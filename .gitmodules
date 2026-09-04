@@ -1,0 +1,3 @@
+[submodule "reference/bn6f"]
+	path = reference/bn6f
+	url = https://github.com/dism-exe/bn6f.git
