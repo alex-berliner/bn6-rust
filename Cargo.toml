@@ -4,3 +4,15 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+agb = "0.25.0"
+
+[profile.dev]
+opt-level = 3
+debug = true
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release]
+lto = "fat"
+debug = true
