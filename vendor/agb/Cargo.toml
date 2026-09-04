@@ -1,0 +1,59 @@
+[workspace]
+
+resolver = "2"
+
+# unfortunately we can't include 'agb' or anything which compiles to non-native code
+# in the workspace here, and they need to be tracked separately.
+members = [
+    # "agb"
+    "agb-debug",
+    "agb-fixnum",
+    "agb-gbafix",
+    "agb-hashmap",
+    "agb-image-converter",
+    "agb-macros",
+    "agb-save",
+    "agb-sound-converter",
+
+    "tracker/agb-midi",
+    "tracker/agb-midi-core",
+    "tracker/agb-tracker-interop",
+    # "tracker/agb-tracker",
+    "tracker/agb-xm",
+    "tracker/agb-xm-core",
+    # "tracker/desktop-player" - needs nightly
+
+    "tools",
+
+    "emulator/mgba",
+    "emulator/mgba-sys",
+    "emulator/test-runner",
+    "emulator/screenshot-generator",
+    "website/backtrace",
+    "website/play",
+]
+
+exclude = [
+    "agb",
+
+    "tracker/agb-tracker",
+    "tracker/desktop-player",
+
+    "examples/amplitude",
+    "examples/combo",
+    "examples/hyperspace-roll",
+    "examples/the-dungeon-puzzlers-lament",
+    "examples/the-hat-chooses-the-wizard",
+    "examples/the-purple-night",
+    "examples/dynamic-isometric",
+    "examples/examples-save",
+
+    "book/games/pong",
+    "book/games/platform",
+
+    "template",
+]
+
+[profile.release.package.backtrace]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

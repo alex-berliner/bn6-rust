@@ -1,0 +1,15 @@
+[package]
+name = "play"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.1"
+serde = { version = "1.0.217", features = ["derive"] }
+tokio = { version = "1.43.0", features = ["full"] }
+tower = "0.5.2"
+tower-http = { version = "0.7.0", features = ["cors"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+uuid = { version = "1.13.1", features = ["v4"] }

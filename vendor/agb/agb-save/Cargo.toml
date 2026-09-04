@@ -1,0 +1,16 @@
+[package]
+name = "agb_save"
+version = "0.25.0"
+edition = "2024"
+repository = "https://github.com/agbrs/agb"
+license = "MPL-2.0"
+description = "Library for managing saves. Designed for use with the agb library for the Game Boy Advance."
+authors = ["Gwilym Inzani <gw@ilym.me>"]
+
+[dependencies]
+crc16 = "0.4"
+serde = { version = "1", default-features = false, features = ["alloc"] }
+postcard = { version = "1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+quickcheck = "1"

@@ -1,0 +1,19 @@
+[package]
+name = "agb-debug"
+version = "0.25.0"
+edition = "2024"
+authors = ["Gwilym Inzani <email@gwilym.dev>"]
+license = "MPL-2.0"
+description = "CLI utility to convert agb stack trace dumps into human readable stack traces"
+repository = "https://github.com/agbrs/agb"
+
+[dependencies]
+addr2line = { version = "0.27", default-features = false, features = ["rustc-demangle"] }
+gimli = { version = "0.34", default-features = false, features = ["endian-reader", "std"] }
+object = { version = "0.39", default-features = false, features = ["read"] }
+
+thiserror = "2"
+clap = { version = "4", features = ["derive"] }
+colored = "3"
+rmp-serde = "1"
+lz4_flex = "0.14"

@@ -1,0 +1,29 @@
+[package]
+name = "the-dungeon-puzzlers-lament"
+version = "0.1.0"
+authors = [""]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+agb = { version = "0.25.0", path = "../../agb" }
+agb_tracker = { version = "0.25.0", path = "../../tracker/agb-tracker" }
+examples_save = { version = "0.1.0", path = "../examples-save" }
+serde = { version = "1", default-features = false, features = ["derive"] }
+
+slotmap = { version = "1", default-features = false }
+
+[profile.dev]
+opt-level = 3
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+debug = true
+
+[build-dependencies]
+tiled = { version = "0.11", default-features = false }
+quote = "1"
+proc-macro2 = "1"

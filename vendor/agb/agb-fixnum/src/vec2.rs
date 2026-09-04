@@ -1,0 +1,507 @@
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+
+use num_traits::Signed;
+
+use crate::{FixedWidthSignedInteger, FixedWidthUnsignedInteger, Num, num};
+
+/// A vector of two points: (x, y) represented by integers or fixed point numbers
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[repr(C)]
+pub struct Vector2D<T> {
+    /// The x coordinate
+    pub x: T,
+    /// The y coordinate
+    pub y: T,
+}
+
+/// A convenience function for constructing a `Vector2D`
+///
+/// ```
+/// use agb_fixnum::{vec2, Vector2D};
+///
+/// assert_eq!(vec2(3, 5), Vector2D::new(3, 5));
+/// ```
+pub const fn vec2<T>(x: T, y: T) -> Vector2D<T> {
+    Vector2D::new(x, y)
+}
+
+impl<T, U> Add<Vector2D<T>> for Vector2D<T>
+where
+    T: Add<T, Output = U>,
+{
+    type Output = Vector2D<U>;
+    fn add(self, rhs: Vector2D<T>) -> Self::Output {
+        vec2(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl<T, Rhs, O> Mul<Rhs> for Vector2D<T>
+where
+    T: Mul<Rhs, Output = O>,
+    Rhs: Copy,
+{
+    type Output = Vector2D<O>;
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        vec2(self.x * rhs, self.y * rhs)
+    }
+}
+
+impl<T, U: Copy> MulAssign<U> for Vector2D<T>
+where
+    T: MulAssign<U>,
+{
+    fn mul_assign(&mut self, rhs: U) {
+        self.x *= rhs;
+        self.y *= rhs;
+    }
+}
+
+impl<T, Rhs, O> Div<Rhs> for Vector2D<T>
+where
+    T: Div<Rhs, Output = O>,
+    Rhs: Copy,
+{
+    type Output = Vector2D<O>;
+    fn div(self, rhs: Rhs) -> Self::Output {
+        vec2(self.x / rhs, self.y / rhs)
+    }
+}
+
+impl<T, U: Copy> DivAssign<U> for Vector2D<T>
+where
+    T: DivAssign<U>,
+{
+    fn div_assign(&mut self, rhs: U) {
+        self.x /= rhs;
+        self.y /= rhs;
+    }
+}
+
+impl<T> AddAssign<Self> for Vector2D<T>
+where
+    T: AddAssign<T>,
+{
+    fn add_assign(&mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
+impl<T, U> Sub<Vector2D<T>> for Vector2D<T>
+where
+    T: Sub<T, Output = U>,
+{
+    type Output = Vector2D<U>;
+    fn sub(self, rhs: Vector2D<T>) -> Self::Output {
+        vec2(self.x - rhs.x, self.y - rhs.y)
+    }
+}
+
+impl<T> SubAssign<Self> for Vector2D<T>
+where
+    T: SubAssign<T>,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
+
+impl<T: Signed> Vector2D<T> {
+    /// Calculates the absolute value of the x and y components.
+    #[must_use]
+    pub fn abs(self) -> Self {
+        vec2(self.x.abs(), self.y.abs())
+    }
+
+    /// Calculates the manhattan (or taxicab) distance, `x.abs()` + `y.abs()`.
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(3.), num!(4.)).into();
+    /// assert_eq!(v1.manhattan_distance(), 7.into());
+    /// ```
+    #[must_use]
+    #[doc(alias = "taxicab")]
+    pub fn manhattan_distance(self) -> T {
+        self.x.abs() + self.y.abs()
+    }
+}
+
+impl<I: FixedWidthUnsignedInteger, const N: usize> Vector2D<Num<I, N>> {
+    #[must_use]
+    /// Truncates the x and y coordinate, see [`Num::trunc`]
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(1.56), num!(-2.2)).into();
+    /// let v2: Vector2D<i32> = (1, -2).into();
+    /// assert_eq!(v1.trunc(), v2);
+    /// ```
+    pub fn trunc(self) -> Vector2D<I> {
+        vec2(self.x.trunc(), self.y.trunc())
+    }
+
+    #[must_use]
+    /// Floors the x and y coordinate, see [`Num::floor`]
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = vec2(num!(1.56), num!(-2.2));
+    /// let v2: Vector2D<i32> = (1, -3).into();
+    /// assert_eq!(v1.floor(), v2);
+    /// ```
+    pub fn floor(self) -> Vector2D<I> {
+        vec2(self.x.floor(), self.y.floor())
+    }
+
+    #[must_use]
+    /// Rounds the x and y coordinate, see [`Num::round`]
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = vec2(num!(1.56), num!(-2.2));
+    /// let v2: Vector2D<i32> = (2, -2).into();
+    /// assert_eq!(v1.round(), v2);
+    /// ```
+    pub fn round(self) -> Vector2D<I> {
+        vec2(self.x.round(), self.y.round())
+    }
+
+    #[must_use]
+    /// Attempts to change the base returning None if the numbers cannot be represented
+    pub fn try_change_base<J: FixedWidthUnsignedInteger + TryFrom<I>, const M: usize>(
+        self,
+    ) -> Option<Vector2D<Num<J, M>>> {
+        Some(vec2(self.x.try_change_base()?, self.y.try_change_base()?))
+    }
+}
+
+impl<const N: usize> Vector2D<Num<i32, N>> {
+    #[must_use]
+    /// Calculates the magnitude by square root
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(3.), num!(4.)).into();
+    /// assert_eq!(v1.magnitude(), 5.into());
+    /// ```
+    pub fn magnitude(self) -> Num<i32, N> {
+        self.magnitude_squared().sqrt()
+    }
+
+    /// Calculates the magnitude of a vector using the [alpha max plus beta min
+    /// algorithm](https://en.wikipedia.org/wiki/Alpha_max_plus_beta_min_algorithm)
+    /// this has a maximum error of less than 4% of the true magnitude, probably
+    /// depending on the size of your fixed point approximation
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(3.), num!(4.)).into();
+    /// assert!(v1.fast_magnitude() > num!(4.9) && v1.fast_magnitude() < num!(5.1));
+    /// ```
+    #[must_use]
+    pub fn fast_magnitude(self) -> Num<i32, N> {
+        let max = core::cmp::max(self.x.abs(), self.y.abs());
+        let min = core::cmp::min(self.x.abs(), self.y.abs());
+
+        max * num!(0.960433870103) + min * num!(0.397824734759)
+    }
+
+    #[must_use]
+    /// Normalises the vector to magnitude of one by performing a square root,
+    /// due to fixed point imprecision this magnitude may not be exactly one
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(4.), num!(4.)).into();
+    /// assert_eq!(v1.normalise().magnitude(), 1.into());
+    /// ```
+    pub fn normalise(self) -> Self {
+        self / self.magnitude()
+    }
+
+    #[must_use]
+    /// Normalises the vector to magnitude of one using [`Vector2D::fast_magnitude`].
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(4.), num!(4.)).into();
+    /// assert_eq!(v1.fast_normalise().magnitude(), 1.into());
+    /// ```
+    pub fn fast_normalise(self) -> Self {
+        self / self.fast_magnitude()
+    }
+}
+
+impl<T, P: Into<T>> From<(P, P)> for Vector2D<T> {
+    fn from(f: (P, P)) -> Self {
+        vec2(f.0.into(), f.1.into())
+    }
+}
+
+impl<T> Vector2D<T> {
+    /// Converts the representation of the vector to another type
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<i16> = vec2(1, 2);
+    /// let v2: Vector2D<i32> = v1.change_base();
+    /// ```
+    pub fn change_base<U: From<T>>(self) -> Vector2D<U> {
+        (self.x, self.y).into()
+    }
+}
+
+impl<I: FixedWidthSignedInteger, const N: usize> Vector2D<Num<I, N>> {
+    /// Creates a unit vector from an angle, noting that the domain of the angle
+    /// is [0, 1], see [`Num::cos`] and [`Num::sin`].
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v: Vector2D<Num<i32, 8>> = Vector2D::new_from_angle(num!(0.0));
+    /// assert_eq!(v, (num!(1.0), num!(0.0)).into());
+    /// ```
+    pub fn new_from_angle(angle: Num<I, N>) -> Self {
+        vec2(angle.cos(), angle.sin())
+    }
+}
+
+impl<I: FixedWidthUnsignedInteger, const N: usize> From<Vector2D<I>> for Vector2D<Num<I, N>> {
+    fn from(n: Vector2D<I>) -> Self {
+        vec2(n.x.into(), n.y.into())
+    }
+}
+
+impl<T> Vector2D<T> {
+    /// Created a vector from the given coordinates.
+    ///
+    /// You should use [`vec2()`] instead.
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v = Vector2D::new(1, 2);
+    /// assert_eq!(v.x, 1);
+    /// assert_eq!(v.y, 2);
+    /// ```
+    pub const fn new(x: T, y: T) -> Self {
+        Vector2D { x, y }
+    }
+
+    /// Returns the tuple of the coordinates
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v = vec2(1, 2);
+    /// assert_eq!(v.get(), (1, 2));
+    /// ```
+    pub fn get(self) -> (T, T) {
+        (self.x, self.y)
+    }
+
+    #[must_use]
+    /// Swaps the x and y coordinate
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1 = vec2(2, 3);
+    /// assert_eq!(v1.swap(), vec2(3, 2));
+    /// ```
+    pub fn swap(self) -> Self {
+        vec2(self.y, self.x)
+    }
+}
+
+impl<T, U> Vector2D<T>
+where
+    T: Mul<T, Output = U>,
+{
+    #[must_use]
+    /// Calculates the hadamard product of two vectors
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1 = vec2(2, 3);
+    /// let v2 = vec2(4, 5);
+    ///
+    /// let r = v1.hadamard(v2);
+    /// assert_eq!(r, vec2(v1.x * v2.x, v1.y * v2.y));
+    /// ```
+    pub fn hadamard(self, other: Self) -> Vector2D<U> {
+        vec2(self.x * other.x, self.y * other.y)
+    }
+}
+
+impl<T> Vector2D<T>
+where
+    T: Mul<T, Output = T> + Add<T, Output = T> + Sub<T, Output = T> + Copy,
+{
+    #[doc(alias = "scalar_product")]
+    /// Calculates the dot product / scalar product of two vectors
+    /// ```
+    /// use agb_fixnum::vec2;
+    ///
+    /// let v1 = vec2(3, 5);
+    /// let v2 = vec2(7, 11);
+    ///
+    /// let dot = v1.dot(v2);
+    /// assert_eq!(dot, 76);
+    /// ```
+    /// The dot product for vectors *A* and *B* is defined as
+    /// > *A*<sub>*x*</sub> × *B*<sub>*x*</sub> + *A*<sub>*y*</sub> × *B*<sub>*y*</sub>.
+    pub fn dot(self, b: Self) -> T {
+        self.x * b.x + self.y * b.y
+    }
+
+    #[doc(alias = "vector_product")]
+    /// Calculates the *z* component of the cross product / vector product of two
+    /// vectors
+    /// ```
+    /// use agb_fixnum::vec2;
+    ///
+    /// let v1 = vec2(3, 5);
+    /// let v2 = vec2(7, 11);
+    ///
+    /// let dot = v1.cross(v2);
+    /// assert_eq!(dot, -2);
+    /// ```
+    /// The *z* component cross product for vectors *A* and *B* is defined as
+    /// > *A*<sub>*x*</sub> × *B*<sub>*y*</sub> - *A*<sub>*y*</sub> × *B*<sub>*x*</sub>.
+    ///
+    ///
+    /// Normally the cross product / vector product is itself a vector. This is
+    /// in the 3D case where the cross product of two vectors is perpendicular
+    /// to both vectors. The only vector perpendicular to two 2D vectors is
+    /// purely in the *z* direction, hence why this method only returns that
+    /// component. The *x* and *y* components are always zero.
+    pub fn cross(self, b: Self) -> T {
+        self.x * b.y - self.y * b.x
+    }
+
+    #[must_use]
+    /// Calculates the magnitude squared, ie (x*x + y*y)
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v1: Vector2D<Num<i32, 8>> = (num!(3.), num!(4.)).into();
+    /// assert_eq!(v1.magnitude_squared(), 25.into());
+    /// ```
+    pub fn magnitude_squared(self) -> T {
+        self.dot(self)
+    }
+}
+
+impl<T: Ord> Vector2D<T> {
+    /// Returns the component-wise minimum of two vectors.
+    ///
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let a = vec2(1, 5);
+    /// let b = vec2(3, 2);
+    /// assert_eq!(a.min(b), vec2(1, 2));
+    /// ```
+    #[must_use]
+    pub fn min(self, other: Self) -> Self {
+        vec2(self.x.min(other.x), self.y.min(other.y))
+    }
+
+    /// Returns the component-wise maximum of two vectors.
+    ///
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let a = vec2(1, 5);
+    /// let b = vec2(3, 2);
+    /// assert_eq!(a.max(b), vec2(3, 5));
+    /// ```
+    #[must_use]
+    pub fn max(self, other: Self) -> Self {
+        vec2(self.x.max(other.x), self.y.max(other.y))
+    }
+
+    /// Clamps each component of the vector between the corresponding components
+    /// of `min` and `max`.
+    ///
+    /// ```
+    /// # use agb_fixnum::*;
+    /// let v = vec2(-5, 15);
+    /// let lo = vec2(0, 0);
+    /// let hi = vec2(10, 10);
+    /// assert_eq!(v.clamp(lo, hi), vec2(0, 10));
+    /// ```
+    #[must_use]
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        vec2(self.x.clamp(min.x, max.x), self.y.clamp(min.y, max.y))
+    }
+}
+
+impl<T: Neg<Output = T>> Neg for Vector2D<T> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        vec2(-self.x, -self.y)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::FixedNum;
+
+    use super::*;
+
+    #[test]
+    fn test_vector_multiplication_and_division() {
+        let a: Vector2D<i32> = (1, 2).into();
+        let b = a * 5;
+        let c = b / 5;
+        assert_eq!(b, (5, 10).into());
+        assert_eq!(a, c);
+    }
+
+    #[test]
+    fn magnitude_accuracy() {
+        let n: Vector2D<Num<i32, 16>> = (3, 4).into();
+        assert!((n.magnitude() - 5).abs() < num!(0.1));
+
+        let n: Vector2D<Num<i32, 8>> = (3, 4).into();
+        assert!((n.magnitude() - 5).abs() < num!(0.1));
+    }
+
+    #[test]
+    fn test_vector_changing() {
+        let v1: Vector2D<FixedNum<8>> = vec2(1.into(), 2.into());
+
+        let v2 = v1.trunc();
+        assert_eq!(v2.get(), (1, 2));
+
+        assert_eq!(v1 + v1, (v2 + v2).into());
+    }
+
+    #[test]
+    fn test_vector_manhattan_distance() {
+        let v = vec2(-3_i32, 4);
+        assert_eq!(v.manhattan_distance(), 7);
+        let v2 = vec2(0_i32, 0);
+        assert_eq!(v2.manhattan_distance(), 0);
+    }
+
+    #[test]
+    fn test_fast_magnitude() {
+        let n: Vector2D<Num<i32, 16>> = (3, 4).into();
+        let result = n.fast_magnitude();
+        assert!(
+            (result - (num!(4) * num!(0.960433870103) + num!(3) * num!(0.397824734759))).abs()
+                < num!(0.1)
+        );
+    }
+
+    #[test]
+    fn test_normalise() {
+        let n: Vector2D<Num<i32, 16>> = (3, 4).into();
+        let result = n.normalise();
+        assert!((result.x - num!(3) / num!(5)).abs() < num!(0.1));
+        assert!((result.y - num!(4) / num!(5)).abs() < num!(0.1));
+    }
+
+    #[test]
+    fn test_fast_normalise() {
+        let n: Vector2D<Num<i32, 16>> = (3, 4).into();
+        let mag = n.fast_magnitude();
+        let result = n.fast_normalise();
+        assert!((result.x - num!(3) / mag).abs() < num!(0.1));
+        assert!((result.y - num!(4) / mag).abs() < num!(0.1));
+    }
+
+    #[test]
+    fn test_vector_new_from_angle() {
+        let angle: Num<i32, 8> = Default::default();
+        let vec = Vector2D::<Num<i32, 8>>::new_from_angle(angle);
+        assert_eq!(vec.x, Num::<i32, 8>::from_f64(1.0));
+        assert_eq!(vec.y, Num::<i32, 8>::from_f64(0.0));
+    }
+}

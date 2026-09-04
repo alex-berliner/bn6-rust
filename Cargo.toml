@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-agb = "0.25.0"
+# Vendored from github.com/agbrs/agb at tag v0.25.0 (1c2842c954fe1dd40a4b0ce0fbecf4ab7157745a)
+# so engine-level features can be added upstream-side rather than worked around here.
+agb = { path = "vendor/agb/agb" }
 
 [profile.dev]
 opt-level = 3

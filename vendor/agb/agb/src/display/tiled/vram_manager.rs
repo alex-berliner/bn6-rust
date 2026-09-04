@@ -1,0 +1,1167 @@
+#![warn(missing_docs)]
+use core::{
+    fmt::Debug,
+    ptr::{self, NonNull},
+};
+
+use alloc::{slice, vec::Vec};
+use tile_allocator::TileAllocator;
+
+mod tile_allocator;
+
+use crate::{
+    display::{Palette16, Rgb15},
+    dma,
+    hash_map::{Entry, HashMap},
+    memory_mapped::MemoryMapped1DArray,
+    util::SyncUnsafeCell,
+};
+
+use super::VRAM_START;
+
+const PALETTE_BACKGROUND: MemoryMapped1DArray<Rgb15, 256> =
+    unsafe { MemoryMapped1DArray::new(0x0500_0000) };
+
+/// Represents the pixel format of a tile in VRAM.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TileFormat {
+    /// 4 bits per pixel, allowing for 16 colours per tile
+    FourBpp = 5,
+    /// 8 bits per pixel, allowing for 256 colours per tile
+    EightBpp = 6,
+}
+
+impl TileFormat {
+    /// Returns the size of the tile in bytes
+    pub(crate) const fn tile_size(self) -> usize {
+        1 << self as usize
+    }
+}
+
+/// Represents a collection of tile data in a specific format.
+///
+/// A `TileSet` holds a slice of raw byte data representing one or more tiles and the
+/// format of those tiles (either 4 bits per pixel or 8 bits per pixel).
+pub struct TileSet {
+    tiles: &'static [u8],
+    format: TileFormat,
+}
+
+impl TileSet {
+    /// Create a new TileSet. You probably shouldn't use this function and instead rely on
+    /// [`include_background_gfx!`](crate::include_background_gfx).
+    ///
+    /// # Safety
+    ///
+    /// * `tiles` must be aligned to 32-bits
+    /// * `tiles` length must be a multiple of the tile size in `format`
+    #[must_use]
+    pub const unsafe fn new(tiles: &'static [u8], format: TileFormat) -> Self {
+        assert!(
+            tiles.len().is_multiple_of(format.tile_size()),
+            "The length of `tiles` must be a multiple of `format.tile_size()`"
+        );
+
+        Self { tiles, format }
+    }
+
+    /// Returns the format used for this TileSet. This will be either [`TileFormat::FourBpp`] if
+    /// it was imported as a 16 colour background (the default) or [`TileFormat::EightBpp`] if
+    /// it was imported as a 256 colour background.
+    #[must_use]
+    pub const fn format(&self) -> TileFormat {
+        self.format
+    }
+
+    /// Gets the raw tile data for a given `tile_id`.
+    ///
+    /// If you have deduplicated the [`TileSet`], then make sure you use the `tile_id` provided by
+    /// the [`TileSetting::tile_id()`](agb::display::tiled::TileSetting::tile_id) method.
+    #[must_use]
+    pub fn get_tile_data(&self, tile_id: u16) -> &'static [u32] {
+        assert!(
+            tile_id as usize * self.format.tile_size() < self.tiles.len(),
+            "{tile_id} is too big for this tileset ({} tiles)",
+            self.tiles.len() / self.format.tile_size()
+        );
+
+        let tile_id = tile_id as usize;
+        let tile_size = self.format.tile_size();
+
+        // SAFETY: alignment checked in precondition of the function, and the start index is valid by the second
+        //         assertion and the length is valid due to the check in the constructor.
+        unsafe {
+            slice::from_raw_parts(
+                self.tiles.as_ptr().add(tile_id * tile_size).cast(),
+                tile_size / 4,
+            )
+        }
+    }
+
+    fn reference(&self) -> NonNull<[u8]> {
+        self.tiles.into()
+    }
+}
+
+/// Represents the index of a tile within VRAM, along with its pixel format.
+///
+/// Tile indices are used to reference specific 8x8 pixel blocks of data stored in the GBA's
+/// Video RAM (VRAM).
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum TileIndex {
+    /// 4 bits per pixel, allowing for 16 colours per tile
+    FourBpp(u16),
+    /// 8 bits per pixel, allowing for 256 colours per tile
+    EightBpp(u16),
+}
+
+impl TileIndex {
+    pub(crate) const fn new(index: usize, format: TileFormat) -> Self {
+        match format {
+            TileFormat::FourBpp => Self::FourBpp(index as u16),
+            TileFormat::EightBpp => Self::EightBpp(index as u16),
+        }
+    }
+
+    pub(crate) const fn raw_index(self) -> u16 {
+        match self {
+            TileIndex::FourBpp(x) => x,
+            TileIndex::EightBpp(x) => x,
+        }
+    }
+
+    pub(crate) const fn format(self) -> TileFormat {
+        match self {
+            TileIndex::FourBpp(_) => TileFormat::FourBpp,
+            TileIndex::EightBpp(_) => TileFormat::EightBpp,
+        }
+    }
+
+    const fn refcount_key(self) -> usize {
+        match self {
+            TileIndex::FourBpp(x) => x as usize,
+            TileIndex::EightBpp(x) => x as usize * 2,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct TileReference(NonNull<u32>);
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct TileInTileSetReference {
+    tileset: *const u8,
+    tile: u16,
+    is_affine: bool,
+}
+
+impl TileInTileSetReference {
+    const fn new(tileset: *const [u8], tile: u16, is_affine: bool) -> Self {
+        Self {
+            tileset: tileset.cast(),
+            tile,
+            is_affine,
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+struct TileReferenceCount {
+    reference_count: u16,
+    tile_in_tile_set: Option<TileInTileSetReference>,
+}
+
+impl TileReferenceCount {
+    const fn new(tile_in_tile_set: TileInTileSetReference) -> Self {
+        Self {
+            reference_count: 1,
+            tile_in_tile_set: Some(tile_in_tile_set),
+        }
+    }
+
+    fn increment_reference_count(&mut self) {
+        debug_assert!(self.tile_in_tile_set.is_some());
+
+        self.reference_count += 1;
+    }
+
+    fn decrement_reference_count(&mut self) -> u16 {
+        assert!(
+            self.reference_count > 0,
+            "Trying to decrease the reference count below 0",
+        );
+
+        debug_assert!(self.tile_in_tile_set.is_some());
+
+        self.reference_count -= 1;
+        self.reference_count
+    }
+
+    const fn clear(&mut self) {
+        self.reference_count = 0;
+        self.tile_in_tile_set = None;
+    }
+
+    const fn current_count(&self) -> u16 {
+        self.reference_count
+    }
+}
+
+/// Represents a tile that can be modified at runtime. Most tiles fetched using [`TileSet`] are generated at
+/// compile time and are loaded on demand from ROM. Note that `DynamicTile16`s are always 16 colours, so four bits
+/// per pixel are used.
+///
+/// If you have access to a `DynamicTile16`, then this is actually a direct pointer to Video RAM. Note that any
+/// writes to [`.data()`](Self::data) must be at least 16-bits at a time, or it won't work due to how the GBA's video RAM
+/// works.
+///
+/// While a DynamicTile16 is active, some of Video RAM will be used up by it, so ensure it is dropped when you don't
+/// need it any more.
+///
+/// Most of the time, you won't need this. But it is used heavily in the
+/// [`RegularBackgroundTextRenderer`](crate::display::font::RegularBackgroundTextRenderer).
+#[non_exhaustive]
+pub struct DynamicTile16 {
+    /// The actual tile data. This will be exactly 8 long, where each entry represents one row of pixel data.
+    tile_data: &'static mut [u32],
+}
+
+impl Debug for DynamicTile16 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::write!(f, "DynamicTile16({})", self.tile_id())
+    }
+}
+
+impl DynamicTile16 {
+    /// Creates a new `DynamicTile16`. Dynamic tiles aren't cleared by default, so the value you get in `tile_data`
+    /// won't necessarily be empty, and will contain whatever was in that same location last time.
+    ///
+    /// If you are completely filling the tile yourself, then this doesn't matter, but otherwise you may want to
+    /// do something like:
+    ///
+    /// ```rust
+    /// # #![no_std]
+    /// # #![no_main]
+    /// use agb::display::tiled::DynamicTile16;
+    ///
+    /// # #[agb::doctest]
+    /// # fn test(gba: agb::Gba) {
+    /// let my_new_tile = DynamicTile16::new().fill_with(0);
+    /// # }
+    /// ```
+    ///
+    /// which will fill the tile with the transparent colour.
+    #[must_use]
+    pub fn new() -> Self {
+        VRAM_MANAGER.new_dynamic_tile()
+    }
+
+    /// Fills a `DynamicTile16` with a given colour index from the palette. Note that the actual palette
+    /// doesn't get assigned until you try to render it.
+    #[must_use]
+    pub fn fill_with(self, colour_index: u8) -> Self {
+        let colour_index = u32::from(colour_index);
+
+        let mut value = 0;
+        for i in 0..8 {
+            value |= colour_index << (i * 4);
+        }
+
+        self.tile_data.fill(value);
+        self
+    }
+
+    /// Returns a reference to the underlying tile data. Note that you cannot write to this in 8-bit chunks
+    /// and must write to it in at least 16-bit chunks.
+    #[must_use]
+    pub const fn data_mut(&mut self) -> &mut [u32] {
+        self.tile_data
+    }
+
+    /// Returns an immutable reference to the underlying tile data.
+    #[must_use]
+    pub const fn data(&self) -> &[u32] {
+        self.tile_data
+    }
+
+    #[must_use]
+    pub(crate) const fn tile_set(&self) -> TileSet {
+        let tiles = unsafe {
+            slice::from_raw_parts_mut(
+                VRAM_START as *mut u8,
+                1024 * TileFormat::FourBpp.tile_size(),
+            )
+        };
+
+        unsafe { TileSet::new(tiles, TileFormat::FourBpp) }
+    }
+
+    #[must_use]
+    pub(crate) fn tile_id(&self) -> u16 {
+        let difference = self.tile_data.as_ptr() as usize - VRAM_START;
+        (difference / TileFormat::FourBpp.tile_size()) as u16
+    }
+
+    /// Sets the pixel at `(x, y)` to the colour index given by `palette_index`
+    pub fn set_pixel(&mut self, x: usize, y: usize, palette_index: u8) {
+        assert!((0..9).contains(&x));
+        assert!((0..9).contains(&y));
+        assert!(palette_index < 16);
+
+        let index = x + y * 8;
+        // each 'pixel' is one nibble, so 8 nibbles in a word (u32)
+        let word_index = index / 8;
+        let nibble_offset = index % 8;
+
+        let ptr = &mut self.tile_data[word_index] as *mut u32;
+
+        let mask = 0xf << (nibble_offset * 4);
+        let palette_value = u32::from(palette_index) << (nibble_offset * 4);
+
+        // SAFETY: ptr points to valid VRAM. Volatile read-modify-write is required because
+        // the GBA cannot write individual bytes to VRAM, so we must ensure the compiler
+        // performs a full 32-bit write.
+        unsafe {
+            let current_value = ptr.read_volatile();
+            ptr.write_volatile((current_value & !mask) | palette_value);
+        }
+    }
+}
+
+impl Default for DynamicTile16 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for DynamicTile16 {
+    fn drop(&mut self) {
+        unsafe {
+            VRAM_MANAGER.drop_dynamic_tile_16(self);
+        }
+    }
+}
+
+/// Represents a tile that can be modified at runtime using 256 colours (8 bits per pixel).
+///
+/// Most tiles fetched using [`TileSet`] are generated at compile time and are loaded on demand from ROM.
+/// `DynamicTile256` allows you to create and modify tiles at runtime with 256 colours.
+///
+/// If you have access to a `DynamicTile256`, then this is actually a direct pointer to Video RAM. Note that any
+/// writes to [`.data()`](Self::data) must be at least 16-bits at a time, or it won't work due to how the GBA's video RAM
+/// works.
+///
+/// While a DynamicTile256 is active, some of Video RAM will be used up by it, so ensure it is dropped when you don't
+/// need it any more.
+///
+/// This is useful for affine backgrounds which require 256-colour tiles.
+#[non_exhaustive]
+pub struct DynamicTile256 {
+    /// The actual tile data. This will be exactly 16 long (64 bytes), where each entry represents part of the pixel data.
+    tile_data: &'static mut [u32],
+}
+
+impl Debug for DynamicTile256 {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::write!(f, "DynamicTile256({})", self.tile_id())
+    }
+}
+
+impl DynamicTile256 {
+    /// Creates a new `DynamicTile256` for use in regular (non-affine) backgrounds. Dynamic tiles aren't cleared
+    /// by default, so the value you get in `tile_data` won't necessarily be empty, and will contain whatever was
+    /// in that same location last time.
+    ///
+    /// If you need a tile for an affine background, use [`DynamicTile256::new_affine()`] instead. Using a tile
+    /// created with `new()` on an affine background may result in the tile not being visible.
+    ///
+    /// If you are completely filling the tile yourself, then this doesn't matter, but otherwise you may want to
+    /// do something like:
+    ///
+    /// ```rust
+    /// # #![no_std]
+    /// # #![no_main]
+    /// use agb::display::tiled::DynamicTile256;
+    ///
+    /// # #[agb::doctest]
+    /// # fn test(gba: agb::Gba) {
+    /// let my_new_tile = DynamicTile256::new().fill_with(0);
+    /// # }
+    /// ```
+    ///
+    /// which will fill the tile with the transparent colour.
+    #[must_use]
+    pub fn new() -> Self {
+        VRAM_MANAGER.new_dynamic_tile_256(false)
+    }
+
+    /// Creates a new `DynamicTile256` for use in affine backgrounds. Dynamic tiles aren't cleared by default,
+    /// so the value you get in `tile_data` won't necessarily be empty, and will contain whatever was in that
+    /// same location last time.
+    ///
+    /// If you are completely filling the tile yourself, then this doesn't matter, but otherwise you may want to
+    /// do something like:
+    ///
+    /// ```rust
+    /// # #![no_std]
+    /// # #![no_main]
+    /// use agb::display::tiled::DynamicTile256;
+    ///
+    /// # #[agb::doctest]
+    /// # fn test(gba: agb::Gba) {
+    /// let my_new_tile = DynamicTile256::new_affine().fill_with(0);
+    /// # }
+    /// ```
+    ///
+    /// which will fill the tile with the transparent colour.
+    #[must_use]
+    pub fn new_affine() -> Self {
+        VRAM_MANAGER.new_dynamic_tile_256(true)
+    }
+
+    /// Fills a `DynamicTile256` with a given colour index from the palette.
+    #[must_use]
+    pub fn fill_with(self, colour_index: u8) -> Self {
+        let colour_index = u32::from(colour_index);
+
+        // Pack 4 bytes (pixels) into each u32
+        let value =
+            colour_index | (colour_index << 8) | (colour_index << 16) | (colour_index << 24);
+
+        self.tile_data.fill(value);
+        self
+    }
+
+    /// Returns a reference to the underlying tile data. Note that you cannot write to this in 8-bit chunks
+    /// and must write to it in at least 16-bit chunks.
+    #[must_use]
+    pub const fn data_mut(&mut self) -> &mut [u32] {
+        self.tile_data
+    }
+
+    /// Returns an immutable reference to the underlying tile data.
+    #[must_use]
+    pub const fn data(&self) -> &[u32] {
+        self.tile_data
+    }
+
+    #[must_use]
+    pub(crate) const fn tile_set(&self) -> TileSet {
+        let tiles = unsafe {
+            slice::from_raw_parts_mut(
+                VRAM_START as *mut u8,
+                1024 * TileFormat::EightBpp.tile_size(),
+            )
+        };
+
+        unsafe { TileSet::new(tiles, TileFormat::EightBpp) }
+    }
+
+    #[must_use]
+    pub(crate) fn tile_id(&self) -> u16 {
+        let difference = self.tile_data.as_ptr() as usize - VRAM_START;
+        (difference / TileFormat::EightBpp.tile_size()) as u16
+    }
+
+    /// Sets the pixel at `(x, y)` to the colour index given by `palette_index`
+    pub fn set_pixel(&mut self, x: usize, y: usize, palette_index: u8) {
+        assert!((0..8).contains(&x));
+        assert!((0..8).contains(&y));
+
+        let index = x + y * 8;
+        // each 'pixel' is one byte, so 4 pixels in a word (u32)
+        let word_index = index / 4;
+        let byte_offset = index % 4;
+
+        let ptr = &mut self.tile_data[word_index] as *mut u32;
+
+        let mask = 0xff << (byte_offset * 8);
+        let palette_value = u32::from(palette_index) << (byte_offset * 8);
+
+        // SAFETY: ptr points to valid VRAM. Volatile read-modify-write is required because
+        // the GBA cannot write individual bytes to VRAM, so we must ensure the compiler
+        // performs a full 32-bit write.
+        unsafe {
+            let current_value = ptr.read_volatile();
+            ptr.write_volatile((current_value & !mask) | palette_value);
+        }
+    }
+}
+
+impl Default for DynamicTile256 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for DynamicTile256 {
+    fn drop(&mut self) {
+        unsafe {
+            VRAM_MANAGER.drop_dynamic_tile_256(self);
+        }
+    }
+}
+
+/// Manages the allocation and deallocation of tile data within the Game Boy Advance's **Video RAM (VRAM)**.
+///
+/// VRAM is a **limited resource (96 KB)** on the GBA, and this manager helps to use it **efficiently**
+/// by tracking the usage of tiles (8x8 pixel mini-bitmaps) and allowing for **dynamic allocation**
+/// of tile memory.
+///
+/// The `VRamManager` interacts with several key GBA graphics concepts:
+///
+/// *   **Tiles:** The fundamental building blocks of graphics on the GBA. This manager tracks which
+///     tiles are in use and where they are located in VRAM.
+/// *   **Palettes:** Colour palettes stored in PAL RAM (both background and sprite palettes). The
+///     `VRamManager` provides methods for interacting with the background palette.
+///
+/// To ensure efficient memory usage and prevent premature freeing of shared resources, the
+/// `VRamManager` employs **reference counting** for tiles that are used by multiple parts of the
+/// game (e.g., different sprites or background layers).
+///
+/// Additionally, the manager supports **dynamic allocation** of tiles for temporary needs, allowing
+/// for flexible memory management during gameplay. These dynamically allocated tiles have their
+/// memory managed by the `VRamManager` and are freed when no longer in use.
+///
+/// All interactions for the VRamManager is done via the static [`VRAM_MANAGER`] instance.
+pub(crate) struct VRamManager {
+    inner: SyncUnsafeCell<VRamManagerInner>,
+}
+
+/// The global instance of the VRamManager. You should always use this and never attempt to
+/// construct one yourself.
+// SAFETY: This is the _only_ one and `init()` is called in `new_in_entry` on the GBA struct
+pub(crate) static VRAM_MANAGER: VRamManager = unsafe { VRamManager::new() };
+
+impl VRamManager {
+    const unsafe fn new() -> Self {
+        Self {
+            inner: SyncUnsafeCell::new(unsafe { VRamManagerInner::new() }),
+        }
+    }
+
+    pub(crate) unsafe fn init(&self) {
+        self.with(|inner| unsafe {
+            inner.init();
+        });
+    }
+
+    fn with<T>(&self, f: impl FnOnce(&mut VRamManagerInner) -> T) -> T {
+        f(unsafe { &mut *self.inner.get() })
+    }
+}
+
+impl VRamManager {
+    unsafe fn drop_dynamic_tile_16(&self, tile: &DynamicTile16) {
+        self.with(|inner| unsafe { inner.remove_dynamic_tile_16(tile) });
+    }
+
+    unsafe fn drop_dynamic_tile_256(&self, tile: &DynamicTile256) {
+        self.with(|inner| unsafe { inner.remove_dynamic_tile_256(tile) });
+    }
+
+    pub(crate) fn new_dynamic_tile(&self) -> DynamicTile16 {
+        self.with(VRamManagerInner::new_dynamic_tile_16)
+    }
+
+    pub(crate) fn new_dynamic_tile_256(&self, is_affine: bool) -> DynamicTile256 {
+        self.with(|inner| inner.new_dynamic_tile_256(is_affine))
+    }
+
+    pub(crate) fn remove_tile(&self, index: TileIndex) {
+        self.with(|inner| inner.remove_tile(index));
+    }
+
+    pub(crate) fn increase_reference(&self, index: TileIndex) {
+        self.with(|inner| inner.increase_reference(index));
+    }
+
+    pub(crate) fn add_tile(
+        &self,
+        tile_set: &TileSet,
+        tile_index: u16,
+        is_affine: bool,
+    ) -> TileIndex {
+        self.with(|inner| inner.add_tile(tile_set, tile_index, is_affine))
+    }
+
+    pub(crate) fn gc(&self) {
+        self.with(VRamManagerInner::gc);
+    }
+
+    pub(crate) const fn vram_background_palette(&self) -> &'static [Palette16] {
+        unsafe {
+            slice::from_raw_parts::<'static, Palette16>(
+                PALETTE_BACKGROUND.as_ptr() as *const Palette16,
+                16,
+            )
+        }
+    }
+
+    /// Sets the `pal_index` background palette to the 4bpp one given in `palette`.
+    /// Note that `pal_index` must be in the range 0..=15 as there are only 16 palettes available on
+    /// the GameBoy Advance.
+    pub fn set_background_palette(&self, pal_index: u8, palette: &Palette16) {
+        self.with(|inner| inner.set_background_palette(pal_index, palette));
+    }
+
+    /// Sets all background palettes based on the entries given in `palettes`. Note that the GameBoy Advance
+    /// can have at most 16 palettes loaded at once, so only the first 16 will be loaded (although this
+    /// array can be shorter if you don't need all 16).
+    ///
+    /// You will probably call this method early on in the game setup using the palette combination that you
+    /// built using [`include_background_gfx!`](crate::include_background_gfx).
+    ///
+    /// This takes effect immediately, so is best used during initialisation before the main game
+    /// loop starts. If you need to change palettes during gameplay and want the change to be
+    /// synchronised with other graphical updates, use
+    /// [`GraphicsFrame::set_background_palettes()`](crate::display::GraphicsFrame::set_background_palettes)
+    /// instead which takes effect on [`.commit()`](crate::display::GraphicsFrame::commit).
+    pub fn set_background_palettes(&self, palettes: &[Palette16]) {
+        self.with(|inner| inner.set_background_palettes(palettes));
+    }
+
+    /// Replaces all instances of the tile found in the `source_tile_set` `source_tile` combination with
+    /// the one in `target_tile_set` `target_tile`. This will just do nothing if don't have any occurrences
+    /// of the `source_tile_set` `source_tile` combination.
+    ///
+    /// This is primarily intended for use with animated backgrounds since it is incredibly efficient, only
+    /// modifying the tile data once.
+    ///
+    /// Note that this only works with tiles in _regular_ backgrounds. Tiles in affine backgrounds should use
+    /// [`replace_tile_affine()`](Self::replace_tile_affine).
+    pub fn replace_tile(
+        &self,
+        source_tile_set: &TileSet,
+        source_tile: u16,
+        target_tile_set: &TileSet,
+        target_tile: u16,
+    ) {
+        self.with(|inner| {
+            inner.replace_tile(
+                source_tile_set,
+                source_tile,
+                target_tile_set,
+                target_tile,
+                false,
+            );
+        });
+    }
+
+    /// Replaces all instances of the tile found in the `source_tile_set` `source_tile` combination with
+    /// the one in `target_tile_set` `target_tile`. This will just do nothing if don't have any occurrences
+    /// of the `source_tile_set` `source_tile` combination.
+    ///
+    /// This is primarily intended for use with animated backgrounds since it is incredibly efficient, only
+    /// modifying the tile data once.
+    ///
+    /// Note that this only works with tiles in _affine_ backgrounds. Tiles in regular backgrounds should use
+    /// [`replace_tile()`](Self::replace_tile).
+    pub fn replace_tile_affine(
+        &self,
+        source_tile_set: &TileSet,
+        source_tile: u16,
+        target_tile_set: &TileSet,
+        target_tile: u16,
+    ) {
+        self.with(|inner| {
+            inner.replace_tile(
+                source_tile_set,
+                source_tile,
+                target_tile_set,
+                target_tile,
+                true,
+            );
+        });
+    }
+
+    #[must_use]
+    pub(crate) fn background_palette_colour_dma(
+        &self,
+        pal_index: usize,
+        colour_index: usize,
+    ) -> dma::DmaControllable<Rgb15> {
+        self.with(|inner| inner.background_palette_colour_dma(pal_index, colour_index))
+    }
+
+    /// Set a single colour in a single palette. `pal_index` must be in 0..16 as must colour_index.
+    /// If you're working with a 256 colour palette, you should use [`VRamManager::set_background_palette_colour_256()`]
+    /// instead. Although these use the same underlying palette, so both methods will work.
+    pub fn set_background_palette_colour(
+        &self,
+        pal_index: usize,
+        colour_index: usize,
+        colour: Rgb15,
+    ) {
+        self.with(|inner| inner.set_background_palette_colour(pal_index, colour_index, colour));
+    }
+
+    /// Gets the index of the colour for a given background palette, or None if it doesn't exist
+    #[must_use]
+    pub fn find_colour_index_16(&self, palette_index: usize, colour: Rgb15) -> Option<usize> {
+        self.with(|inner| inner.find_colour_index_16(palette_index, colour))
+    }
+}
+
+struct VRamManagerInner {
+    tile_set_to_vram: HashMap<TileInTileSetReference, TileReference>,
+    reference_counts: Vec<TileReferenceCount>,
+
+    lookup_cache: [(TileInTileSetReference, TileReference); 8],
+
+    tile_allocator: TileAllocator,
+
+    indices_to_gc: Vec<TileIndex>,
+}
+
+const EMPTY_CACHE_ENTRY: (TileInTileSetReference, TileReference) = (
+    TileInTileSetReference {
+        tileset: ptr::null(),
+        tile: 0,
+        is_affine: false,
+    },
+    TileReference(NonNull::dangling()),
+);
+
+impl VRamManagerInner {
+    const unsafe fn new() -> Self {
+        let tile_set_to_vram: HashMap<TileInTileSetReference, TileReference> = HashMap::new();
+
+        Self {
+            tile_set_to_vram,
+            reference_counts: Vec::new(),
+            indices_to_gc: Vec::new(),
+
+            lookup_cache: [EMPTY_CACHE_ENTRY; _],
+
+            tile_allocator: unsafe { TileAllocator::new() },
+        }
+    }
+
+    unsafe fn init(&mut self) {
+        unsafe {
+            self.tile_allocator.init();
+        }
+    }
+
+    fn index_from_reference(reference: TileReference, format: TileFormat) -> TileIndex {
+        let difference = reference.0.as_ptr() as usize - VRAM_START;
+        TileIndex::new(difference / format.tile_size(), format)
+    }
+
+    const fn reference_from_index(index: TileIndex) -> TileReference {
+        let ptr = (index.raw_index() as usize * index.format().tile_size()) + VRAM_START;
+        TileReference(NonNull::new(ptr as *mut _).unwrap())
+    }
+
+    #[must_use]
+    fn new_dynamic_tile_16(&mut self) -> DynamicTile16 {
+        let tile_format = TileFormat::FourBpp;
+        let new_reference: NonNull<u32> = self.tile_allocator.alloc_for_regular(tile_format);
+        let tile_reference = TileReference(new_reference);
+
+        let index = Self::index_from_reference(tile_reference, tile_format);
+        let key = index.refcount_key();
+
+        let tiles = unsafe {
+            slice::from_raw_parts_mut(VRAM_START as *mut u8, 1024 * tile_format.tile_size())
+        };
+
+        let tileset_reference = TileInTileSetReference::new(tiles, index.raw_index(), false);
+
+        self.tile_set_to_vram
+            .insert(tileset_reference, tile_reference);
+
+        self.reference_counts
+            .resize(self.reference_counts.len().max(key + 1), Default::default());
+        self.reference_counts[key] = TileReferenceCount::new(tileset_reference);
+
+        DynamicTile16 {
+            tile_data: unsafe {
+                slice::from_raw_parts_mut(
+                    tiles
+                        .as_mut_ptr()
+                        .add(index.raw_index() as usize * tile_format.tile_size())
+                        .cast(),
+                    tile_format.tile_size() / core::mem::size_of::<u32>(),
+                )
+            },
+        }
+    }
+
+    #[must_use]
+    fn new_dynamic_tile_256(&mut self, is_affine: bool) -> DynamicTile256 {
+        let tile_format = TileFormat::EightBpp;
+
+        let new_reference = if is_affine {
+            self.tile_allocator.alloc_for_affine()
+        } else {
+            self.tile_allocator.alloc_for_regular(tile_format)
+        };
+
+        let tile_reference = TileReference(new_reference);
+
+        let index = Self::index_from_reference(tile_reference, tile_format);
+        let key = index.refcount_key();
+
+        let tiles = unsafe {
+            slice::from_raw_parts_mut(VRAM_START as *mut u8, 1024 * tile_format.tile_size())
+        };
+
+        let tileset_reference = TileInTileSetReference::new(tiles, index.raw_index(), true);
+
+        self.tile_set_to_vram
+            .insert(tileset_reference, tile_reference);
+
+        self.reference_counts
+            .resize(self.reference_counts.len().max(key + 1), Default::default());
+        self.reference_counts[key] = TileReferenceCount::new(tileset_reference);
+
+        DynamicTile256 {
+            tile_data: unsafe {
+                slice::from_raw_parts_mut(
+                    tiles
+                        .as_mut_ptr()
+                        .add(index.raw_index() as usize * tile_format.tile_size())
+                        .cast(),
+                    tile_format.tile_size() / core::mem::size_of::<u32>(),
+                )
+            },
+        }
+    }
+
+    // The dynamic tile because it will no longer be valid after this call
+    unsafe fn remove_dynamic_tile_16(&mut self, dynamic_tile: &DynamicTile16) {
+        let pointer = NonNull::new(dynamic_tile.tile_data.as_ptr() as *mut _).unwrap();
+        let tile_reference = TileReference(pointer);
+
+        let tile_index = Self::index_from_reference(tile_reference, TileFormat::FourBpp);
+        self.remove_tile(tile_index);
+    }
+
+    // The dynamic tile because it will no longer be valid after this call
+    unsafe fn remove_dynamic_tile_256(&mut self, dynamic_tile: &DynamicTile256) {
+        let pointer = NonNull::new(dynamic_tile.tile_data.as_ptr() as *mut _).unwrap();
+        let tile_reference = TileReference(pointer);
+
+        let tile_index = Self::index_from_reference(tile_reference, TileFormat::EightBpp);
+        self.remove_tile(tile_index);
+    }
+
+    #[inline(never)]
+    fn add_tile(&mut self, tile_set: &TileSet, tile: u16, is_affine: bool) -> TileIndex {
+        let tileset_reference =
+            TileInTileSetReference::new(tile_set.reference().as_ptr(), tile, is_affine);
+
+        let lookup_cache_index = tile as usize & (self.lookup_cache.len() - 1);
+        let cached_lookup = &self.lookup_cache[lookup_cache_index];
+        if cached_lookup.0 == tileset_reference {
+            let tile_index = Self::index_from_reference(cached_lookup.1, tile_set.format);
+            self.increase_reference(tile_index);
+
+            return tile_index;
+        }
+
+        let reference = self.tile_set_to_vram.entry(tileset_reference);
+
+        if let Entry::Occupied(reference) = reference {
+            let tile_index = Self::index_from_reference(*reference.get(), tile_set.format);
+            self.lookup_cache[lookup_cache_index] = (tileset_reference, *reference.get());
+            self.increase_reference(tile_index);
+
+            return tile_index;
+        }
+
+        let new_reference: NonNull<u32> = if is_affine {
+            self.tile_allocator.alloc_for_affine()
+        } else {
+            self.tile_allocator.alloc_for_regular(tile_set.format)
+        };
+        let tile_reference = TileReference(new_reference);
+        reference.or_insert(tile_reference);
+
+        self.copy_tile_to_location(tile_set, tile, tile_reference);
+
+        let index = Self::index_from_reference(tile_reference, tile_set.format);
+        let key = index.refcount_key();
+
+        self.reference_counts
+            .resize(self.reference_counts.len().max(key + 1), Default::default());
+
+        self.reference_counts[key] = TileReferenceCount::new(tileset_reference);
+
+        self.lookup_cache[lookup_cache_index] = (tileset_reference, tile_reference);
+
+        index
+    }
+
+    fn remove_tile(&mut self, tile_index: TileIndex) {
+        let key = tile_index.refcount_key();
+
+        let new_reference_count = self.reference_counts[key].decrement_reference_count();
+
+        if new_reference_count != 0 {
+            return;
+        }
+
+        self.indices_to_gc.push(tile_index);
+    }
+
+    fn increase_reference(&mut self, tile_index: TileIndex) {
+        let key = tile_index.refcount_key();
+        self.reference_counts[key].increment_reference_count();
+    }
+
+    fn gc(&mut self) {
+        self.lookup_cache.fill(EMPTY_CACHE_ENTRY);
+
+        for tile_index in self.indices_to_gc.drain(..) {
+            let key = tile_index.refcount_key();
+            if self.reference_counts[key].current_count() > 0 {
+                continue; // it has since been added back
+            }
+
+            let Some(tile_ref) = self.reference_counts[key].tile_in_tile_set.as_ref() else {
+                // already been deleted
+                continue;
+            };
+
+            let tile_reference = Self::reference_from_index(tile_index);
+            unsafe {
+                self.tile_allocator
+                    .dealloc(tile_reference.0, tile_index.format());
+            }
+
+            self.tile_set_to_vram.remove(tile_ref);
+            self.reference_counts[key].clear();
+        }
+    }
+
+    fn replace_tile(
+        &mut self,
+        source_tile_set: &TileSet,
+        source_tile: u16,
+        target_tile_set: &TileSet,
+        target_tile: u16,
+        is_affine: bool,
+    ) {
+        assert_eq!(
+            source_tile_set.format, target_tile_set.format,
+            "Must replace a tileset with the same format"
+        );
+
+        if let Some(&reference) = self.tile_set_to_vram.get(&TileInTileSetReference::new(
+            source_tile_set.reference().as_ptr(),
+            source_tile,
+            is_affine,
+        )) {
+            self.copy_tile_to_location(target_tile_set, target_tile, reference);
+        }
+    }
+
+    fn copy_tile_to_location(
+        &self,
+        tile_set: &TileSet,
+        tile_id: u16,
+        tile_reference: TileReference,
+    ) {
+        let tile_format = tile_set.format;
+        let tile_size = tile_format.tile_size();
+        let tile_offset = (tile_id as usize) * tile_size;
+        let tile_data_start = unsafe { tile_set.tiles.as_ptr().add(tile_offset) };
+
+        let target_location = tile_reference.0.as_ptr() as *mut _;
+
+        unsafe {
+            match tile_format {
+                TileFormat::FourBpp => core::arch::asm!(
+                    ".rept 2",
+                    "ldmia {src}!, {{{tmp1},{tmp2},{tmp3},{tmp4}}}",
+                    "stmia {dest}!, {{{tmp1},{tmp2},{tmp3},{tmp4}}}",
+                    ".endr",
+                    src = inout(reg) tile_data_start => _,
+                    dest = inout(reg) target_location => _,
+                    tmp1 = out(reg) _,
+                    tmp2 = out(reg) _,
+                    tmp3 = out(reg) _,
+                    tmp4 = out(reg) _,
+                ),
+                TileFormat::EightBpp => core::arch::asm!(
+                    ".rept 4",
+                    "ldmia {src}!, {{{tmp1},{tmp2},{tmp3},{tmp4}}}",
+                    "stmia {dest}!, {{{tmp1},{tmp2},{tmp3},{tmp4}}}",
+                    ".endr",
+                    src = inout(reg) tile_data_start => _,
+                    dest = inout(reg) target_location => _,
+                    tmp1 = out(reg) _,
+                    tmp2 = out(reg) _,
+                    tmp3 = out(reg) _,
+                    tmp4 = out(reg) _,
+                ),
+            }
+        }
+    }
+
+    /// Copies the palette to the given palette index
+    fn set_background_palette(&mut self, pal_index: u8, palette: &Palette16) {
+        assert!(pal_index < 16);
+        for (colour_index, &colour) in palette.colours.iter().enumerate() {
+            PALETTE_BACKGROUND.set(colour_index + 16 * pal_index as usize, colour);
+        }
+    }
+
+    /// The DMA register for controlling a single colour in a single background. Good for drawing gradients
+    #[must_use]
+    fn background_palette_colour_dma(
+        &self,
+        pal_index: usize,
+        colour_index: usize,
+    ) -> dma::DmaControllable<Rgb15> {
+        assert!(pal_index < 16);
+        assert!(colour_index < 16);
+
+        unsafe {
+            dma::DmaControllable::new(
+                PALETTE_BACKGROUND
+                    .as_ptr()
+                    .add(16 * pal_index + colour_index),
+            )
+        }
+    }
+
+    /// Sets a single colour for a given background palette. Takes effect immediately
+    fn set_background_palette_colour(
+        &mut self,
+        pal_index: usize,
+        colour_index: usize,
+        colour: Rgb15,
+    ) {
+        assert!(pal_index < 16);
+        assert!(colour_index < 16);
+
+        PALETTE_BACKGROUND.set(colour_index + 16 * pal_index, colour);
+    }
+
+    /// Copies palettes to the background palettes without any checks.
+    fn set_background_palettes(&mut self, palettes: &[Palette16]) {
+        assert!(palettes.len() <= 16, "cannot set more than 16 palettes");
+
+        unsafe {
+            slice::from_raw_parts_mut(
+                PALETTE_BACKGROUND.as_ptr() as *mut Palette16,
+                palettes.len(),
+            )
+        }
+        .clone_from_slice(palettes);
+    }
+
+    /// Gets the index of the colour for a given background palette, or None if it doesn't exist
+    #[must_use]
+    fn find_colour_index_16(&self, palette_index: usize, colour: Rgb15) -> Option<usize> {
+        assert!(palette_index < 16);
+
+        (0..16).find(|i| PALETTE_BACKGROUND.get(palette_index * 16 + i) == colour)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::Gba;
+
+    #[test_case]
+    fn can_create_dynamic_tile_16(_: &mut Gba) {
+        let tile = DynamicTile16::new();
+        assert_eq!(tile.data().len(), 8);
+    }
+
+    #[test_case]
+    fn can_create_dynamic_tile_256(_: &mut Gba) {
+        let tile = DynamicTile256::new();
+        assert_eq!(tile.data().len(), 16);
+    }
+
+    #[test_case]
+    fn dynamic_tile_16_fill_with(_: &mut Gba) {
+        let tile = DynamicTile16::new().fill_with(5);
+        // Each u32 contains 8 pixels at 4 bits each, so 0x55555555
+        for &word in tile.data() {
+            assert_eq!(word, 0x55555555);
+        }
+    }
+
+    #[test_case]
+    fn dynamic_tile_256_fill_with(_: &mut Gba) {
+        let tile = DynamicTile256::new().fill_with(0xAB);
+        // Each u32 contains 4 pixels at 8 bits each, so 0xABABABAB
+        for &word in tile.data() {
+            assert_eq!(word, 0xABABABAB);
+        }
+    }
+
+    #[test_case]
+    fn dynamic_tile_16_set_pixel(_: &mut Gba) {
+        let mut tile = DynamicTile16::new().fill_with(0);
+
+        // Set pixel at (0, 0) to colour 7
+        tile.set_pixel(0, 0, 7);
+        assert_eq!(tile.data()[0] & 0xF, 7);
+
+        // Set pixel at (3, 0) to colour 10
+        tile.set_pixel(3, 0, 10);
+        assert_eq!((tile.data()[0] >> 12) & 0xF, 10);
+
+        // Set pixel at (0, 1) to colour 15
+        tile.set_pixel(0, 1, 15);
+        assert_eq!(tile.data()[1] & 0xF, 15);
+    }
+
+    #[test_case]
+    fn dynamic_tile_256_set_pixel(_: &mut Gba) {
+        let mut tile = DynamicTile256::new().fill_with(0);
+
+        // Set pixel at (0, 0) to colour 128
+        tile.set_pixel(0, 0, 128);
+        assert_eq!(tile.data()[0] & 0xFF, 128);
+
+        // Set pixel at (3, 0) to colour 200
+        tile.set_pixel(3, 0, 200);
+        assert_eq!((tile.data()[0] >> 24) & 0xFF, 200);
+
+        // Set pixel at (0, 1) to colour 255
+        tile.set_pixel(0, 1, 255);
+        assert_eq!(tile.data()[2] & 0xFF, 255);
+    }
+
+    #[test_case]
+    fn can_create_and_drop_multiple_dynamic_tiles_16(_: &mut Gba) {
+        for _ in 0..10 {
+            let _tiles: Vec<_> = (0..50).map(|_| DynamicTile16::new()).collect();
+            // Tiles are dropped here
+        }
+        VRAM_MANAGER.gc();
+    }
+
+    #[test_case]
+    fn can_create_and_drop_multiple_dynamic_tiles_256(_: &mut Gba) {
+        // Note: Affine tiles have limited VRAM (256 tiles max), so we allocate fewer
+        for _ in 0..10 {
+            let _tiles: Vec<_> = (0..20).map(|_| DynamicTile256::new()).collect();
+            // Tiles are dropped here
+        }
+        VRAM_MANAGER.gc();
+    }
+
+    #[test_case]
+    fn dynamic_tile_256_data_mut(_: &mut Gba) {
+        let mut tile = DynamicTile256::new();
+        let data = tile.data_mut();
+
+        // Write directly to tile data
+        data[0] = 0x12345678;
+        data[15] = 0xDEADBEEF;
+
+        assert_eq!(tile.data()[0], 0x12345678);
+        assert_eq!(tile.data()[15], 0xDEADBEEF);
+    }
+}

@@ -1,0 +1,54 @@
+//! Renders text onto a background.
+#![no_std]
+#![no_main]
+
+use agb::{
+    display::{
+        Priority, Rgb, Rgb15,
+        font::{Font, Layout, LayoutSettings, RegularBackgroundTextRenderer},
+        tiled::{RegularBackground, RegularBackgroundSize, TileFormat},
+    },
+    include_font,
+};
+
+static FONT: Font = include_font!("examples/font/ark-pixel-10px-proportional-ja.ttf", 10);
+
+#[agb::entry]
+fn main(mut gba: agb::Gba) -> ! {
+    let mut gfx = gba.graphics.get();
+
+    gfx.set_background_palette_colour(0, 0, Rgb::new(0, 97, 132).into());
+    gfx.set_background_palette_colour(0, 1, Rgb15::WHITE);
+    gfx.set_background_palette_colour(0, 2, Rgb15::BLACK);
+
+    let mut bg = RegularBackground::new(
+        Priority::P0,
+        RegularBackgroundSize::Background32x32,
+        TileFormat::FourBpp,
+    );
+
+    let mut text_renderer = RegularBackgroundTextRenderer::new((4, 0), 0);
+
+    let mut text_layout = Layout::new(
+        "Hello, World! こんにちは世界\nThis is an example of rendering text using backgrounds.",
+        &FONT,
+        &LayoutSettings::new()
+            .with_max_line_length(200)
+            .with_drop_shadow(2),
+    );
+
+    let mut frame = gfx.frame();
+    bg.show(&mut frame);
+
+    frame.commit();
+
+    loop {
+        if let Some(letter_group) = text_layout.next() {
+            text_renderer.show(&mut bg, &letter_group);
+        }
+
+        let mut frame = gfx.frame();
+        bg.show(&mut frame);
+        frame.commit();
+    }
+}

@@ -1,0 +1,48 @@
+[package]
+name = "agb"
+version = "0.25.0"
+authors = ["Corwin Kuiper <corwin@kuiper.dev>", "Gwilym Inzani <gw@ilym.me>"]
+edition = "2024"
+description = "Library for Game Boy Advance Development"
+license = "MPL-2.0"
+repository = "https://github.com/agbrs/agb"
+homepage = "https://agbrs.dev"
+exclude = ["/tests", "/examples"]
+categories = ["game-engines", "embedded"]
+
+[features]
+default = ["backtrace", "testing"]
+backtrace = ["testing", "dep:qrcodegen-no-heap"]
+testing = []
+multiboot = []
+embassy = []
+
+[dependencies]
+agb_image_converter = { version = "0.25.0", path = "../agb-image-converter" }
+agb_sound_converter = { version = "0.25.0", path = "../agb-sound-converter" }
+agb_macros = { version = "0.25.0", path = "../agb-macros" }
+agb_fixnum = { version = "0.25.0", path = "../agb-fixnum", features = ["serde"] }
+agb_hashmap = { version = "0.25.0", path = "../agb-hashmap", features = ["allocator_api", "serde"] }
+agb_save = { version = "0.25.0", path = "../agb-save" }
+serde = { version = "1", default-features = false, features = ["alloc", "derive"] }
+bilge = "0.3"
+qrcodegen-no-heap = { version = "1.8", optional = true }
+portable-atomic = { version = "1.6.0", default-features = false, features = ["unsafe-assume-single-core", "fallback"] }
+once_cell = { version = "1.20.1", default-features = false, features = ["critical-section"] }
+critical-section = { version = "1.1.2", features = ["restore-state-u16"] }
+
+[package.metadata.docs.rs]
+default-target = "thumbv4t-none-eabi"
+cargo-args = ["-Zbuild-std=core,alloc"]
+
+[profile.dev]
+opt-level = 3
+debug = true
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+debug = true

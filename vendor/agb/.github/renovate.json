@@ -1,0 +1,30 @@
+{
+  "extends": [
+    "config:recommended"
+  ],
+  "ignorePresets": [
+    ":prHourlyLimit2"
+  ],
+  "dependencyDashboardAutoclose": true,
+  "packageRules": [
+    {
+      "groupName": "Javascript packages (non-major)",
+      "groupSlug": "js-update",
+      "schedule": [
+        "on tuesday"
+      ],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "patch",
+        "minor"
+      ]
+    },
+    {
+      "groupName": "Elf file handling",
+      "groupSlug": "elf-updates",
+      "matchPackageNames": ["gimli", "addr2line"]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[package]
+name = "agb_hashmap"
+version = "0.25.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "A simple no_std hashmap implementation intended for use in the `agb` library"
+repository = "https://github.com/agbrs/agb"
+exclude = ["/benches"]
+categories = ["no-std", "data-structures"]
+
+[features]
+allocator_api = []
+serde = ["dep:serde"]
+
+[dependencies]
+rustc-hash = { version = "2", default-features = false }
+serde = { version = "1", default-features = false, optional = true }
+
+[dev-dependencies]
+rand = { version = "0.10", default-features = false }
+lazy_static = "1.4"
+quickcheck = "1"
+serde_json = { version = "1", default-features = false, features = ["alloc"] }
