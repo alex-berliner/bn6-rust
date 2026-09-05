@@ -59,10 +59,15 @@ for a charged shot), B cracks the panel underfoot.
   assets/custom.bin; it slides in from the left at 0xc a frame, revealing
   its columns as they arrive and blanking them as they leave the way the
   game copies them from its staging buffer, holds the fight while it is up,
-  and slides out on A or Start, clearing the gauge. The cursor, the five
-  slots' chip art and the add/undo rules (all located: eS20364C0, the
-  unk_20365C0 slot records, the byte_8725894 icons) are not drawn yet, so
-  the window opens empty and any confirm closes it.
+  and slides out on A over OK, clearing the gauge. The map is the game's
+  template with its 27 dynamic rectangles (byte_8027B2C: chip name,
+  picture, element row, two rows of five slots, OK, the stack column)
+  patched blank as the game does before drawing into them. The cursor is
+  the game's four-corner bracket (dword_86E55BC) at its slot and OK
+  origins, blinking every 8 frames, walking the default slot ring with
+  Start jumping to OK. The chips themselves -- slot icons, the card
+  preview, the add/undo rules (unk_20365C0, byte_8725894) -- are located
+  but not drawn, so the slots are empty and A on one does nothing.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
