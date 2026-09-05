@@ -91,9 +91,10 @@ The release ROM keeps the game's lineup, slow gauge and no L/R shortcut.
   throws from animation 6 and bursts three panels ahead with the Gunner
   impact's animation, its flight a stand-in arc; Recov10 and Recov30
   heal their names; Invisibl makes the navi untouchable for 0x68 frames
-  and Barrier absorbs 10. Cannon, HiCannon, AirShot and Vulcan fire a
-  buster shot at chip power until their own timings are in; AreaGrab is
-  consumed without effect until the field tracks panel ownership.
+  and Barrier absorbs 10. Cannon and HiCannon take the cannon pose
+  (animation 8) and throw their travelling shot at chip power; AirShot and
+  Vulcan still fire a buster shot at chip power until their timings are in;
+  AreaGrab is consumed without effect until the field tracks panel ownership.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.

@@ -86,6 +86,8 @@ const GAUGE_STEP: u16 = 0xd;
 const CHIP_SWORD: u16 = 71;
 const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
+const CHIP_CANNON: u16 = 1;
+const CHIP_HICANNON: u16 = 2;
 const CHIP_MINIBOMB: u16 = 54;
 const CHIP_RECOV10: u16 = 154;
 const CHIP_RECOV30: u16 = 155;
@@ -105,6 +107,18 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     frames: 0x15,
     strike_at: 9,
     recover: 5,
+};
+/// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
+/// animation 8 and the projectile is spawned off the front panel when the
+/// frame counter reads 0xf, the pose exiting once it reads 0x1d
+/// (asm31.s:109454, 109532, 109549). Both subfamilies are under 4, so the
+/// illusions at counter 8 do not apply (asm31.s:109480).
+const CANNON: actor::AttackSpec = actor::AttackSpec {
+    windup: None,
+    anim: 8,
+    frames: 0x1d,
+    strike_at: 0xf,
+    recover: 0,
 };
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
 const RECOV_HP: [u16; 2] = [10, 30];
@@ -727,13 +741,17 @@ impl<'a> Battle<'a> {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
             }
+            CHIP_CANNON | CHIP_HICANNON => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(CANNON);
+            }
             CHIP_RECOV10 => self.megaman.heal(RECOV_HP[0]),
             CHIP_RECOV30 => self.megaman.heal(RECOV_HP[1]),
             CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
             CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
             // AreaGrab needs per-panel ownership, which the field does not
-            // track yet; the shot chips wait on their own timings. Both are
-            // stand-ins for now: nothing, and a buster shot at chip power.
+            // track yet; AirShot and Vulcan wait on their own timings. Both
+            // are stand-ins for now: nothing, and a buster shot at chip power.
             CHIP_AREAGRAB => {}
             _ => {
                 self.chip_in_use = Some(chip);
