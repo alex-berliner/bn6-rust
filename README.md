@@ -52,13 +52,17 @@ for a charged shot), B cracks the panel underfoot.
   the pause that precedes chip selection. The bar itself is not drawn: two
   passes over the disassembly found no display code that reads the value,
   so rather than invent a fill it stays invisible until that is understood.
-  Chip selection itself is understood but not built: its state machine,
-  slide, cursor and add/undo rules, its tilemap (byte_86E625C, bank 9),
-  its chip data records and its 128-byte icons (byte_8725894, by chip id)
-  and its window tiles (dword_86E1D38, found by rendering every data blob
-  against the map after six targeted searches missed it: nothing names it,
-  it is uploaded as part of the palette block it follows) are all located
-  and exported to assets/custom.bin. The screen itself is next.
+- The chip selection window, opening after that pause: its tilemap
+  (byte_86E625C, bank 9) and tiles (dword_86E1D38, found by rendering every
+  data blob against the map after six targeted searches missed it: nothing
+  names it, it is uploaded as part of the palette block it follows) are in
+  assets/custom.bin; it slides in from the left at 0xc a frame, revealing
+  its columns as they arrive and blanking them as they leave the way the
+  game copies them from its staging buffer, holds the fight while it is up,
+  and slides out on A or Start, clearing the gauge. The cursor, the five
+  slots' chip art and the add/undo rules (all located: eS20364C0, the
+  unk_20365C0 slot records, the byte_8725894 icons) are not drawn yet, so
+  the window opens empty and any confirm closes it.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
