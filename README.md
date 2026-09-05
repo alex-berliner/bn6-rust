@@ -47,6 +47,11 @@ for a charged shot), B cracks the panel underfoot.
   the pause that precedes chip selection. The bar itself is not drawn: two
   passes over the disassembly found no display code that reads the value,
   so rather than invent a fill it stays invisible until that is understood.
+  Chip selection itself is understood but not built: its state machine,
+  slide, cursor and add/undo rules, its tilemap (byte_86E625C, bank 9),
+  its chip data records and its 128-byte icons (byte_8725894, by chip id)
+  are all located, but the blob holding the window's own frame tiles is
+  not -- four candidates rendered against the map, none was it.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
