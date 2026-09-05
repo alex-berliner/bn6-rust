@@ -52,12 +52,22 @@ BASE = 4
 def load_sprite_bytes(path):
     """Read a sprite container, decompressing it if LZ77-wrapped.
 
+    `path` may also be `file.s:symbol` for the containers that are assembled
+    inline in a data file rather than shipped under data/sprites/ (the charge
+    glow, for one). Plain containers do not record their own length, so the
+    read runs generously long; the parser only follows offsets, and the
+    exporter only copies what frames reference, so the excess is harmless.
+
     The comp_*.lz77 files hold this same container, just GBA-LZ77 compressed,
     and decompress to `00` + the 3-byte size + the container (sprite_decompress
     skips the prefix: it stores dest+4 as the sprite pointer). A plain
     container's header can also start with 0x10 (e.g. 0x02010010), so only
     treat the data as compressed when it decodes to that shape.
     """
+    if ".s:" in path:
+        src, symbol = path.rsplit(":", 1)
+        from bnasm import read_symbol
+        return read_symbol(src, symbol, max_bytes=0x80000, through_labels=True)
     data = open(path, "rb").read()
     if data[0] == 0x10:
         try:

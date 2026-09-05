@@ -14,6 +14,7 @@ mod shot;
 mod spr;
 
 use actor::{Actor, Update};
+use agb::display::object::Object;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
 use shot::Shot;
@@ -27,6 +28,7 @@ static MEGAMAN: &[u8] = &Aligned(*include_bytes!("../assets/megaman.bin")).0;
 static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
 static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
+static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -60,7 +62,16 @@ fn main(mut gba: agb::Gba) -> ! {
     // Frames of holding A before a release fires a charged shot: the buster's
     // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
     const CHARGE_FRAMES: u16 = 100;
+    // Below this the hold is not yet a charge at all (asm00_2.s:9107).
+    const CHARGING_FROM: u16 = 10;
     let mut charge = 0u16;
+    // The glow is one persistent effect object on the navi's arm whose
+    // animation index is the charge state, 1 charging and 2 full, hidden at 0
+    // (chargeShotChargeObject_update_80E0E20, asm31.s:86354). The game tracks
+    // the arm position each frame; this offset stands in for that.
+    const GLOW_OFFSET: (i32, i32) = (16, -14);
+    let mut glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
+    let mut glow_state = 0usize;
     let mut megaman = Actor::new(
         spr::Assets::new(MEGAMAN),
         2,
@@ -115,6 +126,19 @@ fn main(mut gba: agb::Gba) -> ! {
                 charge = 0;
             }
         }
+
+        let state = match charge {
+            c if c >= CHARGE_FRAMES => 2,
+            c if c >= CHARGING_FROM => 1,
+            _ => 0,
+        };
+        if state != glow_state {
+            glow_state = state;
+            if state != 0 {
+                glow.play(state);
+            }
+        }
+        glow.update();
 
         // Shots tick before the actors, so one spawned this frame first moves
         // next frame, as with an object appended to bn6f's running update.
@@ -182,6 +206,16 @@ fn main(mut gba: agb::Gba) -> ! {
         }
         if !megaman.is_defeated() {
             megaman.show(&mut frame);
+            if glow_state != 0 {
+                let (px, py) = field::panel_centre(megaman.panel().0, megaman.panel().1);
+                for part in glow.parts() {
+                    Object::new(part.sprite.clone())
+                        .set_pos((px + GLOW_OFFSET.0 + part.x, py + GLOW_OFFSET.1 + part.y))
+                        .set_hflip(part.hflip)
+                        .set_vflip(part.vflip)
+                        .show(&mut frame);
+                }
+            }
         }
         for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
             enemy.show(&mut frame);
