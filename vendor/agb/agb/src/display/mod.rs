@@ -87,6 +87,7 @@ pub mod utils;
 mod affine;
 pub use affine::AffineMatrix;
 mod blend;
+mod mosaic;
 mod window;
 
 pub mod font;
@@ -97,6 +98,7 @@ pub(crate) const DISPLAY_STATUS: MemoryMapped<u16> = unsafe { MemoryMapped::new(
 const VCOUNT: MemoryMapped<u16> = unsafe { MemoryMapped::new(0x0400_0006) };
 
 pub use blend::{Blend, BlendAlphaEffect, BlendFadeEffect, BlendObjectTransparency, Layer};
+pub use mosaic::Mosaic;
 
 pub use window::{MovableWindow, WinIn, Window, Windows};
 
@@ -186,6 +188,7 @@ impl<'gba> Graphics<'gba> {
             oam_frame: self.oam.frame(),
             bg_frame: BackgroundFrame::default(),
             blend: Blend::new(),
+            mosaic: Mosaic::new(),
             windows: Windows::new(),
             next_dma: None,
             others: &mut self.others,
@@ -298,6 +301,7 @@ pub struct GraphicsFrame<'frame> {
     pub(crate) oam_frame: OamFrame<'frame>,
     pub(crate) bg_frame: BackgroundFrame,
     blend: Blend,
+    mosaic: Mosaic,
     windows: Windows,
     next_dma: Option<Box<dyn DmaFrame>>,
 
@@ -325,6 +329,7 @@ impl GraphicsFrame<'_> {
         self.oam_frame.commit();
         self.bg_frame.commit();
         self.blend.commit();
+        self.mosaic.commit();
         self.windows.commit();
 
         if let Some(dma) = self.others.dma.as_mut() {
@@ -428,6 +433,11 @@ impl GraphicsFrame<'_> {
     /// Control the blending for this frame.
     pub fn blend(&mut self) -> &mut Blend {
         &mut self.blend
+    }
+
+    /// Control the mosaic block sizes for this frame.
+    pub fn mosaic(&mut self) -> &mut Mosaic {
+        &mut self.mosaic
     }
 
     /// Control the windows for this frame.

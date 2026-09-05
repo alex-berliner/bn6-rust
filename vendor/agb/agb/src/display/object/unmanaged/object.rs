@@ -286,6 +286,14 @@ impl Object {
 
         self
     }
+
+    /// Whether this object is drawn through the mosaic effect, with the block size
+    /// set for objects by [`Mosaic`](crate::display::Mosaic) on the frame.
+    pub fn set_mosaic(&mut self, mosaic: bool) -> &mut Self {
+        self.attributes.set_mosaic(mosaic);
+
+        self
+    }
 }
 
 /// An affine object, an object that can be transformed by an affine matrix (scaled, rotated, etc.).
@@ -447,6 +455,14 @@ impl ObjectAffine {
     /// pixels will be considered as part of the window.
     pub fn set_graphics_mode(&mut self, mode: GraphicsMode) -> &mut Self {
         self.attributes.set_graphics_mode(mode);
+
+        self
+    }
+
+    /// Whether this object is drawn through the mosaic effect, with the block size
+    /// set for objects by [`Mosaic`](crate::display::Mosaic) on the frame.
+    pub fn set_mosaic(&mut self, mosaic: bool) -> &mut Self {
+        self.attributes.set_mosaic(mosaic);
 
         self
     }

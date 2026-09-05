@@ -156,6 +156,12 @@ impl AttributesRegular {
 
         self
     }
+
+    pub fn set_mosaic(&mut self, mosaic: bool) -> &mut Self {
+        self.a0.set_mosaic(mosaic);
+
+        self
+    }
 }
 
 impl AttributesAffine {
@@ -240,6 +246,12 @@ impl AttributesAffine {
             GraphicsMode::AlphaBlending => GraphicsModeInternal::AlphaBlending,
             GraphicsMode::Window => GraphicsModeInternal::Window,
         });
+
+        self
+    }
+
+    pub fn set_mosaic(&mut self, mosaic: bool) -> &mut Self {
+        self.a0.set_mosaic(mosaic);
 
         self
     }
