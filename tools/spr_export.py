@@ -1,6 +1,6 @@
 """Export a bn6f `.spr` file to the compact binary asset format the ROM embeds.
 
-usage: python3 spr_export.py <file.spr> <out.bin> [--anim N ...]
+usage: python3 spr_export.py <file.spr|.lz77> <out.bin> [--anim N ...]
 
 Graphics blobs are shared between frames in the source data, so they are
 deduplicated here rather than emitted per frame.
@@ -30,7 +30,7 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from spr import BASE, Sprite
+from spr import BASE, Sprite, load_sprite_bytes
 
 
 def build(spr, anims):
@@ -121,7 +121,7 @@ def main():
     ap.add_argument("--anim", type=int, nargs="*", default=None)
     args = ap.parse_args()
 
-    spr = Sprite(open(args.input, "rb").read())
+    spr = Sprite(load_sprite_bytes(args.input))
     anims = args.anim if args.anim else list(range(len(spr.anim_offsets)))
     data, counts = build(spr, anims)
     with open(args.output, "wb") as f:

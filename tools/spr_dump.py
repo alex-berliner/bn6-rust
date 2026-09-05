@@ -1,6 +1,6 @@
 """Render frames from a bn6f .spr file to a PNG contact sheet.
 
-usage: python3 spr_dump.py <file.spr> <out.png> [--anim N] [--pal N] [--scale N]
+usage: python3 spr_dump.py <file.spr|.lz77> <out.png> [--anim N] [--pal N] [--scale N]
 """
 
 import argparse
@@ -10,7 +10,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from spr import Sprite, render_frame
+from spr import Sprite, load_sprite_bytes, render_frame
 
 
 def sheet(spr, anims, pal_index, scale, cell_bg=(24, 24, 32)):
@@ -52,7 +52,7 @@ def main():
     ap.add_argument("--scale", type=int, default=3)
     args = ap.parse_args()
 
-    spr = Sprite(open(args.spr, "rb").read())
+    spr = Sprite(load_sprite_bytes(args.spr))
     anims = [args.anim] if args.anim is not None else range(len(spr.anim_offsets))
     img, n = sheet(spr, anims, args.pal, args.scale)
     img.save(args.out)

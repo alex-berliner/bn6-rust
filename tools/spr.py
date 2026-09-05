@@ -37,6 +37,8 @@ laid out in 1D mapping (row-major within each object).
 
 import struct
 
+from bnasm import lz77_decompress
+
 # GBA OBJ dimensions in pixels, indexed [shape][size].
 OBJ_DIMS = {
     0: [(8, 8), (16, 16), (32, 32), (64, 64)],
@@ -45,6 +47,26 @@ OBJ_DIMS = {
 }
 
 BASE = 4
+
+
+def load_sprite_bytes(path):
+    """Read a sprite container, decompressing it if LZ77-wrapped.
+
+    The comp_*.lz77 files hold this same container, just GBA-LZ77 compressed,
+    and decompress to `00` + the 3-byte size + the container (sprite_decompress
+    skips the prefix: it stores dest+4 as the sprite pointer). A plain
+    container's header can also start with 0x10 (e.g. 0x02010010), so only
+    treat the data as compressed when it decodes to that shape.
+    """
+    data = open(path, "rb").read()
+    if data[0] == 0x10:
+        try:
+            dec = lz77_decompress(data)
+            if dec[:1] == b"\0" and dec[1:4] == data[1:4]:
+                data = dec[4:]
+        except IndexError:  # stream is not really LZ77, parse it plain
+            pass
+    return data
 
 
 class OamEntry:
