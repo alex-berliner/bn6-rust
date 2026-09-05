@@ -252,7 +252,9 @@ impl<'a> Battle<'a> {
             let confirm = input.is_pressed(Button::A) || input.is_pressed(Button::Start);
             if let Some(fade) = window.update(confirm) {
                 self.fade_out = fade;
-                self.shown = None;
+                if fade == 16 {
+                    self.shown = None;
+                }
             }
         }
         // The fade-out ends on full black; the next battle's intro fades the

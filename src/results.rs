@@ -90,6 +90,10 @@ enum Phase {
     Sliding { x: i32 },
     Waiting,
     Dismissing { ticks: u8 },
+    /// The screen fade the game runs on dismissal (sub_802C280 ends with a
+    /// SetScreenFade of 0x10 steps); one step a frame stands in for its
+    /// cadence, which was not read.
+    Fading { step: u8 },
     Done,
 }
 
@@ -223,7 +227,8 @@ fn entry(e: u16) -> TileSetting {
 
 impl Shown {
     /// Advance a frame. `confirm` is whether A or Start is down. Returns the
-    /// fade amount to apply once dismissal starts, 0-16, or None before it.
+    /// screen fade to apply, 1-16, once the window is being dismissed, and
+    /// None before then; 16 means the screen is fully black.
     pub fn update(&mut self, confirm: bool) -> Option<u8> {
         self.phase = match self.phase {
             Phase::Sliding { x } if x < REST_X => {
@@ -237,10 +242,13 @@ impl Shown {
             },
             Phase::Waiting => Phase::Waiting,
             Phase::Dismissing { ticks } if ticks > 1 => Phase::Dismissing { ticks: ticks - 1 },
-            Phase::Dismissing { .. } => Phase::Done,
+            Phase::Dismissing { .. } => Phase::Fading { step: 1 },
+            Phase::Fading { step } if step < 16 => Phase::Fading { step: step + 1 },
+            Phase::Fading { .. } => Phase::Done,
             Phase::Done => Phase::Done,
         };
         match self.phase {
+            Phase::Fading { step } => Some(step),
             Phase::Done => Some(16),
             _ => None,
         }
