@@ -11,6 +11,7 @@ mod ai;
 mod field;
 mod gunner;
 mod hud;
+mod results;
 mod shot;
 mod spr;
 
@@ -37,6 +38,7 @@ static WAVE: &[u8] = &Aligned(*include_bytes!("../assets/wave.bin")).0;
 static GUNNER: &[u8] = &Aligned(*include_bytes!("../assets/gunner.bin")).0;
 static CURSOR: &[u8] = &Aligned(*include_bytes!("../assets/cursor.bin")).0;
 static IMPACT: &[u8] = &Aligned(*include_bytes!("../assets/impact.bin")).0;
+static RESULTS: &[u8] = &Aligned(*include_bytes!("../assets/results.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -47,7 +49,13 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let field = field::Field::new(FIELD);
     let hud = hud::Hud::new(FONT);
-    gfx.set_background_palettes(&field.palettes());
+    let results = results::Results::new(RESULTS);
+    // The field uses banks 0-8; the results windows live in 9-11.
+    let mut palettes = field.palettes();
+    for (i, p) in results.palettes().into_iter().enumerate() {
+        palettes[9 + i] = p;
+    }
+    gfx.set_background_palettes(&palettes);
 
     let mut panels = field::Panels::new(field::PANEL_NORMAL);
     let mut bg = field.background(&panels);
@@ -148,6 +156,14 @@ fn main(mut gba: agb::Gba) -> ! {
     const GAUGE_PAUSE: u16 = 60;
     let mut gauge = 0u16;
     let mut gauge_pause = 0u16;
+    // After the last combatant on a side is gone the game's win or loss
+    // state waits before the window comes up; that wait was not read, and
+    // 30 frames stand in. The clear time counts from when control opened.
+    const RESULTS_DELAY: u16 = 30;
+    let mut results_delay = RESULTS_DELAY;
+    let mut shown: Option<results::Shown> = None;
+    let mut fade_out = 0u8;
+    let mut clock = 0u32;
 
     loop {
         input.update();
@@ -184,6 +200,28 @@ fn main(mut gba: agb::Gba) -> ! {
             false
         };
         let paused = over || gauge_pause > 0 || intro;
+        if !paused {
+            clock += 1;
+        }
+        if over && shown.is_none() && fade_out == 0 {
+            if results_delay > 0 {
+                results_delay -= 1;
+            } else {
+                let won = !megaman.is_defeated();
+                shown = Some(results.show(
+                    if won { results::WIN } else { results::LOSE },
+                    clock,
+                    0,
+                ));
+            }
+        }
+        if let Some(window) = shown.as_mut() {
+            let confirm = input.is_pressed(Button::A) || input.is_pressed(Button::Start);
+            if let Some(fade) = window.update(confirm) {
+                fade_out = fade;
+                shown = None;
+            }
+        }
 
         for (button, dx, dy) in [
             (Button::Right, 1, 0),
@@ -411,7 +449,16 @@ fn main(mut gba: agb::Gba) -> ! {
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
         // fade darkens everything until the field is revealed.
-        if intro_fade > 0 {
+        if let Some(window) = &shown {
+            window.show(&mut frame);
+        }
+        if fade_out > 0 {
+            frame
+                .blend()
+                .darken(Num::from_raw(fade_out))
+                .enable_background(bg_id)
+                .enable_object();
+        } else if intro_fade > 0 {
             let amount = Num::from_raw((intro_fade as u8).div_ceil(2));
             frame
                 .blend()
