@@ -25,6 +25,9 @@ pub struct Frame {
     pub oam_first: u16,
     pub oam_count: u16,
     pub duration: u8,
+    /// 0x80 marks the last frame, 0x40 that the animation restarts after it.
+    /// Most animations are one-shot and are re-triggered by game logic.
+    pub flags: u8,
 }
 
 pub struct Oam {
@@ -58,10 +61,6 @@ impl Assets {
         u32::from_le_bytes(self.data[o..o + 4].try_into().unwrap())
     }
 
-    pub fn anim_count(&self) -> usize {
-        self.u32_at(self.anim) as usize
-    }
-
     /// `(first frame index, frame count)` for an animation.
     pub fn anim(&self, i: usize) -> (usize, usize) {
         let o = self.anim + 4 + i * 4;
@@ -76,6 +75,7 @@ impl Assets {
             oam_first: self.u16_at(o + 4),
             oam_count: self.u16_at(o + 6),
             duration: self.data[o + 8],
+            flags: self.data[o + 9],
         }
     }
 
@@ -146,6 +146,7 @@ pub struct Player {
     anim: usize,
     frame_in_anim: usize,
     ticks_left: u8,
+    done: bool,
     parts: Vec<Part>,
 }
 
@@ -156,22 +157,25 @@ impl Player {
             anim,
             frame_in_anim: 0,
             ticks_left: 0,
+            done: false,
             parts: Vec::new(),
         };
         p.load_frame();
         p
     }
 
-    pub fn set_anim(&mut self, anim: usize) {
-        if anim != self.anim {
-            self.anim = anim;
-            self.frame_in_anim = 0;
-            self.load_frame();
-        }
+    /// Restart on `anim`, even if it is already the current one, so a one-shot
+    /// animation can be replayed.
+    pub fn play(&mut self, anim: usize) {
+        self.anim = anim;
+        self.frame_in_anim = 0;
+        self.done = false;
+        self.load_frame();
     }
 
-    pub fn anim_count(&self) -> usize {
-        self.assets.anim_count()
+    /// True once a one-shot animation has held its last frame to the end.
+    pub fn finished(&self) -> bool {
+        self.done
     }
 
     pub fn parts(&self) -> &[Part] {
@@ -179,14 +183,25 @@ impl Player {
     }
 
     /// Advance by one hardware frame, loading the next animation frame when the
-    /// current one's duration expires.
+    /// current one's duration expires. A one-shot animation holds its last
+    /// frame rather than wrapping; the caller decides what to play next.
     pub fn update(&mut self) {
-        self.ticks_left = self.ticks_left.saturating_sub(1);
-        if self.ticks_left == 0 {
-            let (_, count) = self.assets.anim(self.anim);
-            self.frame_in_anim = (self.frame_in_anim + 1) % count;
-            self.load_frame();
+        if self.done {
+            return;
         }
+        self.ticks_left = self.ticks_left.saturating_sub(1);
+        if self.ticks_left > 0 {
+            return;
+        }
+        let (first, count) = self.assets.anim(self.anim);
+        if self.assets.frame(first + self.frame_in_anim).flags & 0x40 == 0
+            && self.frame_in_anim + 1 >= count
+        {
+            self.done = true;
+            return;
+        }
+        self.frame_in_anim = (self.frame_in_anim + 1) % count;
+        self.load_frame();
     }
 
     fn load_frame(&mut self) {

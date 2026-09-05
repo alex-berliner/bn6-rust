@@ -104,7 +104,16 @@ impl Field {
     }
 }
 
+pub const COLS: i32 = 6;
+pub const ROWS: i32 = 3;
+
 /// Screen position of the centre of a panel, for 1-based `(col, row)`.
 pub fn panel_centre(col: i32, row: i32) -> (i32, i32) {
     (col * 40 - 20, row * 24 + 60)
+}
+
+/// The half of the field a side owns. Columns 1-3 are the player's, 4-6 the
+/// enemy's; a navi cannot leave its own half without a chip that grabs area.
+pub fn half(enemy_side: bool) -> (i32, i32) {
+    if enemy_side { (4, COLS) } else { (1, 3) }
 }
