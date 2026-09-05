@@ -6,6 +6,7 @@
 //! stacked 8x8 tiles -- and so goes into an 8x16 OBJ byte-for-byte, with no
 //! reordering (tools/font_export.py).
 
+use agb::display::Priority;
 use agb::display::GraphicsFrame;
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
 use agb::display::{Palette16, Rgb, Rgb15};
@@ -65,6 +66,10 @@ impl Hud {
         let mut x = right_x - GLYPH_W;
         loop {
             Object::new(self.digits[(remaining % 10) as usize].clone())
+                // With the actors, so the chip select window covers them;
+                // the game's HP boxes are on its priority-0 HUD layer at
+                // the top of the screen, which these placeholders are not.
+                .set_priority(Priority::P2)
                 .set_pos((x, y))
                 .show(frame);
             remaining /= 10;

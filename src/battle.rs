@@ -12,7 +12,9 @@ use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
 
 use crate::actor::{self, Actor, Update};
-use crate::custom::{self, Custom, CustomAssets};
+use crate::chips::{Chip, Chips};
+use crate::custom::{self, Custom, CustomAssets, Offer};
+use crate::deck::{Deck, Rng, FOLDER_SIZE};
 use crate::field::{self, Field, Panels};
 use crate::hud::Hud;
 use crate::results::{self, Results};
@@ -89,6 +91,10 @@ pub struct Battle<'a> {
     hud: &'a Hud,
     custom_assets: &'a CustomAssets,
     custom: Option<Custom<'a>>,
+    chips: &'a Chips,
+    deck: Deck,
+    /// The picks from the last chip select, in order; not used yet.
+    hand: alloc::vec::Vec<Chip>,
     panels: Panels,
     bg: RegularBackground,
     megaman: Actor,
@@ -119,7 +125,17 @@ impl<'a> Battle<'a> {
         results: &'a Results,
         hud: &'a Hud,
         custom_assets: &'a CustomAssets,
+        chips: &'a Chips,
+        rng: &mut Rng,
     ) -> Self {
+        // A stand-in folder: the asset's chips over and over, each with its
+        // first code, in place of the PET navi's thirty (sub_800A3E4).
+        let mut folder = [0u16; FOLDER_SIZE];
+        for (i, entry) in folder.iter_mut().enumerate() {
+            let chip = chips.get(i % chips.len());
+            *entry = Deck::entry(chip.id, chip.codes[0]);
+        }
+        let deck = Deck::new(folder, rng);
         let panels = Panels::new(field::PANEL_NORMAL);
         let bg = field.background(&panels);
 
@@ -177,6 +193,9 @@ impl<'a> Battle<'a> {
             hud,
             custom_assets,
             custom: None,
+            chips,
+            deck,
+            hand: alloc::vec::Vec::new(),
             panels,
             bg,
             megaman,
@@ -212,18 +231,39 @@ impl<'a> Battle<'a> {
 
         // The gauge only runs while the fight does; a full gauge holds
         // everything, including itself, through the chimes and then the
-        // chip window, which takes bank 9 while it is up.
+        // chip window, which takes banks 9-15 while it is up.
         if let Some(window) = self.custom.as_mut() {
-            if window.update(input) {
+            if window.update(input, gfx) {
+                // The picks leave the deck (sub_80293F8) and become the hand.
+                self.hand.clear();
+                for offer in window.hand() {
+                    self.deck.take(offer.deck_index);
+                    self.hand.push(offer.chip);
+                }
                 self.custom = None;
-                gfx.set_background_palette(custom::BANK, &self.results.palettes()[0]);
+                for (i, p) in self.results.palettes().iter().enumerate() {
+                    gfx.set_background_palette(custom::BANK + i as u8, p);
+                }
                 self.gauge = 0;
             }
         } else if self.gauge_pause > 0 {
             self.gauge_pause -= 1;
             if self.gauge_pause == 0 {
-                gfx.set_background_palette(custom::BANK, &self.custom_assets.palette(0));
-                self.custom = Some(self.custom_assets.open());
+                // The survivors pack to the front and the first five are
+                // offered (sub_802945A, sub_8027EE8).
+                self.deck.compact();
+                let offered: alloc::vec::Vec<Offer> = self
+                    .deck
+                    .offer(custom::OFFERED)
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(deck_index, &entry)| {
+                        self.chips
+                            .by_id(Deck::id(entry))
+                            .map(|chip| Offer { chip, deck_index })
+                    })
+                    .collect();
+                self.custom = Some(self.custom_assets.open(&offered, gfx));
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);

@@ -9,6 +9,7 @@ extern crate alloc;
 mod actor;
 mod ai;
 mod battle;
+mod chips;
 mod custom;
 mod deck;
 mod field;
@@ -38,6 +39,7 @@ static GUNNER: &[u8] = &Aligned(*include_bytes!("../assets/gunner.bin")).0;
 static CURSOR: &[u8] = &Aligned(*include_bytes!("../assets/cursor.bin")).0;
 static IMPACT: &[u8] = &Aligned(*include_bytes!("../assets/impact.bin")).0;
 static RESULTS: &[u8] = &Aligned(*include_bytes!("../assets/results.bin")).0;
+static CHIPS: &[u8] = &Aligned(*include_bytes!("../assets/chips.bin")).0;
 static CUSTOM: &[u8] = &Aligned(*include_bytes!("../assets/custom.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
@@ -51,6 +53,10 @@ fn main(mut gba: agb::Gba) -> ! {
     let hud = hud::Hud::new(FONT);
     let results = results::Results::new(RESULTS);
     let custom_assets = custom::CustomAssets::new(CUSTOM);
+    let chips = chips::Chips::new(CHIPS);
+    // The folder shuffle's generator; stepped every frame, as the game's
+    // secondary RNG is, so each battle deals differently.
+    let mut rng = deck::Rng::new(0x2f6b_75a1);
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     for (i, p) in results.palettes().into_iter().enumerate() {
@@ -61,9 +67,10 @@ fn main(mut gba: agb::Gba) -> ! {
     loop {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
-        let mut battle = Battle::new(&field, &results, &hud, &custom_assets);
+        let mut battle = Battle::new(&field, &results, &hud, &custom_assets, &chips, &mut rng);
         loop {
             input.update();
+            rng.next();
             if battle.update(&input, &gfx) {
                 break;
             }

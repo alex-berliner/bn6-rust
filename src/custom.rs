@@ -6,24 +6,42 @@
 //! same way (sub_8026B04, sub_8026BF4; asm03_0.s:882, 1026). The tiles are
 //! dword_86E1D38, exported with the map by tools/custom_export.py.
 //!
-//! The map's dynamic regions -- chip name, picture, the slot rows, OK and
-//! the stack column -- arrive blank (see tools/custom_export.py); the chip
-//! art the game renders into them (sub_8028476, sub_80284E2) and the chip
-//! records behind the slots (unk_20365C0) are located but not reproduced
-//! yet. The cursor is: it walks the five slots and OK the way the default
-//! slot table links them (dword_802A7CC, asm03_0.s:9062: a ring, slot 0
-//! through 4 then OK, with no vertical moves while the second row is empty),
-//! Start jumps it to OK, and A on OK closes the window
-//! (custMenuSomeHandler_8028B74, asm03_0.s:5160-5344). A on a slot does
-//! nothing until there are chips to pick.
+//! The map is a template: at load the game overwrites 27 rectangles with
+//! running VRAM tile ids (byte_8027B2C via sub_8027CCC) that the chip
+//! renderers then draw into. Those regions come out of the asset blank, with
+//! the records, and are drawn here: the offered chips' icons and code
+//! letters in the first slot row (sub_80281D4, sub_8028204), the empty icon
+//! byte_86E601C where there is no chip (sub_8028310, asm03_0.s:4152), the
+//! highlighted chip's card picture in its own palette (sub_80284E2,
+//! asm03_0.s:4373: 0x540 bytes of picture and the chip palette into bank
+//! 10), the live OK box (sub_8028320, asm03_0.s:4176) and the picks stacked
+//! down the right-hand column (sub_80281D4 per row, asm03_0.s:3942). The
+//! chip name, element and damage the card also carries are not drawn yet.
+//!
+//! The icons are bank 11 in the game's patch records, yet chip palettes
+//! differ wholesale and nothing in the battle code stages bank 11
+//! (unk_3001AC0 has writers only in asm03_2.s, asm33.s and asm36.s), so how
+//! five icons share it was not resolved. Each slot gets its own bank here,
+//! 11 to 15, holding its chip's palette, which draws every icon as authored.
+//!
+//! Input follows custMenuSomeHandler_8028B74 (asm03_0.s:5160): the cursor
+//! walks the default slot ring (dword_802A7CC, asm03_0.s:9062: slots 0 to 4
+//! then OK, no vertical moves while the second row is empty), Start jumps to
+//! OK, A on a slot adds it (sub_8028D6C, asm03_0.s:5451: at most five, and
+//! only while the pick fits the name-or-code rule of sub_8028E4C), B undoes
+//! the last pick (sub_8029032, asm03_0.s:5892), and A on OK closes the window
+//! with the picks as the hand (custMenuPressOK_8028D3A, asm03_0.s:5415).
 
-use agb::display::Priority;
+use alloc::vec::Vec;
+
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
 use agb::display::tiled::{
     RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
 };
-use agb::display::{GraphicsFrame, Palette16, Rgb15};
+use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 use agb::input::{Button, ButtonController, Tri};
+
+use crate::chips::{Chip, PICTURE_TILES, WILDCARD};
 
 const MAGIC: &[u8; 4] = b"BNCW";
 const MAP_W: usize = 15;
@@ -31,8 +49,17 @@ const MAP_H: usize = 20;
 const SLIDE_FROM: i32 = 0x78;
 const SLIDE_STEP: i32 = 0xc;
 /// The window's palette bank; the results windows use 9-11 too, so the
-/// bank is set on open and the results' restored on close.
+/// banks are set on open and the results' restored on close.
 pub const BANK: u8 = 9;
+/// The card picture's bank, holding the highlighted chip's palette.
+const PICTURE_BANK: u8 = 10;
+/// Slot `i`'s icon draws in bank `SLOT_BANK + i`; see the module comment.
+const SLOT_BANK: u8 = 11;
+/// Chips offered per window: the base count before Custom parts
+/// (sub_802A40C, asm03_0.s:8650).
+pub const OFFERED: usize = 5;
+/// Picks per window (sub_8028D6C, asm03_0.s:5457).
+pub const HAND_SIZE: usize = 5;
 
 /// The cursor's index for the OK box; 0-4 are the offered slots
 /// (S20364C0.inc:14, eS20364C0+7).
@@ -40,6 +67,19 @@ const OK: u8 = 0xa;
 /// The bracket swaps tile and shrinks a pixel every 8 frames (sub_8028820,
 /// asm03_0.s:4807: frame counter >> 3 & 1).
 const BLINK_SHIFT: u32 = 3;
+
+/// Indices into the asset's patch records, in byte_8027B2C's order.
+const REGION_PICTURE: usize = 1;
+const fn region_slot_icon(slot: usize) -> usize {
+    5 + 2 * slot
+}
+const fn region_slot_code(slot: usize) -> usize {
+    6 + 2 * slot
+}
+const REGION_OK: usize = 25;
+const REGION_STACK: usize = 26;
+/// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
+const CODE_NONE: usize = 0x1b;
 
 /// One bracket corner: offset from the cursor origin and its flips, per
 /// blink phase. The game's tables (byte_80288B0 for a slot, byte_80288E4
@@ -90,12 +130,27 @@ const OK_BRACKET: [[Corner; 4]; 2] = [
     ],
 ];
 
+/// A patched rectangle of the map (byte_8027B2C record).
+#[derive(Clone, Copy)]
+struct Region {
+    x: usize,
+    y: usize,
+    w: usize,
+    h: usize,
+    bank: u8,
+    column_major: bool,
+}
+
 pub struct CustomAssets {
     tiles: TileSet,
     map: &'static [u8],
     palette: &'static [u8],
+    regions: Vec<Region>,
     cursor_tiles: &'static [u8],
     cursor_palette: Palette16,
+    empty_icon: TileSet,
+    code_glyphs: TileSet,
+    ok_box: TileSet,
 }
 
 enum Phase {
@@ -105,10 +160,16 @@ enum Phase {
     Done,
 }
 
+/// An offered chip and where it came from in the deck.
+#[derive(Clone, Copy)]
+pub struct Offer {
+    pub chip: Chip,
+    pub deck_index: usize,
+}
+
 pub struct Custom<'a> {
+    assets: &'a CustomAssets,
     bg: RegularBackground,
-    tiles: &'a TileSet,
-    map: &'a [u8],
     /// Columns drawn so far; the rest of the map is left as tile 0.
     revealed: usize,
     phase: Phase,
@@ -117,29 +178,49 @@ pub struct Custom<'a> {
     cursor_at: u8,
     /// Counted while the window is open, as eS20364C0+0x40 is.
     frames: u32,
+    slots: [Option<Offer>; OFFERED],
+    /// Slot indices in pick order (eS20364C0+0x48).
+    picks: Vec<usize>,
+    pictured: Option<u16>,
 }
 
 impl CustomAssets {
     pub fn new(data: &'static [u8]) -> Self {
         assert_eq!(&data[0..4], MAGIC, "not a BNCW asset");
         let at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
-        let (t, m, p, c) = (at(0x08), at(0x0c), at(0x10), at(0x18));
+        let (t, m, p, r, c, a) = (at(0x08), at(0x0c), at(0x10), at(0x14), at(0x18), at(0x1c));
         let len = at(t);
         let tiles = &data[t + 4..t + 4 + len];
-        assert_eq!(
-            tiles.as_ptr() as usize % 4,
-            0,
-            "tile data must be word aligned"
-        );
         let (w, h) = (at(m), at(m + 4));
         assert_eq!((w, h), (MAP_W, MAP_H), "unexpected chip window map size");
+        let regions = (0..at(r))
+            .map(|i| {
+                let e = &data[r + 4 + i * 8..r + 12 + i * 8];
+                Region {
+                    x: e[0] as usize,
+                    y: e[1] as usize,
+                    w: e[2] as usize,
+                    h: e[3] as usize,
+                    bank: e[4],
+                    column_major: e[5] == 1,
+                }
+            })
+            .collect();
+        let tileset = |bytes: &'static [u8]| {
+            assert_eq!(bytes.as_ptr() as usize % 4, 0, "tile data must be word aligned");
+            // SAFETY: alignment asserted; the exporter emits whole tiles.
+            unsafe { TileSet::new(bytes, TileFormat::FourBpp) }
+        };
         Self {
-            // SAFETY: alignment asserted above; the exporter emits whole tiles.
-            tiles: unsafe { TileSet::new(tiles, TileFormat::FourBpp) },
+            tiles: tileset(tiles),
             map: &data[m + 8..m + 8 + w * h * 2],
             palette: &data[p..p + 96],
+            regions,
             cursor_tiles: &data[c..c + 64],
             cursor_palette: read_palette(&data[c + 64..c + 96]),
+            empty_icon: tileset(&data[a..a + 0x80]),
+            code_glyphs: tileset(&data[a + 0x80..a + 0x80 + 28 * 0x40]),
+            ok_box: tileset(&data[a + 0x80 + 28 * 0x40..a + 0x80 + 28 * 0x40 + 0x100]),
         }
     }
 
@@ -148,7 +229,8 @@ impl CustomAssets {
         read_palette(&self.palette[variant * 32..variant * 32 + 32])
     }
 
-    pub fn open(&self) -> Custom<'_> {
+    /// Open the window over the offered chips, at most one per slot.
+    pub fn open(&self, offered: &[Offer], gfx: &Graphics) -> Custom<'_> {
         // BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD
         // layer and over the actors (sub_801DA24, asm00_2.s:29038).
         let mut bg = RegularBackground::new(
@@ -163,16 +245,34 @@ impl CustomAssets {
             DynamicSprite16::from_bytes(Size::S8x8, &self.cursor_tiles[i * 32..i * 32 + 32])
                 .to_vram(palette.clone())
         });
+        let mut slots = [None; OFFERED];
+        for (slot, offer) in slots.iter_mut().zip(offered) {
+            *slot = Some(*offer);
+        }
         let mut custom = Custom {
+            assets: self,
             bg,
-            tiles: &self.tiles,
-            map: self.map,
             revealed: 0,
             phase: Phase::Opening { x: SLIDE_FROM },
             cursor,
             cursor_at: 0,
             frames: 0,
+            slots,
+            picks: Vec::new(),
+            pictured: None,
         };
+        gfx.set_background_palette(BANK, &self.palette(0));
+        for (i, slot) in custom.slots.iter().enumerate() {
+            if let Some(offer) = slot {
+                gfx.set_background_palette(SLOT_BANK + i as u8, &read_palette(offer.chip.palette()));
+            }
+        }
+        for slot in 0..OFFERED {
+            custom.draw_slot(slot);
+        }
+        custom.draw_stack();
+        custom.fill(REGION_OK, &self.ok_box, None);
+        custom.draw_card(gfx);
         custom.reveal(SLIDE_FROM);
         custom
     }
@@ -214,13 +314,19 @@ impl Custom<'_> {
         for row in 0..MAP_H {
             let i = row * MAP_W + col;
             let e = if visible {
-                u16::from_le_bytes(self.map[i * 2..i * 2 + 2].try_into().unwrap())
+                u16::from_le_bytes(self.assets.map[i * 2..i * 2 + 2].try_into().unwrap())
             } else {
                 0
             };
+            // Cells inside the drawn regions are the renderers' and stay put
+            // once revealed; the template only fills them when the column
+            // first arrives, and they are already blank before that.
+            if visible && self.in_region(col, row) {
+                continue;
+            }
             self.bg.set_tile(
                 (col as i32, row as i32),
-                self.tiles,
+                &self.assets.tiles,
                 TileSetting::new(
                     e & 0x3ff,
                     TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
@@ -229,8 +335,160 @@ impl Custom<'_> {
         }
     }
 
+    fn in_region(&self, col: usize, row: usize) -> bool {
+        self.assets
+            .regions
+            .iter()
+            .any(|r| col >= r.x && col < r.x + r.w && row >= r.y && row < r.y + r.h)
+    }
+
+    /// Draw a tileset over a region, tile k at its k-th cell in the
+    /// record's order, in the record's bank unless one is given; `None`
+    /// tiles blank it.
+    fn fill(&mut self, region: usize, tiles: &TileSet, bank: Option<u8>) {
+        let r = self.assets.regions[region];
+        self.fill_from(r, tiles, 0, bank.unwrap_or(r.bank));
+    }
+
+    fn fill_from(&mut self, r: Region, tiles: &TileSet, first: u16, bank: u8) {
+        for k in 0..r.w * r.h {
+            let (dx, dy) = if r.column_major {
+                (k / r.h, k % r.h)
+            } else {
+                (k % r.w, k / r.w)
+            };
+            self.bg.set_tile(
+                ((r.x + dx) as i32, (r.y + dy) as i32),
+                tiles,
+                TileSetting::new(first + k as u16, TileEffect::new(false, false, bank)),
+            );
+        }
+    }
+
+    fn blank(&mut self, region: usize) {
+        let r = self.assets.regions[region];
+        let tiles = &self.assets.tiles;
+        for dy in 0..r.h {
+            for dx in 0..r.w {
+                self.bg.set_tile(
+                    ((r.x + dx) as i32, (r.y + dy) as i32),
+                    tiles,
+                    TileSetting::new(0, TileEffect::new(false, false, r.bank)),
+                );
+            }
+        }
+    }
+
+    /// A slot's icon and code letter: the chip's while it is offered and
+    /// unpicked, the empty icon and blank glyph otherwise (sub_8028310).
+    fn draw_slot(&mut self, slot: usize) {
+        let assets = self.assets;
+        match self.slots[slot] {
+            Some(offer) if !self.picks.contains(&slot) => {
+                let icon = offer.chip.icon();
+                self.fill(region_slot_icon(slot), &icon, Some(SLOT_BANK + slot as u8));
+                let code = offer.chip.codes[0] as usize;
+                let r = assets.regions[region_slot_code(slot)];
+                self.fill_from(r, &assets.code_glyphs, (code * 2) as u16, r.bank);
+            }
+            _ => {
+                self.fill(region_slot_icon(slot), &assets.empty_icon, None);
+                let r = assets.regions[region_slot_code(slot)];
+                self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+            }
+        }
+    }
+
+    /// The picks down the right-hand column, one icon per row, the empty
+    /// icon below them (sub_80281D4 per row at open, asm03_0.s:3942).
+    fn draw_stack(&mut self) {
+        let assets = self.assets;
+        let stack = assets.regions[REGION_STACK];
+        for row in 0..HAND_SIZE {
+            let cell = Region {
+                x: stack.x,
+                y: stack.y + row * 2,
+                w: 2,
+                h: 2,
+                bank: stack.bank,
+                column_major: false,
+            };
+            match self.picks.get(row).and_then(|&slot| self.slots[slot].map(|o| (slot, o))) {
+                Some((slot, offer)) => {
+                    let icon = offer.chip.icon();
+                    self.fill_from(cell, &icon, 0, SLOT_BANK + slot as u8);
+                }
+                None => self.fill_from(cell, &assets.empty_icon, 0, stack.bank),
+            }
+        }
+    }
+
+    /// The card shows the chip under the cursor; on OK, or over an empty
+    /// or picked slot, it is left as it was (sub_8028476 draws nothing for
+    /// the empty slot types, asm03_0.s:4316).
+    fn draw_card(&mut self, gfx: &Graphics) {
+        let Some(offer) = self.highlighted() else {
+            return;
+        };
+        if self.pictured == Some(offer.chip.id) {
+            return;
+        }
+        self.pictured = Some(offer.chip.id);
+        gfx.set_background_palette(PICTURE_BANK, &read_palette(offer.chip.palette()));
+        let picture = offer.chip.picture();
+        let r = self.assets.regions[REGION_PICTURE];
+        debug_assert_eq!((r.w, r.h), PICTURE_TILES);
+        self.fill_from(r, &picture, 0, PICTURE_BANK);
+    }
+
+    fn highlighted(&self) -> Option<Offer> {
+        let slot = self.cursor_at as usize;
+        if slot < OFFERED && !self.picks.contains(&slot) {
+            self.slots[slot]
+        } else {
+            None
+        }
+    }
+
+    /// Whether the chip in `slot` may join the picks so far: any chip
+    /// first; then one sharing the picks' single name, or one whose code
+    /// agrees with theirs, '*' agreeing with anything (sub_8028E4C,
+    /// asm03_0.s:5595; the exact merge of codes across picks is read from
+    /// the greying pass and may differ in corners).
+    fn allowed(&self, slot: usize) -> bool {
+        let Some(offer) = self.slots[slot] else {
+            return false;
+        };
+        if self.picks.is_empty() {
+            return true;
+        }
+        let picked: Vec<Chip> = self
+            .picks
+            .iter()
+            .filter_map(|&s| self.slots[s].map(|o| o.chip))
+            .collect();
+        let name = picked[0].name();
+        if picked.iter().all(|c| c.name() == name) && offer.chip.name() == name {
+            return true;
+        }
+        let mut merged = None;
+        for c in &picked {
+            let code = c.codes[0];
+            if code == WILDCARD {
+                continue;
+            }
+            match merged {
+                None => merged = Some(code),
+                Some(m) if m == code => {}
+                Some(_) => return false,
+            }
+        }
+        let code = offer.chip.codes[0];
+        code == WILDCARD || merged.is_none_or(|m| m == code)
+    }
+
     /// Advance a frame. Returns true once the window has slid back out.
-    pub fn update(&mut self, input: &ButtonController) -> bool {
+    pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
         self.phase = match self.phase {
             Phase::Opening { x } if x > 0 => {
                 let x = (x - SLIDE_STEP).max(0);
@@ -241,7 +499,7 @@ impl Custom<'_> {
             Phase::Opening { .. } => Phase::Open,
             Phase::Open => {
                 self.frames += 1;
-                self.navigate(input)
+                self.navigate(input, gfx)
             }
             Phase::Closing { x } if x < SLIDE_FROM => {
                 let x = (x + SLIDE_STEP).min(SLIDE_FROM);
@@ -256,11 +514,7 @@ impl Custom<'_> {
     }
 
     /// One frame of the open window's input (custMenuSomeHandler_8028B74).
-    /// Left and right follow the slot records' link bytes; with only the
-    /// first row offered the links form the ring 0..4, OK. Start moves the
-    /// cursor to OK (asm03_0.s:5276), A acts on the slot under the cursor
-    /// (asm03_0.s:5344): OK closes the window, a chip slot is not picked yet.
-    fn navigate(&mut self, input: &ButtonController) -> Phase {
+    fn navigate(&mut self, input: &ButtonController, gfx: &Graphics) -> Phase {
         match input.just_pressed_x_tri() {
             Tri::Positive => {
                 self.cursor_at = match self.cursor_at {
@@ -281,10 +535,31 @@ impl Custom<'_> {
         if input.is_just_pressed(Button::Start) {
             self.cursor_at = OK;
         }
-        if input.is_just_pressed(Button::A) && self.cursor_at == OK {
-            return Phase::Closing { x: 0 };
+        if input.is_just_pressed(Button::A) {
+            if self.cursor_at == OK {
+                return Phase::Closing { x: 0 };
+            }
+            let slot = self.cursor_at as usize;
+            if self.picks.len() < HAND_SIZE && !self.picks.contains(&slot) && self.allowed(slot)
+            {
+                self.picks.push(slot);
+                self.draw_slot(slot);
+                self.draw_stack();
+            }
         }
+        if input.is_just_pressed(Button::B) {
+            if let Some(slot) = self.picks.pop() {
+                self.draw_slot(slot);
+                self.draw_stack();
+            }
+        }
+        self.draw_card(gfx);
         Phase::Open
+    }
+
+    /// The picks in order, for the hand.
+    pub fn hand(&self) -> impl Iterator<Item = Offer> + '_ {
+        self.picks.iter().filter_map(|&slot| self.slots[slot])
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {

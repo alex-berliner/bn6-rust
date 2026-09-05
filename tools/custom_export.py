@@ -30,13 +30,25 @@ Format (little-endian):
                          x, y, w, h, bank, column_major, u16 first VRAM
                          tile id the game assigns (0x9b onwards)
   0x18  u32 -> cursor  : 2 8x8 4bpp tiles, then a 32-byte palette
+  0x1c  u32 -> slot art: empty icon (0x80: 4 tiles, 16x16), 28 code
+                         glyphs (0x40 each: 2 tiles, 8x16; 0x1b blank),
+                         the interactive OK box (0x100: 8 tiles, 4x2)
 
 The cursor is four 8x8 objects, one corner tile flipped into each corner,
 blinking between its two tiles every 8 frames (sub_8028820, asm03_0.s:4791;
 attribute word 0xb764 = tile 0x364, palette 11). The window's upload list
 off_802A744 (asm03_0.s:9024) copies the two tiles dword_86E55BC to OBJ VRAM
-0x6016C80 -- tile 0x364 -- and the one palette it stages, byte_86E587C, to
-0x3001A80; that is taken as object bank 11.
+0x6016C80 -- tile 0x364. The palette it stages, byte_86E587C to 0x3001A80,
+is background bank 9 (the palette master is palette_3001960, bank N at
++N*0x20), so the source of object bank 11 was not found; byte_86E587C's
+first bank draws the bracket in the game's yellow and is used for it.
+
+The slots' art when nothing is picked: the empty icon byte_86E601C goes
+into every slot and stack cell (sub_8028310, asm03_0.s:4152; sub_80281D4
+with id 0x1ff, asm03_0.s:3942), a slot's code letter comes from
+dword_86E591C + code * 0x40 with 0x1b for none (sub_8028204), and the OK
+box region gets byte_86E79CC + 0x300 while the box is live (sub_8028320,
+asm03_0.s:4176).
 """
 
 import os
@@ -101,8 +113,12 @@ def main():
     cursor = read_symbol(DAT, "dword_86E55BC", max_bytes=64, through_labels=True)
     cursor_pal = read_symbol(DAT, "byte_86E587C", max_bytes=32, through_labels=True)
     assert len(cursor) == 64 and len(cursor_pal) == 32
+    empty = read_symbol(DAT, "byte_86E601C", max_bytes=0x80, through_labels=True)
+    codes = read_symbol(DAT, "dword_86E591C", max_bytes=28 * 0x40, through_labels=True)
+    ok = read_symbol(DAT, "byte_86E79CC", max_bytes=0x400, through_labels=True)[0x300:0x400]
+    assert len(empty) == 0x80 and len(codes) == 28 * 0x40 and len(ok) == 0x100
 
-    out = bytearray(struct.pack("<4sIIIIII", b"BNCW", 2, 0, 0, 0, 0, 0))
+    out = bytearray(struct.pack("<4sIIIIIII", b"BNCW", 2, 0, 0, 0, 0, 0, 0))
     off_tiles = len(out)
     out += struct.pack("<I", len(tiles)) + tiles
     while len(out) % 4:
@@ -119,8 +135,20 @@ def main():
         out.append(0)
     off_cursor = len(out)
     out += cursor + cursor_pal
+    off_slot_art = len(out)
+    out += empty + codes + ok
     struct.pack_into(
-        "<4sIIIIII", out, 0, b"BNCW", 2, off_tiles, off_map, off_pal, off_regions, off_cursor
+        "<4sIIIIIII",
+        out,
+        0,
+        b"BNCW",
+        2,
+        off_tiles,
+        off_map,
+        off_pal,
+        off_regions,
+        off_cursor,
+        off_slot_art,
     )
     with open(out_path, "wb") as f:
         f.write(out)
