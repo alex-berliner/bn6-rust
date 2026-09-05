@@ -74,13 +74,17 @@ fn main(mut gba: agb::Gba) -> ! {
     loop {
         input.update();
 
+        // Once either side is deleted the fight is decided: the game goes to
+        // its results, which are not built yet, so here the field just holds.
+        let over = megaman.is_defeated() || enemies.iter().all(|e| e.is_defeated());
+
         for (button, dx, dy) in [
             (Button::Right, 1, 0),
             (Button::Left, -1, 0),
             (Button::Down, 0, 1),
             (Button::Up, 0, -1),
         ] {
-            if input.is_just_pressed(button) && !megaman.is_defeated() {
+            if input.is_just_pressed(button) && !over {
                 megaman.step(dx, dy);
             }
         }
@@ -92,7 +96,7 @@ fn main(mut gba: agb::Gba) -> ! {
         }
         // A fires on the press; holding it charges, and a release at full
         // charge fires again, harder (sub_8012EBC, asm00_2.s:9059).
-        if !megaman.is_defeated() {
+        if !over {
             if input.is_just_pressed(Button::A) {
                 megaman.attack();
             }
@@ -144,7 +148,7 @@ fn main(mut gba: agb::Gba) -> ! {
             .enumerate()
             .filter(|(_, e)| !e.is_defeated())
         {
-            if i == 0 {
+            if i == 0 && !over {
                 protoman_ai.update(enemy, megaman.panel());
             }
             // A sword lands on the panel in front; it hits whoever stands there.
