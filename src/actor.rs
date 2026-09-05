@@ -13,8 +13,10 @@ use agb::display::object::Object;
 use crate::field;
 use crate::spr;
 
-/// Animation indices in the exported navi sprites. Only a handful of
-/// animations set the loop flag, so these are one-shot and re-triggered here.
+/// Animation indices in the exported navi sprites. These are a convention
+/// shared across navis, not particular to MegaMan: ProtoMan's 0, 3 and 4 are
+/// the same poses with the same frame counts. Only a handful of animations set
+/// the loop flag, so these are one-shot and re-triggered here.
 pub mod anim {
     pub const IDLE: usize = 0;
     pub const WARP_IN: usize = 3;
