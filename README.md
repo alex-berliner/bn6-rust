@@ -73,4 +73,5 @@ pixel-count metric.
     src/field.rs   the field background and per-panel state
     src/hud.rs     HP numbers
     src/spr.rs     sprite asset reader and animation player
-    vendor/agb     agb, vendored so engine-level fixes can be made in place
+    vendor/agb     agb, vendored so engine-level additions can be made in
+                   place; so far a Mosaic control and Object::set_mosaic
