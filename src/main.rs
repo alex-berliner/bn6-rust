@@ -20,6 +20,7 @@ struct Aligned<T: ?Sized>(T);
 
 static MEGAMAN: &[u8] = &Aligned(*include_bytes!("../assets/megaman.bin")).0;
 static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
+static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
 #[agb::entry]
@@ -34,7 +35,8 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut bg = field.background(&panels);
 
     let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false);
-    let mut protoman = Actor::new(spr::Assets::new(PROTOMAN), 5, 2, true);
+    let mut protoman = Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true);
+    let mut colonel = Actor::new(spr::Assets::new(COLONEL), 6, 3, true);
 
     loop {
         input.update();
@@ -58,8 +60,9 @@ fn main(mut gba: agb::Gba) -> ! {
 
         megaman.update();
         protoman.update();
+        colonel.update();
 
-        panels.update(megaman.occupancy() | protoman.occupancy());
+        panels.update(megaman.occupancy() | protoman.occupancy() | colonel.occupancy());
         for (col, row) in field::panels_in(panels.take_dirty()) {
             field.draw_panel(&mut bg, col, row, panels.animation(col, row));
         }
@@ -68,6 +71,7 @@ fn main(mut gba: agb::Gba) -> ! {
         bg.show(&mut frame);
         megaman.show(&mut frame);
         protoman.show(&mut frame);
+        colonel.show(&mut frame);
         frame.commit();
     }
 }
