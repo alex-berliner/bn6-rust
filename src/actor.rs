@@ -63,6 +63,12 @@ impl Actor {
         }
     }
 
+    /// The panel the actor currently stands on, 1-based. During a warp this is
+    /// the panel being left until the move commits at the midpoint.
+    pub fn panel(&self) -> (i32, i32) {
+        (self.col, self.row)
+    }
+
     pub fn is_moving(&self) -> bool {
         !matches!(self.movement, Movement::Still)
     }

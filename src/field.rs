@@ -67,40 +67,72 @@ impl Field {
         })
     }
 
-    pub fn background(&self, panel_type: usize) -> RegularBackground {
+    pub fn background(&self, panels: &Panels) -> RegularBackground {
         let mut bg = RegularBackground::new(
             Priority::P3,
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
-
-        for row in 1..=3usize {
-            for col in 1..=6usize {
-                // Columns 1-3 are the player's blue half, 4-6 the enemy's red.
-                let side = if col <= 3 { 1 } else { 0 };
-                let variant = 6 * panel_type + 3 * side + (row - 1);
-                let entries = &self.tilemap[variant * 32..variant * 32 + 30];
-                let tile_x = TILE_COLS[col];
-                let tile_y = 3 * row as i32 + 6;
-
-                for i in 0..PANEL_TW * PANEL_TH {
-                    let e = u16::from_le_bytes(entries[i * 2..i * 2 + 2].try_into().unwrap());
-                    let setting = TileSetting::new(
-                        e & 0x3ff,
-                        TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
-                    );
-                    let pos = (
-                        tile_x + (i % PANEL_TW) as i32,
-                        tile_y + (i / PANEL_TW) as i32,
-                    );
-                    if pos.0 >= 0 {
-                        bg.set_tile(pos, &self.tiles, setting);
-                    }
-                }
+        for row in 1..=ROWS {
+            for col in 1..=COLS {
+                self.draw_panel(&mut bg, col, row, panels.get(col, row));
             }
         }
-
         bg
+    }
+
+    /// Repaint one panel's 5x3 tile block, so a panel that changes state does
+    /// not cost a redraw of the whole field.
+    pub fn draw_panel(
+        &self,
+        bg: &mut RegularBackground,
+        col: i32,
+        row: i32,
+        panel_type: usize,
+    ) {
+        // Columns 1-3 are the player's blue half, 4-6 the enemy's red. The two
+        // sides share tiles and differ only by palette bank.
+        let side = if col <= 3 { 1 } else { 0 };
+        let variant = 6 * panel_type + 3 * side + (row as usize - 1);
+        let entries = &self.tilemap[variant * 32..variant * 32 + 30];
+        let tile_x = TILE_COLS[col as usize];
+        let tile_y = 3 * row + 6;
+
+        for i in 0..PANEL_TW * PANEL_TH {
+            let e = u16::from_le_bytes(entries[i * 2..i * 2 + 2].try_into().unwrap());
+            let setting = TileSetting::new(
+                e & 0x3ff,
+                TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
+            );
+            let pos = (
+                tile_x + (i % PANEL_TW) as i32,
+                tile_y + (i / PANEL_TW) as i32,
+            );
+            if pos.0 >= 0 {
+                bg.set_tile(pos, &self.tiles, setting);
+            }
+        }
+    }
+}
+
+/// The type of every panel on the field, indexed by 1-based `(col, row)`.
+pub struct Panels {
+    types: [[u8; COLS as usize]; ROWS as usize],
+}
+
+impl Panels {
+    pub fn new(fill: usize) -> Self {
+        Self {
+            types: [[fill as u8; COLS as usize]; ROWS as usize],
+        }
+    }
+
+    pub fn get(&self, col: i32, row: i32) -> usize {
+        self.types[row as usize - 1][col as usize - 1] as usize
+    }
+
+    pub fn set(&mut self, col: i32, row: i32, panel_type: usize) {
+        self.types[row as usize - 1][col as usize - 1] = panel_type as u8;
     }
 }
 
