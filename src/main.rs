@@ -9,6 +9,7 @@ extern crate alloc;
 mod actor;
 mod ai;
 mod battle;
+mod custom;
 mod field;
 mod gunner;
 mod hud;
@@ -36,6 +37,7 @@ static GUNNER: &[u8] = &Aligned(*include_bytes!("../assets/gunner.bin")).0;
 static CURSOR: &[u8] = &Aligned(*include_bytes!("../assets/cursor.bin")).0;
 static IMPACT: &[u8] = &Aligned(*include_bytes!("../assets/impact.bin")).0;
 static RESULTS: &[u8] = &Aligned(*include_bytes!("../assets/results.bin")).0;
+static CUSTOM: &[u8] = &Aligned(*include_bytes!("../assets/custom.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -47,6 +49,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let field = field::Field::new(FIELD);
     let hud = hud::Hud::new(FONT);
     let results = results::Results::new(RESULTS);
+    let custom_assets = custom::CustomAssets::new(CUSTOM);
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     for (i, p) in results.palettes().into_iter().enumerate() {
@@ -57,10 +60,10 @@ fn main(mut gba: agb::Gba) -> ! {
     loop {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
-        let mut battle = Battle::new(&field, &results, &hud);
+        let mut battle = Battle::new(&field, &results, &hud, &custom_assets);
         loop {
             input.update();
-            if battle.update(&input) {
+            if battle.update(&input, &gfx) {
                 break;
             }
             let mut frame = gfx.frame();

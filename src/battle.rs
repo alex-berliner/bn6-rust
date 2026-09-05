@@ -11,6 +11,7 @@ use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
 
 use crate::actor::{self, Actor, Update};
+use crate::custom::{self, Custom, CustomAssets};
 use crate::field::{self, Field, Panels};
 use crate::hud::Hud;
 use crate::results::{self, Results};
@@ -19,6 +20,7 @@ use crate::{ai, gunner, spr};
 use crate::{
     CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX, WAVE,
 };
+use agb::display::Graphics;
 
 // Boss HP comes from each navi's enemy-definition rows, six bytes per
 // version: an hword whose low twelve bits are HP and top four the
@@ -69,8 +71,7 @@ const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
 // accessors asm00_2.s:29821-29883). A speed word at +0x22 defaults to
 // 0x20 but nothing reading it was found, so it is not applied. When full
 // the battle pauses for about 60 frames of chimes and then opens chip
-// selection (sub_8008840); that screen is not built, so for now the pause
-// ends with the gauge cleared, as entering it does (asm03_0.s:540).
+// selection (sub_8008840), which clears the gauge on entry (asm03_0.s:540).
 const GAUGE_STEP: u16 = 0xd;
 const GAUGE_FULL: u16 = 0x4000;
 const GAUGE_PAUSE: u16 = 60;
@@ -85,6 +86,8 @@ pub struct Battle<'a> {
     field: &'a Field,
     results: &'a Results,
     hud: &'a Hud,
+    custom_assets: &'a CustomAssets,
+    custom: Option<Custom<'a>>,
     panels: Panels,
     bg: RegularBackground,
     megaman: Actor,
@@ -110,7 +113,12 @@ pub struct Battle<'a> {
 }
 
 impl<'a> Battle<'a> {
-    pub fn new(field: &'a Field, results: &'a Results, hud: &'a Hud) -> Self {
+    pub fn new(
+        field: &'a Field,
+        results: &'a Results,
+        hud: &'a Hud,
+        custom_assets: &'a CustomAssets,
+    ) -> Self {
         let panels = Panels::new(field::PANEL_NORMAL);
         let bg = field.background(&panels);
 
@@ -166,6 +174,8 @@ impl<'a> Battle<'a> {
             field,
             results,
             hud,
+            custom_assets,
+            custom: None,
             panels,
             bg,
             megaman,
@@ -194,17 +204,25 @@ impl<'a> Battle<'a> {
     /// Run one frame of battle logic. Returns true once the results window
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
-    pub fn update(&mut self, input: &ButtonController) -> bool {
+    pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
         let over = self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated());
 
         // The gauge only runs while the fight does; a full gauge holds
-        // everything, including itself, until the chip-select hand-off.
-        if self.gauge_pause > 0 {
+        // everything, including itself, through the chimes and then the
+        // chip window, which takes bank 9 while it is up.
+        if let Some(window) = self.custom.as_mut() {
+            if window.update(input) {
+                self.custom = None;
+                gfx.set_background_palette(custom::BANK, &self.results.palettes()[0]);
+                self.gauge = 0;
+            }
+        } else if self.gauge_pause > 0 {
             self.gauge_pause -= 1;
             if self.gauge_pause == 0 {
-                self.gauge = 0;
+                gfx.set_background_palette(custom::BANK, &self.custom_assets.palette(0));
+                self.custom = Some(self.custom_assets.open());
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
@@ -226,7 +244,7 @@ impl<'a> Battle<'a> {
         } else {
             false
         };
-        let paused = over || self.gauge_pause > 0 || intro;
+        let paused = over || self.gauge_pause > 0 || self.custom.is_some() || intro;
         if !paused {
             self.clock += 1;
         }
@@ -505,6 +523,9 @@ impl<'a> Battle<'a> {
         // enemy in -- pixelates and thins over the field; the intro's screen
         // fade darkens everything until the field is revealed.
         let window_id = self.shown.as_ref().map(|window| window.show(frame));
+        if let Some(window) = &self.custom {
+            window.show(frame);
+        }
         if self.fade_out > 0 {
             let mut fade = frame.blend().darken(Num::from_raw(self.fade_out));
             fade.enable_background(bg_id).enable_object();
