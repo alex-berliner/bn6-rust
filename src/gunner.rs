@@ -136,11 +136,14 @@ impl Impact {
     /// `None` once its flash has played out and it should be dropped.
     pub fn update(&mut self, panels: &mut field::Panels) -> Option<bool> {
         if self.warn > 0 {
-            self.warn -= 1;
-            // The warning blink's cadence was not read; every other frame.
-            if self.warn % 2 == 0 {
+            // The panel blinks while the shot warns: the impact object
+            // highlights it on the frames where its countdown's bit 2 is
+            // clear, then decrements -- a 3-on, 4-off pattern from the 0xa
+            // seed (t3_0xd3_80DFE40, sub_80DFEE8, asm31.s:84487, 84490).
+            if self.warn & 4 == 0 {
                 panels.highlight(self.col, self.row, 0);
             }
+            self.warn -= 1;
             return Some(self.warn == 0);
         }
         self.player.update();
