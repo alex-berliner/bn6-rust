@@ -25,6 +25,11 @@ DAT = os.path.join(BN6, "data", "dat38_85.s")
 TILE_COLS = [-5, 0, 5, 10, 15, 20, 25, 30]
 PANEL_TW, PANEL_TH = 5, 3
 
+# sub_80075CA decompresses the tileset to 0x6001460, i.e. VRAM tile 163, so the
+# tilemap's tile ids are offset by that much from the start of the blob. The
+# lowest id any panel variant uses is exactly 163, which confirms the base.
+TILE_BASE = (0x6001460 - 0x6000000) // 32
+
 
 def load():
     tiles = lz77_decompress(read_symbol(DAT, "dword_86DDBA0", max_bytes=0x4000,
@@ -60,7 +65,7 @@ def render(field_type=0, scale=3):
                 e = int.from_bytes(entries[i * 2: i * 2 + 2], "little")
                 tid, hflip, vflip, pb = e & 0x3FF, e & 0x400, e & 0x800, e >> 12
                 colours = bank(pal, pb)
-                px = decode_tile(tiles, tid)
+                px = decode_tile(tiles, tid - TILE_BASE)
                 tx = (tile_x + i % PANEL_TW) * 8
                 ty = (tile_y + i // PANEL_TW) * 8
                 for y in range(8):

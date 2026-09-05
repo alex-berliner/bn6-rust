@@ -18,12 +18,30 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from field_dump import load
+from field_dump import TILE_BASE, load
+
+
+def rebase(tilemap):
+    """Rewrite tile ids to index the tileset blob directly.
+
+    The game's ids are VRAM tile numbers and the blob is loaded at TILE_BASE,
+    so the ROM would otherwise have to know that offset to draw a panel.
+    Variants past the five real panel types hold junk ids below the base;
+    they are pointed at tile 0 rather than wrapping negative.
+    """
+    out = bytearray(tilemap)
+    for i in range(0, len(out) - 1, 2):
+        e = int.from_bytes(out[i:i + 2], "little")
+        tid = e & 0x3FF
+        tid = tid - TILE_BASE if tid >= TILE_BASE else 0
+        out[i:i + 2] = ((e & ~0x3FF) | tid).to_bytes(2, "little")
+    return bytes(out)
 
 
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "field.bin"
     tiles, tilemap, pal = load()
+    tilemap = rebase(tilemap)
 
     out = bytearray(struct.pack("<4sIIII", b"BNFD", 1, 0, 0, 0))
 

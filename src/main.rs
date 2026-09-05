@@ -71,7 +71,18 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let field = field::Field::new(FIELD);
     gfx.set_background_palettes(&field.palettes());
-    let bg = field.background(field::PANEL_NORMAL);
+
+    // Panels will become per-panel state once battles can crack and break
+    // them; for now B walks the whole field through the five types.
+    const PANEL_TYPES: [usize; 5] = [
+        field::PANEL_NORMAL,
+        field::PANEL_CRACKED,
+        field::PANEL_BROKEN,
+        field::PANEL_HOLE,
+        field::PANEL_POISON,
+    ];
+    let mut panel = 0usize;
+    let mut bg = field.background(PANEL_TYPES[panel]);
 
     let mut anim = 1usize;
     let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), anim, 2, 2, false);
@@ -95,6 +106,10 @@ fn main(mut gba: agb::Gba) -> ! {
         if input.is_just_pressed(Button::A) {
             anim = (anim + 1) % megaman.player.anim_count();
             megaman.player.set_anim(anim);
+        }
+        if input.is_just_pressed(Button::B) {
+            panel = (panel + 1) % PANEL_TYPES.len();
+            bg = field.background(PANEL_TYPES[panel]);
         }
 
         megaman.update();

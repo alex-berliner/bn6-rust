@@ -18,9 +18,13 @@ const TILE_COLS: [i32; 8] = [-5, 0, 5, 10, 15, 20, 25, 30];
 const PANEL_TW: usize = 5;
 const PANEL_TH: usize = 3;
 
-/// Panel type 3 is the plain red/blue field; the lower types are overgrown
-/// variants and type 4 is sand.
-pub const PANEL_NORMAL: usize = 3;
+/// Panel types, in the order the tilemap stores them. The disassembly has no
+/// enum for these; the names come from what each variant actually draws.
+pub const PANEL_HOLE: usize = 0;
+pub const PANEL_BROKEN: usize = 1;
+pub const PANEL_NORMAL: usize = 2;
+pub const PANEL_CRACKED: usize = 3;
+pub const PANEL_POISON: usize = 4;
 
 pub struct Field {
     tiles: TileSet,
