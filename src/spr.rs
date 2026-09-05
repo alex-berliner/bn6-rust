@@ -133,6 +133,9 @@ pub struct Part {
     pub sprite: SpriteVram,
     pub x: i32,
     pub y: i32,
+    /// Pixel width; the caller mirrors offsets about the actor origin, which
+    /// needs the part's own extent, not just its offset.
+    pub width: i32,
     pub hflip: bool,
     pub vflip: bool,
 }
@@ -205,6 +208,7 @@ impl Player {
                 sprite,
                 x: e.x as i32,
                 y: e.y as i32,
+                width: (w * 8) as i32,
                 hflip: e.hflip,
                 vflip: e.vflip,
             });
