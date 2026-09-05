@@ -55,12 +55,14 @@ fn main(mut gba: agb::Gba) -> ! {
     // MegaMan's own HP does come from the disassembly: byte_80210DD
     // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
     const PLAYER_HP: u16 = 100;
-    // ProtoMan's sword damage is a placeholder too. Colonel's attacks each
-    // draw from one of five damage rows (asm31.s:153623, 80/100/50/30/150 in
-    // the first version column); which row the overhead slash uses is not
-    // mapped, so the first stands in.
+    // ProtoMan's sword damage is a placeholder too. Colonel's launchers each
+    // pick a damage row (asm31.s:153414-153526): the cross slash reads
+    // byte_81017D8 and the overhead slash byte_81017F0 (asm31.s:153623,
+    // 153629), whose first-version hwords are 80 and 30. The version column
+    // comes from the AI data's version byte (sub_800FE12, asm00_2.s:2370).
     const SWORD_DAMAGE: u16 = 20;
-    const DIVIDE_DAMAGE: u16 = 80;
+    const CROSS_DAMAGE: u16 = 80;
+    const DIVIDE_DAMAGE: u16 = 30;
     // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
     // and a charged shot is (Attack + 1) * 10 (asm00_2.s:5988), at Attack 1.
     const BUSTER_DAMAGE: u16 = 2;
@@ -240,6 +242,7 @@ fn main(mut gba: agb::Gba) -> ! {
                     if targets.contains(&megaman.panel()) {
                         let damage = match ai.style() {
                             ai::Style::Thrust => SWORD_DAMAGE,
+                            ai::Style::Divide if cross_shape.is_some() => CROSS_DAMAGE,
                             ai::Style::Divide => DIVIDE_DAMAGE,
                         };
                         megaman.take_damage(damage);
