@@ -20,6 +20,8 @@ for a charged shot), B cracks the panel underfoot.
 
 ## What is implemented
 
+- The battle intro: the field revealed out of black, then the enemy navis
+  materialising one at a time through mosaic and alpha, before control opens.
 - The 6x3 field, with per-panel state: panels crack, give way when whoever
   stood on them leaves, and regenerate after 600 frames with a warning blink.
 - Navis from the game's own sprite containers, plain and LZ77-compressed,

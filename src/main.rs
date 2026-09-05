@@ -102,6 +102,18 @@ fn main(mut gba: agb::Gba) -> ! {
     // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
     let mut effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
     let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
+    // The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
+    // the intro object, asm31.s:85280), then the enemy navis materialise one
+    // at a time from a fade-in list, and only then does the fight state run
+    // and lift the pause (sub_8009658 onwards, asm00_1.s:13379; sub_800855E,
+    // 11048). The player's navi is simply there. The screen fade's frame
+    // count was not read; two frames a step stands in.
+    const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
+    let mut intro_fade = SCREEN_FADE_FRAMES;
+    let mut intro_next = 0usize;
+    for enemy in enemies.iter_mut() {
+        enemy.hide();
+    }
     let mut cross_shape: Option<&[(i32, i32)]> = None;
     let mut shots: Vec<Shot> = Vec::new();
     // The custom gauge: a u16 at BattleState+0x20 that the fight state adds
@@ -131,13 +143,27 @@ fn main(mut gba: agb::Gba) -> ! {
             if gauge_pause == 0 {
                 gauge = 0;
             }
-        } else if !over {
+        } else if !over && intro_fade == 0 && intro_next >= enemies.len() {
             gauge = (gauge + GAUGE_STEP).min(GAUGE_FULL);
             if gauge == GAUGE_FULL {
                 gauge_pause = GAUGE_PAUSE;
             }
         }
-        let paused = over || gauge_pause > 0;
+        // Bring the field in, then the enemies one by one.
+        let intro = if intro_fade > 0 {
+            intro_fade -= 1;
+            true
+        } else if intro_next < enemies.len() {
+            if !enemies[intro_next].is_present() {
+                enemies[intro_next].appear();
+            } else if !enemies[intro_next].is_busy() {
+                intro_next += 1;
+            }
+            true
+        } else {
+            false
+        };
+        let paused = over || gauge_pause > 0 || intro;
 
         for (button, dx, dy) in [
             (Button::Right, 1, 0),
@@ -227,7 +253,7 @@ fn main(mut gba: agb::Gba) -> ! {
         for (enemy, ai) in enemies
             .iter_mut()
             .zip(ais.iter_mut())
-            .filter(|(e, _)| !e.is_defeated())
+            .filter(|(e, _)| e.is_present())
         {
             if !paused && !enemy.is_busy() && megaman.is_targetable() {
                 // Decided as the attack begins, as the game does, and held for
@@ -299,8 +325,20 @@ fn main(mut gba: agb::Gba) -> ! {
 
         let mut frame = gfx.frame();
         let bg_id = bg.show(&mut frame);
-        // The deleted player pixelates and thins out over the field.
-        if let Some((mosaic, alpha)) = megaman.fade() {
+        // Whichever navi is fading -- the deleted player out, an arriving
+        // enemy in -- pixelates and thins over the field; the intro's screen
+        // fade darkens everything until the field is revealed.
+        if intro_fade > 0 {
+            let amount = Num::from_raw((intro_fade as u8).div_ceil(2));
+            frame
+                .blend()
+                .darken(amount.min(Num::from_raw(16)))
+                .enable_background(bg_id)
+                .enable_object();
+        } else if let Some((mosaic, alpha)) = core::iter::once(&megaman)
+            .chain(enemies.iter())
+            .find_map(|a| a.fade())
+        {
             frame.mosaic().set_object(mosaic, mosaic);
             frame
                 .blend()
@@ -323,7 +361,7 @@ fn main(mut gba: agb::Gba) -> ! {
                 }
             }
         }
-        for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
+        for enemy in enemies.iter().filter(|e| e.is_present()) {
             enemy.show(&mut frame);
         }
         for (p, (x, y), _) in &effects {
@@ -340,7 +378,7 @@ fn main(mut gba: agb::Gba) -> ! {
         // it, which is where the game puts each combatant's gauge.
         for actor in core::iter::once(&megaman)
             .chain(enemies.iter())
-            .filter(|a| a.hp() > 0)
+            .filter(|a| a.is_present() && a.hp() > 0 && a.is_targetable())
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
             let hp = actor.hp();

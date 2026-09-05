@@ -120,6 +120,11 @@ pub struct Profile {
 pub const ENEMY_DEATH_FRAMES: u8 = 92;
 pub const PLAYER_DEATH_FRAMES: u8 = 55;
 const PLAYER_FADE_FRAMES: u8 = 0x20;
+/// An enemy navi fades in over sixteen steps taken every other frame
+/// (sub_801641A, asm00_2.s:16099-16137). How each step maps to the mosaic
+/// and alpha values was not read; they are stepped linearly here.
+const APPEAR_STEPS: u8 = 0x10;
+const APPEAR_FRAMES: u8 = APPEAR_STEPS * 2;
 /// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
 /// and the OAM builder keeps it so until the palette is reassigned
 /// (asm38.s:30060BE). Where that happens was not traced, so this length is a
@@ -169,6 +174,12 @@ enum Action {
         ticks: u8,
     },
     Gone,
+    /// Not on the field yet: the intro brings enemies in one at a time.
+    Hidden,
+    /// Materialising through mosaic and alpha at the start of the battle.
+    Appearing {
+        ticks: u8,
+    },
 }
 
 /// What [`Actor::update`] asks the caller to do this frame.
@@ -239,6 +250,8 @@ impl Actor {
     /// The player's deletion fade, once it has begun: the mosaic block size
     /// and a 0-16 opacity, both from the phase-3 timer `t` counting 0 to 0x20
     /// -- mosaic `t >> 1`, alpha `0x10 - t` (asm00_2.s:18212).
+    ///
+    /// Also covers the intro's fade-in, run backwards.
     pub fn fade(&self) -> Option<(u8, u8)> {
         match self.action {
             Action::Dying { ticks }
@@ -247,13 +260,37 @@ impl Actor {
                 let t = PLAYER_FADE_FRAMES - ticks;
                 Some(((t >> 1).min(15), 0x10u8.saturating_sub(t)))
             }
+            Action::Appearing { ticks } => {
+                let step = (APPEAR_FRAMES - ticks) / 2;
+                Some((APPEAR_STEPS - 1 - step, step + 1))
+            }
             _ => None,
         }
     }
 
-    /// Still something that can be hit or aimed at: not dying, not gone.
+    /// Still something that can be hit or aimed at: on the field, not dying.
     pub fn is_targetable(&self) -> bool {
-        !matches!(self.action, Action::Dying { .. } | Action::Gone)
+        !matches!(
+            self.action,
+            Action::Dying { .. } | Action::Gone | Action::Hidden | Action::Appearing { .. }
+        )
+    }
+
+    /// On the field in some form, so drawn and given an HP number.
+    pub fn is_present(&self) -> bool {
+        !matches!(self.action, Action::Hidden | Action::Gone)
+    }
+
+    /// Take the navi off the field until the intro brings it in.
+    pub fn hide(&mut self) {
+        self.action = Action::Hidden;
+    }
+
+    /// Start materialising; the navi is idle once the fade is done.
+    pub fn appear(&mut self) {
+        self.action = Action::Appearing {
+            ticks: APPEAR_FRAMES,
+        };
     }
 
     /// Take a hit. bn6f subtracts the damage and enters the flinch state as
@@ -478,6 +515,9 @@ impl Actor {
             }
             Action::Dying { .. } => Action::Gone,
             Action::Gone => Action::Gone,
+            Action::Hidden => Action::Hidden,
+            Action::Appearing { ticks } if ticks > 1 => Action::Appearing { ticks: ticks - 1 },
+            Action::Appearing { .. } => Action::Idle,
         };
         update
     }
@@ -487,7 +527,7 @@ impl Actor {
         // (asm00_2.s:23893) and blinks; the game's exact cadence was not
         // traced, so this alternates two frames on, two off, and holds off
         // until the white flash has had its frames on screen.
-        if matches!(self.action, Action::Gone) {
+        if matches!(self.action, Action::Gone | Action::Hidden) {
             return;
         }
         // The mercy blink stops mattering once the navi is being deleted; the
