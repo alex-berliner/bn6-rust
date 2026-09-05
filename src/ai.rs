@@ -8,13 +8,18 @@
 use crate::actor::{self, Actor};
 use crate::field;
 
-/// Frames between decisions. Placeholders until the real pacing is known.
-const MOVE_PAUSE: u16 = 40;
-const ATTACK_PAUSE: u16 = 90;
+/// Frames between decisions. ProtoMan's planner ticks about every 29 frames
+/// and attacks once a counter fed 1-2 per tick reaches 4, so roughly 87
+/// frames on average (sub_80FBA24, asm31.s:141641); that average stands in
+/// for the counter. The others are placeholders.
+const MOVE_PAUSE: u16 = 29;
+const ATTACK_PAUSE: u16 = 87;
 const DIVIDE_PAUSE: u16 = 150;
 
 pub enum Style {
-    /// Line up with the player, warp to the facing panel, thrust.
+    /// Line up with the player, warp to the facing panel, strike the panel
+    /// in front -- attack C's chooser lands exactly there (sub_80FCDBA,
+    /// asm31.s:144205).
     Thrust,
     /// Stand and slash: the 0xA cross when the player is near the centre of
     /// their side, else the overhead slash on their front column.
@@ -79,7 +84,7 @@ impl Ai {
                     me.step((want.0 - col).signum(), 0);
                     self.pause = MOVE_PAUSE;
                 } else {
-                    me.attack(actor::BUSTER);
+                    me.attack(actor::THRUST);
                     self.pause = ATTACK_PAUSE;
                 }
             }

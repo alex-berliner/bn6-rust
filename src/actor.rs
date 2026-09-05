@@ -55,7 +55,7 @@ pub struct AttackSpec {
 
 /// The buster: animation 14 for five passes, ending once its frame counter
 /// clears 4, with the shot spawned on the second (asm31.s:108536, 108547,
-/// 108608). ProtoMan's thrust reuses it; its own timing is not yet read.
+/// 108608).
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: None,
     anim: 14,
@@ -71,6 +71,18 @@ pub const DIVIDE: AttackSpec = AttackSpec {
     frames: 40,
     strike_at: 20,
     recover: 0,
+};
+/// ProtoMan's basic strike, attack A of his AI: animation 0xf held for 16
+/// frames while the front panel flashes, then animation 5 for 30 with the
+/// hit when the countdown reads 0x14 -- ten frames in -- on the one panel in
+/// front, then 20 frames of recovery (sub_80FC226, sub_80FC26A, sub_80FC2DC;
+/// asm31.s:142671, 142716; V1 tiers dword_80FBD28, dword_80FBD14).
+pub const THRUST: AttackSpec = AttackSpec {
+    windup: Some((15, 16)),
+    anim: 5,
+    frames: 30,
+    strike_at: 11,
+    recover: 20,
 };
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery

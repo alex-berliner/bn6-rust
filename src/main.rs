@@ -55,12 +55,13 @@ fn main(mut gba: agb::Gba) -> ! {
     // MegaMan's own HP does come from the disassembly: byte_80210DD
     // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
     const PLAYER_HP: u16 = 100;
-    // ProtoMan's sword damage is a placeholder too. Colonel's launchers each
+    // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
+    // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
     // pick a damage row (asm31.s:153414-153526): the cross slash reads
     // byte_81017D8 and the overhead slash byte_81017F0 (asm31.s:153623,
     // 153629), whose first-version hwords are 80 and 30. The version column
     // comes from the AI data's version byte (sub_800FE12, asm00_2.s:2370).
-    const SWORD_DAMAGE: u16 = 20;
+    const SWORD_DAMAGE: u16 = 100;
     const CROSS_DAMAGE: u16 = 80;
     const DIVIDE_DAMAGE: u16 = 30;
     // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
@@ -207,11 +208,11 @@ fn main(mut gba: agb::Gba) -> ! {
                 ai.update(enemy, megaman.panel());
             }
             let update = enemy.update();
-            // Colonel's slashes: the cross hits its shape around the centre of
-            // the player's side, the overhead one the whole front column
-            // (dword_8103B00, asm31.s:158257). The cross lights its targets
-            // every eighth frame of the wind-up (asm31.s:157045-157076); the
-            // overhead slash borrows that telegraph so it can be read.
+            // ProtoMan's strike lands on the panel in front and Colonel's
+            // slashes on the cross shape or the whole front column
+            // (dword_8103B00, asm31.s:158257). Both navis light their targets
+            // every eighth frame of the wind-up (asm31.s:142671, 157045);
+            // Colonel's overhead slash borrows the same telegraph.
             let targets: Vec<(i32, i32)> = match ai.style() {
                 ai::Style::Thrust => alloc::vec![enemy.front_panel()],
                 ai::Style::Divide => match cross_shape {
@@ -225,9 +226,7 @@ fn main(mut gba: agb::Gba) -> ! {
                 },
             };
             match update {
-                Update::Winding { frame }
-                    if matches!(ai.style(), ai::Style::Divide) && frame % 8 == 0 =>
-                {
+                Update::Winding { frame } if frame % 8 == 0 => {
                     for &(col, row) in &targets {
                         if (1..=field::COLS).contains(&col) && (1..=field::ROWS).contains(&row) {
                             panels.highlight(col, row, 0);
