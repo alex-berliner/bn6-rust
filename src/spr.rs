@@ -173,11 +173,6 @@ impl Player {
         self.load_frame();
     }
 
-    /// True once a one-shot animation has held its last frame to the end.
-    pub fn finished(&self) -> bool {
-        self.done
-    }
-
     pub fn parts(&self) -> &[Part] {
         &self.parts
     }

@@ -21,12 +21,26 @@ pub mod anim {
     pub const WARP_OUT: usize = 4;
 }
 
+/// Frame counts taken from the move state machine, which runs one step per
+/// frame across `sub_80EB088` -> `sub_80EB128` -> `sub_80EB194` ->
+/// `sub_80EB1C4` (asm/asm31.s:108036 onwards). The recovery length is
+/// per-navi and defaults to 4 (`sub_8010332`, asm/asm00_2.s:3121).
+///
+/// The timings are the state machine's, not the animations': the dissolve is
+/// cut off after three of its four frames when the panel is committed.
+const LEAVING_FRAMES: u8 = 3;
+const ARRIVING_FRAMES: u8 = 5;
+const RECOVERING_FRAMES: u8 = 4;
+
+#[derive(Clone, Copy)]
 enum Movement {
     Still,
     /// Dissolving away; `to` is committed as the current panel when this ends.
-    Leaving { to: (i32, i32) },
+    Leaving { to: (i32, i32), ticks: u8 },
     /// Materialising on the panel just arrived at.
-    Arriving,
+    Arriving { ticks: u8 },
+    /// Standing again but still locked out of another move.
+    Recovering { ticks: u8 },
 }
 
 pub struct Actor {
@@ -66,6 +80,7 @@ impl Actor {
         }
         self.movement = Movement::Leaving {
             to: (to_col, to_row),
+            ticks: LEAVING_FRAMES,
         };
         self.player.play(anim::WARP_OUT);
         true
@@ -73,21 +88,31 @@ impl Actor {
 
     pub fn update(&mut self) {
         self.player.update();
-        if !self.player.finished() {
-            return;
-        }
-        match self.movement {
-            Movement::Leaving { to } => {
+        self.movement = match self.movement {
+            Movement::Still => Movement::Still,
+            Movement::Leaving { to, ticks } if ticks > 1 => Movement::Leaving {
+                to,
+                ticks: ticks - 1,
+            },
+            Movement::Leaving { to, .. } => {
                 (self.col, self.row) = to;
-                self.movement = Movement::Arriving;
                 self.player.play(anim::WARP_IN);
+                Movement::Arriving {
+                    ticks: ARRIVING_FRAMES,
+                }
             }
-            Movement::Arriving => {
-                self.movement = Movement::Still;
+            Movement::Arriving { ticks } if ticks > 1 => Movement::Arriving { ticks: ticks - 1 },
+            Movement::Arriving { .. } => {
                 self.player.play(anim::IDLE);
+                Movement::Recovering {
+                    ticks: RECOVERING_FRAMES,
+                }
             }
-            Movement::Still => {}
-        }
+            Movement::Recovering { ticks } if ticks > 1 => {
+                Movement::Recovering { ticks: ticks - 1 }
+            }
+            Movement::Recovering { .. } => Movement::Still,
+        };
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
