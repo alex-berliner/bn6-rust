@@ -170,8 +170,12 @@ pub struct Battle<'a> {
     panels: Panels,
     bg: RegularBackground,
     megaman: Actor,
-    enemies: [Actor; 4],
-    ais: [ai::Ai; 4],
+    /// Sizes differ between debug and release builds: a debug build fights
+    /// the Mettaur alone so the hand and chips can be tried without the
+    /// bosses, while the release keeps the game's lineup. Everything here
+    /// reads whatever length it is.
+    enemies: Vec<Actor>,
+    ais: Vec<ai::Ai>,
     gunner_ctl: gunner::Gunner,
     impacts: Vec<gunner::Impact>,
     effects: Vec<(spr::Player, (i32, i32), u8)>,
@@ -226,24 +230,41 @@ impl<'a> Battle<'a> {
         };
         let megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, player);
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
-        let mut enemies = [
-            Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
-            Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
-            Actor::new(spr::Assets::new(METTAUR), 5, 3, true, enemy(METTAUR_HP)),
-            Actor::new(spr::Assets::new(GUNNER), 6, 2, true, enemy(gunner::HP)),
-        ];
+        // A debug build fights just the Mettaur, to exercise the hand, chips
+        // and deletion without the bosses; the release build keeps the game's
+        // lineup.
+        let mut enemies: Vec<Actor> = if cfg!(debug_assertions) {
+            alloc::vec![Actor::new(
+                spr::Assets::new(METTAUR),
+                5,
+                3,
+                true,
+                enemy(METTAUR_HP)
+            )]
+        } else {
+            alloc::vec![
+                Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
+                Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
+                Actor::new(spr::Assets::new(METTAUR), 5, 3, true, enemy(METTAUR_HP)),
+                Actor::new(spr::Assets::new(GUNNER), 6, 2, true, enemy(gunner::HP)),
+            ]
+        };
         let gunner_ctl = gunner::Gunner::new();
         let impacts: Vec<gunner::Impact> = Vec::new();
         // The deletion effect, sprite_839CCDC animation 0, spawned at the body
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
         let effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
-        let ais = [
-            ai::Ai::new(ai::Style::Thrust),
-            ai::Ai::new(ai::Style::Divide),
-            ai::Ai::new(ai::Style::Mettaur),
-            ai::Ai::new(ai::Style::Gunner),
-        ];
+        let ais: Vec<ai::Ai> = if cfg!(debug_assertions) {
+            alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
+        } else {
+            alloc::vec![
+                ai::Ai::new(ai::Style::Thrust),
+                ai::Ai::new(ai::Style::Divide),
+                ai::Ai::new(ai::Style::Mettaur),
+                ai::Ai::new(ai::Style::Gunner),
+            ]
+        };
         let intro_fade = SCREEN_FADE_FRAMES;
         let intro_next = 0usize;
         for enemy in enemies.iter_mut() {
@@ -251,7 +272,9 @@ impl<'a> Battle<'a> {
         }
         let cross_shape: Option<&[(i32, i32)]> = None;
         let shots: Vec<Shot> = Vec::new();
-        let gauge = 0u16;
+        // A debug build starts with the gauge full, so the first chip select
+        // comes up right after the intro instead of after the counter runs.
+        let gauge = if cfg!(debug_assertions) { GAUGE_FULL } else { 0 };
         let gauge_pause = 0u16;
         let results_delay = RESULTS_DELAY;
         let shown: Option<results::Shown> = None;
@@ -342,9 +365,17 @@ impl<'a> Battle<'a> {
                 self.custom = Some(self.custom_assets.open(&offered, gfx));
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
-            self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
-            if self.gauge == GAUGE_FULL {
-                self.gauge_pause = GAUGE_PAUSE;
+            // Debug: L or R opens the chip window at once, without waiting for
+            // the gauge to refill (test aid; the game has no such button).
+            if cfg!(debug_assertions)
+                && (input.is_just_pressed(Button::L) || input.is_just_pressed(Button::R))
+            {
+                self.gauge_pause = 1;
+            } else {
+                self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
+                if self.gauge == GAUGE_FULL {
+                    self.gauge_pause = GAUGE_PAUSE;
+                }
             }
         }
         // Bring the field in, then the enemies one by one.

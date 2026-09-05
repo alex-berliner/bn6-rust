@@ -19,6 +19,13 @@ Controls: d-pad warps between panels, B fires the buster (hold and release
 for a charged shot) as in the game, where A is the chip button; Select
 cracks the panel underfoot as a test aid.
 
+Debug builds (cargo run, capture.sh) add three test aids: the custom
+gauge starts full, so the first chip select opens right after the intro;
+L or R opens the chip window at any time without waiting for the gauge to
+refill; and the fight is against the Mettaur alone, so the hand and chips
+can be tried without the bosses. The release ROM keeps the game's lineup,
+slow gauge and no L/R shortcut.
+
 ## What is implemented
 
 - The battle intro: the field revealed out of black, then the enemy navis
