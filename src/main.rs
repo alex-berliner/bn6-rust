@@ -42,9 +42,15 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut panels = field::Panels::new(field::PANEL_NORMAL);
     let mut bg = field.background(&panels);
 
-    // Real navi HP comes from the battle stats table, which is not extracted
-    // yet; these stand in so a fight can be played out.
+    // Enemy HP is still a stand-in. Boss HP flows through RAM staging written
+    // somewhere not yet found; the one static table read at spawn
+    // (byte_802DD88, asm03_0.s:15867) serves other-navi spawns, and the
+    // 1000-1300 boss-looking table dword_802F0A8 (asm03_0.s:18275) is only
+    // read by a function nothing calls. Neither names ProtoMan or Colonel.
     const ENEMY_HP: u16 = 40;
+    // MegaMan's own HP does come from the disassembly: byte_80210DD
+    // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
+    const PLAYER_HP: u16 = 100;
     // ProtoMan's sword damage is a placeholder too.
     const SWORD_DAMAGE: u16 = 20;
     // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
@@ -60,7 +66,7 @@ fn main(mut gba: agb::Gba) -> ! {
         2,
         2,
         false,
-        1000,
+        PLAYER_HP,
         actor::PLAYER_MERCY_FRAMES,
     );
     let mut enemies = [
