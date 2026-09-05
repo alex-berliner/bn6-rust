@@ -4,6 +4,7 @@
 //! battle; the field, HUD and results assets are borrowed.
 
 use agb::display::GraphicsFrame;
+use agb::display::Priority;
 use agb::display::object::Object;
 use agb::display::tiled::RegularBackground;
 use agb::fixnum::Num;
@@ -16,10 +17,10 @@ use crate::field::{self, Field, Panels};
 use crate::hud::Hud;
 use crate::results::{self, Results};
 use crate::shot::Shot;
-use crate::{ai, gunner, spr};
 use crate::{
     CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX, WAVE,
 };
+use crate::{ai, gunner, spr};
 use agb::display::Graphics;
 
 // Boss HP comes from each navi's enemy-definition rows, six bytes per
@@ -367,7 +368,11 @@ impl<'a> Battle<'a> {
         match self.megaman.update() {
             Update::Strike { charged } => {
                 let (col, row) = self.megaman.front_panel();
-                let damage = if charged { CHARGED_DAMAGE } else { BUSTER_DAMAGE };
+                let damage = if charged {
+                    CHARGED_DAMAGE
+                } else {
+                    BUSTER_DAMAGE
+                };
                 self.shots.push(Shot::buster(
                     spr::Assets::new(SHOTFX),
                     col,
@@ -480,16 +485,17 @@ impl<'a> Battle<'a> {
         }
 
         // The Gunner's shots warn on their panels, then land.
-        self.impacts.retain_mut(|imp| match imp.update(&mut self.panels) {
-            Some(true) => {
-                if self.megaman.is_targetable() && self.megaman.panel() == (imp.col, imp.row) {
-                    self.megaman.take_damage(gunner::DAMAGE);
+        self.impacts
+            .retain_mut(|imp| match imp.update(&mut self.panels) {
+                Some(true) => {
+                    if self.megaman.is_targetable() && self.megaman.panel() == (imp.col, imp.row) {
+                        self.megaman.take_damage(gunner::DAMAGE);
+                    }
+                    true
                 }
-                true
-            }
-            Some(false) => true,
-            None => false,
-        });
+                Some(false) => true,
+                None => false,
+            });
 
         self.effects.retain_mut(|(p, _, ticks)| {
             p.update();
@@ -506,9 +512,10 @@ impl<'a> Battle<'a> {
         for (col, row) in field::panels_in(self.panels.take_dirty()) {
             match self.panels.flashing(col, row) {
                 Some(which) => self.field.draw_highlight(&mut self.bg, col, row, which),
-                None => self
-                    .field
-                    .draw_panel(&mut self.bg, col, row, self.panels.animation(col, row)),
+                None => {
+                    self.field
+                        .draw_panel(&mut self.bg, col, row, self.panels.animation(col, row))
+                }
             }
         }
 
@@ -559,6 +566,7 @@ impl<'a> Battle<'a> {
                 let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 for part in self.glow.parts() {
                     Object::new(part.sprite.clone())
+                        .set_priority(Priority::P2)
                         .set_pos((px + GLOW_OFFSET.0 + part.x, py + GLOW_OFFSET.1 + part.y))
                         .set_hflip(part.hflip)
                         .set_vflip(part.vflip)
@@ -578,6 +586,7 @@ impl<'a> Battle<'a> {
         for (p, (x, y), _) in &self.effects {
             for part in p.parts() {
                 Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
                     .set_pos((x + part.x, y + part.y))
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)

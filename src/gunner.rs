@@ -8,6 +8,7 @@
 //! 24 frames (sub_8112F4E, sub_8113002, ai_8113038; asm32.s:9958-10102).
 
 use agb::display::GraphicsFrame;
+use agb::display::Priority;
 use agb::display::object::Object;
 
 use crate::actor::Actor;
@@ -99,6 +100,7 @@ impl Cursor {
         let y = field::panel_centre(1, self.row).1;
         for part in self.player.parts() {
             Object::new(part.sprite.clone())
+                .set_priority(Priority::P2)
                 .set_pos((self.x + part.x, y + part.y))
                 .set_hflip(part.hflip)
                 .set_vflip(part.vflip)
@@ -156,6 +158,7 @@ impl Impact {
         let (px, py) = field::panel_centre(self.col, self.row);
         for part in self.player.parts() {
             Object::new(part.sprite.clone())
+                .set_priority(Priority::P2)
                 .set_pos((px + part.x, py + part.y))
                 .set_hflip(part.hflip)
                 .set_vflip(part.vflip)

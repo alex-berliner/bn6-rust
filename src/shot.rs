@@ -9,6 +9,7 @@
 //! (t3_0x16_80C6B40, asm31.s:31354; byte_80C6B00, 31306).
 
 use agb::display::GraphicsFrame;
+use agb::display::Priority;
 use agb::display::object::Object;
 
 use crate::field;
@@ -90,6 +91,7 @@ impl Shot {
                 part.x
             };
             Object::new(part.sprite.clone())
+                .set_priority(Priority::P2)
                 .set_pos((px + x, py + part.y))
                 .set_hflip(part.hflip ^ (self.dx < 0))
                 .set_vflip(part.vflip)

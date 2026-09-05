@@ -62,12 +62,32 @@ const fn corner(dx: i32, dy: i32, flags: u8) -> Corner {
 }
 
 const SLOT_BRACKET: [[Corner; 4]; 2] = [
-    [corner(0, 0, 0), corner(0xe, 0, 0x10), corner(0xe, 0xe, 0x30), corner(0, 0xe, 0x20)],
-    [corner(1, 1, 0), corner(0xc, 1, 0x10), corner(0xc, 0xc, 0x30), corner(1, 0xc, 0x20)],
+    [
+        corner(0, 0, 0),
+        corner(0xe, 0, 0x10),
+        corner(0xe, 0xe, 0x30),
+        corner(0, 0xe, 0x20),
+    ],
+    [
+        corner(1, 1, 0),
+        corner(0xc, 1, 0x10),
+        corner(0xc, 0xc, 0x30),
+        corner(1, 0xc, 0x20),
+    ],
 ];
 const OK_BRACKET: [[Corner; 4]; 2] = [
-    [corner(1, 2, 0), corner(0x16, 2, 0x10), corner(0x16, 0x14, 0x30), corner(1, 0x14, 0x20)],
-    [corner(3, 4, 0), corner(0x14, 4, 0x10), corner(0x14, 0x12, 0x30), corner(3, 0x12, 0x20)],
+    [
+        corner(1, 2, 0),
+        corner(0x16, 2, 0x10),
+        corner(0x16, 0x14, 0x30),
+        corner(1, 0x14, 0x20),
+    ],
+    [
+        corner(3, 4, 0),
+        corner(0x14, 4, 0x10),
+        corner(0x14, 0x12, 0x30),
+        corner(3, 0x12, 0x20),
+    ],
 ];
 
 pub struct CustomAssets {
@@ -106,7 +126,11 @@ impl CustomAssets {
         let (t, m, p, c) = (at(0x08), at(0x0c), at(0x10), at(0x18));
         let len = at(t);
         let tiles = &data[t + 4..t + 4 + len];
-        assert_eq!(tiles.as_ptr() as usize % 4, 0, "tile data must be word aligned");
+        assert_eq!(
+            tiles.as_ptr() as usize % 4,
+            0,
+            "tile data must be word aligned"
+        );
         let (w, h) = (at(m), at(m + 4));
         assert_eq!((w, h), (MAP_W, MAP_H), "unexpected chip window map size");
         Self {
@@ -125,8 +149,10 @@ impl CustomAssets {
     }
 
     pub fn open(&self) -> Custom<'_> {
+        // BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD
+        // layer and over the actors (sub_801DA24, asm00_2.s:29038).
         let mut bg = RegularBackground::new(
-            Priority::P0,
+            Priority::P1,
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
@@ -155,7 +181,9 @@ impl CustomAssets {
 fn read_palette(bytes: &[u8]) -> Palette16 {
     let mut colours = [Rgb15::new(0); 16];
     for (i, slot) in colours.iter_mut().enumerate() {
-        *slot = Rgb15::new(u16::from_le_bytes(bytes[i * 2..i * 2 + 2].try_into().unwrap()));
+        *slot = Rgb15::new(u16::from_le_bytes(
+            bytes[i * 2..i * 2 + 2].try_into().unwrap(),
+        ));
     }
     Palette16::new(colours)
 }

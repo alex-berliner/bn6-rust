@@ -87,13 +87,19 @@ pub struct Results {
 }
 
 enum Phase {
-    Sliding { x: i32 },
+    Sliding {
+        x: i32,
+    },
     Waiting,
-    Dismissing { ticks: u8 },
+    Dismissing {
+        ticks: u8,
+    },
     /// The screen fade the game runs on dismissal (sub_802C280 ends with a
     /// SetScreenFade of 0x10 steps); one step a frame stands in for its
     /// cadence, which was not read.
-    Fading { step: u8 },
+    Fading {
+        step: u8,
+    },
     Done,
 }
 
@@ -115,7 +121,11 @@ impl Results {
             o = (o + 3) & !3;
             let len = u32_at(o);
             let tiles = &data[o + 4..o + 4 + len];
-            assert_eq!(tiles.as_ptr() as usize % 4, 0, "tile data must be word aligned");
+            assert_eq!(
+                tiles.as_ptr() as usize % 4,
+                0,
+                "tile data must be word aligned"
+            );
             o = (o + 4 + len + 3) & !3;
             let (w, h) = (u32_at(o), u32_at(o + 4));
             let map = &data[o + 8..o + 8 + w * h * 2];
@@ -180,11 +190,7 @@ impl Results {
                 let top = FONT_TILE + d * 2;
                 let bank = 9 + rank.min(2) as u16;
                 for (dy, tile) in [(0, top), (1, top + 1)] {
-                    bg.set_tile(
-                        (col as i32, 4 + dy),
-                        &v.tiles,
-                        entry(tile | bank << 12),
-                    );
+                    bg.set_tile((col as i32, 4 + dy), &v.tiles, entry(tile | bank << 12));
                 }
                 bcd >>= 4;
             }

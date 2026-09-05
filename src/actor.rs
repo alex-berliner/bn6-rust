@@ -11,6 +11,7 @@
 //! of a single machine rather than layers that can overlap.
 
 use agb::display::GraphicsFrame;
+use agb::display::Priority;
 use agb::display::object::{GraphicsMode, Object};
 
 use crate::field;
@@ -211,12 +212,16 @@ enum Action {
 pub enum Update {
     Nothing,
     /// A frame of an attack pose before its strike, counted from 1.
-    Winding { frame: u8 },
+    Winding {
+        frame: u8,
+    },
     /// HP just reached zero: the caller spawns the deletion effect here.
     Died,
     /// The second frame of `Attacking`: the caller resolves what the attack
     /// does -- spawn a shot, or hit the panel in front.
-    Strike { charged: bool },
+    Strike {
+        charged: bool,
+    },
 }
 
 pub struct Actor {
@@ -241,7 +246,13 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(assets: spr::Assets, col: i32, row: i32, facing_left: bool, profile: Profile) -> Self {
+    pub fn new(
+        assets: spr::Assets,
+        col: i32,
+        row: i32,
+        facing_left: bool,
+        profile: Profile,
+    ) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
             col,
@@ -640,7 +651,12 @@ impl Actor {
                 part.x
             };
             let mut object = Object::new(part.sprite.clone());
+            // Every battle sprite is OAM priority 2 (sprite_initialize sets
+            // the attribute base 0x800, sprite.s:116); that puts the actors
+            // over the field and behind the chip select window on BG3 at
+            // priority 1 (sub_801DA24, asm00_2.s:29038: BG3CNT 0x1f09).
             object
+                .set_priority(Priority::P2)
                 .set_pos((px + x, py + part.y))
                 .set_hflip(part.hflip ^ self.facing_left)
                 .set_vflip(part.vflip);
