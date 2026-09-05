@@ -46,12 +46,13 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut panels = field::Panels::new(field::PANEL_NORMAL);
     let mut bg = field.background(&panels);
 
-    // Enemy HP is still a stand-in. Boss HP flows through RAM staging written
-    // somewhere not yet found; the one static table read at spawn
-    // (byte_802DD88, asm03_0.s:15867) serves other-navi spawns, and the
-    // 1000-1300 boss-looking table dword_802F0A8 (asm03_0.s:18275) is only
-    // read by a function nothing calls. Neither names ProtoMan or Colonel.
-    const ENEMY_HP: u16 = 40;
+    // Boss HP comes from each navi's enemy-definition rows, six bytes per
+    // version: an hword whose low twelve bits are HP and top four the
+    // element, which the spawner writes to HP and MaxHP (sub_80076A0,
+    // asm00_1.s:9155). First version: ProtoMan byte_80FB8BC 0x708
+    // (asm31.s:141547), Colonel byte_8101244 0x4b0 (asm31.s:152949).
+    const PROTOMAN_HP: u16 = 1800;
+    const COLONEL_HP: u16 = 1200;
     // MegaMan's own HP does come from the disassembly: byte_80210DD
     // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
     const PLAYER_HP: u16 = 100;
@@ -86,15 +87,15 @@ fn main(mut gba: agb::Gba) -> ! {
         mercy: actor::PLAYER_MERCY_FRAMES,
         death_frames: actor::PLAYER_DEATH_FRAMES,
     };
-    let enemy = actor::Profile {
-        hp: ENEMY_HP,
+    let enemy = |hp| actor::Profile {
+        hp,
         mercy: 0,
         death_frames: actor::ENEMY_DEATH_FRAMES,
     };
     let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, player);
     let mut enemies = [
-        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy),
-        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy),
+        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
+        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
     ];
     // The deletion effect, sprite_839CCDC animation 0, spawned at the body
     // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row

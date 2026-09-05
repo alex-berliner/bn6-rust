@@ -42,8 +42,8 @@ for a charged shot), B cracks the panel underfoot.
   passes over the disassembly found no display code that reads the value,
   so rather than invent a fill it stays invisible until that is understood.
 
-Where a value is not yet taken from the disassembly -- enemy HP, Colonel's
-pacing, some effect timings -- the code says so at the point of use.
+Where a value is not yet taken from the disassembly -- Colonel's pacing,
+some effect timings -- the code says so at the point of use.
 
 ## Asset pipeline
 
