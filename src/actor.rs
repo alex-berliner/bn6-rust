@@ -69,6 +69,18 @@ impl Actor {
         (self.col, self.row)
     }
 
+    /// Panels this actor holds: the one it stands on, plus the one it has
+    /// reserved while warping. `object_reservePanel` sets the reserve as the
+    /// move begins and clears it at the commit (asm/asm00_2.s:24949), which
+    /// keeps the destination from breaking underneath the arrival.
+    pub fn occupancy(&self) -> u32 {
+        let mut mask = field::panel_bit(self.col, self.row);
+        if let Movement::Leaving { to, .. } = self.movement {
+            mask |= field::panel_bit(to.0, to.1);
+        }
+        mask
+    }
+
     pub fn is_moving(&self) -> bool {
         !matches!(self.movement, Movement::Still)
     }
