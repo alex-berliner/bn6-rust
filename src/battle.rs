@@ -134,6 +134,19 @@ const VULCAN: actor::AttackSpec = actor::AttackSpec {
     strike_at: 1,
     recover: 0,
 };
+/// AirShot (attack family 0x21, sub_80EC884): takes animation 0x9, plays
+/// the gust sound 0xaf and spawns its shot when the frame counter reads 0x5,
+/// the pose exiting once it reads 0xa, then a 0xa-frame recovery
+/// (sub_80EC8A0, sub_80EC90E; asm31.s:111072, 111094, 111112). The shot it
+/// spawns is the same type-3 object as the cannon's (sub_80C4FFE ->
+/// t3_0x0_80C4E58), so it is the travelling buster shot at chip power.
+const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
+    windup: None,
+    anim: 0x9,
+    frames: 0xa,
+    strike_at: 0x5,
+    recover: 0xa,
+};
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
 const RECOV_HP: [u16; 2] = [10, 30];
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
@@ -763,13 +776,16 @@ impl<'a> Battle<'a> {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(VULCAN);
             }
+            CHIP_AIRSHOT => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(AIRSHOT);
+            }
             CHIP_RECOV10 => self.megaman.heal(RECOV_HP[0]),
             CHIP_RECOV30 => self.megaman.heal(RECOV_HP[1]),
             CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
             CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
             // AreaGrab needs per-panel ownership, which the field does not
-            // track yet; AirShot waits on its own timings. Both are stand-ins
-            // for now: nothing, and a buster shot at chip power.
+            // track yet. The stand-in is nothing.
             CHIP_AREAGRAB => {}
             _ => {
                 self.chip_in_use = Some(chip);
