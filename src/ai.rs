@@ -16,8 +16,30 @@ const DIVIDE_PAUSE: u16 = 150;
 pub enum Style {
     /// Line up with the player, warp to the facing panel, thrust.
     Thrust,
-    /// Stand and bring the sword down on the player's front column.
+    /// Stand and slash: the 0xA cross when the player is near the centre of
+    /// their side, else the overhead slash on their front column.
     Divide,
+}
+
+/// The 0xA slash's base panel for the enemy side is (2,2) (dword_8103A04,
+/// asm31.s:158121), and one of four offset shapes is laid over it by where
+/// the player stands (byte_8103990, asm31.s:158062; lists at
+/// asm00_2.s:20990-21025). Which shape the game picks for which position is
+/// not fully read, so the first shape covering the player is used, and the
+/// last, the 3x3 block without its side centres, when none does.
+pub const CROSS_BASE: (i32, i32) = (2, 2);
+const CROSS_SHAPES: [&[(i32, i32)]; 4] = [
+    &[(0, 0), (1, -1), (-1, 1)],
+    &[(0, 0), (-1, -1), (1, 1)],
+    &[(0, 0), (-1, -1), (-1, 1)],
+    &[(0, 0), (-1, -1), (1, -1), (-1, 1), (1, 1), (0, -1), (0, 1)],
+];
+
+/// The panels the cross slash will hit for a player at `target`, or None if
+/// the player is out of its reach and the overhead slash should be used.
+pub fn cross_targets(target: (i32, i32)) -> Option<&'static [(i32, i32)]> {
+    let rel = (target.0 - CROSS_BASE.0, target.1 - CROSS_BASE.1);
+    CROSS_SHAPES.iter().copied().find(|s| s.contains(&rel))
 }
 
 pub struct Ai {
@@ -62,7 +84,12 @@ impl Ai {
                 }
             }
             Style::Divide => {
-                me.attack(actor::DIVIDE);
+                let spec = if cross_targets(target).is_some() {
+                    actor::CROSS
+                } else {
+                    actor::DIVIDE
+                };
+                me.attack(spec);
                 self.pause = DIVIDE_PAUSE;
             }
         }

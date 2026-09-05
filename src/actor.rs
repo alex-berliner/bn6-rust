@@ -41,26 +41,44 @@ const RECOVERING_FRAMES: u8 = 4;
 /// it the hit lands.
 #[derive(Clone, Copy)]
 pub struct AttackSpec {
+    /// A pose held before the strike pose, if the attack has one.
+    pub windup: Option<(usize, u8)>,
     pub anim: usize,
     pub frames: u8,
     /// 1-based frame of the pose on which the strike is delivered.
     pub strike_at: u8,
+    /// Frames the actor stays busy in its standing pose afterwards.
+    pub recover: u8,
 }
 
 /// The buster: animation 14 for five passes, ending once its frame counter
 /// clears 4, with the shot spawned on the second (asm31.s:108536, 108547,
 /// 108608). ProtoMan's thrust reuses it; its own timing is not yet read.
 pub const BUSTER: AttackSpec = AttackSpec {
+    windup: None,
     anim: 14,
     frames: 5,
     strike_at: 2,
+    recover: 0,
 };
 /// Colonel's overhead slash: animation 0xc held for 0x28 frames, the hit
 /// spawned when the countdown reads 0x14 (asm31.s:157462, 157464-157479).
 pub const DIVIDE: AttackSpec = AttackSpec {
+    windup: None,
     anim: 12,
     frames: 40,
     strike_at: 20,
+    recover: 0,
+};
+/// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
+/// with the hit on its first frame, held 0x1e, then 24 frames of recovery
+/// (asm31.s:157045-157102).
+pub const CROSS: AttackSpec = AttackSpec {
+    windup: Some((6, 30)),
+    anim: 5,
+    frames: 30,
+    strike_at: 1,
+    recover: 24,
 };
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
@@ -99,11 +117,17 @@ enum Action {
     Aiming {
         ticks: u8,
     },
+    /// Holding an attack's wind-up pose; `next` is the strike pose to follow.
+    WindingUp {
+        ticks: u8,
+        next: AttackSpec,
+    },
     /// Attacking; the strike lands when `ticks` counts down to `strike_tick`.
     Attacking {
         ticks: u8,
         strike_tick: u8,
         charged: bool,
+        recover: u8,
     },
     /// Reeling from a hit.
     Flinching {
@@ -252,12 +276,25 @@ impl Actor {
     }
 
     fn begin(&mut self, spec: AttackSpec, charged: bool) {
+        if let Some((anim, frames)) = spec.windup {
+            self.player.play(anim);
+            self.pose_len = frames;
+            self.action = Action::WindingUp {
+                ticks: frames,
+                next: AttackSpec {
+                    windup: None,
+                    ..spec
+                },
+            };
+            return;
+        }
         self.player.play(spec.anim);
         self.pose_len = spec.frames;
         self.action = Action::Attacking {
             ticks: spec.frames,
             strike_tick: spec.frames + 1 - spec.strike_at,
             charged,
+            recover: spec.recover,
         };
     }
 
@@ -318,10 +355,24 @@ impl Actor {
                 self.begin(BUSTER, true);
                 self.action
             }
+            Action::WindingUp { ticks, next } if ticks > 1 => {
+                update = Update::Winding {
+                    frame: (self.pose_len - ticks) + 1,
+                };
+                Action::WindingUp {
+                    ticks: ticks - 1,
+                    next,
+                }
+            }
+            Action::WindingUp { next, .. } => {
+                self.begin(next, false);
+                self.action
+            }
             Action::Attacking {
                 ticks,
                 strike_tick,
                 charged,
+                recover,
             } if ticks > 1 => {
                 if ticks == strike_tick {
                     update = Update::Strike { charged };
@@ -336,11 +387,16 @@ impl Actor {
                     ticks: ticks - 1,
                     strike_tick,
                     charged,
+                    recover,
                 }
             }
-            Action::Attacking { .. } => {
+            Action::Attacking { recover, .. } => {
                 self.player.play(anim::IDLE);
-                Action::Idle
+                if recover > 0 {
+                    Action::Recovering { ticks: recover }
+                } else {
+                    Action::Idle
+                }
             }
             Action::Flinching { ticks } if ticks > 1 => Action::Flinching { ticks: ticks - 1 },
             Action::Flinching { .. } => {

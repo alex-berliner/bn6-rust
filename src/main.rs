@@ -89,6 +89,7 @@ fn main(mut gba: agb::Gba) -> ! {
         Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP, 0),
     ];
     let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
+    let mut cross_shape: Option<&[(i32, i32)]> = None;
     let mut shots: Vec<Shot> = Vec::new();
 
     loop {
@@ -181,32 +182,48 @@ fn main(mut gba: agb::Gba) -> ! {
             .zip(ais.iter_mut())
             .filter(|(e, _)| !e.is_defeated())
         {
-            if !over {
+            if !over && !enemy.is_busy() {
+                // Decided as the attack begins, as the game does, and held for
+                // its duration even if the player moves.
+                cross_shape = ai::cross_targets(megaman.panel());
                 ai.update(enemy, megaman.panel());
             }
             let update = enemy.update();
-            // Colonel's 0xA slash lights its target panels every eighth frame
-            // of the wind-up (asm31.s:157045-157076); the overhead slash is
-            // given the same telegraph on its column so it can be read.
-            if let (ai::Style::Divide, Update::Winding { frame }) = (ai.style(), &update) {
-                if frame % 8 == 0 {
-                    for row in 1..=field::ROWS {
-                        panels.highlight(field::half(false).1, row, 0);
+            // Colonel's slashes: the cross hits its shape around the centre of
+            // the player's side, the overhead one the whole front column
+            // (dword_8103B00, asm31.s:158257). The cross lights its targets
+            // every eighth frame of the wind-up (asm31.s:157045-157076); the
+            // overhead slash borrows that telegraph so it can be read.
+            let targets: Vec<(i32, i32)> = match ai.style() {
+                ai::Style::Thrust => alloc::vec![enemy.front_panel()],
+                ai::Style::Divide => match cross_shape {
+                    Some(shape) => shape
+                        .iter()
+                        .map(|(dx, dy)| (ai::CROSS_BASE.0 + dx, ai::CROSS_BASE.1 + dy))
+                        .collect(),
+                    None => (1..=field::ROWS)
+                        .map(|row| (field::half(false).1, row))
+                        .collect(),
+                },
+            };
+            match update {
+                Update::Winding { frame }
+                    if matches!(ai.style(), ai::Style::Divide) && frame % 8 == 0 =>
+                {
+                    for &(col, row) in &targets {
+                        if (1..=field::COLS).contains(&col) && (1..=field::ROWS).contains(&row) {
+                            panels.highlight(col, row, 0);
+                        }
                     }
                 }
-            }
-            if !matches!(update, Update::Strike { .. }) || megaman.is_defeated() {
-                continue;
-            }
-            // ProtoMan's thrust lands on the panel in front. Colonel's slash
-            // comes down on the whole of the player's front column: rows 1-3
-            // of the column dword_8103B00 names for his side (asm31.s:158257).
-            match ai.style() {
-                ai::Style::Thrust if megaman.panel() == enemy.front_panel() => {
-                    megaman.take_damage(SWORD_DAMAGE);
-                }
-                ai::Style::Divide if megaman.panel().0 == field::half(false).1 => {
-                    megaman.take_damage(DIVIDE_DAMAGE);
+                Update::Strike { .. } if !megaman.is_defeated() => {
+                    if targets.contains(&megaman.panel()) {
+                        let damage = match ai.style() {
+                            ai::Style::Thrust => SWORD_DAMAGE,
+                            ai::Style::Divide => DIVIDE_DAMAGE,
+                        };
+                        megaman.take_damage(damage);
+                    }
                 }
                 _ => {}
             }

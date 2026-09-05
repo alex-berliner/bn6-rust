@@ -30,8 +30,9 @@ for a charged shot), B cracks the panel underfoot.
   shot that hops one panel every two frames, flinching, HP drawn with the
   game's digit font, and a hit flash with a post-hit mercy window.
 - First-pass enemy AI: ProtoMan lines up with the player, warps to the
-  facing panel and thrusts; Colonel brings his sword down on the player's
-  front column. The attacks are the game's; the decision pacing is not yet.
+  facing panel and thrusts; Colonel slashes a telegraphed shape around the
+  centre of the player's side, or brings his sword down on the front
+  column. The attacks are the game's; the decision pacing is not yet.
 
 Where a value is not yet taken from the disassembly -- enemy HP, sword
 damage, some effect timings -- the code says so at the point of use.
