@@ -51,6 +51,11 @@ const FLINCH_FRAMES: u8 = 23;
 /// (sub_801A66C, asm00_2.s:22319). Whether enemies get the same grace is not
 /// verified, so they are constructed without it.
 pub const PLAYER_MERCY_FRAMES: u8 = 120;
+/// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
+/// and the OAM builder keeps it so until the palette is reassigned
+/// (asm38.s:30060BE). Where that happens was not traced, so this length is a
+/// stand-in chosen to look right.
+const FLASH_FRAMES: u8 = 4;
 
 /// What the actor is doing. bn6f keeps one `CurAction` and movement and attack
 /// are mutually exclusive, so all of these are states of one slot.
@@ -58,15 +63,26 @@ pub const PLAYER_MERCY_FRAMES: u8 = 120;
 enum Action {
     Idle,
     /// Dissolving away; `to` is committed as the current panel when this ends.
-    Leaving { to: (i32, i32), ticks: u8 },
+    Leaving {
+        to: (i32, i32),
+        ticks: u8,
+    },
     /// Materialising on the panel just arrived at.
-    Arriving { ticks: u8 },
+    Arriving {
+        ticks: u8,
+    },
     /// Standing again but still locked out of another move.
-    Recovering { ticks: u8 },
+    Recovering {
+        ticks: u8,
+    },
     /// Attacking; the strike lands on the second frame.
-    Attacking { ticks: u8 },
+    Attacking {
+        ticks: u8,
+    },
     /// Reeling from a hit.
-    Flinching { ticks: u8 },
+    Flinching {
+        ticks: u8,
+    },
 }
 
 /// What [`Actor::update`] asks the caller to do this frame.
@@ -88,6 +104,7 @@ pub struct Actor {
     /// Frames of post-hit invulnerability this actor gets, and how many remain.
     mercy: u8,
     invulnerable: u8,
+    flash: u8,
 }
 
 impl Actor {
@@ -108,6 +125,7 @@ impl Actor {
             hp,
             mercy,
             invulnerable: 0,
+            flash: 0,
         }
     }
 
@@ -143,6 +161,8 @@ impl Actor {
         }
         self.hp = self.hp.saturating_sub(amount);
         self.invulnerable = self.mercy;
+        self.flash = FLASH_FRAMES;
+        self.player.set_white(true);
         self.flinch();
         true
     }
@@ -217,6 +237,12 @@ impl Actor {
     pub fn update(&mut self) -> Update {
         self.player.update();
         self.invulnerable = self.invulnerable.saturating_sub(1);
+        if self.flash > 0 {
+            self.flash -= 1;
+            if self.flash == 0 {
+                self.player.set_white(false);
+            }
+        }
         let mut update = Update::Nothing;
         self.action = match self.action {
             Action::Idle => Action::Idle,
@@ -238,9 +264,7 @@ impl Actor {
                     ticks: RECOVERING_FRAMES,
                 }
             }
-            Action::Recovering { ticks } if ticks > 1 => {
-                Action::Recovering { ticks: ticks - 1 }
-            }
+            Action::Recovering { ticks } if ticks > 1 => Action::Recovering { ticks: ticks - 1 },
             Action::Recovering { .. } => Action::Idle,
             Action::Attacking { ticks } if ticks > 1 => {
                 // bn6f spawns the shot when its firing counter equals 1, i.e.
@@ -264,6 +288,13 @@ impl Actor {
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
+        // While invulnerable the object carries OBJECT_FLAGS_FLASHING
+        // (asm00_2.s:23893) and blinks; the game's exact cadence was not
+        // traced, so this alternates two frames on, two off, and holds off
+        // until the white flash has had its frames on screen.
+        if self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
+            return;
+        }
         let (px, py) = field::panel_centre(self.col, self.row);
         for part in self.player.parts() {
             // Offsets are authored facing right, so mirroring reflects the

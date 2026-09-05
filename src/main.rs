@@ -48,7 +48,12 @@ fn main(mut gba: agb::Gba) -> ! {
     // ProtoMan's sword damage is a placeholder too.
     const SWORD_DAMAGE: u16 = 20;
     let mut megaman = Actor::new(
-        spr::Assets::new(MEGAMAN), 2, 2, false, 1000, actor::PLAYER_MERCY_FRAMES,
+        spr::Assets::new(MEGAMAN),
+        2,
+        2,
+        false,
+        1000,
+        actor::PLAYER_MERCY_FRAMES,
     );
     let mut enemies = [
         Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP, 0),
@@ -107,9 +112,19 @@ fn main(mut gba: agb::Gba) -> ! {
         if matches!(megaman.update(), Update::Strike) {
             // The buster's damage of 2 (sub_801265A: Attack 1, +1 for MegaMan).
             let (col, row) = megaman.front_panel();
-            shots.push(Shot::new(spr::Assets::new(SHOTFX), col, row, megaman.facing_dx(), 2));
+            shots.push(Shot::new(
+                spr::Assets::new(SHOTFX),
+                col,
+                row,
+                megaman.facing_dx(),
+                2,
+            ));
         }
-        for (i, enemy) in enemies.iter_mut().enumerate().filter(|(_, e)| !e.is_defeated()) {
+        for (i, enemy) in enemies
+            .iter_mut()
+            .enumerate()
+            .filter(|(_, e)| !e.is_defeated())
+        {
             if i == 0 {
                 protoman_ai.update(enemy, megaman.panel());
             }

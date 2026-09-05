@@ -151,6 +151,11 @@ pub struct Player {
     /// animation almost always share a palette, so this avoids reallocating it
     /// on every frame change.
     palette: Option<(u16, PaletteVramSingle)>,
+    /// An all-white palette for the hit flash, allocated on first use. The game
+    /// does this by forcing the object's palette bank to 15
+    /// (sprite_forceWhitePalette, asm/sprite.s:1141).
+    white: Option<PaletteVramSingle>,
+    white_on: bool,
     parts: Vec<Part>,
 }
 
@@ -163,6 +168,8 @@ impl Player {
             ticks_left: 0,
             done: false,
             palette: None,
+            white: None,
+            white_on: false,
             parts: Vec::new(),
         };
         p.load_frame();
@@ -180,6 +187,18 @@ impl Player {
 
     pub fn parts(&self) -> &[Part] {
         &self.parts
+    }
+
+    /// Draw every part solid white, or normally again. Rebuilds the current
+    /// frame in place without disturbing its timing.
+    pub fn set_white(&mut self, on: bool) {
+        if on == self.white_on {
+            return;
+        }
+        self.white_on = on;
+        let ticks = self.ticks_left;
+        self.load_frame();
+        self.ticks_left = ticks;
     }
 
     /// Advance by one hardware frame, loading the next animation frame when the
@@ -213,15 +232,25 @@ impl Player {
         // a differently-paletted frame tries to allocate.
         self.parts.clear();
 
-        let palette = match &self.palette {
-            Some((index, palette)) if *index == frame.pal => palette.clone(),
-            _ => {
-                self.palette = None;
-                let palette =
-                    PaletteVramSingle::try_allocate_new(&self.assets.palette(frame.pal as usize))
-                        .expect("sprite palette should fit in vram");
-                self.palette = Some((frame.pal, palette.clone()));
-                palette
+        let palette = if self.white_on {
+            self.white
+                .get_or_insert_with(|| {
+                    PaletteVramSingle::try_allocate_new(&Palette16::new([Rgb15::new(0x7fff); 16]))
+                        .expect("white palette should fit in vram")
+                })
+                .clone()
+        } else {
+            match &self.palette {
+                Some((index, palette)) if *index == frame.pal => palette.clone(),
+                _ => {
+                    self.palette = None;
+                    let palette = PaletteVramSingle::try_allocate_new(
+                        &self.assets.palette(frame.pal as usize),
+                    )
+                    .expect("sprite palette should fit in vram");
+                    self.palette = Some((frame.pal, palette.clone()));
+                    palette
+                }
             }
         };
 

@@ -17,7 +17,9 @@ pub struct Ai {
 
 impl Ai {
     pub fn new() -> Self {
-        Self { pause: ATTACK_PAUSE }
+        Self {
+            pause: ATTACK_PAUSE,
+        }
     }
 
     /// Close on the panel facing `target` one step at a time, row first so the

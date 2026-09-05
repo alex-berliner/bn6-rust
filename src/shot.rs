@@ -48,7 +48,11 @@ impl Shot {
     pub fn show(&self, frame: &mut GraphicsFrame) {
         let (px, py) = field::panel_centre(self.col, self.row);
         for part in self.player.parts() {
-            let x = if self.dx < 0 { -part.x - part.width } else { part.x };
+            let x = if self.dx < 0 {
+                -part.x - part.width
+            } else {
+                part.x
+            };
             Object::new(part.sprite.clone())
                 .set_pos((px + x, py + part.y))
                 .set_hflip(part.hflip ^ (self.dx < 0))
