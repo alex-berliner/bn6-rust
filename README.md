@@ -56,7 +56,11 @@ for a charged shot), B cracks the panel underfoot.
   slide, cursor and add/undo rules, its tilemap (byte_86E625C, bank 9),
   its chip data records and its 128-byte icons (byte_8725894, by chip id)
   are all located, but the blob holding the window's own frame tiles is
-  not -- four candidates rendered against the map, none was it.
+  not -- four candidates rendered against the map, none was it, and a
+  fifth pass found that in a normal battle nothing on the screen's open
+  path uploads tiles 1..0x49 of char block 2 at all. The likely error is
+  the assumption that the window's layer uses char block 2; the next step
+  is reading the BG control register the custom screen sets.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
