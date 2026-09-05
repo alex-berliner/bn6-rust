@@ -232,6 +232,10 @@ pub struct Actor {
     death_frames: u8,
     invulnerable: u8,
     flash: u8,
+    /// Hits that landed, counted for the busting level: the game bumps its
+    /// per-alliance counter 3 on each entry into the flinch state
+    /// (asm00_2.s:18308 and its siblings).
+    hits_taken: u8,
     /// Length of the attack pose in progress, for numbering its frames.
     pose_len: u8,
 }
@@ -249,6 +253,7 @@ impl Actor {
             death_frames: profile.death_frames,
             invulnerable: 0,
             flash: 0,
+            hits_taken: 0,
             pose_len: 0,
         }
     }
@@ -329,6 +334,7 @@ impl Actor {
             return false;
         }
         self.hp = self.hp.saturating_sub(amount);
+        self.hits_taken = self.hits_taken.saturating_add(1);
         self.invulnerable = self.mercy;
         self.flash = FLASH_FRAMES;
         self.player.set_white(true);
@@ -343,6 +349,10 @@ impl Actor {
             self.flinch();
         }
         true
+    }
+
+    pub fn hits_taken(&self) -> u8 {
+        self.hits_taken
     }
 
     /// The panel the actor currently stands on, 1-based. During a warp this is

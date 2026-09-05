@@ -30,6 +30,51 @@ const DISMISS_FRAMES: u8 = 0x14;
 const TIME_CAP: u32 = 0x95999;
 const DIGIT_COLS: [usize; 5] = [20, 19, 17, 16, 14];
 const FONT_TILE: u16 = 0xa0;
+/// The level readout sits at row 6, columns 16-20, its digits right-aligned;
+/// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
+/// (sub_802C6EC, asm03_0.s:12830-12888).
+const LEVEL_ROW: i32 = 6;
+const LEVEL_COL: i32 = 16;
+const S_TILE: u16 = 0xb6;
+pub const LEVEL_S: u8 = 0xb;
+
+/// What went into the busting level, from the game's per-alliance counters
+/// (byte_203EAE0; sub_800AC20, asm00_1.s:16678-17055).
+pub struct Tally {
+    /// Clear time in frames.
+    pub time: u32,
+    /// Times the player was hit: counter 3.
+    pub hits_taken: u8,
+    /// Times the player moved: counter 4, bumped as each move begins
+    /// (asm31.s:108088).
+    pub moves: u8,
+}
+
+/// The busting level for a solo battle, 1 to 11 where 11 is S. Time gives a
+/// base of 6/5/4/3 at or under 5.00, 12.00 and 36.00 seconds (off_800ADDC,
+/// byte_800AE00); being hit x times adds 1 - x, or -3 from four hits; moving
+/// at most twice adds one. The game also credits multiple deletions, counter
+/// hits and a counter 0xb that stays zero here -- none of which this battle
+/// can produce yet -- so those terms are left out rather than scored as free
+/// points.
+pub fn busting_level(t: &Tally) -> u8 {
+    let seconds = t.time / 60;
+    let base: i32 = if seconds < 5 {
+        6
+    } else if seconds < 12 {
+        5
+    } else if seconds < 36 {
+        4
+    } else {
+        3
+    };
+    let hit = match t.hits_taken {
+        x if x < 4 => 1 - x as i32,
+        _ => -3,
+    };
+    let moved = if t.moves <= 2 { 1 } else { 0 };
+    (base + hit + moved).clamp(1, LEVEL_S as i32) as u8
+}
 
 struct Variant {
     tiles: TileSet,
@@ -100,9 +145,10 @@ impl Results {
         })
     }
 
-    /// Put up a window. `time` is the clear time in frames and `rank` 0-2 the
-    /// busting level colour; both are ignored by the LOSER window.
-    pub fn show(&self, variant: usize, time: u32, rank: u8) -> Shown {
+    /// Put up a window. `time` is the clear time in frames, `level` the
+    /// busting level and `rank` 0-2 the time's record colour; the LOSER window
+    /// ignores all three.
+    pub fn show(&self, variant: usize, time: u32, level: u8, rank: u8) -> Shown {
         let v = &self.variants[variant];
         let mut bg = RegularBackground::new(
             Priority::P0,
@@ -137,6 +183,27 @@ impl Results {
                     );
                 }
                 bcd >>= 4;
+            }
+            // The level: S as its one glyph, else decimal digits right-aligned
+            // to the readout's last column.
+            let mut col = LEVEL_COL + 4;
+            if level >= LEVEL_S {
+                for (dy, tile) in [(0, S_TILE), (1, S_TILE + 1)] {
+                    bg.set_tile((col, LEVEL_ROW + dy), &v.tiles, entry(tile | 10 << 12));
+                }
+            } else {
+                let mut n = level.max(1);
+                loop {
+                    let top = FONT_TILE + (n % 10) as u16 * 2;
+                    for (dy, tile) in [(0, top), (1, top + 1)] {
+                        bg.set_tile((col, LEVEL_ROW + dy), &v.tiles, entry(tile | 9 << 12));
+                    }
+                    n /= 10;
+                    if n == 0 {
+                        break;
+                    }
+                    col -= 1;
+                }
             }
         }
         bg.set_scroll_pos((-START_X, -Y));

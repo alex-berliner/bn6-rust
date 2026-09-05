@@ -44,8 +44,10 @@ for a charged shot), B cracks the panel underfoot.
   the average of the game's counter, Colonel's a placeholder.
 
 - The results: after the last deletion the RESULT window slides in with the
-  clear time in the game's digit font, or the LOSER window when the player
-  is deleted; A or Start holds 0x14 frames and fades the screen.
+  clear time and the busting level in the game's digit font -- time base,
+  hits taken and moves, from the game's own scoring -- or the LOSER window
+  when the player is deleted; A or Start holds 0x14 frames and fades the
+  screen.
 - The custom gauge, as the game's counter: 0xd a frame, full at 0x4000, then
   the pause that precedes chip selection. The bar itself is not drawn: two
   passes over the disassembly found no display code that reads the value,

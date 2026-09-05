@@ -164,6 +164,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut shown: Option<results::Shown> = None;
     let mut fade_out = 0u8;
     let mut clock = 0u32;
+    let mut moves = 0u8;
 
     loop {
         input.update();
@@ -208,9 +209,15 @@ fn main(mut gba: agb::Gba) -> ! {
                 results_delay -= 1;
             } else {
                 let won = !megaman.is_defeated();
+                let level = results::busting_level(&results::Tally {
+                    time: clock,
+                    hits_taken: megaman.hits_taken(),
+                    moves,
+                });
                 shown = Some(results.show(
                     if won { results::WIN } else { results::LOSE },
                     clock,
+                    level,
                     0,
                 ));
             }
@@ -234,7 +241,9 @@ fn main(mut gba: agb::Gba) -> ! {
                     .iter()
                     .filter(|e| e.is_present())
                     .fold(0, |m, e| m | e.occupancy());
-                megaman.step(dx, dy, blocked);
+                if megaman.step(dx, dy, blocked) {
+                    moves = moves.saturating_add(1);
+                }
             }
         }
         // B cracks the panel underfoot. Step off a cracked panel and it gives
