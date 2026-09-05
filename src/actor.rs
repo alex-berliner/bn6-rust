@@ -25,8 +25,10 @@ pub mod anim {
     pub const FLINCH: usize = 1;
     pub const WARP_IN: usize = 3;
     pub const WARP_OUT: usize = 4;
-    /// The buster fire pose (asm31.s:108536 sets animation 0xe).
-    pub const FIRE: usize = 14;
+    /// The navi's attack pose: MegaMan's buster fire (asm31.s:108536 sets
+    /// animation 0xe) and ProtoMan's sword thrust are both index 14. Colonel's
+    /// is not, so he gets no attack yet.
+    pub const ATTACK: usize = 14;
 }
 
 /// Frame counts taken from the move state machine, which runs one step per
@@ -39,11 +41,16 @@ pub mod anim {
 const LEAVING_FRAMES: u8 = 3;
 const ARRIVING_FRAMES: u8 = 5;
 const RECOVERING_FRAMES: u8 = 4;
-/// The firing state runs five passes, ending once its frame counter clears 4
-/// (asm31.s:108608).
-const FIRING_FRAMES: u8 = 5;
+/// The buster's firing state runs five passes, ending once its frame counter
+/// clears 4 (asm31.s:108608). The sword reuses it; its own timing is not yet
+/// taken from the disassembly.
+const ATTACK_FRAMES: u8 = 5;
 /// The flinch timer is set to 0x17 (asm00_2.s:18309).
 const FLINCH_FRAMES: u8 = 23;
+/// After a hit the player flashes and cannot be hit again for 0x78 frames
+/// (sub_801A66C, asm00_2.s:22319). Whether enemies get the same grace is not
+/// verified, so they are constructed without it.
+pub const PLAYER_MERCY_FRAMES: u8 = 120;
 
 /// What the actor is doing. bn6f keeps one `CurAction` and movement and attack
 /// are mutually exclusive, so all of these are states of one slot.
@@ -56,8 +63,8 @@ enum Action {
     Arriving { ticks: u8 },
     /// Standing again but still locked out of another move.
     Recovering { ticks: u8 },
-    /// Firing the buster; the shot spawns on the second frame.
-    Firing { ticks: u8 },
+    /// Attacking; the strike lands on the second frame.
+    Attacking { ticks: u8 },
     /// Reeling from a hit.
     Flinching { ticks: u8 },
 }
@@ -65,8 +72,9 @@ enum Action {
 /// What [`Actor::update`] asks the caller to do this frame.
 pub enum Update {
     Nothing,
-    /// The second frame of `Firing`: spawn the buster shot in front.
-    SpawnShot,
+    /// The second frame of `Attacking`: the caller resolves what the attack
+    /// does -- spawn a shot, or hit the panel in front.
+    Strike,
 }
 
 pub struct Actor {
@@ -77,10 +85,20 @@ pub struct Actor {
     facing_left: bool,
     action: Action,
     hp: u16,
+    /// Frames of post-hit invulnerability this actor gets, and how many remain.
+    mercy: u8,
+    invulnerable: u8,
 }
 
 impl Actor {
-    pub fn new(assets: spr::Assets, col: i32, row: i32, facing_left: bool, hp: u16) -> Self {
+    pub fn new(
+        assets: spr::Assets,
+        col: i32,
+        row: i32,
+        facing_left: bool,
+        hp: u16,
+        mercy: u8,
+    ) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
             col,
@@ -88,7 +106,19 @@ impl Actor {
             facing_left,
             action: Action::Idle,
             hp,
+            mercy,
+            invulnerable: 0,
         }
+    }
+
+    /// +1 for a navi facing right, -1 facing left.
+    pub fn facing_dx(&self) -> i32 {
+        if self.facing_left { -1 } else { 1 }
+    }
+
+    /// The panel directly ahead, where a shot spawns or a sword lands.
+    pub fn front_panel(&self) -> (i32, i32) {
+        (self.col + self.facing_dx(), self.row)
     }
 
     pub fn hp(&self) -> u16 {
@@ -104,9 +134,17 @@ impl Actor {
     /// Take a hit. bn6f subtracts the damage and enters the flinch state as
     /// separate steps (object_subtractHP at asm00_2.s:23756, flinch at
     /// asm00_2.s:18294), so a killing blow still plays the flinch.
-    pub fn take_damage(&mut self, amount: u16) {
+    ///
+    /// Returns false when the hit was ignored for landing inside the mercy
+    /// window of a previous one.
+    pub fn take_damage(&mut self, amount: u16) -> bool {
+        if self.invulnerable > 0 {
+            return false;
+        }
         self.hp = self.hp.saturating_sub(amount);
+        self.invulnerable = self.mercy;
         self.flinch();
+        true
     }
 
     /// The panel the actor currently stands on, 1-based. During a warp this is
@@ -129,7 +167,7 @@ impl Actor {
 
     /// Anything but idle holds the one `CurAction` slot, so a warp, a shot and
     /// a flinch all refuse to start over each other.
-    fn is_busy(&self) -> bool {
+    pub fn is_busy(&self) -> bool {
         !matches!(self.action, Action::Idle)
     }
 
@@ -152,16 +190,16 @@ impl Actor {
         true
     }
 
-    /// Start firing the buster: animation 14 held for five frames, with the
-    /// shot spawned on the second (asm31.s:108536, 108547, 108608). Refused
-    /// unless idle, since firing takes the same `CurAction` slot as movement.
-    pub fn fire(&mut self) -> bool {
+    /// Start an attack: animation 14 held for five frames, with the strike on
+    /// the second (asm31.s:108536, 108547, 108608). Refused unless idle, since
+    /// attacking takes the same `CurAction` slot as movement.
+    pub fn attack(&mut self) -> bool {
         if !matches!(self.action, Action::Idle) {
             return false;
         }
-        self.player.play(anim::FIRE);
-        self.action = Action::Firing {
-            ticks: FIRING_FRAMES,
+        self.player.play(anim::ATTACK);
+        self.action = Action::Attacking {
+            ticks: ATTACK_FRAMES,
         };
         true
     }
@@ -178,6 +216,7 @@ impl Actor {
 
     pub fn update(&mut self) -> Update {
         self.player.update();
+        self.invulnerable = self.invulnerable.saturating_sub(1);
         let mut update = Update::Nothing;
         self.action = match self.action {
             Action::Idle => Action::Idle,
@@ -203,15 +242,15 @@ impl Actor {
                 Action::Recovering { ticks: ticks - 1 }
             }
             Action::Recovering { .. } => Action::Idle,
-            Action::Firing { ticks } if ticks > 1 => {
+            Action::Attacking { ticks } if ticks > 1 => {
                 // bn6f spawns the shot when its firing counter equals 1, i.e.
                 // on the second of the five passes (asm31.s:108547 'cmp r0, #1').
-                if ticks == FIRING_FRAMES - 1 {
-                    update = Update::SpawnShot;
+                if ticks == ATTACK_FRAMES - 1 {
+                    update = Update::Strike;
                 }
-                Action::Firing { ticks: ticks - 1 }
+                Action::Attacking { ticks: ticks - 1 }
             }
-            Action::Firing { .. } => {
+            Action::Attacking { .. } => {
                 self.player.play(anim::IDLE);
                 Action::Idle
             }

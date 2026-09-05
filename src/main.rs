@@ -7,6 +7,7 @@
 extern crate alloc;
 
 mod actor;
+mod ai;
 mod field;
 mod hud;
 mod shot;
@@ -44,11 +45,17 @@ fn main(mut gba: agb::Gba) -> ! {
     // Real navi HP comes from the battle stats table, which is not extracted
     // yet; these stand in so a fight can be played out.
     const ENEMY_HP: u16 = 40;
-    let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, 1000);
+    // ProtoMan's sword damage is a placeholder too.
+    const SWORD_DAMAGE: u16 = 20;
+    let mut megaman = Actor::new(
+        spr::Assets::new(MEGAMAN), 2, 2, false, 1000, actor::PLAYER_MERCY_FRAMES,
+    );
     let mut enemies = [
-        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP),
-        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP),
+        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP, 0),
+        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP, 0),
     ];
+    // Only ProtoMan acts: his attack animation is verified, Colonel's is not.
+    let mut protoman_ai = ai::Ai::new();
     let mut shots: Vec<Shot> = Vec::new();
 
     loop {
@@ -70,9 +77,9 @@ fn main(mut gba: agb::Gba) -> ! {
             let (col, row) = megaman.panel();
             panels.crack(col, row);
         }
-        // A fires the buster; the shot is spawned from the firing state.
+        // A fires the buster; the shot is spawned from the attack state.
         if input.is_just_pressed(Button::A) {
-            megaman.fire();
+            megaman.attack();
         }
 
         // Shots tick before the actors, so one spawned this frame first moves
@@ -97,14 +104,22 @@ fn main(mut gba: agb::Gba) -> ! {
             }
         }
 
-        if matches!(megaman.update(), Update::SpawnShot) {
-            let (col, row) = megaman.panel();
-            // MegaMan only faces right for now, so the shot leaves the panel
-            // ahead with dx +1 and the buster's damage of 2.
-            shots.push(Shot::new(spr::Assets::new(SHOTFX), col + 1, row, 1, 2));
+        if matches!(megaman.update(), Update::Strike) {
+            // The buster's damage of 2 (sub_801265A: Attack 1, +1 for MegaMan).
+            let (col, row) = megaman.front_panel();
+            shots.push(Shot::new(spr::Assets::new(SHOTFX), col, row, megaman.facing_dx(), 2));
         }
-        for enemy in enemies.iter_mut().filter(|e| !e.is_defeated()) {
-            enemy.update();
+        for (i, enemy) in enemies.iter_mut().enumerate().filter(|(_, e)| !e.is_defeated()) {
+            if i == 0 {
+                protoman_ai.update(enemy, megaman.panel());
+            }
+            // A sword lands on the panel in front; it hits whoever stands there.
+            if matches!(enemy.update(), Update::Strike)
+                && !megaman.is_defeated()
+                && megaman.panel() == enemy.front_panel()
+            {
+                megaman.take_damage(SWORD_DAMAGE);
+            }
         }
 
         let occupied = enemies
