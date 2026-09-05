@@ -66,9 +66,14 @@ cracks the panel underfoot as a test aid.
   patched blank as the game does before drawing into them. The cursor is
   the game's four-corner bracket (dword_86E55BC) at its slot and OK
   origins, blinking every 8 frames, walking the default slot ring with
-  Start jumping to OK. The chips themselves -- slot icons, the card
-  preview, the add/undo rules (unk_20365C0, byte_8725894) -- are located
-  but not drawn, so the slots are empty and A on one does nothing.
+  Start jumping to OK. The slots hold the first five of a thirty-chip
+  deck shuffled by the game's secondary RNG (deck.rs), each with its icon
+  and code letter; the card shows the highlighted chip's picture in its
+  own palette; A adds a chip if it fits the name-or-code rule, B undoes,
+  and A on OK takes the picks out of the deck as the hand. Chip records,
+  icons, pictures and palettes for thirteen chips are in assets/chips.bin
+  (tools/chip_export.py). Not yet: the chip name, element and damage on
+  the card, and using the hand in the fight.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
