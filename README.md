@@ -37,8 +37,13 @@ for a charged shot), B cracks the panel underfoot.
   column. The attacks and their timings are the game's; ProtoMan's pacing is
   the average of the game's counter, Colonel's a placeholder.
 
-Where a value is not yet taken from the disassembly -- enemy HP, sword
-damage, some effect timings -- the code says so at the point of use.
+- The custom gauge, as the game's counter: 0xd a frame, full at 0x4000, then
+  the pause that precedes chip selection. The bar itself is not drawn: two
+  passes over the disassembly found no display code that reads the value,
+  so rather than invent a fill it stays invisible until that is understood.
+
+Where a value is not yet taken from the disassembly -- enemy HP, Colonel's
+pacing, some effect timings -- the code says so at the point of use.
 
 ## Asset pipeline
 
