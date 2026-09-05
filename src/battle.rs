@@ -88,6 +88,8 @@ const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
 const CHIP_CANNON: u16 = 1;
 const CHIP_HICANNON: u16 = 2;
+const CHIP_AIRSHOT: u16 = 4;
+const CHIP_VULCAN: u16 = 5;
 const CHIP_MINIBOMB: u16 = 54;
 const CHIP_RECOV10: u16 = 154;
 const CHIP_RECOV30: u16 = 155;
@@ -118,6 +120,18 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
     anim: 8,
     frames: 0x1d,
     strike_at: 0xf,
+    recover: 0,
+};
+/// Vulcan1 (attack family 0x17, sub_80EBF10): takes animation 0xa as a
+/// wind-up, then animation 0xd and fires until its shots are out
+/// (sub_80EBF30, sub_80EBF6E; asm31.s:109844, 109887). The three shots are
+/// released 0xa frames apart, so they are modelled here as one strike that
+/// spawns a staggered volley in chip_strike.
+const VULCAN: actor::AttackSpec = actor::AttackSpec {
+    windup: Some((0xa, 0x10)),
+    anim: 0xd,
+    frames: 0x1e,
+    strike_at: 1,
     recover: 0,
 };
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
@@ -745,13 +759,17 @@ impl<'a> Battle<'a> {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(CANNON);
             }
+            CHIP_VULCAN => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(VULCAN);
+            }
             CHIP_RECOV10 => self.megaman.heal(RECOV_HP[0]),
             CHIP_RECOV30 => self.megaman.heal(RECOV_HP[1]),
             CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
             CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
             // AreaGrab needs per-panel ownership, which the field does not
-            // track yet; AirShot and Vulcan wait on their own timings. Both
-            // are stand-ins for now: nothing, and a buster shot at chip power.
+            // track yet; AirShot waits on its own timings. Both are stand-ins
+            // for now: nothing, and a buster shot at chip power.
             CHIP_AREAGRAB => {}
             _ => {
                 self.chip_in_use = Some(chip);
@@ -787,6 +805,28 @@ impl<'a> Battle<'a> {
                     damage: chip.power,
                     ticks: 0,
                 });
+            }
+            // Vulcan1: three shots, each fanned a little above or below the
+            // row they were aimed at (dword_80EBFF0 = 0x20181008, one byte per
+            // shot, chosen by the game's RNG & 3; the three here cycle through
+            // them in order) and released 0xa frames apart, the game's fire
+            // period (sub_80EBF6E). Each travels one panel a frame through
+            // Shot::vulcan (sub_80EBF6E -> spawn_t3_0x12_80C6ADA,
+            // t3_0x12_80C6946).
+            CHIP_VULCAN => {
+                const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
+                let (fc, fr) = self.megaman.front_panel();
+                for i in 0..3 {
+                    self.shots.push(Shot::vulcan(
+                        spr::Assets::new(SHOTFX),
+                        fc,
+                        fr,
+                        dx,
+                        chip.power,
+                        FAN[i % FAN.len()],
+                        (i as u8) * 0xa,
+                    ));
+                }
             }
             _ => {
                 let (fc, fr) = self.megaman.front_panel();

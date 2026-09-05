@@ -40,16 +40,42 @@ pub struct Shot {
     /// Fired by the player, so it hits enemies; otherwise it hits the player.
     pub from_player: bool,
     pub damage: u16,
+    /// Vertical pixel offset from the panel centre, for shots that fan out
+    /// (Vulcan's volley is spawned slightly above/below the row it is aimed
+    /// at, sub_80EBF6E via dword_80EBFF0).
+    pub y_offset: i32,
+    /// Frames to sit on the spawn panel before moving, for a volley whose
+    /// shots are released one after another (Vulcan fires every 0xa frames,
+    /// sub_80EBF6E, so shot 1 goes at t=0, shot 2 at 0xa, shot 3 at 0x14).
+    delay: u8,
     player: spr::Player,
 }
 
 impl Shot {
     pub fn buster(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true)
+        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0)
+    }
+
+    /// Vulcan's shot: the count and the vertical fan come from the caller,
+    /// but the travel is the projectile's own -- one panel a frame, stopped
+    /// by the first thing it hits (t3_0x12_80C6946 -> sub_80C6A08, asm31.s:
+    /// 31212, 31215). `delay` holds it on the spawn panel the number of
+    /// frames before the volley releases it.
+    #[allow(clippy::too_many_arguments)]
+    pub fn vulcan(
+        assets: spr::Assets,
+        col: i32,
+        row: i32,
+        dx: i32,
+        damage: u16,
+        y_offset: i32,
+        delay: u8,
+    ) -> Self {
+        Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay)
     }
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false)
+        Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -62,6 +88,8 @@ impl Shot {
         interval: u8,
         piercing: bool,
         from_player: bool,
+        y_offset: i32,
+        delay: u8,
     ) -> Self {
         Self {
             col,
@@ -72,6 +100,8 @@ impl Shot {
             piercing,
             from_player,
             damage,
+            y_offset,
+            delay,
             player: spr::Player::new(assets, ANIM),
         }
     }
@@ -92,7 +122,7 @@ impl Shot {
             };
             Object::new(part.sprite.clone())
                 .set_priority(Priority::P2)
-                .set_pos((px + x, py + part.y))
+                .set_pos((px + x, py + self.y_offset + part.y))
                 .set_hflip(part.hflip ^ (self.dx < 0))
                 .set_vflip(part.vflip)
                 .show(frame);
@@ -104,6 +134,10 @@ impl Shot {
     /// drops it; bn6f likewise destroys the shot when its panel goes invalid.
     pub fn update(&mut self) -> bool {
         self.player.update();
+        if self.delay > 0 {
+            self.delay -= 1;
+            return true;
+        }
         self.ticks -= 1;
         if self.ticks == 0 {
             self.col += self.dx;
