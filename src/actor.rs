@@ -25,6 +25,8 @@ pub mod anim {
     pub const FLINCH: usize = 1;
     /// The pose held while being deleted (asm00_2.s:17808, 18173).
     pub const DELETED: usize = 2;
+    /// The Mettaur's hop between rows, its own index 2 (asm31.s:170580).
+    pub const HOP: usize = 2;
     pub const WARP_IN: usize = 3;
     pub const WARP_OUT: usize = 4;
 }
@@ -39,6 +41,11 @@ pub mod anim {
 const LEAVING_FRAMES: u8 = 3;
 const ARRIVING_FRAMES: u8 = 5;
 const RECOVERING_FRAMES: u8 = 4;
+/// A Mettaur's hop is three frames up and three down, landing in its idle
+/// pose, then a per-version cooldown of 0x1e frames in the first
+/// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
+const HOP_FRAMES: u8 = 6;
+const HOP_COOLDOWN: u8 = 0x1e;
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]
@@ -83,6 +90,16 @@ pub const THRUST: AttackSpec = AttackSpec {
     frames: 30,
     strike_at: 11,
     recover: 20,
+};
+/// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
+/// the shockwave spawned at the front panel when it reads 0x1b
+/// (sub_8109DD2, asm31.s:170721; sub_80C6CE4, 31563).
+pub const SWING: AttackSpec = AttackSpec {
+    windup: None,
+    anim: 1,
+    frames: 0x40,
+    strike_at: 0x40 - 0x1b + 1,
+    recover: 0,
 };
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery
@@ -143,6 +160,11 @@ enum Action {
     },
     /// Materialising on the panel just arrived at.
     Arriving {
+        ticks: u8,
+    },
+    /// Jumping to `to`, committed at the top of the hop.
+    Hopping {
+        to: (i32, i32),
         ticks: u8,
     },
     /// Standing again but still locked out of another move.
@@ -332,7 +354,7 @@ impl Actor {
     /// keeps the destination from breaking underneath the arrival.
     pub fn occupancy(&self) -> u32 {
         let mut mask = field::panel_bit(self.col, self.row);
-        if let Action::Leaving { to, .. } = self.action {
+        if let Action::Leaving { to, .. } | Action::Hopping { to, .. } = self.action {
             mask |= field::panel_bit(to.0, to.1);
         }
         mask
@@ -360,6 +382,24 @@ impl Actor {
             ticks: LEAVING_FRAMES,
         };
         self.player.play(anim::WARP_OUT);
+        true
+    }
+
+    /// Hop one panel, the way a Mettaur moves. Same refusals as `step`.
+    pub fn hop(&mut self, dx: i32, dy: i32) -> bool {
+        if self.is_busy() {
+            return false;
+        }
+        let (to_col, to_row) = (self.col + dx, self.row + dy);
+        let (min_col, max_col) = field::half(self.facing_left);
+        if !(min_col..=max_col).contains(&to_col) || !(1..=field::ROWS).contains(&to_row) {
+            return false;
+        }
+        self.action = Action::Hopping {
+            to: (to_col, to_row),
+            ticks: HOP_FRAMES,
+        };
+        self.player.play(anim::HOP);
         true
     }
 
@@ -437,6 +477,21 @@ impl Actor {
                 self.player.play(anim::WARP_IN);
                 Action::Arriving {
                     ticks: ARRIVING_FRAMES,
+                }
+            }
+            Action::Hopping { to, ticks } if ticks > 1 => {
+                if ticks == HOP_FRAMES / 2 + 1 {
+                    (self.col, self.row) = to;
+                }
+                Action::Hopping {
+                    to,
+                    ticks: ticks - 1,
+                }
+            }
+            Action::Hopping { .. } => {
+                self.player.play(anim::IDLE);
+                Action::Recovering {
+                    ticks: HOP_COOLDOWN,
                 }
             }
             Action::Arriving { ticks } if ticks > 1 => Action::Arriving { ticks: ticks - 1 },

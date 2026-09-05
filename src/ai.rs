@@ -15,6 +15,8 @@ use crate::field;
 const MOVE_PAUSE: u16 = 29;
 const ATTACK_PAUSE: u16 = 87;
 const DIVIDE_PAUSE: u16 = 150;
+/// The Mettaur re-arms its alignment check on a 0x1e counter (asm31.s:171029).
+const METTAUR_PAUSE: u16 = 0x1e;
 
 pub enum Style {
     /// Line up with the player, warp to the facing panel, strike the panel
@@ -24,6 +26,10 @@ pub enum Style {
     /// Stand and slash: the 0xA cross when the player is near the centre of
     /// their side, else the overhead slash on their front column.
     Divide,
+    /// Hop a row at a time toward the player's row, then swing the pickaxe
+    /// and send a shockwave down the row (sub_810A004, asm31.s:171029;
+    /// rule sub_810A21A, 171342). A first-version Mettaur never guards.
+    Mettaur,
 }
 
 /// The 0xA slash's base panel for the enemy side is (2,2) (dword_8103A04,
@@ -87,6 +93,15 @@ impl Ai {
                     me.attack(actor::THRUST);
                     self.pause = ATTACK_PAUSE;
                 }
+            }
+            Style::Mettaur => {
+                let (_, row) = me.panel();
+                if row != target.1 {
+                    me.hop(0, (target.1 - row).signum());
+                } else {
+                    me.attack(actor::SWING);
+                }
+                self.pause = METTAUR_PAUSE;
             }
             Style::Divide => {
                 let spec = if cross_targets(target).is_some() {

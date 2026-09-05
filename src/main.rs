@@ -31,6 +31,8 @@ static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
+static METTAUR: &[u8] = &Aligned(*include_bytes!("../assets/mettaur.bin")).0;
+static WAVE: &[u8] = &Aligned(*include_bytes!("../assets/wave.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -53,6 +55,10 @@ fn main(mut gba: agb::Gba) -> ! {
     // (asm31.s:141547), Colonel byte_8101244 0x4b0 (asm31.s:152949).
     const PROTOMAN_HP: u16 = 1800;
     const COLONEL_HP: u16 = 1200;
+    // The Mettaur's first-version record: HP 0x28, and its shockwave deals
+    // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
+    const METTAUR_HP: u16 = 40;
+    const WAVE_DAMAGE: u16 = 10;
     // MegaMan's own HP does come from the disassembly: byte_80210DD
     // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
     const PLAYER_HP: u16 = 100;
@@ -93,15 +99,21 @@ fn main(mut gba: agb::Gba) -> ! {
         death_frames: actor::ENEMY_DEATH_FRAMES,
     };
     let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, player);
+    // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
     let mut enemies = [
         Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
         Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
+        Actor::new(spr::Assets::new(METTAUR), 5, 3, true, enemy(METTAUR_HP)),
     ];
     // The deletion effect, sprite_839CCDC animation 0, spawned at the body
     // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
     // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
     let mut effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
-    let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
+    let mut ais = [
+        ai::Ai::new(ai::Style::Thrust),
+        ai::Ai::new(ai::Style::Divide),
+        ai::Ai::new(ai::Style::Mettaur),
+    ];
     // The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
     // the intro object, asm31.s:85280), then the enemy navis materialise one
     // at a time from a fade-in list, and only then does the fight state run
@@ -214,16 +226,25 @@ fn main(mut gba: agb::Gba) -> ! {
         // next frame, as with an object appended to bn6f's running update.
         let mut i = 0;
         while i < shots.len() {
-            // A shot on an enemy's panel flinches them and the shot is spent;
-            // MegaMan is not hit yet. Shots off the field are spent too.
+            // A hitbox hits whoever is on the panel it arrives on: the
+            // player's shots hit enemies and are spent, an enemy's wave hits
+            // the player and rolls on. Off the field, both are spent.
             let mut spent = !shots[i].update();
-            if !spent {
-                for enemy in enemies.iter_mut().filter(|e| e.is_targetable()) {
-                    if enemy.panel() == (shots[i].col, shots[i].row) {
-                        enemy.take_damage(shots[i].damage);
-                        spent = true;
+            if !spent && shots[i].just_arrived() {
+                let at = (shots[i].col, shots[i].row);
+                let mut hit = false;
+                if shots[i].from_player {
+                    for enemy in enemies.iter_mut().filter(|e| e.is_targetable()) {
+                        if enemy.panel() == at {
+                            enemy.take_damage(shots[i].damage);
+                            hit = true;
+                        }
                     }
+                } else if megaman.is_targetable() && megaman.panel() == at {
+                    megaman.take_damage(shots[i].damage);
+                    hit = true;
                 }
+                spent = hit && !shots[i].piercing;
             }
             if spent {
                 shots.swap_remove(i);
@@ -236,7 +257,7 @@ fn main(mut gba: agb::Gba) -> ! {
             Update::Strike { charged } => {
                 let (col, row) = megaman.front_panel();
                 let damage = if charged { CHARGED_DAMAGE } else { BUSTER_DAMAGE };
-                shots.push(Shot::new(
+                shots.push(Shot::buster(
                     spr::Assets::new(SHOTFX),
                     col,
                     row,
@@ -268,7 +289,7 @@ fn main(mut gba: agb::Gba) -> ! {
             // every eighth frame of the wind-up (asm31.s:142671, 157045);
             // Colonel's overhead slash borrows the same telegraph.
             let targets: Vec<(i32, i32)> = match ai.style() {
-                ai::Style::Thrust => alloc::vec![enemy.front_panel()],
+                ai::Style::Thrust | ai::Style::Mettaur => alloc::vec![enemy.front_panel()],
                 ai::Style::Divide => match cross_shape {
                     Some(shape) => shape
                         .iter()
@@ -280,7 +301,9 @@ fn main(mut gba: agb::Gba) -> ! {
                 },
             };
             match update {
-                Update::Winding { frame } if frame % 8 == 0 => {
+                Update::Winding { frame }
+                    if frame % 8 == 0 && !matches!(ai.style(), ai::Style::Mettaur) =>
+                {
                     for &(col, row) in &targets {
                         if (1..=field::COLS).contains(&col) && (1..=field::ROWS).contains(&row) {
                             panels.highlight(col, row, 0);
@@ -291,12 +314,25 @@ fn main(mut gba: agb::Gba) -> ! {
                     let at = field::panel_centre(enemy.panel().0, enemy.panel().1);
                     effects.push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90));
                 }
+                // The Mettaur's strike is a wave set rolling from the front
+                // panel; the swords land on their targets at once.
+                Update::Strike { .. } if matches!(ai.style(), ai::Style::Mettaur) => {
+                    let (col, row) = enemy.front_panel();
+                    shots.push(Shot::shockwave(
+                        spr::Assets::new(WAVE),
+                        col,
+                        row,
+                        enemy.facing_dx(),
+                        WAVE_DAMAGE,
+                    ));
+                }
                 Update::Strike { .. } if megaman.is_targetable() => {
                     if targets.contains(&megaman.panel()) {
                         let damage = match ai.style() {
                             ai::Style::Thrust => SWORD_DAMAGE,
                             ai::Style::Divide if cross_shape.is_some() => CROSS_DAMAGE,
                             ai::Style::Divide => DIVIDE_DAMAGE,
+                            ai::Style::Mettaur => WAVE_DAMAGE,
                         };
                         megaman.take_damage(damage);
                     }
