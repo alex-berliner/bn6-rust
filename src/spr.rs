@@ -25,7 +25,6 @@ pub struct Frame {
     pub oam_first: u16,
     pub oam_count: u16,
     pub duration: u8,
-    pub flags: u8,
 }
 
 pub struct Oam {
@@ -77,7 +76,6 @@ impl Assets {
             oam_first: self.u16_at(o + 4),
             oam_count: self.u16_at(o + 6),
             duration: self.data[o + 8],
-            flags: self.data[o + 9],
         }
     }
 
