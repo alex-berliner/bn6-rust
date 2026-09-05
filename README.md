@@ -19,12 +19,12 @@ Controls: d-pad warps between panels, B fires the buster (hold and release
 for a charged shot) as in the game, where A is the chip button; Select
 cracks the panel underfoot as a test aid.
 
-Debug builds (cargo run, capture.sh) add three test aids: the custom
-gauge starts full, so the first chip select opens right after the intro;
-L or R opens the chip window at any time without waiting for the gauge to
-refill; and the fight is against the Mettaur alone, so the hand and chips
-can be tried without the bosses. The release ROM keeps the game's lineup,
-slow gauge and no L/R shortcut.
+Any build without --release (cargo run, capture.sh, tools/web_rom.sh)
+adds three test aids: the custom gauge starts full, so the first chip
+select opens right after the intro; L or R opens the chip window at any
+time without waiting for the gauge to refill; and the fight is against
+the Mettaur alone, so the hand and chips can be tried without the bosses.
+The release ROM keeps the game's lineup, slow gauge and no L/R shortcut.
 
 ## What is implemented
 
@@ -132,13 +132,15 @@ pixel-count metric.
 
 ## Playing it in a browser
 
-tools/web_rom.sh builds the release ROM into web/bn6-rust.gba with a
-bootable header -- tools/gbafix.py writes the Nintendo logo and the
-complement checksum, since agb-gbafix does not build under this
-project's cargo config -- and leaves the commit in web/build.txt for the
-page. tools/serve.py serves web/ on 0.0.0.0 with no-cache headers;
-web/index.html runs the ROM in EmulatorJS's mGBA core with the game's
-button split on the keyboard.
+tools/web_rom.sh builds the ROM into web/bn6-rust.gba with a bootable
+header -- tools/gbafix.py writes the Nintendo logo and the complement
+checksum, since agb-gbafix does not build under this project's cargo
+config -- and leaves the commit in web/build.txt for the page. It builds
+without --release on purpose, so the browser run carries the test aids
+above (full gauge, L/R opening the chip window, the lone Mettaur), with
+L and R on the A and S keys. tools/serve.py serves web/ on 0.0.0.0 with
+no-cache headers; web/index.html runs the ROM in EmulatorJS's mGBA core
+with the game's button split on the keyboard.
 
 ## Layout
 
