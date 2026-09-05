@@ -117,9 +117,12 @@ pub const CROSS: AttackSpec = AttackSpec {
 const AIM_FRAMES: u8 = 5;
 /// The flinch timer is set to 0x17 (asm00_2.s:18309).
 const FLINCH_FRAMES: u8 = 23;
-/// After a hit the player flashes and cannot be hit again for 0x78 frames
-/// (sub_801A66C, asm00_2.s:22319). Whether enemies get the same grace is not
-/// verified, so they are constructed without it.
+/// After a hit the player flashes and cannot be hit again for 0x78 frames;
+/// the flash timer is seeded to 0x78 in the post-hit invulnerability handler
+/// (sub_801A5EE, asm00_2.s:22261) and counts down each frame, holding the
+/// OBJECT_FLAGS_FLASHING invisibility until it reaches zero (asm00_2.s:23893).
+/// Whether enemies get the same grace is not verified, so they are
+/// constructed without it.
 pub const PLAYER_MERCY_FRAMES: u8 = 120;
 
 /// What an actor starts with and how it dies.
