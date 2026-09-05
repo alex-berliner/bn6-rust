@@ -15,6 +15,7 @@ mod spr;
 
 use actor::{Actor, Update};
 use agb::display::object::Object;
+use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
 use shot::Shot;
@@ -267,7 +268,15 @@ fn main(mut gba: agb::Gba) -> ! {
         }
 
         let mut frame = gfx.frame();
-        bg.show(&mut frame);
+        let bg_id = bg.show(&mut frame);
+        // The deleted player pixelates and thins out over the field.
+        if let Some((mosaic, alpha)) = megaman.fade() {
+            frame.mosaic().set_object(mosaic, mosaic);
+            frame
+                .blend()
+                .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha))
+                .enable_background(bg_id);
+        }
         for s in &shots {
             s.show(&mut frame);
         }

@@ -11,7 +11,7 @@
 //! of a single machine rather than layers that can overlap.
 
 use agb::display::GraphicsFrame;
-use agb::display::object::Object;
+use agb::display::object::{GraphicsMode, Object};
 
 use crate::field;
 use crate::spr;
@@ -100,14 +100,14 @@ pub struct Profile {
     pub mercy: u8,
     /// Frames from zero HP to gone. An enemy navi blinks white for 0x5a
     /// frames (sub_8017122, asm00_2.s:17808); the player holds 0x15 then
-    /// fades over 0x20 (asm00_2.s:18173-18212), 55 in all with the two
-    /// one-frame phases. The fade is mosaic plus alpha, which the object layer
-    /// here cannot do yet, so the player stays white for the same span.
+    /// fades over 0x20 by mosaic and alpha (asm00_2.s:18173-18212), 55 in
+    /// all with the two one-frame phases.
     pub death_frames: u8,
 }
 
 pub const ENEMY_DEATH_FRAMES: u8 = 92;
 pub const PLAYER_DEATH_FRAMES: u8 = 55;
+const PLAYER_FADE_FRAMES: u8 = 0x20;
 /// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
 /// and the OAM builder keeps it so until the palette is reassigned
 /// (asm38.s:30060BE). Where that happens was not traced, so this length is a
@@ -222,6 +222,21 @@ impl Actor {
     /// Deleted and no longer on the field.
     pub fn is_defeated(&self) -> bool {
         matches!(self.action, Action::Gone)
+    }
+
+    /// The player's deletion fade, once it has begun: the mosaic block size
+    /// and a 0-16 opacity, both from the phase-3 timer `t` counting 0 to 0x20
+    /// -- mosaic `t >> 1`, alpha `0x10 - t` (asm00_2.s:18212).
+    pub fn fade(&self) -> Option<(u8, u8)> {
+        match self.action {
+            Action::Dying { ticks }
+                if self.death_frames == PLAYER_DEATH_FRAMES && ticks <= PLAYER_FADE_FRAMES =>
+            {
+                let t = PLAYER_FADE_FRAMES - ticks;
+                Some(((t >> 1).min(15), 0x10u8.saturating_sub(t)))
+            }
+            _ => None,
+        }
     }
 
     /// Still something that can be hit or aimed at: not dying, not gone.
@@ -463,7 +478,10 @@ impl Actor {
         if matches!(self.action, Action::Gone) {
             return;
         }
-        if self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
+        // The mercy blink stops mattering once the navi is being deleted; the
+        // die state's own white/visibility handling takes over.
+        let dying = matches!(self.action, Action::Dying { .. });
+        if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
@@ -476,11 +494,17 @@ impl Actor {
             } else {
                 part.x
             };
-            Object::new(part.sprite.clone())
+            let mut object = Object::new(part.sprite.clone());
+            object
                 .set_pos((px + x, py + part.y))
                 .set_hflip(part.hflip ^ self.facing_left)
-                .set_vflip(part.vflip)
-                .show(frame);
+                .set_vflip(part.vflip);
+            if self.fade().is_some() {
+                object
+                    .set_mosaic(true)
+                    .set_graphics_mode(GraphicsMode::AlphaBlending);
+            }
+            object.show(frame);
         }
     }
 }
