@@ -33,8 +33,10 @@ for a charged shot), B cracks the panel underfoot.
   game's digit font, a hit flash with a post-hit mercy window, and deletion:
   the death pose flashing white under the game's own effect until the navi
   is gone.
-- A virus: the Mettaur hops a row at a time to the player's row and sends
-  its shockwave rolling down it, at the game's HP, dwell and damage.
+- Viruses: the Mettaur hops a row at a time to the player's row and sends
+  its shockwave rolling down it; the Gunner's cursor walks the row until it
+  finds the player, locks, and a volley of panel-anchored shots follows, each
+  with its blinking warning. All at the game's HP, timings and damage.
 - First-pass enemy AI: ProtoMan lines up with the player, warps to the
   facing panel and thrusts; Colonel slashes a telegraphed shape around the
   centre of the player's side, or brings his sword down on the front

@@ -189,6 +189,11 @@ impl Player {
         &self.parts
     }
 
+    /// True once a one-shot animation has held its last frame to the end.
+    pub fn finished(&self) -> bool {
+        self.done
+    }
+
     /// Draw every part solid white, or normally again. Rebuilds the current
     /// frame in place without disturbing its timing.
     pub fn set_white(&mut self, on: bool) {

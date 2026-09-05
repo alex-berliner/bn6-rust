@@ -26,6 +26,8 @@ pub enum Style {
     /// Stand and slash: the 0xA cross when the player is near the centre of
     /// their side, else the overhead slash on their front column.
     Divide,
+    /// Driven by its own controller in `gunner`; nothing to do here.
+    Gunner,
     /// Hop a row at a time toward the player's row, then swing the pickaxe
     /// and send a shockwave down the row (sub_810A004, asm31.s:171029;
     /// rule sub_810A21A, 171342). A first-version Mettaur never guards.
@@ -96,6 +98,7 @@ impl Ai {
                     self.pause = ATTACK_PAUSE;
                 }
             }
+            Style::Gunner => {}
             Style::Mettaur => {
                 let (_, row) = me.panel();
                 if row != target.1 {

@@ -196,6 +196,9 @@ enum Action {
         ticks: u8,
     },
     Gone,
+    /// Holding a pose for as long as its controller says; the Gunner aims,
+    /// fires and recovers on its own timers rather than the attack machine.
+    Holding,
     /// Not on the field yet: the intro brings enemies in one at a time.
     Hidden,
     /// Materialising through mosaic and alpha at the start of the battle.
@@ -414,6 +417,19 @@ impl Actor {
         true
     }
 
+    /// Take the action slot and hold `anim` until `release`.
+    pub fn hold(&mut self, anim: usize) {
+        self.player.play(anim);
+        self.action = Action::Holding;
+    }
+
+    pub fn release(&mut self) {
+        if matches!(self.action, Action::Holding) {
+            self.player.play(anim::IDLE);
+            self.action = Action::Idle;
+        }
+    }
+
     /// Start an attack. Refused unless idle, since attacking takes the same
     /// `CurAction` slot as movement.
     pub fn attack(&mut self, spec: AttackSpec) -> bool {
@@ -581,6 +597,7 @@ impl Actor {
             }
             Action::Dying { .. } => Action::Gone,
             Action::Gone => Action::Gone,
+            Action::Holding => Action::Holding,
             Action::Hidden => Action::Hidden,
             Action::Appearing { ticks } if ticks > 1 => Action::Appearing { ticks: ticks - 1 },
             Action::Appearing { .. } => Action::Idle,

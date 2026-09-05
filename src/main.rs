@@ -9,6 +9,7 @@ extern crate alloc;
 mod actor;
 mod ai;
 mod field;
+mod gunner;
 mod hud;
 mod shot;
 mod spr;
@@ -33,6 +34,9 @@ static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
 static METTAUR: &[u8] = &Aligned(*include_bytes!("../assets/mettaur.bin")).0;
 static WAVE: &[u8] = &Aligned(*include_bytes!("../assets/wave.bin")).0;
+static GUNNER: &[u8] = &Aligned(*include_bytes!("../assets/gunner.bin")).0;
+static CURSOR: &[u8] = &Aligned(*include_bytes!("../assets/cursor.bin")).0;
+static IMPACT: &[u8] = &Aligned(*include_bytes!("../assets/impact.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -104,7 +108,10 @@ fn main(mut gba: agb::Gba) -> ! {
         Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
         Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
         Actor::new(spr::Assets::new(METTAUR), 5, 3, true, enemy(METTAUR_HP)),
+        Actor::new(spr::Assets::new(GUNNER), 6, 2, true, enemy(gunner::HP)),
     ];
+    let mut gunner_ctl = gunner::Gunner::new();
+    let mut impacts: Vec<gunner::Impact> = Vec::new();
     // The deletion effect, sprite_839CCDC animation 0, spawned at the body
     // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
     // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
@@ -113,6 +120,7 @@ fn main(mut gba: agb::Gba) -> ! {
         ai::Ai::new(ai::Style::Thrust),
         ai::Ai::new(ai::Style::Divide),
         ai::Ai::new(ai::Style::Mettaur),
+        ai::Ai::new(ai::Style::Gunner),
     ];
     // The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
     // the intro object, asm31.s:85280), then the enemy navis materialise one
@@ -287,6 +295,19 @@ fn main(mut gba: agb::Gba) -> ! {
             .zip(ais.iter_mut())
             .filter(|((_, e), _)| e.is_present())
         {
+            if matches!(ai.style(), ai::Style::Gunner) {
+                if !paused && megaman.is_targetable() {
+                    gunner_ctl.update(
+                        enemy,
+                        megaman.panel(),
+                        spr::Assets::new(CURSOR),
+                        &mut impacts,
+                        || spr::Assets::new(IMPACT),
+                    );
+                }
+                enemy.update();
+                continue;
+            }
             if !paused && !enemy.is_busy() && megaman.is_targetable() {
                 let blocked = all_held & !held[i];
                 // Decided as the attack begins, as the game does, and held for
@@ -301,7 +322,9 @@ fn main(mut gba: agb::Gba) -> ! {
             // every eighth frame of the wind-up (asm31.s:142671, 157045);
             // Colonel's overhead slash borrows the same telegraph.
             let targets: Vec<(i32, i32)> = match ai.style() {
-                ai::Style::Thrust | ai::Style::Mettaur => alloc::vec![enemy.front_panel()],
+                ai::Style::Thrust | ai::Style::Mettaur | ai::Style::Gunner => {
+                    alloc::vec![enemy.front_panel()]
+                }
                 ai::Style::Divide => match cross_shape {
                     Some(shape) => shape
                         .iter()
@@ -344,7 +367,7 @@ fn main(mut gba: agb::Gba) -> ! {
                             ai::Style::Thrust => SWORD_DAMAGE,
                             ai::Style::Divide if cross_shape.is_some() => CROSS_DAMAGE,
                             ai::Style::Divide => DIVIDE_DAMAGE,
-                            ai::Style::Mettaur => WAVE_DAMAGE,
+                            ai::Style::Mettaur | ai::Style::Gunner => WAVE_DAMAGE,
                         };
                         megaman.take_damage(damage);
                     }
@@ -352,6 +375,18 @@ fn main(mut gba: agb::Gba) -> ! {
                 _ => {}
             }
         }
+
+        // The Gunner's shots warn on their panels, then land.
+        impacts.retain_mut(|imp| match imp.update(&mut panels) {
+            Some(true) => {
+                if megaman.is_targetable() && megaman.panel() == (imp.col, imp.row) {
+                    megaman.take_damage(gunner::DAMAGE);
+                }
+                true
+            }
+            Some(false) => true,
+            None => false,
+        });
 
         effects.retain_mut(|(p, _, ticks)| {
             p.update();
@@ -411,6 +446,12 @@ fn main(mut gba: agb::Gba) -> ! {
         }
         for enemy in enemies.iter().filter(|e| e.is_present()) {
             enemy.show(&mut frame);
+        }
+        if let Some(cursor) = gunner_ctl.cursor() {
+            cursor.show(&mut frame);
+        }
+        for imp in &impacts {
+            imp.show(&mut frame);
         }
         for (p, (x, y), _) in &effects {
             for part in p.parts() {
