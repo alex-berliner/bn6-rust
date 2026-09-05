@@ -16,7 +16,9 @@
 //! asm03_0.s:4373: 0x540 bytes of picture and the chip palette into bank
 //! 10), the live OK box (sub_8028320, asm03_0.s:4176) and the picks stacked
 //! down the right-hand column (sub_80281D4 per row, asm03_0.s:3942). The
-//! chip name, element and damage the card also carries are not drawn yet.
+//! card's attack power is drawn with the HUD's digit objects over its
+//! damage row; the chip name and element the card also carries wait on
+//! the game's text font and element icons.
 //!
 //! The icons are bank 11 in the game's patch records, yet chip palettes
 //! differ wholesale and nothing in the battle code stages bank 11
@@ -42,6 +44,7 @@ use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 use agb::input::{Button, ButtonController, Tri};
 
 use crate::chips::{Chip, PICTURE_TILES, WILDCARD};
+use crate::hud::Hud;
 
 const MAGIC: &[u8; 4] = b"BNCW";
 const MAP_W: usize = 15;
@@ -70,6 +73,8 @@ const BLINK_SHIFT: u32 = 3;
 
 /// Indices into the asset's patch records, in byte_8027B2C's order.
 const REGION_PICTURE: usize = 1;
+/// The attack power's cells, (6,9) 3x2: digits right-aligned in the row.
+const REGION_DAMAGE: usize = 4;
 const fn region_slot_icon(slot: usize) -> usize {
     5 + 2 * slot
 }
@@ -181,7 +186,8 @@ pub struct Custom<'a> {
     slots: [Option<Offer>; OFFERED],
     /// Slot indices in pick order (eS20364C0+0x48).
     picks: Vec<usize>,
-    pictured: Option<u16>,
+    /// The chip on the card: its id and attack power.
+    pictured: Option<(u16, u16)>,
 }
 
 impl CustomAssets {
@@ -430,10 +436,10 @@ impl Custom<'_> {
         let Some(offer) = self.highlighted() else {
             return;
         };
-        if self.pictured == Some(offer.chip.id) {
+        if self.pictured.is_some_and(|(id, _)| id == offer.chip.id) {
             return;
         }
-        self.pictured = Some(offer.chip.id);
+        self.pictured = Some((offer.chip.id, offer.chip.power));
         gfx.set_background_palette(PICTURE_BANK, &read_palette(offer.chip.palette()));
         let picture = offer.chip.picture();
         let r = self.assets.regions[REGION_PICTURE];
@@ -562,10 +568,18 @@ impl Custom<'_> {
         self.picks.iter().filter_map(|&slot| self.slots[slot])
     }
 
-    pub fn show(&self, frame: &mut GraphicsFrame) {
+    pub fn show(&self, frame: &mut GraphicsFrame, hud: &Hud) {
         self.bg.show(frame);
         if !matches!(self.phase, Phase::Open) {
             return;
+        }
+        // The card's attack power, in the damage row's cells. The game
+        // renders it into those tiles (sub_802869E draws the row); these are
+        // the HUD's digit objects at the same place, and the chip name
+        // beside it waits on the text font.
+        if let Some((_, power)) = self.pictured.filter(|&(_, p)| p > 0) {
+            let r = self.assets.regions[REGION_DAMAGE];
+            hud.draw_number(frame, power, ((r.x + r.w) * 8) as i32, (r.y * 8) as i32);
         }
         // The origin is the slot's position less 3 in each axis
         // (sub_8028894, sub_80288D0, asm03_0.s:4843-4884: a slot sits at

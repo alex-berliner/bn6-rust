@@ -575,7 +575,7 @@ impl<'a> Battle<'a> {
         // fade darkens everything until the field is revealed.
         let window_id = self.shown.as_ref().map(|window| window.show(frame));
         if let Some(window) = &self.custom {
-            window.show(frame);
+            window.show(frame, self.hud);
         }
         if self.fade_out > 0 {
             let mut fade = frame.blend().darken(Num::from_raw(self.fade_out));
