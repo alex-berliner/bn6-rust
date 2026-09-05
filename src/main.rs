@@ -10,6 +10,7 @@ mod actor;
 mod ai;
 mod battle;
 mod custom;
+mod deck;
 mod field;
 mod gunner;
 mod hud;

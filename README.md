@@ -15,8 +15,9 @@ Needs a nightly toolchain (`rust-toolchain.toml` pins it), and mGBA to run.
     cargo build                                  # target/thumbv4t-none-eabi/debug/bn
     cargo run                                    # launches mgba-qt
 
-Controls: d-pad warps between panels, A fires the buster (hold and release
-for a charged shot), B cracks the panel underfoot.
+Controls: d-pad warps between panels, B fires the buster (hold and release
+for a charged shot) as in the game, where A is the chip button; Select
+cracks the panel underfoot as a test aid.
 
 ## What is implemented
 

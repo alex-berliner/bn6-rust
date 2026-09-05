@@ -299,19 +299,23 @@ impl<'a> Battle<'a> {
                 }
             }
         }
-        // B cracks the panel underfoot. Step off a cracked panel and it gives
-        // way, then comes back on its own after ten seconds.
-        if input.is_just_pressed(Button::B) {
+        // Select cracks the panel underfoot, a test aid with no counterpart
+        // in the game. Step off a cracked panel and it gives way, then comes
+        // back on its own after ten seconds.
+        if input.is_just_pressed(Button::Select) {
             let (col, row) = self.megaman.panel();
             self.panels.crack(col, row);
         }
-        // A fires on the press; holding it charges, and a release at full
-        // charge fires again, harder (sub_8012EBC, asm00_2.s:9059).
+        // B is the buster (pwrAtkRelated_readsFromJoypad_8012FC8,
+        // asm00_2.s:9332: JOYPAD_B sets the buster flag; A is the chip
+        // button, asm00_2.s:9492). It fires on the press; holding it
+        // charges, and a release at full charge fires again, harder
+        // (sub_8012EBC, asm00_2.s:9059).
         if !paused {
-            if input.is_just_pressed(Button::A) {
+            if input.is_just_pressed(Button::B) {
                 self.megaman.attack(actor::BUSTER);
             }
-            if input.is_pressed(Button::A) {
+            if input.is_pressed(Button::B) {
                 self.charge = self.charge.saturating_add(1);
             } else {
                 if self.charge >= CHARGE_FRAMES {
