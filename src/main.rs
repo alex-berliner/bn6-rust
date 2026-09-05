@@ -103,6 +103,18 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
     let mut cross_shape: Option<&[(i32, i32)]> = None;
     let mut shots: Vec<Shot> = Vec::new();
+    // The custom gauge: a u16 at BattleState+0x20 that the fight state adds
+    // 0xd to each frame, full at 0x4000 (sub_800855E, asm00_1.s:11100;
+    // accessors asm00_2.s:29821-29883). A speed word at +0x22 defaults to
+    // 0x20 but nothing reading it was found, so it is not applied. When full
+    // the battle pauses for about 60 frames of chimes and then opens chip
+    // selection (sub_8008840); that screen is not built, so for now the pause
+    // ends with the gauge cleared, as entering it does (asm03_0.s:540).
+    const GAUGE_STEP: u16 = 0xd;
+    const GAUGE_FULL: u16 = 0x4000;
+    const GAUGE_PAUSE: u16 = 60;
+    let mut gauge = 0u16;
+    let mut gauge_pause = 0u16;
 
     loop {
         input.update();
@@ -111,13 +123,28 @@ fn main(mut gba: agb::Gba) -> ! {
         // its results, which are not built yet, so here the field just holds.
         let over = megaman.is_defeated() || enemies.iter().all(|e| e.is_defeated());
 
+        // The gauge only runs while the fight does; a full gauge holds
+        // everything, including itself, until the chip-select hand-off.
+        if gauge_pause > 0 {
+            gauge_pause -= 1;
+            if gauge_pause == 0 {
+                gauge = 0;
+            }
+        } else if !over {
+            gauge = (gauge + GAUGE_STEP).min(GAUGE_FULL);
+            if gauge == GAUGE_FULL {
+                gauge_pause = GAUGE_PAUSE;
+            }
+        }
+        let paused = over || gauge_pause > 0;
+
         for (button, dx, dy) in [
             (Button::Right, 1, 0),
             (Button::Left, -1, 0),
             (Button::Down, 0, 1),
             (Button::Up, 0, -1),
         ] {
-            if input.is_just_pressed(button) && !over {
+            if input.is_just_pressed(button) && !paused {
                 megaman.step(dx, dy);
             }
         }
@@ -129,7 +156,7 @@ fn main(mut gba: agb::Gba) -> ! {
         }
         // A fires on the press; holding it charges, and a release at full
         // charge fires again, harder (sub_8012EBC, asm00_2.s:9059).
-        if !over {
+        if !paused {
             if input.is_just_pressed(Button::A) {
                 megaman.attack(actor::BUSTER);
             }
@@ -201,7 +228,7 @@ fn main(mut gba: agb::Gba) -> ! {
             .zip(ais.iter_mut())
             .filter(|(e, _)| !e.is_defeated())
         {
-            if !over && !enemy.is_busy() && megaman.is_targetable() {
+            if !paused && !enemy.is_busy() && megaman.is_targetable() {
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 cross_shape = ai::cross_targets(megaman.panel());
