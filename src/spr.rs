@@ -147,6 +147,10 @@ pub struct Player {
     frame_in_anim: usize,
     ticks_left: u8,
     done: bool,
+    /// The palette currently in VRAM and the index it came from. Frames of one
+    /// animation almost always share a palette, so this avoids reallocating it
+    /// on every frame change.
+    palette: Option<(u16, PaletteVramSingle)>,
     parts: Vec<Part>,
 }
 
@@ -158,6 +162,7 @@ impl Player {
             frame_in_anim: 0,
             ticks_left: 0,
             done: false,
+            palette: None,
             parts: Vec::new(),
         };
         p.load_frame();
@@ -203,10 +208,23 @@ impl Player {
         let (first, _) = self.assets.anim(self.anim);
         let frame = self.assets.frame(first + self.frame_in_anim);
         let tiles = self.assets.gfx(frame.gfx as usize);
-        let palette = PaletteVramSingle::try_allocate_new(&self.assets.palette(frame.pal as usize))
-            .expect("sprite palette should fit in vram");
-
+        // The outgoing sprites hold the only other references to the previous
+        // palette, so they go first; otherwise its slot is still occupied when
+        // a differently-paletted frame tries to allocate.
         self.parts.clear();
+
+        let palette = match &self.palette {
+            Some((index, palette)) if *index == frame.pal => palette.clone(),
+            _ => {
+                self.palette = None;
+                let palette =
+                    PaletteVramSingle::try_allocate_new(&self.assets.palette(frame.pal as usize))
+                        .expect("sprite palette should fit in vram");
+                self.palette = Some((frame.pal, palette.clone()));
+                palette
+            }
+        };
+
         for i in 0..frame.oam_count as usize {
             let e = self.assets.oam(frame.oam_first as usize + i);
             let (w, h) = e.size.to_tiles_width_height();
