@@ -114,6 +114,8 @@ enum Action {
 /// What [`Actor::update`] asks the caller to do this frame.
 pub enum Update {
     Nothing,
+    /// A frame of an attack pose before its strike, counted from 1.
+    Winding { frame: u8 },
     /// The second frame of `Attacking`: the caller resolves what the attack
     /// does -- spawn a shot, or hit the panel in front.
     Strike { charged: bool },
@@ -131,6 +133,8 @@ pub struct Actor {
     mercy: u8,
     invulnerable: u8,
     flash: u8,
+    /// Length of the attack pose in progress, for numbering its frames.
+    pose_len: u8,
 }
 
 impl Actor {
@@ -152,6 +156,7 @@ impl Actor {
             mercy,
             invulnerable: 0,
             flash: 0,
+            pose_len: 0,
         }
     }
 
@@ -248,6 +253,7 @@ impl Actor {
 
     fn begin(&mut self, spec: AttackSpec, charged: bool) {
         self.player.play(spec.anim);
+        self.pose_len = spec.frames;
         self.action = Action::Attacking {
             ticks: spec.frames,
             strike_tick: spec.frames + 1 - spec.strike_at,
@@ -319,6 +325,12 @@ impl Actor {
             } if ticks > 1 => {
                 if ticks == strike_tick {
                     update = Update::Strike { charged };
+                } else if ticks > strike_tick {
+                    // `ticks` counts down from the pose length; the frame just
+                    // played is the first once the counter has moved once.
+                    update = Update::Winding {
+                        frame: (self.pose_len - ticks) + 1,
+                    };
                 }
                 Action::Attacking {
                     ticks: ticks - 1,

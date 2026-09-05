@@ -11,6 +11,11 @@ Format (little-endian):
 
 Each tilemap variant is 15 GBA background entries (5x3 tiles for one panel)
 plus padding. Variant index is `6 * panel_type + 3 * side + (row - 1)`.
+
+After the panel variants come the two highlight overlays that sub_800C0BA
+draws for a one-shot panel flash (dword_86E0458 and dword_86E0478,
+asm/object.s:1154): each is a solid block of one tile in bank 4, with no
+side or row variants. They are variants HIGHLIGHT_FIRST and +1.
 """
 
 import os
@@ -18,7 +23,10 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from field_dump import TILE_BASE, load
+from bnasm import read_symbol
+from field_dump import DAT, TILE_BASE, load
+
+HIGHLIGHT_FIRST = 32
 
 
 def rebase(tilemap):
@@ -41,6 +49,9 @@ def rebase(tilemap):
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "field.bin"
     tiles, tilemap, pal = load()
+    assert len(tilemap) // 32 == HIGHLIGHT_FIRST, len(tilemap)
+    for sym in ("dword_86E0458", "dword_86E0478"):
+        tilemap += read_symbol(DAT, sym, max_bytes=32, through_labels=True)
     tilemap = rebase(tilemap)
 
     out = bytearray(struct.pack("<4sIIII", b"BNFD", 1, 0, 0, 0))

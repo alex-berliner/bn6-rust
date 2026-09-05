@@ -184,7 +184,18 @@ fn main(mut gba: agb::Gba) -> ! {
             if !over {
                 ai.update(enemy, megaman.panel());
             }
-            if !matches!(enemy.update(), Update::Strike { .. }) || megaman.is_defeated() {
+            let update = enemy.update();
+            // Colonel's 0xA slash lights its target panels every eighth frame
+            // of the wind-up (asm31.s:157045-157076); the overhead slash is
+            // given the same telegraph on its column so it can be read.
+            if let (ai::Style::Divide, Update::Winding { frame }) = (ai.style(), &update) {
+                if frame % 8 == 0 {
+                    for row in 1..=field::ROWS {
+                        panels.highlight(field::half(false).1, row, 0);
+                    }
+                }
+            }
+            if !matches!(update, Update::Strike { .. }) || megaman.is_defeated() {
                 continue;
             }
             // ProtoMan's thrust lands on the panel in front. Colonel's slash
@@ -207,7 +218,10 @@ fn main(mut gba: agb::Gba) -> ! {
             .fold(megaman.occupancy(), |m, e| m | e.occupancy());
         panels.update(occupied);
         for (col, row) in field::panels_in(panels.take_dirty()) {
-            field.draw_panel(&mut bg, col, row, panels.animation(col, row));
+            match panels.flashing(col, row) {
+                Some(which) => field.draw_highlight(&mut bg, col, row, which),
+                None => field.draw_panel(&mut bg, col, row, panels.animation(col, row)),
+            }
         }
 
         let mut frame = gfx.frame();

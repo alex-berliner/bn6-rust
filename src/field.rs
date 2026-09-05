@@ -31,6 +31,11 @@ pub const PANEL_CRACKED: usize = 3;
 #[allow(dead_code)]
 pub const PANEL_POISON: usize = 4;
 
+/// The two highlight overlays follow the panel variants in the tilemap: a
+/// solid block of one tile each, drawn over a panel for a single frame when
+/// something asks for a flash (sub_800C0BA, asm/object.s:1121).
+const HIGHLIGHT_FIRST: usize = 32;
+
 pub struct Field {
     tiles: TileSet,
     tilemap: &'static [u8],
@@ -90,13 +95,21 @@ impl Field {
         bg
     }
 
+    /// Paint one of the highlight overlays over a panel.
+    pub fn draw_highlight(&self, bg: &mut RegularBackground, col: i32, row: i32, which: usize) {
+        self.draw_variant(bg, col, row, HIGHLIGHT_FIRST + which);
+    }
+
     /// Repaint one panel's 5x3 tile block, so a panel that changes state does
     /// not cost a redraw of the whole field.
     pub fn draw_panel(&self, bg: &mut RegularBackground, col: i32, row: i32, panel_type: usize) {
         // Columns 1-3 are the player's blue half, 4-6 the enemy's red. The two
         // sides share tiles and differ only by palette bank.
         let side = if col <= 3 { 1 } else { 0 };
-        let variant = 6 * panel_type + 3 * side + (row as usize - 1);
+        self.draw_variant(bg, col, row, 6 * panel_type + 3 * side + (row as usize - 1));
+    }
+
+    fn draw_variant(&self, bg: &mut RegularBackground, col: i32, row: i32, variant: usize) {
         let entries = &self.tilemap[variant * 32..variant * 32 + 30];
         let tile_x = TILE_COLS[col as usize];
         let tile_y = 3 * row + 6;
@@ -142,6 +155,10 @@ pub struct Panels {
     regen: [u16; PANEL_COUNT],
     occupied_last: u32,
     dirty: u32,
+    /// One-shot highlight requests, as PanelData's Unk_01: set for a frame,
+    /// drawn, cleared (asm/object.s:2552, 1732). Value is 1 + overlay index.
+    flash: [u8; PANEL_COUNT],
+    flash_last: [u8; PANEL_COUNT],
 }
 
 impl Panels {
@@ -152,6 +169,8 @@ impl Panels {
             regen: [REGEN_FRAMES; PANEL_COUNT],
             occupied_last: 0,
             dirty: 0,
+            flash: [0; PANEL_COUNT],
+            flash_last: [0; PANEL_COUNT],
         }
     }
 
@@ -181,11 +200,30 @@ impl Panels {
         self.set(col, row, next);
     }
 
+    /// Ask for a panel to draw as highlight overlay `which` this frame only.
+    pub fn highlight(&mut self, col: i32, row: i32, which: usize) {
+        self.flash[index(col, row)] = 1 + which as u8;
+    }
+
+    /// The overlay a panel should draw this frame instead of itself, if any.
+    pub fn flashing(&self, col: i32, row: i32) -> Option<usize> {
+        match self.flash_last[index(col, row)] {
+            0 => None,
+            f => Some(f as usize - 1),
+        }
+    }
+
     /// Advance one frame. `occupied` is a bitmask of panels a navi is standing
     /// on or has reserved as the target of a warp.
     pub fn update(&mut self, occupied: u32) {
         for i in 0..PANEL_COUNT {
             let bit = 1 << i;
+            // A flash lasts the one frame it was asked for; both edges dirty.
+            if self.flash[i] != self.flash_last[i] {
+                self.flash_last[i] = self.flash[i];
+                self.dirty |= bit;
+            }
+            self.flash[i] = 0;
             let mut anim = self.types[i];
             match self.types[i] as usize {
                 PANEL_HOLE => {}
