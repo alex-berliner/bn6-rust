@@ -38,9 +38,14 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut panels = field::Panels::new(field::PANEL_NORMAL);
     let mut bg = field.background(&panels);
 
-    let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false);
-    let mut protoman = Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true);
-    let mut colonel = Actor::new(spr::Assets::new(COLONEL), 6, 3, true);
+    // Real navi HP comes from the battle stats table, which is not extracted
+    // yet; these stand in so a fight can be played out.
+    const ENEMY_HP: u16 = 40;
+    let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, 1000);
+    let mut enemies = [
+        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP),
+        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP),
+    ];
     let mut shots: Vec<Shot> = Vec::new();
 
     loop {
@@ -75,9 +80,9 @@ fn main(mut gba: agb::Gba) -> ! {
             // MegaMan is not hit yet. Shots off the field are spent too.
             let mut spent = !shots[i].update();
             if !spent {
-                for enemy in [&mut protoman, &mut colonel] {
+                for enemy in enemies.iter_mut().filter(|e| !e.is_defeated()) {
                     if enemy.panel() == (shots[i].col, shots[i].row) {
-                        enemy.flinch();
+                        enemy.take_damage(shots[i].damage);
                         spent = true;
                     }
                 }
@@ -95,10 +100,15 @@ fn main(mut gba: agb::Gba) -> ! {
             // ahead with dx +1 and the buster's damage of 2.
             shots.push(Shot::new(spr::Assets::new(SHOTFX), col + 1, row, 1, 2));
         }
-        protoman.update();
-        colonel.update();
+        for enemy in enemies.iter_mut().filter(|e| !e.is_defeated()) {
+            enemy.update();
+        }
 
-        panels.update(megaman.occupancy() | protoman.occupancy() | colonel.occupancy());
+        let occupied = enemies
+            .iter()
+            .filter(|e| !e.is_defeated())
+            .fold(megaman.occupancy(), |m, e| m | e.occupancy());
+        panels.update(occupied);
         for (col, row) in field::panels_in(panels.take_dirty()) {
             field.draw_panel(&mut bg, col, row, panels.animation(col, row));
         }
@@ -109,8 +119,9 @@ fn main(mut gba: agb::Gba) -> ! {
             s.show(&mut frame);
         }
         megaman.show(&mut frame);
-        protoman.show(&mut frame);
-        colonel.show(&mut frame);
+        for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
+            enemy.show(&mut frame);
+        }
         frame.commit();
     }
 }

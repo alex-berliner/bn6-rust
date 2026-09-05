@@ -76,17 +76,39 @@ pub struct Actor {
     /// Enemies face left, which mirrors the composed frame.
     facing_left: bool,
     action: Action,
+    hp: u16,
 }
 
 impl Actor {
-    pub fn new(assets: spr::Assets, col: i32, row: i32, facing_left: bool) -> Self {
+    pub fn new(assets: spr::Assets, col: i32, row: i32, facing_left: bool, hp: u16) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
             col,
             row,
             facing_left,
             action: Action::Idle,
+            hp,
         }
+    }
+
+    /// Unused until the HP number is drawn on screen.
+    #[allow(dead_code)]
+    pub fn hp(&self) -> u16 {
+        self.hp
+    }
+
+    /// At zero HP bn6f sets the object's death flag and stops running it
+    /// (asm00_2.s:23769); here the caller simply drops the actor.
+    pub fn is_defeated(&self) -> bool {
+        self.hp == 0
+    }
+
+    /// Take a hit. bn6f subtracts the damage and enters the flinch state as
+    /// separate steps (object_subtractHP at asm00_2.s:23756, flinch at
+    /// asm00_2.s:18294), so a killing blow still plays the flinch.
+    pub fn take_damage(&mut self, amount: u16) {
+        self.hp = self.hp.saturating_sub(amount);
+        self.flinch();
     }
 
     /// The panel the actor currently stands on, 1-based. During a warp this is
