@@ -69,11 +69,24 @@ cracks the panel underfoot as a test aid.
   Start jumping to OK. The slots hold the first five of a thirty-chip
   deck shuffled by the game's secondary RNG (deck.rs), each with its icon
   and code letter; the card shows the highlighted chip's picture in its
-  own palette; A adds a chip if it fits the name-or-code rule, B undoes,
-  and A on OK takes the picks out of the deck as the hand. Chip records,
-  icons, pictures and palettes for thirteen chips are in assets/chips.bin
-  (tools/chip_export.py). Not yet: the chip name, element and damage on
-  the card, and using the hand in the fight.
+  own palette with its attack power over the damage row, drawn with the
+  HUD's digits where the game renders them into those tiles
+  (sub_802869E); A adds a chip if it fits the name-or-code rule, B
+  undoes, and A on OK takes the picks out of the deck as the hand. Chip
+  records, icons, pictures and palettes for thirteen chips are in
+  assets/chips.bin (tools/chip_export.py). Not yet: the chip name and
+  element the card also carries, which wait on the game's text font and
+  element icons.
+- The hand in the fight: A uses the next chip while the navi is free
+  (asm00_2.s:9492). The swords (attack family 0x13) hold animation 5 for
+  0x15 frames and land on the ninth on the panel, the column or the two
+  panels ahead (sub_80EB862, byte_80EBA18); MiniBomb (family 0x12)
+  throws from animation 6 and bursts three panels ahead with the Gunner
+  impact's animation, its flight a stand-in arc; Recov10 and Recov30
+  heal their names; Invisibl makes the navi untouchable for 0x68 frames
+  and Barrier absorbs 10. Cannon, HiCannon, AirShot and Vulcan fire a
+  buster shot at chip power until their own timings are in; AreaGrab is
+  consumed without effect until the field tracks panel ownership.
 
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
@@ -109,6 +122,16 @@ learned the hard way: mGBA ignores `xdotool key --window`, so the window has
 to be activated first; and a tight capture loop starves the emulator, so put
 a small sleep between grabs and look at the frames rather than trusting a
 pixel-count metric.
+
+## Playing it in a browser
+
+tools/web_rom.sh builds the release ROM into web/bn6-rust.gba with a
+bootable header -- tools/gbafix.py writes the Nintendo logo and the
+complement checksum, since agb-gbafix does not build under this
+project's cargo config -- and leaves the commit in web/build.txt for the
+page. tools/serve.py serves web/ on 0.0.0.0 with no-cache headers;
+web/index.html runs the ROM in EmulatorJS's mGBA core with the game's
+button split on the keyboard.
 
 ## Layout
 
