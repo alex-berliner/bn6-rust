@@ -1,3 +1,5 @@
 /target
 target/
 __pycache__/
+web/bn6-rust.gba
+web/build.txt
