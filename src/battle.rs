@@ -76,6 +76,72 @@ const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
 // the battle pauses for about 60 frames of chimes and then opens chip
 // selection (sub_8008840), which clears the gauge on entry (asm03_0.s:540).
 const GAUGE_STEP: u16 = 0xd;
+// Chips, by id in ChipDataArr_8021DA8 (data/ChipDataArr.s). The swords
+// (attack family 0x13, sub_80EB776, asm31.s:108924) hold animation 5 for
+// 0x15 frames with the hit when the timer reads 0xc -- the ninth frame --
+// and exit after five more (sub_80EB862, asm31.s:109041, 109407); their
+// shapes are the panel ahead, the column ahead, two panels ahead
+// (byte_80EBA18). MiniBomb (family 0x12, sub_80EB644, asm31.s:108790)
+// throws from animation 6 on the ninth frame of 0x15 and recovers five.
+const CHIP_SWORD: u16 = 71;
+const CHIP_WIDESWRD: u16 = 72;
+const CHIP_LONGSWRD: u16 = 73;
+const CHIP_MINIBOMB: u16 = 54;
+const CHIP_RECOV10: u16 = 154;
+const CHIP_RECOV30: u16 = 155;
+const CHIP_AREAGRAB: u16 = 163;
+const CHIP_INVISIBL: u16 = 177;
+const CHIP_BARRIER: u16 = 178;
+const SWORD: actor::AttackSpec = actor::AttackSpec {
+    windup: None,
+    anim: 5,
+    frames: 0x15,
+    strike_at: 9,
+    recover: 5,
+};
+const THROW: actor::AttackSpec = actor::AttackSpec {
+    windup: None,
+    anim: 6,
+    frames: 0x15,
+    strike_at: 9,
+    recover: 5,
+};
+/// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
+const RECOV_HP: [u16; 2] = [10, 30];
+/// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
+const INVISIBL_FRAMES: u16 = 0x68;
+/// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
+const BARRIER_HP: u16 = 10;
+/// MiniBomb lands three panels ahead, as in every game; its arc and flight
+/// time were not traced (the spawn is at the navi's height plus 0x30), so
+/// the flight is a stand-in: 40 frames along a parabola 48 pixels high.
+const BOMB_RANGE: i32 = 3;
+const BOMB_FLIGHT: u8 = 40;
+const BOMB_HEIGHT: i32 = 0x30;
+/// The blast's animation 0 in sprite 0x26 (the Gunner's impact) runs its
+/// five frames; held about as long as that takes.
+const BLAST_FRAMES: u8 = 30;
+
+/// A thrown MiniBomb in flight, drawn with the buster shot's sprite for
+/// want of the bomb's own, which was not identified.
+struct Bomb {
+    player: spr::Player,
+    from: (i32, i32),
+    target: (i32, i32),
+    damage: u16,
+    ticks: u8,
+}
+
+impl Bomb {
+    fn position(&self) -> (i32, i32) {
+        let (x0, y0) = field::panel_centre(self.from.0, self.from.1);
+        let (x1, y1) = field::panel_centre(self.target.0, self.target.1);
+        let t = self.ticks as i32;
+        let n = BOMB_FLIGHT as i32;
+        let lift = BOMB_HEIGHT * 4 * t * (n - t) / (n * n);
+        (x0 + (x1 - x0) * t / n, y0 + (y1 - y0) * t / n - lift)
+    }
+}
 const GAUGE_FULL: u16 = 0x4000;
 const GAUGE_PAUSE: u16 = 60;
 // After the last combatant on a side is gone the game's win or loss
@@ -93,8 +159,14 @@ pub struct Battle<'a> {
     custom: Option<Custom<'a>>,
     chips: &'a Chips,
     deck: Deck,
-    /// The picks from the last chip select, in order; not used yet.
+    /// The picks from the last chip select, in order (byte_20349C0), and
+    /// how many have been used (getCurChipInBattleHand_8010004 reads
+    /// hand + 2 + 2 * count; sub_800FC7C advances the count).
     hand: alloc::vec::Vec<Chip>,
+    hand_at: usize,
+    /// The chip whose attack pose is playing, for its strike.
+    chip_in_use: Option<Chip>,
+    bombs: Vec<Bomb>,
     panels: Panels,
     bg: RegularBackground,
     megaman: Actor,
@@ -196,6 +268,9 @@ impl<'a> Battle<'a> {
             chips,
             deck,
             hand: alloc::vec::Vec::new(),
+            hand_at: 0,
+            chip_in_use: None,
+            bombs: Vec::new(),
             panels,
             bg,
             megaman,
@@ -236,6 +311,7 @@ impl<'a> Battle<'a> {
             if window.update(input, gfx) {
                 // The picks leave the deck (sub_80293F8) and become the hand.
                 self.hand.clear();
+                self.hand_at = 0;
                 for offer in window.hand() {
                     self.deck.take(offer.deck_index);
                     self.hand.push(offer.chip);
@@ -352,7 +428,17 @@ impl<'a> Battle<'a> {
         // charges, and a release at full charge fires again, harder
         // (sub_8012EBC, asm00_2.s:9059).
         if !paused {
-            if input.is_just_pressed(Button::B) {
+            // A uses the next chip of the hand when the navi is free
+            // (asm00_2.s:9492-9518: AIData flag 4 when the hand has a chip).
+            if input.is_just_pressed(Button::A)
+                && !self.megaman.is_busy()
+                && self.hand_at < self.hand.len()
+            {
+                let chip = self.hand[self.hand_at];
+                self.hand_at += 1;
+                self.use_chip(chip);
+            }
+            if input.is_just_pressed(Button::B) && !self.megaman.is_busy() {
                 self.megaman.attack(actor::BUSTER);
             }
             if input.is_pressed(Button::B) {
@@ -410,6 +496,10 @@ impl<'a> Battle<'a> {
         }
 
         match self.megaman.update() {
+            Update::Strike { .. } if self.chip_in_use.is_some() => {
+                let chip = self.chip_in_use.take().unwrap();
+                self.chip_strike(chip);
+            }
             Update::Strike { charged } => {
                 let (col, row) = self.megaman.front_panel();
                 let damage = if charged {
@@ -546,6 +636,31 @@ impl<'a> Battle<'a> {
             *ticks -= 1;
             *ticks > 0
         });
+        // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
+        // the blast, setCollisionRegion(1), then sprite 0x26's animation 0).
+        let mut landed = Vec::new();
+        self.bombs.retain_mut(|b| {
+            b.player.update();
+            b.ticks += 1;
+            if b.ticks >= BOMB_FLIGHT {
+                landed.push((b.target, b.damage));
+                false
+            } else {
+                true
+            }
+        });
+        for ((col, row), damage) in landed {
+            for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                if enemy.panel() == (col, row) {
+                    enemy.take_damage(damage);
+                }
+            }
+            self.effects.push((
+                spr::Player::new(spr::Assets::new(IMPACT), 0),
+                field::panel_centre(col, row),
+                BLAST_FRAMES,
+            ));
+        }
 
         let occupied = self
             .enemies
@@ -568,6 +683,70 @@ impl<'a> Battle<'a> {
 
     /// Draw the frame for the state `update` has just advanced. The caller
     /// commits it.
+    /// Start a chip: the attack chips set their pose and strike later; the
+    /// rest take effect at once. Ids the fight cannot use yet are consumed
+    /// without effect.
+    fn use_chip(&mut self, chip: Chip) {
+        match chip.id {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(SWORD);
+            }
+            CHIP_MINIBOMB => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(THROW);
+            }
+            CHIP_RECOV10 => self.megaman.heal(RECOV_HP[0]),
+            CHIP_RECOV30 => self.megaman.heal(RECOV_HP[1]),
+            CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
+            CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
+            // AreaGrab needs per-panel ownership, which the field does not
+            // track yet; the shot chips wait on their own timings. Both are
+            // stand-ins for now: nothing, and a buster shot at chip power.
+            CHIP_AREAGRAB => {}
+            _ => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(actor::BUSTER);
+            }
+        }
+    }
+
+    /// The chip's hit, on the frame its pose delivers it.
+    fn chip_strike(&mut self, chip: Chip) {
+        let (col, row) = self.megaman.panel();
+        let dx = self.megaman.facing_dx();
+        match chip.id {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD => {
+                let mut panels: Vec<(i32, i32)> = Vec::new();
+                match chip.id {
+                    CHIP_WIDESWRD => panels.extend((1..=field::ROWS).map(|r| (col + dx, r))),
+                    CHIP_LONGSWRD => panels.extend([(col + dx, row), (col + 2 * dx, row)]),
+                    _ => panels.push((col + dx, row)),
+                }
+                for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                    if panels.contains(&enemy.panel()) {
+                        enemy.take_damage(chip.power);
+                    }
+                }
+            }
+            CHIP_MINIBOMB => {
+                let target = ((col + BOMB_RANGE * dx).clamp(1, field::COLS), row);
+                self.bombs.push(Bomb {
+                    player: spr::Player::new(spr::Assets::new(SHOTFX), 0),
+                    from: (col, row),
+                    target,
+                    damage: chip.power,
+                    ticks: 0,
+                });
+            }
+            _ => {
+                let (fc, fr) = self.megaman.front_panel();
+                self.shots
+                    .push(Shot::buster(spr::Assets::new(SHOTFX), fc, fr, dx, chip.power));
+            }
+        }
+    }
+
     pub fn draw(&mut self, frame: &mut GraphicsFrame) {
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
@@ -626,6 +805,17 @@ impl<'a> Battle<'a> {
         }
         for imp in &self.impacts {
             imp.show(frame);
+        }
+        for b in &self.bombs {
+            let (x, y) = b.position();
+            for part in b.player.parts() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
         }
         for (p, (x, y), _) in &self.effects {
             for part in p.parts() {

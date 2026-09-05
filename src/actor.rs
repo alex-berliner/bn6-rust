@@ -235,8 +235,15 @@ pub struct Actor {
     /// Frames of post-hit invulnerability this actor gets, and how many remain.
     mercy: u8,
     death_frames: u8,
+    max_hp: u16,
     invulnerable: u8,
     flash: u8,
+    /// Frames left of Invisibl: OBJECT_FLAGS_INVIS with FlashingInvisTimer
+    /// (sub_8010474, asm00_2.s:3288), during which nothing lands.
+    invisible: u16,
+    /// A Barrier chip's remaining HP (sub_801A7CC, asm00_2.s:22529): hits
+    /// are taken off it, and it breaks at zero (sub_801A802, :22566).
+    barrier: u16,
     /// Hits that landed, counted for the busting level: the game bumps its
     /// per-alliance counter 3 on each entry into the flinch state
     /// (asm00_2.s:18308 and its siblings).
@@ -260,10 +267,13 @@ impl Actor {
             facing_left,
             action: Action::Idle,
             hp: profile.hp,
+            max_hp: profile.hp,
             mercy: profile.mercy,
             death_frames: profile.death_frames,
             invulnerable: 0,
             flash: 0,
+            invisible: 0,
+            barrier: 0,
             hits_taken: 0,
             pose_len: 0,
         }
@@ -309,12 +319,28 @@ impl Actor {
         }
     }
 
-    /// Still something that can be hit or aimed at: on the field, not dying.
+    /// Still something that can be hit or aimed at: on the field, not dying,
+    /// not invisible.
     pub fn is_targetable(&self) -> bool {
-        !matches!(
-            self.action,
-            Action::Dying { .. } | Action::Gone | Action::Hidden | Action::Appearing { .. }
-        )
+        self.invisible == 0
+            && !matches!(
+                self.action,
+                Action::Dying { .. } | Action::Gone | Action::Hidden | Action::Appearing { .. }
+            )
+    }
+
+    /// Recov: object_addHP (sub_800E2FC, object.s:4684), capped at the
+    /// starting HP.
+    pub fn heal(&mut self, amount: u16) {
+        self.hp = (self.hp + amount).min(self.max_hp);
+    }
+
+    pub fn set_invisible(&mut self, frames: u16) {
+        self.invisible = frames;
+    }
+
+    pub fn set_barrier(&mut self, hp: u16) {
+        self.barrier = hp;
     }
 
     /// On the field in some form, so drawn and given an HP number.
@@ -341,7 +367,11 @@ impl Actor {
     /// Returns false when the hit was ignored for landing inside the mercy
     /// window of a previous one.
     pub fn take_damage(&mut self, amount: u16) -> bool {
-        if self.invulnerable > 0 {
+        if self.invulnerable > 0 || self.invisible > 0 {
+            return false;
+        }
+        if self.barrier > 0 {
+            self.barrier = self.barrier.saturating_sub(amount);
             return false;
         }
         self.hp = self.hp.saturating_sub(amount);
@@ -505,6 +535,7 @@ impl Actor {
     }
 
     pub fn update(&mut self) -> Update {
+        self.invisible = self.invisible.saturating_sub(1);
         self.player.update();
         self.invulnerable = self.invulnerable.saturating_sub(1);
         if self.flash > 0 {
@@ -638,6 +669,11 @@ impl Actor {
         // die state's own white/visibility handling takes over.
         let dying = matches!(self.action, Action::Dying { .. });
         if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
+            return;
+        }
+        // Invisibl draws the navi every other frame; the game's exact
+        // flicker under OBJECT_FLAGS_INVIS was not traced.
+        if self.invisible > 0 && self.invisible % 2 == 1 {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
