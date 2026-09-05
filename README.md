@@ -61,6 +61,13 @@ for a charged shot), B cracks the panel underfoot.
 Where a value is not yet taken from the disassembly -- Colonel's pacing,
 some effect timings -- the code says so at the point of use.
 
+Not started: sound. The game's effects go through Nintendo's m4a driver
+(PlaySoundEffect queues m4a_SongNumStart; sound_MusicTable in data/dat37.s
+maps an id to a song header with a voice table and a track stream). The
+buster and deletion sounds are short sequences on synthesised voices, the
+hit and Gunner impact are PCM samples with a 16-byte header; playing them
+faithfully means a small m4a sequencer over agb's DMG channels and mixer.
+
 ## Asset pipeline
 
 `tools/` holds the extractors. All of them read straight from the submodule
