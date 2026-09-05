@@ -25,10 +25,6 @@ pub mod anim {
     pub const FLINCH: usize = 1;
     pub const WARP_IN: usize = 3;
     pub const WARP_OUT: usize = 4;
-    /// The navi's attack pose: MegaMan's buster fire (asm31.s:108536 sets
-    /// animation 0xe) and ProtoMan's sword thrust are both index 14. Colonel's
-    /// is not, so he gets no attack yet.
-    pub const ATTACK: usize = 14;
 }
 
 /// Frame counts taken from the move state machine, which runs one step per
@@ -41,10 +37,31 @@ pub mod anim {
 const LEAVING_FRAMES: u8 = 3;
 const ARRIVING_FRAMES: u8 = 5;
 const RECOVERING_FRAMES: u8 = 4;
-/// The buster's firing state runs five passes, ending once its frame counter
-/// clears 4 (asm31.s:108608). The sword reuses it; its own timing is not yet
-/// taken from the disassembly.
-const ATTACK_FRAMES: u8 = 5;
+/// One attack's shape: the pose to hold, for how long, and on which frame of
+/// it the hit lands.
+#[derive(Clone, Copy)]
+pub struct AttackSpec {
+    pub anim: usize,
+    pub frames: u8,
+    /// 1-based frame of the pose on which the strike is delivered.
+    pub strike_at: u8,
+}
+
+/// The buster: animation 14 for five passes, ending once its frame counter
+/// clears 4, with the shot spawned on the second (asm31.s:108536, 108547,
+/// 108608). ProtoMan's thrust reuses it; its own timing is not yet read.
+pub const BUSTER: AttackSpec = AttackSpec {
+    anim: 14,
+    frames: 5,
+    strike_at: 2,
+};
+/// Colonel's overhead slash: animation 0xc held for 0x28 frames, the hit
+/// spawned when the countdown reads 0x14 (asm31.s:157462, 157464-157479).
+pub const DIVIDE: AttackSpec = AttackSpec {
+    anim: 12,
+    frames: 40,
+    strike_at: 20,
+};
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
 const AIM_FRAMES: u8 = 5;
@@ -82,9 +99,10 @@ enum Action {
     Aiming {
         ticks: u8,
     },
-    /// Attacking; the strike lands on the second frame.
+    /// Attacking; the strike lands when `ticks` counts down to `strike_tick`.
     Attacking {
         ticks: u8,
+        strike_tick: u8,
         charged: bool,
     },
     /// Reeling from a hit.
@@ -218,19 +236,23 @@ impl Actor {
         true
     }
 
-    /// Start an attack: animation 14 held for five frames, with the strike on
-    /// the second (asm31.s:108536, 108547, 108608). Refused unless idle, since
-    /// attacking takes the same `CurAction` slot as movement.
-    pub fn attack(&mut self) -> bool {
+    /// Start an attack. Refused unless idle, since attacking takes the same
+    /// `CurAction` slot as movement.
+    pub fn attack(&mut self, spec: AttackSpec) -> bool {
         if !matches!(self.action, Action::Idle) {
             return false;
         }
-        self.player.play(anim::ATTACK);
-        self.action = Action::Attacking {
-            ticks: ATTACK_FRAMES,
-            charged: false,
-        };
+        self.begin(spec, false);
         true
+    }
+
+    fn begin(&mut self, spec: AttackSpec, charged: bool) {
+        self.player.play(spec.anim);
+        self.action = Action::Attacking {
+            ticks: spec.frames,
+            strike_tick: spec.frames + 1 - spec.strike_at,
+            charged,
+        };
     }
 
     /// Release a full charge: aim for five frames, then fire as normal with
@@ -287,20 +309,20 @@ impl Actor {
             Action::Recovering { .. } => Action::Idle,
             Action::Aiming { ticks } if ticks > 1 => Action::Aiming { ticks: ticks - 1 },
             Action::Aiming { .. } => {
-                self.player.play(anim::ATTACK);
-                Action::Attacking {
-                    ticks: ATTACK_FRAMES,
-                    charged: true,
-                }
+                self.begin(BUSTER, true);
+                self.action
             }
-            Action::Attacking { ticks, charged } if ticks > 1 => {
-                // bn6f spawns the shot when its firing counter equals 1, i.e.
-                // on the second of the five passes (asm31.s:108547 'cmp r0, #1').
-                if ticks == ATTACK_FRAMES - 1 {
+            Action::Attacking {
+                ticks,
+                strike_tick,
+                charged,
+            } if ticks > 1 => {
+                if ticks == strike_tick {
                     update = Update::Strike { charged };
                 }
                 Action::Attacking {
                     ticks: ticks - 1,
+                    strike_tick,
                     charged,
                 }
             }

@@ -53,8 +53,12 @@ fn main(mut gba: agb::Gba) -> ! {
     // MegaMan's own HP does come from the disassembly: byte_80210DD
     // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
     const PLAYER_HP: u16 = 100;
-    // ProtoMan's sword damage is a placeholder too.
+    // ProtoMan's sword damage is a placeholder too. Colonel's attacks each
+    // draw from one of five damage rows (asm31.s:153623, 80/100/50/30/150 in
+    // the first version column); which row the overhead slash uses is not
+    // mapped, so the first stands in.
     const SWORD_DAMAGE: u16 = 20;
+    const DIVIDE_DAMAGE: u16 = 80;
     // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
     // and a charged shot is (Attack + 1) * 10 (asm00_2.s:5988), at Attack 1.
     const BUSTER_DAMAGE: u16 = 2;
@@ -84,8 +88,7 @@ fn main(mut gba: agb::Gba) -> ! {
         Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP, 0),
         Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP, 0),
     ];
-    // Only ProtoMan acts: his attack animation is verified, Colonel's is not.
-    let mut protoman_ai = ai::Ai::new();
+    let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
     let mut shots: Vec<Shot> = Vec::new();
 
     loop {
@@ -115,7 +118,7 @@ fn main(mut gba: agb::Gba) -> ! {
         // charge fires again, harder (sub_8012EBC, asm00_2.s:9059).
         if !over {
             if input.is_just_pressed(Button::A) {
-                megaman.attack();
+                megaman.attack(actor::BUSTER);
             }
             if input.is_pressed(Button::A) {
                 charge = charge.saturating_add(1);
@@ -173,20 +176,28 @@ fn main(mut gba: agb::Gba) -> ! {
                 damage,
             ));
         }
-        for (i, enemy) in enemies
+        for (enemy, ai) in enemies
             .iter_mut()
-            .enumerate()
-            .filter(|(_, e)| !e.is_defeated())
+            .zip(ais.iter_mut())
+            .filter(|(e, _)| !e.is_defeated())
         {
-            if i == 0 && !over {
-                protoman_ai.update(enemy, megaman.panel());
+            if !over {
+                ai.update(enemy, megaman.panel());
             }
-            // A sword lands on the panel in front; it hits whoever stands there.
-            if matches!(enemy.update(), Update::Strike { .. })
-                && !megaman.is_defeated()
-                && megaman.panel() == enemy.front_panel()
-            {
-                megaman.take_damage(SWORD_DAMAGE);
+            if !matches!(enemy.update(), Update::Strike { .. }) || megaman.is_defeated() {
+                continue;
+            }
+            // ProtoMan's thrust lands on the panel in front. Colonel's slash
+            // comes down on the whole of the player's front column: rows 1-3
+            // of the column dword_8103B00 names for his side (asm31.s:158257).
+            match ai.style() {
+                ai::Style::Thrust if megaman.panel() == enemy.front_panel() => {
+                    megaman.take_damage(SWORD_DAMAGE);
+                }
+                ai::Style::Divide if megaman.panel().0 == field::half(false).1 => {
+                    megaman.take_damage(DIVIDE_DAMAGE);
+                }
+                _ => {}
             }
         }
 
