@@ -28,7 +28,9 @@ for a charged shot), B cracks the panel underfoot.
   panel at the midpoint of the dissolve.
 - The buster and charge shot, with the game's damage formulas, a travelling
   shot that hops one panel every two frames, flinching, HP drawn with the
-  game's digit font, and a hit flash with a post-hit mercy window.
+  game's digit font, a hit flash with a post-hit mercy window, and deletion:
+  the death pose flashing white under the game's own effect until the navi
+  is gone.
 - First-pass enemy AI: ProtoMan lines up with the player, warps to the
   facing panel and thrusts; Colonel slashes a telegraphed shape around the
   centre of the player's side, or brings his sword down on the front

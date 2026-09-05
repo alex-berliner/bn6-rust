@@ -23,6 +23,8 @@ use crate::spr;
 pub mod anim {
     pub const IDLE: usize = 0;
     pub const FLINCH: usize = 1;
+    /// The pose held while being deleted (asm00_2.s:17808, 18173).
+    pub const DELETED: usize = 2;
     pub const WARP_IN: usize = 3;
     pub const WARP_OUT: usize = 4;
 }
@@ -89,6 +91,23 @@ const FLINCH_FRAMES: u8 = 23;
 /// (sub_801A66C, asm00_2.s:22319). Whether enemies get the same grace is not
 /// verified, so they are constructed without it.
 pub const PLAYER_MERCY_FRAMES: u8 = 120;
+
+/// What an actor starts with and how it dies.
+#[derive(Clone, Copy)]
+pub struct Profile {
+    pub hp: u16,
+    /// Post-hit invulnerability, if any.
+    pub mercy: u8,
+    /// Frames from zero HP to gone. An enemy navi blinks white for 0x5a
+    /// frames (sub_8017122, asm00_2.s:17808); the player holds 0x15 then
+    /// fades over 0x20 (asm00_2.s:18173-18212), 55 in all with the two
+    /// one-frame phases. The fade is mosaic plus alpha, which the object layer
+    /// here cannot do yet, so the player stays white for the same span.
+    pub death_frames: u8,
+}
+
+pub const ENEMY_DEATH_FRAMES: u8 = 92;
+pub const PLAYER_DEATH_FRAMES: u8 = 55;
 /// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
 /// and the OAM builder keeps it so until the palette is reassigned
 /// (asm38.s:30060BE). Where that happens was not traced, so this length is a
@@ -133,6 +152,11 @@ enum Action {
     Flinching {
         ticks: u8,
     },
+    /// Being deleted: the pose holds while the body flashes, then it is gone.
+    Dying {
+        ticks: u8,
+    },
+    Gone,
 }
 
 /// What [`Actor::update`] asks the caller to do this frame.
@@ -140,6 +164,8 @@ pub enum Update {
     Nothing,
     /// A frame of an attack pose before its strike, counted from 1.
     Winding { frame: u8 },
+    /// HP just reached zero: the caller spawns the deletion effect here.
+    Died,
     /// The second frame of `Attacking`: the caller resolves what the attack
     /// does -- spawn a shot, or hit the panel in front.
     Strike { charged: bool },
@@ -155,6 +181,7 @@ pub struct Actor {
     hp: u16,
     /// Frames of post-hit invulnerability this actor gets, and how many remain.
     mercy: u8,
+    death_frames: u8,
     invulnerable: u8,
     flash: u8,
     /// Length of the attack pose in progress, for numbering its frames.
@@ -162,22 +189,16 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn new(
-        assets: spr::Assets,
-        col: i32,
-        row: i32,
-        facing_left: bool,
-        hp: u16,
-        mercy: u8,
-    ) -> Self {
+    pub fn new(assets: spr::Assets, col: i32, row: i32, facing_left: bool, profile: Profile) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
             col,
             row,
             facing_left,
             action: Action::Idle,
-            hp,
-            mercy,
+            hp: profile.hp,
+            mercy: profile.mercy,
+            death_frames: profile.death_frames,
             invulnerable: 0,
             flash: 0,
             pose_len: 0,
@@ -198,10 +219,14 @@ impl Actor {
         self.hp
     }
 
-    /// At zero HP bn6f sets the object's death flag and stops running it
-    /// (asm00_2.s:23769); here the caller simply drops the actor.
+    /// Deleted and no longer on the field.
     pub fn is_defeated(&self) -> bool {
-        self.hp == 0
+        matches!(self.action, Action::Gone)
+    }
+
+    /// Still something that can be hit or aimed at: not dying, not gone.
+    pub fn is_targetable(&self) -> bool {
+        !matches!(self.action, Action::Dying { .. } | Action::Gone)
     }
 
     /// Take a hit. bn6f subtracts the damage and enters the flinch state as
@@ -218,7 +243,16 @@ impl Actor {
         self.invulnerable = self.mercy;
         self.flash = FLASH_FRAMES;
         self.player.set_white(true);
-        self.flinch();
+        if self.hp == 0 {
+            // HP zero sets the death flag and the die state takes over the
+            // action slot the same frame (asm00_2.s:23769, 23782-23800).
+            self.player.play(anim::DELETED);
+            self.action = Action::Dying {
+                ticks: self.death_frames,
+            };
+        } else {
+            self.flinch();
+        }
         true
     }
 
@@ -323,7 +357,7 @@ impl Actor {
         self.invulnerable = self.invulnerable.saturating_sub(1);
         if self.flash > 0 {
             self.flash -= 1;
-            if self.flash == 0 {
+            if self.flash == 0 && !matches!(self.action, Action::Dying { .. }) {
                 self.player.set_white(false);
             }
         }
@@ -403,6 +437,20 @@ impl Actor {
                 self.player.play(anim::IDLE);
                 Action::Idle
             }
+            Action::Dying { ticks } if ticks == self.death_frames => {
+                update = Update::Died;
+                Action::Dying { ticks: ticks - 1 }
+            }
+            Action::Dying { ticks } if ticks > 1 => {
+                // The enemy die state forces the white palette on every
+                // carry of timer >> 2, two frames in four (asm00_2.s:17808);
+                // the player's forces it every frame (asm00_2.s:18212).
+                let white = self.death_frames == PLAYER_DEATH_FRAMES || (ticks >> 2) & 1 == 0;
+                self.player.set_white(white);
+                Action::Dying { ticks: ticks - 1 }
+            }
+            Action::Dying { .. } => Action::Gone,
+            Action::Gone => Action::Gone,
         };
         update
     }
@@ -412,6 +460,9 @@ impl Actor {
         // (asm00_2.s:23893) and blinks; the game's exact cadence was not
         // traced, so this alternates two frames on, two off, and holds off
         // until the white flash has had its frames on screen.
+        if matches!(self.action, Action::Gone) {
+            return;
+        }
         if self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
             return;
         }

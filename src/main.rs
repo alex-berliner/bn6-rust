@@ -29,6 +29,7 @@ static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
 static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
+static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
@@ -76,18 +77,25 @@ fn main(mut gba: agb::Gba) -> ! {
     const GLOW_OFFSET: (i32, i32) = (16, -14);
     let mut glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
     let mut glow_state = 0usize;
-    let mut megaman = Actor::new(
-        spr::Assets::new(MEGAMAN),
-        2,
-        2,
-        false,
-        PLAYER_HP,
-        actor::PLAYER_MERCY_FRAMES,
-    );
+    let player = actor::Profile {
+        hp: PLAYER_HP,
+        mercy: actor::PLAYER_MERCY_FRAMES,
+        death_frames: actor::PLAYER_DEATH_FRAMES,
+    };
+    let enemy = actor::Profile {
+        hp: ENEMY_HP,
+        mercy: 0,
+        death_frames: actor::ENEMY_DEATH_FRAMES,
+    };
+    let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, player);
     let mut enemies = [
-        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, ENEMY_HP, 0),
-        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, ENEMY_HP, 0),
+        Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy),
+        Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy),
     ];
+    // The deletion effect, sprite_839CCDC animation 0, spawned at the body
+    // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
+    // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
+    let mut effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
     let mut ais = [ai::Ai::new(ai::Style::Thrust), ai::Ai::new(ai::Style::Divide)];
     let mut cross_shape: Option<&[(i32, i32)]> = None;
     let mut shots: Vec<Shot> = Vec::new();
@@ -152,7 +160,7 @@ fn main(mut gba: agb::Gba) -> ! {
             // MegaMan is not hit yet. Shots off the field are spent too.
             let mut spent = !shots[i].update();
             if !spent {
-                for enemy in enemies.iter_mut().filter(|e| !e.is_defeated()) {
+                for enemy in enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if enemy.panel() == (shots[i].col, shots[i].row) {
                         enemy.take_damage(shots[i].damage);
                         spent = true;
@@ -166,23 +174,30 @@ fn main(mut gba: agb::Gba) -> ! {
             }
         }
 
-        if let Update::Strike { charged } = megaman.update() {
-            let (col, row) = megaman.front_panel();
-            let damage = if charged { CHARGED_DAMAGE } else { BUSTER_DAMAGE };
-            shots.push(Shot::new(
-                spr::Assets::new(SHOTFX),
-                col,
-                row,
-                megaman.facing_dx(),
-                damage,
-            ));
+        match megaman.update() {
+            Update::Strike { charged } => {
+                let (col, row) = megaman.front_panel();
+                let damage = if charged { CHARGED_DAMAGE } else { BUSTER_DAMAGE };
+                shots.push(Shot::new(
+                    spr::Assets::new(SHOTFX),
+                    col,
+                    row,
+                    megaman.facing_dx(),
+                    damage,
+                ));
+            }
+            Update::Died => {
+                let at = field::panel_centre(megaman.panel().0, megaman.panel().1);
+                effects.push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90));
+            }
+            _ => {}
         }
         for (enemy, ai) in enemies
             .iter_mut()
             .zip(ais.iter_mut())
             .filter(|(e, _)| !e.is_defeated())
         {
-            if !over && !enemy.is_busy() {
+            if !over && !enemy.is_busy() && megaman.is_targetable() {
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 cross_shape = ai::cross_targets(megaman.panel());
@@ -216,7 +231,11 @@ fn main(mut gba: agb::Gba) -> ! {
                         }
                     }
                 }
-                Update::Strike { .. } if !megaman.is_defeated() => {
+                Update::Died => {
+                    let at = field::panel_centre(enemy.panel().0, enemy.panel().1);
+                    effects.push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90));
+                }
+                Update::Strike { .. } if megaman.is_targetable() => {
                     if targets.contains(&megaman.panel()) {
                         let damage = match ai.style() {
                             ai::Style::Thrust => SWORD_DAMAGE,
@@ -229,9 +248,15 @@ fn main(mut gba: agb::Gba) -> ! {
             }
         }
 
+        effects.retain_mut(|(p, _, ticks)| {
+            p.update();
+            *ticks -= 1;
+            *ticks > 0
+        });
+
         let occupied = enemies
             .iter()
-            .filter(|e| !e.is_defeated())
+            .filter(|e| e.is_targetable())
             .fold(megaman.occupancy(), |m, e| m | e.occupancy());
         panels.update(occupied);
         for (col, row) in field::panels_in(panels.take_dirty()) {
@@ -262,12 +287,21 @@ fn main(mut gba: agb::Gba) -> ! {
         for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
             enemy.show(&mut frame);
         }
+        for (p, (x, y), _) in &effects {
+            for part in p.parts() {
+                Object::new(part.sprite.clone())
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(&mut frame);
+            }
+        }
 
         // The number sits just under the panel the navi stands on, centred on
         // it, which is where the game puts each combatant's gauge.
         for actor in core::iter::once(&megaman)
             .chain(enemies.iter())
-            .filter(|a| !a.is_defeated())
+            .filter(|a| a.hp() > 0)
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
             let hp = actor.hp();
