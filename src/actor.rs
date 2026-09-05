@@ -91,8 +91,6 @@ impl Actor {
         }
     }
 
-    /// Unused until the HP number is drawn on screen.
-    #[allow(dead_code)]
     pub fn hp(&self) -> u16 {
         self.hp
     }

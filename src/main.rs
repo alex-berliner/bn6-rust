@@ -8,6 +8,7 @@ extern crate alloc;
 
 mod actor;
 mod field;
+mod hud;
 mod shot;
 mod spr;
 
@@ -25,6 +26,7 @@ static MEGAMAN: &[u8] = &Aligned(*include_bytes!("../assets/megaman.bin")).0;
 static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
 static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
+static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 
 #[agb::entry]
@@ -33,6 +35,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut input = ButtonController::new();
 
     let field = field::Field::new(FIELD);
+    let hud = hud::Hud::new(FONT);
     gfx.set_background_palettes(&field.palettes());
 
     let mut panels = field::Panels::new(field::PANEL_NORMAL);
@@ -121,6 +124,14 @@ fn main(mut gba: agb::Gba) -> ! {
         megaman.show(&mut frame);
         for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
             enemy.show(&mut frame);
+        }
+
+        // The number sits just under the panel the navi stands on, centred on
+        // it, which is where the game puts each combatant's gauge.
+        for actor in core::iter::once(&megaman).chain(enemies.iter().filter(|e| !e.is_defeated())) {
+            let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
+            let hp = actor.hp();
+            hud.draw_number(&mut frame, hp, px + hud.width(hp) / 2, py + 6);
         }
         frame.commit();
     }
