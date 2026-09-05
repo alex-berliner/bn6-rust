@@ -254,7 +254,11 @@ impl Shown {
         }
     }
 
-    pub fn show(&self, frame: &mut agb::display::GraphicsFrame) {
-        self.bg.show(frame);
+    /// Draw the window; the id is for including it in the screen fade.
+    pub fn show(
+        &self,
+        frame: &mut agb::display::GraphicsFrame,
+    ) -> agb::display::tiled::RegularBackgroundId {
+        self.bg.show(frame)
     }
 }

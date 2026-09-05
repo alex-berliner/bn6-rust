@@ -504,15 +504,14 @@ impl<'a> Battle<'a> {
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
         // fade darkens everything until the field is revealed.
-        if let Some(window) = &self.shown {
-            window.show(frame);
-        }
+        let window_id = self.shown.as_ref().map(|window| window.show(frame));
         if self.fade_out > 0 {
-            frame
-                .blend()
-                .darken(Num::from_raw(self.fade_out))
-                .enable_background(bg_id)
-                .enable_object();
+            let mut fade = frame.blend().darken(Num::from_raw(self.fade_out));
+            fade.enable_background(bg_id).enable_object();
+            // The window fades with everything else rather than vanishing.
+            if let Some(id) = window_id {
+                fade.enable_background(id);
+            }
         } else if self.intro_fade > 0 {
             let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2));
             frame
