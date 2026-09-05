@@ -45,6 +45,9 @@ const RECOVERING_FRAMES: u8 = 4;
 /// clears 4 (asm31.s:108608). The sword reuses it; its own timing is not yet
 /// taken from the disassembly.
 const ATTACK_FRAMES: u8 = 5;
+/// A charged shot first holds its aim for five frames before entering the
+/// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
+const AIM_FRAMES: u8 = 5;
 /// The flinch timer is set to 0x17 (asm00_2.s:18309).
 const FLINCH_FRAMES: u8 = 23;
 /// After a hit the player flashes and cannot be hit again for 0x78 frames
@@ -75,9 +78,14 @@ enum Action {
     Recovering {
         ticks: u8,
     },
+    /// Winding up a charged shot; the pose does not change.
+    Aiming {
+        ticks: u8,
+    },
     /// Attacking; the strike lands on the second frame.
     Attacking {
         ticks: u8,
+        charged: bool,
     },
     /// Reeling from a hit.
     Flinching {
@@ -90,7 +98,7 @@ pub enum Update {
     Nothing,
     /// The second frame of `Attacking`: the caller resolves what the attack
     /// does -- spawn a shot, or hit the panel in front.
-    Strike,
+    Strike { charged: bool },
 }
 
 pub struct Actor {
@@ -220,7 +228,18 @@ impl Actor {
         self.player.play(anim::ATTACK);
         self.action = Action::Attacking {
             ticks: ATTACK_FRAMES,
+            charged: false,
         };
+        true
+    }
+
+    /// Release a full charge: aim for five frames, then fire as normal with
+    /// the strike flagged charged so the caller scales the damage.
+    pub fn attack_charged(&mut self) -> bool {
+        if !matches!(self.action, Action::Idle) {
+            return false;
+        }
+        self.action = Action::Aiming { ticks: AIM_FRAMES };
         true
     }
 
@@ -266,13 +285,24 @@ impl Actor {
             }
             Action::Recovering { ticks } if ticks > 1 => Action::Recovering { ticks: ticks - 1 },
             Action::Recovering { .. } => Action::Idle,
-            Action::Attacking { ticks } if ticks > 1 => {
+            Action::Aiming { ticks } if ticks > 1 => Action::Aiming { ticks: ticks - 1 },
+            Action::Aiming { .. } => {
+                self.player.play(anim::ATTACK);
+                Action::Attacking {
+                    ticks: ATTACK_FRAMES,
+                    charged: true,
+                }
+            }
+            Action::Attacking { ticks, charged } if ticks > 1 => {
                 // bn6f spawns the shot when its firing counter equals 1, i.e.
                 // on the second of the five passes (asm31.s:108547 'cmp r0, #1').
                 if ticks == ATTACK_FRAMES - 1 {
-                    update = Update::Strike;
+                    update = Update::Strike { charged };
                 }
-                Action::Attacking { ticks: ticks - 1 }
+                Action::Attacking {
+                    ticks: ticks - 1,
+                    charged,
+                }
             }
             Action::Attacking { .. } => {
                 self.player.play(anim::IDLE);

@@ -47,6 +47,14 @@ fn main(mut gba: agb::Gba) -> ! {
     const ENEMY_HP: u16 = 40;
     // ProtoMan's sword damage is a placeholder too.
     const SWORD_DAMAGE: u16 = 20;
+    // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
+    // and a charged shot is (Attack + 1) * 10 (asm00_2.s:5988), at Attack 1.
+    const BUSTER_DAMAGE: u16 = 2;
+    const CHARGED_DAMAGE: u16 = 20;
+    // Frames of holding A before a release fires a charged shot: the buster's
+    // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
+    const CHARGE_FRAMES: u16 = 100;
+    let mut charge = 0u16;
     let mut megaman = Actor::new(
         spr::Assets::new(MEGAMAN),
         2,
@@ -72,7 +80,7 @@ fn main(mut gba: agb::Gba) -> ! {
             (Button::Down, 0, 1),
             (Button::Up, 0, -1),
         ] {
-            if input.is_just_pressed(button) {
+            if input.is_just_pressed(button) && !megaman.is_defeated() {
                 megaman.step(dx, dy);
             }
         }
@@ -82,9 +90,20 @@ fn main(mut gba: agb::Gba) -> ! {
             let (col, row) = megaman.panel();
             panels.crack(col, row);
         }
-        // A fires the buster; the shot is spawned from the attack state.
-        if input.is_just_pressed(Button::A) {
-            megaman.attack();
+        // A fires on the press; holding it charges, and a release at full
+        // charge fires again, harder (sub_8012EBC, asm00_2.s:9059).
+        if !megaman.is_defeated() {
+            if input.is_just_pressed(Button::A) {
+                megaman.attack();
+            }
+            if input.is_pressed(Button::A) {
+                charge = charge.saturating_add(1);
+            } else {
+                if charge >= CHARGE_FRAMES {
+                    megaman.attack_charged();
+                }
+                charge = 0;
+            }
         }
 
         // Shots tick before the actors, so one spawned this frame first moves
@@ -109,15 +128,15 @@ fn main(mut gba: agb::Gba) -> ! {
             }
         }
 
-        if matches!(megaman.update(), Update::Strike) {
-            // The buster's damage of 2 (sub_801265A: Attack 1, +1 for MegaMan).
+        if let Update::Strike { charged } = megaman.update() {
             let (col, row) = megaman.front_panel();
+            let damage = if charged { CHARGED_DAMAGE } else { BUSTER_DAMAGE };
             shots.push(Shot::new(
                 spr::Assets::new(SHOTFX),
                 col,
                 row,
                 megaman.facing_dx(),
-                2,
+                damage,
             ));
         }
         for (i, enemy) in enemies
@@ -129,7 +148,7 @@ fn main(mut gba: agb::Gba) -> ! {
                 protoman_ai.update(enemy, megaman.panel());
             }
             // A sword lands on the panel in front; it hits whoever stands there.
-            if matches!(enemy.update(), Update::Strike)
+            if matches!(enemy.update(), Update::Strike { .. })
                 && !megaman.is_defeated()
                 && megaman.panel() == enemy.front_panel()
             {
@@ -151,14 +170,19 @@ fn main(mut gba: agb::Gba) -> ! {
         for s in &shots {
             s.show(&mut frame);
         }
-        megaman.show(&mut frame);
+        if !megaman.is_defeated() {
+            megaman.show(&mut frame);
+        }
         for enemy in enemies.iter().filter(|e| !e.is_defeated()) {
             enemy.show(&mut frame);
         }
 
         // The number sits just under the panel the navi stands on, centred on
         // it, which is where the game puts each combatant's gauge.
-        for actor in core::iter::once(&megaman).chain(enemies.iter().filter(|e| !e.is_defeated())) {
+        for actor in core::iter::once(&megaman)
+            .chain(enemies.iter())
+            .filter(|a| !a.is_defeated())
+        {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
             let hp = actor.hp();
             hud.draw_number(&mut frame, hp, px + hud.width(hp) / 2, py + 6);
