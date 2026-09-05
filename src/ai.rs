@@ -70,7 +70,9 @@ impl Ai {
         &self.style
     }
 
-    pub fn update(&mut self, me: &mut Actor, target: (i32, i32)) {
+    /// `blocked` is the occupancy of every other object, which no move may
+    /// land on.
+    pub fn update(&mut self, me: &mut Actor, target: (i32, i32), blocked: u32) {
         if self.pause > 0 {
             self.pause -= 1;
             return;
@@ -84,10 +86,10 @@ impl Ai {
                 let (col, row) = me.panel();
                 let want = (field::half(true).0, target.1);
                 if row != want.1 {
-                    me.step(0, (want.1 - row).signum());
+                    me.step(0, (want.1 - row).signum(), blocked);
                     self.pause = MOVE_PAUSE;
                 } else if col != want.0 {
-                    me.step((want.0 - col).signum(), 0);
+                    me.step((want.0 - col).signum(), 0, blocked);
                     self.pause = MOVE_PAUSE;
                 } else {
                     me.attack(actor::THRUST);
@@ -97,7 +99,7 @@ impl Ai {
             Style::Mettaur => {
                 let (_, row) = me.panel();
                 if row != target.1 {
-                    me.hop(0, (target.1 - row).signum());
+                    me.hop(0, (target.1 - row).signum(), blocked);
                 } else {
                     me.attack(actor::SWING);
                 }

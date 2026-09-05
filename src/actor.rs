@@ -366,15 +366,27 @@ impl Actor {
         !matches!(self.action, Action::Idle)
     }
 
+    /// Whether a move to `(col, row)` is allowed: inside this actor's half,
+    /// and not a panel another object stands on or has reserved, which the
+    /// game's destination filter rejects by the panel's reserve and occupant
+    /// flags (byte_8012DD4 via object_getPanelsExceptCurrentFiltered,
+    /// asm00_2.s:8933; asm/object.s:2956).
+    fn can_move_to(&self, col: i32, row: i32, blocked: u32) -> bool {
+        let (min_col, max_col) = field::half(self.facing_left);
+        (min_col..=max_col).contains(&col)
+            && (1..=field::ROWS).contains(&row)
+            && blocked & field::panel_bit(col, row) == 0
+    }
+
     /// Start warping by one panel. Refused while the action slot is taken or
-    /// when the step would leave this actor's half of the field.
-    pub fn step(&mut self, dx: i32, dy: i32) -> bool {
+    /// when the step would leave this actor's half of the field or land on a
+    /// panel in `blocked`, the other objects' occupancy.
+    pub fn step(&mut self, dx: i32, dy: i32, blocked: u32) -> bool {
         if self.is_busy() {
             return false;
         }
         let (to_col, to_row) = (self.col + dx, self.row + dy);
-        let (min_col, max_col) = field::half(self.facing_left);
-        if !(min_col..=max_col).contains(&to_col) || !(1..=field::ROWS).contains(&to_row) {
+        if !self.can_move_to(to_col, to_row, blocked) {
             return false;
         }
         self.action = Action::Leaving {
@@ -386,13 +398,12 @@ impl Actor {
     }
 
     /// Hop one panel, the way a Mettaur moves. Same refusals as `step`.
-    pub fn hop(&mut self, dx: i32, dy: i32) -> bool {
+    pub fn hop(&mut self, dx: i32, dy: i32, blocked: u32) -> bool {
         if self.is_busy() {
             return false;
         }
         let (to_col, to_row) = (self.col + dx, self.row + dy);
-        let (min_col, max_col) = field::half(self.facing_left);
-        if !(min_col..=max_col).contains(&to_col) || !(1..=field::ROWS).contains(&to_row) {
+        if !self.can_move_to(to_col, to_row, blocked) {
             return false;
         }
         self.action = Action::Hopping {

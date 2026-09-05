@@ -184,7 +184,11 @@ fn main(mut gba: agb::Gba) -> ! {
             (Button::Up, 0, -1),
         ] {
             if input.is_just_pressed(button) && !paused {
-                megaman.step(dx, dy);
+                let blocked = enemies
+                    .iter()
+                    .filter(|e| e.is_present())
+                    .fold(0, |m, e| m | e.occupancy());
+                megaman.step(dx, dy, blocked);
             }
         }
         // B cracks the panel underfoot. Step off a cracked panel and it gives
@@ -271,16 +275,24 @@ fn main(mut gba: agb::Gba) -> ! {
             }
             _ => {}
         }
-        for (enemy, ai) in enemies
+        // Each enemy may not move onto a panel any other object holds.
+        let held: Vec<u32> = enemies
+            .iter()
+            .map(|e| if e.is_present() { e.occupancy() } else { 0 })
+            .collect();
+        let all_held = held.iter().fold(megaman.occupancy(), |m, h| m | h);
+        for ((i, enemy), ai) in enemies
             .iter_mut()
+            .enumerate()
             .zip(ais.iter_mut())
-            .filter(|(e, _)| e.is_present())
+            .filter(|((_, e), _)| e.is_present())
         {
             if !paused && !enemy.is_busy() && megaman.is_targetable() {
+                let blocked = all_held & !held[i];
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 cross_shape = ai::cross_targets(megaman.panel());
-                ai.update(enemy, megaman.panel());
+                ai.update(enemy, megaman.panel(), blocked);
             }
             let update = enemy.update();
             // ProtoMan's strike lands on the panel in front and Colonel's
