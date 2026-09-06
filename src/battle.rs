@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    PROTOMAN, SHOTFX, SWORD_SPR, WAVE,
+    PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -103,11 +103,21 @@ const CHIP_RECOV30: u16 = 155;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
 const CHIP_BARRIER: u16 = 178;
+// Against the real ROM (tools/chip_compare.py 47 demo-sword) the sword's
+// pose begins two frames after the cannon's would for the same press, so
+// two frames of the idle pose lead in; the pose is then on screen 0x15 + 1
+// frames (the frame that reads the end only queues the exit) plus the five
+// of recovery, its last frame held throughout, idle again 27 frames in.
+/// How long each slash arc animation runs, from its frame durations
+/// (6+4+3, 6+4+3, 4+3+3).
+const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
 const SWORD: actor::AttackSpec = actor::AttackSpec {
-    windup: None,
+    windup: Some((0, 2)),
     anim: 5,
-    frames: 0x15,
-    strike_at: 9,
+    frames: 0x15 + 1,
+    // The timer starts at 0x15 and the hit goes out on the frame it reads
+    // 0xc (asm31.s:109141), the tenth of the pose.
+    strike_at: 10,
     recover: 5,
     recover_anim: None,
 };
@@ -125,10 +135,6 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 /// ROM shows the idle again 30 frames after the attack starts (TRANSFER.md).
 /// The barrel object lives exactly as long.
 const CANNON_FRAMES: u8 = 0x1d + 1;
-/// The sword slash's transient illusion holds 0x1e frames (the type-4 illusion
-/// the strike spawns at the target panel, asm31.s:109116-109134: the second
-/// illusion is given timer 0x1e).
-const SLASH_FRAMES: u8 = 0x1e;
 /// Frames between auto-fire chip uses in the demo-auto harness: long enough
 /// for an attack's pose and shot to run out before the next one begins.
 #[cfg(feature = "demo-auto")]
@@ -293,12 +299,24 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
     let mut hand = alloc::vec::Vec::new();
     // A sterile arena fields MegaMan alone at the same panel the real save
     // state uses (panel (2,2)) so a chip animation can be captured and
-    // compared frame-for-frame against the real ROM. The hand holds the cannon
-    // family so the cannon can be shot in isolation. This branch must win over
-    // the chip demos below, so it is checked first.
+    // compared frame-for-frame against the real ROM. The hand holds the chip
+    // of whichever chip demo feature is also on, the cannon family when none.
+    // This branch must win over the chip demos below, so it is checked first.
     if cfg!(feature = "demo-sterile") {
-        hand.push(CHIP_CANNON);
-        hand.push(CHIP_HICANNON);
+        if cfg!(feature = "demo-sword") {
+            hand.push(CHIP_SWORD);
+        } else if cfg!(feature = "demo-minibomb") {
+            hand.push(CHIP_MINIBOMB);
+        } else if cfg!(feature = "demo-vulcan") {
+            hand.push(CHIP_VULCAN);
+        } else if cfg!(feature = "demo-airshot") {
+            hand.push(CHIP_AIRSHOT);
+        } else if cfg!(feature = "demo-recovery") {
+            hand.push(CHIP_RECOV10);
+        } else {
+            hand.push(CHIP_CANNON);
+            hand.push(CHIP_HICANNON);
+        }
         return (hand, 2, None);
     }
     // MegaMan is placed at (3,2) facing right so his front panel is (4,2), the
@@ -795,6 +813,24 @@ impl<'a> Battle<'a> {
         }
 
         match self.megaman.update() {
+            // The sword's slash is a t1_0x5 object spawned as the slash pose
+            // begins (sub_80EB862, asm31.s:109041-109070): effect list entry
+            // 3 -> off_8031E00[3] = sprite_82F6ECC, animation 0, riding the
+            // navi's origin with no arm offset (byte_80B8BD4 row 3), and
+            // living until the attack state exits.
+            Update::Winding { frame: 1 }
+                if matches!(
+                    self.chip_in_use,
+                    Some(c) if matches!(c.id, CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD)
+                ) =>
+            {
+                let (mc, mr) = self.megaman.panel();
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(SWORD_SPR), 0),
+                    field::panel_centre(mc, mr),
+                    SWORD.frames + SWORD.recover,
+                ));
+            }
             Update::Strike { .. } if self.chip_in_use.is_some() => {
                 let chip = self.chip_in_use.take().unwrap();
                 self.chip_strike(chip);
@@ -1053,18 +1089,20 @@ impl<'a> Battle<'a> {
                     CHIP_LONGSWRD => panels.extend([(col + dx, row), (col + 2 * dx, row)]),
                     _ => panels.push((col + dx, row)),
                 }
-                // The strike spawns a transient crescent-slash illusion on
-                // the panel(s) it hits (spawnIllusionObject_80E33FA via the
-                // type-4 object, asm31.s:109115-109134; the illusion holds
-                // 0x1e frames). Lift the slash to arm height like the navi's
-                // own pose.
-                let (pcol, prow) = panels[0];
-                let (px, py) = field::panel_centre(pcol, prow);
-                self.effects.push((
-                    spr::Player::new(spr::Assets::new(SWORD_SPR), 0),
-                    (px + 8, py - 10),
-                    SLASH_FRAMES,
-                ));
+                // With the hit region the strike spawns the slash arc: a
+                // type-4 effect object at the front panel's coordinates,
+                // 0x10 up, table row byte_80EBAD8[subfamily] of byte_80E0398
+                // (asm31.s:109180-109200) -- effect list entry 0x14
+                // (sprite_830F144), its animation 2 for Sword, 0 for WideSwrd,
+                // 1 for LongSwrd -- gone when the animation ends.
+                let arc_anim = match chip.id {
+                    CHIP_WIDESWRD => 0,
+                    CHIP_LONGSWRD => 1,
+                    _ => 2,
+                };
+                let (fx, fy) = field::panel_centre(col + dx, row);
+                let arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
+                self.effects.push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim]));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if panels.contains(&enemy.panel()) {
                         enemy.take_damage(chip.power);

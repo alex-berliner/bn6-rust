@@ -59,7 +59,9 @@ pub struct AttackSpec {
     pub strike_at: u8,
     /// Frames the actor stays busy afterwards.
     pub recover: u8,
-    /// The pose held through those frames; the idle pose when none.
+    /// The animation played through those frames; `None` keeps the attack
+    /// pose's last frame (the real ROM holds the sword's final frame
+    /// through its five recovery frames).
     pub recover_anim: Option<usize>,
 }
 
@@ -95,7 +97,7 @@ pub const THRUST: AttackSpec = AttackSpec {
     frames: 30,
     strike_at: 11,
     recover: 20,
-    recover_anim: None,
+    recover_anim: Some(anim::IDLE),
 };
 /// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
 /// the shockwave spawned at the front panel when it reads 0x1b
@@ -117,7 +119,7 @@ pub const CROSS: AttackSpec = AttackSpec {
     frames: 30,
     strike_at: 1,
     recover: 24,
-    recover_anim: None,
+    recover_anim: Some(anim::IDLE),
 };
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
@@ -644,7 +646,11 @@ impl Actor {
                 recover_anim,
                 ..
             } => {
-                self.player.play(recover_anim.unwrap_or(anim::IDLE));
+                if let Some(a) = recover_anim {
+                    self.player.play(a);
+                } else if recover == 0 {
+                    self.player.play(anim::IDLE);
+                }
                 if recover > 0 {
                     Action::Recovering { ticks: recover }
                 } else {
