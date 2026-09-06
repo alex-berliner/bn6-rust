@@ -178,5 +178,11 @@
     "file": "log/proof/1788717258-diffmask4.png",
     "caption": "DIFFMASK at the intended same frame (real f72 vs rust f126, both barrel-peak, aligned 0,-2): residual 6.9->9.5%. Background solid green (identical). Red = MegaMan/barrel sprite pixels + Mettaur + HUD + HP text.",
     "tag": "proof"
+  },
+  {
+    "t": 1788719554,
+    "file": "log/proof/1788719554-dm_c15.png",
+    "caption": "DIFFMASK real f58 vs rust f137 (cannon big-orb frame, enemy deleted, banner blanked): 0/38400 differing. Every frame c0-c35 of the Cannon is now 0 px different within x<140 (c6 = banner re-upload artifact). Fixes: full 13-frame barrel anim 0 incl. discharge, silhouette palette, 0x1e pose + anim 15 recovery, OAM part order, barrel over navi, hidden shot, no player HP object.",
+    "tag": "proof"
   }
 ]
