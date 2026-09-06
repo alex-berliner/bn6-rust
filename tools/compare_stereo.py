@@ -133,6 +133,10 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--frame", type=int, default=0)
     ap.add_argument("--win", default="160x120", help="WxH navi window")
+    ap.add_argument("--navi-center", default=None,
+                    help="pin the crop centre to 'x,y' (GBA px) in BOTH frames instead of "
+                         "centroid-detecting the navi. Use the naav's panel-centre so the two "
+                         "sides overlap and the diff isolates only the chip effect.")
     ap.add_argument("--phase-lock", action="store_true")
     ap.add_argument("--log", action="store_true", help="append to web /log")
     ap.add_argument("--caption", default="")
@@ -146,11 +150,17 @@ def main():
     rfiles += sorted(glob.glob(os.path.join(args.real_dir, '*.png')))
     ufiles += sorted(glob.glob(os.path.join(args.rust_dir, '*.png')))
 
-    # Load both at the requested frame; align on navi centroid.
+    # Load both at the requested frame; align on navi centroid, or pin the crop
+    # to a fixed GBA centre if `--navi-center` is given.
     ri = load_frame(rfiles[args.frame])
     ui = load_frame(ufiles[args.frame])
-    rc = crop_centered(ri, *navi_centroid(ri), ww, wh)
-    uc = crop_centered(ui, *navi_centroid(ui), ww, wh)
+    if args.navi_center:
+        cx, cy = (int(v) for v in args.navi_center.split(","))
+        rc = crop_centered(ri, cx, cy, ww, wh)
+        uc = crop_centered(ui, cx, cy, ww, wh)
+    else:
+        rc = crop_centered(ri, *navi_centroid(ri), ww, wh)
+        uc = crop_centered(ui, *navi_centroid(ui), ww, wh)
 
     from PIL import Image, ImageChops, ImageDraw
     diff = ImageChops.difference(rc, uc).convert('L').point(lambda v: min(255, v * 3))

@@ -6,7 +6,7 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::object::Object;
-use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
+use agb::display::tiled::RegularBackground;
 use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
@@ -342,13 +342,14 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
         hand.push(CHIP_SWORD);
         return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
     }
-    // A sterile arena fields MegaMan alone (no enemy) so a chip animation can
-    // be captured frame-by-frame against a plain background. The hand holds
-    // the cannon family so the cannon can be shot in isolation.
+    // A sterile arena fields MegaMan alone at the same panel the real save
+    // state uses (panel (2,2)) so a chip animation can be captured and
+    // compared frame-for-frame against the real ROM. The hand holds the cannon
+    // family so the cannon can be shot in isolation.
     if cfg!(feature = "demo-sterile") {
         hand.push(CHIP_CANNON);
         hand.push(CHIP_HICANNON);
-        return (hand, 3, None);
+        return (hand, 2, None);
     }
     (hand, megaman_col, None)
 }
@@ -371,16 +372,9 @@ impl<'a> Battle<'a> {
         }
         let deck = Deck::new(folder, rng);
         let panels = Panels::new(field::PANEL_NORMAL);
-        // The sterile arena draws a plain background (no field tiles) so the
-        // navi and the chip's effect read cleanly against a flat colour for a
-        // pixel-perfect comparison with the real ROM.
-        #[cfg(feature = "demo-sterile")]
-        let bg = RegularBackground::new(
-            Priority::P3,
-            RegularBackgroundSize::Background32x32,
-            TileFormat::FourBpp,
-        );
-        #[cfg(not(feature = "demo-sterile"))]
+        // The sterile arena draws the SAME field panels as the real ROM (not a
+        // plain background) so the two captures align pixel-for-pixel: the
+        // field cancels in the diff and only the navi + chip effect remain.
         let bg = field.background(&panels);
 
         let charge = 0u16;
@@ -956,9 +950,8 @@ impl<'a> Battle<'a> {
             .filter(|e| e.is_targetable())
             .fold(self.megaman.occupancy(), |m, e| m | e.occupancy());
         self.panels.update(occupied);
-        // The sterile arena's background is plain, so the field panels are not
-        // repainted onto it (there are none to draw and no dirty updates).
-        #[cfg(not(feature = "demo-sterile"))]
+        // The sterile arena draws the same field as the real ROM, so the panels
+        // are repainted each frame and cancel in the per-pixel diff.
         for (col, row) in field::panels_in(self.panels.take_dirty()) {
             match self.panels.flashing(col, row) {
                 Some(which) => self.field.draw_highlight(&mut self.bg, col, row, which),
@@ -968,8 +961,6 @@ impl<'a> Battle<'a> {
                 }
             }
         }
-        #[cfg(feature = "demo-sterile")]
-        let _dirty = self.panels.take_dirty();
 
         false
     }
