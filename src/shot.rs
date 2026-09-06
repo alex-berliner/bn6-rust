@@ -24,9 +24,12 @@ const WAVE_HOP: u8 = 0x16;
 
 /// The buster shot's graphics live in the effect sprite list: byte_80B8BD4's
 /// record selects `SpritePointersList` offset 0xc (`off_8031E00`) slot 2,
-/// `sprite_82F569C` (data/SpritePointersList.s:88). The shockwave's are
-/// `off_8031FA4` slot 3, `sprite_83536BC`, animation 0 in its first version.
-const ANIM: usize = 0;
+/// `sprite_82F569C` (data/SpritePointersList.s:88), whose animation 1 is the
+/// small round bolt (the effect record at byte_80B8BD4 for the buster is
+/// [0xC, 0x2, 0x1, 0x0, 0x0], so the shot plays anim 1, not the large orb of
+/// anim 0). The shockwave's are `off_8031FA4` slot 3, `sprite_83536BC`,
+/// animation 0 in its first version.
+const ANIM: usize = 1;
 
 pub struct Shot {
     pub col: i32,
