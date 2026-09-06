@@ -46,7 +46,11 @@ def frame(dirname, i):
     return load(os.path.join(dirname, "frame.%05d.rgb" % i))
 
 
-def differs(a, b, box=(0, 40, 140, 160)):
+XMAX = 140
+
+
+def differs(a, b, box=None):
+    box = box or (0, 40, XMAX, 160)
     d = ImageChops.difference(a.crop(box), b.crop(box))
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
 
@@ -113,9 +117,13 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--xmax", type=int, default=140,
+                    help="right edge of the diff window (the real capture's deleted Mettaur remnant sits at x>=149 for ~45 frames)")
     ap.add_argument("--rust-start", type=int, default=None,
                     help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
+    global XMAX
+    XMAX = args.xmax
     real = os.path.join(args.out, "real_" + args.chip)
     rust = os.path.join(args.out, "rust_" + args.feature)
     os.makedirs(args.out, exist_ok=True)

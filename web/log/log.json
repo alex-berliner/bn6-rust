@@ -214,5 +214,11 @@
     "file": "log/proof/1788725644-strip_demo-minibomb.png",
     "caption": "MINIBOMB matched (x<140 window; landing at ~x180 not yet compared): tools/chip_compare.py 36 demo-minibomb -> 0 px on every frame c0-c49 (c6 = banner artifact). Held bomb sprite_82F569C anim 0 on the origin until the throw (pose frame 10), thrown bomb anim 1 with the game's 16.16 physics (2.9 px/f, +2.02 up, -0.156 gravity, 40 frames), shadow part kept on the ground, Y and Z floored separately; animation 6 held 42 frames.",
     "tag": "proof"
+  },
+  {
+    "t": 1788725729,
+    "file": "log/proof/1788725729-strip_demo-minibomb.png",
+    "caption": "MINIBOMB landing matched too: --xmax 240 -> 0 px c42-c74 (the blast sprite_8399578 anim 0 at the landing panel, 22 frames, sound 0x70; the earlier full-width residue is the real ROM's dissolving Mettaur remnant).",
+    "tag": "proof"
   }
 ]

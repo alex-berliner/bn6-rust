@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
+    AIRSHOT_BARREL, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -222,9 +222,10 @@ const BOMB_GRAVITY: i32 = 0x2800;
 /// throw, when the attack drops it (the real ROM shows it gone on the
 /// throw frame).
 const HELD_BOMB_FRAMES: u8 = THROW.strike_at - 1;
-/// The blast's animation 0 in sprite 0x26 (the Gunner's impact) runs its
-/// five frames; held about as long as that takes.
-const BLAST_FRAMES: u8 = 30;
+/// On a solid panel the landing spreads type-4 effect row 0 -- effect list
+/// 0x14 index 0, sprite_8399578, animation 0, 22 frames -- from the panel
+/// (sub_801BD3C, asm31.s:29569-29589) with sound 0x70.
+const BLAST_FRAMES: u8 = 22;
 
 /// A thrown MiniBomb in flight, in the game's 16.16 coordinates.
 struct Bomb {
@@ -1054,12 +1055,13 @@ impl<'a> Battle<'a> {
                     enemy.take_damage(damage);
                 }
             }
-            self.effects.push((
-                spr::Player::new(spr::Assets::new(IMPACT), 0),
-                field::panel_centre(col, row),
-                BLAST_FRAMES,
-                false,
-            ));
+            // Spawned after this frame's effect tick, so take this frame's
+            // tick now: the blast's first frame then runs its duration from
+            // this frame like every other effect.
+            let mut blast = spr::Player::new(spr::Assets::new(BOMB_BLAST), 0);
+            blast.update();
+            self.effects
+                .push((blast, field::panel_centre(col, row), BLAST_FRAMES - 1, false));
         }
 
         let occupied = self
