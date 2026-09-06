@@ -226,6 +226,14 @@ int main(int argc, char** argv) {
 		free(s);
 	}
 
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--peek") == 0 && i + 1 < argc) {
+			uint32_t addr = (uint32_t) strtoul(argv[i + 1], NULL, 0);
+			uint16_t val = core->busRead16(core, addr);
+			fprintf(stderr, "peek 0x%08x = 0x%04x\n", addr, val);
+			++i;
+		}
+	}
 	/* A memory poke after the state loads: `--poke addr:value` (16-bit value)
 	 * writes to a 16-bit address, for patching battle RAM (e.g. the hand chip
 	 * list at byte_20349C0). Repeatable. */
