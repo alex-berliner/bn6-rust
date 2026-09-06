@@ -31,6 +31,8 @@
 #include <mgba/core/log.h>
 #include <mgba/core/serialize.h>
 #include <mgba/internal/gba/input.h>
+#include <mgba/internal/gba/gba.h>
+#include <mgba/internal/gba/video.h>
 #include <mgba-util/common.h>
 #include <mgba-util/vfs.h>
 
@@ -185,6 +187,30 @@ int main(int argc, char** argv) {
 		/* The state may have set its own keys/video; reinstall our buffer. */
 		core->setVideoBuffer(core, buf, stride);
 		fprintf(stderr, "loaded state %s\n", statefile);
+	}
+
+	/* Disable the battle field/background layers directly on the renderer so a
+	 * whole-frame diff against the Rust version's plain background is possible.
+	 * `--disable-bg` sets disableBG[0..3]=true (BG tiles hold the field/panel
+	 * grid and the backdrop) and keeps disableOBJ=false so MegaMan + the attack
+	 * (OBJ sprites) still render. The public enableVideoLayer segfaults for
+	 * BG1-3 on libmgba 0.10.x, so we set the flags ourselves via the renderer
+	 * reached through the GBA core (core->cpu->master is &gba->d). */
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--disable-bg") == 0) {
+			struct ARMCore* cpu = (struct ARMCore*) core->cpu;
+			struct GBA* gba = (struct GBA*) cpu->master;
+			if (gba && gba->video.renderer) {
+				for (int b = 0; b < 4; ++b)
+					gba->video.renderer->disableBG[b] = true;
+				gba->video.renderer->disableOBJ = false;
+				gba->video.renderer->disableWIN[0] = true;
+				gba->video.renderer->disableWIN[1] = true;
+				fprintf(stderr, "disabled BG layers (field/background) on renderer\n");
+			} else {
+				fprintf(stderr, "could not reach GBA renderer for --disable-bg\n");
+			}
+		}
 	}
 
 	/* A key script: "A@60" holds A for frame 60, "Start@120,A@130" etc. The
