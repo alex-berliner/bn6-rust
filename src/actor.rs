@@ -662,16 +662,18 @@ impl Actor {
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
         // While invulnerable the object carries OBJECT_FLAGS_FLASHING
-        // (asm00_2.s:23893) and blinks; the game's exact cadence was not
-        // traced, so this alternates two frames on, two off, and holds off
-        // until the white flash has had its frames on screen.
+        // (asm00_2.s:23893) and blinks. The mercy handler's blink reads
+        // `FlashingInvisTimer >> 2` and hides the object when the carry bit
+        // from that shift is set (asm00_2.s:16796-16806), i.e. the timer's
+        // bit 2 toggles the sprite hidden every four frames: four frames
+        // visible, four hidden.
         if matches!(self.action, Action::Gone | Action::Hidden) {
             return;
         }
         // The mercy blink stops mattering once the navi is being deleted; the
         // die state's own white/visibility handling takes over.
         let dying = matches!(self.action, Action::Dying { .. });
-        if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 2) % 2 == 1 {
+        if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 4) % 2 == 1 {
             return;
         }
         // Invisibl draws the navi every other frame; the game's exact
