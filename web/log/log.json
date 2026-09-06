@@ -40,5 +40,17 @@
     "file": "log/cannon/1788702334-rust_cannon.gif",
     "caption": "Rust cannon \u2014 animated (compact green barrel + charge orb -> white/cyan bolt fires)",
     "tag": "rust"
+  },
+  {
+    "t": 1788702529,
+    "file": "log/cannon/1788702529-real_cannon_fire.gif",
+    "caption": "Real MMBN6F cannon firing (crop on the battle field: MegaMan left, white/cyan bolt traveling to the Mettaur)",
+    "tag": "real"
+  },
+  {
+    "t": 1788702529,
+    "file": "log/cannon/1788702529-rust_cannon.gif",
+    "caption": "Rust cannon: compact green barrel + charge orb -> white/cyan bolt fires (sterile-capable)",
+    "tag": "rust"
   }
 ]
