@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     CANNON_SPR, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX,
-    WAVE,
+    SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -120,6 +120,10 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 /// The cannon barrel's charge animation holds 13 frames (the barrel, the
 /// growing orb, the burst) in its one player animation.
 const CANNON_FRAMES: u8 = 13;
+/// The sword slash's transient illusion holds 0x1e frames (the type-4 illusion
+/// the strike spawns at the target panel, asm31.s:109116-109134: the second
+/// illusion is given timer 0x1e).
+const SLASH_FRAMES: u8 = 0x1e;
 /// Frames between auto-fire chip uses in the demo-auto harness: long enough
 /// for an attack's pose and shot to run out before the next one begins.
 #[cfg(feature = "demo-auto")]
@@ -980,6 +984,18 @@ impl<'a> Battle<'a> {
                     CHIP_LONGSWRD => panels.extend([(col + dx, row), (col + 2 * dx, row)]),
                     _ => panels.push((col + dx, row)),
                 }
+                // The strike spawns a transient crescent-slash illusion on
+                // the panel(s) it hits (spawnIllusionObject_80E33FA via the
+                // type-4 object, asm31.s:109115-109134; the illusion holds
+                // 0x1e frames). Lift the slash to arm height like the navi's
+                // own pose.
+                let (pcol, prow) = panels[0];
+                let (px, py) = field::panel_centre(pcol, prow);
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(SWORD_SPR), 0),
+                    (px + 8, py - 10),
+                    SLASH_FRAMES,
+                ));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if panels.contains(&enemy.panel()) {
                         enemy.take_damage(chip.power);
