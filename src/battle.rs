@@ -282,6 +282,16 @@ pub struct Battle<'a> {
 ))]
 fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Style, u16)>) {
     let mut hand = alloc::vec::Vec::new();
+    // A sterile arena fields MegaMan alone at the same panel the real save
+    // state uses (panel (2,2)) so a chip animation can be captured and
+    // compared frame-for-frame against the real ROM. The hand holds the cannon
+    // family so the cannon can be shot in isolation. This branch must win over
+    // the chip demos below, so it is checked first.
+    if cfg!(feature = "demo-sterile") {
+        hand.push(CHIP_CANNON);
+        hand.push(CHIP_HICANNON);
+        return (hand, 2, None);
+    }
     // MegaMan is placed at (3,2) facing right so his front panel is (4,2), the
     // first column of the enemy half: a sword lands there, a cannon/vulcan/
     // airshot shot spawns there and travels on, and LongSwrd reaches it and
@@ -341,15 +351,6 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
         // RESULT window slides in.
         hand.push(CHIP_SWORD);
         return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
-    }
-    // A sterile arena fields MegaMan alone at the same panel the real save
-    // state uses (panel (2,2)) so a chip animation can be captured and
-    // compared frame-for-frame against the real ROM. The hand holds the cannon
-    // family so the cannon can be shot in isolation.
-    if cfg!(feature = "demo-sterile") {
-        hand.push(CHIP_CANNON);
-        hand.push(CHIP_HICANNON);
-        return (hand, 2, None);
     }
     (hand, megaman_col, None)
 }
