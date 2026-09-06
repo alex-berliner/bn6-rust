@@ -37,7 +37,9 @@
   }
   EJS_player = '#game';
   EJS_core = 'gba';
-  EJS_gameName = romParam;
+  // The name is used for the emulator's save/state files: a bare name,
+  // no directory, no extension.
+  EJS_gameName = romParam.split('/').pop().replace(/\.gba$/, '');
   EJS_gameUrl = romParam + '?' + stamp;
   EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   EJS_startOnLoaded = true;
