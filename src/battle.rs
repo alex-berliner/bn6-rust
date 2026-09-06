@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    HEAL, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
+    AIRSHOT_BARREL, HEAL, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -170,20 +170,27 @@ const VULCAN: actor::AttackSpec = actor::AttackSpec {
     recover: 0,
     recover_anim: None,
 };
-/// AirShot (attack family 0x21, sub_80EC884): takes animation 0x9, plays
-/// the gust sound 0xaf and spawns its shot when the frame counter reads 0x5,
-/// the pose exiting once it reads 0xa, then a 0xa-frame recovery
-/// (sub_80EC8A0, sub_80EC90E; asm31.s:111072, 111094, 111112). The shot it
-/// spawns is the same type-3 object as the cannon's (sub_80C4FFE ->
-/// t3_0x0_80C4E58), so it is the travelling buster shot at chip power.
+/// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
+/// object from the first frame, sound 0xaf; the hit goes out on the frame
+/// the counter reads 5 -- the sixth -- as an instant one-panel hitbox one
+/// panel ahead (sub_80C4FFE -> t3_0x0_80C4E58: no travelling shot); the
+/// first state hands over when the counter reads 10 and the second counts
+/// it back down, exiting on the 22nd frame (sub_80EC8A0, sub_80EC90E;
+/// asm31.s:111067-111142). So the pose is on screen 21 frames.
 const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 0x9,
-    frames: 0xa,
-    strike_at: 0x5,
-    recover: 0xa,
+    frames: 21,
+    strike_at: 6,
+    recover: 0,
     recover_anim: None,
 };
+/// The AirShot arm object lives as long as the pose (byte_80B8BD4 row
+/// 0x13: effect list 0xC index 0x18 = sprite_83138C4, animation 0 -- the
+/// barrel, four frames of muzzle gust, the barrel held -- at arm-position
+/// row 0xa: +18 forward, 24 up, byte_80188C0[20..22]).
+const AIRSHOT_FRAMES: u8 = 21;
+const AIRSHOT_ARM: (i32, i32) = (18, -24);
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
 const RECOV_HP: [u16; 2] = [10, 30];
 /// The heal effect's animation length, from its frame durations.
@@ -1094,6 +1101,15 @@ impl<'a> Battle<'a> {
             CHIP_AIRSHOT => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(AIRSHOT);
+                let (mc, mr) = self.megaman.panel();
+                let (mx, my) = field::panel_centre(mc, mr);
+                let dx = self.megaman.facing_dx();
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(AIRSHOT_BARREL), 0),
+                    (mx + dx * AIRSHOT_ARM.0, my + AIRSHOT_ARM.1),
+                    AIRSHOT_FRAMES,
+                    false,
+                ));
             }
             CHIP_RECOV10 | CHIP_RECOV30 => {
                 self.megaman
@@ -1172,6 +1188,21 @@ impl<'a> Battle<'a> {
             // period (sub_80EBF6E). Each travels one panel a frame through
             // Shot::vulcan (sub_80EBF6E -> spawn_t3_0x12_80C6ADA,
             // t3_0x12_80C6946).
+            // AirShot's hitbox lands on the panel ahead at once and shoves
+            // what it hits one panel back; the shove is the hop the field
+            // already has, its own timing not yet taken from the game.
+            CHIP_AIRSHOT => {
+                let (fc, fr) = self.megaman.front_panel();
+                let blocked = self
+                    .enemies
+                    .iter()
+                    .fold(self.megaman.occupancy(), |m, e| m | e.occupancy());
+                for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                    if enemy.panel() == (fc, fr) && enemy.take_damage(chip.power) {
+                        enemy.hop(dx, 0, blocked);
+                    }
+                }
+            }
             CHIP_VULCAN => {
                 const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
                 let (fc, fr) = self.megaman.front_panel();

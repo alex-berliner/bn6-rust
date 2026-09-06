@@ -202,5 +202,11 @@
     "file": "log/proof/1788724684-strip_demo-recovery.png",
     "caption": "RECOV10 matched: tools/chip_compare.py 9a demo-recovery --rust-start 123 -> 0 px on every frame (c6 = banner artifact). Heal effect = type-4 row 6 -> sprite_830D494 anim 0 at the navi origin, 14 frames, drawn on its spawn frame. Cannon and Sword re-verified at 0.",
     "tag": "proof"
+  },
+  {
+    "t": 1788725232,
+    "file": "log/proof/1788725232-strip_demo-airshot.png",
+    "caption": "AIRSHOT matched: tools/chip_compare.py 04 demo-airshot -> 0 px on every frame (c6 = banner artifact). Arm object sprite_83138C4 anim 0 at (+18,-24) for the 21-frame pose (anim 9); the gust is its frames 1-4; instant one-panel hit on frame 6.",
+    "tag": "proof"
   }
 ]
