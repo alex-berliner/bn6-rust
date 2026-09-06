@@ -172,5 +172,11 @@
     "file": "log/proof/1788717180-diffmask3.png",
     "caption": "DIFFMASK after col-2 fix: residual 10%->6.93%, both MegaMan aligned at (0,0). Background solid green (identical). Red = MegaMan sprite pixels + Mettaur/HP/HUD extra elements.",
     "tag": "proof"
+  },
+  {
+    "t": 1788717258,
+    "file": "log/proof/1788717258-diffmask4.png",
+    "caption": "DIFFMASK at the intended same frame (real f72 vs rust f126, both barrel-peak, aligned 0,-2): residual 6.9->9.5%. Background solid green (identical). Red = MegaMan/barrel sprite pixels + Mettaur + HUD + HP text.",
+    "tag": "proof"
   }
 ]
