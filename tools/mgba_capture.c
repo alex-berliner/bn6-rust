@@ -24,12 +24,15 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #include <mgba/core/core.h>
 #include <mgba/core/interface.h>
 #include <mgba/core/log.h>
+#include <mgba/core/serialize.h>
 #include <mgba/internal/gba/input.h>
 #include <mgba-util/common.h>
+#include <mgba-util/vfs.h>
 
 /* GBA framebuffer size; color_t is 32-bit native unless COLOR_16_BIT is set. */
 #define GW 240
@@ -109,14 +112,94 @@ int main(int argc, char** argv) {
 
 	core->reset(core);
 
-	for (int i = 0; i < count; ++i) {
-		if (g_a_ticks > 0) {
-			if (i >= g_a_start && i < g_a_start + g_a_ticks) {
-				core->setKeys(core, 1 << GBA_KEY_A);
-			} else {
-				core->setKeys(core, 0);
-			}
+	/* Load a battery save (Flash/SRAM .srm/.sav) if given, so the ROM boots
+	 * into the saved game rather than the title. `--loadsave <file>`. */
+	const char* savefile = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--loadsave") == 0 && i + 1 < argc) {
+			savefile = argv[i + 1];
+			++i;
 		}
+	}
+	if (savefile) {
+		if (!mCoreLoadSaveFile(core, savefile, false)) {
+			fprintf(stderr, "mCoreLoadSaveFile failed for %s\n", savefile);
+			return 1;
+		}
+		fprintf(stderr, "loaded battery save %s\n", savefile);
+		core->reset(core);
+	}
+
+	/* Load a save state (mGBA .ss<slot> file) if given, so a capture can start
+	 * mid-battle instead of navigating the title/menu. `--loadstate <file>`. */
+	const char* statefile = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--loadstate") == 0 && i + 1 < argc) {
+			statefile = argv[i + 1];
+			++i;
+		}
+	}
+	if (statefile) {
+		struct VFile* svf = VFileOpen(statefile, O_RDONLY);
+		if (!svf) { fprintf(stderr, "cannot open state %s\n", statefile); return 1; }
+		if (!mCoreLoadStateNamed(core, svf, SAVESTATE_ALL)) {
+			fprintf(stderr, "mCoreLoadStateNamed failed for %s\n", statefile);
+			return 1;
+		}
+		svf->close(svf);
+		/* The state may have set its own keys/video; reinstall our buffer. */
+		core->setVideoBuffer(core, buf, stride);
+		fprintf(stderr, "loaded state %s\n", statefile);
+	}
+
+	/* A key script: "A@60" holds A for frame 60, "Start@120,A@130" etc. The
+	 * game reads the pad each frame, so a one-frame tap is a press. */
+	const char* script = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--script") == 0 && i + 1 < argc) {
+			script = argv[i + 1];
+			++i;
+		}
+	}
+	/* Parse the script up front into a small table. */
+	struct Tap { int frame; uint32_t key; };
+	struct Tap taps[1024];
+	int ntaps = 0;
+	if (script && *script) {
+		char* s = strdup(script);
+		char* tok = strtok(s, ",");
+		while (tok) {
+			int frame = 0; const char* key = tok;
+			char* at = strchr(tok, '@');
+			if (at) { *at = 0; frame = atoi(at + 1); }
+			uint32_t bits = 0;
+			if      (!strcmp(key, "A")) bits = 1 << GBA_KEY_A;
+			else if (!strcmp(key, "B")) bits = 1 << GBA_KEY_B;
+			else if (!strcmp(key, "Select")) bits = 1 << GBA_KEY_SELECT;
+			else if (!strcmp(key, "Start")) bits = 1 << GBA_KEY_START;
+			else if (!strcmp(key, "Right")) bits = 1 << GBA_KEY_RIGHT;
+			else if (!strcmp(key, "Left")) bits = 1 << GBA_KEY_LEFT;
+			else if (!strcmp(key, "Up")) bits = 1 << GBA_KEY_UP;
+			else if (!strcmp(key, "Down")) bits = 1 << GBA_KEY_DOWN;
+			else if (!strcmp(key, "R")) bits = 1 << GBA_KEY_R;
+			else if (!strcmp(key, "L")) bits = 1 << GBA_KEY_L;
+			if (frame >= 0 && frame < count && ntaps < 1024) {
+				taps[ntaps].frame = frame; taps[ntaps].key = bits; ++ntaps;
+			}
+			tok = strtok(NULL, ",");
+		}
+		free(s);
+	}
+
+	for (int i = 0; i < count; ++i) {
+		uint32_t keys = 0;
+		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
+			keys |= 1 << GBA_KEY_A;
+		}
+		for (int t = 0; t < ntaps; ++t) {
+			if (taps[t].frame == i) keys |= taps[t].key;
+		}
+		core->setKeys(core, keys);
 		core->runFrame(core);
 		if (write_frame(buf, stride)) {
 			return 1;
