@@ -190,5 +190,11 @@
     "file": "log/proof/1788724284-strip_demo-sword.png",
     "caption": "SWORD matched: tools/chip_compare.py 47 demo-sword -> 0 px on every frame c0-c39 (c6 = banner artifact). Real objects: sprite_82EFE48 anim 0 (sword, from the slash state's first frame), sprite_830F144 anim 2 (arc at front panel -16, over the sword, spawned on pose frame 10). Cannon re-checked: still 0.",
     "tag": "proof"
+  },
+  {
+    "t": 1788724391,
+    "file": "log/proof/1788724391-strip_demo-wideswrd.png",
+    "caption": "WIDESWRD matched: tools/chip_compare.py 48 demo-wideswrd -> 0 px on every frame (c6 = banner artifact). Same sword object, arc animation 0 of sprite_830F144.",
+    "tag": "proof"
   }
 ]

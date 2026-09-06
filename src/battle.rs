@@ -289,6 +289,9 @@ pub struct Battle<'a> {
 #[cfg(any(
     feature = "demo-buster",
     feature = "demo-sword",
+    feature = "demo-wideswrd",
+    feature = "demo-longswrd",
+    feature = "demo-hicannon",
     feature = "demo-minibomb",
     feature = "demo-cannon",
     feature = "demo-vulcan",
@@ -311,6 +314,12 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
     if cfg!(feature = "demo-sterile") {
         if cfg!(feature = "demo-sword") {
             hand.push(CHIP_SWORD);
+        } else if cfg!(feature = "demo-wideswrd") {
+            hand.push(CHIP_WIDESWRD);
+        } else if cfg!(feature = "demo-longswrd") {
+            hand.push(CHIP_LONGSWRD);
+        } else if cfg!(feature = "demo-hicannon") {
+            hand.push(CHIP_HICANNON);
         } else if cfg!(feature = "demo-minibomb") {
             hand.push(CHIP_MINIBOMB);
         } else if cfg!(feature = "demo-vulcan") {
