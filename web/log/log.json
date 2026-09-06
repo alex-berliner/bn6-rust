@@ -142,5 +142,11 @@
     "file": "log/proof/1788710072-bestdiff.png",
     "caption": "MegaMan+attack aligned (both on black): REAL f58 vs RUST f139, best-shift residual ~54%. Attack shape/pose/scale match; residual is the ORB TRAVEL PHASE (real orb at muzzle vs rust orb further out) + HP '100' text.",
     "tag": "proof"
+  },
+  {
+    "t": 1788710155,
+    "file": "log/proof/1788710155-scale_cmp.png",
+    "caption": "MegaMan+attack scale match (both on black): REAL f57 vs RUST f132 \u2014 same firing pose, green cannon barrel, orb at muzzle. The 66x40 vs 46x38 bbox diff is because the real's orb touches the barrel; shapes match closely.",
+    "tag": "proof"
   }
 ]
