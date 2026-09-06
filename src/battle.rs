@@ -962,9 +962,15 @@ impl<'a> Battle<'a> {
                 // start of the pose, not just at the strike.
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
+                // Anchor the green barrel body at the arm so the whole cannon
+                // (body + forward muzzle discharge) reads as one object on
+                // MegaMan's panel with the burst firing forward, not drifting
+                // onto the enemy's. MegaMan's cannon-pose hand is at local
+                // x[14..20], so the sprite body (local x[-11..11]) sits there
+                // when anchored about mx+8, raised to arm height.
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
-                    (mx + 14, my - 16),
+                    (mx + 8, my - 18),
                     CANNON_FRAMES,
                 ));
             }
