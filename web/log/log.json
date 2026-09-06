@@ -166,5 +166,11 @@
     "file": "log/proof/1788716997-diffmask2.png",
     "caption": "DIFFMASK (real f51 vs rust f125, aligned 0,-6): GREEN=solid identical (black background matches perfectly). RED=differs (MegaMan/barrel sprite + HP text + HUD). Background is solid; sprite differs by exact pixel placement + navi screen position.",
     "tag": "proof"
+  },
+  {
+    "t": 1788717180,
+    "file": "log/proof/1788717180-diffmask3.png",
+    "caption": "DIFFMASK after col-2 fix: residual 10%->6.93%, both MegaMan aligned at (0,0). Background solid green (identical). Red = MegaMan sprite pixels + Mettaur/HP/HUD extra elements.",
+    "tag": "proof"
   }
 ]
