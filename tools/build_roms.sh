@@ -24,6 +24,7 @@ ENTRIES=(
   "demo-vulcan,demo-sterile,demo-auto vulcan-real Vulcan1 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-hicannon,demo-sterile,demo-auto hicannon-real HiCannon on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-longswrd,demo-sterile,demo-auto longswrd-real LongSwrd on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-recov30,demo-sterile,demo-auto recov30-real Recov30 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-vulcan vulcan Vulcan1 volley"
   "demo-airshot airshot AirShot"
   "demo-recovery recovery Recov / Invisibl / Barrier"

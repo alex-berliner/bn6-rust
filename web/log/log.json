@@ -238,5 +238,11 @@
     "file": "log/proof/1788728053-strip_demo-longswrd.png",
     "caption": "LONGSWRD matched: tools/chip_compare.py 49 demo-longswrd -> 0 px on every frame (sword object + arc animation 1, two panels ahead), once the library poke lets the real ROM keep it in the hand.",
     "tag": "proof"
+  },
+  {
+    "t": 1788728075,
+    "file": "log/proof/1788728075-strip_demo-recov30.png",
+    "caption": "RECOV30 matched: tools/chip_compare.py 9b demo-recov30 --rust-start 123 -> 0 px on every frame (same heal effect as Recov10).",
+    "tag": "proof"
   }
 ]
