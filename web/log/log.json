@@ -52,5 +52,11 @@
     "file": "log/cannon/1788702529-rust_cannon.gif",
     "caption": "Rust cannon: compact green barrel + charge orb -> white/cyan bolt fires (sterile-capable)",
     "tag": "rust"
+  },
+  {
+    "t": 1788703723,
+    "file": "log/cannon/1788703723-real_cannon_immortal.gif",
+    "caption": "Real cannon (immortal-enemy battle: enemy kept alive so the fight never ends and MegaMan keeps firing). Note: truly sterile (enemy removed) makes the game end to results, so this is the live-battle cannon capture.",
+    "tag": "real"
   }
 ]
