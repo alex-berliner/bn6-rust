@@ -120,6 +120,10 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 /// The cannon barrel's charge animation holds 13 frames (the barrel, the
 /// growing orb, the burst) in its one player animation.
 const CANNON_FRAMES: u8 = 13;
+/// Frames between auto-fire chip uses in the demo-auto harness: long enough
+/// for an attack's pose and shot to run out before the next one begins.
+#[cfg(feature = "demo-auto")]
+const AUTO_FIRE_GAP: u16 = 90;
 /// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
 /// animation 8 and the projectile is spawned off the front panel when the
 /// frame counter reads 0xf, the pose exiting once it reads 0x1d
@@ -244,6 +248,8 @@ pub struct Battle<'a> {
     fade_out: u8,
     clock: u32,
     moves: u8,
+    /// Countdown to the next automatic chip use, for the demo-auto harness.
+    auto_ticks: u16,
 }
 
 /// What a demo build fields: the chip ids to preload straight into the hand
@@ -457,6 +463,10 @@ impl<'a> Battle<'a> {
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
+        #[cfg(feature = "demo-auto")]
+        let auto_ticks = AUTO_FIRE_GAP;
+        #[cfg(not(feature = "demo-auto"))]
+        let auto_ticks = 0u16;
         // A demo build loads its chips straight into the hand, so A fires the
         // first one at once without the chip-select window.
         let hand: alloc::vec::Vec<Chip> = demo_hand
@@ -498,6 +508,7 @@ impl<'a> Battle<'a> {
             fade_out,
             clock,
             moves,
+            auto_ticks,
         }
     }
 
@@ -661,6 +672,25 @@ impl<'a> Battle<'a> {
                     self.megaman.attack_charged();
                 }
                 self.charge = 0;
+            }
+        }
+        // The demo-auto harness: MegaMan fires the hand chips on a repeating
+        // timer, so a capture run does not rely on key timing. It waits for
+        // the fight to open, a free navi and a chip, and spaces each use by
+        // AUTO_FIRE_GAP so the pose and shot play out between shots. The demo
+        // hand is cycled forever (hand_at wraps) and the custom window is never
+        // allowed to open, so a capture run keeps shooting the featured chip
+        // instead of dropping into a chip select that empties the demo hand.
+        #[cfg(feature = "demo-auto")]
+        if !paused && self.intro_next >= self.enemies.len() {
+            self.gauge = 0;
+            if self.auto_ticks > 0 {
+                self.auto_ticks -= 1;
+            } else if !self.megaman.is_busy() && !self.hand.is_empty() {
+                let chip = self.hand[self.hand_at];
+                self.hand_at = (self.hand_at + 1) % self.hand.len();
+                self.use_chip(chip);
+                self.auto_ticks = AUTO_FIRE_GAP;
             }
         }
 
@@ -1006,7 +1036,7 @@ impl<'a> Battle<'a> {
                 let (mx, my) = field::panel_centre(mc, mr);
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
-                    (mx, my + 10),
+                    (mx, my),
                     CANNON_FRAMES,
                 ));
                 self.shots

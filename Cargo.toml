@@ -37,3 +37,7 @@ demo-gunner = []
 demo-protoman = []
 demo-colonel = []
 demo-results = []
+# When combined with a demo-* chip feature, MegaMan fires the loaded hand
+# chips on a repeating timer instead of waiting for input, so a capture run
+# can watch the attack without key timing.
+demo-auto = []
