@@ -17,6 +17,7 @@
 <header>
   <h1>bn</h1>
   <span>d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) · start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open chip window</span>
+  <label>demo <select id="rom"></select></label>
   <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
   <span id="build"></span>
 </header>
@@ -26,10 +27,12 @@
   // from its CDN, so a client needs internet for those, while the ROM is
   // served from here. A cache-busting query keeps a rebuilt ROM fresh.
   const stamp = Date.now();
+  const params = new URLSearchParams(location.search);
+  const romParam = params.get('rom') || 'bn6-rust.gba';
   EJS_player = '#game';
   EJS_core = 'gba';
-  EJS_gameName = 'bn6-rust';
-  EJS_gameUrl = 'bn6-rust.gba?' + stamp;
+  EJS_gameName = romParam;
+  EJS_gameUrl = romParam + '?' + stamp;
   EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
   EJS_startOnLoaded = true;
   EJS_backgroundColor = '#111';
@@ -52,6 +55,26 @@
   };
   fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : '').then(t => {
     document.getElementById('build').textContent = t ? 'build ' + t.trim() : '';
+  }).catch(() => {});
+  // The demo dropdown: the full game first, then each demo ROM from
+  // web/roms/manifest.json. Picking one reloads with ?rom=... so the
+  // emulator restarts on the selected build.
+  fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []).then(roms => {
+    const sel = document.getElementById('rom');
+    const add = (file, label) => {
+      const o = document.createElement('option');
+      o.value = file;
+      o.textContent = label;
+      if (file === romParam) o.selected = true;
+      sel.appendChild(o);
+    };
+    add('bn6-rust.gba', 'Full game');
+    for (const r of roms) add(r.file, r.label);
+    sel.addEventListener('change', () => {
+      location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);
+    });
+    // Keep the download link in sync with the selection.
+    document.getElementById('dl').href = romParam;
   }).catch(() => {});
 </script>
 <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>

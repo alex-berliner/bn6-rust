@@ -18,3 +18,22 @@ opt-level = 3
 [profile.release]
 lto = "fat"
 debug = true
+
+# Each demo feature builds a bespoke ROM that showcases one mechanic: the
+# chip is preloaded into the hand (A fires it at once) with the target
+# placed so it hits on the first press, or a single enemy is fielded so its
+# AI can be seen alone. See tools/build_roms.sh.
+[features]
+default = []
+demo-buster = []
+demo-sword = []
+demo-minibomb = []
+demo-cannon = []
+demo-vulcan = []
+demo-airshot = []
+demo-recovery = []
+demo-mettaur = []
+demo-gunner = []
+demo-protoman = []
+demo-colonel = []
+demo-results = []

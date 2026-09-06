@@ -18,6 +18,7 @@ const DIVIDE_PAUSE: u16 = 150;
 /// The Mettaur re-arms its alignment check on a 0x1e counter (asm31.s:171029).
 const METTAUR_PAUSE: u16 = 0x1e;
 
+#[derive(Clone, Copy)]
 pub enum Style {
     /// Line up with the player, warp to the facing panel, strike the panel
     /// in front -- attack C's chooser lands exactly there (sub_80FCDBA,

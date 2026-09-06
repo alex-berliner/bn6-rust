@@ -4,3 +4,4 @@ __pycache__/
 web/bn6-rust.gba
 web/build.txt
 web/*.sav
+web/roms/

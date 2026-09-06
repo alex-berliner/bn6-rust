@@ -36,6 +36,9 @@ const COLONEL_HP: u16 = 1200;
 // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
 const METTAUR_HP: u16 = 40;
 const WAVE_DAMAGE: u16 = 10;
+/// HP a chip-demo target carries so several hits can land without the fight
+/// ending; the real value is 40, but that dies to one sword.
+const DEMO_TARGET_HP: u16 = 900;
 // MegaMan's own HP does come from the disassembly: byte_80210DD
 // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
 const PLAYER_HP: u16 = 100;
@@ -236,6 +239,89 @@ pub struct Battle<'a> {
     moves: u8,
 }
 
+/// What a demo build fields: the chip ids to preload straight into the hand
+/// (A fires the first at once), and the lone enemy to place so that chip
+/// connects on the first press. Enemy-only demos leave the hand empty and
+/// just field their navi. None when no demo feature is on.
+#[cfg(any(
+    feature = "demo-buster",
+    feature = "demo-sword",
+    feature = "demo-minibomb",
+    feature = "demo-cannon",
+    feature = "demo-vulcan",
+    feature = "demo-airshot",
+    feature = "demo-recovery",
+    feature = "demo-mettaur",
+    feature = "demo-gunner",
+    feature = "demo-protoman",
+    feature = "demo-colonel",
+    feature = "demo-results",
+))]
+fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Style, u16)>) {
+    let mut hand = alloc::vec::Vec::new();
+    // MegaMan is placed at (3,2) facing right so his front panel is (4,2), the
+    // first column of the enemy half: a sword lands there, a cannon/vulcan/
+    // airshot shot spawns there and travels on, and LongSwrd reaches it and
+    // the panel behind it. WideSwrd sweeps that whole column. MiniBomb lands
+    // three ahead of (3,2), so its target sits at (6,2). The target carries a
+    // big HP so a chip demo can land several hits without the fight ending;
+    // demo-results uses the real 40 so one hit brings the window up.
+    let megaman_col = 3;
+    // Chip demos use a padded-HP target so several hits land without ending
+    // the fight; enemy and results demos use the real HP below.
+    let hp = DEMO_TARGET_HP;
+    if cfg!(feature = "demo-buster") {
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-sword") {
+        hand.push(CHIP_SWORD);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-minibomb") {
+        hand.push(CHIP_MINIBOMB);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-cannon") {
+        hand.push(CHIP_CANNON);
+        hand.push(CHIP_HICANNON);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-vulcan") {
+        hand.push(CHIP_VULCAN);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-airshot") {
+        hand.push(CHIP_AIRSHOT);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-recovery") {
+        hand.push(CHIP_RECOV10);
+        hand.push(CHIP_RECOV30);
+        hand.push(CHIP_INVISIBL);
+        hand.push(CHIP_BARRIER);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
+    }
+    if cfg!(feature = "demo-mettaur") {
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
+    }
+    if cfg!(feature = "demo-gunner") {
+        return (hand, megaman_col, Some((spr::Assets::new(GUNNER), 6, 2, ai::Style::Gunner, gunner::HP)));
+    }
+    if cfg!(feature = "demo-protoman") {
+        return (hand, megaman_col, Some((spr::Assets::new(PROTOMAN), 6, 2, ai::Style::Thrust, PROTOMAN_HP)));
+    }
+    if cfg!(feature = "demo-colonel") {
+        return (hand, megaman_col, Some((spr::Assets::new(COLONEL), 6, 2, ai::Style::Divide, COLONEL_HP)));
+    }
+    if cfg!(feature = "demo-results") {
+        // A lone Mettaur with a sword in hand: one press deletes it and the
+        // RESULT window slides in.
+        hand.push(CHIP_SWORD);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
+    }
+    (hand, megaman_col, None)
+}
+
 impl<'a> Battle<'a> {
     pub fn new(
         field: &'a Field,
@@ -269,12 +355,52 @@ impl<'a> Battle<'a> {
             mercy: 0,
             death_frames: actor::ENEMY_DEATH_FRAMES,
         };
-        let megaman = Actor::new(spr::Assets::new(MEGAMAN), 2, 2, false, player);
+        // A demo build also moves MegaMan up to the front of his half so the
+        // featured chip reaches the target on the first press.
+        let (demo_hand, demo_col, demo_enemy) = {
+            #[cfg(any(
+                feature = "demo-buster",
+                feature = "demo-sword",
+                feature = "demo-minibomb",
+                feature = "demo-cannon",
+                feature = "demo-vulcan",
+                feature = "demo-airshot",
+                feature = "demo-recovery",
+                feature = "demo-mettaur",
+                feature = "demo-gunner",
+                feature = "demo-protoman",
+                feature = "demo-colonel",
+                feature = "demo-results",
+            ))]
+            {
+                demo()
+            }
+            #[cfg(not(any(
+                feature = "demo-buster",
+                feature = "demo-sword",
+                feature = "demo-minibomb",
+                feature = "demo-cannon",
+                feature = "demo-vulcan",
+                feature = "demo-airshot",
+                feature = "demo-recovery",
+                feature = "demo-mettaur",
+                feature = "demo-gunner",
+                feature = "demo-protoman",
+                feature = "demo-colonel",
+                feature = "demo-results",
+            )))]
+            {
+                (alloc::vec::Vec::new(), 2, None)
+            }
+        };
+        let megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, 2, false, player);
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
         // A debug build fights just the Mettaur, to exercise the hand, chips
         // and deletion without the bosses; the release build keeps the game's
-        // lineup.
-        let mut enemies: Vec<Actor> = if cfg!(debug_assertions) {
+        // lineup. A demo build fields its one featured enemy instead.
+        let mut enemies: Vec<Actor> = if let Some((assets, col, row, _style, hp)) = demo_enemy {
+            alloc::vec![Actor::new(assets, col, row, true, enemy(hp))]
+        } else if cfg!(debug_assertions) {
             alloc::vec![Actor::new(
                 spr::Assets::new(METTAUR),
                 5,
@@ -296,7 +422,9 @@ impl<'a> Battle<'a> {
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
         let effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
-        let ais: Vec<ai::Ai> = if cfg!(debug_assertions) {
+        let ais: Vec<ai::Ai> = if let Some((_, _, _, style, _)) = demo_enemy {
+            alloc::vec![ai::Ai::new(style)]
+        } else if cfg!(debug_assertions) {
             alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
         } else {
             alloc::vec![
@@ -322,6 +450,12 @@ impl<'a> Battle<'a> {
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
+        // A demo build loads its chips straight into the hand, so A fires the
+        // first one at once without the chip-select window.
+        let hand: alloc::vec::Vec<Chip> = demo_hand
+            .into_iter()
+            .filter_map(|id| chips.by_id(id))
+            .collect();
 
         Self {
             field,
@@ -331,7 +465,7 @@ impl<'a> Battle<'a> {
             custom: None,
             chips,
             deck,
-            hand: alloc::vec::Vec::new(),
+            hand,
             hand_at: 0,
             chip_in_use: None,
             bombs: Vec::new(),

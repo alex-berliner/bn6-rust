@@ -10,6 +10,7 @@ use alloc::vec::Vec;
 
 const MAGIC: &[u8; 4] = b"BNSP";
 
+#[derive(Clone, Copy)]
 pub struct Assets {
     data: &'static [u8],
     gfx: usize,
