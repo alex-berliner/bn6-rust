@@ -208,5 +208,11 @@
     "file": "log/proof/1788725232-strip_demo-airshot.png",
     "caption": "AIRSHOT matched: tools/chip_compare.py 04 demo-airshot -> 0 px on every frame (c6 = banner artifact). Arm object sprite_83138C4 anim 0 at (+18,-24) for the 21-frame pose (anim 9); the gust is its frames 1-4; instant one-panel hit on frame 6.",
     "tag": "proof"
+  },
+  {
+    "t": 1788725644,
+    "file": "log/proof/1788725644-strip_demo-minibomb.png",
+    "caption": "MINIBOMB matched (x<140 window; landing at ~x180 not yet compared): tools/chip_compare.py 36 demo-minibomb -> 0 px on every frame c0-c49 (c6 = banner artifact). Held bomb sprite_82F569C anim 0 on the origin until the throw (pose frame 10), thrown bomb anim 1 with the game's 16.16 physics (2.9 px/f, +2.02 up, -0.156 gravity, 40 frames), shadow part kept on the ground, Y and Z floored separately; animation 6 held 42 frames.",
+    "tag": "proof"
   }
 ]

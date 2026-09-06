@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, HEAL, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
+    AIRSHOT_BARREL, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -123,12 +123,18 @@ const SWORD: actor::AttackSpec = actor::AttackSpec {
     recover: 5,
     recover_anim: None,
 };
+/// MiniBomb (attack family 0x12, sub_80EB644, asm31.s:108790): animation 6
+/// and the held bomb from the first frame, the throw on the frame the
+/// counter reads 9 -- the tenth -- and the pose's first state ends at 0x15,
+/// but the second state's timer is never re-seeded and counts the same
+/// counter back down, so the navi holds animation 6 (whose last frame is
+/// the idle pose) until the exit 42 frames in (sub_80EB758, asm31.s:108904).
 const THROW: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 6,
-    frames: 0x15,
-    strike_at: 9,
-    recover: 5,
+    frames: 42,
+    strike_at: 10,
+    recover: 0,
     recover_anim: None,
 };
 /// The cannon pose: the counter runs to 0x1d (sub_80EBC28, asm31.s:109532,
@@ -199,37 +205,55 @@ const HEAL_FRAMES: u8 = 14;
 const INVISIBL_FRAMES: u16 = 0x68;
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
 const BARRIER_HP: u16 = 10;
-/// MiniBomb lands three panels ahead, as in every game (BOMB_RANGE). The
-/// flight object's timer is seeded to 0x28 and counts down each frame until
-/// it bursts (asm31.s:3708, 3751-3758), so the flight is 40 frames; its Z is
-/// raised 0x30 on the throw (asm31.s:108848-108850) and drops with a
-/// symmetric parabola (the bomb object adds the navi's height plus 0x30 to
-/// its spawn, then falls).
-const BOMB_RANGE: i32 = 3;
+/// The thrown bomb (sub_80C5DBC -> t3_0x8_80C5BB0, asm31.s:29657, 29400):
+/// spawned 4 pixels ahead of the navi and 0x30 up, sprite_82F569C
+/// animation 1 with a shadow; it flies at 0x2e666 (2.9 px) a frame
+/// forward, its vertical speed starting at 0x20666 (2.02 px) a frame and
+/// losing 0x2800 (0.156 px) a frame (byte_80C5D58, asm31.s:29609), for a
+/// fixed 0x28 frames (asm31.s:29531), which is about three panels.
 const BOMB_FLIGHT: u8 = 40;
-const BOMB_HEIGHT: i32 = 0x30;
+const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
+const BOMB_SPAWN_UP: i32 = 0x30 << 16;
+const BOMB_VX: i32 = 0x2e666;
+const BOMB_VZ: i32 = 0x20666;
+const BOMB_GRAVITY: i32 = 0x2800;
+/// The held bomb rides the navi's origin with no offset (byte_80B8BD4 row
+/// 4: effect list 0xC index 2 = sprite_82F569C, animation 0) until the
+/// throw, when the attack drops it (the real ROM shows it gone on the
+/// throw frame).
+const HELD_BOMB_FRAMES: u8 = THROW.strike_at - 1;
 /// The blast's animation 0 in sprite 0x26 (the Gunner's impact) runs its
 /// five frames; held about as long as that takes.
 const BLAST_FRAMES: u8 = 30;
 
-/// A thrown MiniBomb in flight, drawn with the buster shot's sprite for
-/// want of the bomb's own, which was not identified.
+/// A thrown MiniBomb in flight, in the game's 16.16 coordinates.
 struct Bomb {
     player: spr::Player,
-    from: (i32, i32),
+    x: i32,
+    y: i32,
+    z: i32,
+    vx: i32,
+    vz: i32,
     target: (i32, i32),
     damage: u16,
     ticks: u8,
 }
 
 impl Bomb {
+    fn step(&mut self) {
+        self.x += self.vx;
+        self.vz -= BOMB_GRAVITY;
+        self.z += self.vz;
+    }
+
+    /// Screen position of the bomb; the game truncates Y and Z separately.
     fn position(&self) -> (i32, i32) {
-        let (x0, y0) = field::panel_centre(self.from.0, self.from.1);
-        let (x1, y1) = field::panel_centre(self.target.0, self.target.1);
-        let t = self.ticks as i32;
-        let n = BOMB_FLIGHT as i32;
-        let lift = BOMB_HEIGHT * 4 * t * (n - t) / (n * n);
-        (x0 + (x1 - x0) * t / n, y0 + (y1 - y0) * t / n - lift)
+        (self.x >> 16, (self.y >> 16) - (self.z >> 16))
+    }
+
+    /// Where the shadow goes: on the ground under the bomb.
+    fn ground(&self) -> (i32, i32) {
+        (self.x >> 16, self.y >> 16)
     }
 }
 const GAUGE_FULL: u16 = 0x4000;
@@ -1015,6 +1039,7 @@ impl<'a> Battle<'a> {
         let mut landed = Vec::new();
         self.bombs.retain_mut(|b| {
             b.player.update();
+            b.step();
             b.ticks += 1;
             if b.ticks >= BOMB_FLIGHT {
                 landed.push((b.target, b.damage));
@@ -1073,6 +1098,13 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
+                let (mc, mr) = self.megaman.panel();
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(MINIBOMB), 0),
+                    field::panel_centre(mc, mr),
+                    HELD_BOMB_FRAMES,
+                    false,
+                ));
             }
             CHIP_CANNON | CHIP_HICANNON => {
                 self.chip_in_use = Some(chip);
@@ -1172,10 +1204,15 @@ impl<'a> Battle<'a> {
                 }
             }
             CHIP_MINIBOMB => {
-                let target = ((col + BOMB_RANGE * dx).clamp(1, field::COLS), row);
+                let (mx, my) = field::panel_centre(col, row);
+                let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 self.bombs.push(Bomb {
-                    player: spr::Player::new(spr::Assets::new(SHOTFX), 0),
-                    from: (col, row),
+                    player: spr::Player::new(spr::Assets::new(MINIBOMB), 1),
+                    x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
+                    y: my << 16,
+                    z: BOMB_SPAWN_UP,
+                    vx: dx * BOMB_VX,
+                    vz: BOMB_VZ,
                     target,
                     damage: chip.power,
                     ticks: 0,
@@ -1320,10 +1357,15 @@ impl<'a> Battle<'a> {
         }
         for b in &self.bombs {
             let (x, y) = b.position();
-            for part in b.player.parts().iter().rev() {
+            let (gx, gy) = b.ground();
+            // The frame's first part is the shadow (sprite_hasShadow): it is
+            // drawn on the ground, the rest at the bomb's height -- the real
+            // ROM keeps the shadow at y 106-111 under the whole arc.
+            for (i, part) in b.player.parts().iter().enumerate().rev() {
+                let (px, py) = if i == 0 { (gx, gy) } else { (x, y) };
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)
-                    .set_pos((x + part.x, y + part.y))
+                    .set_pos((px + part.x, py + part.y))
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
                     .show(frame);
