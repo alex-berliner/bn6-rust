@@ -203,36 +203,33 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
   37/38/39 at c14/15/16 (body x 43->39->38->37), 40 at c17-29 (x 35); barrel white c5-7,
   green from c8; muzzle orb small c14, big c15; chevrons c16-22; recovery c30-32; idle c33.
 
-## 7b. IN PROGRESS 2026-09-06: the Sword (chip 0x47), not matched yet
+## 7b. DONE 2026-09-06: the Sword (chip 0x47) is frame-for-frame identical
 
-`tools/chip_compare.py 47 demo-sword --frames 40` runs the whole real-vs-Rust loop for one chip
-(real poke + capture, Rust build + capture, alignment, per-frame diff, strip PNG). Sword sits at
-mean ~274 px/frame; frames c29+ (idle) are 0. What is established from the real capture
-(c = frames from the attack start f43; the pose's own start is c2):
-- States (sub_80EB776): state 0 and state 1 take one frame each (Unk_00 4 then 8), so the slash
-  state sub_80EB862 begins at c2 -> `SWORD.windup = Some((0, 2))`. It sets animation 5 (frames
-  gfx5 x8, gfx6 x2, gfx7 x2, gfx8 held), timer 0x15 counting down; the hit and the arc go out
-  on the frame it reads 0xc (the pose's 10th frame, `strike_at: 10`); the pose is on screen
-  0x15+1 frames plus 5 of recovery with gfx8 held (`recover_anim: None` now means "hold the
-  pose"); idle again at c29. Real body boxes: c2-9 (44,77) 175 px; c10-11 163; c12-13 151;
-  c14-20 (44,82,y from 71-74) with the arc over the body; c21-28 (44,82) 178; c29 idle 195.
-- Two objects: (a) a t1_0x5 temp attack object spawned at the slash start (byte_80B8BD4 row
-  3 -> effect list off_8031E00[3] = sprite_82F6ECC, animation 0: the blue hilt, 4 frames then
-  held, riding the navi's origin, no arm offset, alive until the attack exits) -- BUT the real
-  capture shows nothing of it until c10 (x 74-90, y 78-86 is empty at c2-9), which is not yet
-  explained; (b) the slash arc: a type-4 effect object spawned with the hit region at the front
-  panel's coordinates, z 0x10, byte_80E0398 row byte_80EBAD8[sf] -> row 0x18 = effect list
-  0x14 = sprite_830F144, animation 2 (Sword; 0 WideSwrd, 1 LongSwrd), gone when its animation
-  ends. The real arc is visible c10-c21 (>= 12 frames, top at y=58, x 40-110, drawn over the
-  navi) whereas animation 2 is only 10 frames and renders smaller/lower in Rust -- so either
-  the row/animation is misread or the type-4 object holds its last frame; the four animations
-  are rendered in the session scratchpad (`arc_all.png`) for comparison. Assets exported:
-  assets/sword.bin (now sprite_82F6ECC anim 0, the hilt), assets/sword_arc.bin (sprite_830F144
-  anims 0-2). Code: Update::Winding{frame:1} spawns the hilt, the strike spawns the arc.
-- HiCannon/M-Cannon (0x02/0x03) and Barrier (0xb2) do NOT fire when poked into the hand slot;
-  AirShot 0x04, Vulcan 0x05, MiniBomb 0x36, WideSwrd 0x48, Recov10 0x9a do. Unresolved.
-- A DeepSeek research ticket on the cannon's illusion objects/shot ran >1.5 h without a
-  report and was killed; the cannon is done without it.
+`tools/chip_compare.py 47 demo-sword --frames 40`: 0 pixels on every frame from the press to
+the idle (c6 is the banner-tile artifact, as for the cannon). The comparer aligns on the navi's
+BODY box on both sides (the whole-frame "first change" was the deleted Mettaur's dissolving
+remnant). What the real ROM does (c = frames from the press's effect, real f43):
+- States (sub_80EB776): state 0 and 1 take one frame each -> `windup: Some((0, 2))`; the slash
+  state (sub_80EB862) begins at c2: animation 5 (gfx5 x8, gfx6 x2, gfx7 x2, gfx8 held), timer
+  0x15, the hit and the arc on the frame it reads 0xc = pose frame 10 (c11); pose on screen 27
+  frames (`frames: 0x15 + 2`, `recover: 5` with the pose held: `recover_anim: None`), idle c29.
+- The sword object: t1_0x5 (byte_80B8BD4 row 3 = list 0xC index 0 -> **sprite_82EFE48**,
+  animation 0: an 8x8 spark above the head for 8 frames, then the blade through the swing
+  (frames of 2) and the 16x16 tip held), spawned in the slash state's first frame and DRAWN
+  from that frame, riding the navi origin with no arm offset, gone with the attack's exit.
+  (Earlier reading "sprite_82F6ECC" was a 5-byte-row indexing slip; 82F6ECC is the hilt-by-navi
+  sprite. The blue hilt seen on MegaMan's arm is his own gfx6 art.) Confirmed by OAM dumps at
+  f48/f55/f65: the object's parts land exactly where animation 0's OAM offsets put them.
+- The arc: type-4 effect (row byte_80EBAD8[sf]=0x18 of byte_80E0398 = list 0xC index 0x14 ->
+  **sprite_830F144**, animation 2 for Sword, 0 WideSwrd, 1 LongSwrd), at the front panel's
+  coordinates 0x10 up (panel_centre(3,2) - (0,16) exactly), drawn OVER the sword object, first
+  frame on screen for its full duration (a strike-spawned effect must not tick on its spawn
+  frame: `effects_before_strike` in battle.rs).
+- Actor: an attack with a lead-in now ticks its pose on the transition frame (the game sets
+  the animation and starts the counter in the same tick), and `recover_anim: None` holds the
+  pose; the cannon still diffs to zero after these changes (re-checked).
+- Palette bank 1 in the real OAM = the teal sword palette, bank 2 = the light-blue arc.
+- Still unresolved: HiCannon/M-Cannon/Barrier do not fire when poked into the hand.
 
 ## 7. Where the Cannon comparison stood before that (superseded)
 

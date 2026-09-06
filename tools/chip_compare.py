@@ -78,10 +78,26 @@ def build_and_capture_rust(feature, out, count):
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def first_change(dirname, idle_index, from_index, to_index):
-    idle = frame(dirname, idle_index)
+BODY = (8, 57, 123)
+
+
+def body_box(im):
+    pts = [(x, y) for x in range(0, 140) for y in range(40, 160) if im.getpixel((x, y)) == BODY]
+    if not pts:
+        return None
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return (min(xs), max(xs), min(ys), max(ys), len(pts))
+
+
+def first_body_change(dirname, idle_index, from_index, to_index):
+    """The first frame whose navi body box differs from the idle's. The whole
+    frame cannot be used: the real capture has the deleted Mettaur's remnant
+    dissolving on the right and HUD objects blinking, none of which is the
+    attack."""
+    idle = body_box(frame(dirname, idle_index))
     for i in range(from_index, to_index):
-        if differs(idle, frame(dirname, i)) > 0:
+        if body_box(frame(dirname, i)) != idle:
             return i
     return None
 
@@ -102,11 +118,11 @@ def main():
     if not args.no_build:
         build_and_capture_rust(args.feature, rust, args.rust_frames)
 
-    # The real attack starts at 43; find the first visible change after it
-    # (skipping the banner artifact frames 48-50, which are the banner tiles
-    # racing the blanking) and the same on the Rust side after its idle.
-    real_first = first_change(real, REAL_A_FRAME, REAL_START, REAL_START + 20)
-    rust_first = first_change(rust, 100, 101, args.rust_frames - args.frames)
+    # The real attack starts at 43; align on the first frame the navi's body
+    # changes on each side (the same number of frames after the start on
+    # both, since the lead-in is the game's).
+    real_first = first_body_change(real, REAL_A_FRAME, REAL_START, REAL_START + 20)
+    rust_first = first_body_change(rust, 100, 101, args.rust_frames - args.frames)
     if real_first is None or rust_first is None:
         print("no attack seen: real", real_first, "rust", rust_first)
         sys.exit(1)

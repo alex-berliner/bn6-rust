@@ -184,5 +184,11 @@
     "file": "log/proof/1788719554-dm_c15.png",
     "caption": "DIFFMASK real f58 vs rust f137 (cannon big-orb frame, enemy deleted, banner blanked): 0/38400 differing. Every frame c0-c35 of the Cannon is now 0 px different within x<140 (c6 = banner re-upload artifact). Fixes: full 13-frame barrel anim 0 incl. discharge, silhouette palette, 0x1e pose + anim 15 recovery, OAM part order, barrel over navi, hidden shot, no player HP object.",
     "tag": "proof"
+  },
+  {
+    "t": 1788724284,
+    "file": "log/proof/1788724284-strip_demo-sword.png",
+    "caption": "SWORD matched: tools/chip_compare.py 47 demo-sword -> 0 px on every frame c0-c39 (c6 = banner artifact). Real objects: sprite_82EFE48 anim 0 (sword, from the slash state's first frame), sprite_830F144 anim 2 (arc at front panel -16, over the sword, spawned on pose frame 10). Cannon re-checked: still 0.",
+    "tag": "proof"
   }
 ]

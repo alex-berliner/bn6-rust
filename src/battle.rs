@@ -103,18 +103,20 @@ const CHIP_RECOV30: u16 = 155;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
 const CHIP_BARRIER: u16 = 178;
-// Against the real ROM (tools/chip_compare.py 47 demo-sword) the sword's
-// pose begins two frames after the cannon's would for the same press, so
-// two frames of the idle pose lead in; the pose is then on screen 0x15 + 1
-// frames (the frame that reads the end only queues the exit) plus the five
-// of recovery, its last frame held throughout, idle again 27 frames in.
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
 const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
+// Against the real ROM (tools/chip_compare.py 47 demo-sword): the two
+// lead-in states take a frame each (sub_80EB79C, sub_80EB84C), so two frames
+// of the idle pose lead in; the slash pose is then on screen 27 frames --
+// the 0x15 of its timer, the frame that reads the end and only queues the
+// exit, the exit frame, and the five of recovery with its last frame held
+// -- and the idle is back 29 frames after the press. Every frame of that,
+// with the sword object and the arc, diffs to zero against the real ROM.
 const SWORD: actor::AttackSpec = actor::AttackSpec {
     windup: Some((0, 2)),
     anim: 5,
-    frames: 0x15 + 1,
+    frames: 0x15 + 2,
     // The timer starts at 0x15 and the hit goes out on the frame it reads
     // 0xc (asm31.s:109141), the tenth of the pose.
     strike_at: 10,
@@ -245,6 +247,10 @@ pub struct Battle<'a> {
     hand_at: usize,
     /// The chip whose attack pose is playing, for its strike.
     chip_in_use: Option<Chip>,
+    /// Frames until the sword object is spawned: the two lead-in states
+    /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
+    /// that creates it.
+    sword_in: Option<u8>,
     bombs: Vec<Bomb>,
     panels: Panels,
     bg: RegularBackground,
@@ -549,6 +555,7 @@ impl<'a> Battle<'a> {
             hand,
             hand_at: 0,
             chip_in_use: None,
+            sword_in: None,
             bombs: Vec::new(),
             panels,
             bg,
@@ -812,25 +819,35 @@ impl<'a> Battle<'a> {
             }
         }
 
-        match self.megaman.update() {
-            // The sword's slash is a t1_0x5 object spawned as the slash pose
-            // begins (sub_80EB862, asm31.s:109041-109070): effect list entry
-            // 3 -> off_8031E00[3] = sprite_82F6ECC, animation 0, riding the
-            // navi's origin with no arm offset (byte_80B8BD4 row 3), and
-            // living until the attack state exits.
-            Update::Winding { frame: 1 }
-                if matches!(
-                    self.chip_in_use,
-                    Some(c) if matches!(c.id, CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD)
-                ) =>
-            {
+        // The sword itself is a t1_0x5 object spawned as the slash pose
+        // begins (sub_80EB862, asm31.s:109041-109070): byte_80B8BD4 row 3
+        // -> effect list off_8031E00[0] = sprite_82EFE48, animation 0 (a
+        // spark above the head for eight frames, the blade through the
+        // swing, its tip held), riding the navi's origin with no arm
+        // offset, alive until the attack state exits; its frames run from
+        // the pose's first frame (real ROM: spark c2-9, blade c10-11,
+        // 12-13, 14-15, 16-17, 18-19, tip from c20; TRANSFER.md 7b).
+        if let Some(left) = self.sword_in {
+            if left == 0 {
+                self.sword_in = None;
                 let (mc, mr) = self.megaman.panel();
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(SWORD_SPR), 0),
                     field::panel_centre(mc, mr),
-                    SWORD.frames + SWORD.recover,
+                    // Gone with the attack's exit: off screen the frame the
+                    // idle is back.
+                    SWORD.frames + SWORD.recover - 1,
                 ));
+            } else {
+                self.sword_in = Some(left - 1);
             }
+        }
+        // Effects the strike spawns below are drawn this frame on their
+        // first animation frame and only start counting from the next, as
+        // the game's type-4 effect objects do (the sword arc's first frame
+        // is on screen for its full four frames in the real ROM).
+        let effects_before_strike = self.effects.len();
+        match self.megaman.update() {
             Update::Strike { .. } if self.chip_in_use.is_some() => {
                 let chip = self.chip_in_use.take().unwrap();
                 self.chip_strike(chip);
@@ -966,9 +983,13 @@ impl<'a> Battle<'a> {
                 None => false,
             });
 
+        let mut index = 0;
         self.effects.retain_mut(|(p, _, ticks)| {
-            p.update();
-            *ticks -= 1;
+            if index < effects_before_strike {
+                p.update();
+                *ticks -= 1;
+            }
+            index += 1;
             *ticks > 0
         });
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
@@ -1028,6 +1049,7 @@ impl<'a> Battle<'a> {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(SWORD);
+                self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
             CHIP_MINIBOMB => {
                 self.chip_in_use = Some(chip);
@@ -1200,8 +1222,10 @@ impl<'a> Battle<'a> {
                 .enable_background(bg_id);
         }
         // Attack objects such as the cannon barrel draw over the navi that
-        // spawned them: the real ROM shows the barrel covering the arm.
-        for (p, (x, y), _) in &self.effects {
+        // spawned them (the real ROM shows the barrel covering the arm), and
+        // a later one over an earlier one: the sword's arc, spawned at the
+        // strike, covers the sword object spawned at the pose's start.
+        for (p, (x, y), _) in self.effects.iter().rev() {
             for part in p.parts().iter().rev() {
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)

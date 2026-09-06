@@ -614,8 +614,35 @@ impl Actor {
                 }
             }
             Action::WindingUp { next, .. } => {
+                // The frame that sets the pose is its first: the game's
+                // slash state sets the animation and starts its counter in
+                // the same tick (sub_80EB862), and the real ROM's sword arc
+                // lands a frame earlier than a transition frame would allow
+                // (TRANSFER.md 7b). So tick the new pose at once.
                 self.begin(next, false);
-                self.action
+                match self.action {
+                    Action::Attacking {
+                        ticks,
+                        strike_tick,
+                        charged,
+                        recover,
+                        recover_anim,
+                    } => {
+                        if ticks == strike_tick {
+                            update = Update::Strike { charged };
+                        } else if ticks > strike_tick {
+                            update = Update::Winding { frame: 1 };
+                        }
+                        Action::Attacking {
+                            ticks: ticks - 1,
+                            strike_tick,
+                            charged,
+                            recover,
+                            recover_anim,
+                        }
+                    }
+                    other => other,
+                }
             }
             Action::Attacking {
                 ticks,
