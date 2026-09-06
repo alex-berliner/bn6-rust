@@ -206,6 +206,26 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* Optionally write a native savestate at the end (`--savestate <file>`),
+	 * for round-tripping or producing a state another mGBA build can load. */
+	const char* savestatefile = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--savestate") == 0 && i + 1 < argc) {
+			savestatefile = argv[i + 1];
+			++i;
+		}
+	}
+	if (savestatefile) {
+		struct VFile* svf = VFileOpen(savestatefile, O_WRONLY | O_CREAT | O_TRUNC);
+		if (!svf) { fprintf(stderr, "cannot open %s\n", savestatefile); return 1; }
+		if (!mCoreSaveStateNamed(core, svf, SAVESTATE_ALL)) {
+			fprintf(stderr, "mCoreSaveStateNamed failed for %s\n", savestatefile);
+			return 1;
+		}
+		svf->close(svf);
+		fprintf(stderr, "wrote state %s\n", savestatefile);
+	}
+
 	free(buf);
 	core->deinit(core);
 	fprintf(stderr, "wrote %d frames to %s\n", g_frame, outdir);

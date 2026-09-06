@@ -31,8 +31,8 @@
   let romParam = params.get('rom') || 'bn6-rust.gba';
   // A demo ROM may be given as ?rom=roms/sword.gba (from the dropdown) or
   // ?rom=sword.gba (a bare name); demos live under roms/, so resolve a bare
-  // name there. The full game has no directory.
-  if (romParam !== 'bn6-rust.gba' && !romParam.includes('/')) {
+  // name there. The full game and the canon ROM live at the web root.
+  if (romParam !== 'bn6-rust.gba' && romParam !== 'real-bn6f.gba' && !romParam.includes('/')) {
     romParam = 'roms/' + romParam;
   }
   EJS_player = '#game';
@@ -74,7 +74,8 @@
       if (file === romParam) o.selected = true;
       sel.appendChild(o);
     };
-    add('bn6-rust.gba', 'Full game');
+    add('bn6-rust.gba', 'Full game (Rust port)');
+    add('real-bn6f.gba', 'MMBN6F Falzar (canon ROM)');
     for (const r of roms) add(r.file, r.label);
     sel.addEventListener('change', () => {
       location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);

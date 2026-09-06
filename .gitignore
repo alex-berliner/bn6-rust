@@ -5,3 +5,9 @@ web/bn6-rust.gba
 web/build.txt
 web/*.sav
 web/roms/
+# The canon MMBN6F ROM and its saves are copyrighted binaries; keep them
+# out of git (only served locally).
+web/real-bn6f.gba
+web/*.state
+web/*.sav
+web/roms/*.sav
