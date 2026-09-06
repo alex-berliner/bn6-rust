@@ -88,5 +88,11 @@
     "file": "log/cannon/1788706290-rust_orb_139.png",
     "caption": "RUST Cannon now fires the big yellow-outlined white orb (matching the real), green barrel on the arm",
     "tag": "rust"
+  },
+  {
+    "t": 1788706319,
+    "file": "log/compare/1788706319-orb_cmp.png",
+    "caption": "Cannon comparison: REAL (f16) vs RUST (f139) \u2014 both now fire the big yellow/white orb. The projectiles match; residual diff is from framing/phase/field, not the projectile.",
+    "tag": "compare"
   }
 ]
