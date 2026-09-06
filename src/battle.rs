@@ -116,7 +116,7 @@ const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
 const SWORD: actor::AttackSpec = actor::AttackSpec {
     windup: Some((0, 2)),
     anim: 5,
-    frames: 0x15 + 2,
+    frames: 0x15 + 1,
     // The timer starts at 0x15 and the hit goes out on the frame it reads
     // 0xc (asm31.s:109141), the tenth of the pose.
     strike_at: 10,
@@ -847,12 +847,13 @@ impl<'a> Battle<'a> {
             if left == 0 {
                 self.sword_in = None;
                 let (mc, mr) = self.megaman.panel();
+                let sword = spr::Player::new(spr::Assets::new(SWORD_SPR), 0);
                 self.effects.push((
-                    spr::Player::new(spr::Assets::new(SWORD_SPR), 0),
+                    sword,
                     field::panel_centre(mc, mr),
                     // Gone with the attack's exit: off screen the frame the
                     // idle is back.
-                    SWORD.frames + SWORD.recover - 1,
+                    SWORD.frames + SWORD.recover,
                     false,
                 ));
             } else {
@@ -995,14 +996,12 @@ impl<'a> Battle<'a> {
                 None => false,
             });
 
-        self.effects.retain_mut(|(p, _, ticks, fresh)| {
-            if *fresh {
-                *fresh = false;
-            } else {
-                p.update();
-                *ticks -= 1;
-            }
-            *ticks > 0
+        // An effect with N frames is drawn for N frames, this one included.
+        self.effects.retain_mut(|(p, _, ticks, _)| {
+            p.update();
+            let alive = *ticks > 0;
+            *ticks = ticks.saturating_sub(1);
+            alive
         });
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
         // the blast, setCollisionRegion(1), then sprite 0x26's animation 0).
@@ -1084,12 +1083,9 @@ impl<'a> Battle<'a> {
                 // the navi at panel (2,2).
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
-                self.effects.push((
-                    spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
-                    (mx + 16, my - 24),
-                    CANNON_FRAMES,
-                    false,
-                ));
+                let barrel = spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0);
+                self.effects
+                    .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false));
             }
             CHIP_VULCAN => {
                 self.chip_in_use = Some(chip);

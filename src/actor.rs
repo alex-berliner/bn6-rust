@@ -550,7 +550,6 @@ impl Actor {
 
     pub fn update(&mut self) -> Update {
         self.invisible = self.invisible.saturating_sub(1);
-        self.player.update();
         self.invulnerable = self.invulnerable.saturating_sub(1);
         if self.flash > 0 {
             self.flash -= 1;
@@ -604,7 +603,10 @@ impl Actor {
                 self.begin(BUSTER, true);
                 self.action
             }
-            Action::WindingUp { ticks, next } if ticks > 1 => {
+            // As with the pose: the lead-in is on screen for every tick from
+            // its length down to 1, and the pose begins the frame after (the
+            // sword's two lead-in states are one frame each, then the slash).
+            Action::WindingUp { ticks, next } if ticks > 0 => {
                 update = Update::Winding {
                     frame: (self.pose_len - ticks) + 1,
                 };
@@ -644,13 +646,17 @@ impl Actor {
                     other => other,
                 }
             }
+            // The pose is on screen for every tick from `frames` down to 1;
+            // the frame after the last is the exit (recovery or idle) --
+            // verified against the real ROM for the cannon (0x1e frames of
+            // pose, then the recovery pose) and the sword.
             Action::Attacking {
                 ticks,
                 strike_tick,
                 charged,
                 recover,
                 recover_anim,
-            } if ticks > 1 => {
+            } if ticks > 0 => {
                 if ticks == strike_tick {
                     update = Update::Strike { charged };
                 } else if ticks > strike_tick {
@@ -708,6 +714,11 @@ impl Actor {
             Action::Appearing { ticks } if ticks > 1 => Action::Appearing { ticks: ticks - 1 },
             Action::Appearing { .. } => Action::Idle,
         };
+        // The sprite ticks after the state machine, so an animation set this
+        // frame -- by an attack begun before the update or by a transition
+        // inside it -- is drawn on its first frame this frame and counts
+        // from the next, whichever way it was set.
+        self.player.update();
         update
     }
 

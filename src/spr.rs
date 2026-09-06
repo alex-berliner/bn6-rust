@@ -153,6 +153,11 @@ pub struct Player {
     anim: usize,
     frame_in_anim: usize,
     ticks_left: u8,
+    /// Set by `new` and `play`: the frame just loaded is drawn this frame
+    /// and its duration counts from the next, as the game's sprites do (an
+    /// animation set during an object's update shows its first frame for
+    /// the full duration; verified frame-for-frame against the real ROM).
+    fresh: bool,
     done: bool,
     /// The palette currently in VRAM and the index it came from. Frames of one
     /// animation almost always share a palette, so this avoids reallocating it
@@ -178,6 +183,7 @@ impl Player {
             anim,
             frame_in_anim: 0,
             ticks_left: 0,
+            fresh: true,
             done: false,
             palette: None,
             silhouette: None,
@@ -195,6 +201,7 @@ impl Player {
         self.anim = anim;
         self.frame_in_anim = 0;
         self.done = false;
+        self.fresh = true;
         self.load_frame();
     }
 
@@ -224,6 +231,10 @@ impl Player {
     /// frame rather than wrapping; the caller decides what to play next.
     pub fn update(&mut self) {
         if self.done {
+            return;
+        }
+        if self.fresh {
+            self.fresh = false;
             return;
         }
         self.ticks_left = self.ticks_left.saturating_sub(1);
