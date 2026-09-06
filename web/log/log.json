@@ -94,5 +94,11 @@
     "file": "log/compare/1788706319-orb_cmp.png",
     "caption": "Cannon comparison: REAL (f16) vs RUST (f139) \u2014 both now fire the big yellow/white orb. The projectiles match; residual diff is from framing/phase/field, not the projectile.",
     "tag": "compare"
+  },
+  {
+    "t": 1788706690,
+    "file": "log/compare/1788706690-cannon_match.png",
+    "caption": "Cannon aligned comparison: both now render the field + MegaMan at (2,2) + big orb. Layout matches; residual from exact field tiles/navi-scale/background pattern.",
+    "tag": "compare"
   }
 ]
