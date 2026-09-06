@@ -208,7 +208,8 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
 banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
-Vulcan1 (05 demo-vulcan) and MiniBomb (36 demo-minibomb) are captured and being matched;
+MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240).
+Vulcan1 (05 demo-vulcan) is captured and being matched;
 LongSwrd (0x49), HiCannon (0x02), M-Cannon (0x03) and Barrier (0xb2) do not fire when poked
 into the real ROM's hand slot (a Sonnet pass found no static ChipData gate; unresolved --
 try dumping AIData Unk_44 after the press, or the ChipLockoutTimer, or a release-edge press).
@@ -230,7 +231,11 @@ Objects per chip: Cannon barrel sprite_82F39C0 anim 0 at (+16,-24); Sword object
 sprite_82EFE48 anim 0 at the origin from the slash state's first frame (two lead-in frames),
 arc sprite_830F144 anim 2/0/1 at the front panel -16 on pose frame 10; AirShot arm object
 sprite_83138C4 anim 0 at (+18,-24), 21-frame pose, instant one-panel hit on frame 6; Recov
-heal sprite_830D494 anim 0 at the origin, 14 frames.
+heal sprite_830D494 anim 0 at the origin, 14 frames; MiniBomb held bomb sprite_82F569C anim 0 at
+the origin until the throw (pose frame 10 of animation 6 held 42 frames), thrown bomb anim 1 as
+t3_0x8 with 16.16 physics (from +4/+0x30, vx 0x2e666, vz 0x20666 - 0x2800/frame, 0x28 frames;
+the frame's first part is the shadow and stays on the ground; Y and Z truncated separately),
+blast sprite_8399578 anim 0 (22 frames) at the landing panel.
 
 ## 7b. DONE 2026-09-06: the Sword (chip 0x47) is frame-for-frame identical
 
