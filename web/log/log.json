@@ -70,5 +70,11 @@
     "file": "log/sterile/1788703960-scfire_168.png",
     "caption": "Real cannon: the cannon fires the white orb while MegaMan is alone (patched, enemy removed)",
     "tag": "real"
+  },
+  {
+    "t": 1788704001,
+    "file": "log/compare/1788704001-side_by_side.png",
+    "caption": "Real (frame 31) vs Rust (frame 145) cannon side-by-side: both MegaMan-alone firing. The DIFF is dominated by the field-panel difference (real has panels, rust has black) \u2014 next step is stripping the field background on the real side too.",
+    "tag": "compare"
   }
 ]
