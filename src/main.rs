@@ -35,6 +35,7 @@ static BARREL_CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/barrel_charge.
 static CANNON_ORB: &[u8] = &Aligned(*include_bytes!("../assets/cannon_orb.bin")).0;
 static SWORD_SPR: &[u8] = &Aligned(*include_bytes!("../assets/sword.bin")).0;
 static SWORD_ARC: &[u8] = &Aligned(*include_bytes!("../assets/sword_arc.bin")).0;
+static HEAL: &[u8] = &Aligned(*include_bytes!("../assets/heal.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
 static METTAUR: &[u8] = &Aligned(*include_bytes!("../assets/mettaur.bin")).0;

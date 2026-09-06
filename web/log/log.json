@@ -196,5 +196,11 @@
     "file": "log/proof/1788724391-strip_demo-wideswrd.png",
     "caption": "WIDESWRD matched: tools/chip_compare.py 48 demo-wideswrd -> 0 px on every frame (c6 = banner artifact). Same sword object, arc animation 0 of sprite_830F144.",
     "tag": "proof"
+  },
+  {
+    "t": 1788724684,
+    "file": "log/proof/1788724684-strip_demo-recovery.png",
+    "caption": "RECOV10 matched: tools/chip_compare.py 9a demo-recovery --rust-start 123 -> 0 px on every frame (c6 = banner artifact). Heal effect = type-4 row 6 -> sprite_830D494 anim 0 at the navi origin, 14 frames, drawn on its spawn frame. Cannon and Sword re-verified at 0.",
+    "tag": "proof"
   }
 ]

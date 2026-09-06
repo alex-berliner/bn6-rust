@@ -18,6 +18,7 @@ ENTRIES=(
   "demo-cannon,demo-sterile,demo-auto cannon-real Cannon on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-sword,demo-sterile,demo-auto sword-real Sword on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-wideswrd,demo-sterile,demo-auto wideswrd-real WideSwrd on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-recovery,demo-sterile,demo-auto recov-real Recov10 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-vulcan vulcan Vulcan1 volley"
   "demo-airshot airshot AirShot"
   "demo-recovery recovery Recov / Invisibl / Barrier"

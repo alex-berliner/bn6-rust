@@ -21,7 +21,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
+    HEAL, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -186,6 +186,8 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
 };
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
 const RECOV_HP: [u16; 2] = [10, 30];
+/// The heal effect's animation length, from its frame durations.
+const HEAL_FRAMES: u8 = 14;
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
 const INVISIBL_FRAMES: u16 = 0x68;
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
@@ -263,7 +265,12 @@ pub struct Battle<'a> {
     ais: Vec<ai::Ai>,
     gunner_ctl: gunner::Gunner,
     impacts: Vec<gunner::Impact>,
-    effects: Vec<(spr::Player, (i32, i32), u8)>,
+    /// Transient sprites: the player, its screen position, frames left, and
+    /// whether it is a type-4 effect object -- one the game draws on its
+    /// spawn frame with its first animation frame counting from the next
+    /// (the sword arc, the heal), unlike the type-1 attack objects (the
+    /// cannon barrel, the sword) whose first frame counts from the spawn.
+    effects: Vec<(spr::Player, (i32, i32), u8, bool)>,
     shots: Vec<Shot>,
     glow: spr::Player,
     glow_state: usize,
@@ -511,7 +518,7 @@ impl<'a> Battle<'a> {
         // The deletion effect, sprite_839CCDC animation 0, spawned at the body
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
-        let effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
+        let effects: Vec<(spr::Player, (i32, i32), u8, bool)> = Vec::new();
         let ais: Vec<ai::Ai> = if cfg!(feature = "demo-sterile") {
             alloc::vec::Vec::new()
         } else if let Some((_, _, _, style, _)) = demo_enemy {
@@ -846,16 +853,12 @@ impl<'a> Battle<'a> {
                     // Gone with the attack's exit: off screen the frame the
                     // idle is back.
                     SWORD.frames + SWORD.recover - 1,
+                    false,
                 ));
             } else {
                 self.sword_in = Some(left - 1);
             }
         }
-        // Effects the strike spawns below are drawn this frame on their
-        // first animation frame and only start counting from the next, as
-        // the game's type-4 effect objects do (the sword arc's first frame
-        // is on screen for its full four frames in the real ROM).
-        let effects_before_strike = self.effects.len();
         match self.megaman.update() {
             Update::Strike { .. } if self.chip_in_use.is_some() => {
                 let chip = self.chip_in_use.take().unwrap();
@@ -879,7 +882,7 @@ impl<'a> Battle<'a> {
             Update::Died => {
                 let at = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 self.effects
-                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90));
+                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false));
             }
             _ => {}
         }
@@ -950,7 +953,7 @@ impl<'a> Battle<'a> {
                 Update::Died => {
                     let at = field::panel_centre(enemy.panel().0, enemy.panel().1);
                     self.effects
-                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90));
+                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false));
                 }
                 // The Mettaur's strike is a wave set rolling from the front
                 // panel; the swords land on their targets at once.
@@ -992,13 +995,13 @@ impl<'a> Battle<'a> {
                 None => false,
             });
 
-        let mut index = 0;
-        self.effects.retain_mut(|(p, _, ticks)| {
-            if index < effects_before_strike {
+        self.effects.retain_mut(|(p, _, ticks, fresh)| {
+            if *fresh {
+                *fresh = false;
+            } else {
                 p.update();
                 *ticks -= 1;
             }
-            index += 1;
             *ticks > 0
         });
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
@@ -1024,6 +1027,7 @@ impl<'a> Battle<'a> {
                 spr::Player::new(spr::Assets::new(IMPACT), 0),
                 field::panel_centre(col, row),
                 BLAST_FRAMES,
+                false,
             ));
         }
 
@@ -1084,6 +1088,7 @@ impl<'a> Battle<'a> {
                     spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
                     (mx + 16, my - 24),
                     CANNON_FRAMES,
+                    false,
                 ));
             }
             CHIP_VULCAN => {
@@ -1094,8 +1099,21 @@ impl<'a> Battle<'a> {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(AIRSHOT);
             }
-            CHIP_RECOV10 => self.megaman.heal(RECOV_HP[0]),
-            CHIP_RECOV30 => self.megaman.heal(RECOV_HP[1]),
+            CHIP_RECOV10 | CHIP_RECOV30 => {
+                self.megaman
+                    .heal(RECOV_HP[(chip.id == CHIP_RECOV30) as usize]);
+                // The heal (sub_800E2FC, object.s:4685) adds the HP and
+                // spawns type-4 effect row 6 at the navi's coordinates:
+                // byte_80E0398 row 6 = effect list 0xC index 0x12, animation
+                // 0, gone when the animation ends.
+                let (mc, mr) = self.megaman.panel();
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(HEAL), 0),
+                    field::panel_centre(mc, mr),
+                    HEAL_FRAMES,
+                    true,
+                ));
+            }
             CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
             CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
             // AreaGrab needs per-panel ownership, which the field does not
@@ -1133,7 +1151,8 @@ impl<'a> Battle<'a> {
                 };
                 let (fx, fy) = field::panel_centre(col + dx, row);
                 let arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
-                self.effects.push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim]));
+                self.effects
+                    .push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim], true));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if panels.contains(&enemy.panel()) {
                         enemy.take_damage(chip.power);
@@ -1234,7 +1253,7 @@ impl<'a> Battle<'a> {
         // spawned them (the real ROM shows the barrel covering the arm), and
         // a later one over an earlier one: the sword's arc, spawned at the
         // strike, covers the sword object spawned at the pose's start.
-        for (p, (x, y), _) in self.effects.iter().rev() {
+        for (p, (x, y), _, _) in self.effects.iter().rev() {
             for part in p.parts().iter().rev() {
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)

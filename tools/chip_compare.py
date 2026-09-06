@@ -14,6 +14,9 @@ aligned on the first frame that differs from the idle, and every frame from
 the start is diffed within x<140 (the real ROM keeps the deleted Mettaur's
 remnant at x>=149). A strip of real/rust/diff crops is written for looking.
 
+Chips that do not move the navi (Recov) give the aligner nothing to go on:
+pass --rust-start 123, the frame the sterile demo's auto-fire uses its chip.
+
 Needs /tmp/mgba_capture (tools/mgba_capture.c) and the real ROM/state, which
 are never committed (TRANSFER.md).
 """
@@ -110,6 +113,8 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--rust-start", type=int, default=None,
+                    help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
     real = os.path.join(args.out, "real_" + args.chip)
     rust = os.path.join(args.out, "rust_" + args.feature)
@@ -121,12 +126,16 @@ def main():
     # The real attack starts at 43; align on the first frame the navi's body
     # changes on each side (the same number of frames after the start on
     # both, since the lead-in is the game's).
-    real_first = first_body_change(real, REAL_A_FRAME, REAL_START, REAL_START + 20)
-    rust_first = first_body_change(rust, 100, 101, args.rust_frames - args.frames)
-    if real_first is None or rust_first is None:
-        print("no attack seen: real", real_first, "rust", rust_first)
-        sys.exit(1)
-    rust_start = rust_first - (real_first - REAL_START)
+    if args.rust_start is not None:
+        real_first = REAL_START
+        rust_start = args.rust_start
+    else:
+        real_first = first_body_change(real, REAL_A_FRAME, REAL_START, REAL_START + 20)
+        rust_first = first_body_change(rust, 100, 101, args.rust_frames - args.frames)
+        if real_first is None or rust_first is None:
+            print("no attack seen: real", real_first, "rust", rust_first)
+            sys.exit(1)
+        rust_start = rust_first - (real_first - REAL_START)
     print(f"real start {REAL_START} (first change {real_first}); rust start {rust_start}")
 
     total = 0
