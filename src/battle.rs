@@ -63,8 +63,11 @@ const CHARGING_FROM: u16 = 10;
 // The glow is one persistent effect object on the navi's arm whose
 // animation index is the charge state, 1 charging and 2 full, hidden at 0
 // (chargeShotChargeObject_update_80E0E20, asm31.s:86354). The game tracks
-// the arm position each frame; this offset stands in for that.
-const GLOW_OFFSET: (i32, i32) = (16, -14);
+// the arm position each frame; a fixed offset stands in for that. It is
+// centred on the navi's body and pushed a little toward the front (the
+// direction it faces), rather than the old top-right corner offset, so the
+// charge reads as gathering at the buster.
+const GLOW_FORWARD: i32 = 8;
 // The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
 // the intro object, asm31.s:85280), then the enemy navis materialise one
 // at a time from a fade-in list, and only then does the fight state run
@@ -1026,11 +1029,12 @@ impl<'a> Battle<'a> {
             self.megaman.show(frame);
             if self.glow_state != 0 {
                 let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
+                let dx = self.megaman.facing_dx();
                 for part in self.glow.parts() {
                     Object::new(part.sprite.clone())
                         .set_priority(Priority::P2)
-                        .set_pos((px + GLOW_OFFSET.0 + part.x, py + GLOW_OFFSET.1 + part.y))
-                        .set_hflip(part.hflip)
+                        .set_pos((px + dx * GLOW_FORWARD + part.x, py + part.y))
+                        .set_hflip(part.hflip ^ (dx < 0))
                         .set_vflip(part.vflip)
                         .show(frame);
                 }
