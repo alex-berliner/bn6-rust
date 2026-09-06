@@ -171,9 +171,12 @@ const RECOV_HP: [u16; 2] = [10, 30];
 const INVISIBL_FRAMES: u16 = 0x68;
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
 const BARRIER_HP: u16 = 10;
-/// MiniBomb lands three panels ahead, as in every game; its arc and flight
-/// time were not traced (the spawn is at the navi's height plus 0x30), so
-/// the flight is a stand-in: 40 frames along a parabola 48 pixels high.
+/// MiniBomb lands three panels ahead, as in every game (BOMB_RANGE). The
+/// flight object's timer is seeded to 0x28 and counts down each frame until
+/// it bursts (asm31.s:3708, 3751-3758), so the flight is 40 frames; its Z is
+/// raised 0x30 on the throw (asm31.s:108848-108850) and drops with a
+/// symmetric parabola (the bomb object adds the navi's height plus 0x30 to
+/// its spawn, then falls).
 const BOMB_RANGE: i32 = 3;
 const BOMB_FLIGHT: u8 = 40;
 const BOMB_HEIGHT: i32 = 0x30;
