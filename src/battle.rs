@@ -20,7 +20,8 @@ use crate::hud::Hud;
 use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
-    CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX, WAVE,
+    CANNON_SPR, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX,
+    WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -116,6 +117,9 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     strike_at: 9,
     recover: 5,
 };
+/// The cannon barrel's charge animation holds 13 frames (the barrel, the
+/// growing orb, the burst) in its one player animation.
+const CANNON_FRAMES: u8 = 13;
 /// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
 /// animation 8 and the projectile is spawned off the front panel when the
 /// frame counter reads 0xf, the pose exiting once it reads 0x1d
@@ -983,6 +987,28 @@ impl<'a> Battle<'a> {
                         (i as u8) * 0xa,
                     ));
                 }
+            }
+            // The cannon family's arm barrel: the game spawns a t1_0x5
+            // object on the navi's arm that plays this charge animation while
+            // the navi holds the pose (sub_80EBC28 -> spawn_t1_0x5,
+            // asm31.s:109468; the barrel is effect-list sprite slot 1,
+            // byte_82F39C0, anim 0 for the player). It sits at the front of
+            // the navi's panel and flashes the orb up to the shot, which the
+            // default arm below then fires.
+            CHIP_CANNON | CHIP_HICANNON => {
+                let (fc, fr) = self.megaman.front_panel();
+                // The barrel mounts on the navi's own panel, toward the side it
+                // faces; its sprite parts sit up from its origin, so anchor it
+                // at the body and push it a little forward.
+                let (mc, mr) = self.megaman.panel();
+                let (mx, my) = field::panel_centre(mc, mr);
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
+                    (mx + dx * 8, my + 6),
+                    CANNON_FRAMES,
+                ));
+                self.shots
+                    .push(Shot::buster(spr::Assets::new(SHOTFX), fc, fr, dx, chip.power));
             }
             _ => {
                 let (fc, fr) = self.megaman.front_panel();

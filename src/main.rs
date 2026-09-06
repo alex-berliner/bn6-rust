@@ -31,6 +31,7 @@ static MEGAMAN: &[u8] = &Aligned(*include_bytes!("../assets/megaman.bin")).0;
 static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
 static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
+static CANNON_SPR: &[u8] = &Aligned(*include_bytes!("../assets/cannon.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
 static METTAUR: &[u8] = &Aligned(*include_bytes!("../assets/mettaur.bin")).0;
