@@ -58,5 +58,17 @@
     "file": "log/cannon/1788703723-real_cannon_immortal.gif",
     "caption": "Real cannon (immortal-enemy battle: enemy kept alive so the fight never ends and MegaMan keeps firing). Note: truly sterile (enemy removed) makes the game end to results, so this is the live-battle cannon capture.",
     "tag": "real"
+  },
+  {
+    "t": 1788703960,
+    "file": "log/sterile/1788703960-real_sterile_cannon.gif",
+    "caption": "REAL cannon, STERILE arena (battle_isBattleOver patched to never conclude; enemy deleted): MegaMan alone fires the Cannon40 orb projectile",
+    "tag": "real"
+  },
+  {
+    "t": 1788703960,
+    "file": "log/sterile/1788703960-scfire_168.png",
+    "caption": "Real cannon: the cannon fires the white orb while MegaMan is alone (patched, enemy removed)",
+    "tag": "real"
   }
 ]
