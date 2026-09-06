@@ -1156,7 +1156,10 @@ impl<'a> Battle<'a> {
                 // the navi at panel (2,2).
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
-                let barrel = spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0);
+                let mut barrel = spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0);
+                // byte_80B8BD4 rows 0-2: the same barrel with palette 0, 1
+                // and 2 for Cannon, HiCannon and M-Cannon.
+                barrel.set_palette_add((chip.id - CHIP_CANNON) as usize);
                 self.effects
                     .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false));
             }

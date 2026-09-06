@@ -153,6 +153,10 @@ pub struct Player {
     anim: usize,
     frame_in_anim: usize,
     ticks_left: u8,
+    /// Added to every frame's palette index, as the game's temp attack
+    /// objects add byte_80B8BD4's palette byte (HiCannon's barrel is the
+    /// Cannon's with palette 1, M-Cannon's with 2).
+    palette_add: usize,
     /// Set by `new` and `play`: the frame just loaded is drawn this frame
     /// and its duration counts from the next, as the game's sprites do (an
     /// animation set during an object's update shows its first frame for
@@ -186,6 +190,7 @@ impl Player {
             anim,
             frame_in_anim: 0,
             ticks_left: 0,
+            palette_add: 0,
             fresh: true,
             done: false,
             palette: None,
@@ -210,6 +215,17 @@ impl Player {
 
     pub fn anim(&self) -> usize {
         self.anim
+    }
+
+    /// Draw with the frame's palette index shifted by `add` from now on.
+    pub fn set_palette_add(&mut self, add: usize) {
+        self.palette_add = add;
+        self.palette = None;
+        let ticks = self.ticks_left;
+        let fresh = self.fresh;
+        self.load_frame();
+        self.ticks_left = ticks;
+        self.fresh = fresh;
     }
 
     pub fn parts(&self) -> &[Part] {
@@ -276,15 +292,15 @@ impl Player {
                 })
                 .clone()
         } else {
+            let index = frame.pal + self.palette_add as u16;
             match &self.palette {
-                Some((index, palette)) if *index == frame.pal => palette.clone(),
+                Some((cached, palette)) if *cached == index => palette.clone(),
                 _ => {
                     self.palette = None;
-                    let palette = PaletteVramSingle::try_allocate_new(
-                        &self.assets.palette(frame.pal as usize),
-                    )
-                    .expect("sprite palette should fit in vram");
-                    self.palette = Some((frame.pal, palette.clone()));
+                    let palette =
+                        PaletteVramSingle::try_allocate_new(&self.assets.palette(index as usize))
+                            .expect("sprite palette should fit in vram");
+                    self.palette = Some((index, palette.clone()));
                     palette
                 }
             }

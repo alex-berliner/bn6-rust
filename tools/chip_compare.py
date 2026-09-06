@@ -55,12 +55,46 @@ def differs(a, b, box=None):
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
 
 
+LIBRARY = 0x020008A0
+LIBRARY_COPY = 0x02004C20
+
+
+def peek16(addr):
+    out = subprocess.run(
+        [CAPTURE, STERILE, "/tmp/chip_compare_peek", "0", "--loadstate", STATE,
+         "--peek", "0x%08x" % addr],
+        capture_output=True, text=True,
+    )
+    for line in (out.stdout + out.stderr).splitlines():
+        if line.startswith("peek"):
+            return int(line.split("=")[1], 16)
+    raise RuntimeError("peek failed")
+
+
+def library_pokes(chip_id):
+    """The hand validation (someChipHandValidationHappensHere_800B090,
+    asm00_1.s:17303) swaps any chip the library does not hold for the bug
+    chip 0x185: encryption_testPack_8006e84 wants byte_20008A0[id] ^ 0x81 ==
+    byte_2004C20[id]. The state's library lacks HiCannon, LongSwrd and
+    Barrier, so give the chip a count of 1 and its copy 0x80, keeping the
+    neighbouring byte of the halfword the harness writes."""
+    pokes = []
+    for base, value in ((LIBRARY, 1), (LIBRARY_COPY, 1 ^ 0x81)):
+        addr = base + chip_id
+        half = addr & ~1
+        old = peek16(half)
+        new = (old & 0xff00) | value if addr == half else (old & 0x00ff) | (value << 8)
+        pokes += ["--poke", "0x%08x:0x%04x" % (half, new)]
+    return pokes
+
+
 def capture_real(chip, out, count):
     subprocess.run(["rm", "-rf", out])
     cmd = [
         CAPTURE, STERILE, out, str(count),
         "--loadstate", STATE,
         "--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0",
+        *library_pokes(int(chip, 16)),
         "--cheat", f"{HAND_SLOT}:0x{chip}",
         "--zero", BANNER_TILES, "--disable-bg",
         "--script", f"Start@10,A@{REAL_A_FRAME}",

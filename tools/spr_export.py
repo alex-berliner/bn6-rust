@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spr import BASE, Sprite, load_sprite_bytes
 
 
-def build(spr, anims):
+def build(spr, anims, extra_palettes=0):
     gfx_blobs, gfx_ids = [], {}
     palettes, pal_ids = [], {}
     anim_recs, frame_recs, oam_recs = [], [], []
@@ -51,6 +51,13 @@ def build(spr, anims):
             if key not in pal_ids:
                 pal_ids[key] = len(palettes)
                 palettes.append(spr.palette(f, 0))
+                # The palette block's length word covers only the first
+                # palette, but the game indexes past it: the cannon barrel's
+                # byte_80B8BD4 rows add 1 and 2 for HiCannon and M-Cannon.
+                # Keep those consecutive after the frame's own so a runtime
+                # palette add maps onto the asset's indices.
+                for extra in range(1, extra_palettes + 1):
+                    palettes.append(spr.palette(f, extra))
 
             entries = spr.oam_entries(f)
             first = len(oam_recs)
@@ -119,11 +126,13 @@ def main():
     ap.add_argument("input")
     ap.add_argument("output")
     ap.add_argument("--anim", type=int, nargs="*", default=None)
+    ap.add_argument("--palettes", type=int, default=0,
+                    help="extra consecutive palettes to keep after each frame's own")
     args = ap.parse_args()
 
     spr = Sprite(load_sprite_bytes(args.input))
     anims = args.anim if args.anim else list(range(len(spr.anim_offsets)))
-    data, counts = build(spr, anims)
+    data, counts = build(spr, anims, args.palettes)
     with open(args.output, "wb") as f:
         f.write(data)
     g, p, a, fr, o = counts

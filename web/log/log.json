@@ -226,5 +226,11 @@
     "file": "log/proof/1788726264-strip_demo-vulcan.png",
     "caption": "VULCAN1 matched: tools/chip_compare.py 05 demo-vulcan -> 0 px on every frame c0-c49 (c6 = banner artifact). Arm gun sprite_83195F0 at (+23,-25): anim 0 (cream flash, own, held) in the first state, anim 1 (the 5-frame firing loop with muzzle flashes) from the firing state's first frame, anim 2 held in the last; navi anim 10 x2, anim 13 x20, anim 10 x13; the three shots are invisible in flight.",
     "tag": "proof"
+  },
+  {
+    "t": 1788728037,
+    "file": "log/proof/1788728037-strip_demo-hicannon.png",
+    "caption": "HICANNON matched: tools/chip_compare.py 02 demo-hicannon -> 0 px on every frame. The real ROM's hand validation swaps unowned chips for the bug chip 0x185 (encryption_testPack_8006e84: library byte ^ 0x81 must equal its copy); the comparer now fakes the library entry. HiCannon = the Cannon barrel with palette 1 (byte_80B8BD4 row 1).",
+    "tag": "proof"
   }
 ]
