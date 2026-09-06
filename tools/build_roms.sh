@@ -36,7 +36,7 @@ for entry in "${ENTRIES[@]}"; do
   cargo build --release --features "$feature"
   python3 tools/gbafix.py "target/thumbv4t-none-eabi/release/bn" "web/roms/$file.gba"
   if [ "$first" -eq 0 ]; then printf ',' >> web/roms/manifest.json; fi
-  printf '\n  {"feature": "%s", "file": "%s.gba", "label": "%s"}' \
+  printf '\n  {"feature": "%s", "file": "roms/%s.gba", "label": "%s"}' \
     "$feature" "$file" "$label" >> web/roms/manifest.json
   first=0
 done

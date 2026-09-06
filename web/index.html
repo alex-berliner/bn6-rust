@@ -28,7 +28,13 @@
   // served from here. A cache-busting query keeps a rebuilt ROM fresh.
   const stamp = Date.now();
   const params = new URLSearchParams(location.search);
-  const romParam = params.get('rom') || 'bn6-rust.gba';
+  let romParam = params.get('rom') || 'bn6-rust.gba';
+  // A demo ROM may be given as ?rom=roms/sword.gba (from the dropdown) or
+  // ?rom=sword.gba (a bare name); demos live under roms/, so resolve a bare
+  // name there. The full game has no directory.
+  if (romParam !== 'bn6-rust.gba' && !romParam.includes('/')) {
+    romParam = 'roms/' + romParam;
+  }
   EJS_player = '#game';
   EJS_core = 'gba';
   EJS_gameName = romParam;
