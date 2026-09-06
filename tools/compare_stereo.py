@@ -126,6 +126,42 @@ def is_field(r, g, b):
     return False
 
 
+def is_attack(r, g, b):
+    """True for the navi sprite / attack effect pixels (MegaMan's saturated
+    blues, helmet/white, the barrel green, and the big white/yellow orb).
+
+    Kept deliberately broad so the whole navi + barrel + orb survive the
+    field/HUD mask; everything else (field panels, background, HUD) is blanked.
+    """
+    # MegaMan's saturated blue body / helmet (bright blue, not the pale panel)
+    if b > 120 and (b - r) > 60 and (b - g) > 30:
+        return True
+    # MegaMan's warm helmet / skin / red accents
+    if r > 150 and g > 90 and b < 180 and (r - b) > 40:
+        return True
+    # white highlights / eyes
+    if r > 210 and g > 210 and b > 210:
+        return True
+    # barrel green
+    if g > 90 and (g - r) > 20 and (g - b) > 20:
+        return True
+    # big orb: white/yellow with a pale-yellow outline
+    if r > 200 and g > 200 and b > 120:
+        return True
+    return False
+
+
+def mask_navi_only(im):
+    """Blank everything except the navi/attack pixels (field, bg, HUD -> black)."""
+    px = im.load()
+    w, h = im.size
+    for y in range(h):
+        for x in range(w):
+            if not is_attack(*px[x, y][:3]):
+                px[x, y] = (0, 0, 0)
+    return im
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("real_dir")
@@ -141,6 +177,10 @@ def main():
     ap.add_argument("--log", action="store_true", help="append to web /log")
     ap.add_argument("--caption", default="")
     ap.add_argument("--tag", default="compare")
+    ap.add_argument("--navi-only", action="store_true",
+                    help="blank every pixel that is NOT the navi/attack (field, "
+                         "background and HUD become black) in BOTH frames, so the "
+                         "whole-frame diff is pure MegaMan + attack.")
     args = ap.parse_args()
 
     ww, wh = (int(x) for x in args.win.lower().split("x"))
@@ -161,6 +201,9 @@ def main():
     else:
         rc = crop_centered(ri, *navi_centroid(ri), ww, wh)
         uc = crop_centered(ui, *navi_centroid(ui), ww, wh)
+    if args.navi_only:
+        rc = mask_navi_only(rc.copy())
+        uc = mask_navi_only(uc.copy())
 
     from PIL import Image, ImageChops, ImageDraw
     diff = ImageChops.difference(rc, uc).convert('L').point(lambda v: min(255, v * 3))
