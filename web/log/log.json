@@ -116,8 +116,8 @@
   {
     "t": 1788708777,
     "file": "log/proof/1788708777-proof_orb_full.png",
-    "caption": "PROOF: whole-frame comparison \u2014 REAL vs RUST both render field + MegaMan at (2,2) + big orb (frames f31/f140). Residual = exact field/navi-scale/bg, not the projectile",
-    "tag": "proof"
+    "caption": "CORRECTION: NOT a matched whole-frame comparison. The real (f31) and rust (f140) frames are on DIFFERENT animation phases, with different field layout/background/navi scale. This does not show parity -- the scenes do not match.",
+    "tag": "corrected"
   },
   {
     "t": 1788708804,
