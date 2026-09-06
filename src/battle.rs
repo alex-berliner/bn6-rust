@@ -117,9 +117,12 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     strike_at: 9,
     recover: 5,
 };
-/// The cannon barrel's charge animation holds 13 frames (the barrel, the
-/// growing orb, the burst) in its one player animation.
-const CANNON_FRAMES: u8 = 13;
+/// The cannon barrel's animation plays right through the pose: its anim 0
+/// frames cumulate to the full barrel and muzzle blast around tick 19-22
+/// (the sprite has 13 frames with durations 5,3,1,5,1,1,1,2,2,2,2,2,2 = 29),
+/// so the effect must live as long as the 0x1d-frame pose (sub_80EBC28,
+/// asm31.s:109554) or the barrel is cut off before it forms.
+const CANNON_FRAMES: u8 = 0x1d;
 /// The sword slash's transient illusion holds 0x1e frames (the type-4 illusion
 /// the strike spawns at the target panel, asm31.s:109116-109134: the second
 /// illusion is given timer 0x1e).
@@ -961,7 +964,7 @@ impl<'a> Battle<'a> {
                 let (mx, my) = field::panel_centre(mc, mr);
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
-                    (mx + 8, my - 14),
+                    (mx + 14, my - 16),
                     CANNON_FRAMES,
                 ));
             }
