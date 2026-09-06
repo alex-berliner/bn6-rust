@@ -100,5 +100,11 @@
     "file": "log/compare/1788706690-cannon_match.png",
     "caption": "Cannon aligned comparison: both now render the field + MegaMan at (2,2) + big orb. Layout matches; residual from exact field tiles/navi-scale/background pattern.",
     "tag": "compare"
+  },
+  {
+    "t": 1788706887,
+    "file": "log/compare/1788706887-navi_only.png",
+    "caption": "Cannon navi+attack comparison (REAL f31 vs RUST f140): both fire the green barrel + big orb. Poses match closely; residual is navi pose/frame-timing.",
+    "tag": "compare"
   }
 ]
