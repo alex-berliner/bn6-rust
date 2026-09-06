@@ -124,5 +124,11 @@
     "file": "log/proof/1788708804-proof_oam_blocker.png",
     "caption": "BLOCKER PROOF: zeroing EVERY OAM entry leaves the frame identical \u2014 the game reloads its whole render config (OAM/DISPCNT/palette) each frame, so no write-based strip works. Only a ROM code patch to the field/HUD draw can achieve whole-frame parity.",
     "tag": "proof"
+  },
+  {
+    "t": 1788709640,
+    "file": "log/sterile/1788709640-dbg_30.png",
+    "caption": "BREAKTHROUGH: --disable-bg strips the field/background/panels \u2014 only MegaMan + attack (OBJ) show on black, matching the Rust sterile render for a whole-frame diff",
+    "tag": "proof"
   }
 ]
