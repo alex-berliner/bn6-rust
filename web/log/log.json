@@ -160,5 +160,11 @@
     "file": "log/proof/1788713758-barrelonly.png",
     "caption": "Barrel-anchor matched (real f51 vs rust f132): both green compact barrel at the arm. Residual: exact sprite pixels/colors + HP text, not structure.",
     "tag": "proof"
+  },
+  {
+    "t": 1788716997,
+    "file": "log/proof/1788716997-diffmask2.png",
+    "caption": "DIFFMASK (real f51 vs rust f125, aligned 0,-6): GREEN=solid identical (black background matches perfectly). RED=differs (MegaMan/barrel sprite + HP text + HUD). Background is solid; sprite differs by exact pixel placement + navi screen position.",
+    "tag": "proof"
   }
 ]
