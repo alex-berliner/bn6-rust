@@ -232,5 +232,11 @@
     "file": "log/proof/1788728037-strip_demo-hicannon.png",
     "caption": "HICANNON matched: tools/chip_compare.py 02 demo-hicannon -> 0 px on every frame. The real ROM's hand validation swaps unowned chips for the bug chip 0x185 (encryption_testPack_8006e84: library byte ^ 0x81 must equal its copy); the comparer now fakes the library entry. HiCannon = the Cannon barrel with palette 1 (byte_80B8BD4 row 1).",
     "tag": "proof"
+  },
+  {
+    "t": 1788728053,
+    "file": "log/proof/1788728053-strip_demo-longswrd.png",
+    "caption": "LONGSWRD matched: tools/chip_compare.py 49 demo-longswrd -> 0 px on every frame (sword object + arc animation 1, two panels ahead), once the library poke lets the real ROM keep it in the hand.",
+    "tag": "proof"
   }
 ]
