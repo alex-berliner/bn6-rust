@@ -21,7 +21,8 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, WAVE,
+    AIRSHOT_BARREL, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR,
+    VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -163,19 +164,26 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
     recover: 3,
     recover_anim: Some(15),
 };
-/// Vulcan1 (attack family 0x17, sub_80EBF10): takes animation 0xa as a
-/// wind-up, then animation 0xd and fires until its shots are out
-/// (sub_80EBF30, sub_80EBF6E; asm31.s:109844, 109887). The three shots are
-/// released 0xa frames apart, so they are modelled here as one strike that
-/// spawns a staggered volley in chip_strike.
+/// Vulcan1 (attack family 0x17, sub_80EBF10, asm31.s:109821): the first
+/// state holds animation 0xa for two ticks with the arm gun spawned; the
+/// firing state sets animation 0xd (which loops on its own every five
+/// frames -- the recoil rhythm) and fires on its first tick and every 0xa
+/// after, three shots (dword_80EBFEC), handing over after the third; the
+/// last state sets animation 0xa again for 0xa ticks and exits. Against the
+/// real ROM the idle is back 35 frames after the press.
 const VULCAN: actor::AttackSpec = actor::AttackSpec {
-    windup: Some((0xa, 0x10)),
+    windup: Some((0xa, 2)),
     anim: 0xd,
-    frames: 0x1e,
+    frames: 20,
     strike_at: 1,
-    recover: 0,
-    recover_anim: None,
+    recover: 13,
+    recover_anim: Some(0xa),
 };
+/// The Vulcan gun rides the arm for the whole attack (byte_80B8BD4 row
+/// 0xd: effect list 0xC index 0x1d = sprite_83195F0, animation 0, at
+/// arm-position row 0xe: +23 forward, 25 up, byte_80188C0[28..30]).
+const VULCAN_FRAMES: u8 = 35;
+const VULCAN_ARM: (i32, i32) = (23, -25);
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
 /// object from the first frame, sound 0xaf; the hit goes out on the frame
 /// the counter reads 5 -- the sixth -- as an instant one-panel hitbox one
@@ -281,6 +289,12 @@ pub struct Battle<'a> {
     hand_at: usize,
     /// The chip whose attack pose is playing, for its strike.
     chip_in_use: Option<Chip>,
+    /// The Vulcan gun, driven by the attack's states: animation 0 while the
+    /// first state holds, 1 (the firing loop with its muzzle flashes) from
+    /// the firing state's first frame, 2 (held) from the last state. The
+    /// real ROM's gun follows the navi's states this way; how the game
+    /// passes the state to the object was not traced.
+    vulcan_gun: Option<(spr::Player, (i32, i32), u8)>,
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -604,6 +618,7 @@ impl<'a> Battle<'a> {
             hand_at: 0,
             chip_in_use: None,
             sword_in: None,
+            vulcan_gun: None,
             bombs: Vec::new(),
             panels,
             bg,
@@ -892,7 +907,16 @@ impl<'a> Battle<'a> {
                 self.sword_in = Some(left - 1);
             }
         }
-        match self.megaman.update() {
+        let navi_update = self.megaman.update();
+        if let Some((gun, _, _)) = self.vulcan_gun.as_mut() {
+            match navi_update {
+                // The firing state's first frame is also its first shot.
+                Update::PoseBegun | Update::Strike { .. } if gun.anim() == 0 => gun.play(1),
+                Update::Recovering => gun.play(2),
+                _ => {}
+            }
+        }
+        match navi_update {
             Update::Strike { .. } if self.chip_in_use.is_some() => {
                 let chip = self.chip_in_use.take().unwrap();
                 self.chip_strike(chip);
@@ -1028,6 +1052,14 @@ impl<'a> Battle<'a> {
                 None => false,
             });
 
+        if let Some((gun, _, ticks)) = self.vulcan_gun.as_mut() {
+            gun.update();
+            if *ticks == 0 {
+                self.vulcan_gun = None;
+            } else {
+                *ticks -= 1;
+            }
+        }
         // An effect with N frames is drawn for N frames, this one included.
         self.effects.retain_mut(|(p, _, ticks, _)| {
             p.update();
@@ -1131,6 +1163,14 @@ impl<'a> Battle<'a> {
             CHIP_VULCAN => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(VULCAN);
+                let (mc, mr) = self.megaman.panel();
+                let (mx, my) = field::panel_centre(mc, mr);
+                let dx = self.megaman.facing_dx();
+                self.vulcan_gun = Some((
+                    spr::Player::new(spr::Assets::new(VULCAN_GUN), 0),
+                    (mx + dx * VULCAN_ARM.0, my + VULCAN_ARM.1),
+                    VULCAN_FRAMES,
+                ));
             }
             CHIP_AIRSHOT => {
                 self.chip_in_use = Some(chip);
@@ -1319,6 +1359,16 @@ impl<'a> Battle<'a> {
         // spawned them (the real ROM shows the barrel covering the arm), and
         // a later one over an earlier one: the sword's arc, spawned at the
         // strike, covers the sword object spawned at the pose's start.
+        for (p, (x, y), _) in self.vulcan_gun.iter() {
+            for part in p.parts().iter().rev() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
         for (p, (x, y), _, _) in self.effects.iter().rev() {
             for part in p.parts().iter().rev() {
                 Object::new(part.sprite.clone())

@@ -163,11 +163,14 @@ pub struct Player {
     /// animation almost always share a palette, so this avoids reallocating it
     /// on every frame change.
     palette: Option<(u16, PaletteVramSingle)>,
-    /// The flat palette a part with a palette offset is drawn in: the real
-    /// ROM renders the barrel's silhouette frame as (239,255,239) throughout
-    /// (BGR555 0x77fd), the bank that offset lands on in its object palette
-    /// layout not having been identified.
-    silhouette: Option<PaletteVramSingle>,
+    /// The flat palettes parts with a palette offset are drawn in, keyed by
+    /// the offset. Measured on the real ROM: offset 1 draws every colour as
+    /// (247,239,222) (BGR555 0x6fbe; the Vulcan gun's first frame), offset 4
+    /// as (239,255,239) (0x77fd; the cannon barrel's silhouette), and offset
+    /// 2 leaves the sprite's own colours (the gun's second frame). The banks
+    /// those offsets land on in the game's object palette layout were not
+    /// identified; the colours were.
+    flat: [Option<PaletteVramSingle>; 8],
     /// An all-white palette for the hit flash, allocated on first use. The game
     /// does this by forcing the object's palette bank to 15
     /// (sprite_forceWhitePalette, asm/sprite.s:1141).
@@ -186,7 +189,7 @@ impl Player {
             fresh: true,
             done: false,
             palette: None,
-            silhouette: None,
+            flat: Default::default(),
             white: None,
             white_on: false,
             parts: Vec::new(),
@@ -203,6 +206,10 @@ impl Player {
         self.done = false;
         self.fresh = true;
         self.load_frame();
+    }
+
+    pub fn anim(&self) -> usize {
+        self.anim
     }
 
     pub fn parts(&self) -> &[Part] {
@@ -288,17 +295,21 @@ impl Player {
             let (w, h) = e.size.to_tiles_width_height();
             let start = e.tile as usize * 32;
             let len = w * h * 32;
-            let part_palette = if e.pal_offset != 0 && !self.white_on {
-                self.silhouette
+            let flat_colour = match e.pal_offset {
+                1 => Some(0x6fbe),
+                4 => Some(0x77fd),
+                _ => None,
+            };
+            let part_palette = match flat_colour {
+                Some(colour) if !self.white_on => self.flat[e.pal_offset as usize & 7]
                     .get_or_insert_with(|| {
                         PaletteVramSingle::try_allocate_new(&Palette16::new(
-                            [Rgb15::new(0x77fd); 16],
+                            [Rgb15::new(colour); 16],
                         ))
-                        .expect("silhouette palette should fit in vram")
+                        .expect("flat palette should fit in vram")
                     })
-                    .clone()
-            } else {
-                palette.clone()
+                    .clone(),
+                _ => palette.clone(),
             };
             let sprite = DynamicSprite16::from_bytes(e.size, &tiles[start..start + len])
                 .to_vram(part_palette);

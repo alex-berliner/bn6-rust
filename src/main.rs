@@ -39,6 +39,7 @@ static HEAL: &[u8] = &Aligned(*include_bytes!("../assets/heal.bin")).0;
 static AIRSHOT_BARREL: &[u8] = &Aligned(*include_bytes!("../assets/airshot_barrel.bin")).0;
 static MINIBOMB: &[u8] = &Aligned(*include_bytes!("../assets/minibomb.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
+static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
 static METTAUR: &[u8] = &Aligned(*include_bytes!("../assets/mettaur.bin")).0;

@@ -220,5 +220,11 @@
     "file": "log/proof/1788725729-strip_demo-minibomb.png",
     "caption": "MINIBOMB landing matched too: --xmax 240 -> 0 px c42-c74 (the blast sprite_8399578 anim 0 at the landing panel, 22 frames, sound 0x70; the earlier full-width residue is the real ROM's dissolving Mettaur remnant).",
     "tag": "proof"
+  },
+  {
+    "t": 1788726264,
+    "file": "log/proof/1788726264-strip_demo-vulcan.png",
+    "caption": "VULCAN1 matched: tools/chip_compare.py 05 demo-vulcan -> 0 px on every frame c0-c49 (c6 = banner artifact). Arm gun sprite_83195F0 at (+23,-25): anim 0 (cream flash, own, held) in the first state, anim 1 (the 5-frame firing loop with muzzle flashes) from the firing state's first frame, anim 2 held in the last; navi anim 10 x2, anim 13 x20, anim 10 x13; the three shots are invisible in flight.",
+    "tag": "proof"
   }
 ]

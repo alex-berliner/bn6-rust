@@ -208,8 +208,8 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
 banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
-MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240).
-Vulcan1 (05 demo-vulcan) is captured and being matched;
+MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
+Vulcan1 (05 demo-vulcan). That is every chip on the list that the real ROM will fire;
 LongSwrd (0x49), HiCannon (0x02), M-Cannon (0x03) and Barrier (0xb2) do not fire when poked
 into the real ROM's hand slot (a Sonnet pass found no static ChipData gate; unresolved --
 try dumping AIData Unk_44 after the press, or the ChipLockoutTimer, or a release-edge press).
@@ -235,7 +235,14 @@ heal sprite_830D494 anim 0 at the origin, 14 frames; MiniBomb held bomb sprite_8
 the origin until the throw (pose frame 10 of animation 6 held 42 frames), thrown bomb anim 1 as
 t3_0x8 with 16.16 physics (from +4/+0x30, vx 0x2e666, vz 0x20666 - 0x2800/frame, 0x28 frames;
 the frame's first part is the shadow and stays on the ground; Y and Z truncated separately),
-blast sprite_8399578 anim 0 (22 frames) at the landing panel.
+blast sprite_8399578 anim 0 (22 frames) at the landing panel; Vulcan1 arm gun sprite_83195F0
+at (+23,-25) with its animation following the attack's states (0: two frames of the first
+state, whose first frame is drawn flat cream -- OAM palette offset 1; 1: the 5-frame firing
+loop with muzzle flashes from the firing state's first frame; 2: held from the last state),
+navi animation 10 for 2, 13 for 20 (it loops every 5 frames on its own), 10 for 13; the three
+shots (t3_0x12, every 0xa ticks from the firing state's first frame) load no sprite.
+OAM palette offsets measured: 1 = flat (247,239,222), 2 = the sprite's own colours, 4 = flat
+(239,255,239).
 
 ## 7b. DONE 2026-09-06: the Sword (chip 0x47) is frame-for-frame identical
 

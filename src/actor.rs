@@ -223,6 +223,10 @@ enum Action {
 
 /// What [`Actor::update`] asks the caller to do this frame.
 pub enum Update {
+    /// A lead-in has ended and the pose begun this frame.
+    PoseBegun,
+    /// The attack pose has ended and the recovery begun this frame.
+    Recovering,
     Nothing,
     /// A frame of an attack pose before its strike, counted from 1.
     Winding {
@@ -630,11 +634,11 @@ impl Actor {
                         recover,
                         recover_anim,
                     } => {
-                        if ticks == strike_tick {
-                            update = Update::Strike { charged };
-                        } else if ticks > strike_tick {
-                            update = Update::Winding { frame: 1 };
-                        }
+                        update = if ticks == strike_tick {
+                            Update::Strike { charged }
+                        } else {
+                            Update::PoseBegun
+                        };
                         Action::Attacking {
                             ticks: ticks - 1,
                             strike_tick,
@@ -685,6 +689,7 @@ impl Actor {
                     self.player.play(anim::IDLE);
                 }
                 if recover > 0 {
+                    update = Update::Recovering;
                     Action::Recovering { ticks: recover }
                 } else {
                     Action::Idle

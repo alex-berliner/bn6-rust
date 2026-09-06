@@ -88,7 +88,11 @@ impl Shot {
         y_offset: i32,
         delay: u8,
     ) -> Self {
-        Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay, ANIM)
+        // Invisible in flight: t3_0x12 loads no sprite; only its hit spark
+        // shows (sub_80C6A50, asm31.s:31253).
+        let mut shot = Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay, ANIM);
+        shot.hidden = true;
+        shot
     }
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
