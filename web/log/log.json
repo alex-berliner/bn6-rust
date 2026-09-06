@@ -76,5 +76,11 @@
     "file": "log/compare/1788704001-side_by_side.png",
     "caption": "Real (frame 31) vs Rust (frame 145) cannon side-by-side: both MegaMan-alone firing. The DIFF is dominated by the field-panel difference (real has panels, rust has black) \u2014 next step is stripping the field background on the real side too.",
     "tag": "compare"
+  },
+  {
+    "t": 1788706096,
+    "file": "log/cannon/1788706096-orb_tight.png",
+    "caption": "REAL Cannon projectile: large white orb with yellow outline, at the target panel (the Cannon chip's own big orb, NOT the buster bolt my Rust uses)",
+    "tag": "real"
   }
 ]
