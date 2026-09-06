@@ -107,9 +107,10 @@ impl Shot {
     }
 
     /// True on the frame the hitbox arrived on its panel, including the one
-    /// it was spawned on, so a dwelling wave hits each panel once.
+    /// it was spawned on, so a dwelling wave hits each panel once. A shot
+    /// still waiting out its release delay has not arrived anywhere yet.
     pub fn just_arrived(&self) -> bool {
-        self.ticks == self.interval
+        self.delay == 0 && self.ticks == self.interval
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {

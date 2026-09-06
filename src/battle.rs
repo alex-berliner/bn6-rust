@@ -679,9 +679,12 @@ impl<'a> Battle<'a> {
         while i < self.shots.len() {
             // A hitbox hits whoever is on the panel it arrives on: the
             // player's shots hit enemies and are spent, an enemy's wave hits
-            // the player and rolls on. Off the field, both are spent.
+            // the player and rolls on. Off the field, both are spent. Arrival
+            // is checked before the shot advances, so the panel it spawns on
+            // counts too -- a point-blank target is hit on the first frame.
+            let arrived = self.shots[i].just_arrived();
             let mut spent = !self.shots[i].update();
-            if !spent && self.shots[i].just_arrived() {
+            if !spent && arrived {
                 let at = (self.shots[i].col, self.shots[i].row);
                 let mut hit = false;
                 if self.shots[i].from_player {
