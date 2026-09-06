@@ -136,5 +136,11 @@
     "file": "log/proof/1788709956-fire_cmp.png",
     "caption": "Aligned whole-frame firing compare (both on black via --disable-bg): REAL f58 vs RUST f139 \u2014 both MegaMan fire the green cannon barrel + big white orb. Residual from HP text + exact navi pose/scale.",
     "tag": "proof"
+  },
+  {
+    "t": 1788710072,
+    "file": "log/proof/1788710072-bestdiff.png",
+    "caption": "MegaMan+attack aligned (both on black): REAL f58 vs RUST f139, best-shift residual ~54%. Attack shape/pose/scale match; residual is the ORB TRAVEL PHASE (real orb at muzzle vs rust orb further out) + HP '100' text.",
+    "tag": "proof"
   }
 ]
