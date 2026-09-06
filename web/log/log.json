@@ -1,0 +1,44 @@
+[
+  {
+    "t": 1788702288,
+    "file": "log/arena/1788702288-sterile-arena.png",
+    "caption": "Sterile arena: MegaMan alone on a plain black background, green barrel on the arm, no field tiles / no enemy / never concludes",
+    "tag": "rust"
+  },
+  {
+    "t": 1788702288,
+    "file": "log/cannon/1788702288-rust-cannon-fire.png",
+    "caption": "Rust cannon firing the white/cyan bolt from the compact green barrel (fixed, no big cyan discharge)",
+    "tag": "rust"
+  },
+  {
+    "t": 1788702288,
+    "file": "log/cannon/1788702288-rust-cannon-barrel.png",
+    "caption": "Rust cannon: compact green barrel with charge orb on the arm",
+    "tag": "rust"
+  },
+  {
+    "t": 1788702288,
+    "file": "log/cannon/1788702288-real-cannon-fire.png",
+    "caption": "Real MMBN6F cannon: green barrel firing the white/cyan bolt (frame-advanced ground truth)",
+    "tag": "real"
+  },
+  {
+    "t": 1788702288,
+    "file": "log/cannon/1788702288-real-cannon-barrel.png",
+    "caption": "Real MMBN6F cannon: compact green barrel + orange band at the hand",
+    "tag": "real"
+  },
+  {
+    "t": 1788702334,
+    "file": "log/cannon/1788702334-real_cannon.gif",
+    "caption": "Real MMBN6F cannon \u2014 animated (green barrel -> orb charge -> white/cyan bolt fires -> COUNTER HIT), frame-advanced from the save state",
+    "tag": "real"
+  },
+  {
+    "t": 1788702334,
+    "file": "log/cannon/1788702334-rust_cannon.gif",
+    "caption": "Rust cannon \u2014 animated (compact green barrel + charge orb -> white/cyan bolt fires)",
+    "tag": "rust"
+  }
+]
