@@ -203,6 +203,35 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
   37/38/39 at c14/15/16 (body x 43->39->38->37), 40 at c17-29 (x 35); barrel white c5-7,
   green from c8; muzzle orb small c14, big c15; chevrons c16-22; recovery c30-32; idle c33.
 
+## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
+
+`tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
+banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
+demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
+Vulcan1 (05 demo-vulcan) and MiniBomb (36 demo-minibomb) are captured and being matched;
+LongSwrd (0x49), HiCannon (0x02), M-Cannon (0x03) and Barrier (0xb2) do not fire when poked
+into the real ROM's hand slot (a Sonnet pass found no static ChipData gate; unresolved --
+try dumping AIData Unk_44 after the press, or the ChipLockoutTimer, or a release-edge press).
+
+Timing rules that hold for all five (commit "One timing rule for sprites, poses and effects"):
+- `spr::Player`: a newly set animation is drawn on its first frame that frame and its
+  duration counts from the next (`fresh`). The actor ticks its sprite AFTER its state
+  machine, so this holds whether the animation was set by `attack()` before the update or by
+  the lead-in -> pose transition inside it.
+- `Actor`: a pose (`Attacking`) and a lead-in (`WindingUp`) are on screen for every tick from
+  their length down to 1; the exit is the frame after. The transition frame ticks the new
+  pose at once (the game sets the animation and its counter in the same tick). `recover_anim:
+  None` holds the pose through recovery; `Some(a)` plays `a` (the cannon's animation 15).
+- `Battle.effects`: an effect with N frames is drawn for N frames including its spawn frame.
+  Type-1 attack objects (barrel, sword) and type-4 effects (arc, heal) need no special case.
+- The comparer aligns on the navi's body box, not the whole frame (the deleted Mettaur's
+  remnant dissolves at x>=149; HUD objects blink).
+Objects per chip: Cannon barrel sprite_82F39C0 anim 0 at (+16,-24); Sword object
+sprite_82EFE48 anim 0 at the origin from the slash state's first frame (two lead-in frames),
+arc sprite_830F144 anim 2/0/1 at the front panel -16 on pose frame 10; AirShot arm object
+sprite_83138C4 anim 0 at (+18,-24), 21-frame pose, instant one-panel hit on frame 6; Recov
+heal sprite_830D494 anim 0 at the origin, 14 frames.
+
 ## 7b. DONE 2026-09-06: the Sword (chip 0x47) is frame-for-frame identical
 
 `tools/chip_compare.py 47 demo-sword --frames 40`: 0 pixels on every frame from the press to
