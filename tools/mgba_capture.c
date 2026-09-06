@@ -274,6 +274,23 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* Per-frame cheats: `--cheat addr:value`, re-written before each frame. */
+	struct { uint32_t addr; uint16_t val; } cheats[64];
+	int ncheat = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--cheat") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* colon = strchr(p, ':');
+			if (colon && ncheat < 64) {
+				*colon = 0;
+				cheats[ncheat].addr = (uint32_t) strtoul(p, NULL, 0);
+				cheats[ncheat].val = (uint16_t) strtoul(colon + 1, NULL, 0);
+				++ncheat;
+			}
+			free(p);
+			++i;
+		}
+	}
 	for (int i = 0; i < count; ++i) {
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
@@ -283,6 +300,11 @@ int main(int argc, char** argv) {
 			if (taps[t].frame == i) keys |= taps[t].key;
 		}
 		core->setKeys(core, keys);
+		/* Per-frame "cheats": re-written before each frame so the game cannot
+		 * overwrite them. Repeatable via --cheat addr:value. */
+		for (int c = 0; c < ncheat; ++c) {
+			core->busWrite16(core, cheats[c].addr, cheats[c].val);
+		}
 		core->runFrame(core);
 		if (write_frame(buf, stride)) {
 			return 1;
