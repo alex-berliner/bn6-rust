@@ -1008,9 +1008,12 @@ impl<'a> Battle<'a> {
                 // barrel body (local x[-8..14]) sits at/in front of the hand
                 // when anchored ~mx+12, raised to arm height, so the barrel
                 // reads as held out in front rather than tucked in the torso.
+                // Anchored against the real (barrel centre = body+(+21,-11)) the
+                // barrel sits slightly further forward and higher than a naive
+                // +12,-18; the offset below is trimmed to match that.
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
-                    (mx + 12, my - 18),
+                    (mx + 18, my - 24),
                     CANNON_FRAMES,
                 ));
             }
