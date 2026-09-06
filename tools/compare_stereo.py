@@ -77,20 +77,53 @@ def crop_centered(im, cx, cy, ww, wh):
 
 
 def diff_rate(a, b):
-    """Fraction of differing pixels that are NOT the near-black backdrop."""
+    """Fraction of differing pixels that are NOT background or field panels.
+
+    The field grid (battle panels) is static and identical-intent, so its
+    palette colours are masked out in BOTH frames -- that leaves only the navi,
+    the barrel and the projectile as the real-vs-rust difference.
+    """
     pa, pb = a.load(), b.load()
     tot = dif = 0
     for y in range(a.height):
         for x in range(a.width):
             r0, g0, b0 = pa[x, y]
             r1, g1, b1 = pb[x, y]
-            # ignore backdrop (near-black on both) so it doesn't dominate
+            # ignore backdrop (near-black on both)
             if (r0 + g0 + b0 < 40) and (r1 + g1 + b1 < 40):
+                continue
+            # ignore field panel colours (either side)
+            if is_field(r0, g0, b0) or is_field(r1, g1, b1):
                 continue
             tot += 1
             if (r0, g0, b0) != (r1, g1, b1):
                 dif += 1
     return (dif / tot * 100.0) if tot else 0.0
+
+
+def is_field(r, g, b):
+    """True for the battle-field grid palette (navy/orange/cream panels).
+
+    Sampled from the real frame: the panels are dark navy (0,0,82),
+    blue-grey (0,57,82)/(0,49,123), orange/brown (99,49,16)/(239,148,107)/
+    (255,189,156)/(222,107,74), and the pale-blue player panels (0,148,255)-ish.
+    These are the flat grid cells, distinct from the navi's saturated sprite.
+    """
+    # dark navy / blue-grey panels
+    if b > 60 and g < 120 and r < 40:
+        return True
+    # deep blue player-adjacent
+    if r < 30 and g < 70 and 100 <= b <= 160:
+        return True
+    # orange / brown / cream enemy panels (r clearly highest, g mid)
+    if r > 150 and g > 60 and b < 160 and (r - b) > 60:
+        return True
+    if r > 90 and g > 40 and b < 40 and (r - g) > 30:
+        return True
+    # cream highlight
+    if r > 200 and g > 150 and 90 <= b <= 200 and (r >= g > b):
+        return True
+    return False
 
 
 def main():
@@ -121,6 +154,15 @@ def main():
 
     from PIL import Image, ImageChops, ImageDraw
     diff = ImageChops.difference(rc, uc).convert('L').point(lambda v: min(255, v * 3))
+    # Zero the field panels in the diff so only the navi/barrel/projectile read.
+    diff = diff.convert('RGB')
+    dpx = diff.load()
+    rpx = rc.load()
+    upx = uc.load()
+    for y in range(diff.height):
+        for x in range(diff.width):
+            if is_field(*rpx[x, y][:3]) or is_field(*upx[x, y][:3]):
+                dpx[x, y] = (0, 0, 0)
 
     canvas = Image.new('RGB', (ww * 3 + 8, wh), (20, 20, 28))
     canvas.paste(rc, (0, 0))
