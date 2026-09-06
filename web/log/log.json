@@ -154,5 +154,11 @@
     "file": "log/proof/1788712264-bluemask.png",
     "caption": "Diagnosis: the MegaMan blue-body silhouette MATCHES (same shape real vs rust). The per-frame residual is the barrel/orb position + pose/timing, not a wrong navi or projectile.",
     "tag": "proof"
+  },
+  {
+    "t": 1788713758,
+    "file": "log/proof/1788713758-barrelonly.png",
+    "caption": "Barrel-anchor matched (real f51 vs rust f132): both green compact barrel at the arm. Residual: exact sprite pixels/colors + HP text, not structure.",
+    "tag": "proof"
   }
 ]
