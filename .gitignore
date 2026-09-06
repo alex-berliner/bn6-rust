@@ -11,3 +11,5 @@ web/real-bn6f.gba
 web/*.state
 web/*.sav
 web/roms/*.sav
+web/real-bn6f.srm
+web/*.srm

@@ -191,6 +191,25 @@ int main(int argc, char** argv) {
 		free(s);
 	}
 
+	/* A memory poke after the state loads: `--poke addr:value` (16-bit value)
+	 * writes to a 16-bit address, for patching battle RAM (e.g. the hand chip
+	 * list at byte_20349C0). Repeatable. */
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--poke") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* colon = strchr(p, ':');
+			if (colon) {
+				*colon = 0;
+				uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
+				uint16_t val = (uint16_t) strtoul(colon + 1, NULL, 0);
+				core->busWrite16(core, addr, val);
+				fprintf(stderr, "poke 0x%08x = 0x%04x\n", addr, val);
+			}
+			free(p);
+			++i;
+		}
+	}
+
 	for (int i = 0; i < count; ++i) {
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
