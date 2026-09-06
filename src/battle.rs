@@ -997,14 +997,16 @@ impl<'a> Battle<'a> {
             // default arm below then fires.
             CHIP_CANNON | CHIP_HICANNON => {
                 let (fc, fr) = self.megaman.front_panel();
-                // The barrel mounts on the navi's own panel, toward the side it
-                // faces; its sprite parts sit up from its origin, so anchor it
-                // at the body and push it a little forward.
+                // The barrel mounts on the navi's own panel, at the arm on the
+                // side it faces. Its parts sit up and slightly toward the
+                // front from the origin (x -11..34, y -34..-2), so anchor it
+                // at the body, pushed down a touch so the barrel body lands at
+                // the arm height.
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
-                    (mx + dx * 8, my + 6),
+                    (mx, my + 10),
                     CANNON_FRAMES,
                 ));
                 self.shots
