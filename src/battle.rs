@@ -20,8 +20,8 @@ use crate::hud::Hud;
 use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
-    CANNON_SPR, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN, SHOTFX,
-    SWORD_SPR, WAVE,
+    BARREL_CHARGE, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN,
+    SHOTFX, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -117,11 +117,10 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     strike_at: 9,
     recover: 5,
 };
-/// The cannon barrel's animation plays right through the pose: its anim 0
-/// frames cumulate to the full barrel and muzzle blast around tick 19-22
-/// (the sprite has 13 frames with durations 5,3,1,5,1,1,1,2,2,2,2,2,2 = 29),
-/// so the effect must live as long as the 0x1d-frame pose (sub_80EBC28,
-/// asm31.s:109554) or the barrel is cut off before it forms.
+/// The cannon barrel effect lives as long as the 0x1d-frame pose (the strike
+/// fires at counter 0xf and the pose exits at 0x1d, sub_80EBC28 asm31.s:109532,
+/// 109554) so the barrel stays on the arm until the shot is done. The charge
+/// animation itself is short and holds its last frame.
 const CANNON_FRAMES: u8 = 0x1d;
 /// The sword slash's transient illusion holds 0x1e frames (the type-4 illusion
 /// the strike spawns at the target panel, asm31.s:109116-109134: the second
@@ -959,17 +958,21 @@ impl<'a> Battle<'a> {
                 // begins and charges up to the shot (sub_80EBC28 spawns the
                 // t1_0x5 barrel at counter 0, asm31.s:109468; the shot fires
                 // at counter 0xf, 109531). Spawn it here so it appears at the
-                // start of the pose, not just at the strike.
+                // start of the pose.
+                //
+                // The barrel is the compact green barrel held at the arm: its
+                // charge animation (byte_82F39C0 anim0 frames 1-5) grows the
+                // charge orb at the muzzle and holds there, then the strike
+                // fires the travelling bolt. It does NOT play the cyan
+                // discharge frames of the full sprite -- those are the charged
+                // buster's burst, not the Cannon chip's barrel.
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
-                // Anchor the green barrel body at the arm so the whole cannon
-                // (body + forward muzzle discharge) reads as one object on
-                // MegaMan's panel with the burst firing forward, not drifting
-                // onto the enemy's. MegaMan's cannon-pose hand is at local
-                // x[14..20], so the sprite body (local x[-11..11]) sits there
-                // when anchored about mx+8, raised to arm height.
+                // MegaMan's cannon-pose hand is at local x[14..20], so the
+                // sprite body (local x[-11..11]) sits at the hand when
+                // anchored ~mx+8, raised to arm height.
                 self.effects.push((
-                    spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
+                    spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
                     (mx + 8, my - 18),
                     CANNON_FRAMES,
                 ));
