@@ -6,7 +6,7 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::object::Object;
-use agb::display::tiled::RegularBackground;
+use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
 use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
@@ -372,9 +372,16 @@ impl<'a> Battle<'a> {
         }
         let deck = Deck::new(folder, rng);
         let panels = Panels::new(field::PANEL_NORMAL);
-        // The sterile arena draws the SAME field panels as the real ROM (not a
-        // plain background) so the two captures align pixel-for-pixel: the
-        // field cancels in the diff and only the navi + chip effect remain.
+        // The sterile arena draws a plain background so the real ROM's field can
+        // be stripped via the harness's --disable-bg (BG layers) and the two
+        // captures diff cleanly whole-frame: MegaMan + attack on black on both.
+        #[cfg(feature = "demo-sterile")]
+        let bg = RegularBackground::new(
+            Priority::P3,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
+        #[cfg(not(feature = "demo-sterile"))]
         let bg = field.background(&panels);
 
         let charge = 0u16;
