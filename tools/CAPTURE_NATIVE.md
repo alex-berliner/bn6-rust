@@ -81,3 +81,62 @@ and the AI state), so the harness's `--poke`/`--peek` (which read/write 16-bit
 bus memory) plus the mGBA cheat device are the two ways to apply it. Once a
 sterile battle loads, chip animations can be captured frame-by-frame with no
 enemy interference and no auto-conclusion.
+
+## Chip verification workflow (how to land each chip faithfully)
+
+The goal is to replicate a chip so its rendered animation matches the real
+MMBN6F ROM frame-for-frame. Do it one chip at a time; verify each before moving
+on. Never "it looks close" — the per-pixel diff is the acceptance test.
+
+### 0. Prerequisites (already built)
+- `tools/patch_sterile.py` -> `/tmp/bn6f_sterile.gba` (battle_isBattleOver always
+  "not over", so the fight never concludes).
+- `tools/capture_real_chip.sh <chipid_hex> <outdir> [count]` -> captures the
+  real chip's animation in the sterile arena (loads the save state, deletes the
+  enemy via `--cheat HP=0`, pokes the hand chip at `0x20349c2`, unpauses, fires).
+- `tools/compare_stereo.py <real_dir> <rust_dir> <out>` -> navi-aligned
+  REAL|RUST|DIFF with a field-masked %-differ metric.
+
+### 1. Capture the real chip
+```
+/tmp/capture_real_chip.sh <chipid_hex> /tmp/real_<chip> 200
+```
+Decode to PNGs, then find the frame where the chip's effect fires and study it:
+the projectile size/colour, the barrel/pose, the number of frames. This is the
+ground truth. Cross-check the sprite in the disassembly (`byte_82F*` sprites,
+`SpritePointersList` indices, the attack family's shot/spawn routine) so the
+Rust version uses the *same* asset rather than an approximation.
+
+### 2. Capture the Rust version
+```
+tools/mgba_capture.sh /tmp/rust_<chip> 200 --build demo-<chip>,demo-sterile,demo-auto
+```
+
+### 3. Compare at the matching fire frame
+```
+python3 tools/compare_stereo.py /tmp/real_<chip> /tmp/rust_<chip>/png /tmp/cmp_<chip>.png \
+  --frame <fire_frame> --win 150x110
+```
+The DIFF panel must be near-empty (only the navi + barrel + projectile show).
+Iterate on the Rust until the %-differ is low; a large residual means the
+sprite/timing/position is wrong.
+
+### 4. Fix the Rust chip (engine)
+- Projectile chips: use the *correct* effect sprite (e.g. Cannon's big orb, not
+  the buster bolt); align the barrel to the hand (see the cannon barrel work).
+- Slash chips: the crescent illusion (Sword family) — spawn the type-4 illusion
+  at the strike.
+- Multi-hit chips: match the fan/timing (Vulcan), the arc (MiniBomb), the
+  number of columns (WideSword/LongSword).
+- Status chips: the heal/shield/invis visuals and durations.
+
+### 5. Log the verified chip
+```
+tools/log_entry.py /tmp/cmp_<chip>.png "<chip>: real vs rust comparison" --tag <chip> --out compare
+```
+Then it shows up on /log.html for review.
+
+### Chip id (battle-hand) map for step 1
+Cannon=0x01, HiCannon=0x02, AirShot=0x04, Vulcan=0x05, MiniBomb=0x36,
+Sword=0x47, WideSword=0x48, LongSword=0x49, Recov10=0x9a, Recov30=0x9b,
+Invisibl=0xb1, Barrier=0xb2, AreaGrab=0xa3.
