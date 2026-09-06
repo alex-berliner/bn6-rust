@@ -82,5 +82,11 @@
     "file": "log/cannon/1788706096-orb_tight.png",
     "caption": "REAL Cannon projectile: large white orb with yellow outline, at the target panel (the Cannon chip's own big orb, NOT the buster bolt my Rust uses)",
     "tag": "real"
+  },
+  {
+    "t": 1788706290,
+    "file": "log/cannon/1788706290-rust_orb_139.png",
+    "caption": "RUST Cannon now fires the big yellow-outlined white orb (matching the real), green barrel on the arm",
+    "tag": "rust"
   }
 ]

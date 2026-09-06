@@ -56,7 +56,15 @@ pub struct Shot {
 
 impl Shot {
     pub fn buster(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0)
+        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, ANIM)
+    }
+
+    /// The Cannon/HiCannon projectile: the big yellow-outlined white orb
+    /// (byte_82FE704, anim 0 -- the static round orb the chip fires), which
+    /// hops one panel a time like the buster. It is *not* the buster's small
+    /// bolt; the Cannon chip fires this large orb.
+    pub fn cannon(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
+        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, 0)
     }
 
     /// Vulcan's shot: the count and the vertical fan come from the caller,
@@ -74,11 +82,11 @@ impl Shot {
         y_offset: i32,
         delay: u8,
     ) -> Self {
-        Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay)
+        Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay, ANIM)
     }
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0)
+        Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -93,6 +101,7 @@ impl Shot {
         from_player: bool,
         y_offset: i32,
         delay: u8,
+        anim: usize,
     ) -> Self {
         Self {
             col,
@@ -105,7 +114,7 @@ impl Shot {
             damage,
             y_offset,
             delay,
-            player: spr::Player::new(assets, ANIM),
+            player: spr::Player::new(assets, anim),
         }
     }
 

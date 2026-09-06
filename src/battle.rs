@@ -20,8 +20,8 @@ use crate::hud::Hud;
 use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
-    BARREL_CHARGE, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR, PROTOMAN,
-    SHOTFX, SWORD_SPR, WAVE,
+    BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
+    PROTOMAN, SHOTFX, SWORD_SPR, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -1108,12 +1108,14 @@ impl<'a> Battle<'a> {
             // the navi's panel and flashes the orb up to the shot, which the
             // default arm below then fires.
             // The cannon's shot spawns off the front panel at the strike
+            // The cannon's shot is the big yellow-outlined white orb
+            // (byte_82FE704 anim 0), spawned off the front panel at the strike
             // (counter 0xf, asm31.s:109531). The barrel itself was spawn at
             // the start of the pose in use_chip, so only the shot runs here.
             CHIP_CANNON | CHIP_HICANNON => {
                 let (fc, fr) = self.megaman.front_panel();
                 self.shots
-                    .push(Shot::buster(spr::Assets::new(SHOTFX), fc, fr, dx, chip.power));
+                    .push(Shot::cannon(spr::Assets::new(CANNON_ORB), fc, fr, dx, chip.power));
             }
             _ => {
                 let (fc, fr) = self.megaman.front_panel();
