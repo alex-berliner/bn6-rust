@@ -952,6 +952,18 @@ impl<'a> Battle<'a> {
             CHIP_CANNON | CHIP_HICANNON => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(CANNON);
+                // The barrel mounts on the navi's arm the moment the pose
+                // begins and charges up to the shot (sub_80EBC28 spawns the
+                // t1_0x5 barrel at counter 0, asm31.s:109468; the shot fires
+                // at counter 0xf, 109531). Spawn it here so it appears at the
+                // start of the pose, not just at the strike.
+                let (mc, mr) = self.megaman.panel();
+                let (mx, my) = field::panel_centre(mc, mr);
+                self.effects.push((
+                    spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
+                    (mx + 8, my - 14),
+                    CANNON_FRAMES,
+                ));
             }
             CHIP_VULCAN => {
                 self.chip_in_use = Some(chip);
@@ -1044,20 +1056,11 @@ impl<'a> Battle<'a> {
             // byte_82F39C0, anim 0 for the player). It sits at the front of
             // the navi's panel and flashes the orb up to the shot, which the
             // default arm below then fires.
+            // The cannon's shot spawns off the front panel at the strike
+            // (counter 0xf, asm31.s:109531). The barrel itself was spawn at
+            // the start of the pose in use_chip, so only the shot runs here.
             CHIP_CANNON | CHIP_HICANNON => {
                 let (fc, fr) = self.megaman.front_panel();
-                // The barrel mounts on the navi's own panel, at the arm on the
-                // side it faces. Its parts sit up and slightly toward the
-                // front from the origin (x -11..34, y -34..-2), so anchor it
-                // at the body, pushed down a touch so the barrel body lands at
-                // the arm height.
-                let (mc, mr) = self.megaman.panel();
-                let (mx, my) = field::panel_centre(mc, mr);
-                self.effects.push((
-                    spr::Player::new(spr::Assets::new(CANNON_SPR), 0),
-                    (mx, my),
-                    CANNON_FRAMES,
-                ));
                 self.shots
                     .push(Shot::buster(spr::Assets::new(SHOTFX), fc, fr, dx, chip.power));
             }
