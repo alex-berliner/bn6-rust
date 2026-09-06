@@ -140,13 +140,48 @@ int main(int argc, char** argv) {
 		}
 	}
 	if (statefile) {
-		struct VFile* svf = VFileOpen(statefile, O_RDONLY);
-		if (!svf) { fprintf(stderr, "cannot open state %s\n", statefile); return 1; }
+		/* mGBA-qt states are "RASTATE" (extdata banner) followed by the raw
+		 * GBASerializedState; mCoreExtractState expects the raw state at
+		 * offset 0. If the file begins with "RASTATE", re-emit a converted
+		 * copy whose first bytes are the raw state, then load that. */
+		FILE* sf = fopen(statefile, "rb");
+		FILE* out = NULL;
+		char convpath[512]; convpath[0] = 0;
+		if (sf) {
+			fseek(sf, 0, SEEK_END); long sz = ftell(sf); fseek(sf, 0, SEEK_SET);
+			unsigned char* buf2 = malloc(sz);
+			if (buf2 && fread(buf2, 1, sz, sf) == (size_t) sz && sz > 8 &&
+			    memcmp(buf2, "RASTATE", 7) == 0) {
+				/* Find the raw-state versionMagic (0x01000007). */
+				int off = -1;
+				for (int i = 0; i + 4 <= sz; ++i) {
+					const unsigned char* p = buf2 + i;
+					if (p[0] == 0x07 && p[1] == 0x00 && p[2] == 0x00 && p[3] == 0x01) {
+						off = i; break;
+					}
+				}
+				if (off > 0) {
+					snprintf(convpath, sizeof(convpath), "%s.conv", statefile);
+					out = fopen(convpath, "wb");
+					if (out) {
+						fwrite(buf2 + off, 1, sz - off, out);  /* raw state + rest */
+						fclose(out); out = NULL;
+						fprintf(stderr, "converted %s (core state at %d)\n", statefile, off);
+					}
+				}
+			}
+			free(buf2); fclose(sf);
+		}
+		const char* loadpath = convpath[0] ? convpath : statefile;
+		struct VFile* svf = VFileOpen(loadpath, O_RDONLY);
+		if (!svf) { fprintf(stderr, "cannot open state %s\n", loadpath); return 1; }
 		if (!mCoreLoadStateNamed(core, svf, SAVESTATE_ALL)) {
-			fprintf(stderr, "mCoreLoadStateNamed failed for %s\n", statefile);
+			fprintf(stderr, "mCoreLoadStateNamed failed for %s\n", loadpath);
+			if (convpath[0]) remove(convpath);
 			return 1;
 		}
 		svf->close(svf);
+		if (convpath[0]) remove(convpath);
 		/* The state may have set its own keys/video; reinstall our buffer. */
 		core->setVideoBuffer(core, buf, stride);
 		fprintf(stderr, "loaded state %s\n", statefile);
