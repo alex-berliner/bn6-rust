@@ -38,6 +38,11 @@ pub struct Oam {
     pub size: Size,
     pub hflip: bool,
     pub vflip: bool,
+    /// Bits 4-7 of the OAM record's flags: a palette bank offset added to the
+    /// sprite's own. Only seen on the cannon barrel's silhouette frame
+    /// (sprite_82F39C0 animation 0 frame 1, offset 4), which the real ROM
+    /// draws in a flat light colour; see `Player::load_frame`.
+    pub pal_offset: u8,
 }
 
 impl Assets {
@@ -90,6 +95,7 @@ impl Assets {
             size: size_from_bits(self.data[o + 4]),
             hflip: flags & 1 != 0,
             vflip: flags & 2 != 0,
+            pal_offset: flags >> 4,
         }
     }
 
@@ -152,6 +158,11 @@ pub struct Player {
     /// animation almost always share a palette, so this avoids reallocating it
     /// on every frame change.
     palette: Option<(u16, PaletteVramSingle)>,
+    /// The flat palette a part with a palette offset is drawn in: the real
+    /// ROM renders the barrel's silhouette frame as (239,255,239) throughout
+    /// (BGR555 0x77fd), the bank that offset lands on in its object palette
+    /// layout not having been identified.
+    silhouette: Option<PaletteVramSingle>,
     /// An all-white palette for the hit flash, allocated on first use. The game
     /// does this by forcing the object's palette bank to 15
     /// (sprite_forceWhitePalette, asm/sprite.s:1141).
@@ -169,6 +180,7 @@ impl Player {
             ticks_left: 0,
             done: false,
             palette: None,
+            silhouette: None,
             white: None,
             white_on: false,
             parts: Vec::new(),
@@ -265,8 +277,20 @@ impl Player {
             let (w, h) = e.size.to_tiles_width_height();
             let start = e.tile as usize * 32;
             let len = w * h * 32;
+            let part_palette = if e.pal_offset != 0 && !self.white_on {
+                self.silhouette
+                    .get_or_insert_with(|| {
+                        PaletteVramSingle::try_allocate_new(&Palette16::new(
+                            [Rgb15::new(0x77fd); 16],
+                        ))
+                        .expect("silhouette palette should fit in vram")
+                    })
+                    .clone()
+            } else {
+                palette.clone()
+            };
             let sprite = DynamicSprite16::from_bytes(e.size, &tiles[start..start + len])
-                .to_vram(palette.clone());
+                .to_vram(part_palette);
             self.parts.push(Part {
                 sprite,
                 x: e.x as i32,

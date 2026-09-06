@@ -57,8 +57,10 @@ pub struct AttackSpec {
     pub frames: u8,
     /// 1-based frame of the pose on which the strike is delivered.
     pub strike_at: u8,
-    /// Frames the actor stays busy in its standing pose afterwards.
+    /// Frames the actor stays busy afterwards.
     pub recover: u8,
+    /// The pose held through those frames; the idle pose when none.
+    pub recover_anim: Option<usize>,
 }
 
 /// The buster: animation 14 for five passes, ending once its frame counter
@@ -70,6 +72,7 @@ pub const BUSTER: AttackSpec = AttackSpec {
     frames: 5,
     strike_at: 2,
     recover: 0,
+    recover_anim: None,
 };
 /// Colonel's overhead slash: animation 0xc held for 0x28 frames, the hit
 /// spawned when the countdown reads 0x14 (asm31.s:157462, 157464-157479).
@@ -79,6 +82,7 @@ pub const DIVIDE: AttackSpec = AttackSpec {
     frames: 40,
     strike_at: 20,
     recover: 0,
+    recover_anim: None,
 };
 /// ProtoMan's basic strike, attack A of his AI: animation 0xf held for 16
 /// frames while the front panel flashes, then animation 5 for 30 with the
@@ -91,6 +95,7 @@ pub const THRUST: AttackSpec = AttackSpec {
     frames: 30,
     strike_at: 11,
     recover: 20,
+    recover_anim: None,
 };
 /// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
 /// the shockwave spawned at the front panel when it reads 0x1b
@@ -101,6 +106,7 @@ pub const SWING: AttackSpec = AttackSpec {
     frames: 0x40,
     strike_at: 0x40 - 0x1b + 1,
     recover: 0,
+    recover_anim: None,
 };
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery
@@ -111,6 +117,7 @@ pub const CROSS: AttackSpec = AttackSpec {
     frames: 30,
     strike_at: 1,
     recover: 24,
+    recover_anim: None,
 };
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
@@ -190,6 +197,7 @@ enum Action {
         strike_tick: u8,
         charged: bool,
         recover: u8,
+        recover_anim: Option<usize>,
     },
     /// Reeling from a hit.
     Flinching {
@@ -514,6 +522,7 @@ impl Actor {
             strike_tick: spec.frames + 1 - spec.strike_at,
             charged,
             recover: spec.recover,
+            recover_anim: spec.recover_anim,
         };
     }
 
@@ -584,7 +593,10 @@ impl Actor {
                 }
             }
             Action::Recovering { ticks } if ticks > 1 => Action::Recovering { ticks: ticks - 1 },
-            Action::Recovering { .. } => Action::Idle,
+            Action::Recovering { .. } => {
+                self.player.play(anim::IDLE);
+                Action::Idle
+            }
             Action::Aiming { ticks } if ticks > 1 => Action::Aiming { ticks: ticks - 1 },
             Action::Aiming { .. } => {
                 self.begin(BUSTER, true);
@@ -608,6 +620,7 @@ impl Actor {
                 strike_tick,
                 charged,
                 recover,
+                recover_anim,
             } if ticks > 1 => {
                 if ticks == strike_tick {
                     update = Update::Strike { charged };
@@ -623,10 +636,15 @@ impl Actor {
                     strike_tick,
                     charged,
                     recover,
+                    recover_anim,
                 }
             }
-            Action::Attacking { recover, .. } => {
-                self.player.play(anim::IDLE);
+            Action::Attacking {
+                recover,
+                recover_anim,
+                ..
+            } => {
+                self.player.play(recover_anim.unwrap_or(anim::IDLE));
                 if recover > 0 {
                     Action::Recovering { ticks: recover }
                 } else {
@@ -682,7 +700,11 @@ impl Actor {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
-        for part in self.player.parts() {
+        // The game fills OAM from the last part of a frame to the first, so
+        // the first listed part ends up on top; the shadow is the last part
+        // and the body covers it. Against the real ROM the shadow shows 99
+        // pixels under the idle navi that way, 146 the other way round.
+        for part in self.player.parts().iter().rev() {
             // Offsets are authored facing right, so mirroring reflects the
             // whole composed frame about the actor origin, not each part in
             // place: the part's left edge moves to the opposite side.

@@ -43,6 +43,10 @@ pub struct Shot {
     /// Fired by the player, so it hits enemies; otherwise it hits the player.
     pub from_player: bool,
     pub damage: u16,
+    /// Not drawn: the cannon's shot has no sprite of its own on the real
+    /// ROM -- everything visible is the barrel object's animation -- so
+    /// only its hitbox travels.
+    pub hidden: bool,
     /// Vertical pixel offset from the panel centre, for shots that fan out
     /// (Vulcan's volley is spawned slightly above/below the row it is aimed
     /// at, sub_80EBF6E via dword_80EBFF0).
@@ -64,7 +68,9 @@ impl Shot {
     /// hops one panel a time like the buster. It is *not* the buster's small
     /// bolt; the Cannon chip fires this large orb.
     pub fn cannon(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, 0)
+        let mut shot = Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, 0);
+        shot.hidden = true;
+        shot
     }
 
     /// Vulcan's shot: the count and the vertical fan come from the caller,
@@ -112,6 +118,7 @@ impl Shot {
             piercing,
             from_player,
             damage,
+            hidden: false,
             y_offset,
             delay,
             player: spr::Player::new(assets, anim),
@@ -126,8 +133,11 @@ impl Shot {
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
+        if self.hidden {
+            return;
+        }
         let (px, py) = field::panel_centre(self.col, self.row);
-        for part in self.player.parts() {
+        for part in self.player.parts().iter().rev() {
             let x = if self.dx < 0 {
                 -part.x - part.width
             } else {

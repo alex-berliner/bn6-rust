@@ -109,6 +109,7 @@ const SWORD: actor::AttackSpec = actor::AttackSpec {
     frames: 0x15,
     strike_at: 9,
     recover: 5,
+    recover_anim: None,
 };
 const THROW: actor::AttackSpec = actor::AttackSpec {
     windup: None,
@@ -116,12 +117,14 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     frames: 0x15,
     strike_at: 9,
     recover: 5,
+    recover_anim: None,
 };
-/// The cannon barrel effect lives as long as the 0x1d-frame pose (the strike
-/// fires at counter 0xf and the pose exits at 0x1d, sub_80EBC28 asm31.s:109532,
-/// 109554) so the barrel stays on the arm until the shot is done. The charge
-/// animation itself is short and holds its last frame.
-const CANNON_FRAMES: u8 = 0x1d;
+/// The cannon pose: the counter runs to 0x1d (sub_80EBC28, asm31.s:109532,
+/// 109554), and the frame that reads 0x1d only queues the exit state, which
+/// runs the frame after, so the pose is on screen for 0x1e frames -- the real
+/// ROM shows the idle again 30 frames after the attack starts (TRANSFER.md).
+/// The barrel object lives exactly as long.
+const CANNON_FRAMES: u8 = 0x1d + 1;
 /// The sword slash's transient illusion holds 0x1e frames (the type-4 illusion
 /// the strike spawns at the target panel, asm31.s:109116-109134: the second
 /// illusion is given timer 0x1e).
@@ -138,9 +141,13 @@ const AUTO_FIRE_GAP: u16 = 90;
 const CANNON: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 8,
-    frames: 0x1d,
+    frames: CANNON_FRAMES,
     strike_at: 0xf,
-    recover: 0,
+    // After the pose the real ROM shows three frames of the arm coming
+    // down -- animation 15, a single three-frame pose -- before the idle
+    // (TRANSFER.md: idle again 33 frames after the attack starts).
+    recover: 3,
+    recover_anim: Some(15),
 };
 /// Vulcan1 (attack family 0x17, sub_80EBF10): takes animation 0xa as a
 /// wind-up, then animation 0xd and fires until its shots are out
@@ -153,6 +160,7 @@ const VULCAN: actor::AttackSpec = actor::AttackSpec {
     frames: 0x1e,
     strike_at: 1,
     recover: 0,
+    recover_anim: None,
 };
 /// AirShot (attack family 0x21, sub_80EC884): takes animation 0x9, plays
 /// the gust sound 0xaf and spawns its shot when the frame counter reads 0x5,
@@ -166,6 +174,7 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
     frames: 0xa,
     strike_at: 0x5,
     recover: 0xa,
+    recover_anim: None,
 };
 /// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
 const RECOV_HP: [u16; 2] = [10, 30];
@@ -991,30 +1000,22 @@ impl<'a> Battle<'a> {
             CHIP_CANNON | CHIP_HICANNON => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(CANNON);
-                // The barrel mounts on the navi's arm the moment the pose
-                // begins and charges up to the shot (sub_80EBC28 spawns the
-                // t1_0x5 barrel at counter 0, asm31.s:109468; the shot fires
-                // at counter 0xf, 109531). Spawn it here so it appears at the
-                // start of the pose.
-                //
-                // The barrel is the compact green barrel held at the arm: its
-                // charge animation (byte_82F39C0 anim0 frames 1-5) grows the
-                // charge orb at the muzzle and holds there, then the strike
-                // fires the travelling bolt. It does NOT play the cyan
-                // discharge frames of the full sprite -- those are the charged
-                // buster's burst, not the Cannon chip's barrel.
+                // The barrel is the t1_0x5 object spawned on the navi's arm
+                // as the pose begins (sub_80EBC28 ->
+                // spawn_t1_0x5_tempAttackObject_80B8E30, asm31.s:109468),
+                // sprite_82F39C0 animation 0: five blank frames, three of
+                // white silhouette, the green barrel, the muzzle orb growing
+                // over the shot at counter 0xf, the cyan discharge, then the
+                // plain barrel until the pose ends at 0x1d. Every frame of
+                // that sequence, at those counters, was confirmed against the
+                // real ROM's capture (TRANSFER.md), which is also where the
+                // anchor comes from: the barrel's box is x 74-96, y 75-90 on
+                // the navi at panel (2,2).
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
-                // MegaMan's cannon-pose hand is at local x[14..20], so the
-                // barrel body (local x[-8..14]) sits at/in front of the hand
-                // when anchored ~mx+12, raised to arm height, so the barrel
-                // reads as held out in front rather than tucked in the torso.
-                // Anchored against the real (barrel centre = body+(+21,-11)) the
-                // barrel sits slightly further forward and higher than a naive
-                // +12,-18; the offset below is trimmed to match that.
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
-                    (mx + 18, my - 24),
+                    (mx + 16, my - 24),
                     CANNON_FRAMES,
                 ));
             }
@@ -1160,6 +1161,19 @@ impl<'a> Battle<'a> {
                 .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha))
                 .enable_background(bg_id);
         }
+        // Attack objects such as the cannon barrel draw over the navi that
+        // spawned them: the real ROM shows the barrel covering the arm.
+        for (p, (x, y), _) in &self.effects {
+            for part in p.parts().iter().rev() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
+
         for s in &self.shots {
             s.show(frame);
         }
@@ -1168,7 +1182,7 @@ impl<'a> Battle<'a> {
             if self.glow_state != 0 {
                 let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 let dx = self.megaman.facing_dx();
-                for part in self.glow.parts() {
+                for part in self.glow.parts().iter().rev() {
                     Object::new(part.sprite.clone())
                         .set_priority(Priority::P2)
                         .set_pos((px + dx * GLOW_FORWARD + part.x, py + part.y))
@@ -1189,17 +1203,7 @@ impl<'a> Battle<'a> {
         }
         for b in &self.bombs {
             let (x, y) = b.position();
-            for part in b.player.parts() {
-                Object::new(part.sprite.clone())
-                    .set_priority(Priority::P2)
-                    .set_pos((x + part.x, y + part.y))
-                    .set_hflip(part.hflip)
-                    .set_vflip(part.vflip)
-                    .show(frame);
-            }
-        }
-        for (p, (x, y), _) in &self.effects {
-            for part in p.parts() {
+            for part in b.player.parts().iter().rev() {
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)
                     .set_pos((x + part.x, y + part.y))
@@ -1209,10 +1213,13 @@ impl<'a> Battle<'a> {
             }
         }
 
-        // The number sits just under the panel the navi stands on, centred on
-        // it, which is where the game puts each combatant's gauge.
-        for actor in core::iter::once(&self.megaman)
-            .chain(self.enemies.iter())
+        // Each enemy's HP sits just under its panel, centred, as the game's
+        // object text does. The player's HP is not drawn here: in the game it
+        // is the HUD box at the top left on the background layer, which this
+        // does not have yet, and the real ROM shows nothing under the navi.
+        for actor in self
+            .enemies
+            .iter()
             .filter(|a| a.is_present() && a.hp() > 0 && a.is_targetable())
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);

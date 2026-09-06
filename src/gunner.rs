@@ -98,7 +98,7 @@ impl Cursor {
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
         let y = field::panel_centre(1, self.row).1;
-        for part in self.player.parts() {
+        for part in self.player.parts().iter().rev() {
             Object::new(part.sprite.clone())
                 .set_priority(Priority::P2)
                 .set_pos((self.x + part.x, y + part.y))
@@ -159,7 +159,7 @@ impl Impact {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
-        for part in self.player.parts() {
+        for part in self.player.parts().iter().rev() {
             Object::new(part.sprite.clone())
                 .set_priority(Priority::P2)
                 .set_pos((px + part.x, py + part.y))

@@ -300,6 +300,25 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* Per-frame zero fills: `--zero addr:bytes` (decimal bytes), written
+	 * before each frame like a cheat, for blanking sprite tiles the game
+	 * uploads once (e.g. the ENEMY DELETED banner text in OBJ VRAM). */
+	struct { uint32_t addr; int bytes; } zeros[16];
+	int nzero = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--zero") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* colon = strchr(p, ':');
+			if (colon && nzero < 16) {
+				*colon = 0;
+				zeros[nzero].addr = (uint32_t) strtoul(p, NULL, 0);
+				zeros[nzero].bytes = atoi(colon + 1);
+				++nzero;
+			}
+			free(p);
+			++i;
+		}
+	}
 	/* Per-frame cheats: `--cheat addr:value`, re-written before each frame. */
 	struct { uint32_t addr; uint16_t val; } cheats[64];
 	int ncheat = 0;
@@ -330,6 +349,11 @@ int main(int argc, char** argv) {
 		 * overwrite them. Repeatable via --cheat addr:value. */
 		for (int c = 0; c < ncheat; ++c) {
 			core->busWrite16(core, cheats[c].addr, cheats[c].val);
+		}
+		for (int z = 0; z < nzero; ++z) {
+			for (int b = 0; b < zeros[z].bytes; b += 2) {
+				core->busWrite16(core, zeros[z].addr + b, 0);
+			}
 		}
 		core->runFrame(core);
 		if (write_frame(buf, stride)) {

@@ -174,7 +174,36 @@ exact precondition for a solid-color diff against the Rust version's plain backg
 
 ---
 
-## 7. Where the Cannon comparison stands (the honest residual)
+## 7a. STATUS 2026-09-06: the Cannon is frame-for-frame identical
+
+With the enemy deleted (`--cheat 0x0203ab84:0 --cheat 0x0203ab86:0`), the ENEMY DELETED
+banner's tiles blanked each frame (`--zero 0x6016E00:1280`, new harness option; the banner is
+OAM objects 0-4, 32x16 each at y=64, tiles 880-919), `--disable-bg`, and the Rust built with
+`demo-cannon,demo-sterile,demo-auto`, every frame from the attack's start (real f43 with
+A@40; Rust f122 in a 220-frame run) through the recovery differs by **0 pixels** within
+x<140 (x>=149 holds the real ROM's dissolving Mettaur remnant). One frame, c6, shows ~370
+differing pixels: the banner's tiles re-uploaded that frame before the blanking took --
+capture artifact, not the game.
+
+What it took (all in the commit "Match the Cannon frame-for-frame..."):
+- The barrel is sprite_82F39C0 **animation 0 in full**, 13 frames spawned at counter 0: five
+  blank, three white silhouette (OAM palette offset 4 -> flat 0x77fd, `spr.rs`), the barrel,
+  the small then big muzzle orb at counters 14/15, the cyan discharge chevrons 16-22 (these
+  ARE part of the cannon; the earlier "not the discharge frames" note was wrong), then the
+  plain barrel to the pose's end. Its own OAM offsets carry the recoil; it is anchored once at
+  (mx+16, my-24) and does not follow the navi.
+- The navi's cannon pose is on screen 0x1e frames (the 0x1d frame only queues the exit), then
+  **animation 15 for 3 frames** (arm coming down), then idle.
+- Sprite parts are drawn last-to-first (the game's OAM order): the shadow goes under the
+  feet (99 px visible, as the real), and attack objects draw before the navi so the barrel
+  covers the arm.
+- The cannon's shot has no sprite: `Shot::cannon` is hidden; only its hitbox travels.
+- The player's HP number is no longer drawn under the navi (the game's is on the HUD layer).
+- Timeline (c = frames since attack start): pose frames 33/34/34/35/35 at c0-4, 36 at c5-13,
+  37/38/39 at c14/15/16 (body x 43->39->38->37), 40 at c17-29 (x 35); barrel white c5-7,
+  green from c8; muzzle orb small c14, big c15; chevrons c16-22; recovery c30-32; idle c33.
+
+## 7. Where the Cannon comparison stood before that (superseded)
 
 At the intended same frame (real f72 vs Rust f126, both barrel-peak, aligned (0,-2)) the
 diffmask is **~9.5% differing**. The background is already **solid green** (identical). The red
@@ -184,7 +213,20 @@ regions are:
 3. The **HP number text** (Rust shows "100", real's HP differs).
 4. A small **HUD fragment** top-left on the real.
 
-### The sprite colour difference — root cause found (your hypothesis is correct)
+### CORRECTION (2026-09-06): the "lit" palette is Full Synchro, not the Cannon
+
+Re-checked with palette dumps and colour timelines (`--dump 0x05000200:512:...`, note the
+byte count is decimal): OBJ bank 0 (MegaMan) is rewritten to a brighter palette from the
+frame the shot lands on the *immortal* Mettaur (f63 with A@40) and it **stays lit for the
+rest of the capture**; without firing it never changes; and with the enemy **deleted**
+(`--cheat 0x0203ab84:0 --cheat 0x0203ab86:0`, sterile patch keeping the fight live) MegaMan
+stays dark through the whole cannon. The immortal Mettaur keeps attacking, so every shot is
+a counter hit, which puts MegaMan in Full Synchro — the brightened palette. So do NOT
+brighten the navi during the Cannon pose; use the enemy-deleted capture as the reference
+(`/tmp/fire_nomet`: pose starts f50, barrel f51–72, idle again f73). The section below is
+kept for the record but its conclusion is superseded.
+
+### The sprite colour difference — earlier hypothesis (superseded, see above)
 The real MegaMan **changes palette between idle and cannon-fire**:
 - **Idle (real f45, no cannon):** dark body blue `(8,57,123)`. **My Rust idle is exactly this**
   → my Rust idle renders correctly.
