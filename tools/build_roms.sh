@@ -15,6 +15,7 @@ ENTRIES=(
   "demo-sword sword Sword / WideSwrd / LongSwrd"
   "demo-minibomb minibomb MiniBomb"
   "demo-cannon cannon Cannon / HiCannon"
+  "demo-cannon,demo-sterile,demo-auto cannon-real Cannon on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-vulcan vulcan Vulcan1 volley"
   "demo-airshot airshot AirShot"
   "demo-recovery recovery Recov / Invisibl / Barrier"
