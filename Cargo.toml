@@ -37,6 +37,11 @@ demo-gunner = []
 demo-protoman = []
 demo-colonel = []
 demo-results = []
+# A sterile test arena: MegaMan alone on a plain background, no field tiles,
+# no enemy and no win/lose conclusion, so a chip animation can be captured
+# frame-by-frame and compared pixel-per-pixel against the real ROM (which is
+# patched the same way). Pair with a demo-* chip feature.
+demo-sterile = []
 # When combined with a demo-* chip feature, MegaMan fires the loaded hand
 # chips on a repeating timer instead of waiting for input, so a capture run
 # can watch the attack without key timing.

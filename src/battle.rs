@@ -6,7 +6,7 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::object::Object;
-use agb::display::tiled::RegularBackground;
+use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
 use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
@@ -278,6 +278,7 @@ pub struct Battle<'a> {
     feature = "demo-protoman",
     feature = "demo-colonel",
     feature = "demo-results",
+    feature = "demo-sterile",
 ))]
 fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Style, u16)>) {
     let mut hand = alloc::vec::Vec::new();
@@ -341,6 +342,14 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
         hand.push(CHIP_SWORD);
         return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
     }
+    // A sterile arena fields MegaMan alone (no enemy) so a chip animation can
+    // be captured frame-by-frame against a plain background. The hand holds
+    // the cannon family so the cannon can be shot in isolation.
+    if cfg!(feature = "demo-sterile") {
+        hand.push(CHIP_CANNON);
+        hand.push(CHIP_HICANNON);
+        return (hand, 3, None);
+    }
     (hand, megaman_col, None)
 }
 
@@ -362,6 +371,16 @@ impl<'a> Battle<'a> {
         }
         let deck = Deck::new(folder, rng);
         let panels = Panels::new(field::PANEL_NORMAL);
+        // The sterile arena draws a plain background (no field tiles) so the
+        // navi and the chip's effect read cleanly against a flat colour for a
+        // pixel-perfect comparison with the real ROM.
+        #[cfg(feature = "demo-sterile")]
+        let bg = RegularBackground::new(
+            Priority::P3,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
+        #[cfg(not(feature = "demo-sterile"))]
         let bg = field.background(&panels);
 
         let charge = 0u16;
@@ -393,6 +412,7 @@ impl<'a> Battle<'a> {
                 feature = "demo-protoman",
                 feature = "demo-colonel",
                 feature = "demo-results",
+                feature = "demo-sterile",
             ))]
             {
                 demo()
@@ -410,6 +430,7 @@ impl<'a> Battle<'a> {
                 feature = "demo-protoman",
                 feature = "demo-colonel",
                 feature = "demo-results",
+                feature = "demo-sterile",
             )))]
             {
                 (alloc::vec::Vec::new(), 2, None)
@@ -419,8 +440,11 @@ impl<'a> Battle<'a> {
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
         // A debug build fights just the Mettaur, to exercise the hand, chips
         // and deletion without the bosses; the release build keeps the game's
-        // lineup. A demo build fields its one featured enemy instead.
-        let mut enemies: Vec<Actor> = if let Some((assets, col, row, _style, hp)) = demo_enemy {
+        // lineup. A demo build fields its one featured enemy instead. The
+        // sterile arena fields nobody.
+        let mut enemies: Vec<Actor> = if cfg!(feature = "demo-sterile") {
+            alloc::vec::Vec::new()
+        } else if let Some((assets, col, row, _style, hp)) = demo_enemy {
             alloc::vec![Actor::new(assets, col, row, true, enemy(hp))]
         } else if cfg!(debug_assertions) {
             alloc::vec![Actor::new(
@@ -444,7 +468,9 @@ impl<'a> Battle<'a> {
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
         let effects: Vec<(spr::Player, (i32, i32), u8)> = Vec::new();
-        let ais: Vec<ai::Ai> = if let Some((_, _, _, style, _)) = demo_enemy {
+        let ais: Vec<ai::Ai> = if cfg!(feature = "demo-sterile") {
+            alloc::vec::Vec::new()
+        } else if let Some((_, _, _, style, _)) = demo_enemy {
             alloc::vec![ai::Ai::new(style)]
         } else if cfg!(debug_assertions) {
             alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
@@ -527,7 +553,14 @@ impl<'a> Battle<'a> {
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
-        let over = self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated());
+        // The sterile arena never concludes: MegaMan is alone, so the
+        // all-enemies-deleted win would fire vacuously -- keep the fight open
+        // so a chip animation can be captured for as long as needed.
+        let over = if cfg!(feature = "demo-sterile") {
+            false
+        } else {
+            self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
+        };
 
         // The gauge only runs while the fight does; a full gauge holds
         // everything, including itself, through the chimes and then the
@@ -923,6 +956,9 @@ impl<'a> Battle<'a> {
             .filter(|e| e.is_targetable())
             .fold(self.megaman.occupancy(), |m, e| m | e.occupancy());
         self.panels.update(occupied);
+        // The sterile arena's background is plain, so the field panels are not
+        // repainted onto it (there are none to draw and no dirty updates).
+        #[cfg(not(feature = "demo-sterile"))]
         for (col, row) in field::panels_in(self.panels.take_dirty()) {
             match self.panels.flashing(col, row) {
                 Some(which) => self.field.draw_highlight(&mut self.bg, col, row, which),
@@ -932,6 +968,8 @@ impl<'a> Battle<'a> {
                 }
             }
         }
+        #[cfg(feature = "demo-sterile")]
+        let _dirty = self.panels.take_dirty();
 
         false
     }
@@ -969,11 +1007,12 @@ impl<'a> Battle<'a> {
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
                 // MegaMan's cannon-pose hand is at local x[14..20], so the
-                // sprite body (local x[-11..11]) sits at the hand when
-                // anchored ~mx+8, raised to arm height.
+                // barrel body (local x[-8..14]) sits at/in front of the hand
+                // when anchored ~mx+12, raised to arm height, so the barrel
+                // reads as held out in front rather than tucked in the torso.
                 self.effects.push((
                     spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0),
-                    (mx + 8, my - 18),
+                    (mx + 12, my - 18),
                     CANNON_FRAMES,
                 ));
             }
