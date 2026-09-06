@@ -130,5 +130,11 @@
     "file": "log/sterile/1788709640-dbg_30.png",
     "caption": "BREAKTHROUGH: --disable-bg strips the field/background/panels \u2014 only MegaMan + attack (OBJ) show on black, matching the Rust sterile render for a whole-frame diff",
     "tag": "proof"
+  },
+  {
+    "t": 1788709956,
+    "file": "log/proof/1788709956-fire_cmp.png",
+    "caption": "Aligned whole-frame firing compare (both on black via --disable-bg): REAL f58 vs RUST f139 \u2014 both MegaMan fire the green cannon barrel + big white orb. Residual from HP text + exact navi pose/scale.",
+    "tag": "proof"
   }
 ]
