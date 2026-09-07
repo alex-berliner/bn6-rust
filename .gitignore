@@ -13,3 +13,6 @@ web/*.sav
 web/roms/*.sav
 web/real-bn6f.srm
 web/*.srm
+
+# Claude Code session scratch
+.claude/
