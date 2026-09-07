@@ -1250,7 +1250,10 @@ impl<'a> Battle<'a> {
         // The sterile arena never concludes: MegaMan is alone, so the
         // all-enemies-deleted win would fire vacuously -- keep the fight open
         // so a chip animation can be captured for as long as needed.
-        let over = if cfg!(feature = "demo-sterile") {
+        // The chip-window fixture fields nobody, so the all-enemies-deleted
+        // win would fire on its first frame and hold the gauge -- and the
+        // gauge is what opens the window. Keep the fight open for it too.
+        let over = if cfg!(any(feature = "demo-sterile", feature = "demo-custmatch")) {
             false
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())

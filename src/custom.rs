@@ -133,6 +133,13 @@ const MARK_AT: (i32, i32) = (95, 4);
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
 const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4];
+/// The name row: eight glyph columns two tiles tall, written left to right
+/// and padded with blanks, which the font draws as flat colour 8 -- the same
+/// thing CARD_INTERIOR_TILE is.
+const REGION_NAME: usize = 0;
+/// How many glyphs of the font one glyph of a name takes: 8x16, top over
+/// bottom.
+const GLYPH_TILES: u16 = 2;
 const REGION_OK: usize = 25;
 const REGION_STACK: usize = 26;
 /// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
@@ -230,6 +237,12 @@ pub struct CustomAssets {
     stack_frame: TileSet,
     code_glyphs: TileSet,
     ok_box: TileSet,
+    /// The battle text font with 8 added to every nibble -- the same tiles
+    /// the RESULT window's reward line uses, and for the same reason: the
+    /// game's text renderer adds a colour word to every glyph word on its way
+    /// to VRAM and this window passes index 8 (sub_3006C18, asm/asm38.s:2381).
+    /// The card's name row is these glyphs byte for byte.
+    font: TileSet,
 }
 
 enum Phase {
@@ -273,7 +286,7 @@ pub struct Custom<'a> {
 }
 
 impl CustomAssets {
-    pub fn new(data: &'static [u8]) -> Self {
+    pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
         assert_eq!(&data[0..4], MAGIC, "not a BNCW asset");
         let at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
         let (t, m, p, r, c, a) = (at(0x08), at(0x0c), at(0x10), at(0x14), at(0x18), at(0x1c));
@@ -321,6 +334,13 @@ impl CustomAssets {
             stack_frame: tileset(
                 &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x180],
             ),
+            font: {
+                assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
+                let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
+                let len = u32::from_le_bytes(font[fo..fo + 4].try_into().unwrap()) as usize;
+                // The second half is the colour-added copy.
+                tileset(&font[fo + 4 + len / 2..fo + 4 + len])
+            },
         }
     }
 
@@ -382,7 +402,10 @@ impl CustomAssets {
         // already picked and the cursor sits on OK.
         if cfg!(feature = "demo-custmatch") {
             custom.picks.push(4);
-            custom.cursor_at = OK;
+            // demo-cardname is the same window with the cursor walked onto the
+            // first slot, which is the only way to see the card's NAME: with
+            // the cursor on OK the real ROM shows its message card instead.
+            custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);
@@ -582,6 +605,39 @@ impl Custom<'_> {
         }
     }
 
+    /// The game's own character code for an ASCII byte, which is the glyph's
+    /// index in the battle text font (constants/bn6-charmap.tbl).
+    fn char_code(c: u8) -> u16 {
+        match c {
+            b'0'..=b'9' => 0x01 + (c - b'0') as u16,
+            b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
+            b'a'..=b'z' => 0x26 + (c - b'a') as u16,
+            b'-' => 0x40,
+            _ => 0,
+        }
+    }
+
+    /// The chip's name along the top of the card, left-aligned in the row's
+    /// eight cells and padded with the font's blank -- which is flat colour 8,
+    /// the card's own interior, so the row needs no separate background.
+    fn draw_card_name(&mut self, name: &str) {
+        let r = self.assets.regions[REGION_NAME];
+        let bytes = name.as_bytes();
+        for col in 0..r.w {
+            let g = Self::char_code(bytes.get(col).copied().unwrap_or(b' '));
+            for half in 0..r.h {
+                self.bg.set_tile(
+                    ((r.x + col) as i32, (r.y + half) as i32),
+                    &self.assets.font,
+                    TileSetting::new(
+                        g * GLYPH_TILES + half as u16,
+                        TileEffect::new(false, false, r.bank),
+                    ),
+                );
+            }
+        }
+    }
+
     /// Whether a cell belongs to the pick stack's frame columns, which
     /// draw_stack_frame owns. The stored map has the wrong tile there, so the
     /// template must not paint over them as the window slides in.
@@ -652,6 +708,10 @@ impl Custom<'_> {
                 gfx.set_background_palette(PICTURE_BANK, &self.assets.message_palette);
                 let r = self.assets.regions[REGION_PICTURE];
                 self.fill_from(r, &self.assets.message, 0, PICTURE_BANK);
+                // The name row goes with the card: the real ROM clears it to
+                // flat colour 8 when the message is up, which is what the
+                // interior tile already is.
+                self.draw_card_name("");
             }
             return;
         };
@@ -664,6 +724,7 @@ impl Custom<'_> {
         let r = self.assets.regions[REGION_PICTURE];
         debug_assert_eq!((r.w, r.h), PICTURE_TILES);
         self.fill_from(r, &picture, 0, PICTURE_BANK);
+        self.draw_card_name(offer.chip.name());
     }
 
     fn highlighted(&self) -> Option<Offer> {
