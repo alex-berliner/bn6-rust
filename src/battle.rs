@@ -137,6 +137,13 @@ const CHIP_BARRIER: u16 = 178;
 const CHIP_BARR100: u16 = 179;
 const CHIP_BARR200: u16 = 180;
 const CHIP_ENERGBOM: u16 = 55;
+/// LilBolr1/2/3: bomb family, subfamily 3, which routes through sub_80D7A96
+/// rather than MiniBomb's sub_80C5DBC -- a fixed target ahead rather than the
+/// targeted arc. Its blast is the same object MiniBomb's is, confirmed by the
+/// art matching the exported blast asset byte for byte.
+const CHIP_LILBOLR1: u16 = 98;
+const CHIP_LILBOLR2: u16 = 99;
+const CHIP_LILBOLR3: u16 = 100;
 const CHIP_MEGENBOM: u16 = 56;
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
@@ -637,6 +644,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_ENERGBOM);
         } else if cfg!(feature = "demo-megenbom") {
             hand.push(CHIP_MEGENBOM);
+        } else if cfg!(feature = "demo-lilbolr") {
+            hand.push(CHIP_LILBOLR1);
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
         } else if cfg!(feature = "demo-barr200") {
@@ -1664,7 +1673,8 @@ impl<'a> Battle<'a> {
                 self.megaman.attack(if chip.id == CHIP_STEPSWRD { STEP_SWORD } else { SWORD });
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
-            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
+            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3 => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
@@ -1827,7 +1837,8 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
+            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3 => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb

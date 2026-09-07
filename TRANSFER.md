@@ -255,7 +255,19 @@ throw pose, a gold ball arcs up and off the top of the frame with damage numbers
 then a WHITE SPRAY opens on the panels ahead and runs for the rest of the attack. The spray is
 the new machinery -- everything before it is the throw this build already has.
 
-ITS SPRITE IS sprite_8399578 (data/dat38_33.s). That took all three searches to find, which is
+ITS PARTS ARE BOTH IDENTIFIED, and neither needs new art of its own:
+- THE BLAST is the SAME object MiniBomb's is. sprite_8399578 (data/dat38_33.s) is six frames,
+  durations 2 then 4 -- a white flash, an orange blast, then smoke, 22 frames in all -- and its
+  art matches the exported bomb_blast asset byte for byte. So the existing blast serves.
+- THE THROWN OBJECT is the LilBoiler VIRUS: its tiles are in
+  data/sprites/virusBattleSprite_824EAF4.spr. That is why it looks nothing like a bomb.
+WHAT IS ACTUALLY NEW is the arc. Wired up as a plain bomb variant, LilBolr's throw pose matches
+exactly (frames 0-8 are 0 px) and then the flight differs by 700-1050 px from frame 9 to 41
+before returning to 0: the real ball arcs UP and off the top of the frame rather than across.
+So the work is the arc and the blast's placement, not the artwork.
+The blast covers x 125..204 on screen, about two panels wide, over y 50..128.
+
+The earlier note read: its sprite is sprite_8399578 (data/dat38_33.s). That took all three searches to find, which is
 worth knowing: it is in none of the 97 plain .spr files and none of the 269 compressed ones, and
 only turned up in the assembled data blobs. Its objects at one frame are a 32x32 body at (165,90)
 with 8x32 pieces either side at (157,92) and (197,92), a 16x32 at (175,88) and 32x16 pieces below
