@@ -244,6 +244,28 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7q. Per-pixel parity needs a MATCHING FIXTURE (2026-09-07)
+
+Reporting a difference as "live state" is not a measurement. Build a fixture that matches the
+capture's state instead, so any difference left is art.
+
+`demo-hudmatch` is that fixture for the battle screen: the navi at 60 HP, a full gauge and a
+Cannon in hand, which is what /tmp/pausedwithcannon.state holds. Against it the WHOLE BATTLE
+SCREEN diffs to 0 px of 38400 with sprites off -- HUD 0, backdrop 0, field 0, chip name 0.
+
+BUILDING IT IMMEDIATELY FOUND A BUG the state mismatch had hidden: the chip name was read with
+`chips.get(id)`, indexing the chip table BY CHIP ID, but the table is in tools/chip_export.py's
+own CHIPS order, where index 1 is HiCannon while chip id 1 is Cannon. Every chip name in the game
+named the wrong chip, and it looked plausible enough to survive comparison against a capture that
+held a different chip. The hand holds Chip values, so the name comes from those now.
+
+FOR THE CHIP MENU the same fixture gets the header to 0 and the HP box to backdrop phase alone.
+What is left there is genuinely state: the two builds offer different chips (the card's picture
+alone is ~3000 px), and the real ROM draws EIGHT slot cells where this draws ten -- its lower row
+shows three empty boxes, not five, so the count follows how many the deck can offer. Matching
+that needs a fixture that offers the same chips; identifying them from their icons needs the
+record stride in chips.bin, which is not 36 as the exporter's packing suggests.
+
 ## 7p. The bomb family, mapped; FlshBom started (2026-09-07)
 
 Every NAMED chip in each implemented family, read straight out of ChipDataArr.s by attack_family
