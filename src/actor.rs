@@ -369,6 +369,14 @@ impl Actor {
         !matches!(self.action, Action::Hidden | Action::Gone)
     }
 
+    /// Put the navi on a panel at once, as the sword family's step does
+    /// (asm31.s:108808-108826: it reserves the panel and sets PanelX/PanelY
+    /// rather than running the warp machine).
+    pub fn warp_to(&mut self, col: i32, row: i32) {
+        self.col = col;
+        self.row = row;
+    }
+
     /// Take the navi off the field until the intro brings it in.
     pub fn hide(&mut self) {
         self.action = Action::Hidden;

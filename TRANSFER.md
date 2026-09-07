@@ -367,6 +367,18 @@ matter so far: 0x16/0x17/0x18 = arc animations 0/1/2 palette 0, 0x19/0x1a = anim
 palette 5 (the blades), 0x25 = animation 3 palette 0 (sword subfamily 9, unused so far),
 0x2d = animation 1 palette 6 (Muramasa).
 
+## 7l. StepSwrd (partial, 2026-09-06)
+
+StepSwrd (81) is sword subfamily 1 -- WideSwrd's column shape and arc -- plus a dash: its first
+attack parameter is 1, which sends the family's state 0 through sub_8015B00 to reserve a panel
+across the boundary and move the navi there (asm31.s:108790-108826). Implemented that way
+(`Actor::warp_to`, and back on Recovering), and against the real ROM the DASH PANEL matches
+exactly (body box x 123-157 on both) and every frame from the slash's start (c10) is identical.
+The gap is the first ten frames: the real plays a step pose of its own and draws no navi at all
+for two of them (c8, c9 -- an illusion object, spawnIllusionObject_80E33FA), while this holds
+the idle, so those frames differ by ~705 px. Which MegaMan animation the step uses is not
+identified yet.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the

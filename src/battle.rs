@@ -101,6 +101,7 @@ const CHIP_LONGSWRD: u16 = 73;
 const CHIP_WIDEBLDE: u16 = 74;
 const CHIP_LONGBLDE: u16 = 75;
 const CHIP_MURAMASA: u16 = 85;
+const CHIP_STEPSWRD: u16 = 81;
 const CHIP_FIRESWRD: u16 = 76;
 const CHIP_AQUASWRD: u16 = 77;
 const CHIP_ELECSWRD: u16 = 78;
@@ -411,6 +412,8 @@ pub struct Battle<'a> {
     /// the navi (its OAM entries follow the navi's), for as long as the
     /// barrier has HP (sub_80E0C74, asm31.s:86011).
     bubble: Option<spr::Player>,
+    /// Where StepSwrd's dash started, so the navi can be put back.
+    step_home: Option<(i32, i32)>,
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -504,6 +507,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_SUPRVULC);
         } else if cfg!(feature = "demo-muramasa") {
             hand.push(CHIP_MURAMASA);
+        } else if cfg!(feature = "demo-stepswrd") {
+            hand.push(CHIP_STEPSWRD);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -742,6 +747,7 @@ impl<'a> Battle<'a> {
             hand_at: 0,
             chip_in_use: None,
             sword_in: None,
+            step_home: None,
             presentation: None,
             bubble: None,
             vulcan_gun: None,
@@ -1092,6 +1098,13 @@ impl<'a> Battle<'a> {
             }
         }
         match navi_update {
+            Update::Recovering if self.step_home.is_some() => {
+                // Back where it started once the slash is over: the real ROM
+                // has the navi home 24 frames into the attack.
+                if let Some((col, row)) = self.step_home.take() {
+                    self.megaman.warp_to(col, row);
+                }
+            }
             Update::Strike { .. } if self.chip_in_use.is_some() => {
                 let chip = self.chip_in_use.take().unwrap();
                 self.chip_strike(chip);
@@ -1332,8 +1345,31 @@ impl<'a> Battle<'a> {
     fn use_chip(&mut self, chip: Chip) {
         match chip.id {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
-            | CHIP_MURAMASA | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
-            | CHIP_BAMBSWRD => {
+            | CHIP_MURAMASA | CHIP_STEPSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
+            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+                // StepSwrd's first attack parameter is 1, which sends the
+                // sword family's state 0 through sub_8015B00: it reserves a
+                // panel across the boundary and moves the navi there before
+                // the slash (asm31.s:108790-108826). Against the real ROM the
+                // navi is on the enemy's front column from the attack's first
+                // frame -- the panel below matches exactly -- and home again
+                // 24 frames in, and the slash from the tenth frame is
+                // pixel-identical. What is NOT reproduced is the step's own
+                // ten frames: the real plays a pose of its own there and
+                // hides the navi entirely for two frames (an illusion object,
+                // spawnIllusionObject_80E33FA), where this holds the idle.
+                if chip.id == CHIP_STEPSWRD {
+                    let (col, row) = self.megaman.panel();
+                    let dx = self.megaman.facing_dx();
+                    let (lo, hi) = self.panels.half(true, row);
+                    let step_to = if dx > 0 { lo } else { hi };
+                    if !(1..=field::COLS).contains(&step_to) {
+                        // Nowhere to step: the slash happens where it stands.
+                    } else {
+                        self.step_home = Some((col, row));
+                        self.megaman.warp_to(step_to, row);
+                    }
+                }
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
@@ -1437,14 +1473,15 @@ impl<'a> Battle<'a> {
         let dx = self.megaman.facing_dx();
         match chip.id {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
-            | CHIP_MURAMASA | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
-            | CHIP_BAMBSWRD => {
+            | CHIP_MURAMASA | CHIP_STEPSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
+            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                 let mut panels: Vec<(i32, i32)> = Vec::new();
                 // The hit shape is byte_80EBA18's first byte per subfamily
                 // (asm31.s:109246): 1 the panel ahead, 4 the column ahead,
                 // 2 two panels ahead; the elemental swords are all 4.
                 match chip.id {
-                    CHIP_WIDESWRD | CHIP_WIDEBLDE | CHIP_FIRESWRD | CHIP_AQUASWRD
+                    CHIP_WIDESWRD | CHIP_WIDEBLDE | CHIP_STEPSWRD | CHIP_FIRESWRD
+                    | CHIP_AQUASWRD
                     | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                         panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
                     }
