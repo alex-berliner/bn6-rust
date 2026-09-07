@@ -374,6 +374,22 @@ const BLKBOMB_VZ: i32 = 0x22051;
 /// off the real ROM's object list.
 const DAMAGE_TAG_RIGHT: i32 = 32;
 const DAMAGE_TAG_DOWN: i32 = 30;
+/// FlshBom's arc is taller than a bomb's and it comes down harder. Solved
+/// against the real ROM's ball tracked frame by frame by its four yellow
+/// colours over the whole forty-frame flight: it leaves the hand at y48,
+/// peaks at y32 held from frame 20 to 24, and is back down at y90 on frame
+/// 47. Fitting only the first thirty frames gives a curve that is right at
+/// the peak and six pixels low at the end, so the fit has to run to the
+/// landing.
+///
+/// The fit is on the arc this build actually draws, which is a step behind
+/// the naive one: the ball's z carries 0x8c00 of subpixel from the panel
+/// geometry and its first frame is drawn after a step, so simulating
+/// `vz - gravity` from 0x8c00 reproduces the drawn pixels exactly. The pair
+/// below is the centre of the region of (vz, gravity) that reproduces every
+/// one of the forty positions.
+const FLSHBOM_VZ: i32 = 0x2BD00;
+const FLSHBOM_GRAVITY: i32 = 0x3000;
 const LILBOLR_VX: i32 = 0x2C7AE;
 const LILBOLR_VZ: i32 = 0x2999A;
 const LILBOLR_GRAVITY: i32 = 0x2800;
@@ -614,7 +630,7 @@ pub struct Battle<'a> {
     /// spawn frame with its first animation frame counting from the next
     /// (the sword arc, the heal), unlike the type-1 attack objects (the
     /// cannon barrel, the sword) whose first frame counts from the spawn.
-    effects: Vec<(spr::Player, (i32, i32), u8, bool)>,
+    effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)>,
     shots: Vec<Shot>,
     glow: spr::Player,
     glow_state: usize,
@@ -904,7 +920,7 @@ impl<'a> Battle<'a> {
         // The deletion effect, sprite_839CCDC animation 0, spawned at the body
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
-        let effects: Vec<(spr::Player, (i32, i32), u8, bool)> = Vec::new();
+        let effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)> = Vec::new();
         let ais: Vec<ai::Ai> = if cfg!(feature = "demo-sterile") {
             alloc::vec::Vec::new()
         } else if let Some((_, _, _, style, _)) = demo_enemy {
@@ -1337,6 +1353,7 @@ impl<'a> Battle<'a> {
                     // idle is back.
                     SWORD.frames + SWORD.recover,
                     false,
+                    false,
                 ));
             } else {
                 self.sword_in = Some(left - 1);
@@ -1397,7 +1414,7 @@ impl<'a> Battle<'a> {
                     // panel keeps only the afterimage -- so an attack object
                     // follows the navi rather than staying where it spawned.
                     let home = field::panel_centre(col, row);
-                    for (_, pos, _, _) in self.effects.iter_mut() {
+                    for (_, pos, _, _, _) in self.effects.iter_mut() {
                         *pos = home;
                     }
                     // The far panel does keep a sword copy after the return
@@ -1430,7 +1447,7 @@ impl<'a> Battle<'a> {
             Update::Died => {
                 let at = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 self.effects
-                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false));
+                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false, false));
             }
             _ => {}
         }
@@ -1501,7 +1518,7 @@ impl<'a> Battle<'a> {
                 Update::Died => {
                     let at = field::panel_centre(enemy.panel().0, enemy.panel().1);
                     self.effects
-                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false));
+                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false, false));
                 }
                 // The Mettaur's strike is a wave set rolling from the front
                 // panel; the swords land on their targets at once.
@@ -1559,7 +1576,7 @@ impl<'a> Battle<'a> {
         if let Some((left, to)) = self.held_raise {
             if left == 0 {
                 self.held_raise = None;
-                if let Some((_, pos, _, _)) = self.effects.first_mut() {
+                if let Some((_, pos, _, _, _)) = self.effects.first_mut() {
                     *pos = to;
                 }
             } else {
@@ -1578,7 +1595,7 @@ impl<'a> Battle<'a> {
                 self.step_dest = field::panel_centre(mcol, mrow);
             }
             self.step_trail_sword[age as usize % 4] =
-                self.effects.first().map(|(p, _, _, _)| p.frame_key());
+                self.effects.first().map(|(p, _, _, _, _)| p.frame_key());
             // Refreshed on the first frame of each blink pair and held for
             // the second: on frames 16 AND 17 the real copy carries the
             // navi's frame-13 sprite, not 13 and then 14.
@@ -1618,7 +1635,7 @@ impl<'a> Battle<'a> {
             }
         }
         // An effect with N frames is drawn for N frames, this one included.
-        self.effects.retain_mut(|(p, _, ticks, _)| {
+        self.effects.retain_mut(|(p, _, ticks, _, _)| {
             p.update();
             let alive = *ticks > 0;
             *ticks = ticks.saturating_sub(1);
@@ -1678,7 +1695,7 @@ impl<'a> Battle<'a> {
                 let mut blast = spr::Player::new(spr::Assets::new(BOMB_BLAST), 0);
                 blast.update();
                 self.effects
-                    .push((blast, field::panel_centre(c, r), BLAST_FRAMES - 1, false));
+                    .push((blast, field::panel_centre(c, r), BLAST_FRAMES - 1, false, false));
             }
         }
 
@@ -1774,11 +1791,20 @@ impl<'a> Battle<'a> {
                 if flash {
                     self.held_raise = Some((HELD_RAISE_AT, (at.0 + 14, at.1 - 24)));
                 }
+                // The flash bomb's sprite carries a ground shadow as its
+                // first part, and the real ROM does not draw it while the ball
+                // is held: with the shadow on, this build's ground ellipse
+                // runs to x63 on row 110 and starts at x55 on row 105, where
+                // the real ROM's stops at x55 and starts at x57 -- its whole
+                // ground mark is the navi's own. Drawn at the ball it is a
+                // separate 51 px blob at x30-45 y96-100 that the real ROM
+                // leaves black.
                 self.effects.push((
                     held,
                     at,
                     HELD_BOMB_FRAMES,
                     false,
+                    flash,
                 ));
             }
             CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
@@ -1802,7 +1828,7 @@ impl<'a> Battle<'a> {
                 // and 2 for Cannon, HiCannon and M-Cannon.
                 barrel.set_palette_add((chip.id - CHIP_CANNON) as usize);
                 self.effects
-                    .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false));
+                    .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false, false));
             }
             CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 | CHIP_SUPRVULC => {
                 self.chip_in_use = Some(chip);
@@ -1828,6 +1854,7 @@ impl<'a> Battle<'a> {
                     (mx + dx * AIRSHOT_ARM.0, my + AIRSHOT_ARM.1),
                     AIRSHOT_FRAMES,
                     false,
+                    false,
                 ));
             }
             CHIP_RECOV10 | CHIP_RECOV30 | CHIP_RECOV50 | CHIP_RECOV80 | CHIP_RECOV120
@@ -1844,6 +1871,7 @@ impl<'a> Battle<'a> {
                     field::panel_centre(mc, mr),
                     HEAL_FRAMES,
                     true,
+                    false,
                 ));
             }
             CHIP_INVISIBL => self.presentation = Some((chip, INVISIBL_PRESENTATION)),
@@ -1924,7 +1952,7 @@ impl<'a> Battle<'a> {
                 let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
                 arc.set_palette_add(arc_palette);
                 self.effects
-                    .push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim], true));
+                    .push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim], true, false));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if panels.contains(&enemy.panel()) {
                         enemy.take_damage(chip.power);
@@ -1946,7 +1974,14 @@ impl<'a> Battle<'a> {
                 // by taking its tiles out of OBJ VRAM mid-flight and finding
                 // those exact bytes in byte_831FA84.spr, the only one of the
                 // 97 sprite files that holds them.
-                let mut thrown = if lilbolr {
+                let flash = matches!(
+                    chip.id,
+                    CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
+                );
+                let mut thrown = if flash {
+                    // The thrown ball is the same sprite as the held one.
+                    spr::Player::new(spr::Assets::new(FLSHBOM), 0)
+                } else if lilbolr {
                     // The thing LilBolr lobs is the LilBoiler VIRUS, not a
                     // bomb: its tiles are in virusBattleSprite_824EAF4.spr,
                     // which is why it looks nothing like one.
@@ -1961,7 +1996,13 @@ impl<'a> Battle<'a> {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
                     flight: if chip.id == CHIP_BLKBOMB { BLKBOMB_FLIGHT } else { BOMB_FLIGHT },
-                    gravity: if lilbolr { LILBOLR_GRAVITY } else { BOMB_GRAVITY },
+                    gravity: if flash {
+                        FLSHBOM_GRAVITY
+                    } else if lilbolr {
+                        LILBOLR_GRAVITY
+                    } else {
+                        BOMB_GRAVITY
+                    },
                     show_damage: lilbolr,
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
@@ -1973,7 +2014,9 @@ impl<'a> Battle<'a> {
                     } else {
                         dx * BOMB_VX
                     },
-                    vz: if lilbolr {
+                    vz: if flash {
+                        FLSHBOM_VZ
+                    } else if lilbolr {
                         LILBOLR_VZ
                     } else if chip.id == CHIP_BLKBOMB {
                         BLKBOMB_VZ
@@ -2144,8 +2187,13 @@ impl<'a> Battle<'a> {
                 }
             }
         }
-        for (p, (x, y), _, _) in self.effects.iter().rev() {
-            for part in p.parts().iter().rev() {
+        for (p, (x, y), _, _, no_shadow) in self.effects.iter().rev() {
+            for (i, part) in p.parts().iter().enumerate().rev() {
+                // A sprite's first part is its ground shadow, and a HELD
+                // object's is not drawn.
+                if *no_shadow && i == 0 {
+                    continue;
+                }
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)
                     .set_pos((x + part.x, y + part.y))

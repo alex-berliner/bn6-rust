@@ -508,5 +508,11 @@
     "file": "log/shots/1788769996-parity_zero.png",
     "caption": "Per-pixel tile parity for the whole battle screen: zero differing pixels out of 38400, real ROM above and this build below with sprites off. Getting a true number needed a fixture that matches the captured battle's state, 60 HP with a full gauge and a Cannon in hand, so that a difference means art rather than state. Building it exposed a real bug that the state mismatch had been hiding: the chip name was read by indexing the chip table with the chip's id, but the table is in the exporter's own order, so every name was the wrong chip. Taking the name from the chip in hand fixes it, and every layer then reads zero: HUD, backdrop, field and name strip.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788771633,
+    "file": "log/shots/1788771633-flshbom_compare.png",
+    "caption": "FlshBom1-3 reach per-pixel parity. The thrown ball was still using the MiniBomb sprite, its arc was a bomb's, and the held ball dragged a ground shadow the real ROM does not draw. With its own launch speed and gravity -- solved against the ball tracked frame by frame by its four yellow colours over the whole forty-frame flight -- and the held shadow suppressed, every frame of the attack now differs by 0 pixels from the real ROM. Real on top, this build in the middle, the difference below; the band above the line is the HUD, which the sterile arena does not reproduce.",
+    "tag": "chip"
   }
 ]
