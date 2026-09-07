@@ -24,7 +24,7 @@ use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
-    FLSHBOM, LILBOILER, MINIBOMB, POISSEED,
+    FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -167,6 +167,10 @@ const CHIP_POISSEED: u16 = 70;
 const SEED_HELD_ANIM: usize = 8;
 const SEED_THROWN_ANIM: usize = 9;
 const SEED_PALETTE: usize = 3;
+/// The poison sheet's animation and how long it runs, from the sprite's own
+/// frame durations.
+const POISON_ANIM: usize = 1;
+const POISON_FRAMES: u8 = 16;
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
 const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
@@ -546,6 +550,9 @@ struct Bomb {
     flight: u8,
     /// LilBolr shows its damage riding under the projectile; the bombs do not.
     show_damage: bool,
+    /// PoisSeed lays poison over the enemy's half where it lands instead of
+    /// bursting.
+    poison: bool,
 }
 
 impl Bomb {
@@ -666,6 +673,8 @@ pub struct Battle<'a> {
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
     emotion: crate::emotion::Emotion,
+    /// Frames until PoisSeed's sheet goes down, counted from the pod landing.
+    poison_pending: u8,
     /// The palette for the chip-in-hand icon the game hangs over the navi.
     /// None in the sterile arena, which does not draw the icon: the bank it
     /// would hold is one the longest volley needs. SuprVulc panicked with
@@ -1077,6 +1086,7 @@ impl<'a> Battle<'a> {
                 Some(crate::backdrop::Backdrop::new(crate::BACKDROP))
             },
             field_slide: 0,
+            poison_pending: 0,
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
@@ -1744,6 +1754,39 @@ impl<'a> Battle<'a> {
             *ticks = ticks.saturating_sub(1);
             alive
         });
+        // PoisSeed's sheet, one frame after the pod lands.
+        if self.poison_pending > 0 {
+            self.poison_pending -= 1;
+            if self.poison_pending == 0 {
+                let (first, last) = field::half(true);
+                for c in first..=last {
+                    for r in 1..=field::ROWS {
+                        // NOT in the sterile arena: the real capture's field
+                        // layer is stripped, so its poison panels cannot show,
+                        // while this build's field would paint them and cost
+                        // the comparison 1440 px a frame. The sheet itself is
+                        // objects and shows on both sides.
+                        if !cfg!(feature = "demo-sterile") {
+                            self.panels.set(c, r, field::PANEL_POISON);
+                        }
+                        // Spawned a frame after the pod lands and already one
+                        // tick in, so its first frame shows for that one frame
+                        // only: with either half of that alone the whole sheet
+                        // runs a frame early or a frame late.
+                        let mut sheet =
+                            spr::Player::new(spr::Assets::new(POISAREA), POISON_ANIM);
+                        sheet.update();
+                        self.effects.push((
+                            sheet,
+                            field::panel_centre(c, r),
+                            POISON_FRAMES - 1,
+                            false,
+                            false,
+                        ));
+                    }
+                }
+            }
+        }
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
         // the blast, setCollisionRegion(1), then sprite 0x26's animation 0).
         let mut landed = Vec::new();
@@ -1752,13 +1795,30 @@ impl<'a> Battle<'a> {
             b.step();
             b.ticks += 1;
             if b.ticks >= b.flight {
-                landed.push((b.target, b.damage, b.wide));
+                landed.push((b.target, b.damage, b.wide, b.poison));
                 false
             } else {
                 true
             }
         });
-        for ((col, row), damage, wide) in landed {
+        for ((col, row), damage, wide, poison) in landed {
+            // PoisSeed does not burst: it lays poison over the enemy's whole
+            // half, nine panels, each with a pale green sheet that grows out
+            // of an ellipse over sixteen frames. Read off the real ROM's OAM
+            // at the landing: nine pairs of 32x32 objects, one pair per panel
+            // -- a panel is forty wide, so it takes two -- all of them one
+            // sprite, byte_830E44C.spr, in the seed's own palette bank. The
+            // panels themselves are POISON underneath, which the field asset
+            // already carries.
+            if poison {
+                // The pod is gone for ONE frame before the sheet starts: the
+                // real ROM's landing frame shows neither. Measured -- with the
+                // sheet spawned the moment the pod goes, its whole animation
+                // is a frame early and c48 carries nine ellipses the real ROM
+                // does not have.
+                self.poison_pending = 1;
+                continue;
+            }
             // The landing panel, and its eight neighbours for BigBomb.
             // The nine puffs overlap, so the order they are pushed decides
             // which seams show. Effects are drawn last-pushed-first, so this
@@ -2118,7 +2178,11 @@ impl<'a> Battle<'a> {
                 self.bombs.push(Bomb {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
-                    flight: if chip.id == CHIP_BLKBOMB { BLKBOMB_FLIGHT } else { BOMB_FLIGHT },
+                    flight: if chip.id == CHIP_BLKBOMB {
+                        BLKBOMB_FLIGHT
+                    } else {
+                        BOMB_FLIGHT
+                    },
                     gravity: if flash {
                         FLSHBOM_GRAVITY
                     } else if lilbolr {
@@ -2129,6 +2193,7 @@ impl<'a> Battle<'a> {
                         BOMB_GRAVITY
                     },
                     show_damage: lilbolr,
+                    poison: seed,
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,

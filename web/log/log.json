@@ -616,5 +616,11 @@
     "file": "log/shots/1788781502-poisseed_cmp.png",
     "caption": "PoisSeed, a new chip: real ROM on top, this build in the middle, the difference below -- 10.1 px/frame against a floor of 7.7, so 2.4 of real difference on six frames of forty-eight. The pod is byte_82F569C.spr, found by pulling the four tiles of its flying object out of OBJ VRAM and searching all 97 sprite files; animation 8 is the pod in the hand and 9 the pod in flight, matched by their OAM shapes against the real ROM's. Its magenta is palette 12 of the sprite's own block, which carries one palette per seed -- index 0 is IceSeed's blue -- reached as the chip's shift of 3, its attack_param_2, plus the OAM offset of 9 every part carries. Getting that colour out needed a bug fixed: the per-offset palettes were cached by the OAM offset alone, so a sprite whose first frame already carries an offset kept the palette it was built with however it was later shifted. Its arc needed no fitting at all -- the plain bomb launch and gravity put the pod on the real ROM's pixel at every frame of the flight.",
     "tag": "chip"
+  },
+  {
+    "t": 1788781992,
+    "file": "log/shots/1788781992-poisseed_full.png",
+    "caption": "PoisSeed, whole attack: real ROM on top, this build in the middle, the difference below -- 6.9 px/frame over seventy frames against a floor of 5.3. The throw, the arc, the landing and the POISON going down all match. The sheet is nine pairs of 32x32 objects, one pair per panel of the enemy's half because a panel is forty wide, all from byte_830E44C.spr; it grows from an ellipse to a full green sheet and then fades, leaving the panels poison underneath. Its timing took two measurements to place: spawned the moment the pod lands it runs a frame early, spawned a frame later it runs a frame late -- it is spawned a frame later AND already one tick in, so its first frame shows for exactly one frame. What is left is a shadow under the pod for six frames just after the throw.",
+    "tag": "chip"
   }
 ]
