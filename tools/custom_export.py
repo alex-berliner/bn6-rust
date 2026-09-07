@@ -32,7 +32,8 @@ Format (little-endian):
   0x18  u32 -> cursor  : 2 8x8 4bpp tiles, then a 32-byte palette
   0x1c  u32 -> slot art: empty icon (0x80: 4 tiles, 16x16), 28 code
                          glyphs (0x40 each: 2 tiles, 8x16; 0x1b blank),
-                         the interactive OK box (0x100: 8 tiles, 4x2)
+                         the interactive OK box (0x100: 8 tiles, 4x2), then
+                         the pick stack's two frame tiles (0x40)
 
 The cursor is four 8x8 objects, one corner tile flipped into each corner,
 blinking between its two tiles every 8 frames (sub_8028820, asm03_0.s:4791;
@@ -120,7 +121,14 @@ def main():
     empty = read_symbol(DAT, "byte_86E601C", max_bytes=0x80, through_labels=True)
     codes = read_symbol(DAT, "dword_86E591C", max_bytes=28 * 0x40, through_labels=True)
     ok = read_symbol(DAT, "byte_86E79CC", max_bytes=0x400, through_labels=True)[0x300:0x400]
+    # The two tiles that frame the pick stack, alternating down the columns
+    # either side of it. The window's stored map does not carry them -- the
+    # game patches those cells in when it opens -- and they are not in the
+    # window's own tile block; byte_86E2E18 is a separate block the game
+    # uploads at VRAM tile 0x89, and it begins with exactly these two.
+    stack_frame = read_symbol(DAT, "byte_86E2E18", max_bytes=64, through_labels=True)
     assert len(empty) == 0x80 and len(codes) == 28 * 0x40 and len(ok) == 0x100
+    assert len(stack_frame) == 64
 
     out = bytearray(struct.pack("<4sIIIIIII", b"BNCW", 2, 0, 0, 0, 0, 0, 0))
     off_tiles = len(out)
@@ -147,7 +155,7 @@ def main():
     off_cursor = len(out)
     out += cursor + cursor_pal
     off_slot_art = len(out)
-    out += empty + codes + ok
+    out += empty + codes + ok + stack_frame
     struct.pack_into(
         "<4sIIIIIII",
         out,

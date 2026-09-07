@@ -178,6 +178,10 @@ pub struct CustomAssets {
     /// cursor is an object and takes it from OBJ palette space.
     cursor_palette: Palette16,
     empty_icon: TileSet,
+    /// The two tiles that frame the pick stack, alternating down the column
+    /// either side of it. The stored map has neither -- the game patches those
+    /// cells in when the window opens.
+    stack_frame: TileSet,
     code_glyphs: TileSet,
     ok_box: TileSet,
 }
@@ -251,6 +255,9 @@ impl CustomAssets {
             empty_icon: tileset(&data[a..a + 0x80]),
             code_glyphs: tileset(&data[a + 0x80..a + 0x80 + 28 * 0x40]),
             ok_box: tileset(&data[a + 0x80 + 28 * 0x40..a + 0x80 + 28 * 0x40 + 0x100]),
+            stack_frame: tileset(
+                &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x140],
+            ),
         }
     }
 
@@ -313,6 +320,7 @@ impl CustomAssets {
             custom.fill_from(r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
         }
         custom.draw_stack();
+        custom.draw_stack_frame();
         custom.fill(REGION_OK, &self.ok_box, None);
         custom.draw_card(gfx);
         custom.reveal(SLIDE_FROM);
@@ -363,7 +371,7 @@ impl Custom<'_> {
             // Cells inside the drawn regions are the renderers' and stay put
             // once revealed; the template only fills them when the column
             // first arrives, and they are already blank before that.
-            if visible && self.in_region(col, row) {
+            if visible && (self.in_region(col, row) || self.in_stack_frame(col, row)) {
                 continue;
             }
             self.bg.set_tile(
@@ -437,6 +445,32 @@ impl Custom<'_> {
                 self.fill(region_slot_icon(slot), &assets.empty_icon, None);
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+            }
+        }
+    }
+
+    /// Whether a cell belongs to the pick stack's frame columns, which
+    /// draw_stack_frame owns. The stored map has the wrong tile there, so the
+    /// template must not paint over them as the window slides in.
+    fn in_stack_frame(&self, col: usize, row: usize) -> bool {
+        let stack = self.assets.regions[REGION_STACK];
+        (col == (stack.x - 1) as usize || col == (stack.x + stack.w) as usize)
+            && (stack.y as usize..(stack.y + stack.h) as usize).contains(&row)
+    }
+
+    /// The columns either side of the pick stack, alternating the two frame
+    /// tiles down each. Read off a live menu: both columns carry the same
+    /// pair, in the window's own bank.
+    fn draw_stack_frame(&mut self) {
+        let stack = self.assets.regions[REGION_STACK];
+        let tiles = &self.assets.stack_frame;
+        for row in 0..stack.h {
+            for col in [stack.x - 1, stack.x + stack.w] {
+                self.bg.set_tile(
+                    (col as i32, (stack.y + row) as i32),
+                    tiles,
+                    TileSetting::new((row % 2) as u16, TileEffect::new(false, false, BANK)),
+                );
             }
         }
     }

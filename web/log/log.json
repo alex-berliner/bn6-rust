@@ -430,5 +430,11 @@
     "file": "log/shots/1788764219-cust_cmp4.png",
     "caption": "The chip select window, real ROM above and this build below. The window has ten slot cells in two rows of five, and only five chips are offered here; the real ROM draws its empty icon in every cell it is not offering, while this build drew only the five it had, leaving the lower row transparent so the battle field showed through the window. Filling them takes the window area from 8151 differing pixels to 6999. Still open: the two frame columns flanking the pick stack, where the real ROM alternates two tiles down the column in the shared icon bank and this build has a single tile in the window bank.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788764509,
+    "file": "log/shots/1788764509-cust_cmp5.png",
+    "caption": "The chip select window, real ROM above and this build below, with the pick stack's frame now drawn. Its two columns are not in the window's stored map, because the game patches those cells in when the window opens, and their tiles are not in the window's own tile block either: they are the first two tiles of a separate block the game uploads elsewhere in video memory. They alternate down both columns in the window's own bank. Three things had to line up: exporting the tiles, stopping the slide-in from repainting those cells from the stored map, and using the right bank. The window area is down to 6319 differing pixels from 10321 when I started on it.",
+    "tag": "chipselect"
   }
 ]
