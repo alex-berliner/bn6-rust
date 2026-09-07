@@ -153,6 +153,20 @@ const SWORD: actor::AttackSpec = actor::AttackSpec {
     recover: 5,
     recover_anim: None,
 };
+/// StepSwrd holds its recovery pose one frame longer than the other swords.
+/// Measured against the real ROM: on the attack's frame 29 the navi is still
+/// in the recovery pose (917 non-black pixels at home, 178 of them body
+/// colour) and idle on 30, where every other sword is idle on 29. The frame
+/// the step spends going home is the likely cause.
+const STEP_SWORD: actor::AttackSpec = actor::AttackSpec {
+    windup: SWORD.windup,
+    anim: SWORD.anim,
+    frames: SWORD.frames,
+    strike_at: SWORD.strike_at,
+    recover: SWORD.recover + 1,
+    recover_anim: SWORD.recover_anim,
+};
+
 /// MiniBomb (attack family 0x12, sub_80EB644, asm31.s:108790): animation 6
 /// and the held bomb from the first frame, the throw on the frame the
 /// counter reads 9 -- the tenth -- and the pose's first state ends at 0x15,
@@ -1249,9 +1263,11 @@ impl<'a> Battle<'a> {
                     for (_, pos, _, _) in self.effects.iter_mut() {
                         *pos = home;
                     }
-                    // The afterimage keeps copying the navi after the return
-                    // but not the sword: from frame 24 the far panel's copy
-                    // is the navi alone.
+                    // The far panel does keep a sword copy after the return
+                    // -- 68 px of one on every blink frame from 24 on -- but
+                    // not the frame this holds: keeping this one costs 173 px
+                    // a frame instead of 68, so it is dropped until the right
+                    // frame is known.
                     self.step_ghost2_sword = None;
                 }
             }
@@ -1580,7 +1596,7 @@ impl<'a> Battle<'a> {
                     }
                 }
                 self.chip_in_use = Some(chip);
-                self.megaman.attack(SWORD);
+                self.megaman.attack(if chip.id == CHIP_STEPSWRD { STEP_SWORD } else { SWORD });
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {

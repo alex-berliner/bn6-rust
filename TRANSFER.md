@@ -434,10 +434,16 @@ What is actually true, measured per frame from the framebuffer:
   The afterimage also keeps taking new frames after the return, but only from frames where the
   navi was still on the far panel, so the trail carries each frame's POSITION beside its sprite
   and is followed by position rather than cut off at the return.
-- StepSwrd now scores 43 px/frame over 40 frames, from 340, with 31 of the 40 at exactly 0.
-- WHAT IS LEFT: frame 6 is the standing banner artifact (369, unavoidable). Frames 24-25, 28 and
-  32-33 hold 68 px each and 20-21 hold 26. Frame 29 is 954 px spanning both panels and has not
-  been looked at.
+- ITS RECOVERY IS A FRAME LONGER than the other swords'. On the attack's frame 29 the real navi
+  is still in the recovery pose (917 non-black at home, 178 of them body colour) and idle on 30,
+  where Sword, WideSwrd and Muramasa are idle on 29. STEP_SWORD is SWORD with recover+1, and it
+  takes frame 29's home panel from 886 px to 84. Sword, WideSwrd and Muramasa are unchanged.
+- StepSwrd now scores 23 px/frame over 40 frames, from 340, with 33 of the 40 at exactly 0.
+- WHAT IS LEFT: frame 6 is the standing banner artifact (369, unavoidable). The far panel holds a
+  flat 68 px on every blink frame from 24 on, which is a SWORD copy the real keeps there after the
+  return and this does not draw -- drawing the frame this has costs 173 a frame instead, so the
+  frame it should hold is still unknown. Frame 29's home panel keeps 84 px, one frame of pose in
+  the hand-off from recovery to idle.
 
 Capture modes, and what each costs:
 - A state with no enemy is impossible: the game refuses a chip press once the deletion sequence

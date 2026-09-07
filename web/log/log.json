@@ -364,5 +364,11 @@
     "file": "log/shots/1788753080-energbom_done.png",
     "caption": "Four new chips matched frame for frame: Barr100 and Barr200 (the same barrier chip with a bigger bubble in gold and pink), and EnergBom and MegEnBom (MiniBomb's family and throw on the same bomb sprite's other pair of animations, tumbling in flight). The bomb's sprite was identified without reading any disassembly, by pulling the real bomb's tiles out of video memory at a chosen frame and searching the sprite's graphics blobs for those exact bytes.",
     "tag": "chips"
+  },
+  {
+    "t": 1788754984,
+    "file": "log/shots/1788754984-stepswrd_recover.png",
+    "caption": "StepSwrd holds its recovery pose one frame longer than the other swords: the real navi is still in it on the attack's frame 29 and idle on 30, where Sword, WideSwrd and Muramasa are idle on 29. That takes frame 29's home panel from 886 pixels to 84 and the chip from 43 to 23 per frame, with 33 of its 40 frames exact. What is left is a sword copy the far panel keeps after the return, at 68 pixels a frame.",
+    "tag": "stepswrd"
   }
 ]
