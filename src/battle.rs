@@ -100,6 +100,7 @@ const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
 const CHIP_WIDEBLDE: u16 = 74;
 const CHIP_LONGBLDE: u16 = 75;
+const CHIP_MURAMASA: u16 = 85;
 const CHIP_FIRESWRD: u16 = 76;
 const CHIP_AQUASWRD: u16 = 77;
 const CHIP_ELECSWRD: u16 = 78;
@@ -501,6 +502,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_RECOV300);
         } else if cfg!(feature = "demo-suprvulc") {
             hand.push(CHIP_SUPRVULC);
+        } else if cfg!(feature = "demo-muramasa") {
+            hand.push(CHIP_MURAMASA);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1329,7 +1332,8 @@ impl<'a> Battle<'a> {
     fn use_chip(&mut self, chip: Chip) {
         match chip.id {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
-            | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+            | CHIP_MURAMASA | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
+            | CHIP_BAMBSWRD => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
@@ -1433,7 +1437,8 @@ impl<'a> Battle<'a> {
         let dx = self.megaman.facing_dx();
         match chip.id {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
-            | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+            | CHIP_MURAMASA | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
+            | CHIP_BAMBSWRD => {
                 let mut panels: Vec<(i32, i32)> = Vec::new();
                 // The hit shape is byte_80EBA18's first byte per subfamily
                 // (asm31.s:109246): 1 the panel ahead, 4 the column ahead,
@@ -1443,7 +1448,7 @@ impl<'a> Battle<'a> {
                     | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                         panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
                     }
-                    CHIP_LONGSWRD | CHIP_LONGBLDE => {
+                    CHIP_LONGSWRD | CHIP_LONGBLDE | CHIP_MURAMASA => {
                         panels.extend([(col + dx, row), (col + 2 * dx, row)])
                     }
                     _ => panels.push((col + dx, row)),
@@ -1466,6 +1471,9 @@ impl<'a> Battle<'a> {
                     CHIP_SWORD => (2, 0),
                     CHIP_WIDEBLDE => (0, 5),
                     CHIP_LONGBLDE => (1, 5),
+                    // Muramasa's row 0x2d: the same animation as LongBlde's
+                    // in palette 6.
+                    CHIP_MURAMASA => (1, 6),
                     _ => (0, 0),
                 };
                 let (fx, fy) = field::panel_centre(col + dx, row);

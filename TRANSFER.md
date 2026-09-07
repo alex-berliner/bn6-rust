@@ -306,8 +306,10 @@ FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 su
   neighbours, each getting the same effect row 0. (byte_80C5BA0's third byte is the flying
   bomb's hit modifier, not a blast size.) With that, BigBomb is at 22 px/frame mean, down from
   87: the 3x3 blast lines up -- same bounding box and same pixel count on both sides -- and
-  what is left is a small colour/edge residual in its last frames (135-230 px, at the window's
-  right edge). Reversing the nine-panel spawn order does not change it. Open.
+  what is left is one puff out of phase: the differing pixels are all blast oranges against
+  blast oranges (real (239,181,33) where ours is (214,74,33)) in a 16x14 box at the window's
+  right edge, i.e. the leftmost puff of the nine is a frame ahead or behind ours. Reversing the
+  spawn order does not change it. 22 px/frame, 0.06% of the screen. Open.
 - BlkBomb, after two wrong turns, is left arcing like MiniBomb (~256 px/frame). The trail:
   off_80EB6F8[6] = sub_80CD886 (asm31.s:45704), whose object takes sprite_831EA40 animation 0
   from byte_80CD8AC[Param1 * 8] (asm31.s:46200) and, on the reading of sub_80CDA1C /
@@ -355,6 +357,16 @@ resolves to the arc's animations 0 and 1 in **palette 5** (asm31.s:85787), the w
 Both diff to zero. Recov150/200/300 need nothing but their ids (the amount table already had
 them); Recov300 diffs to zero.
 
+## 7k. Muramasa, and the arc's palette rows (2026-09-06)
+
+Muramasa (85, sword subfamily 8) diffs to zero: LongSwrd's two-panel shape with the arc in
+**animation 1, palette 6** -- byte_80EBAD8[8] = row 0x2d of byte_80E0398. Reading that table
+past row 27 needs care: a pointer (off_80E0408 = unk_200150C) sits inline and occupies one
+four-byte row, so a naive parse stops there and every later row comes out missing. Rows that
+matter so far: 0x16/0x17/0x18 = arc animations 0/1/2 palette 0, 0x19/0x1a = animations 0/1
+palette 5 (the blades), 0x25 = animation 3 palette 0 (sword subfamily 9, unused so far),
+0x2d = animation 1 palette 6 (Muramasa).
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
@@ -364,7 +376,7 @@ MiniBomb (36 demo-minibomb, flight in the default window and the landing with --
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
-Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), LongSwrd (49 demo-longswrd), Recov30 (9b
+Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,
