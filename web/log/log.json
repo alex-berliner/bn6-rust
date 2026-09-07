@@ -382,5 +382,11 @@
     "file": "log/shots/1788760639-backdrop_done.png",
     "caption": "The battle backdrop is implemented and matches the real ROM: all 1024 cells of its tilemap carry identical tile art and identical flip and palette bits, and it scrolls at the real rate, one pixel left every two frames and one pixel up every four. The hand-off doc had recorded that the tilemap is not in any ROM data blob and that the tile blob's order is not the order the game uploads. Matching every tile byte for byte against the blob resolved both: the map is stored as blob indices, so the exporter needs only the disassembly.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788760893,
+    "file": "log/shots/1788760893-tiles_cmp.png",
+    "caption": "Tile parity with the sprites turned off, real ROM above and this build below. Both background layers now match: the field is pixel-identical and the backdrop's tilemap is identical in all 1024 cells, so the only difference across the field is the backdrop's scroll phase, which depends on when the battle started. What is left is the HUD layer the real ROM keeps on BG3: the HP box and CUSTOM gauge across the top, worth 5409 pixels, and the chip name along the bottom, worth 1224. Those hold live values, so they need a tile-based renderer rather than a static map.",
+    "tag": "tiles"
   }
 ]

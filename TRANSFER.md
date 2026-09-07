@@ -244,6 +244,53 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7m. Tile parity: the field and the backdrop (2026-09-07)
+
+The capture harness can now isolate layers: `--disable-obj` turns the sprites off and leaves the
+BG layers on, and `--only-bg <n>` leaves exactly one BG layer on and everything else off. With
+the objects gone a whole-frame diff is a diff of the tilemaps, and one layer at a time says which
+layer a difference is in. Both were what made the rest of this measurable.
+
+LAYER ROLES, read off those captures and confirmed against BG0-3CNT (1c08, 1d03, 1e02, 1f09):
+BG1 is the backdrop (screen block 29, char base 0, priority 3), BG2 the field (block 30, char
+base 0, priority 2), BG3 the HUD and chip name (block 31, char base 2, priority 1). BG0 is empty
+in battle. This build now matches that layering: the field moved from priority 3 to 2 with the
+backdrop behind it at 3.
+
+THE FIELD IS EXACT -- 0 px over the whole layer. It was short by one tilemap row: the real ROM
+draws a front lip below the bottom panel row, five tiles repeating per column (0x28d, 0x28e,
+0x28f, 0x28e, 0x28d) in that column's own side palette, 1 on the player's red half and 5 on the
+enemy's blue one. That is the six pixels the field stopped short of at y 144..149. Its tiles were
+already inside the exported tileset, which covers 498 tiles from TILE_BASE while the lip uses 653
+to 655, so this was a tilemap row and no new art. field_export.py emits it as two variants after
+the highlights, and Field::draw_lip paints one per column of the bottom row.
+
+THE BACKDROP IS EXACT -- all 1024 cells of its tilemap carry identical tile art and identical
+flip and palette bits. It was parked on two obstacles recorded in 7d: the tile blob's order is
+not the order the game uploads to VRAM, and the 32x32 map is in no data blob because the game
+builds it at runtime. Matching every tile of a live battle's BG1 byte for byte against the blob
+resolved both at once -- all 37 distinct map tiles matched, collapsing to 32 blob tiles -- so
+tools/backdrop_export.py records the map as indices into the blob and needs only the disassembly,
+not the ROM. It scrolls one pixel left every two frames and one pixel up every four, kept in
+quarter-pixels; the direction matters and was wrong at first, caught by comparing per-frame steps
+rather than absolute positions.
+DO NOT compare scrolled screenshots by shifting and wrapping them: the screen is a 240 px window
+on a 256 px map, so a wrapped shift does not reconstruct the map and leaves a false residual
+(2153 px on a pair that is in fact identical). Compare the tilemaps in VRAM instead.
+The sterile arena leaves the backdrop out, for the same reason it draws a plain field: the real
+captures strip their BG layers, so both sides must be MegaMan on black. With the backdrop drawn
+there, every chip comparison jumped to 15767 px/frame.
+
+WHAT IS LEFT is BG3. With sprites off, the whole screen differs by 10134 px: 5409 in the HUD
+strip (y 0..40), 1224 in the chip-name strip (y 150..160), 3373 in the backdrop band which is
+scroll phase alone, and 128 across the field which is backdrop showing through the gaps between
+panels at a different phase. BG3's map has content only in rows 0-1 and 18-19, 37 distinct tiles
+in palettes 0, 9 and 13, char base 2 (0x6008000). Rows 0-1 are the HP box in columns 0-5 (frame
+tiles 0x1b4-0x1b7, digit tiles around 0x1a0-0x1ad, each cell a two-row pair) and the CUSTOM gauge
+from column 6 in palette 9. Rows 18-19 are the chip name. All of it holds live values, so it
+needs a tile-based renderer rather than a static export -- exporting the map as captured would
+hardcode this state's "60" and "Cannon40". That is the next piece of work.
+
 ## 7e. AreaGrab and per-panel ownership (2026-09-06)
 
 field::Panels now carries `enemy_owned` per panel instead of the fixed 1-3 / 4-6 split:
