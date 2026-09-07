@@ -1013,6 +1013,41 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7ba. What a battle's first 200 frames actually look like (2026-09-07)
+
+`demo-open` fields the battle-start capture's own line-up -- three Mettaurs at (4,1), (5,2) and
+(6,3) with the navi on column 2 -- so the opening can be compared at all. A one-virus battle
+cannot be: the intro materialises them one at a time, so its length depends on how many there
+are, which is why this build's opening had never been measured against anything.
+
+THE REAL OPENING, from `/tmp/battlestart.state`:
+
+    frames   0..70   PLAIN WHITE, the whole screen
+    frame    71      the field appears, whole, with the navi already on it
+    frame    113     the first virus materialises
+    frame    141     the second        (+28)
+    frame    173     the third         (+32)
+    frame    173     the chip window opens
+
+THE WHITE IS NOT A FADE. It is a hold: 100% white from frame 0 through 70 and 0% at 71, with no
+ramp between. This build fades in from BLACK over 32 frames (`SCREEN_FADE_FRAMES`, a stand-in the
+file has always flagged as unread), which is both the wrong colour and less than half the length.
+Note the sampling trap that hid this for a while: a "brightness" measure reads white as full
+brightness and therefore reads a white screen as a finished fade. Measure the COLOUR, not the
+level.
+
+WHAT THIS BUILD DOES, same fixture: field at ~32, viruses at 59, 92 and 125 (+33, +33), window at
+134. So the SPACING is right -- about thirty frames a virus, against the real 28 and 32 -- and
+everything is uniformly early because the lead-in is 32 frames of black where the real is 71 of
+white. Correcting the lead-in should bring the whole sequence into line, and the virus spacing is
+then worth re-measuring rather than assumed.
+
+NOT DONE, deliberately: the white hold is not implemented. It is a large visible change and there
+is a real question behind it -- whether the white belongs to the BATTLE or to the map-to-battle
+transition that this build has no map to run. The state is at battle init and the screen is
+already white there, which argues for the battle, but that is an argument and not a measurement,
+and today has been a long lesson in the difference.
+
 ## 7az. A researched fact that did not survive contact with a capture (2026-09-07)
 
 Panel damage was researched, implemented, measured, and REVERTED, and the sequence is worth

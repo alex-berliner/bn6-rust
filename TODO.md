@@ -101,14 +101,22 @@ settle this AND BATTLE START!'s delay (C1) in one go. That save state is now the
 valuable thing the harness does not have.
 
 
-### A5. A battle-opening fixture with three viruses
-`/tmp/battlestart.state` is a battle's first frame, and the chip window opens at 173 there
-against 134 here -- but the captured battle materialises THREE Mettaurs one at a time and
-this build fields one, so the two are not comparable. A demo feature that fields three
-Mettaurs on the capture's own panels would make the whole opening comparable: the screen
-fade's real length (this build stands in "two frames a step", and only the 0x10 divisor is
-confirmed), the materialise sequence, and the window's opening frame. It would also give
-the `cursor` check's blink a battle-relative origin to be anchored to (A2).
+### A5. The battle opening  *(fixture built and measured -- TRANSFER 7ba)*
+`demo-open` exists and fields the capture's own three Mettaurs. Measured:
+
+    real   white 0..70, field at 71, viruses 113/141/173, window 173
+    ours   fade  0..32, field at 32, viruses  59/ 92/125, window 134
+
+The spacing is right; the lead-in is not. What is left is one decision and then a change:
+IS THE WHITE THE BATTLE'S OR THE MAP TRANSITION'S? The state is at battle init and the
+screen is already white, which argues for the battle -- but that is an argument. Settle it
+(the fade controller is `sub_80E0684`/`sub_80E06E0`, asm31.s:85362/85412, and
+`SetScreenFade`'s level is at asm00_1.s:6387/6554), then replace the 32-frame black fade
+with whatever it really is and re-measure the virus spacing rather than assuming it.
+
+A sampling trap worth remembering: a "brightness" measure reads white as FULL brightness, so
+a white screen looks like a finished fade. Measure the colour.
+
 
 ## B. Things the game does that this build does not
 

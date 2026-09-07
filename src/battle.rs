@@ -1152,7 +1152,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             Some((spr::Assets::new(METTAUR), 5, 2, ai::Style::Mettaur, FIELDMATCH_HP)),
         );
     }
-    let megaman_col = 3;
+    // The battle-start capture has the navi on column 2, not 3.
+    let megaman_col = if cfg!(feature = "demo-open") { 2 } else { 3 };
     // Chip demos use a padded-HP target so several hits land without ending
     // the fight; enemy and results demos use the real HP below.
     let hp = DEMO_TARGET_HP;
@@ -1308,11 +1309,25 @@ impl<'a> Battle<'a> {
             alloc::vec::Vec::new()
         } else if let Some((assets, col, row, _style, hp)) = demo_enemy {
             alloc::vec![Actor::new(assets, col, row, true, enemy(hp))]
+        } else if cfg!(feature = "demo-open") {
+            // THE BATTLE-START CAPTURE'S OWN LINE-UP. /tmp/battlestart.state is
+            // a battle's first frame with THREE Mettaurs in a diagonal --
+            // (4,1), (5,2), (6,3), forty HP each -- and the navi on (2,1).
+            // A one-virus battle cannot be compared against it: the intro
+            // materialises them one at a time, so its length depends on how
+            // many there are. With the same three, the whole opening becomes
+            // comparable: the screen fade, the materialise sequence, and the
+            // frame the chip window comes up on.
+            alloc::vec![
+                Actor::new(spr::Assets::new(METTAUR), 4, 1, true, enemy(METTAUR_HP)),
+                Actor::new(spr::Assets::new(METTAUR), 5, 2, true, enemy(METTAUR_HP)),
+                Actor::new(spr::Assets::new(METTAUR), 6, 3, true, enemy(METTAUR_HP)),
+            ]
         } else {
-            // ONE METTAUR, in every build. The four-strong line-up that used
-            // to stand here in release builds -- ProtoMan, Colonel, a Mettaur
-            // and a Gunner -- kills the navi in about fifteen seconds, which
-            // is before the custom gauge has filled even once, so nobody
+            // ONE METTAUR, in every other build. The four-strong line-up that
+            // used to stand here in release builds -- ProtoMan, Colonel, a
+            // Mettaur and a Gunner -- kills the navi in about fifteen seconds,
+            // which is before the custom gauge has filled even once, so nobody
             // playing the rollup ever reached the chip window.
             alloc::vec![Actor::new(
                 spr::Assets::new(METTAUR),
@@ -1332,6 +1347,12 @@ impl<'a> Battle<'a> {
             alloc::vec::Vec::new()
         } else if let Some((_, _, _, style, _)) = demo_enemy {
             alloc::vec![ai::Ai::new(style)]
+        } else if cfg!(feature = "demo-open") {
+            alloc::vec![
+                ai::Ai::new(ai::Style::Mettaur),
+                ai::Ai::new(ai::Style::Mettaur),
+                ai::Ai::new(ai::Style::Mettaur),
+            ]
         } else {
             alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
         };

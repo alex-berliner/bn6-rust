@@ -78,6 +78,9 @@ demo-field = ["demo"]
 # The ENEMY DELETED banner on its own, put up on a known frame in the sterile
 # arena so it can be compared with the real ROM's.
 demo-banner = ["demo"]
+# The battle-start capture's own line-up: three Mettaurs in a diagonal, so a
+# battle's whole opening can be compared against /tmp/battlestart.state.
+demo-open = ["demo"]
 demo-minibomb = ["demo"]
 demo-cannon = ["demo"]
 demo-vulcan = ["demo"]
