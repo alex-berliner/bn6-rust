@@ -38,6 +38,7 @@ ENTRIES=(
   "demo-results results Results screen"
   "demo-hudmatch hudmatch HUD fixture: 60 HP, full gauge, Cannon in hand -- the battle screen matched to the real ROM tile for tile"
   "demo-custmatch custmatch Chip select fixture: the same five chips the real ROM's window offers, matched to it pixel for pixel"
+  "demo-resultmatch resultmatch RESULT window fixture: the capture's own clear time and busting level"
   "demo-areagrab areagrab AreaGrab: stealing the enemy's front column"
   "demo-vulcan2 vulcan2 Vulcan2 (four shots)"
   "demo-vulcan3 vulcan3 Vulcan3 (five shots)"

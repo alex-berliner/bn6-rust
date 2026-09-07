@@ -303,6 +303,30 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7x. The RESULT window (2026-09-07)
+
+It had never been compared: demo-results needs a chip press the capture harness cannot land, so
+`demo-resultmatch` puts the window up at once with the capture's own readout -- 0:29:33 is 1760
+frames, busting level 2 -- against /tmp/noenemy2.state. Three defects, and each is a class:
+
+A POSITION READ FROM THE DISASSEMBLY IN THE WRONG UNITS. "Rests at x = 3" is a tile COLUMN, not a
+pixel; the window sat 24 px left and 16 px up of the real one. Aligning the two images by search
+gives the offset in one step -- do that before trusting a number lifted from the code.
+
+PALETTE BANKS TAKEN BY SOMETHING ELSE. The window draws in banks 9-11 and the CUSTOM gauge holds
+bank 9 all fight, so the window came up in the gauge's greens. It takes its banks back on open
+now, as the chip window already did. Any element that shares a bank has to do this.
+
+A MISSING SUB-IMAGE. The coin in the GET DATA box is a 7x6 image -- the same shape as a chip
+card's picture -- at dword_8732E54 with palette dword_8733394, both matched byte for byte against
+a live results screen's char block. It is kept as its own tileset rather than padded into the
+window's blob, which would cost 15 KB of zeroes to reach tile 0x1e8.
+
+WHAT IS LEFT is 553 px, all of it the "100 z" reward text. Its glyphs are composed at runtime and
+are in no data blob -- searching for the exact tile bytes finds nothing, and they match neither
+the window's own digit font at tile 0xa0 nor the battle text font. That is the same proportional
+renderer the chip card's name waits on, and it is now the single blocker for both.
+
 ## 7w. The scoreboard, and two fixtures worth knowing (2026-09-07)
 
 `tools/scoreboard.py` runs every chip comparison and prints each one's mean against its FLOOR --
