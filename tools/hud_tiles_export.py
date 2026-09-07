@@ -18,7 +18,7 @@ Format (little-endian):
   0x00  magic "BNHT"
   0x04  u32 version
   0x08  u32 -> tiles  : u32 byte_len, then 4bpp tile data
-  0x0c  u32 -> palette: 32 bytes (16 * u16 BGR555)
+  0x0c  u32 -> palette: 32 bytes for bank 13 then 32 for bank 9
 """
 
 import os
@@ -34,10 +34,22 @@ BLOB = "dword_86E1638"
 #: Ten digits then the frame pieces, 50 tiles.
 BLOB_BYTES = 1600
 
+#: The CUSTOM gauge's tiles live in another blob in the same file, loaded at
+#: VRAM tile 0x222, so blob index is the VRAM tile less that. The gauge uses
+#: 0x22b to 0x23d, which is blob 9 to 27, and they are appended after the HP
+#: tiles: gauge tile n is at asset index GAUGE_FIRST + (n - 0x22b).
+GAUGE_BLOB = "dword_86E489C"
+GAUGE_BASE = 0x222
+GAUGE_FROM, GAUGE_TO = 0x22B, 0x23D
+GAUGE_FIRST = BLOB_BYTES // 32
+
 #: Tile pair index within the blob for each piece, counting in two-tile pairs.
 DIGIT_FIRST = 0
 BLANK_PAIR = 10
 CAP_PAIR = 11
+
+#: BG palette bank 9, the gauge's, read from a live battle.
+GAUGE_PALETTE = [0, 32766, 5285, 992, 31710, 32700, 32665, 28271, 25036, 895, 671, 640, 13639, 14326, 31697, 16648]
 
 #: BG palette bank 13, read from a live battle.
 PALETTE = [0, 32766, 5285, 992, 31710, 32700, 32665, 28271, 25036, 895, 671, 640, 13639, 14326, 31697, 16648]
@@ -48,6 +60,11 @@ def main():
     tiles = read_symbol(DAT, BLOB, max_bytes=BLOB_BYTES, through_labels=True)
     if len(tiles) != BLOB_BYTES:
         raise SystemExit(f"{BLOB}: expected {BLOB_BYTES} bytes, got {len(tiles)}")
+    want = (GAUGE_TO - GAUGE_BASE + 1) * 32
+    gauge = read_symbol(DAT, GAUGE_BLOB, max_bytes=want, through_labels=True)
+    if len(gauge) != want:
+        raise SystemExit(f"{GAUGE_BLOB}: expected {want} bytes, got {len(gauge)}")
+    tiles += gauge[(GAUGE_FROM - GAUGE_BASE) * 32:]
 
     out = bytearray(struct.pack("<4sIII", b"BNHT", 1, 0, 0))
     while len(out) % 4:
@@ -58,6 +75,8 @@ def main():
         out.append(0)
     off_pal = len(out)
     for c in PALETTE:
+        out += struct.pack("<H", c)
+    for c in GAUGE_PALETTE:
         out += struct.pack("<H", c)
 
     struct.pack_into("<4sIII", out, 0, b"BNHT", 1, off_tiles, off_pal)

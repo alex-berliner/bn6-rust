@@ -18,6 +18,28 @@ const BLANK_PAIR: u16 = 10;
 const CAP_PAIR: u16 = 11;
 /// Digit slots between the two caps.
 const SLOTS: u32 = 4;
+/// The CUSTOM gauge, in the same asset after the HP tiles. Its art is loaded
+/// at VRAM tile 0x222 on the real ROM, so the asset index of VRAM tile t is
+/// GAUGE_FIRST + (t - 0x22b). The bar is one tile row: an end cap, six body
+/// cells, the four-cell L-or-R marker, six more body cells and a mirrored end
+/// cap, with the CUSTOM label on the row above it.
+const GAUGE_FIRST: u16 = 50;
+const CAP_TOP: u16 = GAUGE_FIRST;
+const CAP_BOTTOM: u16 = GAUGE_FIRST + 1;
+const FILLER: u16 = GAUGE_FIRST + 2;
+const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3;
+const BAR: u16 = GAUGE_FIRST + 7;
+/// The marker is cyan while the gauge is filling and orange once it is full,
+/// which is the swap the gauge shows instead of any proportional readout.
+const MARKER_WAITING: u16 = GAUGE_FIRST + 11;
+const MARKER_READY: u16 = GAUGE_FIRST + 15;
+/// Columns the gauge spans, and how many of them carry bar body.
+const GAUGE_COL: u32 = 6;
+const GAUGE_CELLS: u32 = 18;
+const BAR_CELLS: u32 = 12;
+/// The palette bank the gauge draws in on the real ROM.
+pub const GAUGE_BANK: u8 = 9;
+
 /// The palette bank the box draws in. The field uses 0-8 and the results
 /// windows 9-11, so this one is free and is the real ROM's own choice.
 pub const BANK: u8 = 13;
@@ -26,7 +48,9 @@ pub struct HudTiles {
     bg: RegularBackground,
     tiles: TileSet,
     palette: Palette16,
+    gauge_palette: Palette16,
     shown: Option<u16>,
+    gauge_shown: Option<u32>,
 }
 
 impl HudTiles {
@@ -44,9 +68,11 @@ impl HudTiles {
         );
 
         let mut colours = [Rgb15::new(0); 16];
-        for (i, slot) in colours.iter_mut().enumerate() {
+        let mut gauge = [Rgb15::new(0); 16];
+        for (i, (slot, g)) in colours.iter_mut().zip(gauge.iter_mut()).enumerate() {
             let o = p + i * 2;
             *slot = Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
+            *g = Rgb15::new(u16::from_le_bytes(data[o + 32..o + 34].try_into().unwrap()));
         }
 
         Self {
@@ -59,12 +85,59 @@ impl HudTiles {
             // number of 4bpp tiles by construction of the exporter.
             tiles: unsafe { TileSet::new(tiles, TileFormat::FourBpp) },
             palette: Palette16::new(colours),
+            gauge_palette: Palette16::new(gauge),
             shown: None,
+            gauge_shown: None,
         }
     }
 
     pub fn palette(&self) -> Palette16 {
         self.palette.clone()
+    }
+
+    pub fn gauge_palette(&self) -> Palette16 {
+        self.gauge_palette.clone()
+    }
+
+    /// Repaint the CUSTOM label and the bar. `filled` is the gauge's value
+    /// over its full value; the marker turns from cyan to orange at one.
+    /// NOTE: only the full bar is verified against the real ROM, because the
+    /// gauge drains only when the custom window opens and that window
+    /// replaces this whole layer, so a draining bar never shows on its own.
+    /// The empty body cell is drawn with the label row's filler tile, which is
+    /// a guess.
+    pub fn set_gauge(&mut self, filled: u16, full: u16) {
+        let lit = (u32::from(filled) * BAR_CELLS / u32::from(full.max(1))).min(BAR_CELLS);
+        if self.gauge_shown == Some(lit) {
+            return;
+        }
+        self.gauge_shown = Some(lit);
+        let ready = lit >= BAR_CELLS;
+        let mut body = 0;
+        for i in 0..GAUGE_CELLS {
+            let col = GAUGE_COL + i;
+            let last = i + 1 == GAUGE_CELLS;
+            let (top, bottom) = if i == 0 || last {
+                (CAP_TOP, CAP_BOTTOM)
+            } else if (7..11).contains(&i) {
+                let m = if ready { MARKER_READY } else { MARKER_WAITING };
+                (CUSTOM_TEXT + (i as u16 - 7), m + (i as u16 - 7))
+            } else {
+                let cell = if body < lit { BAR } else { FILLER };
+                body += 1;
+                (FILLER, cell)
+            };
+            self.gauge_cell(col, 0, top, last);
+            self.gauge_cell(col, 1, bottom, last);
+        }
+    }
+
+    fn gauge_cell(&mut self, col: u32, row: i32, tile: u16, hflip: bool) {
+        self.bg.set_tile(
+            (col as i32, row),
+            &self.tiles,
+            TileSetting::new(tile, TileEffect::new(hflip, false, GAUGE_BANK)),
+        );
     }
 
     /// Repaint the box when the number changes. The digits are laid out

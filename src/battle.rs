@@ -942,6 +942,7 @@ impl<'a> Battle<'a> {
         {
             self.backdrop.update();
             self.hud_tiles.set_hp(self.megaman.hp());
+            self.hud_tiles.set_gauge(self.gauge, GAUGE_FULL);
         }
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
@@ -969,6 +970,15 @@ impl<'a> Battle<'a> {
                 self.custom = None;
                 for (i, p) in self.results.palettes().iter().enumerate() {
                     gfx.set_background_palette(custom::BANK + i as u8, p);
+                }
+                // The window borrows banks 9-15, and the gauge's is 9, so it
+                // goes back last. On the real ROM the window covers this whole
+                // layer while it is up, which is why they can share a bank.
+                gfx.set_background_palette(
+                    crate::hudtiles::GAUGE_BANK,
+                    &self.hud_tiles.gauge_palette(),
+                );
+                {
                 }
                 self.gauge = 0;
             }
@@ -1874,8 +1884,12 @@ impl<'a> Battle<'a> {
         // with --disable-bg, so both sides must be MegaMan on black.
         #[cfg(not(feature = "demo-sterile"))]
         self.backdrop.show(frame);
+        // The chip window covers the HUD strip on the real ROM and borrows
+        // its palette bank, so this layer stands down while it is up.
         #[cfg(not(feature = "demo-sterile"))]
-        self.hud_tiles.show(frame);
+        if self.custom.is_none() {
+            self.hud_tiles.show(frame);
+        }
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
