@@ -315,7 +315,22 @@ data/textscript/TextScriptChipNames0.s, so `chip_names()` gives them without gue
   id 70  PoisSeed  subfamily 0c, power 10, param2 3, element 10
   id 150 VDoll     subfamily 08, power 10, element 7
 
-POISSEED IS THE ONE TO BUILD FIRST, because its panel art already exists: the field asset carries
+POISSEED IS BUILT -- 6.9 px/frame over seventy frames against a floor of 5.3, throw, arc, landing
+and poison all matching. Three things it taught:
+- ITS ARC NEEDED NO FITTING. The plain bomb launch and gravity put the pod on the real ROM's
+  pixel at every frame. Try that before reaching for the tracker.
+- A SPRITE'S PALETTE CAN BE A SHIFT PLUS AN OAM OFFSET. Every part of both animations carries an
+  OAM palette offset of 9, the chip's shift is 3 (its attack_param_2, as BigBomb's 3 picks the
+  red bomb), and the live palette is the sprite's index 12. So the offsets count from the SHIFTED
+  palette. And the per-offset palettes were cached by the offset alone and never cleared, so the
+  pod kept IceSeed's cyan however it was shifted -- set_palette_add and set_offsets_follow_shift
+  clear that cache now.
+- AN EFFECT'S TIMING HAS TWO KNOBS, and one alone is not enough. The poison sheet spawned when
+  the pod lands runs a frame early; spawned a frame later it runs a frame late. It is spawned a
+  frame later AND already one tick in, so its first frame shows for exactly one frame -- the real
+  ROM's landing frame carries neither pod nor sheet.
+
+IT WAS THE ONE TO BUILD FIRST because its panel art already exists: the field asset carries
 HOLE, BROKEN, NORMAL, CRACKED and POISON, and the ROM's panel tilemap has only those five, so
 GrasSeed's and IceSeed's panels are art this project does not have at all.
 

@@ -35,6 +35,7 @@ ENTRIES=(
   "demo-gunner gunner Gunner AI"
   "demo-protoman protoman ProtoMan AI"
   "demo-colonel colonel Colonel AI"
+  "demo-poisseed,demo-sterile,demo-auto poisseed-real PoisSeed on black, auto-fire: the pod, its arc and the poison going down, matched to the real ROM"
   "demo-results results Results screen"
   "demo-hudmatch hudmatch HUD fixture: 60 HP, full gauge, Cannon in hand -- the battle screen matched to the real ROM tile for tile"
   "demo-custmatch custmatch Chip select fixture: the same five chips the real ROM's window offers, matched to it pixel for pixel"

@@ -50,6 +50,7 @@ CHIPS = [
     ("demo-blkbomb", "3c", 50, []),
     ("demo-bigbomb", "ca", 75, []),
     ("demo-lilbolr", "62", 48, []),
+    ("demo-poisseed", "46", 70, []),
     # Recov moves nothing, so the aligner has nothing to lock onto: the
     # sterile demo's auto-fire uses its chip at frame 123.
     ("demo-recovery", "9a", 40, ["--rust-start", "123"]),
