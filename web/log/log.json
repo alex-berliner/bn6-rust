@@ -700,5 +700,11 @@
     "file": "log/shots/1788793760-buster_log.png",
     "caption": "The buster, real ROM above and this build below, six frames of one shot. It was wrong in five ways and four are fixed: 30 differing frames and about 15000 pixels are now 4 frames and 1480. The pose does nothing for FIVE frames after the button -- the real navi is pixel-identical to his idle through the fourth -- then runs 16, not the 5 the disassembly's 'five passes' was read as; those are passes of the animation. The shot is a HITSCAN: it never crosses the field, and the enemy's HP is already down while the flash is still at the gun, so what this build fired as a travelling projectile is now an immediate hit on the row plus an effect at the muzzle. And two objects were missing entirely, both found by dumping OBJ VRAM on the firing frame and searching all 97 sprite files for those tiles: the light-blue BARREL that rides the navi's arm for the whole pose (byte_82F6ECC.spr animation 0, a 16x8 at +13,-30 from his origin) and the muzzle FLASH itself (byte_82FE378.spr, five frames at the front panel's x, 26 pixels above its centre). What is left is the pose's first two frames and two of the flash's, which is the animation's own frame durations rather than anything structural.",
     "tag": "rust"
+  },
+  {
+    "t": 1788794470,
+    "file": "log/shots/1788794470-buster_zero.png",
+    "caption": "The buster is exact: real ROM above, this build below, seven frames of one shot and 0 differing pixels across the whole thirty-frame span of it. The last three constants came out of the same measurement, repeated: find the frames on which the navi's BODY changes, on each side, with the barrel and the flash excluded from the sample box. The real changes on frames 5, 6, 8 and 10 after the button and then holds; this build was changing on 6, 7, 9 and 11 -- one frame late throughout, so the windup is four frames and not five. The pose then ended a frame early, so it is 17. And the muzzle flash's own two big frames landed one early, so the strike is on the third frame of the pose, not the second. Doing it that way -- one measurement, one constant, re-measure -- took the shot from 30 differing frames and about 15000 pixels this morning to nothing. Chips and the field frame are unchanged.",
+    "tag": "rust"
   }
 ]

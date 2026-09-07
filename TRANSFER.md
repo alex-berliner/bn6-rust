@@ -384,12 +384,11 @@ WHAT WAS WRONG, three things:
 Scripting B into both sides the way 7ad scripts a direction found five defects; four are fixed.
 30 differing frames and about 15000 px are now 4 frames and 1480.
 
-- FIVE FRAMES OF NOTHING after the button. The real navi is pixel-identical to his idle through
-  the fourth frame and changes on the fifth, so BUSTER carries `windup: Some((anim::IDLE, 5))`.
+- FOUR FRAMES OF NOTHING after the button, so BUSTER carries `windup: Some((anim::IDLE, 4))`.
   The chips that reuse this spec inherit it; the chip comparisons align on the first body change,
   so the scoreboard cannot see the difference either way.
-- THE POSE IS 16 FRAMES, not 5. The disassembly's "animation 14 for five passes" counts passes of
-  the ANIMATION. Measured: the navi is back to idle 17 frames after the pose starts.
+- THE POSE IS 17 FRAMES, not 5. The disassembly's "animation 14 for five passes" counts passes of
+  the ANIMATION.
 - THE SHOT IS A HITSCAN. It never crosses the field: OAM on the firing frame has the flash still
   at the gun and the enemy's HP already down. This build fired a travelling `Shot::buster`; the
   plain buster now strikes the row at once and draws only the flash. The CHARGED shot still
@@ -404,8 +403,13 @@ Scripting B into both sides the way 7ad scripts a direction found five defects; 
   part 0. Setting it -- which is right for a HELD object with a shadow part -- draws nothing at
   all.
 
-WHAT IS LEFT: the pose's first two frames and two of the flash's, which is the animations' own
-frame durations rather than anything structural.
+0 PX over the whole thirty frames of a shot. The last three constants came from ONE measurement
+repeated: find the frames on which the navi's BODY changes, on each side, with the barrel and the
+flash excluded from the sample box. The real changes on 5, 6, 8, 10 and then holds; this build
+was on 6, 7, 9, 11 -- one late throughout, so the windup is 4. The pose then ended a frame early,
+so it is 17. Then the flash's own two big frames landed one early, so the strike is the pose's
+THIRD frame. One measurement, one constant, re-measure; do not sweep several at once when the
+frames themselves can be counted.
 
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 

@@ -56,7 +56,7 @@ const HOP_COOLDOWN: u8 = 0x1e;
 /// The buster does nothing for five frames after the button: measured
 /// against the capture, whose navi is pixel-identical to its idle through
 /// frame 64 with the press at 60 and changes on 65.
-const BUSTER_WINDUP: u8 = 5;
+const BUSTER_WINDUP: u8 = 4;
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]
@@ -83,8 +83,8 @@ pub struct AttackSpec {
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: Some((anim::IDLE, BUSTER_WINDUP)),
     anim: 14,
-    frames: 16,
-    strike_at: 2,
+    frames: 17,
+    strike_at: 3,
     recover: 0,
     recover_anim: None,
 };
