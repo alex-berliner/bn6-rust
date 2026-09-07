@@ -469,6 +469,7 @@ Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
 Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd),
 EnergBom (37 demo-energbom --frames 45) and MegEnBom (38 demo-megenbom, same),
+BlkBomb (3c demo-blkbomb --frames 45: 12.8 px/frame, 0 on all but three frames -- see 7h),
 BigBomb (ca demo-bigbomb --frames 60, and 0 across the whole screen with --xmax 240 from c10 on:
 its nine puffs overlap and the draw order was the entire difference -- read out of the real ROM's
 OAM on a blast frame, they occupy OAM centre/left/right of the front row, then centre/right/left
@@ -496,6 +497,15 @@ disassembly, by pulling the real bomb's tiles straight out of OBJ VRAM at a chos
 searching the sprite's graphics blobs for those exact bytes; the OAM dump says which object and
 which tile, and the blob says which animation. That is the fastest way to identify an unknown
 sprite and is worth reaching for first.
+BLKBOMB'S THROWN SPRITE IS FOUND (the open item in 7h). It is not the bomb sprite in another
+palette: it is byte_831FA84.spr, one animation of one frame in three parts -- a 32x8 ground
+shadow and a 16x32 plus an 8x32 making a dark brown ball with a fuse -- and one palette. Found by
+taking its tiles out of OBJ VRAM mid-flight and searching all 97 sprite files for those exact
+bytes; only that one holds them. Its held bomb was already right (the bomb sprite's animation 0
+in palette 4). Its flight is slower: the leading edge covers 70 px over the 27 frames where
+MiniBomb's covers 74, so the flight is 42 frames rather than 40, with the horizontal speed scaled
+down by that and the launch speed up so the arc still lands flat. 41 and 43 score 53 and 50
+px/frame against 42's 12.8. What is left is 65, 87 and 55 px on frames 31, 33 and 37.
 WHICH PALETTE AN OAM OFFSET COUNTS FROM IS PER OBJECT, and both halves are measured. HiCannon's
 barrel sits in palette 1 and its silhouette frame, offset 4, shows the flat palette 4, ignoring
 the shift. Barr100's bubble is Barrier's shifted by 3 and its later frames, offsets 1 and 2, show

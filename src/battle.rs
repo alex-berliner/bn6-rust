@@ -21,7 +21,8 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL, MINIBOMB,
+    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
+    MINIBOMB,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -319,6 +320,12 @@ const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
 /// losing 0x2800 (0.156 px) a frame (byte_80C5D58, asm31.s:29609), for a
 /// fixed 0x28 frames (asm31.s:29531), which is about three panels.
 const BOMB_FLIGHT: u8 = 40;
+/// BlkBomb's ball covers the same three panels more slowly: measured against
+/// the real ROM, its leading edge moves 70 px over the 27 frames where
+/// MiniBomb's moves 74, so the flight is 42 frames rather than 40. The
+/// horizontal speed scales down with that and the launch speed up, so the arc
+/// still lands flat.
+const BLKBOMB_FLIGHT: u8 = 42;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -416,6 +423,7 @@ struct Bomb {
     /// (asm31.s:29619, asm00_2.s:20987). Every panel gets the same puff.
     wide: bool,
     ticks: u8,
+    flight: u8,
 }
 
 impl Bomb {
@@ -1452,7 +1460,7 @@ impl<'a> Battle<'a> {
             b.player.update();
             b.step();
             b.ticks += 1;
-            if b.ticks >= BOMB_FLIGHT {
+            if b.ticks >= b.flight {
                 landed.push((b.target, b.damage, b.wide));
                 false
             } else {
@@ -1733,17 +1741,35 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
-                let mut thrown =
-                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true));
+                // BlkBomb's thrown ball is its own sprite, not the bomb
+                // sprite in another palette: a dark brown ball with a fuse
+                // and a ground shadow, three parts in one frame. Identified
+                // by taking its tiles out of OBJ VRAM mid-flight and finding
+                // those exact bytes in byte_831FA84.spr, the only one of the
+                // 97 sprite files that holds them.
+                let mut thrown = if chip.id == CHIP_BLKBOMB {
+                    spr::Player::new(spr::Assets::new(BLKBOMB), 0)
+                } else {
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
+                };
                 thrown.set_palette_add(bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
+                    flight: if chip.id == CHIP_BLKBOMB { BLKBOMB_FLIGHT } else { BOMB_FLIGHT },
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
-                    vx: dx * BOMB_VX,
-                    vz: BOMB_VZ,
+                    vx: if chip.id == CHIP_BLKBOMB {
+                        dx * BOMB_VX * BOMB_FLIGHT as i32 / BLKBOMB_FLIGHT as i32
+                    } else {
+                        dx * BOMB_VX
+                    },
+                    vz: if chip.id == CHIP_BLKBOMB {
+                        BOMB_VZ * BLKBOMB_FLIGHT as i32 / BOMB_FLIGHT as i32
+                    } else {
+                        BOMB_VZ
+                    },
                     target,
                     damage: chip.power,
                     ticks: 0,

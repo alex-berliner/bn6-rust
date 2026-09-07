@@ -41,6 +41,7 @@ static ELEC_SWORD: &[u8] = &Aligned(*include_bytes!("../assets/sword_832C418.bin
 static HEAL: &[u8] = &Aligned(*include_bytes!("../assets/heal.bin")).0;
 static AIRSHOT_BARREL: &[u8] = &Aligned(*include_bytes!("../assets/airshot_barrel.bin")).0;
 static MINIBOMB: &[u8] = &Aligned(*include_bytes!("../assets/minibomb.bin")).0;
+static BLKBOMB: &[u8] = &Aligned(*include_bytes!("../assets/blkbomb.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
 static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
 static BARRIER: &[u8] = &Aligned(*include_bytes!("../assets/barrier.bin")).0;
