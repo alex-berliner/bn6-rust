@@ -247,6 +247,9 @@ def check_rollup():
             return white > len(sampled) // 2
         # From 60: the first frames are the boot white before anything is drawn.
         bad = [i for i in range(60, ROLLUP_FRAMES, 5) if crashed(i)]
+        # Three walks of 2600 frames is about 1.2 GB of raw captures. Leaving
+        # them behind is how /tmp reached 37 GB and the box ran out of swap.
+        subprocess.run(["rm", "-rf", out], check=True)
         total += len(bad)
         if bad:
             notes.append("walk %d white by frame %d" % (w, bad[0]))
