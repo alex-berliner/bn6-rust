@@ -433,8 +433,19 @@ data/sprites, so a search of all 97 .spr files finds nothing; `spr.load_sprite_b
   at 8-10, so its sparks cross his body. Drawn under him they were cut wherever they crossed --
   the last 53 px a frame, and the third time today that the answer was OAM order (7aa, 7ac).
 
-NOT VERIFIED: the full-charge state. The capture's Mettaur buries the navi in a shockwave at
-exactly the moment it would show, so `CHARGE_FRAMES` and the third animation are still guesses.
+THE FULL CHARGE IS 101 FRAMES of holding B, and its glow is animation 2, drawn in the sprite's
+THIRD palette -- a magenta orb at the navi's chest with pink sparks.
+
+HOW TO SEE IT AT ALL. The obvious capture cannot: the save state's Mettaur hammers the navi with a
+shockwave at exactly the moment the charge fills and buries him. Press DOWN first. The navi moves
+off the virus's row, the wave then travels a row he is no longer on, and the change is in plain
+sight. Worth reaching for whenever the capture's own virus is in the way.
+A TRAP on the way: this build showed no magenta at all until `spr_export.py --palettes 3` was
+used. A frame carrying a palette OFFSET needs those palettes exported, or the offset falls back
+to the first and nothing says so.
+
+STILL NOT VERIFIED: the charged shot itself. Releasing at full charge puts the navi back in the
+shockwave's way in this capture.
 
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 

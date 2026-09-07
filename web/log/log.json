@@ -712,5 +712,11 @@
     "file": "log/shots/1788795076-charge_log.png",
     "caption": "Holding the buster: real ROM above, this build below, and 0 differing pixels over the whole 32 frames of the hold that the virus's shockwave leaves comparable. Four things came out of it. THE BUSTER FIRES ON THE RELEASE, not the press -- hold B on the real ROM and the navi stands in his idle and charges for as long as you hold it, and shoots only when you let go. A tap is a press and a release, which is why tapping fires at once and why this went unnoticed against the two-frame press the earlier test used. The charge glow was the WRONG SPRITE: the real one is sprite_83A9190, which lives in a data file rather than under data/sprites, four 32x32 quadrants around the navi; this build had a different sprite that drew green dots. It sits two pixels forward of the panel centre, not eight. It starts on the ELEVENTH frame of the hold, not the tenth. And it is drawn OVER the navi -- the real ROM's OAM puts its four quadrants at entries 4 to 7 and the navi's at 8 to 10, so its sparks cross his body; drawn under him they were cut wherever they crossed, which was the last 53 pixels a frame. The full-charge state is still unverified: the capture's Mettaur buries the navi in a shockwave at exactly the moment it would show.",
     "tag": "rust"
+  },
+  {
+    "t": 1788795261,
+    "file": "log/shots/1788795261-fullcharge_log.png",
+    "caption": "The buster at full charge: real ROM above, this build below, the two frames either side of the change and two after -- identical. The threshold is 101 frames of holding B, and getting that number needed a trick worth writing down. The obvious capture cannot show it: the save state's Mettaur hammers the navi with a shockwave at exactly the moment the charge fills, and buries him. Pressing DOWN first moves the navi off the virus's row, the wave then travels a row that no longer has him on it, and the change is in plain sight. The glow's full-charge animation draws in the sprite's THIRD palette, which is why this build showed no magenta at all until the exporter was told to take more than one: a sprite whose frames carry a palette offset needs those palettes exported or the offset silently falls back to the first.",
+    "tag": "rust"
   }
 ]

@@ -85,9 +85,12 @@ const BUSTER_ARM_FRAMES: u8 = 18;
 /// windup the pose waits out.
 const BUSTER_ARM_DELAY: u8 = 2;
 const CHARGED_DAMAGE: u16 = 20;
-// Frames of holding A before a release fires a charged shot: the buster's
+// Frames of holding B before a release fires a charged shot: the buster's
 // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
-const CHARGE_FRAMES: u16 = 100;
+// Measured rather than read: the real ROM's glow turns magenta on the 101st
+// frame of the hold, in a capture whose navi was first moved off the virus's
+// row so its shockwave would not bury him at that moment.
+const CHARGE_FRAMES: u16 = 101;
 // Below this the hold is not yet a charge at all (asm00_2.s:9107). Eleven,
 // not ten: the real ROM's sparks first show on the eleventh frame of the
 // hold, this build's on the tenth.
