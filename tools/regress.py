@@ -88,11 +88,35 @@ def check_chips():
     return total - exact, "%d of %d exact, off: %s" % (exact, total, " ".join(bad))
 
 
+#: The backdrop (BG1) scrolls under a per-frame counter pair, eBGScrollCBCounters
+#: (0x02009690/0x02009694 in EWRAM, decremented 8 and 4 a frame -- see
+#: BGScrollCB_BG1Diagonal3to2Scroll, reference/bn6f/asm/asm00_0.s:2165) that is zeroed
+#: only once, at battle init (sub_8080D90, asm21.s:2, called from
+#: initBattleStructsAndVram_80071D4, asm00_1.s ~5147). So the phase is "frames since
+#: this battle started" -- exactly what this build already counts from (backdrop.rs's
+#: `ticks`) -- but PAUSED is a save state grabbed mid-battle, and pausing does not
+#: reset or expose the counter: peeking it at load (`--peek 0x02009690/0x02009694`)
+#: reads -63128/-31564, i.e. 7891 real frames already elapsed before the save, a
+#: number nothing else in the state or in this build can reproduce. That is genuinely
+#: unrecoverable from this one state -- a fresh capture from a battle's real frame 0
+#: would pin it outright.
+#: What IS available: both sides are deterministic replays (fixed scripts, no live
+#: input), so a rust frame that reproduces the real ROM's phase does so every run.
+#: Measured once by sweeping the old 340..400 window: 392 is the only exact hit --
+#: 391 already differs by 110 px and 393 by 3295 (VOFS ticks over on a 4-frame
+#: cadence), so it is not a coincidental near-match. Pinning it turns this from "does
+#: some frame in a 60-frame window match" into "does frame 392 match", which a real
+#: phase or rate regression will fail, and a coincidental one in the old range would
+#: not have.
+TILES_RUST_FRAME = 392
+
+
 def check_tiles():
     build("demo-hudmatch", "/tmp/rg_hud.gba")
     capture(REAL, "/tmp/rg_tr", 60, "--loadstate", PAUSED, "--script", "Start@10", "--disable-obj")
-    capture("/tmp/rg_hud.gba", "/tmp/rg_tu", 400, "--disable-obj")
-    return best("/tmp/rg_tr", 43, "/tmp/rg_tu", range(340, 400), (0, 0, 240, 160)), "whole screen"
+    capture("/tmp/rg_hud.gba", "/tmp/rg_tu", TILES_RUST_FRAME + 1, "--disable-obj")
+    return (diff("/tmp/rg_tr", 43, "/tmp/rg_tu", TILES_RUST_FRAME, (0, 0, 240, 160)),
+            "whole screen, fixed frame %d" % TILES_RUST_FRAME)
 
 
 def check_field():

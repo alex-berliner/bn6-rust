@@ -107,7 +107,14 @@ beside the fact that `field`, `warp`, `buster` and `chip-use` all compare at FIX
 numbers and have stayed at zero across dozens of builds today. Confirm or refute it
 first; if it is real it is a bigger ticket than this one.
 
-### A4. Pin the backdrop's scroll phase
+### A4. Pin the backdrop's scroll phase  *(done -- see TRANSFER 7av)*
+`tiles` compares a fixed frame 392 now, not the best of sixty. The phase counts from battle init
+(`eBGScrollCBCounters`, zeroed once by `sub_8080D90`), and the save state is 7891 battle frames in,
+so the origin is genuinely unrecoverable from it -- a capture from a battle's real frame 0 would
+settle this AND BATTLE START!'s delay (C1) in one go. That save state is now the single most
+valuable thing the harness does not have.
+
+### A4-old. Pin the backdrop's scroll phase
 `regress.py`'s `tiles` check does not compare a fixed frame — it searches rust frames
 340..400 for the one that best matches real frame 43, because the backdrop's scroll phase
 is not pinned. That hides a whole class of drift. Work out the phase relationship (the

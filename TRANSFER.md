@@ -991,6 +991,32 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7av. The backdrop's scroll phase, pinned (2026-09-07)
+
+`regress.py`'s `tiles` check used to compare real frame 43 against whichever of rust frames
+340..400 matched it best. A check that searches a sixty-frame window is a check that cannot fail
+for a phase error, which is the single biggest class of bug this project has found today.
+
+WHAT THE PHASE COUNTS FROM. The backdrop scrolls under a counter pair `eBGScrollCBCounters`
+(0x02009690 and 0x02009694 in EWRAM), decremented by 8 and 4 a frame respectively
+(`BGScrollCB_BG1Diagonal3to2Scroll`, asm00_0.s:2165). They are zeroed exactly once, at battle init
+(`sub_8080D90`, asm21.s:2, from `initBattleStructsAndVram_80071D4`). So the phase is simply
+"frames since this battle started" -- which is what this build counts too.
+
+AND IT IS UNRECOVERABLE FROM THIS SAVE STATE, for a concrete reason. `pausedwithcannon.state` was
+grabbed mid-battle; peeking the counters at load (`--peek 0x02009690`, `--peek 0x02009694`) reads
+-63128 and -31564, which is 7891 frames of battle already elapsed. Nothing else in the state, and
+nothing in this build, can reproduce that number. A capture from a battle's real frame 0 would pin
+it outright, and that is the second thing today that wants a save state at a battle's start (7as
+wants the same for BATTLE START!'s delay).
+
+WHAT WAS DONE INSTEAD. Both sides are deterministic replays -- fixed scripts, no live input -- so a
+rust frame that reproduces the real phase does so every run. Sweeping the old window, 392 is the
+ONLY exact hit: 391 differs by 110 px and 390 by 3240, and 393 by 3295, so it is not a coincidental
+near-match sitting in a flat region. The check now compares frame 392 and nothing else. That turns
+"does some frame in a sixty-frame window match" into "does frame 392 match", which a real phase or
+rate regression fails and a lucky one in the old range would not have.
+
 ## 7au. The harness can capture AUDIO now, and the buster is a PSG blip (2026-09-07)
 
 `tools/mgba_capture.c` grows two flags, so that sound can eventually be verified the way pixels
