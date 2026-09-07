@@ -26,55 +26,35 @@ measurement first.
 
 ## A. Measured residues — small, self-contained, all have a number
 
-### A1. The shockwave's DEPARTURE — 4 frames, 115 px each  (was "the Mettaur's tail")
-RENAMED, because the diagnosis was wrong. Splitting the `mettaur` check's window by region:
-the virus's own body is 0 px over all 70 frames -- its animation is exact -- and the entire
-460 px sits to its LEFT, on frames 198-201 of the standard alignment.
+### A1. The shockwave's departure — 3 frames left of 4  *(mostly done -- TRANSFER 7ah)*
+460 px to 345. The mechanism is modelled: a hop spawns a NEW segment and the old one stops
+where it is and plays its own animation out until its authored last frame comes round.
 
-What it is: the real ROM leaves a thinning spray of blue fragments arcing above the panel
-the shockwave has just hopped off, for about six frames. This build shows it for two and
-then nothing. That fits `TRANSFER.md` 7ai's finding that
-`object_highlightCurrentCollisionPanels` keeps being called from `sub_80C6C14` until the
-SEGMENT'S OWN DEPARTURE ANIMATION finishes (`sprite_getFrameParameters` bit 0x80,
-`sub_80C6CBA`, asm31.s:31552-31567) -- so a hop is not one sprite moving: the old segment
-stays and plays out while the new one appears, and this build moves a single sprite and
-draws nothing behind it.
+What is left is very probably a hop LATE in the attack, where the real ROM is on a different
+row of `byte_80C6B00` (asm31.s:31361-31366) with a shorter dwell and a different animation,
+while `Shot::shockwave` uses row 0's dwell of 0x16 for every hop -- its own doc comment
+already calls that "its first version". Modelling the per-hop table is the job. A negative
+result on the way there: allowing SEVERAL departures to overlap measures 8725 px over 20
+frames, far worse, because the real ROM's late hops are too short-lived to leave that many
+fragments. One slot, newest wins.
 
-The job: find the departure animation in `t3_0x16_80C6B40` (asm31.s:31354) and its sprite,
-and make `Shot::shockwave` leave one behind at each hop. `src/shot.rs` already tracks
-`left_panel`/`left_ticks` for the panel light, which is the same event.
 
-Already ruled out, do not repeat: `SWING.frames` 0x40 -> 0x3f. Well motivated --
-`object_exitAttackState` writes CurAnim=0 on the tick Unk_10 reaches zero (asm31.s:170737),
-and animation 1's sub-frames in `assets/mettaur.bin` sum to exactly 63 -- and it changes
-nothing, because animation 1's last sub-frame is pixel-identical to the idle pose. On a
-wider window it is worse. The pickaxe was never involved.
+### A2. The chip window's cursor  *(done -- TRANSFER 7ag)*
+170 frames of a five-step walk, and everything the SCRIPT drives is exact. It was two
+one-frame bugs and neither was `CURSOR_DELAY`: the card's palette landed a frame before
+its tiles, and the bracket's blink flipped a frame early because `self.frames` is bumped
+before anything is drawn. The fixture had to be fixed first -- `demo-cardname` places its
+cursor statically and never walks, so a scripted real walk was being compared against a
+still picture. `demo-custmatch` starts on OK as the save state does, so both sides run the
+same script.
 
-### A2. The chip window's cursor — FIX THE FIXTURE FIRST
-"At a delay of two the bracket is one frame early; at three the card is one frame late."
-Two things that move on different frames, which is exactly the shape the chip-in-hand
-icon turned out to have — the fix there was to decouple them. `CURSOR_DELAY` is in
-`src/custom.rs`. See `TRANSFER.md` 7ag.
+STILL OPEN, and it is a fixture problem not a build one: the check's `want` is 3152, which
+is entirely the bracket's blink one frame out. That blink counts from the window's own
+opening and the two sides have no shared origin for it. It read 0 for a while and then did
+not, after a change that cannot affect this fixture's logic. Anchoring it needs something
+both sides share -- most likely a battle-relative counter rather than a window-relative
+one. Check what `sub_8028820` (asm03_0.s:4807) actually reads its frame counter FROM.
 
-BUT THE FIXTURE CANNOT SETTLE IT, and that is the first job. The real side is scripted
-(Left held six frames at 20, 50, 80, 110, 140) and the rust side is NOT: `demo-cardname`
-walks its cursor on a schedule of its own and `check_card` captures it with no script at
-all, so the two walks are aligned by a lag that is a compromise across the whole run.
-Measured at the best lag (85), 58 of 60 frames match and the two that differ are 3233 px
-each — the whole preview card. Tracking when the card's contents change on each side:
-
-    real  106, 112, 114, 122, 130, 138, 142, 146, 154, 162, 170, 178, 186, 194
-    rust  106,      114, 122, 130, 138,      146, 154, 162, 170, 178, 186, 194
-
-Every eight frames is something in the card BLINKING, on both sides and in phase. The
-real ROM has two changes that are not on that cadence -- 112 and 142, each two frames
-after a Left press -- and this build has none, because its own switches happen to land on
-cadence frames. So one move looks two frames late and the other four frames early, which
-is not a timing rule, it is an artefact of the two sides being driven by different walks.
-
-Make `demo-cardname` take its directions from the pad instead, drive both sides from the
-identical script, and the question becomes answerable. Then decouple the bracket from the
-card if the numbers say so.
 
 ### A3. The shockwave's panel light — 89 of 90, one frame left
 Was 87 of 90. Two of the three were the wave's PARTING light: when the hitbox dwelt its
@@ -114,15 +94,15 @@ so the origin is genuinely unrecoverable from it -- a capture from a battle's re
 settle this AND BATTLE START!'s delay (C1) in one go. That save state is now the single most
 valuable thing the harness does not have.
 
-### A4-old. Pin the backdrop's scroll phase
-`regress.py`'s `tiles` check does not compare a fixed frame — it searches rust frames
-340..400 for the one that best matches real frame 43, because the backdrop's scroll phase
-is not pinned. That hides a whole class of drift. Work out the phase relationship (the
-backdrop scrolls; the question is what it is counting from) and make the check compare a
-single frame. Recorded as "unresolvable from one save state", which may just mean a
-second save state is needed.
 
----
+### A5. A battle-opening fixture with three viruses
+`/tmp/battlestart.state` is a battle's first frame, and the chip window opens at 173 there
+against 134 here -- but the captured battle materialises THREE Mettaurs one at a time and
+this build fields one, so the two are not comparable. A demo feature that fields three
+Mettaurs on the capture's own panels would make the whole opening comparable: the screen
+fade's real length (this build stands in "two frames a step", and only the 0x10 divisor is
+confirmed), the materialise sequence, and the window's opening frame. It would also give
+the `cursor` check's blink a battle-relative origin to be anchored to (A2).
 
 ## B. Things the game does that this build does not
 
@@ -159,14 +139,6 @@ a small hand-written PSG driver (register pokes on 0x4000060-0x4000075, in the s
 DirectSound effect instead -- `SOUND_HIT_6B`'s sample is already decoded end to end: WaveData at
 `byte_81597A0`, 1881 bytes, 10512 Hz, no loop.
 
-### B3-old. Sound — research ticket, not an implementation one
-Nothing in this build makes a sound. Before anyone writes code, find out what it would
-take: where the sequences and samples live in the ROM, what the driver is, whether agb
-can be given a channel layout that matches, and what the smallest useful first step is
-(one sound effect on the buster, most likely). Deliver a plan with citations and a size
-estimate, not code.
-
----
 
 ## C. Research tickets — read-only, no build, good to run several at once
 
@@ -180,12 +152,6 @@ Still open from the same state: our window opens at 134 against the real 173, be
 battle fields three Mettaurs and this one fields one. A fixture with a matching line-up would
 settle the intro's length and the screen fade's real frame count in one go.
 
-### C1-old. How many frames into a battle does BATTLE START! go up?
-Currently placed, not measured: this build raises it the moment the last enemy has
-finished materialising. `sub_8008064` (asm00_1.s:10386) is state 1 of the dispatcher
-`off_8008038`, driven by `dword_203CA70` through `sub_800801C`. Trace the battle-scene
-boot to the first tick of that dispatcher and count. Alternatively find a way to make a
-save state at a battle's start, which is the thing the harness has never had.
 
 ### C2. The last 8 frames before the RESULT window
 The handler that raises the banner arms a countdown of 0x66 = 102 frames
@@ -202,10 +168,6 @@ fields, and implementing Angry is not worth it until there is an enemy that can 
 IS worth doing cheaply: `tools/emotion_export.py` takes only state 0's tiles and state 0's palette,
 and the other 22 states sit right after at a fixed stride -- exporting them is mechanical.
 
-### C3-old. The emotion window
-`src/emotion.rs` draws it and it never changes state. The real ROM has angry, and full
-synchro, and more. Find what drives the state and when, with citations, and whether any
-of it is reachable in a one-Mettaur battle.
 
 ### C4. Does the chip-name popup's gate match ours?
 This build shows the popup for `attack_family == 0x15`, which is right for all 43 chips
@@ -218,11 +180,10 @@ it turns a proxy into the real thing.
 
 ## D. Harness
 
-### D1. Track the Mettaur cycle in `regress.py`
-A1's residue lives only in `TRANSFER.md`. Give it a check, with the alignment done the
-way 7ah describes (list the frames on which the virus's bounding box changes on each side
-and find the lag that lines the two lists up), so a regression in it is caught rather
-than remembered.
+### D1. Track the residues in `regress.py`  *(done)*
+`mettaur` (345) and `wave` (960) both have checks, alignment done the 7ah way, wants
+measured rather than copied. A `cursor` check was added too. Fifteen checks now.
+
 
 ### D2. Make the harness clean up after itself, everywhere  *(done)*
 `regress.py`'s rollup check, `chip_compare.py --clean` (which `scoreboard.py` now always
