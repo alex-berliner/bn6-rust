@@ -36,6 +36,7 @@ ENTRIES=(
   "demo-protoman protoman ProtoMan AI"
   "demo-colonel colonel Colonel AI"
   "demo-results results Results screen"
+  "demo-areagrab areagrab AreaGrab: stealing the enemy's front column"
 )
 
 mkdir -p web/roms
