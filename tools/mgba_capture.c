@@ -279,6 +279,37 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* `--disable-obj` turns the sprites off and leaves the BG layers on, and
+	 * `--only-bg <n>` leaves exactly one BG layer on and turns everything else
+	 * off. Both are for tile parity: with the objects gone, a whole-frame diff
+	 * is a diff of the tilemaps alone, and one layer at a time says which
+	 * layer a difference is in. */
+	for (int i = 4; i < argc; ++i) {
+		int only = -1;
+		if (strcmp(argv[i], "--only-bg") == 0 && i + 1 < argc) {
+			only = atoi(argv[i + 1]);
+		} else if (strcmp(argv[i], "--disable-obj") != 0) {
+			continue;
+		}
+		struct ARMCore* cpu = (struct ARMCore*) core->cpu;
+		struct GBA* gba = (struct GBA*) cpu->master;
+		if (!gba || !gba->video.renderer) {
+			fprintf(stderr, "could not reach GBA renderer\n");
+			continue;
+		}
+		gba->video.renderer->disableOBJ = true;
+		if (only >= 0) {
+			for (int b = 0; b < 4; ++b)
+				gba->video.renderer->disableBG[b] = (b != only);
+			gba->video.renderer->disableWIN[0] = true;
+			gba->video.renderer->disableWIN[1] = true;
+			fprintf(stderr, "left only BG%d on\n", only);
+			++i;
+		} else {
+			fprintf(stderr, "disabled OBJ layer\n");
+		}
+	}
+
 	/* Per-frame zero fills: `--zero addr:bytes` (decimal bytes), written
 	 * before each frame like a cheat, for blanking sprite tiles the game
 	 * uploads once (e.g. the ENEMY DELETED banner text in OBJ VRAM). */

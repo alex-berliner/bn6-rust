@@ -37,6 +37,11 @@ pub const PANEL_POISON: usize = 4;
 /// solid block of one tile each, drawn over a panel for a single frame when
 /// something asks for a flash (sub_800C0BA, asm/object.s:1121).
 const HIGHLIGHT_FIRST: usize = 32;
+/// The front lip: one tilemap row of five tiles per panel column, sitting in
+/// the row below the bottom panels, in that column's own side palette. The
+/// real ROM has it at screen block 30's row 18, and it is the six pixels the
+/// field was short of at y 144..149. One variant per side.
+const LIP_FIRST: usize = HIGHLIGHT_FIRST + 2;
 
 pub struct Field {
     tiles: TileSet,
@@ -100,6 +105,9 @@ impl Field {
                 );
             }
         }
+        for col in 1..=COLS {
+            self.draw_lip(&mut bg, col, panels.enemy_owned(col, ROWS));
+        }
         bg
     }
 
@@ -122,6 +130,25 @@ impl Field {
         // the real ROM the player's half is the red one.
         let side = usize::from(enemy_owned);
         self.draw_variant(bg, col, row, 6 * panel_type + 3 * side + (row as usize - 1));
+    }
+
+    /// Paint the front lip under one column of the bottom row.
+    pub fn draw_lip(&self, bg: &mut RegularBackground, col: i32, enemy_owned: bool) {
+        let variant = LIP_FIRST + usize::from(enemy_owned);
+        let entries = &self.tilemap[variant * 32..variant * 32 + PANEL_TW * 2];
+        let tile_x = TILE_COLS[col as usize];
+        let tile_y = 3 * (ROWS + 1) + 6;
+        for i in 0..PANEL_TW {
+            let e = u16::from_le_bytes(entries[i * 2..i * 2 + 2].try_into().unwrap());
+            let setting = TileSetting::new(
+                e & 0x3ff,
+                TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
+            );
+            let pos = (tile_x + i as i32, tile_y);
+            if pos.0 >= 0 {
+                bg.set_tile(pos, &self.tiles, setting);
+            }
+        }
     }
 
     fn draw_variant(&self, bg: &mut RegularBackground, col: i32, row: i32, variant: usize) {

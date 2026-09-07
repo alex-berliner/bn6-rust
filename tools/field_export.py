@@ -27,6 +27,16 @@ from bnasm import read_symbol
 from field_dump import DAT, TILE_BASE, load
 
 HIGHLIGHT_FIRST = 32
+# The two variants after the highlights: the front lip the real ROM draws in
+# the tilemap row below the bottom panel row, one per side. Read straight off
+# the live BG2 tilemap (screen block 30, row 18): five entries repeating tiles
+# 0x28d, 0x28e, 0x28f, 0x28e, 0x28d, in palette 1 on the player's red half and
+# palette 5 on the enemy's blue one, the same banks the panels use. Those tile
+# ids fall inside the exported tileset already, which covers 498 tiles from
+# TILE_BASE, so this adds a tilemap row and no new graphics.
+LIP_FIRST = HIGHLIGHT_FIRST + 2
+LIP_TILES = (0x28D, 0x28E, 0x28F, 0x28E, 0x28D)
+LIP_PALETTES = (1, 5)
 
 
 def rebase(tilemap):
@@ -52,6 +62,10 @@ def main():
     assert len(tilemap) // 32 == HIGHLIGHT_FIRST, len(tilemap)
     for sym in ("dword_86E0458", "dword_86E0478"):
         tilemap += read_symbol(DAT, sym, max_bytes=32, through_labels=True)
+    assert len(tilemap) // 32 == LIP_FIRST, len(tilemap)
+    for bank in LIP_PALETTES:
+        row = b"".join(struct.pack("<H", t | (bank << 12)) for t in LIP_TILES)
+        tilemap += row + bytes(32 - len(row))
     tilemap = rebase(tilemap)
 
     out = bytearray(struct.pack("<4sIIII", b"BNFD", 1, 0, 0, 0))
