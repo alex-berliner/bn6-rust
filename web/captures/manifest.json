@@ -1,5 +1,10 @@
 [
   {
+    "file": "captures/banner-compare.gif",
+    "name": "banner-compare",
+    "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up."
+  },
+  {
     "file": "captures/bigbomb-compare.gif",
     "name": "bigbomb-compare",
     "label": "BigBomb \u2014 exact, frame for frame (real ROM left, this build right)"
@@ -12,7 +17,7 @@
   {
     "file": "captures/bugbomb-compare.gif",
     "name": "bugbomb-compare",
-    "label": "BugBomb \u2014 the ball flies flatter than a bomb and stays where it lands; one frame before the landing differs (real ROM left, this build right)"
+    "label": "BugBomb, real ROM left and this build right: 0.0 pixels a frame over seventy. Its arc used to be swept and was one rounding step out on the frame before it lands; the constants are now read out of the object while it is in the air -- vx 0x2C000, vz 0x26062, gravity 0x2800 over 42 frames."
   },
   {
     "file": "captures/cannon.gif",
@@ -62,6 +67,6 @@
   {
     "file": "captures/vdoll-compare.gif",
     "name": "vdoll-compare",
-    "label": "VDoll \u2014 the doll arcs to the top of the screen and stands where it lands; five frames at the edge of the window still differ (real ROM left, this build right)"
+    "label": "VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel."
   }
 ]

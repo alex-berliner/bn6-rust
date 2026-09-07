@@ -1,1 +1,1 @@
-VDoll — the doll arcs to the top of the screen and stands where it lands; five frames at the edge of the window still differ (real ROM left, this build right)
+VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel.
