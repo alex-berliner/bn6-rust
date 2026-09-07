@@ -34,6 +34,12 @@ static MEGAMAN: &[u8] = &Aligned(*include_bytes!("../assets/megaman.bin")).0;
 static PROTOMAN: &[u8] = &Aligned(*include_bytes!("../assets/protoman.bin")).0;
 static COLONEL: &[u8] = &Aligned(*include_bytes!("../assets/colonel.bin")).0;
 static SHOTFX: &[u8] = &Aligned(*include_bytes!("../assets/shotfx.bin")).0;
+/// The buster's own two objects: the barrel that rides the navi's arm
+/// (byte_82F6ECC.spr animation 0) and the muzzle flash it fires
+/// (byte_82FE378.spr), both identified by dumping OBJ VRAM on the firing
+/// frame and searching every sprite file for those tiles.
+static BUSTER_ARM: &[u8] = &Aligned(*include_bytes!("../assets/buster_arm.bin")).0;
+static BUSTER_FX: &[u8] = &Aligned(*include_bytes!("../assets/buster_fx.bin")).0;
 static BARREL_CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/barrel_charge.bin")).0;
 static CANNON_ORB: &[u8] = &Aligned(*include_bytes!("../assets/cannon_orb.bin")).0;
 static SWORD_SPR: &[u8] = &Aligned(*include_bytes!("../assets/sword.bin")).0;

@@ -53,6 +53,10 @@ const WARP_DELAY: u8 = 1;
 /// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
 const HOP_FRAMES: u8 = 6;
 const HOP_COOLDOWN: u8 = 0x1e;
+/// The buster does nothing for five frames after the button: measured
+/// against the capture, whose navi is pixel-identical to its idle through
+/// frame 64 with the press at 60 and changes on 65.
+const BUSTER_WINDUP: u8 = 5;
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]
@@ -77,10 +81,10 @@ pub struct AttackSpec {
 /// where the capture's Mettaur loses its first HP (asm31.s:108536, 108547,
 /// 108608).
 pub const BUSTER: AttackSpec = AttackSpec {
-    windup: None,
+    windup: Some((anim::IDLE, BUSTER_WINDUP)),
     anim: 14,
-    frames: 21,
-    strike_at: 14,
+    frames: 16,
+    strike_at: 2,
     recover: 0,
     recover_anim: None,
 };

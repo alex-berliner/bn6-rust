@@ -379,31 +379,33 @@ WHAT WAS WRONG, three things:
   It is NOT the forced white a hit uses, and it could not have been drawn at all: the exporter
   was taking one palette for the navi. `spr_export.py --palettes 1` now gives it two.
 
-## 7ae. The buster, half done (2026-09-07)
+## 7ae. The buster (2026-09-07)
 
-Scripting B into both sides the way 7ad scripts a direction shows the buster is wrong in three
-ways. One is fixed, two are found and measured but not built.
+Scripting B into both sides the way 7ad scripts a direction found five defects; four are fixed.
+30 differing frames and about 15000 px are now 4 frames and 1480.
 
-FIXED: THE POSE IS 21 FRAMES, NOT 5. The disassembly's "animation 14 for five passes" counts
-passes of the ANIMATION, not game frames. Swept against the capture, `frames: 21` is the minimum
-(1486 sampled px against 3226 at 5), and the shot leaves on the eighth frame -- the capture's
-Mettaur loses its first HP between real frames 68 and 69 with the press at 60 -- so
-`strike_at: 14`. Also, the navi's sprite is exported with all 16 palettes now, not one.
+- FIVE FRAMES OF NOTHING after the button. The real navi is pixel-identical to his idle through
+  the fourth frame and changes on the fifth, so BUSTER carries `windup: Some((anim::IDLE, 5))`.
+  The chips that reuse this spec inherit it; the chip comparisons align on the first body change,
+  so the scoreboard cannot see the difference either way.
+- THE POSE IS 16 FRAMES, not 5. The disassembly's "animation 14 for five passes" counts passes of
+  the ANIMATION. Measured: the navi is back to idle 17 frames after the pose starts.
+- THE SHOT IS A HITSCAN. It never crosses the field: OAM on the firing frame has the flash still
+  at the gun and the enemy's HP already down. This build fired a travelling `Shot::buster`; the
+  plain buster now strikes the row at once and draws only the flash. The CHARGED shot still
+  travels.
+- TWO OBJECTS WERE MISSING, both found by dumping OBJ VRAM on the firing frame and searching all
+  97 .spr files for those tiles:
+  - the BARREL, `byte_82F6ECC.spr` animation 0 -- a 16x8 riding the navi's arm at (+13,-30) from
+    his origin, four frames of recoil (durations 1,2,2,3) and then held for the whole pose;
+  - the FLASH, `byte_82FE378.spr` -- five frames (2,1,1,2,1) at the FRONT panel's x, 26 px above
+    the panel centre.
+  A TRAP with both: they are single-part sprites, and the effects list's `no_shadow` flag skips
+  part 0. Setting it -- which is right for a HELD object with a shadow part -- draws nothing at
+  all.
 
-FOUND, NOT BUILT: THE BUSTER IS A HITSCAN. The shot does not travel. OAM at the firing frame has
-a 32x16 flash at the GUN and the enemy's HP is already down; the little dart visible for two
-frames after is part of the same effect, and it never crosses the field. This build fires a
-travelling projectile with `Shot::buster`.
-
-FOUND, NOT BUILT: TWO OBJECTS ARE MISSING.
-- the BARREL over the navi's arm: `byte_82F6ECC.spr` animation 0, four frames of a 16x8 at
-  (+13,-30) from the navi's origin, durations 1,2,2,3. Without it the arm is the navi's own flat
-  dark bar where the real ROM has a light blue tube.
-- the MUZZLE FLASH: `byte_82FE378.spr`, its only animation, five frames (durations 2,1,1,2,1):
-  an 8x8, then two 32x16 at (-9,-7), then a 16x8. Its origin in the capture is (100,82) -- the
-  FRONT panel's x, at gun height, 26 px above the panel centre.
-Both were found by dumping OBJ VRAM at the firing frame and searching all 97 .spr files for the
-tiles; `tools/spr_export.py` reads both already.
+WHAT IS LEFT: the pose's first two frames and two of the flash's, which is the animations' own
+frame durations rather than anything structural.
 
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 

@@ -25,6 +25,7 @@ use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
+    BUSTER_ARM, BUSTER_FX,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -73,6 +74,16 @@ const DIVIDE_DAMAGE: u16 = 30;
 // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
 // and a charged shot is (Attack + 1) * 10 (asm00_2.s:5988), at Attack 1.
 const BUSTER_DAMAGE: u16 = 2;
+/// The muzzle flash's origin above the front panel's centre, and how long its
+/// animation runs (durations 2,1,1,2,1).
+const BUSTER_FX_UP: i32 = 26;
+const BUSTER_FX_FRAMES: u8 = 7;
+/// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
+/// offsets, and how long its four frames last (1,2,2,3).
+const BUSTER_ARM_FRAMES: u8 = 18;
+/// Frames after the button before the barrel appears, which is the same
+/// windup the pose waits out.
+const BUSTER_ARM_DELAY: u8 = 4;
 const CHARGED_DAMAGE: u16 = 20;
 // Frames of holding A before a release fires a charged shot: the buster's
 // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
@@ -779,6 +790,8 @@ pub struct Battle<'a> {
     /// The regular-chip mark the RESULT window hangs at its top-left corner,
     /// held only while that window is up.
     results_mark: Option<agb::display::object::SpriteVram>,
+    /// Frames until the buster's barrel joins the pose.
+    buster_arm_in: u8,
     fade_out: u8,
     clock: u32,
     moves: u8,
@@ -1128,6 +1141,7 @@ impl<'a> Battle<'a> {
         let results_delay = RESULTS_DELAY;
         let shown: Option<results::Shown> = None;
         let results_mark: Option<agb::display::object::SpriteVram> = None;
+        let buster_arm_in = 0u8;
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
@@ -1211,11 +1225,32 @@ impl<'a> Battle<'a> {
             results_delay,
             shown,
             results_mark,
+            buster_arm_in,
             fade_out,
             clock,
             moves,
             auto_ticks,
         }
+    }
+
+    /// The buster's BARREL, a 16x8 object riding the navi's arm for the whole
+    /// pose. Its own OAM offsets put it at (+13,-30) from the navi's origin,
+    /// which is the panel centre, so it is spawned there and the sprite
+    /// places itself. A held object, so no ground shadow.
+    fn spawn_buster_arm(&mut self) {
+        // NOT pre-ticked: it is spawned at the top of the frame, before the
+        // effects tick, so it takes this frame's tick with the rest.
+        let arm = spr::Player::new(spr::Assets::new(BUSTER_ARM), 0);
+        let (mc, mr) = self.megaman.panel();
+        // Its ONE part is the barrel itself, not a ground shadow, so the
+        // no-shadow flag must be off or nothing is drawn at all.
+        self.effects.push((
+            arm,
+            field::panel_centre(mc, mr),
+            BUSTER_ARM_FRAMES - 1,
+            false,
+            false,
+        ));
     }
 
     /// Put the results window up, taking its palette banks back first. The
@@ -1234,6 +1269,12 @@ impl<'a> Battle<'a> {
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+        if self.buster_arm_in > 0 {
+            self.buster_arm_in -= 1;
+            if self.buster_arm_in == 0 {
+                self.spawn_buster_arm();
+            }
+        }
         if self.backdrop.is_some() {
             self.backdrop.as_mut().unwrap().update(gfx);
             self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
@@ -1456,6 +1497,9 @@ impl<'a> Battle<'a> {
             }
             if input.is_just_pressed(Button::B) && !self.megaman.is_busy() {
                 self.megaman.attack(actor::BUSTER);
+                // The barrel comes with the POSE, not with the button: the
+                // real navi stands in his idle for five frames first.
+                self.buster_arm_in = BUSTER_ARM_DELAY;
             }
             if input.is_pressed(Button::B) {
                 self.charge = self.charge.saturating_add(1);
@@ -1645,18 +1689,41 @@ impl<'a> Battle<'a> {
             }
             Update::Strike { charged } => {
                 let (col, row) = self.megaman.front_panel();
-                let damage = if charged {
-                    CHARGED_DAMAGE
+                if charged {
+                    self.shots.push(Shot::buster(
+                        spr::Assets::new(SHOTFX),
+                        col,
+                        row,
+                        self.megaman.facing_dx(),
+                        CHARGED_DAMAGE,
+                    ));
                 } else {
-                    BUSTER_DAMAGE
-                };
-                self.shots.push(Shot::buster(
-                    spr::Assets::new(SHOTFX),
-                    col,
-                    row,
-                    self.megaman.facing_dx(),
-                    damage,
-                ));
+                    // THE PLAIN BUSTER IS A HITSCAN. Its shot never crosses
+                    // the field: OAM on the firing frame has a 32x16 flash
+                    // still at the gun while the enemy's HP is already down.
+                    // So the row is struck at once and the only object is the
+                    // flash, at the FRONT panel's x and BUSTER_FX_UP above the
+                    // panel's centre -- (100,82) in the capture, whose navi
+                    // stands on the panel centred at (60,108).
+                    let (mc, mr) = self.megaman.panel();
+                    for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                        let (ec, er) = enemy.panel();
+                        if er == mr && (ec - mc) * self.megaman.facing_dx() > 0 {
+                            enemy.take_damage(BUSTER_DAMAGE);
+                            break;
+                        }
+                    }
+                    let (px, py) = field::panel_centre(col, row);
+                    let mut fx = spr::Player::new(spr::Assets::new(BUSTER_FX), 0);
+                    fx.update();
+                    self.effects.push((
+                        fx,
+                        (px, py - BUSTER_FX_UP),
+                        BUSTER_FX_FRAMES - 1,
+                        false,
+                        false,
+                    ));
+                }
             }
             Update::Died => {
                 let at = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
