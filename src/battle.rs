@@ -22,7 +22,7 @@ use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
-    MINIBOMB,
+    LILBOILER, MINIBOMB,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -354,6 +354,12 @@ const BOMB_FLIGHT: u8 = 40;
 const BLKBOMB_FLIGHT: u8 = 42;
 const BLKBOMB_VX: i32 = 0x2C000;
 const BLKBOMB_VZ: i32 = 0x22051;
+/// LilBolr lobs its boiler far higher than a bomb: measured on the real ROM
+/// the ball rises to y=10, about a hundred pixels above the panel, peaking
+/// eleven frames in and landing on the same fortieth frame a bomb does. That
+/// needs a faster launch and a stronger pull, solved from those two figures.
+const LILBOLR_VZ: i32 = 0x63333;
+const LILBOLR_GRAVITY: i32 = 0x5EB8;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -443,6 +449,7 @@ struct Bomb {
     z: i32,
     vx: i32,
     vz: i32,
+    gravity: i32,
     target: (i32, i32),
     damage: u16,
     /// BigBomb's landing spreads over the panel and its eight neighbours:
@@ -457,7 +464,7 @@ struct Bomb {
 impl Bomb {
     fn step(&mut self) {
         self.x += self.vx;
-        self.vz -= BOMB_GRAVITY;
+        self.vz -= self.gravity;
         self.z += self.vz;
     }
 
@@ -1840,6 +1847,10 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3 => {
                 let (mx, my) = field::panel_centre(col, row);
+                let lilbolr = matches!(
+                    chip.id,
+                    CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
+                );
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb
                 // sprite in another palette: a dark brown ball with a fuse
@@ -1847,7 +1858,12 @@ impl<'a> Battle<'a> {
                 // by taking its tiles out of OBJ VRAM mid-flight and finding
                 // those exact bytes in byte_831FA84.spr, the only one of the
                 // 97 sprite files that holds them.
-                let mut thrown = if chip.id == CHIP_BLKBOMB {
+                let mut thrown = if lilbolr {
+                    // The thing LilBolr lobs is the LilBoiler VIRUS, not a
+                    // bomb: its tiles are in virusBattleSprite_824EAF4.spr,
+                    // which is why it looks nothing like one.
+                    spr::Player::new(spr::Assets::new(LILBOILER), 0)
+                } else if chip.id == CHIP_BLKBOMB {
                     spr::Player::new(spr::Assets::new(BLKBOMB), 0)
                 } else {
                     spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
@@ -1857,11 +1873,18 @@ impl<'a> Battle<'a> {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
                     flight: if chip.id == CHIP_BLKBOMB { BLKBOMB_FLIGHT } else { BOMB_FLIGHT },
+                    gravity: if lilbolr { LILBOLR_GRAVITY } else { BOMB_GRAVITY },
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
                     vx: if chip.id == CHIP_BLKBOMB { dx * BLKBOMB_VX } else { dx * BOMB_VX },
-                    vz: if chip.id == CHIP_BLKBOMB { BLKBOMB_VZ } else { BOMB_VZ },
+                    vz: if lilbolr {
+                        LILBOLR_VZ
+                    } else if chip.id == CHIP_BLKBOMB {
+                        BLKBOMB_VZ
+                    } else {
+                        BOMB_VZ
+                    },
                     target,
                     damage: chip.power,
                     ticks: 0,

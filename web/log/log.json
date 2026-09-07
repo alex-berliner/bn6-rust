@@ -466,5 +466,11 @@
     "file": "log/shots/1788766304-lilbolr_log.png",
     "caption": "LilBolr1 captured from the real ROM, the next chip family to build. The navi throws, a gold ball arcs off the top of the frame with damage numbers popping, and a white spray then opens on the panels ahead. The throw is machinery this build already has; the spray is new. Its sprite is identified as sprite_8399578, which took all three searches to find: it is in none of the plain sprite files and none of the compressed ones, and only turned up in the assembled data blobs.",
     "tag": "chips"
+  },
+  {
+    "t": 1788766889,
+    "file": "log/shots/1788766889-lilbolr_progress.png",
+    "caption": "LilBolr in flight, real ROM above and this build below. What it lobs is the LilBoiler virus, a golden kettle, not a bomb, and it now draws from that virus's own sprite. Its arc is far taller than a bomb's: the ball rises about a hundred pixels above the panel, peaking eleven frames in and landing on the same fortieth frame a bomb does, which needs both a faster launch and a stronger pull. The chip is down from around a thousand differing pixels a frame to 390. Left: the kettle sits about thirteen pixels high, the flame on its lid is missing, and the damage figure that pops beneath it is a separate feature. Its blast already matches, because it is the same blast object MiniBomb uses.",
+    "tag": "chips"
   }
 ]
