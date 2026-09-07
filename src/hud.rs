@@ -9,7 +9,7 @@
 use agb::display::Priority;
 use agb::display::GraphicsFrame;
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
-use agb::display::{Palette16, Rgb, Rgb15};
+use agb::display::{Palette16, Rgb15};
 use alloc::vec::Vec;
 
 const MAGIC: &[u8; 4] = b"BNFT";
@@ -83,11 +83,16 @@ impl Hud {
         let count = u32::from_le_bytes(data[8..12].try_into().unwrap()) as usize;
 
         // The glyphs use colour index 5 for the inner fill and 9 for the
-        // outline. The palette bank the game keeps them in is not identified
-        // yet, so this is a local stand-in -- not the game's palette.
+        // outline. The palette is the game's own, dword_86B7AC0, which the
+        // exporter appends after the glyphs: OBJ bank 14 of a live battle
+        // holds those sixteen words exactly. This build stood in flat white
+        // on black before, which is a shade off on both.
+        let p = 0x0c + count * GLYPH_BYTES;
         let mut colours = [Rgb15::new(0); 16];
-        colours[5] = Rgb15::WHITE;
-        colours[9] = Rgb::new(16, 16, 16).to_rgb15();
+        for (i, slot) in colours.iter_mut().enumerate() {
+            let o = p + i * 2;
+            *slot = Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
+        }
         let palette = PaletteVramSingle::try_allocate_new(&Palette16::new(colours))
             .expect("font palette should fit in vram");
 

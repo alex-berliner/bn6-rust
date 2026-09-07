@@ -386,9 +386,17 @@ const DAMAGE_TAG_DOWN: i32 = 30;
 /// one of the forty positions.
 const FLSHBOM_VZ: i32 = 0x2BD00;
 const FLSHBOM_GRAVITY: i32 = 0x3000;
-const LILBOLR_VX: i32 = 0x2C7AE;
-const LILBOLR_VZ: i32 = 0x2999A;
-const LILBOLR_GRAVITY: i32 = 0x2800;
+/// The summoned LilBoiler's own HP, which rides under it in the game's object
+/// digits. All three LilBolrs show 40 against powers of 100, 140 and 180.
+const BOILER_HP: u16 = 40;
+/// Where that figure sits relative to the projectile's origin: measured on
+/// the real ROM's frames 13, 20 and 30, its two digits span sixteen pixels
+/// starting at the projectile's own x and its top is three below.
+const BOILER_HP_RIGHT: i32 = 16;
+const BOILER_HP_DOWN: i32 = 3;
+const LILBOLR_VX: i32 = 0x2C300;
+const LILBOLR_VZ: i32 = 0x226A0;
+const LILBOLR_GRAVITY: i32 = 0x2860;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -2258,13 +2266,12 @@ impl<'a> Battle<'a> {
             // 19, where the boiler's centre is (93,35). It shows with the
             // enemy deleted, so it belongs to the projectile rather than to a
             // hit.
-            // NOT DRAWN: the figure the real ROM rides under the boiler is
-            // NOT this chip's damage. It reads 40 where LilBolr1's power is
-            // 100, so it is something else -- most likely the summoned
-            // LilBoiler virus's own HP, which would fit the thrown object
-            // being a virus sprite. Drawing b.damage there puts "100" under
-            // it and scores worse (404 px/frame against 352), so it waits
-            // until the figure's meaning is settled.
+            // The figure the real ROM rides under the boiler is NOT this
+            // chip's damage: it reads 40 for all three LilBolrs, whose powers
+            // are 100, 140 and 180. It is the summoned LilBoiler virus's own
+            // HP, which fits the thrown object being a virus sprite -- so it
+            // is a constant, not b.damage, and drawing b.damage there scored
+            // worse (404 px/frame against 352).
             // The frame's first part is the shadow (sprite_hasShadow): it is
             // drawn on the ground, the rest at the bomb's height -- the real
             // ROM keeps the shadow at y 106-111 under the whole arc.
@@ -2276,6 +2283,14 @@ impl<'a> Battle<'a> {
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
                     .show(frame);
+            }
+            if b.show_damage {
+                self.hud.draw_number(
+                    frame,
+                    BOILER_HP,
+                    x + BOILER_HP_RIGHT,
+                    y + BOILER_HP_DOWN,
+                );
             }
         }
 

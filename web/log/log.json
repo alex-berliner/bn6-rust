@@ -562,5 +562,11 @@
     "file": "log/shots/1788773763-cs_obj_cmp.png",
     "caption": "Chip select with sprites on: real ROM left, this build right. Two objects were missing or wrong. The gold ring above the pick stack -- the regular-chip mark, and a red disc with a slash when no regular chip is set -- was not drawn at all; the real ROM hangs it in a 32x32 OAM entry at (87,-4) whose only four non-blank tiles are the ring, and those four turned up at byte_86F5834 by searching the disassembly for their bytes. It now matches pixel for pixel. And the cursor bracket was yellow where the real ROM's is orange: the window's stored cursor palette is its BACKGROUND bank word for word, and the bracket sprites draw from the OBJECT bank instead. What is left is the two builds holding different chips.",
     "tag": "chip"
+  },
+  {
+    "t": 1788774445,
+    "file": "log/shots/1788774445-lilbolr_now.png",
+    "caption": "LilBolr1-3: 333.6 px/frame down to 34.6. Real ROM on top, this build in the middle, the difference below. The chip lobs the LilBoiler VIRUS, not a bomb, and the figure riding under it is the summoned boiler's own HP -- it reads 40 for all three variants, whose powers are 100, 140 and 180 -- so it is a constant, not the chip's damage. That figure also turned up the fact that this build's HP digits were drawn in a made-up palette: flat white on black where the game's is a soft white with a dark blue outline. The real one is dword_86B7AC0, the 32 bytes immediately before the battle text font, and dumping OBJ bank 14 out of a live battle gives it back word for word. What is left is a one-pixel wobble on six frames of forty-eight.",
+    "tag": "chip"
   }
 ]
