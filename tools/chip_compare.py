@@ -17,6 +17,14 @@ remnant at x>=149). A strip of real/rust/diff crops is written for looking.
 Chips that do not move the navi (Recov) give the aligner nothing to go on:
 pass --rust-start 123, the frame the sterile demo's auto-fire uses its chip.
 
+A chip that needs a live target (StepSwrd steps to the enemy's column) has
+nothing to work with once the enemy is deleted, so it gets --hide-enemy: the
+enemy stays alive and immortal and its tiles are blanked every frame. That is
+not a better default -- a live enemy is hit, and its sparks, damage numbers
+and the navi's Full Synchro all land in the diff -- Cannon scores 0 with the
+enemy deleted and 346 px/frame with it hidden. Use it only where the chip
+cannot work without a target.
+
 Keep --frames inside the attack: the real capture presses A once, while the
 Rust demo's auto-fire starts the next use as soon as the navi is free, so
 frames past the attack's end compare a second volley against an idle navi.
@@ -39,6 +47,15 @@ STERILE = "/tmp/bn6f_sterile.gba"
 STATE = "/tmp/pausedwithcannon.state"
 HAND_SLOT = "0x020349c2"
 BANNER_TILES = "0x6016E00:1280"
+# The Mettaur's object tiles. Deleting the enemy costs 24 frames of red
+# deletion flash over everything, and the game refuses a chip press once that
+# sequence has run, so a chip that needs a live target cannot be captured that
+# way (--a-frame and a post-deletion save state both hit the refusal). Keeping
+# it alive and blanking its tiles every frame leaves the arena as empty as
+# deleting it, with none of that. Its HP counter is drawn from tiles the
+# banner blanking already covers. Found by decoding OAM (objects 9, 10 and 14,
+# palette 1, tiles 31..44) from `--dump 0x7000000:1024`.
+ENEMY_TILES = "0x60103E0:448"
 # The A press, and the frame the attack's effect starts. Deleting the enemy
 # leaves it dissolving for about a hundred frames with a screen flash at the
 # end; a chip that moves the navi toward that remnant (StepSwrd) needs the
@@ -60,6 +77,7 @@ XMAX = 140
 # screen is compared rather than the navi's half.
 BACKGROUNDS = False
 KEEP_ENEMY = False
+HIDE_ENEMY = False
 
 
 def differs(a, b, box=None):
@@ -107,15 +125,18 @@ def capture_real(chip, out, count):
         CAPTURE, STERILE, out, str(count),
         "--loadstate", STATE,
         # The enemy is deleted so only the navi and its chip are on screen.
-        # KEEP_ENEMY makes it immortal instead, for a chip that moves the navi
-        # toward where the deleted one would be dissolving (StepSwrd): the
-        # remnant and its screen flash would otherwise land in the window.
+        # KEEP_ENEMY makes it immortal instead, for watching it react.
+        # HIDE_ENEMY keeps it immortal and blanks its tiles, which a chip that
+        # needs a live target (StepSwrd steps to the enemy's column) has to
+        # have: deleting the enemy takes the target away and paints 24 frames
+        # of deletion flash over the navi as well.
         *(["--cheat", "0x0203ab84:0xffff", "--cheat", "0x0203ab86:0xffff"]
-          if KEEP_ENEMY else
+          if KEEP_ENEMY or HIDE_ENEMY else
           ["--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0"]),
         *library_pokes(int(chip, 16)),
         "--cheat", f"{HAND_SLOT}:0x{chip}",
         "--zero", BANNER_TILES,
+        *(["--zero", ENEMY_TILES] if HIDE_ENEMY else []),
         *([] if BACKGROUNDS else ["--disable-bg"]),
         "--script", f"Start@10,A@{REAL_A_FRAME}",
     ]
@@ -173,6 +194,8 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--hide-enemy", action="store_true",
+                    help="keep the enemy alive but blank its tiles, for a chip that needs a live target (StepSwrd)")
     ap.add_argument("--keep-enemy", action="store_true",
                     help="leave the real capture's enemy alive (immortal) instead of deleting it")
     ap.add_argument("--a-frame", type=int, default=40,
@@ -184,8 +207,9 @@ def main():
     ap.add_argument("--rust-start", type=int, default=None,
                     help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
-    global XMAX, BACKGROUNDS, KEEP_ENEMY, REAL_A_FRAME, REAL_START
+    global XMAX, BACKGROUNDS, KEEP_ENEMY, HIDE_ENEMY, REAL_A_FRAME, REAL_START
     KEEP_ENEMY = args.keep_enemy
+    HIDE_ENEMY = args.hide_enemy
     REAL_A_FRAME = args.a_frame
     REAL_START = REAL_A_FRAME + 3
     BACKGROUNDS = args.bg

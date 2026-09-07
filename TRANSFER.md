@@ -387,6 +387,39 @@ in the half the navi dashes into and is worse. Both flags are in chip_compare.py
 attempt. StepSwrd is believed correct but is not cleanly measurable with this save state; a
 state with no enemy at all, or one whose enemy is off the dash panel, would settle it.
 
+### 7l (corrected, same day, after looking at the pixels again)
+
+Most of the paragraph above is wrong and is kept only so the dead ends are not walked twice.
+Measured per frame, not eyeballed: with the enemy deleted the navi's own body colour is in
+x 100..200 (the enemy's front column) for the attack's frames 0..23 and at home from frame 24,
+so the dash is real and immediate and the "identical navi at c0" reading was of the wrong
+object. What stands on the home panel for those 24 frames is an AFTERIMAGE: the navi's idle
+silhouette, 705 of the idle's 766 pixels and a strict subset of them, blinking two frames on,
+two off, from frame 1 to frame 18. That afterimage is what the residual has been all along --
+the recurring 705 in the diff is exactly it -- and nothing draws it on the Rust side.
+Its colour is a capture artifact, not the game: under `--disable-bg` every pixel keeps its red
+component and loses green and blue exactly ((8,57,123) -> (8,0,0)); no such palette exists in
+OBJ palette RAM (dumped all 16 banks) and the blend registers read mode 0 on every frame, and
+with backgrounds ON the same frame's home box matches the plain idle navi's histogram. So the
+afterimage is a semi-transparent object and mGBA's renderer-level BG disable mis-blends it.
+A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
+has run. Proved on one continuous run (no save states involved) -- A at frame 40 fires, A at
+120, 150, 200 and 260 all do nothing. Save states made after the deletion inherit the refusal,
+and one saved at frame 300 is already in the victory fade. `--clean-state` is removed.
+What replaced it is `--hide-enemy`: the enemy is kept alive and immortal and its object tiles
+are blanked every frame (`--zero 0x60103E0:448`; objects 9, 10 and 14, palette 1, tiles 31..44,
+read out of `--dump 0x7000000:1024`). Its HP counter is drawn from tiles the banner blanking
+already covers. This is the only way to capture a chip that needs a live target, but it is not
+a better default: the enemy gets hit, and its sparks, damage numbers and the navi's Full Synchro
+all land in the window -- Cannon scores 0 with the enemy deleted and 346 px/frame with it
+hidden. Under it, StepSwrd's remaining differences are the afterimage and a pink warp ring
+around the navi as it returns at frame 24.
+Clearing the entity's visible flag does NOT work as a poke: the object header's Flags byte is at
+struct offset 0 with OBJECT_FLAG_VISIBLE = 0x02 (ObjectHeader.inc:6-9), the Mettaur's struct
+base is 0x0203AB60 (HP at +0x24 = the known 0x0203AB84; T1 battle objects, stride 0xD8, array
+eT1BattleObjects at 0x0203A9A0, ewram.s:2972, with MegaMan at 0x0203A9B0), but the harness writes
+cheats before runFrame and the game re-sets the bit every frame, so it has no effect at all.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the

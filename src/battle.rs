@@ -1351,13 +1351,10 @@ impl<'a> Battle<'a> {
                 // sword family's state 0 through sub_8015B00: it reserves a
                 // panel across the boundary and moves the navi there before
                 // the slash (asm31.s:108790-108826). Against the real ROM the
-                // navi is on the enemy's front column from the attack's first
-                // frame -- the panel below matches exactly -- and home again
-                // 24 frames in, and the slash from the tenth frame is
-                // pixel-identical. What is NOT reproduced is the step's own
-                // ten frames: the real plays a pose of its own there and
-                // hides the navi entirely for two frames (an illusion object,
-                // spawnIllusionObject_80E33FA), where this holds the idle.
+                // navi's own colours sit on the enemy's front column from the
+                // attack's first frame through its 24th, then it is home
+                // again, and the slash is pixel-identical. What the home panel
+                // holds meanwhile is an afterimage: see step_ghost below.
                 if chip.id == CHIP_STEPSWRD {
                     let (col, row) = self.megaman.panel();
                     let dx = self.megaman.facing_dx();

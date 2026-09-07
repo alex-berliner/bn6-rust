@@ -322,5 +322,11 @@
     "file": "log/proof/1788749030-stepswrd.png",
     "caption": "StepSwrd: real (top), ours (middle), diff (bottom) at c0, c4, c10, c16, c29. The navi and the slash are identical wherever they can be compared -- the differences are the deleted enemy dissolving beside the dashed navi and the screen-wide red flash of its DELETED sequence, both artifacts of the capture setup rather than the chip.",
     "tag": "proof"
+  },
+  {
+    "t": 1788750472,
+    "file": "log/shots/1788750472-stepswrd_afterimage.png",
+    "caption": "StepSwrd re-measured: the navi's body colour is on the enemy's front column for the attack's first 24 frames, so the dash is immediate. The 705px residual is an afterimage of the navi's idle silhouette left on the home panel, blinking 2 frames on 2 off from frame 1 to 18, which nothing draws on the Rust side; the real row also shows a pink warp ring as the navi returns at frame 24. The afterimage's red-only look under --disable-bg is an mGBA blend artifact for semi-transparent objects, not the game. The game refuses chip use after the deletion sequence, so a no-enemy save state is impossible; --clean-state removed and replaced by --hide-enemy, which keeps the enemy immortal and blanks its object tiles.",
+    "tag": "stepswrd"
   }
 ]
