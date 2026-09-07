@@ -957,10 +957,17 @@ puts it up the moment the fight is over.
 ## 7as. BATTLE START!, and every check at zero (2026-09-07)
 
 A battle now opens the way the game opens one: the field fades in, the enemy materialises, and
-BATTLE START! unrolls over a fight that is already running. The research (7ar) says why it does
-not pause: `sub_8008064` (asm00_1.s:10386) raises message 0 and there is no `PauseBattle` call
-anywhere in it, and `sub_800801C` is ticked every frame from `sub_800938A` alongside the normal
-chip-hand processing. So the banner goes up without touching the intro's own gate.
+BATTLE START! unrolls.
+
+CORRECTED, SAME DAY: THE FIGHT IS PAUSED FOR THE WHOLE BANNER. This section first said the
+opposite, on the strength of there being no `PauseBattle` call inside `sub_8008064`
+(asm00_1.s:10386). That is true and it is not the question. One is already in effect:
+`PauseBattle()` fires on the first tick of battle state 0 (asm00_1.s:12786) and the ONLY
+`UnpauseBattle()` reachable from there is at the top of `sub_80080D2` (asm00_1.s:10448) -- the
+state after the one that holds the banner. And `sub_8008064` is left only when `sub_801E754`
+reports the banner idle, which for a KIND 0 record like BATTLE START!'s has no early-out the way
+KIND 2 does. So the pause spans the banner's 58 frames. The lesson is the one this file keeps
+relearning: "there is no call to X in this function" is not "X does not happen".
 
 NOT VERIFIED: how many frames after the intro it goes up. There is no save state at a battle's
 start to compare against, and making one means playing the game to a battle. Everything else about
@@ -1007,12 +1014,26 @@ writer at angle 0, so pure scale -- with `r2 = pd / 4`:
 `r1 = 0x40` in all three (27633, 27672, 27697).
 
 THE GAP TO THE RESULT WINDOW is armed by the same handler that raises the banner: `sub_80081A4`
-(asm00_1.s:10542) sets a countdown at `[r5,#8]` to 0x66 = 102 frames or 0x5e = 94 depending on the
-battle mode (10577-10592), and leaving that state needs BOTH the countdown and the banner
-reporting idle through `sub_801E754` (asm00_2.s:30973). 102 frames from the banner's frame 49 is
-151, against the 159 measured; the remaining 8 frames are in states 6-9 of the same end-of-turn
-machine (`off_8008038`, asm00_1.s:10370) or the window's own lead-in, and were not traced. This
-build uses the measured 110.
+(asm00_1.s:10542) sets a countdown at `[r5,#8]`, and leaving that state needs BOTH the countdown
+and the banner reporting idle through `sub_801E754` (asm00_2.s:30973).
+
+TWO CORRECTIONS to what this section first said. The pairing is the other way round: SONG_WINNER_0
+goes with 0x5e = 94 frames and SONG_WINNER_1 with 0x66 = 102 (asm00_1.s:10576-10592), and the
+split is not on the battle mode but on `BATTLE_EFFECT_SHOW_RESULTS`, bit 0x2 of `GetBattleEffects()`
+(asm03_0.s:14407-14423). A normal single-player virus battle is `BATTLE_MODE_NORMAL` = 0
+(`battle_constants.inc:29-41`), not in {4,5,8}, and the one field-encounter row that could be read
+(`data/BattleSettings.s:6`) has SHOW_RESULTS SET, which selects the 94-frame path. So the arithmetic
+is probably 94 + 16, not 102 + 8.
+
+And states 6-9 of `off_8008038` contribute NOTHING: they are sibling branches selected by
+`sub_80080D2` (asm00_1.s:10442) on `sub_800A152()`'s return -- 1 goes to the win banner, 2 to the
+lose banner, 7 to state 6 -- not steps that follow the banner. State 3, the ENEMY DELETED handler,
+never writes the state index at all; it only sets a done flag (asm00_1.s:10620-10627). The
+remaining frames are instead in the RESULT window's own path: `sub_8009478` (asm00_1.s:13129) waits
+on a data-dependent tally (`sub_800B46C`, two counters fed by the fight's transfer buffer) before
+`sub_80094B6` (13166) calls `sub_802C34E` (asm03_0.s:12353) to spawn the window, which then runs
+its own three-then-five-state slide-in. None of that is a compile-time constant, so 110 stays a
+measurement rather than becoming a derivation. This build uses the measured 110.
 
 WHICH MESSAGE, BY CALLER: 0 BATTLE START! and 3 TURN START! and 4 FINAL TURN! all come from
 `sub_8008064` (asm00_1.s:10386), state 1 of `off_8008038`; 1 ENEMY DELETED is the default in
@@ -1022,9 +1043,26 @@ START! does NOT stop the fight.
 
 THE CHIP-NAME POPUP IS A BANNER TOO, in the same machinery: message ids 19 and 20 are kind 3,
 which dispatches to `sub_801E8CC` -> `sub_801E95C`, and they are raised by `object_drawChipName`
-(object.s:183-239) gated on a `ChipData+9` flag bit and a chip-category check (`sub_800B892`).
-So the "attack_family 0x15" rule 7ap uses is a proxy for that gate; it is right for all 43 chips
-in the scoreboard, and if a chip is ever added that disagrees, this is where to look.
+(object.s:183-239) and three near-duplicates.
+
+AND THERE IS NO CHIPDATA PREDICATE AT ALL. `object_drawChipName` raises the banner
+UNCONDITIONALLY once reached. The `ChipData+9` bit it reads (object.s:212-214) only decides
+whether a NUMBER is shown beside the name, and `sub_800B892` (object.s:13-18) is not a chip
+category check but a per-alliance "is the other side already showing a banner" rendezvous over a
+scratch struct at `byte_203CF00` that is zero-filled once per battle (object.s:942-961). What
+actually decides it is structural: which of ~121 Type-4 object handlers the chip's use-effect
+spawns, and whether that handler's `CurAction` table happens to include this step. 49 of the 121
+do. The subtype is a hardcoded immediate at each of 127 `object_spawnType4` call sites; it is
+never read out of ChipData.
+
+SO `attack_family == 0x15` IS A STRICT SUPERSET, and worth knowing before another chip is added:
+84 chips carry family 0x15, including plain attack chips (AirRaid, BurnSquare, Sensor, Magnum,
+CircleGun, RockCube, TimeBomb, Mine, Snake, Meteors, the summons, Anubis...) that certainly do not
+dim the screen and post a name. It is right for all 43 chips this build implements, and it will
+misfire on the first one of those that is added. There is also a SECOND family that shows the
+popup by a different route: `sub_800BE2C` (object.s:703-880) is gated on the chip id being in
+221..280, which by name is exactly the Navi Chips, all family 0x1B. Recov is family 0x20, which is
+why it looks like it should have a popup and does not.
 
 AND PAUSE FREEZES IT. The pause menu (`sub_802B7A0`, asm03_0.s:10937) raises message 9 or 13, both
 kind 2, and kind 2 is exactly what makes `sub_801CE28` stop incrementing its counter at 4

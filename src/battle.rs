@@ -1578,9 +1578,16 @@ impl<'a> Battle<'a> {
                 self.intro_next += 1;
                 // The last one has finished materialising: BATTLE START!.
                 // sub_8008064 (asm00_1.s:10386) raises message 0 here, and
-                // there is no PauseBattle call anywhere in it -- the fight is
-                // already running while the ribbon is up, which is why this
-                // does not touch `intro`.
+                // THE FIGHT IS PAUSED FOR THE WHOLE OF IT. There is no
+                // PauseBattle call inside sub_8008064, which is what an
+                // earlier reading of this stopped at -- but one is already in
+                // effect: PauseBattle() fires on the first tick of battle
+                // state 0 (asm00_1.s:12786) and the only UnpauseBattle()
+                // reachable from there is at the top of sub_80080D2
+                // (asm00_1.s:10448), the state AFTER this one. And this state
+                // is left only when sub_801E754 reports the banner idle, which
+                // for a KIND 0 record like BATTLE START!'s has no early-out.
+                // So the pause covers the banner's whole 58 frames.
                 // NOT VERIFIED: how many frames after the intro it goes up.
                 // There is no save state at a battle's start to compare with.
                 // NOT IN A DEMO BUILD. Every fixture that fields an enemy
@@ -1599,8 +1606,15 @@ impl<'a> Battle<'a> {
             false
         };
         let presenting = self.presentation.is_some();
-        let paused =
-            over || self.gauge_pause > 0 || self.custom.is_some() || intro || presenting;
+        // The opening banner holds the fight, as above. The closing one does
+        // not need to: the fight is over by then.
+        let opening = self.banner.is_some() && !self.banner_done;
+        let paused = over
+            || self.gauge_pause > 0
+            || self.custom.is_some()
+            || intro
+            || opening
+            || presenting;
         if !paused {
             self.clock += 1;
         }
