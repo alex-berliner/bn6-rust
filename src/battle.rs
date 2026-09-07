@@ -447,8 +447,21 @@ pub struct Battle<'a> {
     /// from so it is only rebuilt when that frame changes.
     step_ghost2: Option<(spr::Player, (i32, i32))>,
     step_ghost2_key: Option<(usize, usize)>,
-    /// The navi's last four sprite frames, so the afterimage can lag by three.
-    step_trail: [(usize, usize); 4],
+    /// The sword's matching red copy: the afterimage takes the attack's own
+    /// object with it, so on a blink frame the far panel's blade tip is drawn
+    /// in the red bank rather than its own teal and white.
+    step_ghost2_sword: Option<(spr::Player, (i32, i32))>,
+    /// The sprite the live sword was built from, so its past frame can be
+    /// rebuilt, and the navi's and the sword's last four sprite frames, so
+    /// the afterimage can lag by three.
+    step_sword_art: Option<(&'static [u8], usize)>,
+    step_trail: [((usize, usize), (i32, i32)); 4],
+    step_trail_sword: [Option<(usize, usize)>; 4],
+    /// The panel the step went to. The afterimage keeps taking new frames
+    /// after the navi has gone home -- frame 24's copy carries the navi's
+    /// frame-21 sprite -- but only from frames where the navi was still over
+    /// there, so the trail is followed by position, not by a cut-off.
+    step_dest: (i32, i32),
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -786,7 +799,11 @@ impl<'a> Battle<'a> {
             step_ghost: None,
             step_ghost2: None,
             step_ghost2_key: None,
-            step_trail: [(0, 0); 4],
+            step_ghost2_sword: None,
+            step_sword_art: None,
+            step_trail: [((0, 0), (0, 0)); 4],
+            step_trail_sword: [None; 4],
+            step_dest: (0, 0),
             presentation: None,
             bubble: None,
             vulcan_gun: None,
@@ -1084,6 +1101,7 @@ impl<'a> Battle<'a> {
                 };
                 let mut sword = spr::Player::new(spr::Assets::new(asset), 0);
                 sword.set_palette_add(palette);
+                self.step_sword_art = Some((asset, palette));
                 self.effects.push((
                     sword,
                     field::panel_centre(mc, mr),
@@ -1151,6 +1169,10 @@ impl<'a> Battle<'a> {
                     for (_, pos, _, _) in self.effects.iter_mut() {
                         *pos = home;
                     }
+                    // The afterimage keeps copying the navi after the return
+                    // but not the sword: from frame 24 the far panel's copy
+                    // is the navi alone.
+                    self.step_ghost2_sword = None;
                 }
             }
             Update::Strike { .. } if self.chip_in_use.is_some() => {
@@ -1306,31 +1328,50 @@ impl<'a> Battle<'a> {
         if let Some((_, _, age)) = self.step_ghost.as_mut() {
             *age += 1;
             let age = *age;
-            self.step_trail[age as usize % 4] = self.megaman.sprite_key();
+            let (mcol, mrow) = self.megaman.panel();
+            self.step_trail[age as usize % 4] =
+                (self.megaman.sprite_key(), field::panel_centre(mcol, mrow));
+            if age == STEP_GHOST2_FIRST {
+                self.step_dest = field::panel_centre(mcol, mrow);
+            }
+            self.step_trail_sword[age as usize % 4] =
+                self.effects.first().map(|(p, _, _, _)| p.frame_key());
             // Refreshed on the first frame of each blink pair and held for
             // the second: on frames 16 AND 17 the real copy carries the
             // navi's frame-13 sprite, not 13 and then 14.
             // It stops taking new frames once the navi has gone home: from
             // then on it holds the last pose the navi had on that panel.
-            if age >= STEP_GHOST2_FIRST
-                && (age - STEP_GHOST2_FIRST) % 4 == 0
-                && self.step_home.is_some()
-            {
-                // Three frames back is the next slot round the ring of four.
-                let delayed = self.step_trail[(age as usize + 1) % 4];
-                if self.step_ghost2_key != Some(delayed) {
+            if age >= STEP_GHOST2_FIRST && (age - STEP_GHOST2_FIRST) % 4 == 0 {
+                // Three frames back is the next slot round the ring of four,
+                // and only while the navi was still on the far panel then.
+                let (delayed, was_at) = self.step_trail[(age as usize + 1) % 4];
+                if self.step_ghost2_key != Some(delayed) && was_at == self.step_dest {
                     let mut ghost =
                         spr::Player::frozen_at(spr::Assets::new(MEGAMAN), delayed.0, delayed.1);
                     ghost.set_red_only(true);
-                    let (col, row) = self.megaman.panel();
-                    self.step_ghost2 = Some((ghost, field::panel_centre(col, row)));
+                    let at = self.step_dest;
+                    self.step_ghost2 = Some((ghost, at));
                     self.step_ghost2_key = Some(delayed);
+                    self.step_ghost2_sword = match (
+                        self.step_trail_sword[(age as usize + 1) % 4],
+                        self.step_sword_art,
+                    ) {
+                        (Some((anim, f)), Some((art, pal))) => {
+                            let mut g = spr::Player::frozen_at(spr::Assets::new(art), anim, f);
+                            g.set_palette_add(pal);
+                            g.set_red_only(true);
+                            Some((g, at))
+                        }
+                        _ => None,
+                    };
                 }
             }
             if age > STEP_STATE_LAST {
                 self.step_ghost = None;
                 self.step_ghost2 = None;
                 self.step_ghost2_key = None;
+                self.step_ghost2_sword = None;
+                self.step_sword_art = None;
             }
         }
         // An effect with N frames is drawn for N frames, this one included.
@@ -1761,13 +1802,20 @@ impl<'a> Battle<'a> {
             if (STEP_GHOST2_FIRST..=STEP_GHOST2_LAST).contains(age)
                 && (*age - STEP_GHOST2_FIRST) % 4 < 2
             {
-                for part in p.parts().iter().rev() {
-                    Object::new(part.sprite.clone())
-                        .set_priority(Priority::P2)
-                        .set_pos((x + part.x, y + part.y))
-                        .set_hflip(part.hflip)
-                        .set_vflip(part.vflip)
-                        .show(frame);
+                for (q, (qx, qy)) in self
+                    .step_ghost2_sword
+                    .iter()
+                    .map(|(q, at)| (q, *at))
+                    .chain(core::iter::once((p, (*x, *y))))
+                {
+                    for part in q.parts().iter().rev() {
+                        Object::new(part.sprite.clone())
+                            .set_priority(Priority::P2)
+                            .set_pos((qx + part.x, qy + part.y))
+                            .set_hflip(part.hflip)
+                            .set_vflip(part.vflip)
+                            .show(frame);
+                    }
                 }
             }
         }

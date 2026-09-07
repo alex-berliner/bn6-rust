@@ -426,12 +426,18 @@ What is actually true, measured per frame from the framebuffer:
   moves with it, rather than staying where it spawned: when StepSwrd sends the navi home the
   sword goes too. Implemented in the Recovering branch, and it takes frames 24-27 from 152/168
   to 68/0.
-- StepSwrd now scores 52 px/frame over 40 frames, from 340, with 30 of the 40 at exactly 0.
-- WHAT IS LEFT: the afterimage copies the SWORD as well as the navi. On frames 20-21 the far
-  panel's blade tip is drawn in the red bank ((24,0,0) and (231,0,0) where this draws the sword's
-  own teal and white), and the same 68 px sits on 24-25, 28 and 32-33. Doing it needs the sword's
-  sprite frame in the trail beside the navi's. Frame 29 (954 px, spanning both panels) is a
-  separate question. Frame 6 is the standing banner artifact.
+- THE AFTERIMAGE COPIES THE SWORD TOO, but only while the sword is still over there. On frames
+  20-21 the far panel's blade tip is drawn in the red bank ((24,0,0) and (231,0,0) where the live
+  sword is teal and white); adding a red copy of the sword to the afterimage takes those from 206
+  to 26 px. From frame 24, when the navi and its sword go home, the far panel's copy is the navi
+  alone -- keeping the sword in it costs 173 px a frame instead of 68.
+  The afterimage also keeps taking new frames after the return, but only from frames where the
+  navi was still on the far panel, so the trail carries each frame's POSITION beside its sprite
+  and is followed by position rather than cut off at the return.
+- StepSwrd now scores 43 px/frame over 40 frames, from 340, with 31 of the 40 at exactly 0.
+- WHAT IS LEFT: frame 6 is the standing banner artifact (369, unavoidable). Frames 24-25, 28 and
+  32-33 hold 68 px each and 20-21 hold 26. Frame 29 is 954 px spanning both panels and has not
+  been looked at.
 
 Capture modes, and what each costs:
 - A state with no enemy is impossible: the game refuses a chip press once the deletion sequence

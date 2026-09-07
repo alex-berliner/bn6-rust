@@ -369,11 +369,6 @@ impl Actor {
         !matches!(self.action, Action::Hidden | Action::Gone)
     }
 
-    /// A still copy of the actor's current sprite frame, for an afterimage.
-    pub fn frozen_sprite(&self) -> spr::Player {
-        self.player.frozen_copy()
-    }
-
     /// The actor's current animation and frame within it, for rebuilding that
     /// frame later as an afterimage.
     pub fn sprite_key(&self) -> (usize, usize) {

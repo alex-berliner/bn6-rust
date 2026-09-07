@@ -279,19 +279,6 @@ impl Player {
         p
     }
 
-    /// A still copy of this player as it looks right now: the same animation
-    /// stopped on the same frame, which never advances again. The game leaves
-    /// these behind as afterimages (StepSwrd drops one on the panel it steps
-    /// to, frozen at the pose the navi held when it was made).
-    pub fn frozen_copy(&self) -> Self {
-        let mut p = Self::new(self.assets, self.anim);
-        p.frame_in_anim = self.frame_in_anim;
-        p.palette_add = self.palette_add;
-        p.done = true;
-        p.load_frame();
-        p
-    }
-
     /// Draw every part with green and blue masked off, or normally again.
     pub fn set_red_only(&mut self, on: bool) {
         if on == self.red_on {
