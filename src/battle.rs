@@ -18,6 +18,7 @@ use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;
 
 use crate::actor::{self, Actor, Update};
+use crate::banner::{self, Banner};
 use crate::chips::{Chip, Chips};
 use crate::custom::{self, Custom, CustomAssets, Offer};
 use crate::deck::{Deck, Rng, FOLDER_SIZE};
@@ -703,21 +704,8 @@ const POPUP_CELL: i32 = 8;
 /// it is the attack's 18th frame -- and 19 counted from here, because the
 /// presentation is set on the frame before the attack's first.
 const POPUP_AT: u16 = 19;
-/// The vertical scale of the shared affine matrix, in the 8.8 OAM stores, one
-/// entry per frame of the popup's 58. BIGGER IS FLATTER: the matrix maps the
-/// screen back to the texture, so 0x100 is life size, 896 is a sixth of the
-/// height and 208 is a fifth taller than life. It unrolls from a flat line,
-/// overshoots into a stretch, settles, and rolls back up the same way. The
-/// horizontal scale never moves.
-const POPUP_SCALE: [u16; 58] = [
-    768, 640, 512, 384, 256, 208, 224, // opening
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
-    256, 256, 256,
-    224, 208, 256, 384, 512, 640, 768, 896, // closing
-];
+/// The popup's roll-out is the BANNER's, frame for frame: the same 58-entry
+/// vertical-scale sequence, read out of OAM for both. `banner::SCALE` holds it.
 /// OBJ palette bank 11 while the popup is up, read straight out of palette RAM
 /// at 0x5000360. It is the battle text font's own object bank, and it is the
 /// same sixteen colours for every one of the five chips.
@@ -765,14 +753,14 @@ impl NamePopup {
     /// Advance a frame; false once the popup has rolled up and gone.
     fn update(&mut self) -> bool {
         self.t += 1;
-        self.t < POPUP_AT + POPUP_SCALE.len() as u16
+        self.t < POPUP_AT + banner::SCALE.len() as u16
     }
 
     fn show(&self, frame: &mut GraphicsFrame) {
         let Some(&scale) = self
             .t
             .checked_sub(POPUP_AT)
-            .and_then(|i| POPUP_SCALE.get(i as usize))
+            .and_then(|i| banner::SCALE.get(i as usize))
         else {
             return;
         };
@@ -798,10 +786,19 @@ const GLYPH_BYTES: usize = 64;
 
 const GAUGE_FULL: u16 = 0x4000;
 const GAUGE_PAUSE: u16 = 60;
-// After the last combatant on a side is gone the game's win or loss
-// state waits before the window comes up; that wait was not read, and
-// 30 frames stand in. The clear time counts from when control opened.
-const RESULTS_DELAY: u16 = 30;
+// After the last combatant on a side is gone the game shows its BANNER and
+// then, 110 frames after the banner goes up, slides the RESULT window in.
+// The 110 is measured: on the real ROM, from the save state with the enemy's
+// HP forced to zero and Start pressed at frame 10, the ENEMY DELETED banner
+// runs frames 49..106 and the window starts sliding at 159.
+// NOT VERIFIED: how long after the enemy is gone the banner itself goes up.
+// This build puts it up the moment the fight is over, which is the same order
+// the real ROM does it in but not necessarily the same gap.
+const BANNER_AFTER_OVER: u16 = 0;
+/// The frame `demo-banner` puts its banner up on.
+const BANNER_DEMO_AT: u32 = 100;
+const BANNER_TO_RESULTS: u16 = 110;
+const RESULTS_DELAY: u16 = BANNER_AFTER_OVER + BANNER_TO_RESULTS;
 
 /// Everything that belongs to one battle, so a finished battle can be
 /// dropped and the next one built from scratch.
@@ -842,6 +839,13 @@ pub struct Battle<'a> {
     /// attack's 18th against the presentation's 77) and is outlived by it for
     /// Invisibl, so it runs on its own clock rather than the presentation's.
     popup: Option<NamePopup>,
+    /// The wide ribbon across the middle of the screen -- ENEMY DELETED when
+    /// the last enemy goes, MEGAMAN DELETED when the navi does.
+    banner: Option<Banner>,
+    banner_assets: banner::Assets,
+    /// Whether the fight's closing banner has been asked for, so it is asked
+    /// for once.
+    banner_done: bool,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1340,6 +1344,9 @@ impl<'a> Battle<'a> {
             step_dest: (0, 0),
             presentation: None,
             popup: None,
+            banner: None,
+            banner_assets: banner::Assets::new(crate::BANNER),
+            banner_done: false,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1589,6 +1596,17 @@ impl<'a> Battle<'a> {
             self.show_results(results::WIN, RESULTMATCH_TIME, 2, gfx);
         }
         if over && self.shown.is_none() && self.fade_out == 0 {
+            // The banner the fight ends on, put up once: the real ROM shows it
+            // and then brings the RESULT window in behind it.
+            if !self.banner_done && self.results_delay <= BANNER_TO_RESULTS {
+                self.banner_done = true;
+                let message = if self.megaman.is_defeated() {
+                    banner::MEGAMAN_DELETED
+                } else {
+                    banner::ENEMY_DELETED
+                };
+                self.banner = Some(Banner::new(self.banner_assets, message));
+            }
             if self.results_delay > 0 {
                 self.results_delay -= 1;
             } else {
@@ -1817,6 +1835,18 @@ impl<'a> Battle<'a> {
             if !popup.update() {
                 self.popup = None;
             }
+        }
+        if let Some(banner) = self.banner.as_mut() {
+            if !banner.update() {
+                self.banner = None;
+            }
+        }
+        // The banner fixture: put ENEMY DELETED up on a known frame of the
+        // sterile arena, so it can be compared with the real ROM's, which
+        // runs frames 49..106 of a capture that deletes the enemy and presses
+        // Start at 10.
+        if cfg!(feature = "demo-banner") && self.clock == BANNER_DEMO_AT {
+            self.banner = Some(Banner::new(self.banner_assets, banner::ENEMY_DELETED));
         }
         if let Some((chip, left)) = self.presentation {
             if left == 0 {
@@ -2765,6 +2795,9 @@ impl<'a> Battle<'a> {
         // it.
         if let Some(popup) = self.popup.as_ref() {
             popup.show(frame);
+        }
+        if let Some(banner) = self.banner.as_ref() {
+            banner.show(frame);
         }
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen

@@ -75,6 +75,9 @@ demo-resultmatch = ["demo"]
 # The real save state's layout: MegaMan at (2,2), a Mettaur at (5,2), for
 # comparing the whole screen with backgrounds on.
 demo-field = ["demo"]
+# The ENEMY DELETED banner on its own, put up on a known frame in the sterile
+# arena so it can be compared with the real ROM's.
+demo-banner = ["demo"]
 demo-minibomb = ["demo"]
 demo-cannon = ["demo"]
 demo-vulcan = ["demo"]

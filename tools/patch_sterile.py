@@ -9,14 +9,18 @@ check from concluding the fight, so a battle with the enemy deleted stays live.
 The results window is still reached through a separate flow (the enemy-death
 -> result animation), so a full arena also needs that path handled.
 
-usage: patch_sterile.py <in.gba> <out.gba>
+usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner]
+
+--keep-banner leaves the ENEMY DELETED banner in, for the one fixture that
+wants to compare the banner itself rather than get it out of the way.
 """
 import sys
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: patch_sterile.py <in.gba> <out.gba>")
+        print("usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner]")
         return 2
+    keep_banner = "--keep-banner" in sys.argv[3:]
     with open(sys.argv[1], 'rb') as f:
         d = bytearray(f.read())
     base = 0x08000000
@@ -37,7 +41,8 @@ def main():
     banner = 0x0801E838 - base
     if d[banner:banner + 2] != b'\xf0\xb5':
         print(f"warning: expected push at 0x{banner:08x}, got {d[banner:banner+2].hex()}")
-    d[banner:banner + 2] = b'\x70\x47'  # bx lr
+    if not keep_banner:
+        d[banner:banner + 2] = b'\x70\x47'  # bx lr
 
     # The chip-name popup that family-0x15 chips put up (AreaGrab, Invisibl,
     # Barrier, Barr100, Barr200) is NOT patched out any more: this build draws
@@ -51,7 +56,8 @@ def main():
     # for. chip_compare.py's --no-banner-zero with --hide-enemy does that.
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print(f"patched battle_isBattleOver and the ENEMY DELETED banner: {sys.argv[2]}")
+    print("patched battle_isBattleOver%s: %s"
+          % ("" if keep_banner else " and the ENEMY DELETED banner", sys.argv[2]))
 
 if __name__ == '__main__':
     main()

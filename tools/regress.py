@@ -197,6 +197,30 @@ def check_popup():
     return total, "; ".join(notes) or "%d chips, whole popup" % len(POPUP_CHIPS)
 
 
+def check_banner():
+    """The ENEMY DELETED banner: art, palette, position and roll-out.
+
+    The real side is the sterile arena's own save state with the enemy's HP
+    forced to zero and Start pressed at frame 10, which puts the banner up on
+    frames 49..106; `demo-banner` puts this build's up on its clock's 100th
+    frame, which is capture frame 132. The box stops at x=145 because the
+    deleted enemy's remnant dissolves to the right of it for a hundred frames.
+    """
+    build("demo-sterile,demo-banner", "/tmp/rg_ban.gba")
+    # The sterile ROM has the banner patched OUT, which is what every chip
+    # comparison needs and exactly what this one cannot have.
+    subprocess.run(["python3", os.path.join(ROOT, "tools", "patch_sterile.py"),
+                    REAL, "/tmp/bn6f_banner.gba", "--keep-banner"],
+                   check=True, stdout=subprocess.DEVNULL)
+    capture("/tmp/bn6f_banner.gba", "/tmp/rg_banr", 120, "--loadstate", PAUSED,
+            "--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0",
+            "--disable-bg", "--script", "Start@10")
+    capture("/tmp/rg_ban.gba", "/tmp/rg_banu", 220)
+    box = (40, 56, 145, 88)
+    return (sum(diff("/tmp/rg_banr", 49 + k, "/tmp/rg_banu", 132 + k, box) for k in range(58)),
+            "58 frames of the banner")
+
+
 def check_rollup():
     """The full battle, under several long input scripts, must not crash.
 
@@ -252,6 +276,7 @@ CHECKS = [
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 256),  # the chip-in-hand icon, one frame
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
+    ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames
     ("rollup", check_rollup, 0),        # the full battle must survive a long script
 ]
 

@@ -861,6 +861,47 @@ AND THEN FOUR MORE, of which only one was in the window's own map:
 backdrop outside the window, which the fixture does not reproduce. `demo-resultmatch` carries the
 capture's 60 HP too, as `demo-hudmatch` does.
 
+## 7aq. The banner is TEXT, and it is now drawn (2026-09-07)
+
+"ENEMY DELETED" is in the build, matched to the real ROM's pixels over all 58 frames of its
+roll-out, and so are the other forty-four messages the game keeps.
+
+IT IS NOT A PICTURE. The real ROM has a font of 8x16 cells and a record per message: the first
+word is `(y << 8) | x` and the words after it are one glyph pointer per cell, terminated by
+`byte_801FDC0` -- which is itself the BLANK glyph, so `sub_801E838` (asm00_2.s:31106) simply stops
+advancing its cursor and keeps writing blanks out to the twentieth cell. Twenty cells go up as
+five 32x16 objects. Two arrays of records, at `pt_801EF84` (20) and `pt_801EFD4` (27), and two of
+those 47 slots are not records at all -- the arrays abut and the boundary entry reads as one,
+which shows up as glyph pointers outside the ROM.
+
+`tools/banner_export.py` walks all of that into `assets/banner.bin`: 40 distinct glyphs, 45
+messages, 4506 bytes. Its `--sheet` renders every message, which is how the ids were identified --
+0 BATTLE START!, 1 ENEMY DELETED, 2 MEGAMAN DELETED, 3 TURN START!, 4 FINAL TURN!, 5 YOU WIN!,
+6 YOU LOSE, 7 DRAW!.
+
+THE PALETTE IS NOT THE TEXT FONT'S. `sub_801E838`'s last act is to stage the sixteen colours at
+`byte_86F2900`, which are the banner's own yellow-on-blue, and the asset carries them. Rendering
+the sheet in the chip-name popup's bank 11 gives a blue-on-black that looks plausible and is
+wrong -- worth remembering when a sheet "nearly" looks right.
+
+THE ROLL-OUT IS THE POPUP'S, exactly: the same 58-entry vertical-scale sequence, the same shared
+affine matrix, read out of OAM for both. `banner::SCALE` is the one copy and `battle.rs`'s popup
+uses it.
+
+VERIFIED: `regress.py`'s `banner` check builds `demo-sterile,demo-banner`, which puts ENEMY
+DELETED up on the clock's 100th frame, and compares 58 frames against a capture that forces the
+enemy's HP to zero and presses Start at 10, where the real banner runs frames 49..106. 0 px. The
+box stops at x=145 because the deleted enemy's remnant dissolves to the right of it for a hundred
+frames, and the real ROM for that fixture is built with `patch_sterile.py --keep-banner` -- the
+sterile ROM patches the banner OUT, which is what every chip comparison needs and precisely what
+this one cannot have.
+
+WHAT IS MEASURED AND WHAT IS PLACED. Measured: the art, the palette, the position, the 58-frame
+animation, and that the RESULT window starts sliding 110 frames after the banner goes up (banner
+49..106, window 159), which turns `RESULTS_DELAY` from an admitted 30-frame stand-in into a read
+number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
+puts it up the moment the fight is over.
+
 ## 7ap. The chip-name popup, DRAWN rather than patched away (2026-09-07)
 
 Five chips put their NAME up in the middle of the screen while they present, and this build now
