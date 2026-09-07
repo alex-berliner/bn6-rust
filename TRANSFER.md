@@ -1013,6 +1013,34 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7az. A researched fact that did not survive contact with a capture (2026-09-07)
+
+Panel damage was researched, implemented, measured, and REVERTED, and the sequence is worth
+keeping because it is the fourth time today a written claim lost to a measurement.
+
+THE CLAIM, from a careful read with citations: MegaMan's charge shot sets the panel it hits
+straight to BROKEN. The buster and charge shot share the type-0 straight-shot object
+(`sub_80C4F02`, asm31.s:27760); on a hit it switches on its own `Param1` and the default branch
+calls `object_setPanelType(hit_panel, Param1)` (asm31.s:27864-27874); the charge shot's `Param1`
+is `byte_80EBD34[Unk_03]` = {1,1,1,1,0xC,0xC,0xC,0} (asm31.s:109578-109611); and 1 is
+PANEL_BROKEN. Every step of that is a real citation.
+
+THE MEASUREMENT. From `/tmp/pausedwithcannon.state`, enemy kept alive, move the navi out of the
+shockwave's row first so the charge is not interrupted, hold B for 150 frames and release. The
+charged hit lands -- a starburst on the Mettaur, plainly a different impact from a tap's -- and
+THE PANEL DOES NOT CHANGE, for 140 frames afterwards, backgrounds on, 400-pixel threshold on that
+panel's box. Nothing.
+
+The weak link is almost certainly the one the research itself flagged and did not resolve:
+"I could not find anywhere that resets `Unk_03`". Its value was inferred from what writes it
+elsewhere, not read. Everything downstream of that inference is only as good as it.
+
+WHAT WAS DONE: the implementation was reverted rather than shipped. It compiled and it was
+designed sensibly, and it would have made this build break a panel where the real ROM does not --
+a fidelity regression dressed as a feature. The rule this keeps proving is worth stating plainly:
+A CHAIN OF CORRECT CITATIONS IS NOT A MEASUREMENT. Every link can be right and the conclusion
+still false, because the chain has to start from a value somebody actually read.
+
 ## 7ay. THE LOOP CLOSES (2026-09-07)
 
 A whole battle now runs end to end in the rollup build, which it could not do this morning: the

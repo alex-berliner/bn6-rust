@@ -131,8 +131,23 @@ freeze is one condition. Verify against a capture that presses Start mid-battle.
 broken. The research says what is reachable and what is not, and the answer is narrower
 and more useful than expected.
 
-REACHABLE, and the one to build: **MegaMan's CHARGE SHOT sets the panel it hits straight to
-BROKEN.** The buster and charge shot both spawn the shared type-0 straight-shot object
+MEASURED, AND IT DOES NOT HAPPEN (2026-09-07). The claim below is a static read and the
+capture refutes it. On the real ROM, from `/tmp/pausedwithcannon.state` with the enemy kept
+alive: move MegaMan out of the shockwave's row so the charge is not interrupted, hold B for
+150 frames, release. The charged hit lands visibly -- a starburst on the Mettaur -- and the
+panel under it DOES NOT CHANGE, through 140 frames afterwards, with backgrounds on and a
+400-pixel threshold on that panel's box. An implementation of the claim was written and
+reverted unbuilt-upon rather than shipped.
+
+So something in the chain below is wrong, and the most likely link is the one its own author
+flagged: `Unk_03`'s value was inferred, not read -- "I could not find anywhere that resets
+`Unk_03`". Before anyone tries again, PEEK IT: find `oAIAttackVars_Unk_03` for MegaMan's slot
+in the save state and read what is actually there, and read the `Param1` the spawned shot
+actually carries, rather than deriving both from the table. The rest of the entry is kept
+because the lifecycle and movement findings are probably still good.
+
+THE CLAIM AS ORIGINALLY RESEARCHED, now known not to reproduce: **MegaMan's CHARGE SHOT sets
+the panel it hits straight to BROKEN.** The buster and charge shot both spawn the shared type-0 straight-shot object
 (`sub_80C4F02`, asm31.s:27760); on a hit it switches on its own `Param1`, and the default
 branch calls `object_setPanelType(hit_panel, Param1)` outright (asm31.s:27864-27874), gated
 only on the panel being solid. The plain buster's `Param1` is 0x1d (asm31.s:12531), not one
