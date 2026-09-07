@@ -86,6 +86,24 @@ def differs(a, b, box=None):
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
 
 
+def differs_masked(a, b, box=None):
+    """The same diff, forgiving the capture's semi-transparency artifact.
+
+    An object the game draws semi-transparent comes out of the real capture
+    with green and blue zeroed and red untouched -- mGBA's renderer-level BG
+    disable mis-blends it, which is the capture and not the game (TRANSFER.md
+    7l). So a real pixel counts as matching when it is the Rust pixel or the
+    Rust pixel stripped to its red. Every other pixel is compared exactly.
+    This says whether such an object is drawn in the right place with the
+    right sprite; it says nothing about its colour, and it would forgive a
+    genuinely wrong green or blue, so read it beside the raw number."""
+    box = box or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
+    return sum(
+        1 for r, u in zip(a.crop(box).getdata(), b.crop(box).getdata())
+        if r != u and r != (u[0], 0, 0)
+    )
+
+
 LIBRARY = 0x020008A0
 LIBRARY_COPY = 0x02004C20
 
@@ -194,6 +212,8 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--semi-mask", action="store_true",
+                    help="also print the diff with the Rust side's green and blue dropped, for frames holding a semi-transparent object the capture mis-blends")
     ap.add_argument("--hide-enemy", action="store_true",
                     help="keep the enemy alive but blank its tiles, for a chip that needs a live target (StepSwrd)")
     ap.add_argument("--keep-enemy", action="store_true",
@@ -237,6 +257,7 @@ def main():
     print(f"real start {REAL_START} (first change {real_first}); rust start {rust_start}")
 
     total = 0
+    masked = 0
     worst = []
     for c in range(args.frames):
         r = frame(real, REAL_START + c)
@@ -244,8 +265,15 @@ def main():
         d = differs(r, u)
         total += d
         worst.append((d, c))
-        print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
+        if args.semi_mask:
+            masked += differs_masked(r, u)
+            print("c%02d %5d/%-5d" % (c, d, differs_masked(r, u)),
+                  end="\n" if c % 5 == 4 else "  ")
+        else:
+            print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
     print("\nmean %.1f px/frame; worst %s" % (total / args.frames, sorted(worst)[-5:]))
+    if args.semi_mask:
+        print("mean %.1f px/frame with green and blue dropped" % (masked / args.frames))
 
     # A strip of the frames that differ most, plus the first and last.
     picks = sorted({0, args.frames - 1} | {c for _, c in sorted(worst)[-7:]})

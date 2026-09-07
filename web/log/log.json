@@ -328,5 +328,11 @@
     "file": "log/shots/1788750472-stepswrd_afterimage.png",
     "caption": "StepSwrd re-measured: the navi's body colour is on the enemy's front column for the attack's first 24 frames, so the dash is immediate. The 705px residual is an afterimage of the navi's idle silhouette left on the home panel, blinking 2 frames on 2 off from frame 1 to 18, which nothing draws on the Rust side; the real row also shows a pink warp ring as the navi returns at frame 24. The afterimage's red-only look under --disable-bg is an mGBA blend artifact for semi-transparent objects, not the game. The game refuses chip use after the deletion sequence, so a no-enemy save state is impossible; --clean-state removed and replaced by --hide-enemy, which keeps the enemy immortal and blanks its object tiles.",
     "tag": "stepswrd"
+  },
+  {
+    "t": 1788750727,
+    "file": "log/shots/1788750727-stepswrd_ghost_done.png",
+    "caption": "StepSwrd's afterimage implemented and verified: the navi's idle silhouette on the panel it stepped off, two frames on and two off, from the attack's frame 1 through 18. Frames 0-11 now match the real ROM at zero pixels, step and all five blinks included. The remaining differences are from frame 12 (the slash, ~200px) and frame 24 (the return: a pink warp ring the Rust side does not draw, and the recovery pose).",
+    "tag": "stepswrd"
   }
 ]

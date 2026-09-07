@@ -414,6 +414,17 @@ a better default: the enemy gets hit, and its sparks, damage numbers and the nav
 all land in the window -- Cannon scores 0 with the enemy deleted and 346 px/frame with it
 hidden. Under it, StepSwrd's remaining differences are the afterimage and a pink warp ring
 around the navi as it returns at frame 24.
+The afterimage is now implemented (`step_ghost`) and VERIFIED: with `--hide-enemy --semi-mask`,
+StepSwrd's frames 0 through 11 are 0 px, the step and all five blinks included. `--semi-mask`
+forgives the artifact per pixel -- a real pixel matches if it is the Rust pixel or the Rust pixel
+stripped to its red -- and everything else is still compared exactly. The proof that the artifact
+is only colour: the 61 pixels the afterimage appeared to be "missing" are all the single palette
+entry (0,132,222), whose red is 0, so the mis-blend renders them black. The afterimage is the
+navi's whole idle silhouette, in the right place, on the right frames.
+What is still open is the second half: frames 12-23 differ by about 200 px around the slash, and
+from frame 24, where the navi returns, by 700-1400 -- the real ROM draws a pink warp ring around
+it that nothing here draws, and the recovery pose differs (a flat 667 px from frame 30 on).
+
 Clearing the entity's visible flag does NOT work as a poke: the object header's Flags byte is at
 struct offset 0 with OBJECT_FLAG_VISIBLE = 0x02 (ObjectHeader.inc:6-9), the Mettaur's struct
 base is 0x0203AB60 (HP at +0x24 = the known 0x0203AB84; T1 battle objects, stride 0xD8, array

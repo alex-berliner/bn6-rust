@@ -291,6 +291,12 @@ const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
 /// losing 0x2800 (0.156 px) a frame (byte_80C5D58, asm31.s:29609), for a
 /// fixed 0x28 frames (asm31.s:29531), which is about three panels.
 const BOMB_FLIGHT: u8 = 40;
+
+/// The afterimage's age when it is drawn for the last time. It is spawned
+/// during the frame that uses the chip and aged in that same frame, so an age
+/// of 1 is the attack's frame 0. Measured against the real ROM: drawn on the
+/// attack's frames 1-2, 5-6, 9-10, 13-14 and 17-18, and gone from 19 on.
+const STEP_GHOST_LAST: u8 = 19;
 const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
 const BOMB_SPAWN_UP: i32 = 0x30 << 16;
 const BOMB_VX: i32 = 0x2e666;
@@ -414,6 +420,16 @@ pub struct Battle<'a> {
     bubble: Option<spr::Player>,
     /// Where StepSwrd's dash started, so the navi can be put back.
     step_home: Option<(i32, i32)>,
+    /// The afterimage StepSwrd leaves on the panel it stepped off: the navi's
+    /// idle silhouette, its screen position, and its age in frames. Measured
+    /// against the real ROM with the enemy hidden rather than deleted -- it is
+    /// drawn two frames on and two off, from the attack's frame 1 through its
+    /// frame 18, and the navi's own colours are on the enemy's column
+    /// throughout. The real object is semi-transparent, which this is not:
+    /// under `--disable-bg` mGBA mis-blends it to red-only, so the capture
+    /// cannot show what it should look like over a black field (TRANSFER.md
+    /// 7l).
+    step_ghost: Option<(spr::Player, (i32, i32), u8)>,
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -748,6 +764,7 @@ impl<'a> Battle<'a> {
             chip_in_use: None,
             sword_in: None,
             step_home: None,
+            step_ghost: None,
             presentation: None,
             bubble: None,
             vulcan_gun: None,
@@ -1253,6 +1270,14 @@ impl<'a> Battle<'a> {
         ) {
             counter.update(hp);
         }
+        // The afterimage is spawned on the attack's frame 0 and ages from
+        // there; it is gone after frame 18.
+        if let Some((_, _, age)) = self.step_ghost.as_mut() {
+            *age += 1;
+            if *age > STEP_GHOST_LAST {
+                self.step_ghost = None;
+            }
+        }
         // An effect with N frames is drawn for N frames, this one included.
         self.effects.retain_mut(|(p, _, ticks, _)| {
             p.update();
@@ -1365,6 +1390,11 @@ impl<'a> Battle<'a> {
                     } else {
                         self.step_home = Some((col, row));
                         self.megaman.warp_to(step_to, row);
+                        self.step_ghost = Some((
+                            spr::Player::new(spr::Assets::new(MEGAMAN), actor::anim::IDLE),
+                            field::panel_centre(col, row),
+                            0,
+                        ));
                     }
                 }
                 self.chip_in_use = Some(chip);
@@ -1661,6 +1691,19 @@ impl<'a> Battle<'a> {
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
                     .show(frame);
+            }
+        }
+        // Two frames shown, two hidden, starting on the attack's frame 1.
+        if let Some((p, (x, y), age)) = self.step_ghost.as_ref() {
+            if *age >= 2 && (*age - 2) % 4 < 2 {
+                for part in p.parts().iter().rev() {
+                    Object::new(part.sprite.clone())
+                        .set_priority(Priority::P2)
+                        .set_pos((x + part.x, y + part.y))
+                        .set_hflip(part.hflip)
+                        .set_vflip(part.vflip)
+                        .show(frame);
+                }
             }
         }
         for (p, (x, y), _, _) in self.effects.iter().rev() {
