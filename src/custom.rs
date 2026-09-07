@@ -218,6 +218,11 @@ pub struct CustomAssets {
     /// The regular-chip mark above the pick stack: a gold ring with a red
     /// disc, four tiles of a 16x16 object.
     regular_mark: &'static [u8],
+    /// The "CHIP DATA TRANSMISSION / Sending chip data..." card and its
+    /// palette, shown in the picture region whenever the cursor is not on a
+    /// chip the window can preview.
+    message: TileSet,
+    message_palette: Palette16,
     empty_icon: TileSet,
     /// The two tiles that frame the pick stack, alternating down the column
     /// either side of it. The stored map has neither -- the game patches those
@@ -238,6 +243,11 @@ enum Phase {
 #[derive(Clone, Copy)]
 pub struct Offer {
     pub chip: Chip,
+    /// The CODE of this copy, from the folder entry's high bits. A folder
+    /// holds copies of the same chip under different codes, and the window
+    /// shows the copy's, not the chip's first -- this build used
+    /// `chip.codes[0]` and so lettered every copy the same.
+    pub code: u8,
     pub deck_index: usize,
 }
 
@@ -299,12 +309,17 @@ impl CustomAssets {
             cursor_tiles: &data[c..c + 64],
             cursor_palette: read_palette(&data[c + 64..c + 96]),
             cursor_obj_palette: read_palette(&data[c + 96..c + 128]),
-            regular_mark: &data[a + 0x80 + 28 * 0x40 + 0x140..a + 0x80 + 28 * 0x40 + 0x1c0],
+            regular_mark: &data[a + 0x80 + 28 * 0x40 + 0x180..a + 0x80 + 28 * 0x40 + 0x200],
+            message: tileset(&data[a + 0x80 + 28 * 0x40 + 0x200..a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32]),
+            message_palette: read_palette(
+                &data[a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32
+                    ..a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32 + 32],
+            ),
             empty_icon: tileset(&data[a..a + 0x80]),
             code_glyphs: tileset(&data[a + 0x80..a + 0x80 + 28 * 0x40]),
             ok_box: tileset(&data[a + 0x80 + 28 * 0x40..a + 0x80 + 28 * 0x40 + 0x100]),
             stack_frame: tileset(
-                &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x140],
+                &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x180],
             ),
         }
     }
@@ -362,6 +377,12 @@ impl CustomAssets {
         gfx.set_background_palette(DIM_BANK, &self.palette(DIM_ICON_VARIANT));
         for (i, slot) in custom.slots.iter().enumerate() {
             let _ = (i, slot);
+        }
+        // The window fixture reproduces the capture's state: its Cannon A is
+        // already picked and the cursor sits on OK.
+        if cfg!(feature = "demo-custmatch") {
+            custom.picks.push(4);
+            custom.cursor_at = OK;
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);
@@ -519,11 +540,21 @@ impl Custom<'_> {
                 let icon = offer.chip.icon();
                 let bank = if self.allowed(slot) { ICON_BANK } else { DIM_BANK };
                 self.fill(region_slot_icon(slot), &icon, Some(bank));
-                let code = offer.chip.codes[0] as usize;
+                let code = offer.code as usize;
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (code * 2) as u16, r.bank);
             }
-            _ => {
+            // A PICKED slot keeps its code letter and loses only its icon.
+            // Read off the real ROM: its fifth slot shows the empty-cell art
+            // with an A still under it, and the chip that A belongs to -- a
+            // Cannon, identified from the pick stack's icon -- is the one in
+            // the stack.
+            Some(offer) => {
+                self.fill(region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
+                let r = assets.regions[region_slot_code(slot)];
+                self.fill_from(r, &assets.code_glyphs, (offer.code as u16) * 2, r.bank);
+            }
+            None => {
                 self.fill(region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
@@ -573,7 +604,12 @@ impl Custom<'_> {
                 self.bg.set_tile(
                     (col as i32, (stack.y + row) as i32),
                     tiles,
-                    TileSetting::new((row % 2) as u16, TileEffect::new(hflip, false, BANK)),
+                    // The top two rows have their own pair; the rest
+                    // alternate the first two down the column.
+                    TileSetting::new(
+                        if row < 2 { 2 + row as u16 } else { (row % 2) as u16 },
+                        TileEffect::new(hflip, false, BANK),
+                    ),
                 );
             }
         }
@@ -608,6 +644,15 @@ impl Custom<'_> {
     /// the empty slot types, asm03_0.s:4316).
     fn draw_card(&mut self, gfx: &Graphics) {
         let Some(offer) = self.highlighted() else {
+            // No chip to preview -- the cursor is on OK, or over a slot
+            // already picked -- so the real ROM puts its "sending chip data"
+            // card here instead, in the picture region's own bank.
+            if self.pictured.is_some() || self.frames == 0 {
+                self.pictured = None;
+                gfx.set_background_palette(PICTURE_BANK, &self.assets.message_palette);
+                let r = self.assets.regions[REGION_PICTURE];
+                self.fill_from(r, &self.assets.message, 0, PICTURE_BANK);
+            }
             return;
         };
         if self.pictured.is_some_and(|(id, _)| id == offer.chip.id) {
@@ -648,18 +693,18 @@ impl Custom<'_> {
         if self.picks.is_empty() {
             return true;
         }
-        let picked: Vec<Chip> = self
+        let picked: Vec<Offer> = self
             .picks
             .iter()
-            .filter_map(|&s| self.slots[s].map(|o| o.chip))
+            .filter_map(|&s| self.slots[s])
             .collect();
-        let name = picked[0].name();
-        if picked.iter().all(|c| c.name() == name) && offer.chip.name() == name {
+        let name = picked[0].chip.name();
+        if picked.iter().all(|o| o.chip.name() == name) && offer.chip.name() == name {
             return true;
         }
         let mut merged = None;
-        for c in &picked {
-            let code = c.codes[0];
+        for o in &picked {
+            let code = o.code;
             if code == WILDCARD {
                 continue;
             }
@@ -669,7 +714,7 @@ impl Custom<'_> {
                 Some(_) => return false,
             }
         }
-        let code = offer.chip.codes[0];
+        let code = offer.code;
         code == WILDCARD || merged.is_none_or(|m| m == code)
     }
 

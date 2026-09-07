@@ -580,5 +580,11 @@
     "file": "log/shots/1788777748-tile_parity.png",
     "caption": "Whole-screen tile parity, restored with the animation in: real ROM left, this build middle, difference right -- 0 px of 38400, every background layer, sprites off. Getting here needed a longer capture than before. The backdrop's art loop is 56 frames and its scroll repeats every 128, so the two only line up every 896; add the CUSTOM gauge's own 112-frame flow and a matching frame is rare. The earlier measurement searched a hundred frames and found nothing, which read as a regression and was not one. Two other things had to be fixed to measure it at all: the RGB555-to-8-bit expansion in the analysis script was v*255/31 where the emulator uses v<<3|v>>2, which put a one-off on most pixels and made every exact match fail; and the HUD fixture held a full gauge, which opened the chip window that the demo -- pressing nothing -- could never close, so a long capture had no battle screen in it.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788778213,
+    "file": "log/shots/1788778213-cm_full.png",
+    "caption": "The chip select window is at per-pixel parity: real ROM left, this build middle, difference right -- 0 px, sprites and all. The way in was identifying the capture's own chips: each slot's four icon tiles were pulled out of VRAM and matched against every one of the 411 chips' icons in byte_8725894, which named them Vulcan1 D, AirShot *, Sword S, MiniBomb B and Cannon A -- and the pick stack's icon is that Cannon, so the fifth slot is not empty, it is picked. demo-custmatch offers exactly those five with the Cannon picked and the cursor on OK. Four defects fell out. A picked slot keeps its CODE and loses only its icon. A slot's code comes from the FOLDER ENTRY, not the chip's first code, so a folder's copies letter differently. The card shows a 'sending chip data' message whenever the cursor is not on a previewable chip, and that message is a static 7x6 image at dword_87225B4. And the pick stack's frame is four tiles, not two: its top two rows have their own pair.",
+    "tag": "chip"
   }
 ]

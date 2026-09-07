@@ -55,6 +55,14 @@ impl Deck {
         (entry >> 9) as u8
     }
 
+    /// A deck holding exactly these entries in this order, for a fixture that
+    /// has to offer the same chips a capture does. Not a shuffle.
+    pub fn stacked<const N: usize>(entries: [u16; N]) -> Self {
+        let mut chips = [EMPTY; FOLDER_SIZE];
+        chips[..N].copy_from_slice(&entries);
+        Self { chips }
+    }
+
     /// A folder shuffled as the battle intro does: ShuffleHwordList_SecondaryRNG
     /// (asm00_0.s:1343) swaps two random positions once per entry.
     pub fn new(folder: [u16; FOLDER_SIZE], rng: &mut Rng) -> Self {

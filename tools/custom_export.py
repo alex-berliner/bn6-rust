@@ -132,6 +132,27 @@ def main():
     # stack, a 16x16 object the real ROM draws inside a 32x32 OAM entry at
     # (87,-4), so the ring itself lands at (95,4). Its four tiles are the four
     # non-blank ones of that entry and they are contiguous here.
+    # The "CHIP DATA TRANSMISSION / Sending chip data..." card, which the real
+    # ROM shows in the picture region whenever the cursor is not on a chip it
+    # can preview -- on OK, or over a slot already picked. It is a static image
+    # at dword_87225B4, exactly the 7x6 tiles of that region, text and all; the
+    # blob continues with the window's other messages, the next being
+    # "...DO DATA SHUFFLE!". Its palette is dword_87257F4, which matches BG
+    # bank 10 of a live menu word for word.
+    message = read_symbol(
+        os.path.join(BN6, "data", "dat38_86.s"),
+        "dword_87225B4",
+        max_bytes=42 * 32,
+        through_labels=True,
+    )
+    message_pal = read_symbol(
+        os.path.join(BN6, "data", "dat38_86.s"),
+        "dword_87257F4",
+        max_bytes=32,
+        through_labels=True,
+    )[:32]
+    assert len(message) == 42 * 32 and len(message_pal) == 32
+
     regular_mark = read_symbol(
         os.path.join(BN6, "data", "dat38_86.s"),
         "byte_86F5834",
@@ -143,14 +164,16 @@ def main():
     empty = read_symbol(DAT, "byte_86E601C", max_bytes=0x80, through_labels=True)
     codes = read_symbol(DAT, "dword_86E591C", max_bytes=28 * 0x40, through_labels=True)
     ok = read_symbol(DAT, "byte_86E79CC", max_bytes=0x400, through_labels=True)[0x300:0x400]
-    # The two tiles that frame the pick stack, alternating down the columns
-    # either side of it. The window's stored map does not carry them -- the
+    # The FOUR tiles that frame the pick stack. The real ROM's map uses the
+    # third and fourth for its top two rows and then alternates the first two
+    # down the rest, both columns, the right one mirrored -- taking only two
+    # left the frame's top a few pixels wrong. The window's stored map does not carry them -- the
     # game patches those cells in when it opens -- and they are not in the
     # window's own tile block; byte_86E2E18 is a separate block the game
     # uploads at VRAM tile 0x89, and it begins with exactly these two.
-    stack_frame = read_symbol(DAT, "byte_86E2E18", max_bytes=64, through_labels=True)
+    stack_frame = read_symbol(DAT, "byte_86E2E18", max_bytes=128, through_labels=True)
     assert len(empty) == 0x80 and len(codes) == 28 * 0x40 and len(ok) == 0x100
-    assert len(stack_frame) == 64
+    assert len(stack_frame) == 128
 
     out = bytearray(struct.pack("<4sIIIIIII", b"BNCW", 2, 0, 0, 0, 0, 0, 0))
     off_tiles = len(out)
@@ -177,7 +200,7 @@ def main():
     off_cursor = len(out)
     out += cursor + cursor_pal + cursor_obj_pal
     off_slot_art = len(out)
-    out += empty + codes + ok + stack_frame + regular_mark
+    out += empty + codes + ok + stack_frame + regular_mark + message + message_pal
     struct.pack_into(
         "<4sIIIIIII",
         out,

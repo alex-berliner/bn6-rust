@@ -851,7 +851,22 @@ impl<'a> Battle<'a> {
             let chip = chips.get(i % chips.len());
             *entry = Deck::entry(chip.id, chip.codes[0]);
         }
-        let deck = Deck::new(folder, rng);
+        let mut deck = Deck::new(folder, rng);
+        // The chip-window fixture offers exactly what the capture's window
+        // does, read off the real ROM by matching each slot's four icon tiles
+        // against every chip's icon in byte_8725894: Vulcan1 D, AirShot *,
+        // Sword S, MiniBomb B and Cannon A, with the Cannon already picked
+        // (its icon is the one in the pick stack).
+        if cfg!(feature = "demo-custmatch") {
+            deck = Deck::stacked([
+                Deck::entry(CHIP_VULCAN, 3),
+                Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
+                Deck::entry(CHIP_SWORD, 18),
+                Deck::entry(CHIP_MINIBOMB, 1),
+                Deck::entry(CHIP_CANNON, 0),
+            ]);
+        }
+        let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
         // The sterile arena draws a plain background so the real ROM's field can
         // be stripped via the harness's --disable-bg (BG layers) and the two
@@ -949,7 +964,11 @@ impl<'a> Battle<'a> {
         let shots: Vec<Shot> = Vec::new();
         // A debug build starts with the gauge full, so the first chip select
         // comes up right after the intro instead of after the counter runs.
-        let gauge = if cfg!(any(debug_assertions, feature = "demo-hudmatch")) {
+        let gauge = if cfg!(any(
+            debug_assertions,
+            feature = "demo-hudmatch",
+            feature = "demo-custmatch"
+        )) {
             GAUGE_FULL
         } else {
             0
@@ -1140,7 +1159,11 @@ impl<'a> Battle<'a> {
                     .filter_map(|(deck_index, &entry)| {
                         self.chips
                             .by_id(Deck::id(entry))
-                            .map(|chip| Offer { chip, deck_index })
+                            .map(|chip| Offer {
+                                chip,
+                                code: Deck::code(entry),
+                                deck_index,
+                            })
                     })
                     .collect();
                 self.custom = Some(self.custom_assets.open(&offered, gfx));
