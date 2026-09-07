@@ -308,18 +308,14 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
     }
 }
 
-/// BlkBomb does not throw an arc: off_80EB6F8[6] is sub_80CD886
-/// (asm31.s:45704), which spawns a type-3 family 0x4a object three panels
-/// ahead straight onto the panel; it plants itself there, reserves the
-/// panel and ticks a 0x3c-frame fuse with sound 0xc1 (sub_80CDA1C,
-/// sub_80CDAD8) before going off. That behaviour is reproduced, but its
-/// ART is not: the real ROM draws a dark brown bomb whose colours are in
-/// none of the bomb sprite's palettes, and the sprite the object's
-/// `sprite_load(0x80, 0xc, 0x23)` seemed to name (sprite_831EA40) turns
-/// out to be a numbered canister, so the right sprite is still unknown.
-/// The held bomb's grey palette stands in for it meanwhile.
-const BLKBOMB_AHEAD: i32 = 3;
-const BLKBOMB_FUSE: u16 = 0x3c;
+// BlkBomb (family 0x12 subfamily 6) throws through off_80EB6F8[6] =
+// sub_80CD886 (asm31.s:45704) rather than MiniBomb's sub_80C5DBC, and that
+// object's sprite resolves to sprite_831EA40 animation 0 by
+// byte_80CD8AC[Param1 * 8] (asm31.s:46200). But that sprite is a numbered
+// canister, while the real ROM throws a dark brown ball on the same arc as
+// MiniBomb with the same ground shadow, so the reading is wrong somewhere.
+// Until it is resolved BlkBomb arcs like MiniBomb; only its colours differ
+// from the real ROM (its brown is in none of the bomb sprite's palettes).
 
 /// The held bomb rides the navi's origin with no offset (byte_80B8BD4 row
 /// 4: effect list 0xC index 2 = sprite_82F569C, animation 0) until the
@@ -419,8 +415,6 @@ pub struct Battle<'a> {
     /// that creates it.
     sword_in: Option<u8>,
     bombs: Vec<Bomb>,
-    /// BlkBomb's planted bombs: the panel, the sprite and the fuse.
-    planted: Vec<(spr::Player, (i32, i32), u16, u16)>,
     panels: Panels,
     bg: RegularBackground,
     megaman: Actor,
@@ -749,7 +743,6 @@ impl<'a> Battle<'a> {
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
-            planted: Vec::new(),
             panels,
             bg,
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
@@ -1251,28 +1244,6 @@ impl<'a> Battle<'a> {
             *ticks = ticks.saturating_sub(1);
             alive
         });
-        let mut fused = Vec::new();
-        self.planted.retain_mut(|(player, panel, fuse, damage)| {
-            player.update();
-            *fuse = fuse.saturating_sub(1);
-            if *fuse == 0 {
-                fused.push((*panel, *damage));
-                false
-            } else {
-                true
-            }
-        });
-        for ((col, row), damage) in fused {
-            for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
-                if enemy.panel() == (col, row) {
-                    enemy.take_damage(damage);
-                }
-            }
-            let mut blast = spr::Player::new(spr::Assets::new(BOMB_BLAST), 0);
-            blast.update();
-            self.effects
-                .push((blast, field::panel_centre(col, row), BLAST_FRAMES - 1, false));
-        }
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
         // the blast, setCollisionRegion(1), then sprite 0x26's animation 0).
         let mut landed = Vec::new();
@@ -1519,18 +1490,7 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_BLKBOMB => {
-                let target = ((col + BLKBOMB_AHEAD * dx).clamp(1, field::COLS), row);
-                let mut planted = spr::Player::new(spr::Assets::new(MINIBOMB), 0);
-                planted.set_palette_add(4);
-                self.planted.push((
-                    planted,
-                    target,
-                    BLKBOMB_FUSE,
-                    chip.power,
-                ));
-            }
-            CHIP_MINIBOMB | CHIP_BIGBOMB => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 let mut thrown = spr::Player::new(spr::Assets::new(MINIBOMB), 1);
@@ -1714,17 +1674,6 @@ impl<'a> Battle<'a> {
         }
         for imp in &self.impacts {
             imp.show(frame);
-        }
-        for (player, panel, _, _) in &self.planted {
-            let (x, y) = field::panel_centre(panel.0, panel.1);
-            for part in player.parts().iter().rev() {
-                Object::new(part.sprite.clone())
-                    .set_priority(Priority::P2)
-                    .set_pos((x + part.x, y + part.y))
-                    .set_hflip(part.hflip)
-                    .set_vflip(part.vflip)
-                    .show(frame);
-            }
         }
         for b in &self.bombs {
             let (x, y) = b.position();

@@ -308,16 +308,18 @@ FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 su
   87: the 3x3 blast lines up -- same bounding box and same pixel count on both sides -- and
   what is left is a small colour/edge residual in its last frames (135-230 px, at the window's
   right edge). Reversing the nine-panel spawn order does not change it. Open.
-- BlkBomb is a different object: off_80EB6F8[6] = sub_80CD886 (asm31.s:45704), not
-  sub_80C5DBC. It spawns a type-3 family 0x4a object three panels ahead with NO arc: it
-  materialises on the panel, plants itself, reserves it and ticks a 60-frame fuse
-  (sub_80CDA1C, sub_80CDAD8) with sound 0xc1. That behaviour is implemented. Its ART is NOT:
-  the object's `sprite_load(0x80, 0xc, 0x23)` appeared to name sprite_831EA40, but rendering
-  that sprite's animations shows a numbered canister (a count bomb), not the dark brown bomb
-  the real ROM draws, and the brown is in none of sprite_82F569C's twelve palettes either. So
-  the sprite is still unknown and the held bomb's grey palette stands in; BlkBomb sits at
-  ~265 px/frame. Open: resolve effect list 0xC index 0x23 properly (check whether
-  sprite_load's r2 is an index into a different list for type-3 objects).
+- BlkBomb, after two wrong turns, is left arcing like MiniBomb (~256 px/frame). The trail:
+  off_80EB6F8[6] = sub_80CD886 (asm31.s:45704), whose object takes sprite_831EA40 animation 0
+  from byte_80CD8AC[Param1 * 8] (asm31.s:46200) and, on the reading of sub_80CDA1C /
+  sub_80CDAD8, plants itself on a panel three ahead and ticks a 60-frame fuse. Implementing
+  exactly that was WRONG on both counts: sprite_831EA40 renders as a numbered canister (a
+  count bomb) and the real ROM plainly throws a dark brown ball along MiniBomb's arc, ground
+  shadow and all -- so it does arc, and the sprite reading is off somewhere.
+  sprite_load's arguments were checked and are as assumed (sprite.s:75-78: r1 list, r2 index),
+  so the error is elsewhere -- possibly that subfamily 6 does not reach sub_80CD886 at all for
+  the player. With the arc restored several frames diff to zero (c40 among them); what is left
+  is the bomb's colour (its brown is in none of sprite_82F569C's twelve palettes) and the
+  pose's last frames.
 
 **The custom gauge (research, second pass, confirms the first):** the counter lives at
 word_20352A0 (eStruct2035280+0x20), is cleared by ClearCustGauge (asm00_2.s:29826) and raised
