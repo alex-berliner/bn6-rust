@@ -27,12 +27,15 @@ use crate::hud::{Counter, Hud};
 use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
-    BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
+    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX,
-    PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
+    SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
+/// The three navis only a demo build fields: a battle puts up one Mettaur.
+#[cfg(feature = "demo")]
+use crate::{COLONEL, GUNNER, PROTOMAN};
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
 
@@ -41,7 +44,9 @@ use agb::display::Graphics;
 // element, which the spawner writes to HP and MaxHP (sub_80076A0,
 // asm00_1.s:9155). First version: ProtoMan byte_80FB8BC 0x708
 // (asm31.s:141547), Colonel byte_8101244 0x4b0 (asm31.s:152949).
+#[cfg(feature = "demo")]
 const PROTOMAN_HP: u16 = 1800;
+#[cfg(feature = "demo")]
 const COLONEL_HP: u16 = 1200;
 // The Mettaur's first-version record: HP 0x28, and its shockwave deals
 // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
@@ -1244,7 +1249,12 @@ impl<'a> Battle<'a> {
             alloc::vec::Vec::new()
         } else if let Some((assets, col, row, _style, hp)) = demo_enemy {
             alloc::vec![Actor::new(assets, col, row, true, enemy(hp))]
-        } else if cfg!(debug_assertions) {
+        } else {
+            // ONE METTAUR, in every build. The four-strong line-up that used
+            // to stand here in release builds -- ProtoMan, Colonel, a Mettaur
+            // and a Gunner -- kills the navi in about fifteen seconds, which
+            // is before the custom gauge has filled even once, so nobody
+            // playing the rollup ever reached the chip window.
             alloc::vec![Actor::new(
                 spr::Assets::new(METTAUR),
                 5,
@@ -1252,13 +1262,6 @@ impl<'a> Battle<'a> {
                 true,
                 enemy(METTAUR_HP)
             )]
-        } else {
-            alloc::vec![
-                Actor::new(spr::Assets::new(PROTOMAN), 5, 1, true, enemy(PROTOMAN_HP)),
-                Actor::new(spr::Assets::new(COLONEL), 6, 3, true, enemy(COLONEL_HP)),
-                Actor::new(spr::Assets::new(METTAUR), 5, 3, true, enemy(METTAUR_HP)),
-                Actor::new(spr::Assets::new(GUNNER), 6, 2, true, enemy(gunner::HP)),
-            ]
         };
         let gunner_ctl = gunner::Gunner::new();
         let impacts: Vec<gunner::Impact> = Vec::new();
@@ -1270,15 +1273,8 @@ impl<'a> Battle<'a> {
             alloc::vec::Vec::new()
         } else if let Some((_, _, _, style, _)) = demo_enemy {
             alloc::vec![ai::Ai::new(style)]
-        } else if cfg!(debug_assertions) {
-            alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
         } else {
-            alloc::vec![
-                ai::Ai::new(ai::Style::Thrust),
-                ai::Ai::new(ai::Style::Divide),
-                ai::Ai::new(ai::Style::Mettaur),
-                ai::Ai::new(ai::Style::Gunner),
-            ]
+            alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
         };
         let intro_fade = SCREEN_FADE_FRAMES;
         let intro_next = 0usize;

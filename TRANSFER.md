@@ -501,8 +501,25 @@ pre-tick the bombs' effects already do, and `Shot::shockwave` now does it too. T
 four differing frames go to zero; the cycle goes from 16 differing frames and 5117 px to 10 and
 2430.
 
-WHAT IS LEFT: four frames at the end of the cycle, where the real Mettaur holds its pickaxe up a
-frame or two longer than this build.
+WHAT IS LEFT: four frames at the end of the cycle, 698 px each, where the real Mettaur holds its
+pickaxe up a frame or two longer than this build.
+
+AND A NEGATIVE RESULT WORTH KEEPING (2026-09-07). The obvious fix is wrong. `object_exitAttackState`
+writes CurAnim=0 on the tick Unk_10 is decremented TO zero (asm31.s:170737), so only 63 of the
+counter's 64 ticks show the pose -- and animation 1's own sub-frame durations in
+`assets/mettaur.bin` sum to exactly 63, which looks like confirmation. Setting `SWING.frames` to
+0x3f changes NOTHING: animation 1's last sub-frame (index 15) has OAM data identical to the idle
+pose, so shortening the window by a tick swaps one image for a pixel-identical one. Measured on a
+wider window it is actively WORSE -- 0 differing frames of 70 becomes 21 and 16961 px -- so it is
+not a harmless no-op either.
+
+What the tail actually looks like, from run-length analysis of which captured frames are identical
+to their neighbour, done independently on each side: the first fifteen segments of the swing's tail
+match EXACTLY (2,1,1,3,8,4,9,3,2,2,2,2,4,10,6). Only the last five ticks before idle diverge --
+the real ROM holds three distinct poses there (2,2,1 ticks) and this build four (1,1,2,1). That is
+animation 1's last two authored sub-frames plus the attacking-to-idle handoff tick. A tick-by-tick
+simulation of `Actor`/`Player` predicts (1,2,2), which is neither, so something in the handoff is
+not modelled by either reading. Unresolved.
 
 ## 7ai. The shockwave lights the panel it stands on (2026-09-07)
 
