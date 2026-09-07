@@ -91,6 +91,53 @@ const BUSTER_DAMAGE: u16 = 2;
 /// animation runs (durations 2,1,1,2,1).
 const BUSTER_FX_UP: i32 = 26;
 const BUSTER_FX_FRAMES: u8 = 7;
+// SOUND_BUSTER_6A (id 0x6A, reference/bn6f/constants/enums/SoundOffsets.inc:50), played the
+// instant the fire phase starts by sub_80BCF7A (asm31.s:10516-10528). It is a PSG channel-1
+// (square/sweep) blip, not a DirectSound sample: its song header (dat37.s:41516-41519,
+// dword_81B82FC) is one track (dat37.s:41513-41515, byte_81B82EC) selecting voicegroup entry 0
+// (dat37.s:2755-2756, byte_8156D6C -- type 0x9 = square1, duty 0 = 12.5%, sweep byte 0x1F =
+// time 1/decreasing/shift 7, envelope attack 0/decay 1(fastest)/sustain 0/release 0) at key 0x7F
+// with the instrument's own base key 0x3C, tempo 0x4B=75 (the docs' own example of "75 = 1
+// frame/tick"), for a 7-tick/7-frame gate. The instrument's "hardware time length control" byte
+// is 0, i.e. disabled, so nothing hardware-gates the note: only the envelope's own decay ends it.
+// Capturing the real ROM's channel 0 (mgba_capture --dump-audio --audio-channel 0, subtracting a
+// silent control run to cancel the battle music) shows a clean downward hardware sweep starting
+// around 5240 Hz -- an 18-sample period at the measured 96000 Hz capture rate -- decaying in
+// volume over about 130-150 ms with no sharp cutoff, exactly matching that reading of the ROM
+// data. BUSTER_BLIP_FREQ is that measured onset frequency's register value, not a note-table
+// guess.
+const BUSTER_BLIP_SWEEP: agb::sound::psg::Sweep =
+    agb::sound::psg::Sweep { time: 1, decreasing: true, shift: 7 };
+/// MEASURED AGAINST THE REAL ROM, not taken from the instrument's own bytes.
+/// Capturing channel 0 on both sides and subtracting a run with no shot to
+/// cancel the battle music, the real blip is 1376 RMS on the frame it lands
+/// and 794 on the next, and gone. A hardware envelope at its FASTEST period
+/// still takes fifteen frames to fall from 15 to 0 -- which is what a straight
+/// reading of the instrument produces, and it is about five times too long and
+/// nearly three times too loud. M4A evidently runs this envelope in software.
+/// So the volume is set to match the measured peak (15 * 1376/3768 is about 6)
+/// and the note is cut by the hardware LENGTH COUNTER, which the instrument
+/// itself does not use -- an approximation of the real envelope's shape rather
+/// than a reproduction of its mechanism, and recorded here as one.
+const BUSTER_BLIP_ENVELOPE: agb::sound::psg::Envelope =
+    agb::sound::psg::Envelope { initial_volume: 6, increasing: false, period: 1 };
+/// Frames the blip sounds for. The real one is full on the frame it lands, half
+/// on the next, and gone -- and the hardware cannot do that on its own: its
+/// FASTEST envelope takes about six frames to fall from volume 6, and the
+/// length counter that is supposed to cut a note short does not appear to work
+/// at all (a note asking for 1/256 of a second still runs the full six). So the
+/// channel is stopped in software after two frames, which is what M4A does
+/// anyway -- it runs its envelopes itself rather than leaving them to the APU,
+/// which is exactly why its blips are shorter than the hardware's fastest.
+const BUSTER_BLIP_FRAMES: u8 = 2;
+/// Frames between the buster firing and the blip. The real ROM does not play a
+/// sound where it asks for one: `PlaySoundEffect` (asm00_0.s:26) appends a
+/// {function, args} record to a 32-entry ring buffer that something else drains
+/// (`sound_8000808`, asm00_0.s:380), so the note lands a frame after the frame
+/// that asked for it. Measured: the real blip is on the press's seventh frame
+/// and this build's, played immediately, was on the sixth.
+const BUSTER_BLIP_DELAY: u8 = 1;
+const BUSTER_BLIP_FREQ: u16 = 2023;
 /// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
 /// offsets, and how long its four frames last (1,2,2,3).
 const BUSTER_ARM_FRAMES: u8 = 18;
@@ -859,6 +906,10 @@ pub struct Battle<'a> {
     opened: bool,
     /// Frames until it goes up, counting down from the chip window closing.
     banner_at: u16,
+    /// Frames until the buster's blip sounds; see BUSTER_BLIP_DELAY.
+    blip_in: u8,
+    /// Frames until it is silenced again; see BUSTER_BLIP_FRAMES.
+    blip_off: u8,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1360,6 +1411,8 @@ impl<'a> Battle<'a> {
             banner_done: false,
             opened: false,
             banner_at: 0,
+            blip_in: 0,
+            blip_off: 0,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1899,6 +1952,25 @@ impl<'a> Battle<'a> {
                 self.popup = None;
             }
         }
+        if self.blip_in > 0 {
+            self.blip_in -= 1;
+            if self.blip_in == 0 {
+                agb::sound::psg::Channel1::play(
+                    BUSTER_BLIP_SWEEP,
+                    agb::sound::psg::Duty::Eighth,
+                    BUSTER_BLIP_ENVELOPE,
+                    BUSTER_BLIP_FREQ,
+                    None,
+                );
+                self.blip_off = BUSTER_BLIP_FRAMES;
+            }
+        }
+        if self.blip_off > 0 {
+            self.blip_off -= 1;
+            if self.blip_off == 0 {
+                agb::sound::psg::Channel1::stop();
+            }
+        }
         if self.banner_at > 0 {
             self.banner_at -= 1;
             if self.banner_at == 0 {
@@ -2002,6 +2074,7 @@ impl<'a> Battle<'a> {
                         CHARGED_DAMAGE,
                     ));
                 } else {
+                    self.blip_in = BUSTER_BLIP_DELAY;
                     // THE PLAIN BUSTER IS A HITSCAN. Its shot never crosses
                     // the field: OAM on the firing frame has a 32x16 flash
                     // still at the gun while the enemy's HP is already down.

@@ -1013,6 +1013,55 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7ax. THE FIRST SOUND, and how audio is compared (2026-09-07)
+
+The buster's blip is in the build, and it is measured against the real ROM rather than guessed.
+
+WHAT THE BLIP IS. `SOUND_BUSTER_6A` (SoundOffsets.inc:50), queued by `sub_80BCF7A` (asm31.s:
+10516) when the fire phase starts. Song header `dword_81B82FC` (dat37.s:41516): one track,
+voicegroup `byte_8156D6C`, whose entry (dat37.s:2755) is an M4A `ToneData` of type 0x9 -- square
+1, hardware sweep -- duty 0 (12.5%), sweep byte 0x1F, envelope decay 1, and its hardware length
+control byte ZERO, i.e. the note is not hardware-gated. So it is a PSG channel-1 blip, confirmed
+against the real ROM's own audio and not just the note table.
+
+HOW AUDIO IS COMPARED, which is the reusable part:
+1. `--dump-audio <dir>` writes post-mix stereo as raw s16le PCM, one file per frame, numbered to
+   line up with the `.rgb` frames. `--audio-channel <id>` solos one of the six sources.
+2. CONTROL SUBTRACTION. The battle music never stops, so one capture says nothing. Capture the
+   same run twice -- once with the press, once without -- and subtract per-frame RMS. What is left
+   is the effect.
+3. Compare the envelopes indexed by FRAMES AFTER THE PRESS, so the two sides' absolute frames do
+   not have to agree.
+It is an envelope comparison, not sample equality. Sample equality is possible in principle -- the
+emulator is deterministic -- but only where both sides drive the same hardware path, and they do
+not: the real ROM runs M4A's software envelope and this build drives the APU.
+
+THE RESULT, control-subtracted RMS on channel 0, by frames after the press:
+
+    real   +7: 1376   +8: 794    gone
+    ours   +7: 1191   +8: 416    gone
+
+THREE THINGS MEASURING IT MYSELF CHANGED, all of which a report had stated otherwise:
+- THE ONSET WAS A FRAME EARLY, not exact. The fix is faithful rather than a fudge:
+  `PlaySoundEffect` (asm00_0.s:26) does not play anything -- it appends a {function, args} record
+  to a 32-entry ring buffer that something else drains (`sound_8000808`, asm00_0.s:380), so the
+  note lands the frame after the frame that asks for it. One frame of delay, cited.
+- THE DECAY WAS FIVE TIMES TOO LONG, not twice. The hardware envelope at its FASTEST takes about
+  six frames to fall from volume 6, and the real blip is two.
+- AND THE HARDWARE LENGTH COUNTER DOES NOT WORK. `SOUND1CNT_H`'s length field with `SOUND1CNT_X`
+  bit 14 set is supposed to cut a note short; a note asking for 1/256 of a second still ran its
+  full six-frame envelope under mGBA. Tested down to length 1. So the channel is stopped in
+  SOFTWARE after two frames -- which is what M4A does anyway, and is why its blips are shorter
+  than the hardware's fastest decay.
+
+The volume (6 of 15) was set from the measured peak ratio, not from the instrument's byte.
+
+WHERE IT LIVES. `vendor/agb/agb/src/sound/psg.rs` -- agb has no PSG support at all, only
+DirectSound, so this is the vendored-crate fix rather than a workaround in game code. Raw register
+writes in `hw.rs`'s style, read-modify-writing `SOUNDCNT_*` so DirectSound's bits are never
+clobbered. `Channel1::play` is fire-and-forget with no per-frame cost; `Channel1::stop` exists for
+the software cut. All fifteen regression checks are unchanged, so it costs no frame budget.
+
 ## 7aw. A SAVE STATE AT A BATTLE'S FIRST FRAME (2026-09-07)
 
 `/tmp/battlestart.state`. Two open questions wanted it and it immediately found two bugs neither
