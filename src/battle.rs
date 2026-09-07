@@ -358,6 +358,10 @@ const BLKBOMB_VZ: i32 = 0x22051;
 /// the ball rises to y=10, about a hundred pixels above the panel, peaking
 /// eleven frames in and landing on the same fortieth frame a bomb does. That
 /// needs a faster launch and a stronger pull, solved from those two figures.
+/// Where the damage tag sits relative to the projectile's origin, measured
+/// off the real ROM's object list.
+const DAMAGE_TAG_RIGHT: i32 = 32;
+const DAMAGE_TAG_DOWN: i32 = 30;
 const LILBOLR_VX: i32 = 0x2C7AE;
 const LILBOLR_VZ: i32 = 0x2999A;
 const LILBOLR_GRAVITY: i32 = 0x2800;
@@ -460,6 +464,8 @@ struct Bomb {
     wide: bool,
     ticks: u8,
     flight: u8,
+    /// LilBolr shows its damage riding under the projectile; the bombs do not.
+    show_damage: bool,
 }
 
 impl Bomb {
@@ -1875,6 +1881,7 @@ impl<'a> Battle<'a> {
                     wide: chip.id == CHIP_BIGBOMB,
                     flight: if chip.id == CHIP_BLKBOMB { BLKBOMB_FLIGHT } else { BOMB_FLIGHT },
                     gravity: if lilbolr { LILBOLR_GRAVITY } else { BOMB_GRAVITY },
+                    show_damage: lilbolr,
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
@@ -2113,6 +2120,19 @@ impl<'a> Battle<'a> {
         for b in &self.bombs {
             let (x, y) = b.position();
             let (gx, gy) = b.ground();
+            // LilBolr carries its damage under the thing it lobs, in the same
+            // number objects the HP counters use. Measured on the real ROM:
+            // two 32x16 objects at (84,64) and (116,64) on the attack's frame
+            // 19, where the boiler's centre is (93,35). It shows with the
+            // enemy deleted, so it belongs to the projectile rather than to a
+            // hit.
+            // NOT DRAWN: the figure the real ROM rides under the boiler is
+            // NOT this chip's damage. It reads 40 where LilBolr1's power is
+            // 100, so it is something else -- most likely the summoned
+            // LilBoiler virus's own HP, which would fit the thrown object
+            // being a virus sprite. Drawing b.damage there puts "100" under
+            // it and scores worse (404 px/frame against 352), so it waits
+            // until the figure's meaning is settled.
             // The frame's first part is the shadow (sprite_hasShadow): it is
             // drawn on the ground, the rest at the bomb's height -- the real
             // ROM keeps the shadow at y 106-111 under the whole arc.

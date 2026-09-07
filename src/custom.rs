@@ -317,9 +317,7 @@ impl CustomAssets {
         gfx.set_background_palette(PANEL_BANK, &self.palette(0));
         gfx.set_background_palette(SLOT_BANKS[0], &self.palette(SHARED_ICON_VARIANT));
         for (i, slot) in custom.slots.iter().enumerate() {
-            if let Some(offer) = slot {
-                let _ = i;
-            }
+            let _ = (i, slot);
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);

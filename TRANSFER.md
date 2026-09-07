@@ -278,11 +278,16 @@ WHAT IS LEFT, and it is not the arc. Searching vz alone made things worse in bot
 position. Two other things: the real kettle carries a FLAME and a purple ring on its lid that
 animation 0 does not draw, worth 366 px on frame 19 where the diff is grey-blue and white rather
 than gold; and the damage figure that rides beneath it is drawn by no chip here yet.
-THAT FIGURE IS IDENTIFIED: two 32x16 OBJECTS at (84,64) and (116,64) on frame 19, tiles 888 and
-896 -- the same OBJ number tiles the enemy HP counter uses (880 upward, which BANNER_TILES
-already blanks). So it is the number machinery hud.rs already has, drawn under the projectile and
-travelling with it, not a new sprite. It shows even with the enemy deleted, so it is the chip's
-own damage on the projectile rather than a hit indicator.
+THAT FIGURE IS IDENTIFIED as an object, but NOT as a meaning. It is two 32x16 OBJECTS at (84,64)
+and (116,64) on frame 19, tiles 888 and 896 -- the same OBJ number tiles the enemy HP counter
+uses (880 upward, which BANNER_TILES already blanks) -- so it is the number machinery hud.rs
+already has, drawn under the projectile and travelling with it, not a new sprite.
+WHAT IT IS NOT is this chip's damage. It reads 40 where LilBolr1's attack_power is 100. Since the
+thrown object is a VIRUS sprite, the likeliest reading is the summoned LilBoiler's own HP, which
+would make this chip a summon rather than a throw -- but the boiler does explode into the shared
+bomb blast, which a summon would not. Drawing the chip's power there scores 404 px/frame against
+352 for leaving it out, so it stays out until the figure's meaning is settled. Checking LilBolr2
+and LilBolr3, whose powers differ, would settle it in one capture.
 The kettle's flame is NOT missing: every one of the virus sprite's animations carries the flame
 and the purple ring, and rendering them confirms it. The residual on frame 19 is grey-blue and
 white because it is this number, not the lid. The vertical
