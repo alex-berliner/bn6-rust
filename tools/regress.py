@@ -266,6 +266,58 @@ def check_chip_use():
                for k in range(32)), "navi half, 32 frames"
 
 
+def check_mettaur():
+    """The Mettaur virus's 70-frame attack cycle (TRANSFER.md 7ah).
+
+    The virus acts on an RNG neither side shares, so there is no fixed frame
+    offset the way `field`/`warp`/`buster` have. Instead: list the frames on
+    which the Mettaur's own bounding box (it lives at x>=145, clear of the
+    navi) changes on each side, and find the lag that lines the two lists up
+    -- of the 17 boundary frames in the real side's attack cluster, 16 land
+    on an exact rust boundary at a lag of 21. (7ah measured 20; a rebuild
+    today puts every boundary one frame later on both this check and `wave`
+    below, which move on a shared mechanism -- see the note in the report.)
+    Once aligned, 70 consecutive frames of the cycle are diffed over the
+    Mettaur's half of the screen.
+    """
+    build("demo-field", "/tmp/rg_field.gba")
+    capture(STERILE, "/tmp/rg_mtr", 215, "--loadstate", PAUSED, *ALIVE,
+            "--disable-bg", "--script", "Start@10")
+    capture("/tmp/rg_field.gba", "/tmp/rg_mtu", 235, "--disable-bg")
+    lag, start, box = 21, 140, (145, 0, 240, 160)
+    diffs = [diff("/tmp/rg_mtr", start + k, "/tmp/rg_mtu", start + lag + k, box)
+             for k in range(70)]
+    subprocess.run(["rm", "-rf", "/tmp/rg_mtr", "/tmp/rg_mtu"], check=True)
+    bad = sum(1 for d in diffs if d)
+    return sum(diffs), "%d of 70 frames differ, lag %d" % (bad, lag)
+
+
+def check_wave():
+    """The shockwave's panel light, one hop and its three-frame linger (TRANSFER.md 7ai).
+
+    Both sides captured `--disable-obj` (backgrounds only, so the field's
+    panels and their one-shot yellow highlight, (255,255,66), are what's
+    compared -- no sprites). The wave hops panel to panel on its own
+    schedule with no shared frame offset, so alignment tracks the SET of lit
+    panel centres per frame, lists the frames where that set changes on each
+    side, and finds the lag that lines up the boundaries around the real
+    side's first visible hop (frame 71, confirmed here) -- 126, at last
+    measurement. (7ai measured 125; see the note on `mettaur` above, this
+    check moved by the same one frame.) A 90-frame window anchored there
+    catches the hop and its linger.
+    """
+    build("demo-field", "/tmp/rg_field.gba")
+    capture(STERILE, "/tmp/rg_wvr", 165, "--loadstate", PAUSED, *ALIVE,
+            "--disable-obj", "--script", "Start@10")
+    capture("/tmp/rg_field.gba", "/tmp/rg_wvu", 290, "--disable-obj")
+    lag, start, box = 126, 71, (0, 72, 240, 144)
+    diffs = [diff("/tmp/rg_wvr", start + k, "/tmp/rg_wvu", start + lag + k, box)
+             for k in range(90)]
+    subprocess.run(["rm", "-rf", "/tmp/rg_wvr", "/tmp/rg_wvu"], check=True)
+    bad = sum(1 for d in diffs if d)
+    return sum(diffs), "%d of 90 frames identical, lag %d" % (90 - bad, lag)
+
+
 #: name -> (function, the number it produced when last verified). A non-zero
 #: `want` is a residue that is understood; TRANSFER.md says why for each.
 CHECKS = [
@@ -278,6 +330,8 @@ CHECKS = [
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
+    ("mettaur", check_mettaur, 460),    # attack tail, 4 of 70 frames, 7ah
+    ("wave", check_wave, 960),          # panel light, first hop, 1 of 90 frames, 7ai
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames
     ("rollup", check_rollup, 0),        # the full battle must survive a long script

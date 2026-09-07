@@ -1889,7 +1889,11 @@ impl<'a> Battle<'a> {
         // sterile arena, so it can be compared with the real ROM's, which
         // runs frames 49..106 of a capture that deletes the enemy and presses
         // Start at 10.
-        if cfg!(feature = "demo-banner") && self.clock == BANNER_DEMO_AT {
+        // Once. The clock STOPS while an opening banner is up, so a bare
+        // `clock == BANNER_DEMO_AT` stays true every frame and rebuilds the
+        // banner forever -- which is what it did the moment the pause went in.
+        if cfg!(feature = "demo-banner") && self.clock == BANNER_DEMO_AT && !self.opened {
+            self.opened = true;
             self.banner = Some(Banner::new(self.banner_assets, banner::ENEMY_DELETED));
         }
         if let Some((chip, left)) = self.presentation {

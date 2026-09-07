@@ -979,12 +979,27 @@ against a capture taken mid-battle, where no banner is up. `check_chip_use` star
 and the banner ends at 126. Four frames is not margin, so `cfg!(feature = "demo")` keeps it out,
 the way the chip-in-hand icon is kept out of the sterile arena.
 
-AND EVERY CHECK IS AT ZERO. All twelve, for the first time:
+AND EVERY COMPARISON CHECK IS AT ZERO. `chip-use` was the last one to fall, at 256 px, and the
+note explaining it was wrong (7ag). There are fourteen checks now:
 
     chips 0 (43 of 43)   tiles 0   field 0   window 0   card 0   result 0
     warp 0   buster 0   chip-use 0   popup 0   banner 0   rollup 0
+    mettaur 460          wave 960
 
-`chip-use` was the last one, at 256 px, and the note explaining it was wrong (7ag).
+The last two are new and are NOT zero: they are the two residues that had been living in prose in
+this file, given checks so a regression in them is caught rather than remembered. Their `want`s are
+what was measured when they were added, not what this file claimed -- and the two disagreed. The
+Mettaur's is 4 differing frames of 70 as recorded, but 460 px rather than 698 per frame; the
+earlier figure came from a wider box that also contains a separate object between the navi and the
+virus. Both alignments also came out exactly ONE FRAME later than recorded (lag 21 not 20, 126 not
+125), consistently, across two unrelated fixtures. Unexplained, and worth a moment before trusting
+any lag in this file.
+
+AND A TRAP THE PAUSE SET OFF. `demo-banner` triggers on `clock == BANNER_DEMO_AT`, and the clock
+STOPS while an opening banner is up, so the condition stayed true every frame and rebuilt the
+banner forever -- the check went from 0 to 47631 the moment the pause went in. Any demo trigger
+that compares the clock to a constant needs a fired-once flag, because the clock is not guaranteed
+to keep moving.
 
 ## 7ar. Where the banner's numbers come from (2026-09-07)
 
