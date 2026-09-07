@@ -221,8 +221,23 @@ demo-field):
   real capture) -- the panels themselves match.
 - bottom, y >= 145: 100% differing -- the backdrop continues below the field and the chip
   name ("Cannon 40") is drawn there.
-Next: the backdrop layer (a Sonnet pass is locating its tiles/map/palette and whether it
-scrolls), then the HUD.
+The backdrop, measured from the real ROM (BG1: BG1CNT 0x1d03 = priority 3, char block 0,
+screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
+- It is a 32x32-tile (256x256 px) map of a teal-arc motif on navy, ~37 distinct tiles, all in
+  palette bank 0. Dumped and rendered from VRAM: scratchpad/bg1_map.png.
+- It SCROLLS: 1 px left every 2 frames and 1 px up every 4 frames (measured by best-shift
+  matching over frames 41-55 of an idle capture; residual 42-482 px out of 4800, i.e. a rigid
+  scroll). In fixed point that is +0x80 HOFS and +0x40 VOFS per frame on an 8.8 accumulator.
+- The tiles are in the disassembly at **dword_8617488** (data/dat38_60.s:49372, 4416 bytes =
+  138 tiles), found by scanning every data blob and compressed file for a distinctive VRAM
+  tile. The blob's order is NOT the VRAM order: the game uploads it in groups (VRAM 3-6 ->
+  blob 1-4, 8/13/14/19/20 -> 5/10/11/16/17, 9/10/15/24/29/30 -> 32-37, 11/12/18/21/27/28 ->
+  128-133), and the uniform navy tiles collapse onto blob tile 0. So an exporter has to know
+  the upload's tile order, or lay the tiles out itself and rewrite the map.
+- The 32x32 tilemap was NOT found in any data blob or compressed file, so it is probably built
+  at runtime (or stored in a form the scan does not reach). Open.
+Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
+HUD.
 
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
