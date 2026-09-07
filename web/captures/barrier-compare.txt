@@ -1,0 +1,1 @@
+Barrier, real ROM left and this build right: 0.0 pixels a frame over its whole life. One of the five chips that put their NAME up in the middle of the screen: eight objects of the raw battle font, unrolled and rolled back up by one shared affine matrix.

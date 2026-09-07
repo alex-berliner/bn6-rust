@@ -1,8 +1,18 @@
 [
   {
+    "file": "captures/areagrab-compare.gif",
+    "name": "areagrab-compare",
+    "label": "AreaGrab, real ROM left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows."
+  },
+  {
     "file": "captures/banner-compare.gif",
     "name": "banner-compare",
     "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up."
+  },
+  {
+    "file": "captures/barrier-compare.gif",
+    "name": "barrier-compare",
+    "label": "Barrier, real ROM left and this build right: 0.0 pixels a frame over its whole life. One of the five chips that put their NAME up in the middle of the screen: eight objects of the raw battle font, unrolled and rolled back up by one shared affine matrix."
   },
   {
     "file": "captures/battle-open-compare.gif",
@@ -35,6 +45,11 @@
     "label": "The chip window's cursor walking five slots, real ROM left and this build right: 170 frames, 0 pixels. Two one-frame bugs, neither of them the cursor delay it had been blamed on -- the card's palette landing a frame before its tiles, and the bracket's blink flipping a frame early. Neither was findable until the fixture could run the same script on both sides."
   },
   {
+    "file": "captures/fireswrd-compare.gif",
+    "name": "fireswrd-compare",
+    "label": "FireSwrd, real ROM left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette."
+  },
+  {
     "file": "captures/flshbom-compare.gif",
     "name": "flshbom-compare",
     "label": "FlshBom \u2014 exact, frame for frame (real ROM left, this build right)"
@@ -50,14 +65,34 @@
     "label": "GrasSeed \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
+    "file": "captures/hicannon-compare.gif",
+    "name": "hicannon-compare",
+    "label": "HiCannon, real ROM left and this build right: 0.0 pixels a frame. The three cannons are one barrel object in three palettes -- HiCannon is the Cannon's sprite with palette 1, M-Cannon with 2 -- so they cost no extra art."
+  },
+  {
     "file": "captures/iceseed-compare.gif",
     "name": "iceseed-compare",
     "label": "IceSeed \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
+    "file": "captures/invisibl-compare.gif",
+    "name": "invisibl-compare",
+    "label": "Invisibl, real ROM left and this build right: 0.0 pixels a frame. Its presentation runs 128 frames before the navi goes transparent -- measured, not guessed."
+  },
+  {
     "file": "captures/lilbolr-compare.gif",
     "name": "lilbolr-compare",
     "label": "LilBolr1 \u2014 exact, frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/megenbom-compare.gif",
+    "name": "megenbom-compare",
+    "label": "MegEnBom, real ROM left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted."
+  },
+  {
+    "file": "captures/muramasa-compare.gif",
+    "name": "muramasa-compare",
+    "label": "Muramasa, real ROM left and this build right: 0.0 pixels a frame. Its power is the damage MegaMan has already taken."
   },
   {
     "file": "captures/poisseed-compare.gif",

@@ -1,0 +1,1 @@
+MegEnBom, real ROM left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted.

@@ -1,0 +1,1 @@
+HiCannon, real ROM left and this build right: 0.0 pixels a frame. The three cannons are one barrel object in three palettes -- HiCannon is the Cannon's sprite with palette 1, M-Cannon with 2 -- so they cost no extra art.
