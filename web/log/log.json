@@ -514,5 +514,29 @@
     "file": "log/shots/1788771633-flshbom_compare.png",
     "caption": "FlshBom1-3 reach per-pixel parity. The thrown ball was still using the MiniBomb sprite, its arc was a bomb's, and the held ball dragged a ground shadow the real ROM does not draw. With its own launch speed and gravity -- solved against the ball tracked frame by frame by its four yellow colours over the whole forty-frame flight -- and the held shadow suppressed, every frame of the attack now differs by 0 pixels from the real ROM. Real on top, this build in the middle, the difference below; the band above the line is the HUD, which the sterile arena does not reproduce.",
     "tag": "chip"
+  },
+  {
+    "t": 1788771663,
+    "file": "log/shots/1788771663-flshbom.gif",
+    "caption": "FlshBom in motion: the real ROM on the left, this build on the right, half speed. The whole throw -- the ball raised on frame 5, the forty-frame arc, the recovery -- is identical pixel for pixel.",
+    "tag": "chip"
+  },
+  {
+    "t": 1788771691,
+    "file": "log/shots/1788771691-sword.gif",
+    "caption": "Sword, real ROM left and this build right at half speed: the pose, the arc object spawned at the navi's front and the five frames of recovery. 0 px on every frame.",
+    "tag": "chip"
+  },
+  {
+    "t": 1788771691,
+    "file": "log/shots/1788771691-bigbomb.gif",
+    "caption": "BigBomb, real left and this build right. The nine blast puffs overlap, so the order they are pushed decides which seams show; they are pushed back to front in the order the real ROM's OAM has them. 0 px on every frame.",
+    "tag": "chip"
+  },
+  {
+    "t": 1788771691,
+    "file": "log/shots/1788771691-barrier.gif",
+    "caption": "Barrier, real left and this build right. The bubble's palette bank is the one the sterile arena would otherwise hand to the backdrop, which is why the backdrop's bank is assigned only in a full battle.",
+    "tag": "chip"
   }
 ]
