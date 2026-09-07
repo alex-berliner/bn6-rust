@@ -772,5 +772,17 @@
     "file": "log/compare/1788802062-bugbomb_cmp.gif",
     "caption": "BugBomb, real ROM left and this build right: 0.0 pixels a frame over seventy. Its residue had been one frame -- the ball a pixel high on the frame before it lands, and nowhere else -- which is what a rounding boundary looks like when the constants are nearly but not quite right. Read out of the object rather than swept, BugBomb's launch is vx 0x2C000, vz 0x26062 and gravity 0x2800 over a timer of 42; the sweep had settled on 0x25D60 and 0x27C0, a launch 1282 too weak and a pull 64 too soft, which cancel over forty frames everywhere except at that one boundary. The same read-out found that LilBolr and BlkBomb are thrown by the SAME launcher, to the digit -- two separate sweeps had produced two different nearby answers and nothing said they should agree. Forty-three chips of forty-three now match the real ROM exactly.",
     "tag": "compare"
+  },
+  {
+    "t": 1788804930,
+    "file": "log/compare/1788804930-banner_cmp.gif",
+    "caption": "ENEMY DELETED, real ROM above and this build below: 0 pixels over all 58 frames of the roll-out. The banner is not a picture. The real ROM keeps a font of 8x16 cells and a record per message -- the first word is the position packed as (y << 8) | x, the words after it are one glyph pointer per cell, and the list is terminated by the BLANK glyph, so the uploader simply stops advancing its cursor and keeps writing blanks out to the twentieth cell. Twenty cells go up as five 32x16 objects. There are two arrays of these records holding forty-five messages between them: BATTLE START!, ENEMY DELETED, MEGAMAN DELETED, TURN START!, FINAL TURN!, YOU WIN!, YOU LOSE, DRAW! and thirty-seven more, all now in the build as a 4.5KB asset. The palette is not the text font's -- the uploader's last act is to stage sixteen colours of its own, which is where the yellow-on-blue comes from, and rendering the sheet in the chip-name popup's bank instead gives a blue-on-black that looks plausible and is wrong. The unrolling is the same shared affine matrix the chip-name popup uses, frame for frame: it opens from a flat line, overshoots into a stretch a fifth taller than life, holds 43 frames, and rolls back up.",
+    "tag": "compare"
+  },
+  {
+    "t": 1788804940,
+    "file": "log/game/1788804940-megaman_deleted.gif",
+    "caption": "MEGAMAN DELETED in a real fight in the rollup build, which is the same machinery from the other side: the banner asset carries all forty-five of the game's messages, so the losing one costs nothing extra. The fight ends, the ribbon unrolls over the field, holds, and rolls back up, and the RESULT window comes in 110 frames after it went up -- that gap is measured off the real ROM, where the banner runs frames 49 to 106 of a won battle and the window starts sliding at 159. It replaces a 30-frame stand-in that had been in the code with a note saying it had never been read.",
+    "tag": "rust"
   }
 ]
