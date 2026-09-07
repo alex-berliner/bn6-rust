@@ -32,8 +32,15 @@ Format (little-endian):
   0x18  u32 -> cursor  : 2 8x8 4bpp tiles, then a 32-byte palette
   0x1c  u32 -> slot art: empty icon (0x80: 4 tiles, 16x16), 28 code
                          glyphs (0x40 each: 2 tiles, 8x16; 0x1b blank),
-                         the interactive OK box (0x100: 8 tiles, 4x2), then
-                         the pick stack's two frame tiles (0x40)
+                         the interactive OK box (0x100: 8 tiles, 4x2), the
+                         pick stack's four frame tiles (0x80), the
+                         regular-chip mark (0x80), the message card
+                         (42 tiles) and its palette (0x20), then the preview
+                         card's own three fonts: 28 code letters (0x40
+                         each), 10 damage digits (0x40 each) and 11 element
+                         icons (0x80 each, indexed by the chip's element),
+                         then 11 rows of six BGR555 entries, the tail of the
+                         shared icon bank for that element (entries 10-15)
 
 The cursor is four 8x8 objects, one corner tile flipped into each corner,
 blinking between its two tiles every 8 frames (sub_8028820, asm03_0.s:4791;
@@ -174,6 +181,29 @@ def main():
     stack_frame = read_symbol(DAT, "byte_86E2E18", max_bytes=128, through_labels=True)
     assert len(empty) == 0x80 and len(codes) == 28 * 0x40 and len(ok) == 0x100
     assert len(stack_frame) == 128
+    # THE PREVIEW CARD'S OWN THREE FONTS, all stored ready-coloured -- unlike
+    # the name, which is the shared battle font plus a colour word. They were
+    # found by taking the card's tiles out of a live menu and searching the ROM
+    # for their SHAPE (any one ink over any one background), skipping the three
+    # blank rows every glyph starts with; an exact-bytes search finds nothing
+    # because the search has to be row-aligned, not tile-aligned.
+    #   the code letter: A-Z, then '*' and a blank, ink 0xb, 8x16
+    #   the damage digits: 0-9 in order, ink 9, 8x16
+    #   the element icons: 11 of them indexed by the chip's element byte
+    #     (0x0a is null), 16x16 in the shared icon bank
+    card_letters = read_symbol(DAT, "dword_86E2E98", max_bytes=28 * 0x40, through_labels=True)
+    card_digits = read_symbol(DAT, "dword_86E411C", max_bytes=10 * 0x40, through_labels=True)
+    elements = read_symbol(DAT, "dword_86E3598", max_bytes=11 * 0x80, through_labels=True)
+    # AND THE TAIL OF BANK 11 IS PER ELEMENT. The six words that follow the
+    # icons, one row of six per element, are palette entries 10 through 15 of
+    # the shared icon bank: 10-12 are the same frame colours every time and
+    # 13-15 are the element's own, which is why the null element's are zero and
+    # why reading the bank off one live menu (a null-element card) left the
+    # wind icon's 64 pixels of colour 13 black. sub_8028476 writes them when it
+    # draws the card.
+    element_pals = read_symbol(DAT, "dword_86E3B18", max_bytes=11 * 12, through_labels=True)
+    assert len(card_letters) == 28 * 0x40 and len(card_digits) == 10 * 0x40
+    assert len(elements) == 11 * 0x80 and len(element_pals) == 11 * 12
 
     out = bytearray(struct.pack("<4sIIIIIII", b"BNCW", 2, 0, 0, 0, 0, 0, 0))
     off_tiles = len(out)
@@ -201,6 +231,7 @@ def main():
     out += cursor + cursor_pal + cursor_obj_pal
     off_slot_art = len(out)
     out += empty + codes + ok + stack_frame + regular_mark + message + message_pal
+    out += card_letters + card_digits + elements + element_pals
     struct.pack_into(
         "<4sIIIIIII",
         out,

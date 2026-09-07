@@ -140,6 +140,22 @@ const REGION_NAME: usize = 0;
 /// How many glyphs of the font one glyph of a name takes: 8x16, top over
 /// bottom.
 const GLYPH_TILES: u16 = 2;
+/// The element/code/damage row: the code letter, the element icon and the
+/// attack power.
+const REGION_CODE: usize = 2;
+const REGION_ELEMENT: usize = 3;
+/// Tiles in one element icon, 16x16 row-major.
+const ELEMENT_TILES: u16 = 4;
+/// Elements the card has an icon for; 0x0a is null, the last.
+const ELEMENTS: usize = 11;
+/// Bytes of shared-icon-bank tail each element carries: entries 10 to 15.
+const ELEMENT_PALETTE: usize = 12;
+/// Where the card's three fonts begin inside the asset's slot-art section:
+/// after the empty icon, the 28 slot code glyphs, the OK box, the stack
+/// frame, the regular-chip mark, and the message card with its palette.
+const fn card_fonts_at(slot_art: usize) -> usize {
+    slot_art + 0x80 + 28 * 0x40 + 0x200 + 42 * 32 + 32
+}
 const REGION_OK: usize = 25;
 const REGION_STACK: usize = 26;
 /// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
@@ -243,6 +259,20 @@ pub struct CustomAssets {
     /// to VRAM and this window passes index 8 (sub_3006C18, asm/asm38.s:2381).
     /// The card's name row is these glyphs byte for byte.
     font: TileSet,
+    /// The card's own three fonts, which -- unlike the name -- are stored
+    /// ready-coloured and go to VRAM unchanged: the code letter (A-Z, '*',
+    /// blank; ink 0xb), the damage digits (0-9; ink 9) and the element icons,
+    /// eleven 16x16 pictures indexed by the chip's element byte.
+    card_letters: TileSet,
+    card_digits: TileSet,
+    elements: TileSet,
+    /// Six BGR555 entries per element: the LAST SIX of the shared icon bank.
+    /// 10-12 are the icon frame's colours, the same every time; 13-15 are the
+    /// element's own, which the real ROM writes as it draws the card. Reading
+    /// the bank off one live menu is not enough -- that menu was showing a
+    /// null-element card, whose last three entries are zero, so every other
+    /// element's icon came out with black where its colour should be.
+    element_palettes: &'static [u8],
 }
 
 enum Phase {
@@ -334,6 +364,17 @@ impl CustomAssets {
             stack_frame: tileset(
                 &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x180],
             ),
+            card_letters: tileset(&data[card_fonts_at(a)..card_fonts_at(a) + 28 * 0x40]),
+            card_digits: tileset(
+                &data[card_fonts_at(a) + 28 * 0x40..card_fonts_at(a) + 38 * 0x40],
+            ),
+            elements: tileset(
+                &data[card_fonts_at(a) + 38 * 0x40..card_fonts_at(a) + 38 * 0x40 + 11 * 0x80],
+            ),
+            element_palettes: {
+                let o = card_fonts_at(a) + 38 * 0x40 + 11 * 0x80;
+                &data[o..o + ELEMENTS * ELEMENT_PALETTE]
+            },
             font: {
                 assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
                 let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
@@ -347,6 +388,18 @@ impl CustomAssets {
     /// One of the window's colour variants, or the two icon banks after them.
     pub fn palette(&self, variant: usize) -> Palette16 {
         read_palette(&self.palette[variant * 32..variant * 32 + 32])
+    }
+
+    /// The shared icon bank carrying this element's own last six entries,
+    /// which is what the real ROM has in bank 11 while the card shows it.
+    fn icon_palette(&self, element: u8) -> Palette16 {
+        let mut bytes = [0u8; 32];
+        let base = SHARED_ICON_VARIANT * 32;
+        let keep = 32 - ELEMENT_PALETTE;
+        bytes[..keep].copy_from_slice(&self.palette[base..base + keep]);
+        let e = (element as usize).min(ELEMENTS - 1) * ELEMENT_PALETTE;
+        bytes[keep..].copy_from_slice(&self.element_palettes[e..e + ELEMENT_PALETTE]);
+        read_palette(&bytes)
     }
 
     /// Open the window over the offered chips, at most one per slot.
@@ -638,6 +691,45 @@ impl Custom<'_> {
         }
     }
 
+    /// The row under the picture: the copy's code letter, the chip's element
+    /// icon, and the attack power right-aligned in the row's three cells with
+    /// the rest left as the card's interior. A chip with no attack power
+    /// (a Recovery, a Barrier) shows nothing there.
+    /// NOT VERIFIED: what the row does for a power of four digits or more --
+    /// the widest chip in this build is Muramasa at 1020, which fits.
+    fn draw_card_row(&mut self, code: u8, element: u8, power: u16, gfx: &Graphics) {
+        let assets = self.assets;
+        gfx.set_background_palette(ICON_BANK, &assets.icon_palette(element));
+        let r = assets.regions[REGION_CODE];
+        self.fill_from(r, &assets.card_letters, code as u16 * GLYPH_TILES, r.bank);
+        let r = assets.regions[REGION_ELEMENT];
+        self.fill_from(
+            r,
+            &assets.elements,
+            element as u16 * ELEMENT_TILES,
+            ICON_BANK,
+        );
+        let r = assets.regions[REGION_DAMAGE];
+        let mut n = power;
+        for col in (0..r.w).rev() {
+            let digit = (n % 10) as u16;
+            let blank = power == 0 || (n == 0 && col + 1 != r.w);
+            for half in 0..r.h {
+                let (tiles, tile) = if blank {
+                    (&assets.tiles, CARD_INTERIOR_TILE)
+                } else {
+                    (&assets.card_digits, digit * GLYPH_TILES + half as u16)
+                };
+                self.bg.set_tile(
+                    ((r.x + col) as i32, (r.y + half) as i32),
+                    tiles,
+                    TileSetting::new(tile, TileEffect::new(false, false, r.bank)),
+                );
+            }
+            n /= 10;
+        }
+    }
+
     /// Whether a cell belongs to the pick stack's frame columns, which
     /// draw_stack_frame owns. The stored map has the wrong tile there, so the
     /// template must not paint over them as the window slides in.
@@ -708,10 +800,10 @@ impl Custom<'_> {
                 gfx.set_background_palette(PICTURE_BANK, &self.assets.message_palette);
                 let r = self.assets.regions[REGION_PICTURE];
                 self.fill_from(r, &self.assets.message, 0, PICTURE_BANK);
-                // The name row goes with the card: the real ROM clears it to
-                // flat colour 8 when the message is up, which is what the
-                // interior tile already is.
-                self.draw_card_name("");
+                // The name and the row under the picture go with the card:
+                // the real ROM clears both to flat colour 8 when the message
+                // is up, which is what the interior tile already is.
+                self.fill_card_text_background();
             }
             return;
         };
@@ -725,11 +817,16 @@ impl Custom<'_> {
         debug_assert_eq!((r.w, r.h), PICTURE_TILES);
         self.fill_from(r, &picture, 0, PICTURE_BANK);
         self.draw_card_name(offer.chip.name());
+        self.draw_card_row(offer.code, offer.chip.element, offer.chip.power, gfx);
     }
 
+    /// The chip the card should show. A PICKED slot still previews its chip:
+    /// walking the real ROM's cursor onto its picked Cannon puts the Cannon
+    /// card up, even though the slot itself shows the empty-cell art. Only OK
+    /// and a slot with nothing in it leave the card without a chip.
     fn highlighted(&self) -> Option<Offer> {
         let slot = self.cursor_at as usize;
-        if slot < OFFERED && !self.picks.contains(&slot) {
+        if slot < OFFERED {
             self.slots[slot]
         } else {
             None
