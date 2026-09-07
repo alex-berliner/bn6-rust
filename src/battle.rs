@@ -547,6 +547,7 @@ pub struct Battle<'a> {
     panels: Panels,
     bg: RegularBackground,
     backdrop: crate::backdrop::Backdrop,
+    hud_tiles: crate::hudtiles::HudTiles,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
     /// the Mettaur alone so the hand and chips can be tried without the
@@ -905,6 +906,7 @@ impl<'a> Battle<'a> {
             panels,
             bg,
             backdrop: crate::backdrop::Backdrop::new(crate::BACKDROP),
+            hud_tiles: crate::hudtiles::HudTiles::new(crate::HUD_TILES),
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -937,7 +939,10 @@ impl<'a> Battle<'a> {
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
         #[cfg(not(feature = "demo-sterile"))]
-        self.backdrop.update();
+        {
+            self.backdrop.update();
+            self.hud_tiles.set_hp(self.megaman.hp());
+        }
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
         // The sterile arena never concludes: MegaMan is alone, so the
@@ -1869,6 +1874,8 @@ impl<'a> Battle<'a> {
         // with --disable-bg, so both sides must be MegaMan on black.
         #[cfg(not(feature = "demo-sterile"))]
         self.backdrop.show(frame);
+        #[cfg(not(feature = "demo-sterile"))]
+        self.hud_tiles.show(frame);
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen

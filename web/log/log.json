@@ -394,5 +394,11 @@
     "file": "log/shots/1788761392-site_shot.png",
     "caption": "The site's playable demos now render both background layers: the real ROM above, a demo ROM below. The backdrop scrolls behind the field at the game's own rate and the field carries its front lip, so the only thing still missing from the tiles is the HUD strip and the chip name, which the real ROM draws on its own layer. The enemy and HP number in the lower shot are the demo's own, not a mismatch.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788761783,
+    "file": "log/shots/1788761783-hud_cmp.png",
+    "caption": "The HP box is now drawn in tiles the way the real ROM draws it, real above and this build below. Each digit is two tiles stacked and the set steps by two per digit, so the box is a left cap, four slots filled right-aligned with a blank in the leading positions, and a right cap. The art is a fourth variant of the font the project already exports, found in the same file by scanning its symbols for the digit-zero tiles: all ten digits match the real ROM's, and the box frame follows in the same blob. The numbers differ only because the demo starts at 100 HP and the captured battle is at 60. The CUSTOM gauge beside it is still to do.",
+    "tag": "tiles"
   }
 ]

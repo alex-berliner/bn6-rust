@@ -16,6 +16,7 @@ mod deck;
 mod field;
 mod gunner;
 mod hud;
+mod hudtiles;
 mod results;
 mod shot;
 mod spr;
@@ -59,6 +60,7 @@ static CUSTOM: &[u8] = &Aligned(*include_bytes!("../assets/custom.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 static BACKDROP: &[u8] = &Aligned(*include_bytes!("../assets/backdrop.bin")).0;
+static HUD_TILES: &[u8] = &Aligned(*include_bytes!("../assets/hud_tiles.bin")).0;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -77,6 +79,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut palettes = field.palettes();
     // The backdrop draws in bank 0, as it does on the real ROM.
     palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
+    palettes[hudtiles::BANK as usize] = hudtiles::HudTiles::new(HUD_TILES).palette();
     for (i, p) in results.palettes().into_iter().enumerate() {
         palettes[9 + i] = p;
     }
