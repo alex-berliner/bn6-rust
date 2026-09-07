@@ -506,6 +506,10 @@ Two details from the same capture:
   dark and lights the one behind him again on the far side. NOT VERIFIED beyond this one capture:
   it is a single observation, not a rule read out of the disassembly.
 
+VERIFIED: with both sides captured `--disable-obj` (backgrounds only) and aligned on the wave's
+own dwell boundaries, 87 of 90 frames of the field's panels are identical, highlight and all. The
+three that differ are single dwell boundaries a frame out.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
