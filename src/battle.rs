@@ -6,7 +6,9 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::object::Object;
-use agb::display::tiled::{RegularBackground, RegularBackgroundSize, TileFormat};
+#[cfg(feature = "demo-sterile")]
+use agb::display::tiled::{RegularBackgroundSize, TileFormat};
+use agb::display::tiled::RegularBackground;
 use agb::fixnum::Num;
 use agb::input::{Button, ButtonController};
 use alloc::vec::Vec;

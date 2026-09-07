@@ -286,8 +286,13 @@ WHAT IT IS NOT is this chip's damage. It reads 40 where LilBolr1's attack_power 
 thrown object is a VIRUS sprite, the likeliest reading is the summoned LilBoiler's own HP, which
 would make this chip a summon rather than a throw -- but the boiler does explode into the shared
 bomb blast, which a summon would not. Drawing the chip's power there scores 404 px/frame against
-352 for leaving it out, so it stays out until the figure's meaning is settled. Checking LilBolr2
-and LilBolr3, whose powers differ, would settle it in one capture.
+352 for leaving it out, so it stays out until the figure's meaning is settled. SETTLED: LilBolr1, 2 and 3, whose
+attack powers are 100, 140 and 180, ALL show 40. A constant figure across the three is not
+damage; taken with the thrown object being a virus sprite it is the summoned LilBoiler's own HP,
+which viruses have fixed. SO THIS CHIP IS A SUMMON, not a throw, and the blast that already
+matches is the boiler's own doing rather than a bomb going off. Modelling it as a bomb gets the
+arc and the blast right by coincidence of shape; a faithful version needs a summoned actor with
+40 HP that lands and then acts.
 The kettle's flame is NOT missing: every one of the virus sprite's animations carries the flame
 and the purple ring, and rendering them confirms it. The residual on frame 19 is grey-blue and
 white because it is this number, not the lid. The vertical

@@ -472,5 +472,11 @@
     "file": "log/shots/1788766889-lilbolr_progress.png",
     "caption": "LilBolr in flight, real ROM above and this build below. What it lobs is the LilBoiler virus, a golden kettle, not a bomb, and it now draws from that virus's own sprite. Its arc is far taller than a bomb's: the ball rises about a hundred pixels above the panel, peaking eleven frames in and landing on the same fortieth frame a bomb does, which needs both a faster launch and a stronger pull. The chip is down from around a thousand differing pixels a frame to 390. Left: the kettle sits about thirteen pixels high, the flame on its lid is missing, and the damage figure that pops beneath it is a separate feature. Its blast already matches, because it is the same blast object MiniBomb uses.",
     "tag": "chips"
+  },
+  {
+    "t": 1788767762,
+    "file": "log/shots/1788767762-lb_numbers_log.png",
+    "caption": "LilBolr1, 2 and 3 at the same frame, whose chip powers are 100, 140 and 180. All three show the same figure of 40 under the thing they throw, so that figure is not the chip's damage. Taken with the thrown object being a virus sprite, it is the summoned LilBoiler's own HP, which makes this chip a summon rather than a throw. One capture of the three settled a question that reasoning about the chip data could not.",
+    "tag": "chips"
   }
 ]
