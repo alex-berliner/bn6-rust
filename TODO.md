@@ -107,12 +107,16 @@ valuable thing the harness does not have.
     real   white 0..70, field at 71, viruses 113/141/173, window 173
     ours   fade  0..32, field at 32, viruses  59/ 92/125, window 134
 
-The spacing is right; the lead-in is not. What is left is one decision and then a change:
-IS THE WHITE THE BATTLE'S OR THE MAP TRANSITION'S? The state is at battle init and the
-screen is already white, which argues for the battle -- but that is an argument. Settle it
-(the fade controller is `sub_80E0684`/`sub_80E06E0`, asm31.s:85362/85412, and
-`SetScreenFade`'s level is at asm00_1.s:6387/6554), then replace the 32-frame black fade
-with whatever it really is and re-measure the virus spacing rather than assuming it.
+SETTLED AND DONE: the white is the battle's -- the save state's scroll counters read zero,
+so init has happened, and the screen is white for 71 frames after. The intro now holds full
+white for 71 frames in non-demo builds and in `demo-open`; every other demo keeps the old
+black ramp, because their frame offsets were calibrated against it and changing it moved
+eight checks at once.
+
+WHAT IS LEFT: with the lead-in right, the first virus is at 91 frames after init here
+against 113 there. The real ROM waits 42 frames between the field appearing and the first
+virus and this build waits 20; the spacing after that is right. Measure that gap -- it is
+probably the appear animation's own length -- rather than fitting a constant to it.
 
 A sampling trap worth remembering: a "brightness" measure reads white as FULL brightness, so
 a white screen looks like a finished fade. Measure the colour.

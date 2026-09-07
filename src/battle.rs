@@ -169,13 +169,32 @@ const GLOW_FORWARD: i32 = 2;
 /// Animations 0 and 1 carry the same OAM offsets and different spark art;
 /// 2 is the full-charge set, which draws in the sprite's third palette.
 const GLOW_ANIM: [usize; 3] = [0, 0, 2];
-// The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
-// the intro object, asm31.s:85280), then the enemy navis materialise one
-// at a time from a fade-in list, and only then does the fight state run
-// and lift the pause (sub_8009658 onwards, asm00_1.s:13379; sub_800855E,
-// 11048). The player's navi is simply there. The screen fade's frame
-// count was not read; two frames a step stands in.
-const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
+// The intro: the screen holds WHITE, then the field appears whole, then the
+// enemies materialise one at a time from a fade-in list, and only then does
+// the fight state run and lift the pause (sub_8009658 onwards, asm00_1.s:
+// 13379; sub_800855E, 11048). The player's navi is simply there.
+//
+// MEASURED (2026-09-07), from a save state at a battle's first frame and its
+// own line-up under `demo-open`: the screen is 100% WHITE from frame 0 through
+// 70 and 0% at 71, with no ramp between -- a HOLD, not a fade -- and then the
+// field is simply there. The three viruses follow at 113, 141 and 173.
+// This was black and 32 frames, with a note admitting the count had never been
+// read. It was the wrong colour and less than half the length.
+// The white belongs to the BATTLE and not to the map-to-battle transition:
+// the save state's scroll counters (`eBGScrollCBCounters`, zeroed once at
+// battle init) read 0x0000 there, so init has just happened, and the screen is
+// still white for 71 frames afterwards.
+//
+// NOT IN A DEMO BUILD, except `demo-open`, which exists to compare the opening.
+// Every other fixture compares against a capture taken MID-BATTLE, where no
+// intro is running, and each has a frame offset calibrated against the 32 this
+// used to be; lengthening it to the real 71 moved eight of them at once. The
+// intro's length is a fixture artefact for them, exactly as BATTLE START! is.
+const SCREEN_FADE_FRAMES: u16 = if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
+    0x10 * 2
+} else {
+    71
+};
 // The custom gauge: a u16 at BattleState+0x20 that the fight state adds
 // 0xd to each frame, full at 0x4000 (sub_800855E, asm00_1.s:11100;
 // accessors asm00_2.s:29821-29883). A speed word at +0x22 defaults to
@@ -2990,12 +3009,23 @@ impl<'a> Battle<'a> {
                 fade.enable_background(id);
             }
         } else if self.intro_fade > 0 {
-            let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2));
-            frame
-                .blend()
-                .darken(amount.min(Num::from_raw(16)))
-                .enable_background(bg_id)
-                .enable_object();
+            // FULL WHITE, held, not a ramp: the real ROM is 100% white through
+            // its 71st frame and 0% on the 72nd. A demo build keeps the old
+            // black ramp, so its fixtures' offsets still hold.
+            if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
+                let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2));
+                frame
+                    .blend()
+                    .darken(amount.min(Num::from_raw(16)))
+                    .enable_background(bg_id)
+                    .enable_object();
+            } else {
+                frame
+                    .blend()
+                    .brighten(Num::from_raw(16))
+                    .enable_background(bg_id)
+                    .enable_object();
+            }
         } else if let Some((mosaic, alpha)) = core::iter::once(&self.megaman)
             .chain(self.enemies.iter())
             .find_map(|a| a.fade())

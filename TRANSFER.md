@@ -1042,11 +1042,30 @@ everything is uniformly early because the lead-in is 32 frames of black where th
 white. Correcting the lead-in should bring the whole sequence into line, and the virus spacing is
 then worth re-measuring rather than assumed.
 
-NOT DONE, deliberately: the white hold is not implemented. It is a large visible change and there
-is a real question behind it -- whether the white belongs to the BATTLE or to the map-to-battle
-transition that this build has no map to run. The state is at battle init and the screen is
-already white there, which argues for the battle, but that is an argument and not a measurement,
-and today has been a long lesson in the difference.
+SETTLED, AND IMPLEMENTED. The question was whether the white belongs to the BATTLE or to the
+map-to-battle transition this build has no map to run. It is the battle's: `battlestart.state`'s
+scroll counters (`eBGScrollCBCounters`, zeroed exactly once at battle init) read 0x0000 there, so
+init has already happened, and the screen is white for 71 frames AFTER it. `SCREEN_FADE_FRAMES` is
+71 and the intro holds full white rather than ramping from black. Measured back: 71 frames of
+white on both sides.
+
+AND IT BROKE EIGHT CHECKS AT ONCE, which is worth recording as the cost of the change. Every
+fixture but `tiles` compares against a capture taken MID-BATTLE, where no intro is running, and
+each carries a frame offset calibrated against the 32 frames this used to be. Lengthening it moved
+all of them. So the real intro is gated to non-demo builds and `demo-open`, exactly as BATTLE
+START! is, and the demo builds keep the old black ramp so their offsets still hold.
+
+AND IT BROKE THE CRASH DETECTOR, more interestingly. `rollup` calls a mostly-white frame a crash,
+because agb's crash screen is a white page -- and now so is the first 71 frames of every battle,
+and the rollup loops battles. What separates them is that A CRASH NEVER CLEARS: the check now
+requires a frame to be white AND the frame 150 later to be white too. A detector that keys on an
+appearance rather than on a behaviour will eventually catch something legitimate that looks the
+same.
+
+WHAT IS STILL OUT: with the white right, the first virus is at 91 frames after init here against
+113 there -- the real ROM waits 42 frames between the field appearing and the first virus, and
+this build waits 20. The spacing after that is right. That gap is the next thing to measure, not
+to fit.
 
 ## 7az. A researched fact that did not survive contact with a capture (2026-09-07)
 

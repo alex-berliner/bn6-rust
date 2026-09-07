@@ -307,8 +307,15 @@ def check_rollup():
             sampled = [(x, y) for y in range(0, 160, 2) for x in range(0, 240, 2)]
             white = sum(1 for x, y in sampled if px[x, y] == (255, 255, 255))
             return white > len(sampled) // 2
-        # From 60: the first frames are the boot white before anything is drawn.
-        bad = [i for i in range(60, ROLLUP_FRAMES, 5) if crashed(i)]
+        # A WHITE PAGE IS NOT ENOUGH ANY MORE. agb's crash screen is white, and
+        # so is the first 71 frames of every battle this build opens (TRANSFER
+        # 7ba) -- and the rollup loops battles, so it shows several. What tells
+        # them apart is that a crash NEVER CLEARS: the screen is still white
+        # 150 frames later, where an intro is long gone. So a frame only counts
+        # if it is white and so is the one 150 frames after it.
+        LINGER = 150
+        bad = [i for i in range(60, ROLLUP_FRAMES - LINGER, 5)
+               if crashed(i) and crashed(i + LINGER)]
         # Three walks of 2600 frames is about 1.2 GB of raw captures. Leaving
         # them behind is how /tmp reached 37 GB and the box ran out of swap.
         subprocess.run(["rm", "-rf", out], check=True)
