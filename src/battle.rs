@@ -340,6 +340,8 @@ const BOMB_FLIGHT: u8 = 40;
 /// horizontal speed scales down with that and the launch speed up, so the arc
 /// still lands flat.
 const BLKBOMB_FLIGHT: u8 = 42;
+const BLKBOMB_VX: i32 = 0x2C000;
+const BLKBOMB_VZ: i32 = 0x22051;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -1784,16 +1786,8 @@ impl<'a> Battle<'a> {
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
-                    vx: if chip.id == CHIP_BLKBOMB {
-                        dx * BOMB_VX * BOMB_FLIGHT as i32 / BLKBOMB_FLIGHT as i32
-                    } else {
-                        dx * BOMB_VX
-                    },
-                    vz: if chip.id == CHIP_BLKBOMB {
-                        BOMB_VZ * BLKBOMB_FLIGHT as i32 / BOMB_FLIGHT as i32
-                    } else {
-                        BOMB_VZ
-                    },
+                    vx: if chip.id == CHIP_BLKBOMB { dx * BLKBOMB_VX } else { dx * BOMB_VX },
+                    vz: if chip.id == CHIP_BLKBOMB { BLKBOMB_VZ } else { BOMB_VZ },
                     target,
                     damage: chip.power,
                     ticks: 0,

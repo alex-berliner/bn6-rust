@@ -510,9 +510,13 @@ shadow and a 16x32 plus an 8x32 making a dark brown ball with a fuse -- and one 
 taking its tiles out of OBJ VRAM mid-flight and searching all 97 sprite files for those exact
 bytes; only that one holds them. Its held bomb was already right (the bomb sprite's animation 0
 in palette 4). Its flight is slower: the leading edge covers 70 px over the 27 frames where
-MiniBomb's covers 74, so the flight is 42 frames rather than 40, with the horizontal speed scaled
-down by that and the launch speed up so the arc still lands flat. 41 and 43 score 53 and 50
-px/frame against 42's 12.8. What is left is 65, 87 and 55 px on frames 31, 33 and 37.
+MiniBomb's covers 74, so the flight is 42 frames rather than 40 (41 and 43 score 53 and 50
+px/frame against 42's 12.8), with its own horizontal and launch speeds, BLKBOMB_VX 0x2C000 and
+BLKBOMB_VZ 0x22051. Those were found by search against the real capture, not derived: vx has a
+plateau over 0x2C000-0x2C200 at 10.6 px/frame with 0x2BF00 and 0x2C34B both worse, and vz is flat
+over 0x22000-0x22200, so the residual is not vertical. What is left is 65 and 45 px on frames 31
+and 37, where the bomb crosses the top edge of the diff window at y=40 and the two arcs differ by
+about a pixel. Everything else is 0.
 WHICH PALETTE AN OAM OFFSET COUNTS FROM IS PER OBJECT, and both halves are measured. HiCannon's
 barrel sits in palette 1 and its silhouette frame, offset 4, shows the flat palette 4, ignoring
 the shift. Barr100's bubble is Barrier's shifted by 3 and its later frames, offsets 1 and 2, show
