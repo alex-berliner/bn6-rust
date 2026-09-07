@@ -213,6 +213,11 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--clean", action="store_true",
+                    help="delete both captures when done. A run of 43 chips leaves about"
+                         " 4 GB of raw frames behind otherwise, which is how /tmp reached"
+                         " 37 GB and the machine ran out of swap. Not the default, because"
+                         " --no-build reuses the Rust capture from the previous run.")
     ap.add_argument("--hide-enemy", action="store_true",
                     help="keep the enemy alive but blank its tiles, for a chip that needs a live target (StepSwrd)")
     ap.add_argument("--keep-enemy", action="store_true",
@@ -286,6 +291,9 @@ def main():
     path = os.path.join(args.out, f"strip_{args.feature}.png")
     strip.resize((strip.width * 2, strip.height * 2), Image.NEAREST).save(path)
     print("frames", picks, "->", path)
+
+    if args.clean:
+        subprocess.run(["rm", "-rf", real, rust])
 
 
 if __name__ == "__main__":

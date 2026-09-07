@@ -151,9 +151,9 @@ way 7ah describes (list the frames on which the virus's bounding box changes on 
 and find the lag that lines the two lists up), so a regression in it is caught rather
 than remembered.
 
-### D2. Make the harness clean up after itself, everywhere
-`regress.py`'s rollup check now deletes its captures. `chip_compare.py`, `scoreboard.py`
-and `throw_dump.py` do not, and a capture frame is 150 KB. `/tmp` reached 37 GB across
-652 stale capture directories and the box ran out of swap, which was taking the OOM
-killer to whatever else was running. Give the tools a `--keep` flag and delete by
-default.
+### D2. Make the harness clean up after itself, everywhere  *(done)*
+`regress.py`'s rollup check, `chip_compare.py --clean` (which `scoreboard.py` now always
+passes) and `throw_dump.py` all delete their captures. `--clean` is opt-in for
+`chip_compare` rather than the default because `--no-build` reuses the previous run's
+Rust capture. What is left: the ad-hoc capture directories a person makes by hand, which
+is what actually filled the disk.

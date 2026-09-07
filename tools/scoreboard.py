@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Run every chip comparison and print the scoreboard.
 
+Each comparison is run with --clean: 43 chips leave about 4 GB of raw capture
+frames behind otherwise, and this box has run out of swap over exactly that.
+
 usage: python3 scoreboard.py [--only NAME,...] [--out FILE]
 
 Each row is one chip: its demo feature, the frames compared and the mean
@@ -112,7 +115,7 @@ def main():
             continue
         out = subprocess.run(
             ["python3", os.path.join(ROOT, "tools", "chip_compare.py"),
-             chip, feature, "--frames", str(frames), *extra],
+             chip, feature, "--frames", str(frames), "--clean", *extra],
             cwd=ROOT, capture_output=True, text=True,
         )
         mean = None

@@ -91,7 +91,13 @@ def main():
         path = "/tmp/throw_ew_%s_%d.bin" % (args.chip, f)
         dump(args.chip, f, path)
         mems[f] = open(path, "rb").read()
+        os.remove(path)
     print("sampled frames %d..%d" % (frames[0], frames[-1]))
+
+    # The dumps are 256K each and the capture directory holds a frame per
+    # emulated frame at 150K a frame; leaving them behind is how /tmp reached
+    # 37 GB and the machine ran out of swap.
+    subprocess.run(["rm", "-rf", "/tmp/throw_dump_frames"], check=False)
 
     hits = find_object(mems, frames)
     if not hits:
