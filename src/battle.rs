@@ -24,7 +24,7 @@ use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
-    LILBOILER, MINIBOMB,
+    FLSHBOM, LILBOILER, MINIBOMB,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -143,6 +143,11 @@ const CHIP_ENERGBOM: u16 = 55;
 /// rather than MiniBomb's sub_80C5DBC -- a fixed target ahead rather than the
 /// targeted arc. Its blast is the same object MiniBomb's is, confirmed by the
 /// art matching the exported blast asset byte for byte.
+/// FlshBom1/2/3 share bomb subfamily 0xe, so one implementation serves all
+/// three; their powers are 40, 70 and 100.
+const CHIP_FLSHBOM1: u16 = 57;
+const CHIP_FLSHBOM2: u16 = 58;
+const CHIP_FLSHBOM3: u16 = 59;
 const CHIP_LILBOLR1: u16 = 98;
 const CHIP_LILBOLR2: u16 = 99;
 const CHIP_LILBOLR3: u16 = 100;
@@ -662,6 +667,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_MEGENBOM);
         } else if cfg!(feature = "demo-lilbolr") {
             hand.push(CHIP_LILBOLR1);
+        } else if cfg!(feature = "demo-flshbom") {
+            hand.push(CHIP_FLSHBOM1);
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
         } else if cfg!(feature = "demo-barr200") {
@@ -1692,15 +1699,33 @@ impl<'a> Battle<'a> {
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
-            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3 => {
+            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
-                let mut held = spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false));
+                let flash = matches!(
+                    chip.id,
+                    CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
+                );
+                // The flash bomb is its own sprite, sprite_8391E40, found by
+                // taking the held ball's tiles out of OBJ VRAM and searching
+                // the data blobs -- it is in no sprite file.
+                let mut held = if flash {
+                    spr::Player::new(spr::Assets::new(FLSHBOM), 0)
+                } else {
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false))
+                };
                 held.set_palette_add(bomb_palette(chip.id, false));
+                // The flash bomb's sprite carries its own part offsets, which
+                // sit 22 right and 10 down of where the bomb sprite's do:
+                // measured from the held ball's centre, (37,88) on the real
+                // ROM against (59,98) drawn at the panel's origin.
+                let at = field::panel_centre(mc, mr);
+                let at = if flash { (at.0 - 22, at.1 - 10) } else { at };
                 self.effects.push((
                     held,
-                    field::panel_centre(mc, mr),
+                    at,
                     HELD_BOMB_FRAMES,
                     false,
                 ));
@@ -1856,7 +1881,8 @@ impl<'a> Battle<'a> {
                 }
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
-            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3 => {
+            | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 => {
                 let (mx, my) = field::panel_centre(col, row);
                 let lilbolr = matches!(
                     chip.id,

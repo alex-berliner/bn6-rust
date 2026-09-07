@@ -45,6 +45,7 @@ static AIRSHOT_BARREL: &[u8] = &Aligned(*include_bytes!("../assets/airshot_barre
 static MINIBOMB: &[u8] = &Aligned(*include_bytes!("../assets/minibomb.bin")).0;
 static BLKBOMB: &[u8] = &Aligned(*include_bytes!("../assets/blkbomb.bin")).0;
 static LILBOILER: &[u8] = &Aligned(*include_bytes!("../assets/lilboiler.bin")).0;
+static FLSHBOM: &[u8] = &Aligned(*include_bytes!("../assets/flshbom.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
 static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
 static BARRIER: &[u8] = &Aligned(*include_bytes!("../assets/barrier.bin")).0;

@@ -77,6 +77,7 @@ CHIPS = [
     "SuprVulc", "Muramasa", "StepSwrd",
     "Barr100", "Barr200", "EnergBom", "MegEnBom",
     "LilBolr1", "LilBolr2", "LilBolr3",
+    "FlshBom1", "FlshBom2", "FlshBom3",
 ]
 ALIASES = {"WideSwd": "WideSwrd", "LongSwd": "LongSwrd", "Invis": "Invisibl"}
 ICON_BASE = 0x8725894  # data/dat38_86.s:22229; sub_80281E4 indexes id*0x80

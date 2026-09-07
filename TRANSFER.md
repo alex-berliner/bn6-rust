@@ -244,6 +244,28 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7p. The bomb family, mapped; FlshBom started (2026-09-07)
+
+Every NAMED chip in each implemented family, read straight out of ChipDataArr.s by attack_family
+and attack_subfamily, so there is no more guessing about what is left:
+- SWORD 0x13: Sword(s0) WideSwrd(s1) LongSwrd(s2) WideBlde(s3) LongBlde(s4) FireSwrd(s12)
+  AquaSwrd(s13) ElecSwrd(s14) BambSwrd(s15) StepSwrd(s1, param1=1) Muramasa(s8). ALL ELEVEN ARE
+  IMPLEMENTED -- the family is complete. WindRack, VarSwrd, NeoVari, MoonBld, MchnSwrd, ElemSwrd
+  and AssnSwrd are sword-NAMED but families 0x3f, 0x53, 0x54, 0x40 and 0x49, not this one.
+- CANNON 0x14: Cannon, HiCannon, M-Cannon. Complete.
+- VULCAN 0x17: Vulcan1, Vulcan2, Vulcan3, SuprVulc. Complete.
+- BOMB 0x12, the only one with room left: MiniBomb(s0) EnergBom(s1) MegEnBom(s1) BlkBomb(s6)
+  LilBolr1/2/3(s3) BigBomb(s15) are done; FlshBom1/2/3(s14) is started; BugBomb(s7) GrasSeed(s13)
+  IceSeed(s9) PoisSeed(s12) VDoll(s8) are not.
+
+FLSHBOM1/2/3 share subfamily 0xe, so one implementation serves all three (powers 40, 70, 100).
+Wired as a bomb variant it is at 138 px/frame. Its held ball is its OWN sprite, sprite_8391E40 in
+data/dat38_33.s -- found by pulling the held ball's tiles out of OBJ VRAM and searching the data
+blobs, since it is in no sprite file and its yellow is in none of the bomb sprite's thirteen
+palettes. That sprite carries its own part offsets, sitting 22 right and 10 down of the bomb
+sprite's, so the held object is drawn at the panel origin less that; with it the first five
+frames are 51 px. Frames 5-8 are still 589: the held ball's second frame needs its own offset.
+
 ## 7o. LilBolr, identified and ready to build (2026-09-07)
 
 LilBolr1/2/3 (98, 99, 100; powers 100, 140, 180) are bomb family, subfamily 3, which routes
