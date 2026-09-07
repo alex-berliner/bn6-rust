@@ -120,11 +120,50 @@ from `TextScript86F0300`, sound effects 0x91/0x92 on cursor moves, and
 The banner half is nearly free — `src/banner.rs` already carries all 45 messages and the
 freeze is one condition. Verify against a capture that presses Start mid-battle.
 
-### B2. Panel damage
-`src/field.rs` carries the art for hole, broken, normal, cracked and poison panels and
-nothing drives cracked or broken. `object_crackPanel` writes 3 and a broken panel is 1
-(object.s:2301, 2198). Find what cracks a panel in the real ROM and drive it. Verify with
-a capture of something heavy landing.
+### B2. Panel damage  *(researched -- ready to implement)*
+`src/field.rs` carries the art for all five panel states and nothing drives cracked or
+broken. The research says what is reachable and what is not, and the answer is narrower
+and more useful than expected.
+
+REACHABLE, and the one to build: **MegaMan's CHARGE SHOT sets the panel it hits straight to
+BROKEN.** The buster and charge shot both spawn the shared type-0 straight-shot object
+(`sub_80C4F02`, asm31.s:27760); on a hit it switches on its own `Param1`, and the default
+branch calls `object_setPanelType(hit_panel, Param1)` outright (asm31.s:27864-27874), gated
+only on the panel being solid. The plain buster's `Param1` is 0x1d (asm31.s:12531), not one
+of the five types, so it does nothing visible. The charge shot's comes from
+`byte_80EBD34[Unk_03]` = {1,1,1,1,0xC,0xC,0xC,0} (asm31.s:109578-109611), and a base-tier
+shot takes index 0 or 1 -- **1 is PANEL_BROKEN**. No cracked stage at all.
+
+ALSO REACHABLE: the seeds stamp an AREA of panels to their terrain directly
+(`object_setPanelType` in a loop, asm31.s:47200-47223, effect ids {4,7,6} for
+poison/grass/ice at byte_80CE41E), and VDoll sets its landing panel to POISON
+unconditionally (asm31.s:60531-60534). Both bypass the crack lifecycle entirely.
+
+NOT REACHABLE, so do not build it: the Mettaur's shockwave CAN crack (`byte_80C6B00`,
+asm31.s:31360-31366: `Param1==4` cracks, `==5` poisons) but `Param1` is the virus's Version
+tier via an identity table (asm31.s:171288), and the Mettaur this build fields is Version 0
+-- confirmed by its 10-damage shockwave. None of MiniBomb, EnergBom, MegEnBom, BigBomb,
+BlkBomb, LilBolr, BugBomb or FlshBom contain any crack/break/setPanelType call at all.
+
+THE LIFECYCLE, for whatever is built: broken goes back to normal after **600 frames** (480
+if `GetBattleMode()==1`), from `sub_800C488` (object.s:1541-1549), with an alternating
+"about to reform" flag over the last 60 (object.s:1458-1467). A broken panel simply REJECTS
+movement onto it, like a wall -- the validity gate wants the solid bit 0x10
+(`object_isPanelSolid`, object.s:2703; `playerObjectMovingToPanelValidityRelated_800E618`,
+object.s:5112) -- rather than dropping anyone through.
+
+TWO THINGS TO CONFIRM EMPIRICALLY BEFORE TRUSTING THEM. Cracked-to-broken is NOT a timer: it
+re-arms every frame and instead tests a cached value against mask 0xF800000 (object.s:
+1468-1490), whose bits the struct comments call "support object"/"enemy alliance"/"ally
+alliance". Whether that means "somebody is standing here" or "this half of the field is
+theirs" was NOT established -- and this project has already been burned once by an occupancy
+rule that turned out not to exist (TRANSFER 7ai), so measure it. And nothing was found that
+handles a panel breaking UNDER someone already standing on it.
+
+VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster at the Mettaur
+(expect no panel change), then a charge shot (expect its panel to go straight to broken on
+the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
+poked into the hand for the poison case.
 
 ### B3a. Sound: the harness can hear now  *(the research is done)*
 `tools/mgba_capture.c` has `--dump-audio` and `--audio-channel`; see TRANSFER 7au for the two
