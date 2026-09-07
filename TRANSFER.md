@@ -449,11 +449,24 @@ frames, and tracking the object's bounding box frame by frame shows the paths ag
   OAM puts the figure ahead of the navi. When a residue sits where two objects overlap, count the
   pixels of ONE colour on each side before assuming a position is wrong; the figure's bounding
   box had been identical all along.
-- PoisSeed (6.9, never an arc problem): the pod's GROUND SHADOW on six frames, 115 px. Measured
-  against a later frame of the same capture, the real shadow covers 218 pixels on the first frame
-  of flight and shrinks to 196 over six -- which is the fixed size this build draws throughout.
-  So the shadow starts LARGER and settles; it does not keep shrinking as the pod climbs, and it
-  never grows back on the way down. NOT EXPLAINED: what drives those six frames.
+- PoisSeed (6.9, never an arc problem): 115 px over six frames in the GROUND SHADOW, and it is
+  not the pod's arc. Counting the shadow colour (16,16,16) between x 40 and 140, both sides hold
+  106 pixels on the frame before the throw and 132 six frames later, but in between the real ROM
+  goes 75, 96, 127 while this build goes 118, 118, 132. IceSeed and GrasSeed -- the same sprite,
+  the same arc, a different palette -- are 106/143/158/182/195 on BOTH sides, exact.
+  WHAT THE OAM SAYS. Dumping OAM at that frame: the real ROM's thrown object is ABOVE the navi
+  (MiniBomb's bomb is entry 9, the navi entries 10-13 and 15) and its ground shadow is entry 14 --
+  between the navi's body and the navi's OWN shadow. This build draws the whole bomb after the
+  actors, so under all of them.
+  MOVING THE WHOLE BOMB ABOVE THE NAVI IS WORSE, and the measurement is worth keeping: PoisSeed
+  6.9 -> 6.0 but IceSeed and GrasSeed 5.3 -> 6.0, MiniBomb 6.2 -> 7.0, BlkBomb 7.4 -> 10.1,
+  LilBolr 7.7 -> 18.2, FlshBom 7.7 -> 9.9, BigBomb 4.9 -> 5.6. The order is not one rule for the
+  whole object: the body goes over the navi and the shadow goes between his body and his shadow,
+  and until both are separated the flat move costs more than it buys.
+  ALSO UNEXPLAINED: the real PoisSeed capture's NAVI is on a different OAM layout at that frame
+  from the real MiniBomb capture's (four entries against five), which should not happen if both
+  play the same throw animation. Somebody should check whether the seeds' throw is a different
+  animation before chasing the shadow further.
 Track the bounding box before touching a constant: if it already matches, the arc is right and
 the residue is animation or a part, not physics.
 
