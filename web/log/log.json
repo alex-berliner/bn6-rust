@@ -298,5 +298,11 @@
     "file": "log/proof/1788744549-vulcan_diff.png",
     "caption": "Vulcan2/Vulcan3's last differing frame, before the fix: real (top) still in the firing pose with recoil and muzzle flash, ours (middle) already in recovery. Measuring the firing pose's last frame (c21/c35/c46) and the gun's life (35/46/57) gave the per-volley timings that took both to zero.",
     "tag": "proof"
+  },
+  {
+    "t": 1788744996,
+    "file": "log/proof/1788744996-eswords.png",
+    "caption": "The elemental swords before the fix: real (top), ours (middle), diff (bottom) for FireSwrd and ElecSwrd. The sword objects were already exact -- only the arc kept the default blue. The strike ORs (subfamily - 0xb) into the spawn as a palette offset, so the arc takes the element's colour; with that, all four diff to zero.",
+    "tag": "proof"
   }
 ]

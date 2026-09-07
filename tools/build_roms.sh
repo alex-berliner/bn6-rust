@@ -40,6 +40,8 @@ ENTRIES=(
   "demo-vulcan2 vulcan2 Vulcan2 (four shots)"
   "demo-vulcan3 vulcan3 Vulcan3 (five shots)"
   "demo-recov50 recov50 Recov50"
+  "demo-fireswrd fireswrd FireSwrd"
+  "demo-elecswrd elecswrd ElecSwrd"
 )
 
 mkdir -p web/roms

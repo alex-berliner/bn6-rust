@@ -21,8 +21,8 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, BARRIER, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC,
-    SWORD_SPR, VULCAN_GUN, WAVE,
+    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL, MINIBOMB,
+    PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -94,6 +94,10 @@ const GAUGE_STEP: u16 = 0xd;
 const CHIP_SWORD: u16 = 71;
 const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
+const CHIP_FIRESWRD: u16 = 76;
+const CHIP_AQUASWRD: u16 = 77;
+const CHIP_ELECSWRD: u16 = 78;
+const CHIP_BAMBSWRD: u16 = 79;
 const CHIP_CANNON: u16 = 1;
 const CHIP_HICANNON: u16 = 2;
 const CHIP_MCANNON: u16 = 3;
@@ -429,6 +433,14 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_VULCAN3);
         } else if cfg!(feature = "demo-recov50") {
             hand.push(CHIP_RECOV50);
+        } else if cfg!(feature = "demo-fireswrd") {
+            hand.push(CHIP_FIRESWRD);
+        } else if cfg!(feature = "demo-aquaswrd") {
+            hand.push(CHIP_AQUASWRD);
+        } else if cfg!(feature = "demo-elecswrd") {
+            hand.push(CHIP_ELECSWRD);
+        } else if cfg!(feature = "demo-bambswrd") {
+            hand.push(CHIP_BAMBSWRD);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -947,7 +959,20 @@ impl<'a> Battle<'a> {
             if left == 0 {
                 self.sword_in = None;
                 let (mc, mr) = self.megaman.panel();
-                let sword = spr::Player::new(spr::Assets::new(SWORD_SPR), 0);
+                // The sword object is byte_80B8BD4's row for the chip's
+                // subfamily (byte_80EBB64, asm31.s:109348): row 3 is
+                // sprite_82EFE48 for the plain swords, rows 0x19-0x1b its
+                // fire, aqua and elec counterparts, and row 0x1c is
+                // sprite_82EFE48 again with palette 2 for BambSwrd.
+                let (asset, palette) = match self.chip_in_use.map(|c| c.id) {
+                    Some(CHIP_FIRESWRD) => (FIRE_SWORD, 0),
+                    Some(CHIP_AQUASWRD) => (AQUA_SWORD, 0),
+                    Some(CHIP_ELECSWRD) => (ELEC_SWORD, 0),
+                    Some(CHIP_BAMBSWRD) => (SWORD_SPR, 2),
+                    _ => (SWORD_SPR, 0),
+                };
+                let mut sword = spr::Player::new(spr::Assets::new(asset), 0);
+                sword.set_palette_add(palette);
                 self.effects.push((
                     sword,
                     field::panel_centre(mc, mr),
@@ -1213,7 +1238,8 @@ impl<'a> Battle<'a> {
     /// without effect.
     fn use_chip(&mut self, chip: Chip) {
         match chip.id {
-            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD => {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
+            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
@@ -1313,10 +1339,15 @@ impl<'a> Battle<'a> {
         let (col, row) = self.megaman.panel();
         let dx = self.megaman.facing_dx();
         match chip.id {
-            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD => {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
+            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                 let mut panels: Vec<(i32, i32)> = Vec::new();
+                // The hit shape is byte_80EBA18's first byte per subfamily
+                // (asm31.s:109246): 1 the panel ahead, 4 the column ahead,
+                // 2 two panels ahead; the elemental swords are all 4.
                 match chip.id {
-                    CHIP_WIDESWRD => panels.extend((1..=field::ROWS).map(|r| (col + dx, r))),
+                    CHIP_WIDESWRD | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
+                    | CHIP_BAMBSWRD => panels.extend((1..=field::ROWS).map(|r| (col + dx, r))),
                     CHIP_LONGSWRD => panels.extend([(col + dx, row), (col + 2 * dx, row)]),
                     _ => panels.push((col + dx, row)),
                 }
@@ -1326,13 +1357,28 @@ impl<'a> Battle<'a> {
                 // (asm31.s:109180-109200) -- effect list entry 0x14
                 // (sprite_830F144), its animation 2 for Sword, 0 for WideSwrd,
                 // 1 for LongSwrd -- gone when the animation ends.
+                // The arc's animation is byte_80EBAD8 per subfamily
+                // (asm31.s:109264): 0x18 for Sword, 0x16 for WideSwrd and
+                // every elemental sword, 0x17 for LongSwrd.
                 let arc_anim = match chip.id {
-                    CHIP_WIDESWRD => 0,
                     CHIP_LONGSWRD => 1,
-                    _ => 2,
+                    CHIP_SWORD => 2,
+                    _ => 0,
                 };
                 let (fx, fy) = field::panel_centre(col + dx, row);
-                let arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
+                // The elemental swords add their palette: the strike ORs
+                // (subfamily - 0xb) into the spawn's Param3, which the
+                // effect object adds to the sprite's palette
+                // (asm31.s:109198-109206; sub_80E0568, asm31.s:85852).
+                let arc_palette = match chip.id {
+                    CHIP_FIRESWRD => 1,
+                    CHIP_AQUASWRD => 2,
+                    CHIP_ELECSWRD => 3,
+                    CHIP_BAMBSWRD => 4,
+                    _ => 0,
+                };
+                let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
+                arc.set_palette_add(arc_palette);
                 self.effects
                     .push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim], true));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {

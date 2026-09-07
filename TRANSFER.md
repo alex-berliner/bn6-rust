@@ -271,6 +271,23 @@ starts at c2) and the gun lives 35/46/57 frames, giving (firing, recovery) = (20
 (45,10) for 3/4/5 shots -- kept as a measured table in `vulcan_timing`, since the state
 machine's ticks do not map to frames one-for-one.
 
+## 7g. The elemental swords (2026-09-06)
+
+FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 subfamilies
+0xc-0xf and all diff to zero. What they add over Sword/WideSwrd/LongSwrd:
+- Hit shape: byte_80EBA18's first byte per subfamily is 4 for all of them, i.e. the column
+  ahead, like WideSwrd; the arc animation (byte_80EBAD8) is 0x16, also WideSwrd's.
+- The sword object's row comes from byte_80EBB64[subfamily] (asm31.s:109348): row 3
+  (sprite_82EFE48) for the plain swords, rows 0x19/0x1a/0x1b for fire/aqua/elec
+  (sprite_83279C0 / sprite_8329D28 / sprite_832C418), and row 0x1c for BambSwrd, which is
+  sprite_82EFE48 again with palette 2.
+- The ARC takes the element's colour: the strike ORs `(subfamily - 0xb) << 16` into the
+  spawn's Param3 (asm31.s:109198-109206), which sub_80E0568 adds to the sprite's palette
+  index -- 1 fire, 2 aqua, 3 elec, 4 bamboo. Exporting sprite_830F144 with `--palettes 4` and
+  setting the player's palette add reproduces it exactly. Getting this wrong was the whole
+  residual: the swords themselves were already pixel-perfect, only the arc was the default
+  light blue.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
@@ -278,7 +295,8 @@ banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd 
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
-Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3), LongSwrd (49 demo-longswrd), Recov30 (9b
+Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
+FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,
