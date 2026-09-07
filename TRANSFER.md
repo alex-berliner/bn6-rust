@@ -288,6 +288,37 @@ FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 su
   residual: the swords themselves were already pixel-perfect, only the arc was the default
   light blue.
 
+## 7h. The bomb family and the gauge/HP research (2026-09-06)
+
+**BigBomb (202)** and **BlkBomb (60)** are family 0x12 like MiniBomb. What differs:
+- The HELD object's row is byte_80EB738's packed halfword per subfamily (asm31.s:108898):
+  MiniBomb and BigBomb row 4, BlkBomb row 0x2d, which is the same bomb sprite with palette 4.
+- The THROWN object's palette is byte_80C5BA0[Param1]'s fourth byte (asm31.s:29422), Param1
+  being the chip's first attack parameter: row 0 -> palette 0 (MiniBomb), row 3 -> palette 3
+  (BigBomb, whose parameter is 3) -- the red bomb. BigBomb's held bomb is red too.
+- BigBomb is at 87 px/frame mean with only its LANDING left: the real blast is much larger
+  than MiniBomb's (byte_80C5BA0 row 3's third byte is 3 where MiniBomb's is 0, presumably the
+  blast type). Open.
+- BlkBomb is still ~195 px/frame: its thrown bomb is brown in the real, which is not any of
+  the sprite's first five palettes, so its throw probably goes through a different spawner
+  (off_80EB6F8[subfamily]) rather than sub_80C5DBC. Open.
+
+**The custom gauge (research, second pass, confirms the first):** the counter lives at
+word_20352A0 (eStruct2035280+0x20), is cleared by ClearCustGauge (asm00_2.s:29826) and raised
+0xd a frame by sub_801DFB8 from sub_800855E (asm00_1.s:11099). Its only readers are
+sub_800A21C (a binary `cmp r0,#0x4000` ready check) and sub_8010B78 (AI chip-use bucketing).
+**No routine turns the counter into a proportional fill.** The gauge cell is an 18x2 tile
+region written by CopyBackgroundTiles from word_801ED6C (counting) and word_801EDB4 (ready),
+with a three-frame sparkle picked from byte_86E1CD8 (data/dat38_85.s:1795) -- i.e. a binary
+state plus an animation, not a bar that grows. Drawing it is background work, which is parked.
+
+**The HP box** is OBJECTS, not a background: digits go to OBJ VRAM 0x06016600 (asm00_2.s:25957)
+from three pre-coloured glyph sets (off_801D854/0x880/0x8AC -> dword_86E0AB8.., the same 8x16
+cells this project already exports), and byte_203EB50 drives them per frame: on a change the
+shown number walks toward the real HP by |delta|/8 + 2 a frame (sub_801C1D0/sub_801C1EA,
+asm00_2.s:25916-25949) while a flash timer picks the alternate glyph set. That count-up/down
+is worth having as a gameplay detail.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
@@ -296,7 +327,7 @@ demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-star
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
-FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), LongSwrd (49 demo-longswrd), Recov30 (9b
+FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), BigBomb (ca, all but its blast), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,

@@ -72,6 +72,7 @@ CHIPS = [
     # (dword_80EBFEC), the Recovs only in the amount (byte_80EC870).
     "Vulcan2", "Vulcan3", "Recov50", "Recov80", "Recov120",
     "FireSwrd", "AquaSwrd", "ElecSwrd", "BambSwrd",
+    "BlkBomb", "BigBomb",
 ]
 ALIASES = {"WideSwd": "WideSwrd", "LongSwd": "LongSwrd", "Invis": "Invisibl"}
 ICON_BASE = 0x8725894  # data/dat38_86.s:22229; sub_80281E4 indexes id*0x80

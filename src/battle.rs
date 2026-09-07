@@ -106,6 +106,8 @@ const CHIP_VULCAN: u16 = 5;
 const CHIP_VULCAN2: u16 = 6;
 const CHIP_VULCAN3: u16 = 7;
 const CHIP_MINIBOMB: u16 = 54;
+const CHIP_BLKBOMB: u16 = 60;
+const CHIP_BIGBOMB: u16 = 202;
 const CHIP_RECOV10: u16 = 154;
 const CHIP_RECOV30: u16 = 155;
 const CHIP_RECOV50: u16 = 156;
@@ -277,6 +279,20 @@ const BOMB_SPAWN_UP: i32 = 0x30 << 16;
 const BOMB_VX: i32 = 0x2e666;
 const BOMB_VZ: i32 = 0x20666;
 const BOMB_GRAVITY: i32 = 0x2800;
+/// The bomb's palette. The held object takes byte_80EB738's packed row
+/// (asm31.s:108898): MiniBomb and BigBomb row 4, BlkBomb row 0x2d, which
+/// is the same sprite with palette 4. The thrown object takes
+/// byte_80C5BA0[Param1]'s fourth byte instead (asm31.s:29422): row 0 is
+/// palette 0 and row 3 -- BigBomb's, whose first attack parameter is 3 --
+/// is palette 3, the red bomb.
+const fn bomb_palette(id: u16, thrown: bool) -> usize {
+    match (id, thrown) {
+        (CHIP_BLKBOMB, false) => 4,
+        (CHIP_BIGBOMB, _) => 3,
+        _ => 0,
+    }
+}
+
 /// The held bomb rides the navi's origin with no offset (byte_80B8BD4 row
 /// 4: effect list 0xC index 2 = sprite_82F569C, animation 0) until the
 /// throw, when the attack drops it (the real ROM shows it gone on the
@@ -441,6 +457,10 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_ELECSWRD);
         } else if cfg!(feature = "demo-bambswrd") {
             hand.push(CHIP_BAMBSWRD);
+        } else if cfg!(feature = "demo-blkbomb") {
+            hand.push(CHIP_BLKBOMB);
+        } else if cfg!(feature = "demo-bigbomb") {
+            hand.push(CHIP_BIGBOMB);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1244,12 +1264,14 @@ impl<'a> Battle<'a> {
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
-            CHIP_MINIBOMB => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
+                let mut held = spr::Player::new(spr::Assets::new(MINIBOMB), 0);
+                held.set_palette_add(bomb_palette(chip.id, false));
                 self.effects.push((
-                    spr::Player::new(spr::Assets::new(MINIBOMB), 0),
+                    held,
                     field::panel_centre(mc, mr),
                     HELD_BOMB_FRAMES,
                     false,
@@ -1387,11 +1409,13 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_MINIBOMB => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
+                let mut thrown = spr::Player::new(spr::Assets::new(MINIBOMB), 1);
+                thrown.set_palette_add(bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
-                    player: spr::Player::new(spr::Assets::new(MINIBOMB), 1),
+                    player: thrown,
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
