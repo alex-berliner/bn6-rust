@@ -98,6 +98,8 @@ const GAUGE_STEP: u16 = 0xd;
 const CHIP_SWORD: u16 = 71;
 const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
+const CHIP_WIDEBLDE: u16 = 74;
+const CHIP_LONGBLDE: u16 = 75;
 const CHIP_FIRESWRD: u16 = 76;
 const CHIP_AQUASWRD: u16 = 77;
 const CHIP_ELECSWRD: u16 = 78;
@@ -117,6 +119,9 @@ const CHIP_RECOV30: u16 = 155;
 const CHIP_RECOV50: u16 = 156;
 const CHIP_RECOV80: u16 = 157;
 const CHIP_RECOV120: u16 = 158;
+const CHIP_RECOV150: u16 = 159;
+const CHIP_RECOV200: u16 = 160;
+const CHIP_RECOV300: u16 = 161;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
 const CHIP_BARRIER: u16 = 178;
@@ -317,6 +322,11 @@ struct Bomb {
     vz: i32,
     target: (i32, i32),
     damage: u16,
+    /// BigBomb's landing spreads over the panel and its eight neighbours:
+    /// the region byte dword_80C5D7C[Param1] is 1 for MiniBomb and 0xf for
+    /// BigBomb, and 0xf is the nine-panel offset list byte_8019951
+    /// (asm31.s:29619, asm00_2.s:20987). Every panel gets the same puff.
+    wide: bool,
     ticks: u8,
 }
 
@@ -468,6 +478,12 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_BLKBOMB);
         } else if cfg!(feature = "demo-bigbomb") {
             hand.push(CHIP_BIGBOMB);
+        } else if cfg!(feature = "demo-wideblde") {
+            hand.push(CHIP_WIDEBLDE);
+        } else if cfg!(feature = "demo-longblde") {
+            hand.push(CHIP_LONGBLDE);
+        } else if cfg!(feature = "demo-recov300") {
+            hand.push(CHIP_RECOV300);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1219,25 +1235,47 @@ impl<'a> Battle<'a> {
             b.step();
             b.ticks += 1;
             if b.ticks >= BOMB_FLIGHT {
-                landed.push((b.target, b.damage));
+                landed.push((b.target, b.damage, b.wide));
                 false
             } else {
                 true
             }
         });
-        for ((col, row), damage) in landed {
-            for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
-                if enemy.panel() == (col, row) {
-                    enemy.take_damage(damage);
+        for ((col, row), damage, wide) in landed {
+            // The landing panel, and its eight neighbours for BigBomb.
+            let spread: &[(i32, i32)] = if wide {
+                &[
+                    (0, 0),
+                    (0, -1),
+                    (0, 1),
+                    (1, 0),
+                    (-1, 0),
+                    (1, -1),
+                    (-1, 1),
+                    (1, 1),
+                    (-1, -1),
+                ]
+            } else {
+                &[(0, 0)]
+            };
+            for (dc, dr) in spread {
+                let (c, r) = (col + dc, row + dr);
+                if !(1..=field::COLS).contains(&c) || !(1..=field::ROWS).contains(&r) {
+                    continue;
                 }
+                for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                    if enemy.panel() == (c, r) {
+                        enemy.take_damage(damage);
+                    }
+                }
+                // Spawned after this frame's effect tick, so take this
+                // frame's tick now: the blast's first frame then runs its
+                // duration from this frame like every other effect.
+                let mut blast = spr::Player::new(spr::Assets::new(BOMB_BLAST), 0);
+                blast.update();
+                self.effects
+                    .push((blast, field::panel_centre(c, r), BLAST_FRAMES - 1, false));
             }
-            // Spawned after this frame's effect tick, so take this frame's
-            // tick now: the blast's first frame then runs its duration from
-            // this frame like every other effect.
-            let mut blast = spr::Player::new(spr::Assets::new(BOMB_BLAST), 0);
-            blast.update();
-            self.effects
-                .push((blast, field::panel_centre(col, row), BLAST_FRAMES - 1, false));
         }
 
         let occupied = self
@@ -1273,8 +1311,8 @@ impl<'a> Battle<'a> {
     /// without effect.
     fn use_chip(&mut self, chip: Chip) {
         match chip.id {
-            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
-            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
+            | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
@@ -1341,7 +1379,8 @@ impl<'a> Battle<'a> {
                     false,
                 ));
             }
-            CHIP_RECOV10 | CHIP_RECOV30 | CHIP_RECOV50 | CHIP_RECOV80 | CHIP_RECOV120 => {
+            CHIP_RECOV10 | CHIP_RECOV30 | CHIP_RECOV50 | CHIP_RECOV80 | CHIP_RECOV120
+            | CHIP_RECOV150 | CHIP_RECOV200 | CHIP_RECOV300 => {
                 self.megaman
                     .heal(RECOV_HP[(chip.id - CHIP_RECOV10) as usize]);
                 // The heal (sub_800E2FC, object.s:4685) adds the HP and
@@ -1376,16 +1415,20 @@ impl<'a> Battle<'a> {
         let (col, row) = self.megaman.panel();
         let dx = self.megaman.facing_dx();
         match chip.id {
-            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
-            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
+            | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
                 let mut panels: Vec<(i32, i32)> = Vec::new();
                 // The hit shape is byte_80EBA18's first byte per subfamily
                 // (asm31.s:109246): 1 the panel ahead, 4 the column ahead,
                 // 2 two panels ahead; the elemental swords are all 4.
                 match chip.id {
-                    CHIP_WIDESWRD | CHIP_FIRESWRD | CHIP_AQUASWRD | CHIP_ELECSWRD
-                    | CHIP_BAMBSWRD => panels.extend((1..=field::ROWS).map(|r| (col + dx, r))),
-                    CHIP_LONGSWRD => panels.extend([(col + dx, row), (col + 2 * dx, row)]),
+                    CHIP_WIDESWRD | CHIP_WIDEBLDE | CHIP_FIRESWRD | CHIP_AQUASWRD
+                    | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
+                        panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
+                    }
+                    CHIP_LONGSWRD | CHIP_LONGBLDE => {
+                        panels.extend([(col + dx, row), (col + 2 * dx, row)])
+                    }
                     _ => panels.push((col + dx, row)),
                 }
                 // With the hit region the strike spawns the slash arc: a
@@ -1397,10 +1440,16 @@ impl<'a> Battle<'a> {
                 // The arc's animation is byte_80EBAD8 per subfamily
                 // (asm31.s:109264): 0x18 for Sword, 0x16 for WideSwrd and
                 // every elemental sword, 0x17 for LongSwrd.
-                let arc_anim = match chip.id {
-                    CHIP_LONGSWRD => 1,
-                    CHIP_SWORD => 2,
-                    _ => 0,
+                // byte_80EBAD8's row per subfamily indexes byte_80E0398:
+                // rows 0x16/0x17/0x18 are the arc's animations 0/1/2 in
+                // palette 0, and the blades' rows 0x19/0x1a are animations
+                // 0 and 1 in palette 5 (asm31.s:85787).
+                let (arc_anim, blade_palette) = match chip.id {
+                    CHIP_LONGSWRD => (1, 0),
+                    CHIP_SWORD => (2, 0),
+                    CHIP_WIDEBLDE => (0, 5),
+                    CHIP_LONGBLDE => (1, 5),
+                    _ => (0, 0),
                 };
                 let (fx, fy) = field::panel_centre(col + dx, row);
                 // The elemental swords add their palette: the strike ORs
@@ -1412,7 +1461,7 @@ impl<'a> Battle<'a> {
                     CHIP_AQUASWRD => 2,
                     CHIP_ELECSWRD => 3,
                     CHIP_BAMBSWRD => 4,
-                    _ => 0,
+                    _ => blade_palette,
                 };
                 let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
                 arc.set_palette_add(arc_palette);
@@ -1431,6 +1480,7 @@ impl<'a> Battle<'a> {
                 thrown.set_palette_add(bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
                     player: thrown,
+                    wide: chip.id == CHIP_BIGBOMB,
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,

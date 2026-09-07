@@ -42,6 +42,8 @@ ENTRIES=(
   "demo-recov50 recov50 Recov50"
   "demo-fireswrd fireswrd FireSwrd"
   "demo-elecswrd elecswrd ElecSwrd"
+  "demo-wideblde wideblde WideBlde"
+  "demo-bigbomb bigbomb BigBomb: a nine-panel blast"
 )
 
 mkdir -p web/roms

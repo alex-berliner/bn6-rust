@@ -296,12 +296,18 @@ FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 su
 - The THROWN object's palette is byte_80C5BA0[Param1]'s fourth byte (asm31.s:29422), Param1
   being the chip's first attack parameter: row 0 -> palette 0 (MiniBomb), row 3 -> palette 3
   (BigBomb, whose parameter is 3) -- the red bomb. BigBomb's held bomb is red too.
-- BigBomb is at 87 px/frame mean with only its LANDING left: the real blast is much larger
-  than MiniBomb's (byte_80C5BA0 row 3's third byte is 3 where MiniBomb's is 0, presumably the
-  blast type). Open.
-- BlkBomb is still ~195 px/frame: its thrown bomb is brown in the real, which is not any of
-  the sprite's first five palettes, so its throw probably goes through a different spawner
-  (off_80EB6F8[subfamily]) rather than sub_80C5DBC. Open.
+- BigBomb's landing is NINE MiniBomb puffs, not a bigger one: the region byte is
+  dword_80C5D7C[Param1] (asm31.s:29619) -- 1 for MiniBomb, 0xf for BigBomb -- and 0xf indexes
+  the nine-offset list byte_8019951 (asm00_2.s:20987), the landing panel plus its eight
+  neighbours, each getting the same effect row 0. (byte_80C5BA0's third byte is the flying
+  bomb's hit modifier, not a blast size.) With that, BigBomb is at 22 px/frame mean, down from
+  87: the 3x3 blast lines up and only a small residual in its last frames is left. Open.
+- BlkBomb is a different object: off_80EB6F8[6] = sub_80CD886 (asm31.s:45704), not
+  sub_80C5DBC. It spawns a type-3 family 0x4a object three panels ahead with sprite
+  sprite_831EA40 (effect list 0xC index 0x23) -- hence the brown that is not in
+  sprite_82F569C's palettes -- with no arc at all: it materialises on the panel, plants
+  itself, reserves it and ticks a 60-frame fuse (sub_80CDA1C, sub_80CDAD8) with sound 0xc1.
+  Not implemented yet.
 
 **The custom gauge (research, second pass, confirms the first):** the counter lives at
 word_20352A0 (eStruct2035280+0x20), is cleared by ClearCustGauge (asm00_2.s:29826) and raised
@@ -329,6 +335,14 @@ a frame and flashes while it catches up (sub_801C168 -> sub_801C1D0 / sub_801C1E
 asm00_2.s:25853-25949); tools/font_export.py now exports all three pre-coloured digit sets
 (dword_86E0AB8 / 86E0D38 / 86E0FB8, off_801D854/880/8AC) and `draw_number_in` picks one.
 
+## 7j. Blade swords and the rest of the Recovs (2026-09-06)
+
+WideBlde (74) and LongBlde (75) are sword subfamilies 3 and 4: the same sword object as the
+plain swords, the column and two-panel shapes, and arc rows 0x19/0x1a -- which byte_80E0398
+resolves to the arc's animations 0 and 1 in **palette 5** (asm31.s:85787), the white blade.
+Both diff to zero. Recov150/200/300 need nothing but their ids (the amount table already had
+them); Recov300 diffs to zero.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
@@ -337,7 +351,8 @@ demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-star
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
-FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), BigBomb (ca, all but its blast), LongSwrd (49 demo-longswrd), Recov30 (9b
+FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
+Recov300 (a1 --rust-start 123), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,
