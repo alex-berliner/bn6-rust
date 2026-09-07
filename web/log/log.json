@@ -790,5 +790,11 @@
     "file": "log/game/1788808183-win_flow.gif",
     "caption": "A battle won from end to end in the rollup build, which nobody could reach before. The release build used to field the game's four-strong lineup -- ProtoMan, Colonel, a Mettaur and a Gunner -- and they delete the navi in about fifteen seconds, which is less time than the custom gauge takes to fill even once. So the rollup was a ROM in which you could never open the chip window and never win. It fields one Mettaur now, and the whole sequence runs: the fight, the deletion, the ENEMY DELETED ribbon unrolling over the field, and then the RESULT window sliding in 110 frames after it -- a gap measured off the real ROM rather than guessed -- with the clear time, the busting level and the reward chip. Every piece of that is separately matched to the real ROM pixel for pixel.",
     "tag": "rust"
+  },
+  {
+    "t": 1788813226,
+    "file": "log/compare/1788813226-cursor_cmp.gif",
+    "caption": "The chip window's cursor walking five slots, real ROM left and this build right, 170 frames with nothing between them. This had been recorded as unresolvable -- at a cursor delay of two the bracket looked one frame early, at three the card looked one frame late -- and the delay was never the problem. The FIXTURE was. The demo build placed its cursor on a slot statically and never walked, so a scripted walk on the real ROM was being compared against a still picture, and the timing reading came from an alignment that was a compromise across the whole run. Starting the demo on OK, where the save state starts, lets both sides run the same script. That turned 110 ambiguous frames into 170 unambiguous ones, and the residue into two separate one-frame bugs. The card's PALETTE was landing a frame before its TILES, so the old chip's picture was painted in the new chip's colours for exactly one frame after every move -- the same bug the HP box had, and the same fix. And the cursor bracket's blink was flipping a frame early, because the frame counter is bumped at the top of the update before anything is drawn, so the first drawn frame already reads one. Neither was findable until the fixture could ask the question.",
+    "tag": "compare"
   }
 ]

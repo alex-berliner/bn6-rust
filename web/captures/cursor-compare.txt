@@ -1,0 +1,1 @@
+The chip window's cursor walking five slots, real ROM left and this build right: 170 frames, 0 pixels. Two one-frame bugs, neither of them the cursor delay it had been blamed on -- the card's palette landing a frame before its tiles, and the bracket's blink flipping a frame early. Neither was findable until the fixture could run the same script on both sides.
