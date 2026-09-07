@@ -244,6 +244,23 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7o. LilBolr, identified and ready to build (2026-09-07)
+
+LilBolr1/2/3 (98, 99, 100; powers 100, 140, 180) are bomb family, subfamily 3, which routes
+through off_80EB6F8[3] = sub_80D7A96 rather than MiniBomb's sub_80C5DBC: a fixed target in front
+of the navi rather than the targeted arc. They are now in the chip export.
+
+Captured against the real ROM (`--cheat` the hand to 0x62, enemy immortal): the navi plays the
+throw pose, a gold ball arcs up and off the top of the frame with damage numbers popping, and
+then a WHITE SPRAY opens on the panels ahead and runs for the rest of the attack. The spray is
+the new machinery -- everything before it is the throw this build already has.
+
+ITS SPRITE IS sprite_8399578 (data/dat38_33.s). That took all three searches to find, which is
+worth knowing: it is in none of the 97 plain .spr files and none of the 269 compressed ones, and
+only turned up in the assembled data blobs. Its objects at one frame are a 32x32 body at (165,90)
+with 8x32 pieces either side at (157,92) and (197,92), a 16x32 at (175,88) and 32x16 pieces below
+at (169,108) and (165,122) -- so it is composed of several parts, not one sprite.
+
 ## 7n. How to investigate this ROM (2026-09-07)
 
 Three habits earned their keep tonight and are worth following before reasoning about tables.

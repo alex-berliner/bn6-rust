@@ -460,5 +460,11 @@
     "file": "log/shots/1788765679-tiles_cmp2.png",
     "caption": "Battle tile parity, real ROM above and this build below, sprites off so only the tilemaps show. Every layer is now drawn: the backdrop scrolling behind, the field with its front lip, the HP box, the CUSTOM gauge with its label and marker, and the chip name with its damage figure. Nothing structural is missing. What still differs is live state rather than art: the captured battle is at 60 HP with a full gauge holding a Cannon, this build at 100 with an empty gauge holding a HiCannon, and the backdrop sits at a different scroll phase because the two battles started at different times. The whole screen is down from 10134 differing pixels to 7523, and the field alone is within 147.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788766304,
+    "file": "log/shots/1788766304-lilbolr_log.png",
+    "caption": "LilBolr1 captured from the real ROM, the next chip family to build. The navi throws, a gold ball arcs off the top of the frame with damage numbers popping, and a white spray then opens on the panels ahead. The throw is machinery this build already has; the spray is new. Its sprite is identified as sprite_8399578, which took all three searches to find: it is in none of the plain sprite files and none of the compressed ones, and only turned up in the assembled data blobs.",
+    "tag": "chips"
   }
 ]
