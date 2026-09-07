@@ -568,5 +568,11 @@
     "file": "log/shots/1788774445-lilbolr_now.png",
     "caption": "LilBolr1-3: 333.6 px/frame down to 34.6. Real ROM on top, this build in the middle, the difference below. The chip lobs the LilBoiler VIRUS, not a bomb, and the figure riding under it is the summoned boiler's own HP -- it reads 40 for all three variants, whose powers are 100, 140 and 180 -- so it is a constant, not the chip's damage. That figure also turned up the fact that this build's HP digits were drawn in a made-up palette: flat white on black where the game's is a soft white with a dark blue outline. The real one is dword_86B7AC0, the 32 bytes immediately before the battle text font, and dumping OBJ bank 14 out of a live battle gives it back word for word. What is left is a one-pixel wobble on six frames of forty-eight.",
     "tag": "chip"
+  },
+  {
+    "t": 1788777223,
+    "file": "log/shots/1788777223-bd_anim.png",
+    "caption": "The battle backdrop ANIMATES, which this build had missed. Top row is the real ROM's backdrop layer at three moments, bottom row is this build's: the little magenta digits inside the rings fade in and out. It is the TILE ART that cycles -- seven complete sets of the layer's 37 tiles, eight frames each, a 56-frame loop -- while the map's 1024 entries, the palette bank and the scroll all stand still. Dumping BG1's char data frame by frame is what shows it; dumping the map or the palette shows nothing at all. All 259 tiles were matched byte for byte against the disassembly's blob, so the exporter still needs only the submodule. A still backdrop differs from the real ROM by about 280 px a frame; with the animation the best alignment found is 150. The rest is phase: the game's horizontal and vertical scroll phases are independent, and this build ties them to one counter, so most of the 64x64 phase lattice is unreachable and the two rings' grids sit at different offsets above.",
+    "tag": "tiles"
   }
 ]

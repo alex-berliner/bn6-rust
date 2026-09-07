@@ -6,18 +6,41 @@
 //! up every four, measured against the real ROM as a rigid shift with zero
 //! residual, so the offset is kept in quarters of a pixel and advances by two
 //! and one each frame.
+//!
+//! AND ITS ART IS ANIMATED. The map, the palette and the scroll all stand
+//! still while the TILE ART underneath cycles: seven complete sets of the
+//! layer's 37 tiles, eight frames each, a 56-frame loop -- the little purple
+//! glyphs inside the rings. Dumping BG1's char data frame by frame off a live
+//! battle shows 36 of the 37 tiles changing while the map's 1024 entries and
+//! palette bank 0 never move. A still backdrop differs from the real ROM by
+//! about 280 px a frame.
+//! NOT VERIFIED: where the loop starts. One save state cannot say what the
+//! phase is counted from, so this build counts from the battle's first frame.
 
 use agb::display::tiled::{
     RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
 };
-use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
+use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 
 /// Quarter-pixels of scroll per frame, across and down.
 const SCROLL_X_Q: u32 = 2;
 const SCROLL_Y_Q: u32 = 1;
+/// Frames each step of the art animation is held.
+const STEP_FRAMES: u32 = 8;
+/// Where in a step the loop starts. The scroll advances a pixel every two
+/// frames across and every four down, so choosing which frame to compare on
+/// can only move the art by four; the other offsets have to be built in.
+const ART_PHASE: u32 = 0;
 
 pub struct Backdrop {
     bg: RegularBackground,
+    tiles: TileSet,
+    /// Steps in the art animation, and how many tiles each holds.
+    steps: u16,
+    slots: u16,
+    /// The step whose art is in vram, and the frame counter driving it.
+    step: u16,
+    ticks: u32,
     palette: Palette16,
     /// Scroll position in quarters of a pixel, so the half- and quarter-pixel
     /// steps stay exact rather than drifting.
@@ -30,6 +53,7 @@ impl Backdrop {
         assert_eq!(&data[0..4], b"BNBD", "not a BNBD asset");
         let at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
         let (t, m, p) = (at(0x08), at(0x0c), at(0x10));
+        let (steps, slots) = (at(0x14) as u16, at(0x18) as u16);
 
         let tiles_len = u32::from_le_bytes(data[t..t + 4].try_into().unwrap()) as usize;
         let tiles = &data[t + 4..t + 4 + tiles_len];
@@ -68,6 +92,11 @@ impl Backdrop {
 
         Self {
             bg,
+            tiles: tileset,
+            steps,
+            slots,
+            step: 0,
+            ticks: 0,
             palette,
             x_q: 0,
             y_q: 0,
@@ -80,8 +109,21 @@ impl Backdrop {
         self.palette.clone()
     }
 
-    /// Advance the scroll by one frame.
-    pub fn update(&mut self) {
+    /// Advance the scroll and the art animation by one frame.
+    pub fn update(&mut self, gfx: &Graphics) {
+        self.ticks += 1;
+        let want = (((self.ticks + ART_PHASE) / STEP_FRAMES) % u32::from(self.steps)) as u16;
+        if want != self.step {
+            // The map still names the first step's tiles, so those stay the
+            // key and only the bytes behind them change: agb keys vram by
+            // (tileset, tile index) and replace_tile rewrites the pixels in
+            // place, which is what the real ROM does too -- its map never
+            // moves.
+            for k in 0..self.slots {
+                gfx.replace_tile(&self.tiles, k, &self.tiles, want * self.slots + k);
+            }
+            self.step = want;
+        }
         self.x_q = (self.x_q + SCROLL_X_Q) % (256 * 4);
         self.y_q = (self.y_q + SCROLL_Y_Q) % (256 * 4);
         // The motif travels left and up, so the scroll position runs

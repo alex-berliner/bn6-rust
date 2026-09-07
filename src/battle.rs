@@ -1048,7 +1048,7 @@ impl<'a> Battle<'a> {
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
         if self.backdrop.is_some() {
-            self.backdrop.as_mut().unwrap().update();
+            self.backdrop.as_mut().unwrap().update(gfx);
             self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
             self.hud_tiles.as_mut().unwrap().set_hp(self.megaman.hp());
             self.hud_tiles.as_mut().unwrap().set_gauge(self.gauge, GAUGE_FULL);
