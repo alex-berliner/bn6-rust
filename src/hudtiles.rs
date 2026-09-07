@@ -77,6 +77,8 @@ const BLANK_TILE: u16 = 69;
 /// The palette bank the box draws in. The field uses 0-8 and the results
 /// windows 9-11, so this one is free and is the real ROM's own choice.
 pub const BANK: u8 = 13;
+/// The entries that bank swaps while the HP figure catches up after a hit.
+const HP_FLASH: [(usize, u16); 4] = [(4, 22463), (5, 13087), (6, 4767), (11, 127)];
 
 /// The game's own character code for an ASCII byte, which is also the index of
 /// its glyph in the text font (constants/bn6-charmap.tbl). Anything without a
@@ -164,6 +166,23 @@ impl HudTiles {
 
     pub fn palette(&self) -> Palette16 {
         self.palette.clone()
+    }
+
+    /// The box's bank with the four entries the real ROM swaps while the HP
+    /// figure is catching up after a hit. The TILES do not change -- the same
+    /// white digits are drawn -- and entries 4, 5, 6 and 11 go to an orange
+    /// ramp, read straight out of BG palette RAM on a flashing frame.
+    /// NOT VERIFIED: the heal flash. Nothing in the capture heals the navi, so
+    /// this build uses the same ramp for both.
+    pub fn flash_palette(&self) -> Palette16 {
+        let mut colours = [Rgb15::new(0); 16];
+        for (i, slot) in colours.iter_mut().enumerate() {
+            *slot = self.palette.colour(i);
+        }
+        for (i, c) in HP_FLASH {
+            colours[i] = Rgb15::new(c);
+        }
+        Palette16::new(colours)
     }
 
     pub fn gauge_palette(&self) -> Palette16 {

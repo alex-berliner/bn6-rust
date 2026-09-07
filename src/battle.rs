@@ -804,6 +804,10 @@ pub struct Battle<'a> {
     results_mark: Option<agb::display::object::SpriteVram>,
     /// Frames until the buster's barrel joins the pose.
     buster_arm_in: u8,
+    /// Whether the HP box's bank is currently on its orange ramp, and what
+    /// it should be on the next frame.
+    hp_flashing: bool,
+    hp_flash_next: bool,
     fade_out: u8,
     clock: u32,
     moves: u8,
@@ -1154,6 +1158,8 @@ impl<'a> Battle<'a> {
         let shown: Option<results::Shown> = None;
         let results_mark: Option<agb::display::object::SpriteVram> = None;
         let buster_arm_in = 0u8;
+        let hp_flashing = false;
+        let hp_flash_next = false;
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
@@ -1238,6 +1244,8 @@ impl<'a> Battle<'a> {
             shown,
             results_mark,
             buster_arm_in,
+            hp_flashing,
+            hp_flash_next,
             fade_out,
             clock,
             moves,
@@ -1290,7 +1298,6 @@ impl<'a> Battle<'a> {
         if self.backdrop.is_some() {
             self.backdrop.as_mut().unwrap().update(gfx);
             self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
-            self.hud_tiles.as_mut().unwrap().set_hp(self.megaman.hp());
             let gauge_up = self.shown.is_none() && self.fade_out == 0;
             self.hud_tiles
                 .as_mut()
@@ -1893,6 +1900,29 @@ impl<'a> Battle<'a> {
             core::iter::once(self.megaman.hp()).chain(self.enemies.iter().map(|e| e.hp())),
         ) {
             counter.update(hp);
+        }
+        // The HP box AFTER its counter has stepped: the real ROM's first
+        // orange frame already shows the lower number, so drawing it before
+        // the step flashes the old one.
+        if self.hud_tiles.is_some() {
+            self.hud_tiles
+                .as_mut()
+                .unwrap()
+                .set_hp(self.hp_shown[0].shown());
+            // ONE FRAME BEHIND the digits. A palette write lands on the frame
+            // it is made and the box's tile writes land on the next, so
+            // swapping the ramp the moment the counter flashes paints the
+            // OLD number orange for a frame.
+            let flashing = core::mem::replace(
+                &mut self.hp_flash_next,
+                self.hp_shown[0].set() != crate::hud::SET_PLAIN,
+            );
+            if self.hp_flashing != flashing {
+                self.hp_flashing = flashing;
+                let hud = self.hud_tiles.as_ref().unwrap();
+                let p = if flashing { hud.flash_palette() } else { hud.palette() };
+                gfx.set_background_palette(crate::hudtiles::BANK, &p);
+            }
         }
         if let Some((left, to)) = self.held_raise {
             if left == 0 {

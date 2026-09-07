@@ -742,5 +742,11 @@
     "file": "log/shots/1788797120-panel_log.png",
     "caption": "A whole panel effect this build never drew: real ROM above, this build below. The Mettaur's shockwave LIGHTS THE PANEL IT IS STANDING ON -- a solid yellow block, one of the field's two highlight overlays, held for all 22 frames the wave dwells there and travelling with it panel by panel. It was invisible in every comparison so far because the chip captures run with the backgrounds stripped, and the highlight is a background tile. Two details fell out of the same capture and both are in. The light LINGERS: for exactly three frames at each hop, the new panel and the old one are lit together. And a panel somebody is standing on is NOT lit -- the wave passes through the navi's own panel with it dark, and lights the one behind him again on the far side. That last one is a single observation from one capture rather than a rule read out of the disassembly, and it is recorded as such.",
     "tag": "rust"
+  },
+  {
+    "t": 1788797874,
+    "file": "log/shots/1788797874-hp_log.png",
+    "caption": "The player's HP box after a hit, this build above and the real ROM below, eight frames from the moment the wave lands. It was jumping straight to the new number in white; it now counts down and flashes, and the two sequences are the same shape frame for frame -- a drop of ten goes 5, 4, 1 on both sides. Three things came out of one capture. The step is |difference| / 8 + 4, not + 2 as the code had it, which is what makes the first step five rather than three. The flash holds for seventeen frames, of which three are the countdown. And the flash is NOT a second set of orange digits, which is what I built first: the tiles never change. The real ROM swaps four entries of the box's palette bank -- 4, 5, 6 and 11 go to an orange ramp -- and swaps them back. Reading that out of BG palette RAM on a flashing frame gave the four values directly. One implementation note worth keeping: the palette write has to be held back a frame, because a palette lands on the frame it is made and the box's tile writes land on the next, so swapping the ramp the moment the counter flashes paints the OLD number orange for a frame.",
+    "tag": "rust"
   }
 ]

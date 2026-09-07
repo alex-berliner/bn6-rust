@@ -32,7 +32,7 @@ pub struct Hud {
 
 /// A number on screen that walks toward the value it is meant to show, as
 /// the game's HP boxes do: on a change the shown number moves by
-/// `|difference| / 8 + 2` a frame and the digits flash in the damage or
+/// `|difference| / 8 + 4` a frame and the digits flash in the damage or
 /// heal set while a timer runs (sub_801C168, sub_801C1D0, sub_801C1EA;
 /// asm00_2.s:25853-25949).
 pub struct Counter {
@@ -64,14 +64,20 @@ impl Counter {
         if self.shown == actual {
             return;
         }
+        // Fifteen, measured: the real ROM's HP box holds its orange ramp for
+        // seventeen frames after a ten-point hit, of which three are the
+        // countdown itself.
         let (set, flash) = if actual < self.shown {
-            (SET_DAMAGE, 10)
+            (SET_DAMAGE, 15)
         } else {
             (SET_HEAL, 1)
         };
         self.set = set;
         self.flash = self.flash.max(flash);
-        let step = self.shown.abs_diff(actual) / 8 + 2;
+        // Measured on a capture whose navi drops from 60 to 50: the box shows
+        // 55, then 51, then 50 -- steps of 5, 4 and 1, which is
+        // |difference| / 8 + 4, not + 2.
+        let step = self.shown.abs_diff(actual) / 8 + 4;
         self.shown = if actual < self.shown {
             self.shown.saturating_sub(step).max(actual)
         } else {

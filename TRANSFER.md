@@ -510,6 +510,29 @@ VERIFIED: with both sides captured `--disable-obj` (backgrounds only) and aligne
 own dwell boundaries, 87 of 90 frames of the field's panels are identical, highlight and all. The
 three that differ are single dwell boundaries a frame out.
 
+## 7aj. The HP box counts down and flashes (2026-09-07)
+
+Found by a cheap audit worth repeating: list the COLOURS each side shows over a long run and
+subtract. Three appeared in the real ROM and never here, and two of them were the HP box's orange.
+
+The player's box was jumping straight to the new number in white. It should count down and flash,
+and now does -- a drop of ten goes 5, 4, 1 on both sides.
+
+- THE STEP IS `|difference| / 8 + 4`, not `+ 2` as the code had it. That is what makes the first
+  step five rather than three.
+- THE FLASH HOLDS 17 FRAMES, of which three are the countdown, so the constant is 15.
+- THE FLASH IS NOT A SECOND SET OF DIGITS. The tiles never change: the real ROM swaps four
+  entries of the box's palette bank -- 4, 5, 6 and 11 -- to an orange ramp and swaps them back.
+  Dumping BG palette RAM on a flashing frame gives the four values directly. Building it as an
+  orange digit set instead gets the wrong orange by one palette entry, which is how the mistake
+  showed.
+- AND THE PALETTE WRITE HAS TO BE HELD BACK A FRAME. A palette lands on the frame it is made and
+  the box's tile writes land on the next, so swapping the ramp the moment the counter flashes
+  paints the OLD number orange for a frame.
+
+NOT VERIFIED: the heal flash. Nothing in the capture heals the navi, so the same ramp is used for
+both.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
