@@ -784,5 +784,11 @@
     "file": "log/game/1788804940-megaman_deleted.gif",
     "caption": "MEGAMAN DELETED in a real fight in the rollup build, which is the same machinery from the other side: the banner asset carries all forty-five of the game's messages, so the losing one costs nothing extra. The fight ends, the ribbon unrolls over the field, holds, and rolls back up, and the RESULT window comes in 110 frames after it went up -- that gap is measured off the real ROM, where the banner runs frames 49 to 106 of a won battle and the window starts sliding at 159. It replaces a 30-frame stand-in that had been in the code with a note saying it had never been read.",
     "tag": "rust"
+  },
+  {
+    "t": 1788808183,
+    "file": "log/game/1788808183-win_flow.gif",
+    "caption": "A battle won from end to end in the rollup build, which nobody could reach before. The release build used to field the game's four-strong lineup -- ProtoMan, Colonel, a Mettaur and a Gunner -- and they delete the navi in about fifteen seconds, which is less time than the custom gauge takes to fill even once. So the rollup was a ROM in which you could never open the chip window and never win. It fields one Mettaur now, and the whole sequence runs: the fight, the deletion, the ENEMY DELETED ribbon unrolling over the field, and then the RESULT window sliding in 110 frames after it -- a gap measured off the real ROM rather than guessed -- with the clear time, the busting level and the reward chip. Every piece of that is separately matched to the real ROM pixel for pixel.",
+    "tag": "rust"
   }
 ]
