@@ -902,6 +902,60 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7ar. Where the banner's numbers come from (2026-09-07)
+
+Traced in the disassembly after the banner was already matched by measurement, which is the right
+order: the pixels agreed first, and this says why.
+
+ONE ENTRY POINT. Every banner goes through `sub_801E792` (asm00_2.s:31016), which takes
+`messageIndex * 4` -- a byte offset into what is really ONE 47-entry pointer array, since
+`pt_801EF84 + 0x50 == pt_801EFD4` -- refuses if a banner is already up (bit 0x8000 of
+`eStruct2035280+0x40`, asm00_2.s:31024-31029), latches the record's KIND byte into the state block
+`byte_2036840` (31053-31061) and dispatches through `off_801E944` (31258-31265): kinds 0/1/2 to
+`sub_801E828`, kind 3 to `sub_801E8CC`, kind 4 to `sub_801E8EA`. There are 34 call sites in three
+files.
+
+THE ROLL-OUT IS THREE PHASES, not a table. `sub_801CE28` (asm00_2.s:27587) ticks a phase byte and
+a counter in `byte_2036840`, and each phase calls `sub_802FE7A` (asm03_0.s:20115) -- an OAM affine
+writer at angle 0, so pure scale -- with `r2 = pd / 4`:
+- ROLL-IN, `sub_801CE6C` (27624): `r2 = 0xE0 - counter * 0x20` for counter 1..5, so pd 768, 640,
+  512, 384, 256. Five frames.
+- HOLD, `sub_801CE92` (27647): only counters 1, 2, 3, 46, 47 and 48 touch the matrix -- 208, 224,
+  256 ... 224, 208, 256 -- and counters 4..45 fall straight through without writing, so the matrix
+  simply KEEPS 256 for 43 frames. That is why the hold reads as a plateau with a wobble at each
+  end: nothing is animating it in between. 48 frames.
+- ROLL-OUT, `sub_801CED2` (27688): `r2 = 0x40 + counter * 0x20` for counter 1..5, so 384, 512,
+  640, 768, 896, then the affine slot is freed and the objects go. Five frames.
+5 + 48 + 5 = 58, which is exactly what the capture shows. The horizontal scale is the constant
+`r1 = 0x40` in all three (27633, 27672, 27697).
+
+THE GAP TO THE RESULT WINDOW is armed by the same handler that raises the banner: `sub_80081A4`
+(asm00_1.s:10542) sets a countdown at `[r5,#8]` to 0x66 = 102 frames or 0x5e = 94 depending on the
+battle mode (10577-10592), and leaving that state needs BOTH the countdown and the banner
+reporting idle through `sub_801E754` (asm00_2.s:30973). 102 frames from the banner's frame 49 is
+151, against the 159 measured; the remaining 8 frames are in states 6-9 of the same end-of-turn
+machine (`off_8008038`, asm00_1.s:10370) or the window's own lead-in, and were not traced. This
+build uses the measured 110.
+
+WHICH MESSAGE, BY CALLER: 0 BATTLE START! and 3 TURN START! and 4 FINAL TURN! all come from
+`sub_8008064` (asm00_1.s:10386), state 1 of `off_8008038`; 1 ENEMY DELETED is the default in
+`sub_80081A4` and 2 MEGAMAN DELETED in `sub_800825A` (10632), each upgraded to 5 YOU WIN! or 6 YOU
+LOSE when `sub_800A152()` returns 7. No `PauseBattle` call sits inside `sub_8008064`, so BATTLE
+START! does NOT stop the fight.
+
+THE CHIP-NAME POPUP IS A BANNER TOO, in the same machinery: message ids 19 and 20 are kind 3,
+which dispatches to `sub_801E8CC` -> `sub_801E95C`, and they are raised by `object_drawChipName`
+(object.s:183-239) gated on a `ChipData+9` flag bit and a chip-category check (`sub_800B892`).
+So the "attack_family 0x15" rule 7ap uses is a proxy for that gate; it is right for all 43 chips
+in the scoreboard, and if a chip is ever added that disagrees, this is where to look.
+
+AND PAUSE FREEZES IT. The pause menu (`sub_802B7A0`, asm03_0.s:10937) raises message 9 or 13, both
+kind 2, and kind 2 is exactly what makes `sub_801CE28` stop incrementing its counter at 4
+(27590-27603): the banner sits fully extended for as long as the game is paused. Unpausing calls
+`sub_801E780`, which forces the counter to 45 and drops it into the hold's tail wobble and the
+normal roll-out. Worth knowing if PAUSE is ever implemented -- it is a real menu, with a cursor
+box, text from `TextScript86F0300` and its own screen fades.
+
 ## 7ap. The chip-name popup, DRAWN rather than patched away (2026-09-07)
 
 Five chips put their NAME up in the middle of the screen while they present, and this build now
