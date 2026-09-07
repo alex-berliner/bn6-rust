@@ -240,6 +240,12 @@ impl Player {
     pub fn set_palette_add(&mut self, add: usize) {
         self.palette_add = add;
         self.palette = None;
+        // The per-offset palettes are cached by the OAM offset alone, so they
+        // have to go too: a shift changes which palette an offset lands on.
+        // Without this a sprite whose first frame already carries an offset
+        // keeps the palette it was built with -- PoisSeed's pod, whose every
+        // part carries offset 9, stayed IceSeed's cyan however it was shifted.
+        self.offset_palettes = Default::default();
         let ticks = self.ticks_left;
         let fresh = self.fresh;
         self.load_frame();
@@ -278,6 +284,7 @@ impl Player {
     /// frame's own. Set before the palette shift; see `load_frame`.
     pub fn set_offsets_follow_shift(&mut self, on: bool) {
         self.offsets_follow_shift = on;
+        self.offset_palettes = Default::default();
     }
 
     /// A still player holding one named frame of one animation.

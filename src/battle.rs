@@ -24,7 +24,7 @@ use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
-    FLSHBOM, LILBOILER, MINIBOMB,
+    FLSHBOM, LILBOILER, MINIBOMB, POISSEED,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -155,6 +155,18 @@ const CHIP_LILBOLR1: u16 = 98;
 const CHIP_LILBOLR2: u16 = 99;
 const CHIP_LILBOLR3: u16 = 100;
 const CHIP_MEGENBOM: u16 = 56;
+/// PoisSeed, the one of the three seeds whose panels this build already has
+/// art for: the field asset carries POISON, and the ROM's panel tilemap has
+/// no grass or ice at all.
+const CHIP_POISSEED: u16 = 70;
+/// Its sprite's animations and palette shift, read off the real ROM's OAM.
+/// Every part of both animations carries an OAM palette offset of 9, and the
+/// live palette is the sprite's index 12, so the chip's own shift is 3 -- its
+/// attack_param_2, the same way BigBomb's 3 picks the red bomb. The offsets
+/// count FROM the shifted palette here, as Barr100's bubble does.
+const SEED_HELD_ANIM: usize = 8;
+const SEED_THROWN_ANIM: usize = 9;
+const SEED_PALETTE: usize = 3;
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
 const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
@@ -744,6 +756,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_LILBOLR1);
         } else if cfg!(feature = "demo-flshbom") {
             hand.push(CHIP_FLSHBOM1);
+        } else if cfg!(feature = "demo-poisseed") {
+            hand.push(CHIP_POISSEED);
 
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
@@ -1854,7 +1868,7 @@ impl<'a> Battle<'a> {
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
-            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 => {
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 | CHIP_POISSEED => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
@@ -1865,12 +1879,26 @@ impl<'a> Battle<'a> {
                 // The flash bomb is its own sprite, sprite_8391E40, found by
                 // taking the held ball's tiles out of OBJ VRAM and searching
                 // the data blobs -- it is in no sprite file.
-                let mut held = if flash {
+                // PoisSeed lobs a magenta pod: byte_82F569C.spr, found by
+                // taking the four tiles of its flying object out of OBJ VRAM
+                // and searching all 97 sprite files. Animation 8 is the pod in
+                // the hand and 9 the pod in flight -- matched by their OAM
+                // shapes against the real ROM's, an 8x8 shadow for the held
+                // one and a 16x8 for the thrown. The magenta is palette 12 of
+                // the sprite's own block, which carries a palette per seed;
+                // index 0 is the blue one IceSeed uses.
+                let seed = chip.id == CHIP_POISSEED;
+                let mut held = if seed {
+                    spr::Player::new(spr::Assets::new(POISSEED), SEED_HELD_ANIM)
+                } else if flash {
                     spr::Player::new(spr::Assets::new(FLSHBOM), 0)
                 } else {
                     spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false))
                 };
-                held.set_palette_add(bomb_palette(chip.id, false));
+                if seed {
+                    held.set_offsets_follow_shift(true);
+                }
+                held.set_palette_add(if seed { SEED_PALETTE } else { bomb_palette(chip.id, false) });
                 // The flash bomb's sprite carries its own part offsets, which
                 // sit 22 right and 10 down of where the bomb sprite's do:
                 // measured from the held ball's centre, (37,88) on the real
@@ -1893,7 +1921,7 @@ impl<'a> Battle<'a> {
                     at,
                     HELD_BOMB_FRAMES,
                     false,
-                    flash,
+                    flash || seed,
                 ));
             }
             CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
@@ -2050,12 +2078,13 @@ impl<'a> Battle<'a> {
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
-            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 => {
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 | CHIP_POISSEED => {
                 let (mx, my) = field::panel_centre(col, row);
                 let lilbolr = matches!(
                     chip.id,
                     CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
                 );
+                let seed = chip.id == CHIP_POISSEED;
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb
                 // sprite in another palette: a dark brown ball with a fuse
@@ -2067,7 +2096,9 @@ impl<'a> Battle<'a> {
                     chip.id,
                     CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
                 );
-                let mut thrown = if flash {
+                let mut thrown = if seed {
+                    spr::Player::new(spr::Assets::new(POISSEED), SEED_THROWN_ANIM)
+                } else if flash {
                     // The thrown ball is the same sprite as the held one.
                     spr::Player::new(spr::Assets::new(FLSHBOM), 0)
                 } else if lilbolr {
@@ -2080,7 +2111,10 @@ impl<'a> Battle<'a> {
                 } else {
                     spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
                 };
-                thrown.set_palette_add(bomb_palette(chip.id, true));
+                if seed {
+                    thrown.set_offsets_follow_shift(true);
+                }
+                thrown.set_palette_add(if seed { SEED_PALETTE } else { bomb_palette(chip.id, true) });
                 self.bombs.push(Bomb {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,

@@ -610,5 +610,11 @@
     "file": "log/shots/1788780693-whole_screen.png",
     "caption": "The whole battle screen, sprites and all: real ROM left, this build middle, difference right. Everything that is art lines up -- the animated backdrop, the field and its lip, the HP box, the CUSTOM gauge, the emotion window, the chip name strip, the chip-in-hand icon, the navi's pose and the Mettaur on the same panel in the same pose. The 1991 px that remain are live state and nothing else: this build's navi is at 40 HP where the capture's is at 60, its Mettaur carries the demo's padded HP so a chip can be fired at it repeatedly, a hit spark is in the air, and the gauge's flow animation is a few frames out of phase. Finding a frame to compare at all took a 1200-frame capture: the backdrop's art loop is 56 frames and its scroll repeats every 128, so they coincide only every 896.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788781502,
+    "file": "log/shots/1788781502-poisseed_cmp.png",
+    "caption": "PoisSeed, a new chip: real ROM on top, this build in the middle, the difference below -- 10.1 px/frame against a floor of 7.7, so 2.4 of real difference on six frames of forty-eight. The pod is byte_82F569C.spr, found by pulling the four tiles of its flying object out of OBJ VRAM and searching all 97 sprite files; animation 8 is the pod in the hand and 9 the pod in flight, matched by their OAM shapes against the real ROM's. Its magenta is palette 12 of the sprite's own block, which carries one palette per seed -- index 0 is IceSeed's blue -- reached as the chip's shift of 3, its attack_param_2, plus the OAM offset of 9 every part carries. Getting that colour out needed a bug fixed: the per-offset palettes were cached by the OAM offset alone, so a sprite whose first frame already carries an offset kept the palette it was built with however it was later shifted. Its arc needed no fitting at all -- the plain bomb launch and gravity put the pod on the real ROM's pixel at every frame of the flight.",
+    "tag": "chip"
   }
 ]
