@@ -20,6 +20,11 @@
     "label": "How a battle opens, real ROM above and this build below. Found with the harness's first save state at a battle's FIRST frame, which immediately showed two things wrong here: a battle OPENS with the chip window (frame 165, unprompted) where this build made you wait 1260 frames for it, and BATTLE START! follows the chip window rather than the intro. Corrected, the banner lands at 291 against the real ROM's 292."
   },
   {
+    "file": "captures/battle-opening.gif",
+    "name": "battle-opening",
+    "label": "How a battle opens in the build now: white held and ramped off, the field, the virus materialising, the chip window. The lead-in was 32 frames of black where the real ROM is 71 of white plus a 16-frame ramp, and with that one constant wrong everything after it looked wrong in its own way. Fixing it aligned all of them: the virus starts materialising at frame 76 and settles at 142 on both sides, and the chip window opens at 130 against 129."
+  },
+  {
     "file": "captures/bigbomb-compare.gif",
     "name": "bigbomb-compare",
     "label": "BigBomb \u2014 exact, frame for frame (real ROM left, this build right)"
