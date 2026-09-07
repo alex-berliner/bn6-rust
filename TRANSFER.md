@@ -467,8 +467,25 @@ the same two frames -- the buster, the chip button, the cursor -- is the stronge
 the real ROM simply acts on its pad a couple of frames after reading it, rather than each of
 these being its own rule. Anyone refactoring that should re-derive 7ae's constants, which absorb
 the same two frames in their own way.
-NOT RESOLVED: the last frame of a cursor move. At a delay of two the bracket is one frame early;
-at three the card is one frame late.
+RESOLVED, and it was two separate one-frame bugs, neither of them `CURSOR_DELAY` (2026-09-07).
+The first job was the FIXTURE: `demo-cardname` places its cursor statically and never walks, so
+`check_card` was comparing a scripted real walk against a still picture, and the "delay of two vs
+three" reading came from a lag that was a compromise across the run. `demo-custmatch` starts on OK
+exactly as the save state does, so BOTH SIDES CAN RUN THE SAME SCRIPT -- five Left presses, six
+frames each, thirty apart -- and be compared frame for frame. That turned 110 ambiguous frames into
+170 unambiguous ones.
+
+With that, the residue was 16667 px over 25 frames, in two shapes:
+- 2688 px on the frame after every press: THE CARD'S PALETTE LANDED A FRAME BEFORE ITS TILES, so
+  the OLD chip's picture was painted in the NEW chip's colours for one frame. Exactly the HP box's
+  bug (7aj), and the same fix: `Custom` holds its background palettes for a frame and sets them at
+  the top of the next update. The whole card now changes on ONE frame, as the real ROM's does.
+- 153 px every eight frames: the cursor bracket's blink, one frame early. `self.frames` is bumped
+  at the top of the update, before anything is drawn, so the first DRAWN frame already reads 1 and
+  every phase flip landed a frame early. The phase is now taken from the value the frame started
+  with.
+
+Both together: 170 frames of the walk, 0 px. `regress.py` gains a `cursor` check for it.
 
 The 256 were the CHIP-IN-HAND ICON on one frame, AND THE EXPLANATION WAS WRONG. It was recorded
 as the button's RELEASE arriving late through an input lag, and "nothing in the drawing can drop

@@ -18,10 +18,30 @@
  *
  * Each frame is written to <outdir>/frame.####.rgb as raw 32-bit native GBA
  * pixels (240*160*4 bytes), which tools/mgba_frames.py decodes to PNG.
+ *
+ *   --dump-audio <dir>  after every frame, drain the core's final stereo
+ *                       mix and append it as signed 16-bit interleaved PCM to
+ *                       <dir>/frame.####.pcm (one file per frame, same
+ *                       numbering as the video). No container, no resampling
+ *                       of our own -- whatever rate mgba's blip resampler
+ *                       settled on is printed to stderr once
+ *                       ("audio sample rate: N Hz"); that is the file's rate.
+ *                       Reads core->getAudioChannel(core, 0/1), which is the
+ *                       post-mix left/right bus (PSG + both DirectSound
+ *                       FIFOs already summed), not a per-voice tap -- combine
+ *                       with --audio-channel to isolate one source.
+ *   --audio-channel <id>  solo channel <id> (repeatable to solo several),
+ *                       muting every other PSG/FIFO channel via
+ *                       core->enableAudioChannel. The id table (from
+ *                       core->listAudioChannels: 0-3 are the four PSG
+ *                       channels, 4-5 are DirectSound FIFOs A/B) is printed
+ *                       to stderr whenever this or --dump-audio is used, so
+ *                       the ids are legible without reading this comment.
  */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -30,6 +50,7 @@
 #include <mgba/core/interface.h>
 #include <mgba/core/log.h>
 #include <mgba/core/serialize.h>
+#include <mgba/core/blip_buf.h>
 #include <mgba/internal/gba/input.h>
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/video.h>
@@ -46,6 +67,20 @@ static const char* g_outdir;
 /* Hold-A control. */
 static int g_a_ticks = 0;
 static int g_a_start = 60;
+
+/* --dump-audio: an mAVStream whose only real job is to catch the resampled
+ * output rate mgba settles on (audioRateChanged fires once, synchronously,
+ * from inside core->setAVStream). The actual samples are not read through
+ * this stream -- postAudioFrame/postAudioBuffer's per-sample/per-callback
+ * timing is undocumented, whereas core->getAudioChannel(core, 0/1) hands
+ * back the same underlying blip_t buffers directly, and draining those once
+ * per runFrame() is simpler and exactly matches the video loop's cadence. */
+static unsigned g_audio_rate = 0;
+static void on_audio_rate_changed(struct mAVStream* stream, unsigned rate) {
+	(void) stream;
+	g_audio_rate = rate;
+}
+static struct mAVStream g_stream = { .audioRateChanged = on_audio_rate_changed };
 
 static int write_frame(color_t* buf, size_t stride) {
 	char name[512];
@@ -346,6 +381,71 @@ int main(int argc, char** argv) {
 			++i;
 		}
 	}
+	/* `--audio-channel <id>` (repeatable): solo the given channel(s), muting
+	 * every other PSG/FIFO channel, via core->enableAudioChannel. This is an
+	 * emulator-level force-mute (GBAAudio's forceDisableCh[]/forceDisableChA/
+	 * B), not a RAM write, so unlike --cheat/--zero it only needs setting
+	 * once, before the frame loop, not re-applied every frame. */
+	int solo_ids[16];
+	int nsolo = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--audio-channel") == 0 && i + 1 < argc) {
+			if (nsolo < 16) solo_ids[nsolo++] = atoi(argv[i + 1]);
+			++i;
+		}
+	}
+	/* `--dump-audio <dir>`: see the header comment. Set up here, before the
+	 * loop, so the stream is installed and any boot-time backlog in the
+	 * blip buffers is drained before frame 0's dump. */
+	const char* dumpaudio_dir = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--dump-audio") == 0 && i + 1 < argc) {
+			dumpaudio_dir = argv[i + 1];
+			++i;
+		}
+	}
+	struct blip_t* audio_left = NULL;
+	struct blip_t* audio_right = NULL;
+	if (dumpaudio_dir) {
+		if (mkdir(dumpaudio_dir, 0755) != 0 && errno != EEXIST) {
+			fprintf(stderr, "mkdir %s: %s\n", dumpaudio_dir, strerror(errno));
+			return 1;
+		}
+		core->setAVStream(core, &g_stream);
+		fprintf(stderr, "audio sample rate: %u Hz (stereo s16le PCM)\n", g_audio_rate);
+		audio_left = core->getAudioChannel(core, 0);
+		audio_right = core->getAudioChannel(core, 1);
+		/* Discard whatever boot/state-load already queued so frame 0's file
+		 * holds only audio generated during frame 0 itself. */
+		int16_t discard[4096];
+		int avail = blip_samples_avail(audio_left);
+		while (avail > 0) {
+			int n = avail > 4096 ? 4096 : avail;
+			blip_read_samples(audio_left, discard, n, 0);
+			blip_read_samples(audio_right, discard, n, 0);
+			avail = blip_samples_avail(audio_left);
+		}
+	}
+	if (nsolo > 0 || dumpaudio_dir) {
+		const struct mCoreChannelInfo* chaninfo = NULL;
+		size_t nchan = core->listAudioChannels(core, &chaninfo);
+		fprintf(stderr, "audio channels:\n");
+		for (size_t c = 0; c < nchan; ++c) {
+			fprintf(stderr, "  %zu: %s (%s)\n", chaninfo[c].id, chaninfo[c].visibleName,
+			        chaninfo[c].visibleType ? chaninfo[c].visibleType : chaninfo[c].internalName);
+		}
+		if (nsolo > 0) {
+			for (size_t c = 0; c < nchan; ++c) {
+				bool keep = false;
+				for (int s = 0; s < nsolo; ++s) {
+					if (solo_ids[s] == (int) chaninfo[c].id) keep = true;
+				}
+				core->enableAudioChannel(core, chaninfo[c].id, keep);
+			}
+			fprintf(stderr, "soloed %d channel(s)\n", nsolo);
+		}
+	}
+
 	for (int i = 0; i < count; ++i) {
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
@@ -366,6 +466,26 @@ int main(int argc, char** argv) {
 			}
 		}
 		core->runFrame(core);
+		if (dumpaudio_dir) {
+			int avail = blip_samples_avail(audio_left);
+			int availR = blip_samples_avail(audio_right);
+			if (availR < avail) avail = availR;
+			if (avail > 4096) avail = 4096;
+			int16_t pcm[4096 * 2];
+			if (avail > 0) {
+				blip_read_samples(audio_left, pcm, avail, 1);
+				blip_read_samples(audio_right, pcm + 1, avail, 1);
+			}
+			char pname[512];
+			snprintf(pname, sizeof(pname), "%s/frame.%05d.pcm", dumpaudio_dir, i);
+			FILE* pf = fopen(pname, "wb");
+			if (!pf) {
+				fprintf(stderr, "fopen %s: %s\n", pname, strerror(errno));
+				return 1;
+			}
+			fwrite(pcm, sizeof(int16_t) * 2, avail, pf);
+			fclose(pf);
+		}
 		if (write_frame(buf, stride)) {
 			return 1;
 		}

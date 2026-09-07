@@ -118,6 +118,29 @@ def check_card():
     return best("/tmp/rg_kr", 159, "/tmp/rg_ku", range(238, 250), (0, 0, 112, 160)), "card + window"
 
 
+#: The cursor walk: five Left presses, six frames each, thirty apart. The real
+#: side comes from the chip-select save state, where the window is already open
+#: with the cursor on OK; `demo-custmatch` is that same state, so both sides can
+#: be driven by the SAME script and compared frame for frame -- which
+#: `check_card` cannot do, because `demo-cardname` places its cursor statically
+#: and never walks at all.
+CURSOR_PRESS = 250
+CURSOR_LAG = 230
+
+
+def check_cursor():
+    """Every frame of a five-step cursor walk, both sides on one script."""
+    build("demo-custmatch", "/tmp/rg_cw.gba")
+    capture(REAL, "/tmp/rg_wr2", 200, "--loadstate", CHIPSELECT,
+            "--script", ",".join(held("Left", 20 + 30 * k, 6) for k in range(5)))
+    capture("/tmp/rg_cw.gba", "/tmp/rg_wu2", 420, "--script",
+            ",".join(held("Left", CURSOR_PRESS + 30 * k, 6) for k in range(5)))
+    total = sum(diff("/tmp/rg_wr2", 15 + k, "/tmp/rg_wu2", 15 + CURSOR_LAG + k, (0, 0, 112, 160))
+                for k in range(170))
+    subprocess.run(["rm", "-rf", "/tmp/rg_wr2", "/tmp/rg_wu2"], check=True)
+    return total, "170 frames of a five-step walk"
+
+
 def check_result():
     build("demo-resultmatch", "/tmp/rg_res.gba")
     capture(REAL, "/tmp/rg_rr", 40, "--loadstate", NOENEMY)
@@ -326,6 +349,7 @@ CHECKS = [
     ("field", check_field, 0),
     ("window", check_window, 0),
     ("card", check_card, 0),
+    ("cursor", check_cursor, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),

@@ -328,6 +328,15 @@ pub struct Custom<'a> {
     /// A direction waiting out CURSOR_DELAY, and the frames left of it.
     pending_move: i8,
     move_in: u8,
+    /// Background palettes the card wants, held back ONE FRAME. A palette
+    /// lands on the frame it is set and a tilemap write lands on the next, so
+    /// setting the new chip's picture palette as the card is redrawn paints
+    /// the OLD chip's tiles in the NEW chip's colours for a frame -- 2688
+    /// pixels of it, on the frame after every cursor move. The real ROM
+    /// changes the whole card on one frame; this build changed the picture's
+    /// colours a frame before everything else. Same shape as the HP box's
+    /// orange flash (TRANSFER 7aj), same fix.
+    pending_palettes: Vec<(u8, Palette16)>,
     /// Counted while the window is open, as eS20364C0+0x40 is.
     frames: u32,
     slots: [Option<Offer>; OFFERED],
@@ -472,6 +481,7 @@ impl CustomAssets {
             cursor_at: 0,
             pending_move: 0,
             move_in: 0,
+            pending_palettes: Vec::new(),
             frames: 0,
             slots,
             picks: Vec::new(),
@@ -725,7 +735,8 @@ impl Custom<'_> {
     /// the widest chip in this build is Muramasa at 1020, which fits.
     fn draw_card_row(&mut self, code: u8, element: u8, power: u16, gfx: &Graphics) {
         let assets = self.assets;
-        gfx.set_background_palette(ICON_BANK, &assets.icon_palette(element));
+        self.pending_palettes
+            .push((ICON_BANK, assets.icon_palette(element)));
         let r = assets.regions[REGION_CODE];
         self.fill_from(r, &assets.card_letters, code as u16 * GLYPH_TILES, r.bank);
         let r = assets.regions[REGION_ELEMENT];
@@ -823,7 +834,8 @@ impl Custom<'_> {
             // card here instead, in the picture region's own bank.
             if self.pictured.is_some() || self.frames == 0 {
                 self.pictured = None;
-                gfx.set_background_palette(PICTURE_BANK, &self.assets.message_palette);
+                self.pending_palettes
+                    .push((PICTURE_BANK, self.assets.message_palette.clone()));
                 let r = self.assets.regions[REGION_PICTURE];
                 self.fill_from(r, &self.assets.message, 0, PICTURE_BANK);
                 // The name and the row under the picture go with the card:
@@ -837,7 +849,8 @@ impl Custom<'_> {
             return;
         }
         self.pictured = Some((offer.chip.id, offer.chip.power));
-        gfx.set_background_palette(PICTURE_BANK, &read_palette(offer.chip.palette()));
+        self.pending_palettes
+            .push((PICTURE_BANK, read_palette(offer.chip.palette())));
         let picture = offer.chip.picture();
         let r = self.assets.regions[REGION_PICTURE];
         debug_assert_eq!((r.w, r.h), PICTURE_TILES);
@@ -904,6 +917,10 @@ impl Custom<'_> {
 
     /// Advance a frame. Returns true once the window has slid back out.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+        // Last frame's card palettes, now that its tiles have landed.
+        for (bank, palette) in self.pending_palettes.drain(..) {
+            gfx.set_background_palette(bank, &palette);
+        }
         self.phase = match self.phase {
             Phase::Opening { x } if x > 0 => {
                 let x = (x - SLIDE_STEP).max(0);
@@ -1021,7 +1038,11 @@ impl Custom<'_> {
         } else {
             (8 + 16 * self.cursor_at as i32 - 3, 0x68 - 3, &SLOT_BRACKET)
         };
-        let phase = (self.frames >> BLINK_SHIFT) as usize & 1;
+        // The counter is bumped at the top of the frame, before anything is
+        // drawn, so the first DRAWN frame already reads 1 and every phase flip
+        // lands a frame before the real ROM's. Draw from the value the frame
+        // started with.
+        let phase = (self.frames.saturating_sub(1) >> BLINK_SHIFT) as usize & 1;
         for c in &bracket[phase] {
             Object::new(self.cursor[phase].clone())
                 .set_pos((x + c.dx, y + c.dy))
