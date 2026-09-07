@@ -277,7 +277,7 @@ CHECKS = [
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
-    ("chip-use", check_chip_use, 256),  # the chip-in-hand icon, one frame
+    ("chip-use", check_chip_use, 0),
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames
     ("rollup", check_rollup, 0),        # the full battle must survive a long script

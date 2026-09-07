@@ -470,12 +470,20 @@ the same two frames in their own way.
 NOT RESOLVED: the last frame of a cursor move. At a delay of two the bracket is one frame early;
 at three the card is one frame late.
 
-The 256 are the CHIP-IN-HAND ICON on one frame. The real ROM drops it on the frame the button
-comes UP; this build drops it the frame after, because it reads its input a frame later than the
-real ROM reads its own, so the release itself arrives late. Nothing in the drawing can drop an
-icon before it knows the button is up, so it is recorded rather than papered over -- and it is
-the same one-frame input lag that makes every button-driven comparison here need its offset
-measured rather than assumed.
+The 256 were the CHIP-IN-HAND ICON on one frame, AND THE EXPLANATION WAS WRONG. It was recorded
+as the button's RELEASE arriving late through an input lag, and "nothing in the drawing can drop
+an icon before it knows the button is up". The button never comes up. Measured again with A HELD
+for five frames:
+
+  icon present   real  through the press's frame + 1, gone from + 2
+                 rust  through + 2, gone from + 3
+  navi's pose changes  frame + 4 on BOTH sides
+
+So the attack was aligned all along and the real ROM simply takes the chip out of the hand ONE
+FRAME BEFORE the use fires. `chip_use_in` reads 1 on that frame, and skipping the icon there takes
+the check to zero. The lesson is the older one restated: when a residue is blamed on something
+that cannot be fixed, check the blame before accepting it -- the measurement that would have
+falsified this one is a five-frame hold, which takes a minute.
 
 ## 7ah. Comparing an ENEMY, and the wave that ran a frame late (2026-09-07)
 

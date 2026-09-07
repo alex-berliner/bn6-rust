@@ -2860,14 +2860,18 @@ impl<'a> Battle<'a> {
         // closing, not to the hand's contents: the real captures poke a chip
         // straight into the hand slot and show no icon at all, so drawing one
         // there costs every chip comparison a constant 256 px.
-        // NOT VERIFIED: it goes one frame late. The real ROM drops it on the
-        // frame the button comes UP and this build on the frame after, which
-        // is the one frame of a chip use that still differs -- 256 px, the
-        // icon's own 16x16. This build's input is read a frame later than the
-        // real ROM reads its own, so the release itself arrives late; nothing
-        // here can drop the icon before it knows the button is up.
+        // IT GOES WITH THE PRESS, NOT THE RELEASE, and it goes one frame
+        // before the chip does. Measured with A HELD for five frames, so the
+        // release cannot be involved: the real ROM's icon is present through
+        // the press's frame + 1 and gone from + 2, this build's was gone from
+        // + 3, and the navi's pose changes on + 4 on BOTH sides. So the attack
+        // is aligned and the real ROM simply takes the chip out of the hand a
+        // frame before the use fires. `chip_use_in` reads 1 on that frame.
+        // (The earlier note here said the real ROM dropped it "on the frame
+        // the button comes UP" and that nothing could drop it sooner. The
+        // button never came up.)
         if let (None, Some(palette)) = (&self.custom, self.hand_icon_palette.as_ref()) {
-            if let Some(chip) = self.hand.get(self.hand_at) {
+            if let Some(chip) = self.hand.get(self.hand_at).filter(|_| self.chip_use_in != 1) {
                 let (mc, mr) = self.megaman.panel();
                 let (px, py) = field::panel_centre(mc, mr);
                 let sprite = DynamicSprite16::from_bytes(Size::S16x16, chip.icon_bytes())
