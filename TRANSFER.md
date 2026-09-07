@@ -1599,5 +1599,8 @@ python3 tools/diffmask.py /tmp/cap/frame.00072.rgb /tmp/rust_out/frame.00126.rgb
 
 The single biggest things to remember: (1) the field can only be stripped by disabling the
 renderer layer (`--disable-bg`), because the game reloads DISPCNT/BGPAL/OAM every frame; (2)
-the real MegaMan **lights up during the cannon fire**, which is the sprite-colour gap; (3) the
+~~the real MegaMan lights up during the cannon fire~~ -- STALE, and checked: the real navi's
+colours do not change through a cannon shot (counted frame by frame over the whole pose, the same
+blues throughout), and all three cannons compare at 0.0 px, so whatever that early note saw was
+the barrel's own charge glow and not the navi. (3) the
 `demo-sterile` branch must come before `demo-cannon` or MegaMan lands on the wrong column.
