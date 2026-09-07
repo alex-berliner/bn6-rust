@@ -538,8 +538,35 @@ Two details from the same capture:
   it is a single observation, not a rule read out of the disassembly.
 
 VERIFIED: with both sides captured `--disable-obj` (backgrounds only) and aligned on the wave's
-own dwell boundaries, 87 of 90 frames of the field's panels are identical, highlight and all. The
-three that differ are single dwell boundaries a frame out.
+own dwell boundaries, 89 of 90 frames of the field's panels are identical, highlight and all.
+
+AND THE OCCUPANCY RULE ABOVE IS WRONG (2026-09-07). There is NO occupancy check anywhere in the
+render path: `object_highlightPanel`, `object_highlightPanelRegion` and the panel-draw loop
+`sub_800C5E0` (object.s:2548-2560, 2712-2766, 1684-1761) look only at panel validity, a blink flag
+and the one-shot highlight flag. Nothing reads a navi's coordinates. What actually happens is in
+the wave's own update: `sub_80C6C14` calls `object_clearCollisionRegion` only when a hit has just
+registered (asm31.s:31480-31485), before re-presenting the highlight. So the rule is DARK ON THE
+FRAME A HIT REGISTERS THERE, which merely looks like "dark whenever occupied" the first time a
+fresh target is hit. Demonstrated by sampling MegaMan's HP with repeated `--dump`: on the second
+Mettaur attack the wave relit his same panel normally for about fourteen frames -- he was still in
+his post-hit invincibility, so no new collision fired -- and it went dark only once a second hit
+landed. This build's `taken = navi.panel() == (c, r)` matches over the measured window by
+coincidence, because that window covers a first hit on a fresh target. Doing it properly means
+modelling mercy invincibility, which is a bigger feature than this.
+
+TWO OF THE THREE were the wave's PARTING light. When the hitbox dwelt its way off the field this
+build dropped the shot at once, discarding the three-frame linger `Shot::update` had just armed
+for the panel it was vacating. The real ROM's segment does not vanish at the edge:
+`object_highlightCurrentCollisionPanels` is called unconditionally every frame from `sub_80C6C14`
+(asm31.s:31491) whatever the CurAction is, until the segment's own departure animation ends. The
+shot is now kept alive and hidden until its linger runs out.
+
+WHAT IS LEFT is the wave's FIRST hop, one frame. And one claim that came with it and has NOT been
+independently confirmed: that any source edit at all, including in code that never runs before the
+wave spawns, shifts the Mettaur's whole attack timing by whole frames through binary layout. If
+true that undermines every RNG-driven comparison; it also sits awkwardly beside `field`, `warp`,
+`buster` and `chip-use`, which compare at FIXED frame numbers and have not moved across dozens of
+builds. Confirm or refute before building on it.
 
 ## 7aj. The HP box counts down and flashes (2026-09-07)
 
