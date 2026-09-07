@@ -303,6 +303,33 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7u. The chip select window is EXACT (2026-09-07)
+
+0 px against the capture, sprites and all. The route there is the general one and worth copying.
+
+IDENTIFY THE CAPTURE'S OWN STATE FROM ITS PIXELS. Each slot's four icon tiles came out of OBJ/BG
+VRAM and were matched against all 411 chips' icons in byte_8725894 (id * 0x80): Vulcan1 D,
+AirShot *, Sword S, MiniBomb B, Cannon A. The pick stack's icon matched Cannon too, so the fifth
+slot is not empty -- it is PICKED. `demo-custmatch` then offers exactly those five with the
+Cannon picked and the cursor on OK, and every difference left is art.
+
+Four defects fell out:
+- A PICKED SLOT KEEPS ITS CODE and loses only its icon.
+- A SLOT'S CODE IS THE FOLDER ENTRY'S, not the chip's first code. A folder holds copies of a chip
+  under different letters; `Offer` carries the entry's code now and the selectability rule uses
+  it.
+- THE CARD SHOWS A MESSAGE whenever the cursor is not on a previewable chip. "CHIP DATA
+  TRANSMISSION / Sending chip data..." is a static 7x6 image at dword_87225B4 -- exactly the
+  picture region, text and all -- with palette dword_87257F4. The blob continues with the
+  window's other messages ("...DO DATA SHUFFLE!" is next).
+- THE PICK STACK'S FRAME IS FOUR TILES: the top two rows have their own pair, the rest alternate
+  the first two, the right column mirrored.
+
+Earlier findings that also had to be right: eight slot cells and not ten, with the hidden pair
+filled FLAT rather than with the empty icon in another bank; bank 12 as the dimmed icon palette
+for chips that cannot join the picks; the regular-chip mark object; and the cursor bracket's
+OBJECT palette, which is not the window's background bank.
+
 ## 7t. The backdrop is ANIMATED (2026-09-07)
 
 CORRECTS 7m. The backdrop is not a still image that scrolls. Its TILE ART cycles: seven complete
