@@ -194,7 +194,7 @@ const BUG_GRAVITY: i32 = BLKBOMB_GRAVITY;
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
 /// top of the screen and hangs there -- so it gets its own launch, gravity
 /// and flight. Fitted against the doll tracked by its four ochre colours.
-const VDOLL_VX: i32 = 0x1EF00;
+const VDOLL_VX: i32 = 0x1EEA0;
 const VDOLL_VZ: i32 = 0x31600;
 const VDOLL_GRAVITY: i32 = 0x2060;
 const VDOLL_FLIGHT: u8 = 60;

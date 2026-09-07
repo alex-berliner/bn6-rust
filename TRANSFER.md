@@ -427,7 +427,7 @@ speed, and two of them on the same gravity:
 | BlkBomb  | 0x2C000      | 0x22051 | 0x27C0       | --     | exact | 7.4   |
 | BugBomb  | = BlkBomb's  | 0x25D60 | = BlkBomb's  | 35.4   | 6.4   | 5.3   |
 | LilBolr  | = BlkBomb's  | 0x22280 | 0x27F0       | 34.6   | exact | 7.7   |
-| VDoll    | 0x1EF00      | 0x31600 | 0x2060       | 10.7   | 7.3   | 5.3   |
+| VDoll    | 0x1EEA0      | 0x31600 | 0x2060       | 10.7   | 6.9   | 5.3   |
 
 So the thrown things share a launcher and differ mostly in how hard it throws. When a new chip's
 arc needs fitting, START from BLKBOMB_VX and BLKBOMB_GRAVITY and sweep vz alone -- that is one
@@ -442,7 +442,13 @@ a plateau several hundred wide; take the middle.
 
 WHAT IS LEFT IS NOT THE ARC. Each of the three now has a handful of pixels on a handful of
 frames, and tracking the object's bounding box frame by frame shows the paths agreeing exactly.
-- BugBomb: one frame, 80 px, the last frame before it lands.
+- BugBomb: one frame, 80 px, the last frame before it lands -- the ball a pixel right and a pixel
+  down of the real one, on that frame alone. The sweep's minimum is a plateau and every point on
+  it has the same frame wrong, so this is the model's discretisation, not a constant.
+- VDoll: five frames, 109 px, all in x 129-139 as the doll comes back down at the right edge of
+  the compare window. Its ground shadow's two frames went away with the shadow's OAM slot, and
+  sweeping the across-speed to 0x1EEA0 took the rest of the arc; what is left is the doll's own
+  art at the frames where it is half off the box.
 - LilBolr: DONE. The last three frames were the boiler's HP FIGURE passing behind the navi's
   head -- the figure is drawn with the thrown object, the thrown object after the actors, so his
   helmet cut the digits: 69 white pixels in the real ROM against 50 in this build. The real ROM's
@@ -515,8 +521,8 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-41 of 43 exact (2026-09-07, latest run). The two that are not: VDoll 2.0 px/frame over floor and
-BugBomb 1.1 -- about 220 pixels between them, none of it the arc (7aa).
+41 of 43 exact (2026-09-07, latest run). The two that are not: VDoll 1.6 px/frame over floor and
+BugBomb 1.1 -- about 190 pixels between them, none of it the arc (7aa).
 BlkBomb, LilBolr and the seeds joined the exact ones after their constants were SWEPT against the
 capture rather than fitted.
 
