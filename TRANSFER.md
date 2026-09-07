@@ -927,6 +927,31 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7as. BATTLE START!, and every check at zero (2026-09-07)
+
+A battle now opens the way the game opens one: the field fades in, the enemy materialises, and
+BATTLE START! unrolls over a fight that is already running. The research (7ar) says why it does
+not pause: `sub_8008064` (asm00_1.s:10386) raises message 0 and there is no `PauseBattle` call
+anywhere in it, and `sub_800801C` is ticked every frame from `sub_800938A` alongside the normal
+chip-hand processing. So the banner goes up without touching the intro's own gate.
+
+NOT VERIFIED: how many frames after the intro it goes up. There is no save state at a battle's
+start to compare against, and making one means playing the game to a battle. Everything else about
+it -- the art, the palette, the position, the 58-frame roll-out -- is the same asset and the same
+animation the ENEMY DELETED check already matches at 0 px.
+
+NOT IN A DEMO BUILD, and the reason is worth keeping: every fixture that fields an enemy compares
+against a capture taken mid-battle, where no banner is up. `check_chip_use` starts at frame 130
+and the banner ends at 126. Four frames is not margin, so `cfg!(feature = "demo")` keeps it out,
+the way the chip-in-hand icon is kept out of the sterile arena.
+
+AND EVERY CHECK IS AT ZERO. All twelve, for the first time:
+
+    chips 0 (43 of 43)   tiles 0   field 0   window 0   card 0   result 0
+    warp 0   buster 0   chip-use 0   popup 0   banner 0   rollup 0
+
+`chip-use` was the last one, at 256 px, and the note explaining it was wrong (7ag).
+
 ## 7ar. Where the banner's numbers come from (2026-09-07)
 
 Traced in the disassembly after the banner was already matched by measurement, which is the right

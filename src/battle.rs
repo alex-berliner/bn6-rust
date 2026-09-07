@@ -851,6 +851,8 @@ pub struct Battle<'a> {
     /// Whether the fight's closing banner has been asked for, so it is asked
     /// for once.
     banner_done: bool,
+    /// Whether BATTLE START! has been put up, likewise once.
+    opened: bool,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1343,6 +1345,7 @@ impl<'a> Battle<'a> {
             banner: None,
             banner_assets: banner::Assets::new(crate::BANNER),
             banner_done: false,
+            opened: false,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1564,7 +1567,7 @@ impl<'a> Battle<'a> {
                 }
             }
         }
-        // Bring the field in, then the enemies one by one.
+        // Bring the field in, then the enemies one by one, then say so.
         let intro = if self.intro_fade > 0 {
             self.intro_fade -= 1;
             true
@@ -1573,6 +1576,23 @@ impl<'a> Battle<'a> {
                 self.enemies[self.intro_next].appear();
             } else if !self.enemies[self.intro_next].is_busy() {
                 self.intro_next += 1;
+                // The last one has finished materialising: BATTLE START!.
+                // sub_8008064 (asm00_1.s:10386) raises message 0 here, and
+                // there is no PauseBattle call anywhere in it -- the fight is
+                // already running while the ribbon is up, which is why this
+                // does not touch `intro`.
+                // NOT VERIFIED: how many frames after the intro it goes up.
+                // There is no save state at a battle's start to compare with.
+                // NOT IN A DEMO BUILD. Every fixture that fields an enemy
+                // compares against a capture taken mid-battle, where no
+                // banner is up, and the earliest of them starts at frame 130
+                // against a banner that ends at 126 -- four frames of margin
+                // is not margin.
+                if self.intro_next >= self.enemies.len() && !self.opened && !cfg!(feature = "demo")
+                {
+                    self.opened = true;
+                    self.banner = Some(Banner::new(self.banner_assets, banner::BATTLE_START));
+                }
             }
             true
         } else {
