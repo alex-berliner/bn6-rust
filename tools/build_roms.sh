@@ -53,6 +53,7 @@ ENTRIES=(
   "demo-recov200,demo-sterile,demo-auto recov200-real Recov200 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-stepswrd,demo-sterile,demo-auto stepswrd-real StepSwrd on black, auto-fire: 33 of 40 frames match the real ROM exactly"
   "demo-blkbomb,demo-sterile,demo-auto blkbomb-real BlkBomb on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-lilbolr,demo-sterile,demo-auto lilbolr-real LilBolr1 on black, auto-fire: the boiler's arc matches; it is a summon, so its figure is the boiler's HP"
   "demo-energbom,demo-sterile,demo-auto energbom-real EnergBom on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-megenbom,demo-sterile,demo-auto megenbom-real MegEnBom on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-barr100,demo-sterile,demo-auto barr100-real Barr100 on black, auto-fire: matched frame-for-frame to the real ROM"
