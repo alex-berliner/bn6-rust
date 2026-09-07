@@ -306,9 +306,9 @@ const STEP_GHOST_LAST: u8 = 19;
 /// frame 12 those of frame 9. It outlives the step: the navi is home from
 /// frame 24 and the copy is still blinking there at 29.
 const STEP_GHOST2_FIRST: u8 = 9;
-const STEP_GHOST2_LAST: u8 = 30;
+const STEP_GHOST2_LAST: u8 = 34;
 /// The age at which the step's bookkeeping is dropped.
-const STEP_STATE_LAST: u8 = 30;
+const STEP_STATE_LAST: u8 = 34;
 const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
 const BOMB_SPAWN_UP: i32 = 0x30 << 16;
 const BOMB_VX: i32 = 0x2e666;
@@ -1301,7 +1301,12 @@ impl<'a> Battle<'a> {
             // Refreshed on the first frame of each blink pair and held for
             // the second: on frames 16 AND 17 the real copy carries the
             // navi's frame-13 sprite, not 13 and then 14.
-            if age >= STEP_GHOST2_FIRST && (age - STEP_GHOST2_FIRST) % 4 == 0 {
+            // It stops taking new frames once the navi has gone home: from
+            // then on it holds the last pose the navi had on that panel.
+            if age >= STEP_GHOST2_FIRST
+                && (age - STEP_GHOST2_FIRST) % 4 == 0
+                && self.step_home.is_some()
+            {
                 // Three frames back is the next slot round the ring of four.
                 let delayed = self.step_trail[(age as usize + 1) % 4];
                 if self.step_ghost2_key != Some(delayed) {

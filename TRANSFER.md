@@ -417,10 +417,16 @@ What is actually true, measured per frame from the framebuffer:
   OAM, the copy on frames 16 AND 17 has exactly the sizes and positions the navi's four sprites
   had on frame 13, and the copy on frame 12 those of frame 9. Implemented (`step_ghost2`, with a
   four-entry ring of the navi's sprite frames and `spr::Player::frozen_at`).
-- StepSwrd now scores 79 px/frame over 40 frames. Frames 0-19 are all 0 except the standing
-  banner artifact at 6 and one stray pixel on 16 and 17. What is left is frames 20-21 (206),
-  and the return from 24 on, where the real ROM draws a pink warp ring around the navi that
-  nothing here draws.
+  It stops taking new frames once the navi goes home and holds the last pose it had on that
+  panel: refreshing past the return puts the navi's HOME pose on the far panel and costs 1090 px
+  on frames 32-33 instead of 68.
+- StepSwrd now scores 67 px/frame over 40 frames, from 340. Frames 0-19 are all 0 except the
+  standing banner artifact at 6 and one stray pixel on 16 and 17.
+- WHAT IS LEFT, and the lead for it: frames 20-21 (206), 24-29 (152-954) and 32-33 (68). OAM on
+  those frames carries a 16x16 object nothing here draws, sitting above and left of the navi --
+  at (41,58) over the home panel on frames 24 and 26, and at (121,58) over the far panel from
+  frame 20 through 32, growing out of an 8x8 that sits at (124,60) from frame 8. That is the
+  pink ring seen in the strips. Its sprite has not been identified.
 
 Capture modes, and what each costs:
 - A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
