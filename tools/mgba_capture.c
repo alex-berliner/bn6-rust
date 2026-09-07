@@ -46,6 +46,19 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+/* The installed libmgba.so was built with debugger support (it exports
+ * CLIDebuggerCreate and friends), which is a struct mCore ABI switch: core.h
+ * guards debuggerPlatform/attachDebugger/etc. behind USE_DEBUGGERS, and
+ * listAudioChannels/enableAudioChannel sit right after that block. Compiling
+ * this file without the macro leaves this translation unit's struct mCore
+ * one exec vtable slot short from that point on, so those two calls silently
+ * read whatever library-internal pointer actually lives at that offset
+ * instead (observed: listAudioChannels returned a garbage count and a NULL
+ * table, segfaulting on first use). Every field the existing flags use
+ * (setVideoBuffer, setKeys, busRead/Write*, runFrame, ...) is declared
+ * earlier in the struct and is unaffected either way. */
+#define USE_DEBUGGERS 1
+
 #include <mgba/core/core.h>
 #include <mgba/core/interface.h>
 #include <mgba/core/log.h>
@@ -535,6 +548,11 @@ int main(int argc, char** argv) {
 		fprintf(stderr, "wrote state %s\n", savestatefile);
 	}
 
+	if (dumpaudio_dir) {
+		int cfgrate = -1;
+		mCoreConfigGetIntValue(&core->config, "sampleRate", &cfgrate);
+		fprintf(stderr, "DEBUG config sampleRate=%d\n", cfgrate);
+	}
 	free(buf);
 	core->deinit(core);
 	fprintf(stderr, "wrote %d frames to %s\n", g_frame, outdir);

@@ -155,7 +155,15 @@ idle. 102 frames from the banner's frame 49 is 151; the window is measured start
 159. States 6-9 of `off_8008038` (asm00_1.s:10370) were not traced. This build uses the
 measured 110; finding the real source would replace a measurement with a derivation.
 
-### C3. The emotion window
+### C3. The emotion window  *(researched; see TRANSFER 7at)*
+Answered: only Calm and Angry are reachable without a Cross or a Navi Customizer bug, and Angry
+needs ~120 continuous frames of hitstun or a single 300+ damage hit, which a Mettaur's 10-damage
+shockwave will not produce. So this build's single face is very probably correct for the battle it
+fields, and implementing Angry is not worth it until there is an enemy that can trigger it. What
+IS worth doing cheaply: `tools/emotion_export.py` takes only state 0's tiles and state 0's palette,
+and the other 22 states sit right after at a fixed stride -- exporting them is mechanical.
+
+### C3-old. The emotion window
 `src/emotion.rs` draws it and it never changes state. The real ROM has angry, and full
 synchro, and more. Find what drives the state and when, with citations, and whether any
 of it is reachable in a one-Mettaur battle.

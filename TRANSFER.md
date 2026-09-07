@@ -971,6 +971,30 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7at. The emotion window: what would drive it (2026-09-07)
+
+Researched, not implemented, because almost none of it is reachable in the battle this build
+fields.
+
+WHERE IT LIVES. The battle HUD is a 24-bit dispatcher over one struct `eStruct2035280`
+(ewram.s:2642); bit 14 is the emotion window, ticked by `sub_801CADC` and drawn by `sub_801CDEC`
+(asm00_2.s:27186, 27554). The face index is `eStruct2035280+0x17`, indexing 23 graphics at
+`dword_872D814` (data/dat38_86.s:26158), 0x180 bytes apart -- and there is a PER-STATE PALETTE
+array beside it at `dword_872F114` (26556), 32 bytes apart, which `tools/emotion_export.py`
+currently ignores: it takes state 0's tiles and state 0's palette and nothing else.
+
+WHAT DRIVES IT. The index is not written by scattered setters; it is recomputed every frame from a
+category (`possiblyGetBattleEmotion_8015B64`, asm00_2.s:15095): Unk_36 or Mood==0 gives 5, else
+Anger gives 3, else Unk_32 gives 1, else Mood==0xff gives 2, else 0. With no Cross active those
+map through `byte_801E6F4` (30922) to faces 0-4; the other eighteen faces are Cross and Beast Out
+only.
+
+WHAT IS REACHABLE HERE. Calm and Angry. Categories 1 and 2 need `NaviStats.EmotionBug` non-zero,
+which is a Navi Customizer program bug; 5-22 need a Transformation. And ANGRY itself is a stretch:
+`sub_80142DC` (asm00_2.s:11913) arms it on about 120 CONTINUOUS frames of hitstun or a single hit
+of 300+ damage, and a Mettaur's shockwave does 10. So a lone-Mettaur battle will almost certainly
+never leave face 0, which is what this build draws. Worth knowing, not worth building yet.
+
 ## 7as. BATTLE START!, and every check at zero (2026-09-07)
 
 A battle now opens the way the game opens one: the field fades in, the enemy materialises, and
@@ -1933,11 +1957,21 @@ byte count is decimal): OBJ bank 0 (MegaMan) is rewritten to a brighter palette 
 frame the shot lands on the *immortal* Mettaur (f63 with A@40) and it **stays lit for the
 rest of the capture**; without firing it never changes; and with the enemy **deleted**
 (`--cheat 0x0203ab84:0 --cheat 0x0203ab86:0`, sterile patch keeping the fight live) MegaMan
-stays dark through the whole cannon. The immortal Mettaur keeps attacking, so every shot is
-a counter hit, which puts MegaMan in Full Synchro — the brightened palette. So do NOT
-brighten the navi during the Cannon pose; use the enemy-deleted capture as the reference
-(`/tmp/fire_nomet`: pose starts f50, barrel f51–72, idle again f73). The section below is
-kept for the record but its conclusion is superseded.
+stays dark through the whole cannon. So do NOT brighten the navi during the Cannon pose; use the
+enemy-deleted capture as the reference (`/tmp/fire_nomet`: pose starts f50, barrel f51–72, idle
+again f73). The section below is kept for the record but its conclusion is superseded.
+
+THE NAME "Full Synchro" IS PROBABLY WRONG (2026-09-07). The observation stands -- the navi's OBJ
+bank 0 is rewritten brighter from the frame a shot lands on the immortal Mettaur and stays lit --
+but a search of the disassembly for a Full Synchro flag found none: the only "Synchro" in the tree
+is a one-shot post-battle tutorial script. What it DID find, at the right shape, is ANGER:
+`sub_80143E4` (asm00_2.s:12065) calls `sprite_setColorShader(0xf)` on the navi's own battle sprite
+for as long as `AIData.Anger` is non-zero, and Anger is armed by `sub_80142DC` (asm00_2.s:
+11913-11947) on either about 120 continuous frames of hitstun or a single hit of 300 or more
+damage, then runs 0x258 = 600 frames. An immortal Mettaur attacking continuously is exactly the
+120-frame-hitstun case. That fits the capture better than a counter-hit mechanic does, though it
+was not confirmed by watching `AIData.Anger` itself. Either way the practical instruction is
+unchanged: do not brighten the navi for the Cannon.
 
 ### The sprite colour difference — earlier hypothesis (superseded, see above)
 The real MegaMan **changes palette between idle and cannon-fire**:
