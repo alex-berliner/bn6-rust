@@ -1013,6 +1013,25 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7ay. THE LOOP CLOSES (2026-09-07)
+
+A whole battle now runs end to end in the rollup build, which it could not do this morning: the
+chip window a battle opens with, BATTLE START!, the fight, the win, the ENEMY DELETED ribbon, the
+RESULT window with its clear time and reward, and straight into the next battle's chip select.
+Verified by playing it under a scripted 2200-frame capture.
+
+Two things had been in the way and both came out of the same place -- the save state at a battle's
+first frame (7aw). The release build fielded the game's four-strong line-up, which deletes the navi
+in about fifteen seconds; and the custom gauge started EMPTY, which is 1260 frames before the first
+chip. So the rollup was a ROM in which you could neither win nor ever open the chip window, and
+nobody had noticed because every fixture tests one chip on an empty arena.
+
+That is the shape of most of what today found. The per-piece parity was never the problem: 43 of 43
+chips, the window, the card, the banner, the RESULT window are all at zero and have been for a
+while. What was wrong was the JOINS between them -- when the window opens, when the banner goes up,
+which enemies are fielded, whether the fight is paused -- and nothing in the harness looked at a
+join until there was a state that started at one.
+
 ## 7ax. THE FIRST SOUND, and how audio is compared (2026-09-07)
 
 The buster's blip is in the build, and it is measured against the real ROM rather than guessed.
