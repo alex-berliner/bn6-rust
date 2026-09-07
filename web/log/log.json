@@ -256,5 +256,11 @@
     "file": "log/proof/1788740735-strip_demo-invisibl.png",
     "caption": "INVISIBL matched: tools/chip_compare.py b1 demo-invisibl --frames 190 --rust-start 123 -> 0 px on every frame. Presentation 128 frames (measured), then FlashingInvisTimer 0x68: the navi is not drawn on frames where the timer's bit 1 is set (2 hidden / 2 shown; blindVisualHandledHere_8016934).",
     "tag": "proof"
+  },
+  {
+    "t": 1788740850,
+    "file": "log/game/1788740850-sheet.png",
+    "caption": "Integration check in the normal fight (debug build): chip window, five picks, then A five times -- sword swing with its arc, sword held, heal streaks, presentation chips holding the fight. All twelve matched chips run through the same code as the sterile comparisons.",
+    "tag": "game"
   }
 ]
