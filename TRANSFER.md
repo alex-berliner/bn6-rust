@@ -301,13 +301,19 @@ FireSwrd (76), AquaSwrd (77), ElecSwrd (78) and BambSwrd (79) are family 0x13 su
   the nine-offset list byte_8019951 (asm00_2.s:20987), the landing panel plus its eight
   neighbours, each getting the same effect row 0. (byte_80C5BA0's third byte is the flying
   bomb's hit modifier, not a blast size.) With that, BigBomb is at 22 px/frame mean, down from
-  87: the 3x3 blast lines up and only a small residual in its last frames is left. Open.
+  87: the 3x3 blast lines up -- same bounding box and same pixel count on both sides -- and
+  what is left is a small colour/edge residual in its last frames (135-230 px, at the window's
+  right edge). Reversing the nine-panel spawn order does not change it. Open.
 - BlkBomb is a different object: off_80EB6F8[6] = sub_80CD886 (asm31.s:45704), not
-  sub_80C5DBC. It spawns a type-3 family 0x4a object three panels ahead with sprite
-  sprite_831EA40 (effect list 0xC index 0x23) -- hence the brown that is not in
-  sprite_82F569C's palettes -- with no arc at all: it materialises on the panel, plants
-  itself, reserves it and ticks a 60-frame fuse (sub_80CDA1C, sub_80CDAD8) with sound 0xc1.
-  Not implemented yet.
+  sub_80C5DBC. It spawns a type-3 family 0x4a object three panels ahead with NO arc: it
+  materialises on the panel, plants itself, reserves it and ticks a 60-frame fuse
+  (sub_80CDA1C, sub_80CDAD8) with sound 0xc1. That behaviour is implemented. Its ART is NOT:
+  the object's `sprite_load(0x80, 0xc, 0x23)` appeared to name sprite_831EA40, but rendering
+  that sprite's animations shows a numbered canister (a count bomb), not the dark brown bomb
+  the real ROM draws, and the brown is in none of sprite_82F569C's twelve palettes either. So
+  the sprite is still unknown and the held bomb's grey palette stands in; BlkBomb sits at
+  ~265 px/frame. Open: resolve effect list 0xC index 0x23 properly (check whether
+  sprite_load's r2 is an index into a different list for type-3 objects).
 
 **The custom gauge (research, second pass, confirms the first):** the counter lives at
 word_20352A0 (eStruct2035280+0x20), is cleared by ClearCustGauge (asm00_2.s:29826) and raised
