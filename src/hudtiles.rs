@@ -45,6 +45,16 @@ const BAR_CYCLE: [u16; 4] = [
 ];
 const BAR_FRAMES: u32 = 7;
 const MARKER_FRAMES: u32 = 8;
+/// The flow runs one frame behind the counter that drives it. Found by
+/// aligning a whole battle screen against the real ROM on the BACKDROP's
+/// animation -- which leaves every tile but this bar identical, 360 px -- and
+/// then sweeping the gauge's own band alone: it matches at -1 and nowhere
+/// else, taking the whole 240x160 screen to zero.
+/// NOT VERIFIED as a rule. The capture's gauge has been full for an unknown
+/// time, so its phase relative to the backdrop is not fixed by anything this
+/// save state can show; -1 is what makes this capture match, and its being so
+/// small is the only reason to think the two counters are related at all.
+const BAR_PHASE: u32 = 1;
 /// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
@@ -200,10 +210,11 @@ impl HudTiles {
         } else {
             self.gauge_tick = 0;
         }
+        let flow = self.gauge_tick.wrapping_sub(BAR_PHASE);
         let (bar, marker) = if ready {
             (
-                BAR_CYCLE[((self.gauge_tick / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
-                if (self.gauge_tick / MARKER_FRAMES) % 2 == 0 {
+                BAR_CYCLE[((flow / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
+                if (flow / MARKER_FRAMES) % 2 == 0 {
                     MARKER_READY
                 } else {
                     MARKER_WAITING

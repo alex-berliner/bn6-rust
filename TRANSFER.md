@@ -303,6 +303,33 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7ab. Whole-screen tile parity, and the limit of one save state (2026-09-07)
+
+0 of 38400 pixels, sprites off, `demo-hudmatch` against /tmp/pausedwithcannon.state: backdrop
+with its animation and scroll, HP box, CUSTOM gauge with its flowing bar, twelve panels and the
+chip name strip.
+
+HOW TO ALIGN TWO SCREENS. Capture both with `--disable-obj`, then search PAIRS of frames -- not
+one frame against a sweep, because the backdrop's animation and its scroll have periods that only
+line up occasionally. Sample every eighth pixel over a grid of (real frame, rust frame) first;
+the winner is usually exact or nearly so at full resolution. Use an EARLY real frame: by frame
+~290 of that capture the navi has been hit and the HP box reads 40, which no fixture reproduces.
+
+WHAT MOVED. The gauge's flow ran a frame ahead of its counter. With the two screens aligned on
+the backdrop, every tile matched but the gauge's bar -- 360 px, one 8-pixel band -- and sweeping
+that band alone put it at -1 (`BAR_PHASE`).
+
+AND THE LIMIT. Two phases in that screen CANNOT be settled by one save state:
+- the gauge's flow phase against the backdrop's. The capture's gauge has been full for an unknown
+  time, so nothing fixes their relative phase; -1 is what makes this screen match and the only
+  argument for it being a rule is that it is 1 rather than 14.
+- the SCROLL's parity. Both sides step the backdrop a pixel every other frame; in this pairing
+  they step on opposite frames, so the screen matches on one frame and diverges on the next by
+  about 3000 px. Giving the backdrop a one-frame head start fixes the parity and breaks the
+  gauge, because they are driven by different counters. Where the real ROM's scroll sat when the
+  state was saved is not something the state explains. Do not chase it with a constant; capture a
+  battle FROM ITS FIRST FRAME if it ever matters.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
