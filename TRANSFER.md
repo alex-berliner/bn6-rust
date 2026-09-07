@@ -277,7 +277,15 @@ WHAT IS LEFT, and it is not the arc. Searching vz alone made things worse in bot
 (0x18F5C gave 422, 0x1C000 gave 381, against 0x2999A's 352), because the residual is not mostly
 position. Two other things: the real kettle carries a FLAME and a purple ring on its lid that
 animation 0 does not draw, worth 366 px on frame 19 where the diff is grey-blue and white rather
-than gold; and the damage figure that pops beneath it is drawn by no chip here yet. The vertical
+than gold; and the damage figure that rides beneath it is drawn by no chip here yet.
+THAT FIGURE IS IDENTIFIED: two 32x16 OBJECTS at (84,64) and (116,64) on frame 19, tiles 888 and
+896 -- the same OBJ number tiles the enemy HP counter uses (880 upward, which BANNER_TILES
+already blanks). So it is the number machinery hud.rs already has, drawn under the projectile and
+travelling with it, not a new sprite. It shows even with the enemy deleted, so it is the chip's
+own damage on the projectile rather than a hit indicator.
+The kettle's flame is NOT missing: every one of the virus sprite's animations carries the flame
+and the purple ring, and rendering them confirms it. The residual on frame 19 is grey-blue and
+white because it is this number, not the lid. The vertical
 is still 5-13 px high and drifting, which is worth revisiting only after the sprite is right.
 
 The earlier note read: its sprite is sprite_8399578 (data/dat38_33.s). That took all three searches to find, which is
