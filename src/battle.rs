@@ -993,7 +993,9 @@ impl<'a> Battle<'a> {
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
             // follows the front of the hand.
-            match self.hand.get(self.hand_at) {
+            // The window covers the name strip while the menu is up, and the
+            // real ROM draws no name there then.
+            match self.hand.get(self.hand_at).filter(|_| self.custom.is_none()) {
                 Some(&id) => {
                     let chip = self.chips.get(id.id as usize);
                     self.hud_tiles.as_mut().unwrap().set_name(Some((chip.name(), id.power)));
