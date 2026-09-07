@@ -303,6 +303,23 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7v. Elements this build was simply missing (2026-09-07)
+
+Three of them turned up in one afternoon, all by looking at a live battle rather than at a chip:
+the EMOTION WINDOW (7r), the CHIP IN HAND, and the backdrop's animation (7t). The lesson is that
+a chip-by-chip comparison in the sterile arena cannot find anything the sterile arena strips.
+Capture a plain battle from a save state, unpaused with `--script Start@10`, and look at it.
+
+THE CHIP IN HAND is a 16x16 object over the navi carrying the front chip's own icon -- the same
+art byte_8725894 gives the window's slots, which chips.bin already has. Its OAM entry is (59,52)
+with the navi on the middle panel of its row: that panel's centre one left and fifty-six up. Only
+its OBJECT palette was new, byte_872CFD4, which is NOT the window's icon bank (a background
+palette, differing at two entries).
+IT IS NOT DRAWN IN THE STERILE ARENA. The object belongs to the chip window CLOSING, not to the
+hand's contents, and the real captures poke a chip straight into the hand slot; drawing one there
+costs every chip comparison a flat 256 px. Same class of thing as the emotion window, which the
+real ROM drops the moment the ENEMY DELETED banner shows.
+
 ## 7u. The chip select window is EXACT (2026-09-07)
 
 0 px against the capture, sprites and all. The route there is the general one and worth copying.
