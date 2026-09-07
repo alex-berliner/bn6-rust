@@ -1079,10 +1079,22 @@ requires a frame to be white AND the frame 150 later to be white too. A detector
 appearance rather than on a behaviour will eventually catch something legitimate that looks the
 same.
 
-WHAT IS STILL OUT: with the white right, the first virus is at 91 frames after init here against
-113 there -- the real ROM waits 42 frames between the field appearing and the first virus, and
-this build waits 20. The spacing after that is right. That gap is the next thing to measure, not
-to fit.
+AND WITH THE INTRO RIGHT, THE REST CAME WITH IT. Everything downstream of the opening had been
+measured against the wrong lead-in, so the "discrepancies" were the lead-in wearing different
+hats. Re-measured against the corrected build, both sides on the same detector:
+
+    the first virus starts materialising   frame 76 after init, BOTH SIDES
+    it settles                             frame 142,          BOTH SIDES
+    the chip window opens                  129 there, 130 here
+
+which is the whole opening, to within a frame. The earlier readings of "22 frames early" and
+"91 against 113" were both artefacts of comparing a 32-frame black lead-in against a 71-frame
+white one; there was never a materialise discrepancy to explain.
+
+THE GENERAL POINT, and it is the same one 7ay makes about joins: a wrong constant EARLY in a
+sequence makes every later thing in that sequence look wrong in its own way, and each of those
+looks like its own bug worth its own investigation. Fix the earliest one first and measure again
+before believing any of the others.
 
 ## 7az. A researched fact that did not survive contact with a capture (2026-09-07)
 

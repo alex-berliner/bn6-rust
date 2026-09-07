@@ -101,7 +101,7 @@ settle this AND BATTLE START!'s delay (C1) in one go. That save state is now the
 valuable thing the harness does not have.
 
 
-### A5. The battle opening  *(fixture built and measured -- TRANSFER 7ba)*
+### A5. The battle opening  *(done -- TRANSFER 7ba)*
 `demo-open` exists and fields the capture's own three Mettaurs. Measured:
 
     real   white 0..70, field at 71, viruses 113/141/173, window 173
@@ -113,10 +113,16 @@ white for 71 frames in non-demo builds and in `demo-open`; every other demo keep
 black ramp, because their frame offsets were calibrated against it and changing it moved
 eight checks at once.
 
-WHAT IS LEFT: with the lead-in right, the first virus is at 91 frames after init here
-against 113 there. The real ROM waits 42 frames between the field appearing and the first
-virus and this build waits 20; the spacing after that is right. Measure that gap -- it is
-probably the appear animation's own length -- rather than fitting a constant to it.
+DONE. With the lead-in right the rest came with it, and there was never a second problem:
+
+    first virus starts materialising   frame 76 after init, BOTH SIDES
+    it settles                         frame 142,          BOTH SIDES
+    chip window opens                  129 there, 130 here
+
+The earlier "22 frames early" and "91 against 113" were the wrong lead-in wearing different
+hats. A wrong constant early in a sequence makes everything after it look wrong in its own
+way, and each of those looks like a separate bug. Fix the earliest and re-measure before
+believing any of the others.
 
 A sampling trap worth remembering: a "brightness" measure reads white as FULL brightness, so
 a white screen looks like a finished fade. Measure the colour.
