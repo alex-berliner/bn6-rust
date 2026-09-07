@@ -37,7 +37,7 @@ impl Emotion {
             let o = p + i * 2;
             *slot = Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
         }
-        let palette = PaletteVramSingle::try_allocate_new(&Palette16::new(colours))
+        let palette = PaletteVramSingle::try_allocate_shared(&Palette16::new(colours))
             .expect("emotion palette should fit in vram");
 
         let split = WIDE_TILES * 32;

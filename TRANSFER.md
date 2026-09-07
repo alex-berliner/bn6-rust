@@ -891,10 +891,25 @@ Sharing cannot change a pixel: the colours are identical, only the bank index di
 nothing here depends on which bank an object lands in. Four thousand frames of the same fight
 now run clean, and every fixture is unchanged.
 
-WHAT THIS SAYS ABOUT THE HARNESS. `regress.py` checks nine things and none of them is "the game
-runs". A fixture puts one chip on an empty arena; the crash needed five actors and their
-effects. When something only the full battle can do goes wrong, no amount of per-chip parity
-will say so -- run the rollup build under a long input script now and then.
+AND THERE WAS A SECOND ONE, found by running the rollup under a DIFFERENT walk: `custom.rs:404,
+cursor palette should fit in vram`, about 1650 frames in. `spr.rs` was not the only caller of
+`try_allocate_new` -- `custom.rs` (twice, for the cursor and for the regular-chip mark, which the
+real ROM draws out of the same bank 11), `hud.rs`, `emotion.rs` and `battle.rs`'s hand icon all
+built their palettes at runtime too. All five now share.
+
+WHAT THIS SAYS ABOUT THE HARNESS. `regress.py` checked nine things and none of them was "the game
+runs". A fixture puts one chip on an empty arena; these crashes needed five actors and their
+effects, and a chip window that only opens if the navi is still alive when the gauge fills. The
+`rollup` check now runs THREE different walks of 2600 frames each, because one walk decides which
+enemies the navi meets and how long it survives -- the two crashes came out of two different
+walks, and one walk would have found only one of them.
+
+AND THE REBUILD IS PARALLEL NOW. `tools/build_roms.sh` builds 58 ROMs; one after another that is
+about a quarter of an hour, which is long enough that the site was routinely stale. They cannot
+simply be backgrounded, because cargo locks its target directory and every job writes the same
+`target/.../bn` that gbafix then reads. Each worker gets its own `CARGO_TARGET_DIR` under /tmp
+instead, handed out round robin so a worker keeps its own incremental artifacts, with `JOBS`
+defaulting to half the cores. 2m21s wall for 17m37s of CPU.
 
 ## 7w. The scoreboard, and two fixtures worth knowing (2026-09-07)
 

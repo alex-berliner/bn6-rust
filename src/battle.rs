@@ -523,7 +523,7 @@ fn hand_icon_palette() -> PaletteVramSingle {
         let o = 8 + i * 2;
         *slot = agb::display::Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
     }
-    PaletteVramSingle::try_allocate_new(&agb::display::Palette16::new(colours))
+    PaletteVramSingle::try_allocate_shared(&agb::display::Palette16::new(colours))
         .expect("hand icon palette should fit in vram")
 }
 const BOILER_HP: u16 = 40;

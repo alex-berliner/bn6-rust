@@ -154,8 +154,21 @@ def check_buster():
                for k in range(32)), "navi half, 32 frames"
 
 
+#: Direction cycles for the rollup check. ONE script is not enough: the walk
+#: it produces decides which enemies the navi meets and how long it survives,
+#: and the two crashes this check exists for came out of two different walks
+#: -- one 362 frames into a fight, the other at a chip window that only opens
+#: if the navi is still alive when the gauge fills, some 1650 frames in.
+ROLLUP_WALKS = [
+    ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left", "Right", "Up"],
+    ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left"],
+    ["Right", "Right", "Up", "Down", "Left", "Up", "Right", "Down", "Down"],
+]
+ROLLUP_FRAMES = 2600
+
+
 def check_rollup():
-    """The full battle, under a long input script, must not crash.
+    """The full battle, under several long input scripts, must not crash.
 
     Every other check here puts one or two objects on an empty arena, which is
     why none of them caught the game running out of object palette banks 362
@@ -164,20 +177,27 @@ def check_rollup():
     white finds it without knowing what the panic said.
     """
     build("default", "/tmp/rg_roll.gba")
-    keys = ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left", "Right", "Up"]
-    script = [held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, 1950, 19))]
-    script += [held("B", at, 2) for at in range(70, 1950, 11)]
-    script += [held("A", at, 2) for at in range(100, 1950, 37)]
-    capture("/tmp/rg_roll.gba", "/tmp/rg_rollcap", 2000, "--script", ",".join(script))
+    last = ROLLUP_FRAMES - 50
+    total, notes = 0, []
+    for w, keys in enumerate(ROLLUP_WALKS):
+        script = [held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, last, 19))]
+        script += [held("B", at, 2) for at in range(70, last, 11)]
+        script += [held("A", at, 2) for at in range(100, last, 37)]
+        out = "/tmp/rg_rollcap%d" % w
+        capture("/tmp/rg_roll.gba", out, ROLLUP_FRAMES, "--script", ",".join(script))
 
-    def crashed(i):
-        px = cc.frame("/tmp/rg_rollcap", i).load()
-        sampled = [(x, y) for y in range(0, 160, 2) for x in range(0, 240, 2)]
-        white = sum(1 for x, y in sampled if px[x, y] == (255, 255, 255))
-        return white > len(sampled) // 2
-    # From 60: the first frames are the boot white before anything is drawn.
-    bad = [i for i in range(60, 2000, 5) if crashed(i)]
-    return len(bad), "no crash in 2000 frames" if not bad else "crashed by frame %d" % bad[0]
+        def crashed(i):
+            px = cc.frame(out, i).load()
+            sampled = [(x, y) for y in range(0, 160, 2) for x in range(0, 240, 2)]
+            white = sum(1 for x, y in sampled if px[x, y] == (255, 255, 255))
+            return white > len(sampled) // 2
+        # From 60: the first frames are the boot white before anything is drawn.
+        bad = [i for i in range(60, ROLLUP_FRAMES, 5) if crashed(i)]
+        total += len(bad)
+        if bad:
+            notes.append("walk %d white by frame %d" % (w, bad[0]))
+    return total, "; ".join(notes) or "no crash, %d walks of %d frames" % (
+        len(ROLLUP_WALKS), ROLLUP_FRAMES)
 
 
 def check_chip_use():

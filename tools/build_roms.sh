@@ -77,15 +77,47 @@ ENTRIES=(
 )
 
 mkdir -p web/roms
+
+# Built in parallel. Sixty-odd `cargo build --release --features X` runs take
+# about a quarter of an hour one after another, and they cannot simply be
+# backgrounded: cargo locks its target directory, so concurrent invocations
+# queue rather than overlap, and worse, they would each overwrite the same
+# target/.../bn that the gbafix step reads. Each job therefore gets its OWN
+# CARGO_TARGET_DIR under /tmp -- disk for wall clock -- and does its own
+# gbafix out of that directory. JOBS defaults to half the cores, because a
+# rustc invocation is itself threaded.
+JOBS="${JOBS:-$(( $(nproc) / 2 > 1 ? $(nproc) / 2 : 1 ))}"
+BUILD_ROOT="${BUILD_ROOT:-/tmp/bn_roms_build}"
+mkdir -p "$BUILD_ROOT"
+
+build_one() {
+  local slot="$1" feature="$2" file="$3"
+  local target="$BUILD_ROOT/$slot"
+  echo "building $feature -> web/roms/$file.gba"
+  CARGO_TARGET_DIR="$target" cargo build --release --features "$feature" \
+    || { echo "FAILED $feature"; return 1; }
+  python3 tools/gbafix.py "$target/thumbv4t-none-eabi/release/bn" "web/roms/$file.gba"
+}
+export -f build_one
+export BUILD_ROOT
+
+# One slot per worker, handed out round robin, so a worker reuses its own
+# target directory across its jobs and keeps its incremental artifacts.
+i=0
+for entry in "${ENTRIES[@]}"; do
+  read -r feature file label <<< "$entry"
+  printf '%s\0%s\0%s\0' "$(( i % JOBS ))" "$feature" "$file"
+  i=$(( i + 1 ))
+done | xargs -0 -n 3 -P "$JOBS" bash -c 'build_one "$0" "$1" "$2"'
+
+# The manifest is written after the builds, in the order of ENTRIES, so the
+# dropdown does not depend on which job finished first.
 : > web/roms/manifest.json
 printf '[' >> web/roms/manifest.json
-
 first=1
 for entry in "${ENTRIES[@]}"; do
   read -r feature file label <<< "$entry"
-  echo "building $feature -> web/roms/$file.gba"
-  cargo build --release --features "$feature"
-  python3 tools/gbafix.py "target/thumbv4t-none-eabi/release/bn" "web/roms/$file.gba"
+  if [ ! -f "web/roms/$file.gba" ]; then echo "missing web/roms/$file.gba"; exit 1; fi
   if [ "$first" -eq 0 ]; then printf ',' >> web/roms/manifest.json; fi
   printf '\n  {"feature": "%s", "file": "roms/%s.gba", "label": "%s"}' \
     "$feature" "$file" "$label" >> web/roms/manifest.json
