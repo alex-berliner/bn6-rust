@@ -40,6 +40,11 @@
     "label": "FlshBom \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
+    "file": "captures/full-battle-loop.gif",
+    "name": "full-battle-loop",
+    "label": "A whole battle end to end in the rollup ROM: the chip window a battle opens with, the BATTLE START! ribbon, the fight, the win, the RESULT window with its reward, and into the next battle's chip select. This loop did not exist before today -- the release build fielded four enemies that delete the navi in fifteen seconds and started the custom gauge empty, 1260 frames before the first chip. Every piece here is separately matched to the real ROM pixel for pixel."
+  },
+  {
     "file": "captures/grasseed-compare.gif",
     "name": "grasseed-compare",
     "label": "GrasSeed \u2014 exact, frame for frame (real ROM left, this build right)"
