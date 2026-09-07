@@ -67,10 +67,36 @@ Make `demo-cardname` take its directions from the pad instead, drive both sides 
 identical script, and the question becomes answerable. Then decouple the bracket from the
 card if the numbers say so.
 
-### A3. The shockwave's panel light — 3 frames of 90  *(assigned)*
-Single dwell boundaries a frame out. Also open: is "a panel somebody is standing on is
-not lit" a real rule, or one capture's coincidence? It is currently modelled as a rule on
-the strength of a single observation. See `TRANSFER.md` 7ai.
+### A3. The shockwave's panel light — 89 of 90, one frame left
+Was 87 of 90. Two of the three were the wave's PARTING light: when the hitbox dwelt its
+way off the field this build dropped it immediately, discarding the three-frame linger
+`Shot::update` had just armed for the panel it was vacating. The real ROM's segment keeps
+re-asserting its old panel's highlight every frame until its own departure animation
+finishes -- `object_highlightCurrentCollisionPanels` is called unconditionally from
+`sub_80C6C14` (asm31.s:31491) whatever the CurAction is. Fixed in `src/battle.rs`.
+
+AND THE OCCUPANCY RULE WAS NOT A RULE. "A panel somebody is standing on is not lit" was
+recorded from one capture and is wrong: there is no occupancy check anywhere in the
+render path -- `object_highlightPanel` and the panel-draw loop `sub_800C5E0`
+(object.s:2548-2560, 1684-1761) only ever look at panel validity, a blink flag and the
+one-shot highlight flag. The real mechanism is in the wave's own update:
+`object_clearCollisionRegion` is called only when a hit has just registered
+(asm31.s:31480-31485). Confirmed by tracking MegaMan's HP across dumps -- on the SECOND
+attack the wave relit his panel normally for about 14 frames while he was still in his
+post-hit invincibility, and it went dark only when a hit actually landed. The simple
+`taken = navi.panel() == (c, r)` check in `battle.rs` happens to match over the measured
+window because that window covers a first hit on a fresh target. Modelling it properly
+means modelling mercy invincibility.
+
+WHAT IS LEFT is the wave's FIRST hop, one frame, and one claim to check before trusting
+it. The agent reported that ANY source edit -- including in code that never runs before
+the wave spawns -- shifts the Mettaur's whole attack timing by whole frames uniformly,
+identical source always reproducing identical frames, which it read as binary-layout
+sensitivity in boot or vblank sync rather than RNG. That would be a serious problem for
+every RNG-driven comparison, so it deserves independent confirmation: it sits awkwardly
+beside the fact that `field`, `warp`, `buster` and `chip-use` all compare at FIXED frame
+numbers and have stayed at zero across dozens of builds today. Confirm or refute it
+first; if it is real it is a bigger ticket than this one.
 
 ### A4. Pin the backdrop's scroll phase
 `regress.py`'s `tiles` check does not compare a fixed frame — it searches rust frames
