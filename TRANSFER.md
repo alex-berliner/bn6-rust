@@ -303,6 +303,43 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7t. The backdrop is ANIMATED (2026-09-07)
+
+CORRECTS 7m. The backdrop is not a still image that scrolls. Its TILE ART cycles: seven complete
+sets of the layer's 37 tiles, eight frames each, a 56-frame loop -- the little magenta digits
+inside the rings fading in and out -- while the map's 1024 entries, palette bank 0 and the scroll
+all stand still.
+
+HOW TO SEE IT AT ALL: dump BG1's CHAR data frame by frame. Dumping the map or the palette shows
+nothing moving, and a whole-frame comparison at one moment is what let 7m call the layer exact.
+Any HUD or background element that looks static in a screenshot deserves this test -- dump the
+map, the tile art and the palette across frames and see which of the three moves. The CUSTOM
+gauge (7r) turned out to be the map; this is the art.
+
+All 7 x 37 tiles matched byte for byte, AT TILE ALIGNMENT, against the blob at dword_8617488 --
+searching without the alignment constraint gives false hits inside runs of uniform bytes, which
+is how four of them first came back "not in the blob". The asset now records seven rows of 37
+blob indices, a 32x32 map of slot indices 0..36 (not indices into a collapsed 32-tile list: two
+slots that share art in one step do not in another), and the palette. tools/backdrop_export.py
+still needs only the submodule. The swap uses agb's replace_tile, which rewrites the pixels
+behind a tile in place -- what the real ROM does, since its map never moves.
+
+STILL OPEN, and it is the interesting part. With sprites off the field area went from 279 px a
+frame to 150, but no frame of a 1100-frame capture of this build matches any frame of the real
+one, at any shift. What is known:
+- The map repeats every EIGHT tiles in both axes, so only the scroll offset mod 64 matters --
+  a 64x64 lattice of phases.
+- The game's horizontal and vertical scroll phases are INDEPENDENT. This build derives both from
+  one counter (x = t/2, y = t/4), so it can only reach 64 of those 4096 combinations. A fixture
+  that matches the capture needs the two set separately.
+- A Python renderer built from the real ROM's own map, tiles and palette reproduces the real
+  layer's motif exactly, so map, palette and tile decode are all right, and the best offset for a
+  given frame is recoverable (frame 48 of the capture is sx=254, with sy ambiguous mod 64 as
+  expected). But at that offset only 82% of sampled pixels match, which the phase alone does not
+  explain and the art step does not either. That 18% is the next thing to chase.
+DO NOT take the earlier "backdrop is exact, whole screen 0 px of 38400" as still standing: it was
+measured on a still layer at one frame.
+
 ## 7s. LilBolr, and the digit palette that was never the game's (2026-09-07)
 
 LILBOLR IS DOWN TO 34.6 px/frame from 333.6. Three things.
