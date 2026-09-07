@@ -105,6 +105,11 @@ def apply_patches(tilemap, records):
 
 #: BG palette bank 11 of a live menu: the shared icon and meter palette.
 SHARED_ICON_PALETTE = [0, 32767, 27483, 22198, 16944, 13739, 10538, 5285, 17277, 24243, 22198, 5285, 15823, 0, 0, 0]
+#: BG palette bank 12 of the same menu: the DIMMED copy the real ROM gives a
+#: slot whose chip cannot join the picks made so far. It is not a computed dim
+#: of bank 11 -- white drops 19% per channel where the next entry drops 27% --
+#: so like bank 11 it is read off a live menu rather than found in the data.
+DIM_ICON_PALETTE = [0, 26425, 20083, 16945, 14798, 11626, 10538, 5285, 23287, 24243, 0, 0, 0, 0, 0, 0]
 
 
 def main():
@@ -144,7 +149,7 @@ def main():
     # draws every icon from it, so its icons are greyscale rather than each
     # chip's own colours -- read off a live menu, since it is in neither this
     # window's data nor the chip data.
-    for c in SHARED_ICON_PALETTE:
+    for c in SHARED_ICON_PALETTE + DIM_ICON_PALETTE:
         out += struct.pack("<H", c)
     off_regions = len(out)
     out += struct.pack("<I", len(records))

@@ -67,19 +67,35 @@ const PANEL_BANK: u8 = 13;
 /// chip's colours. What the list avoids is bank 13, which is the window's
 /// panel and the HP box beside it: running 11 through 15 painted the HP box in
 /// a chip's colours.
-const SLOT_BANKS: [u8; 5] = [11, 11, 11, 11, 11];
 /// The palette every icon and the vertical meter share, variant 3 of the
 /// asset's palette section. The real ROM's icons are GREYSCALE, all drawn from
 /// this one bank rather than each chip's own colours.
 const SHARED_ICON_VARIANT: usize = 3;
+/// A dimmed copy of it, variant 4, which the real ROM keeps in bank 12 and
+/// gives to every slot whose chip cannot join the picks made so far
+/// (sub_80283C8 maps the slot record's selectable byte through byte_8028470
+/// to bank 11 or 12; asm03_0.s:4235-4313). It is not a computed dim of bank
+/// 11 -- the per-channel ratios differ entry to entry -- so like bank 11 it
+/// is read off a live menu by the exporter.
+const DIM_ICON_VARIANT: usize = 4;
+const ICON_BANK: u8 = 11;
+const DIM_BANK: u8 = 12;
 /// Chips offered per window: the base count before Custom parts
 /// (sub_802A40C, asm03_0.s:8650).
 pub const OFFERED: usize = 5;
-/// The window has ten slot cells, two rows of five. Only OFFERED of them ever
-/// hold a chip here, and the real ROM draws its empty icon in every one it is
-/// not offering, so the rest have to be filled too -- left alone they stay
+/// The window has ten slot cells, two rows of five, and the real ROM draws
+/// its empty icon in every one it is not offering -- left alone they stay
 /// transparent and the field shows through the window.
 const SLOT_CELLS: usize = 10;
+/// But only the first EIGHT are ever seen. sub_8027E90 copies the template
+/// dword_802A7CC into the twelve per-slot records, and its low bytes give
+/// cells 1-8 state 0x0a and cells 9-10 state 0x0b (asm03_0.s:3447, 9062);
+/// sub_80283C8 maps 0x0a to the icon bank and lets 0x0b fall through to the
+/// window frame's bank 9, where the empty-cell art reads as the panel's own
+/// background. The last two only appear in the rare full-custom case where
+/// both the draw pile and the capacity reach ten. So the count is fixed, not
+/// a function of how many chips are offered.
+const SLOT_CELLS_SHOWN: usize = 8;
 /// Picks per window (sub_8028D6C, asm03_0.s:5457).
 pub const HAND_SIZE: usize = 5;
 
@@ -107,6 +123,11 @@ const fn region_slot_code(slot: usize) -> usize {
 /// those regions are filled with this rather than left transparent -- without
 /// it the backdrop shows straight through the card.
 const CARD_INTERIOR_TILE: u16 = 0x011;
+/// A tile of flat colour 1, which in the window frame's bank is the panel's
+/// own background. The real ROM fills the two hidden slot cells with it --
+/// their VRAM tiles are uniform 0x11 bytes, not the empty-cell art in another
+/// bank -- so they read as bare panel.
+const PANEL_FLAT_TILE: u16 = 0x03e;
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
 const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4];
@@ -258,7 +279,9 @@ impl CustomAssets {
         Self {
             tiles: tileset(tiles),
             map: &data[m + 8..m + 8 + w * h * 2],
-            palette: &data[p..p + 128],
+            // Three variants from the window's own data, then the icon
+            // bank and its dimmed copy the exporter appends.
+            palette: &data[p..p + 160],
             regions,
             cursor_tiles: &data[c..c + 64],
             cursor_palette: read_palette(&data[c + 64..c + 96]),
@@ -271,7 +294,7 @@ impl CustomAssets {
         }
     }
 
-    /// One of the three colour variants, for background bank 9.
+    /// One of the window's colour variants, or the two icon banks after them.
     pub fn palette(&self, variant: usize) -> Palette16 {
         read_palette(&self.palette[variant * 32..variant * 32 + 32])
     }
@@ -315,7 +338,8 @@ impl CustomAssets {
         // salmon where the real ROM's is grey.
         gfx.set_background_palette(BANK, &self.cursor_palette);
         gfx.set_background_palette(PANEL_BANK, &self.palette(0));
-        gfx.set_background_palette(SLOT_BANKS[0], &self.palette(SHARED_ICON_VARIANT));
+        gfx.set_background_palette(ICON_BANK, &self.palette(SHARED_ICON_VARIANT));
+        gfx.set_background_palette(DIM_BANK, &self.palette(DIM_ICON_VARIANT));
         for (i, slot) in custom.slots.iter().enumerate() {
             let _ = (i, slot);
         }
@@ -323,9 +347,14 @@ impl CustomAssets {
             custom.draw_slot(slot);
         }
         for slot in OFFERED..SLOT_CELLS {
-            custom.fill(region_slot_icon(slot), &self.empty_icon, None);
-            let r = self.regions[region_slot_code(slot)];
-            custom.fill_from(r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+            if slot < SLOT_CELLS_SHOWN {
+                custom.fill(region_slot_icon(slot), &self.empty_icon, Some(ICON_BANK));
+                let r = self.regions[region_slot_code(slot)];
+                custom.fill_from(r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+            } else {
+                custom.fill_flat(region_slot_icon(slot));
+                custom.fill_flat(region_slot_code(slot));
+            }
         }
         custom.draw_stack();
         custom.draw_stack_frame();
@@ -424,6 +453,21 @@ impl Custom<'_> {
         }
     }
 
+    /// Fill a region with the panel's flat background, as the real ROM does
+    /// for the slot cells it does not show.
+    fn fill_flat(&mut self, region: usize) {
+        let r = self.assets.regions[region];
+        for dy in 0..r.h {
+            for dx in 0..r.w {
+                self.bg.set_tile(
+                    ((r.x + dx) as i32, (r.y + dy) as i32),
+                    &self.assets.tiles,
+                    TileSetting::new(PANEL_FLAT_TILE, TileEffect::new(false, false, BANK)),
+                );
+            }
+        }
+    }
+
     fn blank(&mut self, region: usize) {
         let r = self.assets.regions[region];
         let tiles = &self.assets.tiles;
@@ -438,6 +482,14 @@ impl Custom<'_> {
         }
     }
 
+    /// Repaint every offered slot. A pick changes which of the OTHERS may
+    /// still be taken, so they all have to be redrawn, not just the one.
+    fn draw_offered(&mut self) {
+        for slot in 0..OFFERED {
+            self.draw_slot(slot);
+        }
+    }
+
     /// A slot's icon and code letter: the chip's while it is offered and
     /// unpicked, the empty icon and blank glyph otherwise (sub_8028310).
     fn draw_slot(&mut self, slot: usize) {
@@ -445,13 +497,14 @@ impl Custom<'_> {
         match self.slots[slot] {
             Some(offer) if !self.picks.contains(&slot) => {
                 let icon = offer.chip.icon();
-                self.fill(region_slot_icon(slot), &icon, Some(SLOT_BANKS[slot % SLOT_BANKS.len()]));
+                let bank = if self.allowed(slot) { ICON_BANK } else { DIM_BANK };
+                self.fill(region_slot_icon(slot), &icon, Some(bank));
                 let code = offer.chip.codes[0] as usize;
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (code * 2) as u16, r.bank);
             }
             _ => {
-                self.fill(region_slot_icon(slot), &assets.empty_icon, None);
+                self.fill(region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
             }
@@ -520,10 +573,10 @@ impl Custom<'_> {
                 bank: stack.bank,
                 column_major: false,
             };
-            match self.picks.get(row).and_then(|&slot| self.slots[slot].map(|o| (slot, o))) {
-                Some((slot, offer)) => {
+            match self.picks.get(row).and_then(|&slot| self.slots[slot]) {
+                Some(offer) => {
                     let icon = offer.chip.icon();
-                    self.fill_from(cell, &icon, 0, SLOT_BANKS[slot % SLOT_BANKS.len()]);
+                    self.fill_from(cell, &icon, 0, ICON_BANK);
                 }
                 None => self.fill_from(cell, &assets.empty_icon, 0, stack.bank),
             }
@@ -566,6 +619,12 @@ impl Custom<'_> {
         let Some(offer) = self.slots[slot] else {
             return false;
         };
+        // Nothing more fits once the hand is full: the real ROM dims every
+        // slot then (updateCustomScreen_WhenUnselectingChip_8028EC8's first
+        // test, asm03_0.s:5666).
+        if self.picks.len() >= HAND_SIZE {
+            return false;
+        }
         if self.picks.is_empty() {
             return true;
         }
@@ -650,13 +709,13 @@ impl Custom<'_> {
             if self.picks.len() < HAND_SIZE && !self.picks.contains(&slot) && self.allowed(slot)
             {
                 self.picks.push(slot);
-                self.draw_slot(slot);
+                self.draw_offered();
                 self.draw_stack();
             }
         }
         if input.is_just_pressed(Button::B) {
-            if let Some(slot) = self.picks.pop() {
-                self.draw_slot(slot);
+            if self.picks.pop().is_some() {
+                self.draw_offered();
                 self.draw_stack();
             }
         }
