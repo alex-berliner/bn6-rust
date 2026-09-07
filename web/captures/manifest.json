@@ -3,5 +3,30 @@
     "file": "captures/cannon.gif",
     "name": "cannon",
     "label": "Cannon"
+  },
+  {
+    "file": "captures/sword-compare.gif",
+    "name": "sword-compare",
+    "label": "Sword \u2014 matches frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/bigbomb-compare.gif",
+    "name": "bigbomb-compare",
+    "label": "BigBomb \u2014 matches frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/suprvulc-compare.gif",
+    "name": "suprvulc-compare",
+    "label": "SuprVulc \u2014 matches frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/stepswrd-compare.gif",
+    "name": "stepswrd-compare",
+    "label": "StepSwrd \u2014 33 of 40 frames exact (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/flshbom-compare.gif",
+    "name": "flshbom-compare",
+    "label": "FlshBom \u2014 in progress, 102 px/frame (real ROM left, this build right)"
   }
 ]
