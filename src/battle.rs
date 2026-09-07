@@ -52,8 +52,9 @@ const PLAYER_HP: u16 = 100;
 /// makes the HUD comparison like for like, so a difference is art rather than
 /// state. Build with demo-hudmatch.
 const HUDMATCH_HP: u16 = 60;
-/// The capture's clear time, 0:29:33, in frames.
+/// The capture's clear time, 0:29:33, in frames, and its reward.
 const RESULTMATCH_TIME: u32 = 1760;
+const RESULTMATCH_ZENNY: u16 = 100;
 // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
 // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
 // pick a damage row (asm31.s:153414-153526): the cross slash reads
@@ -1202,7 +1203,7 @@ impl<'a> Battle<'a> {
         for (i, p) in self.results.palettes().iter().enumerate() {
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
-        self.shown = Some(self.results.show(kind, time, level, 0));
+        self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
     }
 
     /// Run one frame of battle logic. Returns true once the results window

@@ -634,5 +634,11 @@
     "file": "log/shots/1788783088-bug_vdoll_cmp.png",
     "caption": "BugBomb and VDoll, the last two chips of the bomb family. Real ROM above this build in each pair. Both THROW AND STAY -- the object stops where it lands and keeps standing there, so neither bursts. BugBomb's ball is the seeds' own sprite in another animation and flies flatter and slower than a bomb; VDoll's doll is its own sprite, byte_83262C0, and arcs to the top of the screen and hangs there, needing its own launch, gravity and a sixty-frame flight. VDoll's HELD object is not the doll at all: it is the seeds' sprite again, animation 0, whose 16x16 part sits thirty left and twenty-eight up of the panel centre, exactly where the real ROM's OAM puts it. BugBomb is 35.4 px/frame against a floor of 5.3 and VDoll 10.7. With these the bomb family is complete: eleven chips.",
     "tag": "chip"
+  },
+  {
+    "t": 1788783476,
+    "file": "log/shots/1788783476-rm_final2.png",
+    "caption": "The RESULT window's reward line, drawn at last: real ROM left, this build middle, difference right -- 80 px of the window's interior, all of it one row of the box's bottom border. The text was never proportional. It is the SAME fixed 8x16 font the chip name strip already uses, dword_86B7AE0, and the reason a live screen's tiles matched nothing in the ROM is that the game's text renderer does not copy glyphs unchanged: its loop adds a 32-bit colour word to every glyph word on the way to VRAM, and this window passes the index whose word is 0x88888888. The capture's '1' and '0' are glyphs 2 and 1 with 8 added to every nibble, byte for byte. The symbol after the amount is not a letter either -- it is glyph 0xb3 of the same font, found by searching all 448 of them. That also unblocks the chip card's name, which the same renderer draws the same way.",
+    "tag": "hud"
   }
 ]

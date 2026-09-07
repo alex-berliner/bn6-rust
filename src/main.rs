@@ -78,7 +78,7 @@ fn main(mut gba: agb::Gba) -> ! {
 
     let field = field::Field::new(FIELD);
     let hud = hud::Hud::new(FONT);
-    let results = results::Results::new(RESULTS);
+    let results = results::Results::new(RESULTS, TEXT_FONT);
     let custom_assets = custom::CustomAssets::new(CUSTOM);
     let chips = chips::Chips::new(CHIPS);
     // The folder shuffle's generator; stepped every frame, as the game's

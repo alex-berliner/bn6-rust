@@ -41,6 +41,12 @@ const REWARD_ROW: i32 = 10;
 /// The palette bank it draws in, which is the fourth this asset carries: the
 /// window's own are 9-11 and the picture's is 12.
 const REWARD_BANK: u8 = 12;
+/// The reward line's row and its last digit column, in window coordinates,
+/// and the bank it draws in.
+const REWARD_TEXT_ROW: i32 = 12;
+const REWARD_TEXT_LAST: i32 = 9;
+const REWARD_TEXT_BANK: u8 = 9;
+const ZENNY_GLYPH: u16 = 0xb3;
 const FONT_TILE: u16 = 0xa0;
 /// The level readout sits at row 6, columns 16-20, its digits right-aligned;
 /// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
@@ -100,6 +106,11 @@ pub struct Results {
     /// own bank. The game draws it into the window's map as a 7x6 image, the
     /// same shape as a chip card's picture.
     reward: TileSet,
+    /// The battle text font with 8 added to every nibble, which is what the
+    /// game's own text renderer writes here: its copy loop adds a colour word
+    /// to each glyph word and this window passes index 8 (sub_3006C18,
+    /// asm/asm38.s:2381). Checked against a capture, byte for byte.
+    font: TileSet,
 }
 
 enum Phase {
@@ -126,7 +137,7 @@ pub struct Shown {
 }
 
 impl Results {
-    pub fn new(data: &'static [u8]) -> Self {
+    pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
         assert_eq!(&data[0..4], MAGIC, "not a BNRS asset");
         let u32_at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
         let count = u32_at(0x08);
@@ -162,6 +173,16 @@ impl Results {
             reward: unsafe {
                 TileSet::new(&data[pal + 128..pal + 128 + REWARD_TILES * 32], TileFormat::FourBpp)
             },
+            font: {
+                assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
+                let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
+                let len = u32::from_le_bytes(font[fo..fo + 4].try_into().unwrap()) as usize;
+                // The second half is the colour-added copy.
+                let g = &font[fo + 4 + len / 2..fo + 4 + len];
+                assert_eq!(g.as_ptr() as usize % 4, 0, "font must be word aligned");
+                // SAFETY: alignment asserted; the exporter emits whole tiles.
+                unsafe { TileSet::new(g, TileFormat::FourBpp) }
+            },
         }
     }
 
@@ -184,7 +205,18 @@ impl Results {
     /// Put up a window. `time` is the clear time in frames, `level` the
     /// busting level and `rank` 0-2 the time's record colour; the LOSER window
     /// ignores all three.
-    pub fn show(&self, variant: usize, time: u32, level: u8, rank: u8) -> Shown {
+    /// The game's own character code for an ASCII byte, which is the glyph's
+    /// index in this font (constants/bn6-charmap.tbl).
+    fn char_code(c: u8) -> u16 {
+        match c {
+            b'0'..=b'9' => 0x01 + (c - b'0') as u16,
+            b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
+            b'a'..=b'z' => 0x26 + (c - b'a') as u16,
+            _ => 0,
+        }
+    }
+
+    pub fn show(&self, variant: usize, time: u32, level: u8, rank: u8, zenny: u16) -> Shown {
         let v = &self.variants[variant];
         let mut bg = RegularBackground::new(
             Priority::P0,
@@ -239,6 +271,37 @@ impl Results {
             }
         }
         if variant == WIN {
+            // The reward line: the amount right-aligned to the digit column,
+            // a blank, then a 'z'. Read off the capture's map, whose "100 z"
+            // fills window columns 7-9 and 11 of rows 12-13.
+            let mut n = zenny;
+            let mut col = REWARD_TEXT_LAST;
+            loop {
+                let g = Self::char_code(b'0' + (n % 10) as u8);
+                for half in 0..2u16 {
+                    bg.set_tile(
+                        (col, REWARD_TEXT_ROW + half as i32),
+                        &self.font,
+                        entry(g * 2 + half | (REWARD_TEXT_BANK as u16) << 12),
+                    );
+                }
+                n /= 10;
+                col -= 1;
+                if n == 0 {
+                    break;
+                }
+            }
+            // The symbol after the amount is not a letter: it is glyph 0xb3
+            // of the font, found by taking the real ROM's own reward line
+            // out of VRAM and searching all 448 glyphs for it.
+            let z = ZENNY_GLYPH;
+            for half in 0..2u16 {
+                bg.set_tile(
+                    (REWARD_TEXT_LAST + 2, REWARD_TEXT_ROW + half as i32),
+                    &self.font,
+                    entry(z * 2 + half | (REWARD_TEXT_BANK as u16) << 12),
+                );
+            }
             for k in 0..REWARD_TILES {
                 bg.set_tile(
                     (REWARD_COL + (k % REWARD_W) as i32, REWARD_ROW + (k / REWARD_W) as i32),
