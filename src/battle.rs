@@ -358,8 +358,9 @@ const BLKBOMB_VZ: i32 = 0x22051;
 /// the ball rises to y=10, about a hundred pixels above the panel, peaking
 /// eleven frames in and landing on the same fortieth frame a bomb does. That
 /// needs a faster launch and a stronger pull, solved from those two figures.
-const LILBOLR_VZ: i32 = 0x63333;
-const LILBOLR_GRAVITY: i32 = 0x5EB8;
+const LILBOLR_VX: i32 = 0x2C7AE;
+const LILBOLR_VZ: i32 = 0x2999A;
+const LILBOLR_GRAVITY: i32 = 0x2800;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -1877,7 +1878,13 @@ impl<'a> Battle<'a> {
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
-                    vx: if chip.id == CHIP_BLKBOMB { dx * BLKBOMB_VX } else { dx * BOMB_VX },
+                    vx: if lilbolr {
+                        dx * LILBOLR_VX
+                    } else if chip.id == CHIP_BLKBOMB {
+                        dx * BLKBOMB_VX
+                    } else {
+                        dx * BOMB_VX
+                    },
                     vz: if lilbolr {
                         LILBOLR_VZ
                     } else if chip.id == CHIP_BLKBOMB {

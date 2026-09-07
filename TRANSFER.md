@@ -267,6 +267,19 @@ before returning to 0: the real ball arcs UP and off the top of the frame rather
 So the work is the arc and the blast's placement, not the artwork.
 The blast covers x 125..204 on screen, about two panels wide, over y 50..128.
 
+IMPLEMENTED to 352 px/frame, from about a thousand. The boiler draws from the virus sprite, the
+blast is the shared one, and the arc has its own constants: LILBOLR_VX 0x2C7AE, LILBOLR_VZ
+0x2999A, LILBOLR_GRAVITY 0x2800 (the bomb's). Track the kettle by its gold colours
+((222,156,49), (173,107,8), (255,206,90)) to compare trajectories -- bounding boxes pick up the
+navi and the damage popup and are useless here. On that measure the HORIZONTAL now matches
+exactly, frame for frame: 76, 93, 109, 126, 142.
+WHAT IS LEFT, and it is not the arc. Searching vz alone made things worse in both directions
+(0x18F5C gave 422, 0x1C000 gave 381, against 0x2999A's 352), because the residual is not mostly
+position. Two other things: the real kettle carries a FLAME and a purple ring on its lid that
+animation 0 does not draw, worth 366 px on frame 19 where the diff is grey-blue and white rather
+than gold; and the damage figure that pops beneath it is drawn by no chip here yet. The vertical
+is still 5-13 px high and drifting, which is worth revisiting only after the sprite is right.
+
 The earlier note read: its sprite is sprite_8399578 (data/dat38_33.s). That took all three searches to find, which is
 worth knowing: it is in none of the 97 plain .spr files and none of the 269 compressed ones, and
 only turned up in the assembled data blobs. Its objects at one frame are a 32x32 body at (165,90)
