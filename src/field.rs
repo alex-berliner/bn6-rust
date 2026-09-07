@@ -103,9 +103,10 @@ impl Field {
     /// Repaint one panel's 5x3 tile block, so a panel that changes state does
     /// not cost a redraw of the whole field.
     pub fn draw_panel(&self, bg: &mut RegularBackground, col: i32, row: i32, panel_type: usize) {
-        // Columns 1-3 are the player's blue half, 4-6 the enemy's red. The two
-        // sides share tiles and differ only by palette bank.
-        let side = if col <= 3 { 1 } else { 0 };
+        // Columns 1-3 are the player's half, 4-6 the enemy's. The two sides
+        // share tiles and differ only by palette bank; against the real ROM
+        // the player's half is the red one.
+        let side = if col <= 3 { 0 } else { 1 };
         self.draw_variant(bg, col, row, 6 * panel_type + 3 * side + (row as usize - 1));
     }
 

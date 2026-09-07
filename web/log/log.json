@@ -262,5 +262,11 @@
     "file": "log/game/1788740850-sheet.png",
     "caption": "Integration check in the normal fight (debug build): chip window, five picks, then A five times -- sword swing with its arc, sword held, heal streaks, presentation chips holding the fight. All twelve matched chips run through the same code as the sterile comparisons.",
     "tag": "game"
+  },
+  {
+    "t": 1788742691,
+    "file": "log/proof/1788742691-bgon_cmp.png",
+    "caption": "Backgrounds-on comparison, step 1: the field's halves were the opposite colours to the real ROM's (the player's half is the red one). Whole-screen difference 99.2% -> 59.4%; the field region now differs only by the two actors (the real capture is mid-cannon, ours idle) and a bottom strip. The backdrop layer is still missing.",
+    "tag": "proof"
   }
 ]
