@@ -468,6 +468,7 @@ Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
 Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd),
+EnergBom (37 demo-energbom --frames 45) and MegEnBom (38 demo-megenbom, same),
 BigBomb (ca demo-bigbomb --frames 60, and 0 across the whole screen with --xmax 240 from c10 on:
 its nine puffs overlap and the draw order was the entire difference -- read out of the real ROM's
 OAM on a blast frame, they occupy OAM centre/left/right of the front row, then centre/right/left
@@ -486,6 +487,15 @@ parameter indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP: 1 -> 10, 
 7 -> 0xc8. The bubble is the same object in another colour, gold for Barr100 and pink for
 Barr200, matched against sprite_832F8C8's thirteen palettes (3 and 6); the asset is now exported
 with all of them.
+EnergBom and MegEnBom are MiniBomb's family and throw (off_80EB6F8[1] = sub_80C5DBC, the same
+function MiniBomb and BigBomb use), powers 40 and 60, on the same bomb sprite but its OTHER pair
+of animations: held 2 and thrown 3 where MiniBomb uses 0 and 1, in the sprite's palette 5.
+Animation 3 is a five-frame loop at four frames each -- the bomb tumbles in flight, where
+MiniBomb's single thrown frame does not. All of that was found without reading a line of
+disassembly, by pulling the real bomb's tiles straight out of OBJ VRAM at a chosen frame and
+searching the sprite's graphics blobs for those exact bytes; the OAM dump says which object and
+which tile, and the blob says which animation. That is the fastest way to identify an unknown
+sprite and is worth reaching for first.
 WHICH PALETTE AN OAM OFFSET COUNTS FROM IS PER OBJECT, and both halves are measured. HiCannon's
 barrel sits in palette 1 and its silhouette frame, offset 4, shows the flat palette 4, ignoring
 the shift. Barr100's bubble is Barrier's shifted by 3 and its later frames, offsets 1 and 2, show

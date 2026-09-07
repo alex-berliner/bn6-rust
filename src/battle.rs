@@ -348,6 +348,23 @@ const BOMB_GRAVITY: i32 = 0x2800;
 /// byte_80C5BA0[Param1]'s fourth byte instead (asm31.s:29422): row 0 is
 /// palette 0 and row 3 -- BigBomb's, whose first attack parameter is 3 --
 /// is palette 3, the red bomb.
+/// Which animation of the bomb sprite a bomb plays, held and thrown. MiniBomb,
+/// BlkBomb and BigBomb use 0 and 1; EnergBom and MegEnBom use 2 and 3. Found
+/// by pulling the real bomb's tiles out of OBJ VRAM and looking for those
+/// exact bytes among the sprite's graphics blobs: held, they turn up in the
+/// blob animation 2's first frame uses; in flight, in the one animation 3's
+/// second frame uses -- and animation 3 is a five-frame loop at four frames
+/// each, which is the bomb tumbling, where MiniBomb's animation 1 is a single
+/// held frame.
+const fn bomb_anim(id: u16, thrown: bool) -> usize {
+    match (id, thrown) {
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => 2,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, true) => 3,
+        (_, true) => 1,
+        _ => 0,
+    }
+}
+
 const fn bomb_palette(id: u16, thrown: bool) -> usize {
     match (id, thrown) {
         (CHIP_BLKBOMB, false) => 4,
@@ -359,7 +376,7 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
         // is grey with brown and orange, and palette 5 is the only one of
         // sprite_82F569C's thirteen that holds all of those colours. The
         // asset is exported with every palette so that index exists.
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => 5,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, _) => 5,
         _ => 0,
     }
 }
@@ -1554,7 +1571,7 @@ impl<'a> Battle<'a> {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
-                let mut held = spr::Player::new(spr::Assets::new(MINIBOMB), 0);
+                let mut held = spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false));
                 held.set_palette_add(bomb_palette(chip.id, false));
                 self.effects.push((
                     held,
@@ -1716,7 +1733,8 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
-                let mut thrown = spr::Player::new(spr::Assets::new(MINIBOMB), 1);
+                let mut thrown =
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true));
                 thrown.set_palette_add(bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
                     player: thrown,

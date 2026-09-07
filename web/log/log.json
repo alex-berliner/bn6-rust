@@ -358,5 +358,11 @@
     "file": "log/shots/1788752316-stepswrd_final.png",
     "caption": "StepSwrd is down to 43 px/frame from 340, with 31 of its 40 frames pixel-exact. The last pieces: the afterimage copies the sword as well as the navi while the sword is still on the far panel, and the sword itself follows the navi home rather than staying where it spawned. What is left is one unavoidable banner artifact and a 954-pixel difference on frame 29 that has not been looked at.",
     "tag": "stepswrd"
+  },
+  {
+    "t": 1788753080,
+    "file": "log/shots/1788753080-energbom_done.png",
+    "caption": "Four new chips matched frame for frame: Barr100 and Barr200 (the same barrier chip with a bigger bubble in gold and pink), and EnergBom and MegEnBom (MiniBomb's family and throw on the same bomb sprite's other pair of animations, tumbling in flight). The bomb's sprite was identified without reading any disassembly, by pulling the real bomb's tiles out of video memory at a chosen frame and searching the sprite's graphics blobs for those exact bytes.",
+    "tag": "chips"
   }
 ]
