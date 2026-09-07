@@ -281,7 +281,40 @@ The sterile arena leaves the backdrop out, for the same reason it draws a plain 
 captures strip their BG layers, so both sides must be MegaMan on black. With the backdrop drawn
 there, every chip comparison jumped to 15767 px/frame.
 
-WHAT IS LEFT is BG3. With sprites off, the whole screen differs by 10134 px: 5409 in the HUD
+BG3 IS NOW MOSTLY DRAWN. The HP box and the CUSTOM gauge are both in tiles, on a layer at
+priority 1, and the HUD strip is down from 5409 px to 812 -- what is left there is live state,
+not art: the demo sits at 80 HP with a part-filled gauge where the captured battle is at 60 with
+a full one.
+- THE HP BOX is a left cap, four digit slots filled right-aligned with a blank tile in the
+  leading positions, and a right cap. Each digit is two tiles stacked and the set steps by two
+  tiles per digit. Its art is a FOURTH variant of the font tools/font_export.py already reads
+  three sets of, in the same file: dword_86E1638, whose first 640 bytes are the ten digits,
+  verified tile for tile, with the box frame pieces immediately after. tools/hud_tiles_export.py
+  emits it. The real ROM draws this in TILES; this build had it as sprites.
+- THE GAUGE's art is in the same file under dword_86E489C, loaded at VRAM tile 0x222, so the
+  asset index is a constant offset from the VRAM tile. Its layout is not what the tilemap first
+  suggests: the top row is the CUSTOM LABEL, white text on a dark filler, and the bar is the
+  single row below it -- end cap, six body cells, the four-cell L-or-R marker, six more body
+  cells, mirrored end cap, spanning columns 6 to 23. The marker is cyan while the gauge fills and
+  orange once it is full, which is the binary swap 7d's research found rather than a proportional
+  readout. NOT VERIFIED: the bar's empty body cell, drawn here with the label row's filler. The
+  gauge drains only when the custom window opens and that window replaces this whole layer, so a
+  draining bar never shows on its own.
+- PALETTE BANKS COLLIDE HERE. The gauge's bank is 9, which the results windows also take and
+  were assigned after it, and the chip window borrows banks 9-15 while it is up. On the real ROM
+  that is safe because the window covers this layer, so the gauge takes bank 9 last, gets it back
+  when the window closes, and the layer stands down while the window is up.
+
+WHAT IS LEFT is the CHIP NAME, rows 18-19 of BG3, 1224 px. Its glyphs are a font in the ROM at
+dword_86B7CA0 (data/dat38_60.s): each character is two tiles stacked, and the game copies glyphs
+into VRAM to compose a name, which is why the two n's of "Cannon" are the same glyph at different
+VRAM tiles. Searching the blob for a glyph's bytes is NOT a reliable way to index it -- blank and
+near-blank tiles collide -- so this needs the game's character-to-glyph table. The damage number
+beside the name is easier: it is a second digit set in the HP blob, starting at VRAM 0x1b8 with
+the same two-tiles-per-digit step, so "40" is 0x1c0 then 0x1b8, and those pairs are already in
+the exported asset.
+
+FOR THE RECORD, the older note said BG3. With sprites off, the whole screen differs by 10134 px: 5409 in the HUD
 strip (y 0..40), 1224 in the chip-name strip (y 150..160), 3373 in the backdrop band which is
 scroll phase alone, and 128 across the field which is backdrop showing through the gaps between
 panels at a different phase. BG3's map has content only in rows 0-1 and 18-19, 37 distinct tiles
