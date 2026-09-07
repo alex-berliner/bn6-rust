@@ -484,5 +484,11 @@
     "file": "log/shots/1788768259-win_left.png",
     "caption": "The chip name was drawing over the chip select window's bottom edge. The real ROM shows no name there while the menu is up, because the window covers that strip; this build kept writing it, so HiCannon40 sat across the window's lower frame. Hiding it with the menu open takes that strip from 497 differing pixels to 64 and the window to 5012. The lower half of this shot is the pick stack, real left and mine right, which matches.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788768520,
+    "file": "log/shots/1788768520-stack_zero.png",
+    "caption": "The chip select window's pick stack, real ROM left and this build right, now identical to the pixel. Its two frame columns are the same pair of tiles, but the right column is the left one mirrored, which the real ROM's map does with a flip bit. Drawing both unmirrored left one tile column wrong down the whole stack: the same pixels in the same colours, just facing the wrong way, which is why the colour counts on the two sides matched exactly while 600 pixels differed. That was the hint worth following.",
+    "tag": "chipselect"
   }
 ]

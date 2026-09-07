@@ -494,11 +494,13 @@ impl Custom<'_> {
         let stack = self.assets.regions[REGION_STACK];
         let tiles = &self.assets.stack_frame;
         for row in 0..stack.h {
-            for col in [stack.x - 1, stack.x + stack.w] {
+            // The right column is the left one MIRRORED: the real ROM's map
+            // has the same two tiles there with h-flip set.
+            for (col, hflip) in [(stack.x - 1, false), (stack.x + stack.w, true)] {
                 self.bg.set_tile(
                     (col as i32, (stack.y + row) as i32),
                     tiles,
-                    TileSetting::new((row % 2) as u16, TileEffect::new(false, false, BANK)),
+                    TileSetting::new((row % 2) as u16, TileEffect::new(hflip, false, BANK)),
                 );
             }
         }
