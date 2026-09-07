@@ -5,7 +5,11 @@
 
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
-use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size};
+use agb::display::AffineMatrix;
+use agb::display::object::{
+    AffineMatrixObject, AffineMode, DynamicSprite16, Object, ObjectAffine,
+    PaletteVramSingle, Size, SpriteVram,
+};
 #[cfg(feature = "demo-sterile")]
 use agb::display::tiled::{RegularBackgroundSize, TileFormat};
 use agb::display::tiled::RegularBackground;
@@ -680,6 +684,118 @@ impl Bomb {
         (self.x >> 16, self.y >> 16)
     }
 }
+/// The CHIP-NAME POPUP. A family-0x15 chip puts its name up in the middle of
+/// the screen while it presents -- AreaGrab, Invisibl, Barrier, Barr100 and
+/// Barr200 are the five in this build, and the family is what picks them out:
+/// `attack_family: 0x15` in `data/ChipDataArr.s`, which nothing else carries.
+/// Checked the other way too, by dumping OAM on the attack's 40th frame for
+/// every one of the scoreboard's 43 chips: exactly those five put objects up.
+///
+/// Everything below was read out of the real ROM's OAM frame by frame.
+/// One 8x16 object per letter, all at y=32, in OBJ palette bank 11, drawn
+/// ahead of everything else (they are OAM entries 0 upward). The strip is
+/// CENTRED on x=60: eight letters run 28..92 and seven 32..88.
+const POPUP_Y: i32 = 32;
+const POPUP_CENTRE: i32 = 60;
+const POPUP_CELL: i32 = 8;
+/// Frames from the chip's use to the popup's first frame. The real ROM puts it
+/// up 21 frames after the button and the attack starts 3 frames after it, so
+/// it is the attack's 18th frame -- and 19 counted from here, because the
+/// presentation is set on the frame before the attack's first.
+const POPUP_AT: u16 = 19;
+/// The vertical scale of the shared affine matrix, in the 8.8 OAM stores, one
+/// entry per frame of the popup's 58. BIGGER IS FLATTER: the matrix maps the
+/// screen back to the texture, so 0x100 is life size, 896 is a sixth of the
+/// height and 208 is a fifth taller than life. It unrolls from a flat line,
+/// overshoots into a stretch, settles, and rolls back up the same way. The
+/// horizontal scale never moves.
+const POPUP_SCALE: [u16; 58] = [
+    768, 640, 512, 384, 256, 208, 224, // opening
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+    256, 256, 256,
+    224, 208, 256, 384, 512, 640, 768, 896, // closing
+];
+/// OBJ palette bank 11 while the popup is up, read straight out of palette RAM
+/// at 0x5000360. It is the battle text font's own object bank, and it is the
+/// same sixteen colours for every one of the five chips.
+const POPUP_PALETTE: [u16; 16] = [
+    0x0000, 0x7ffe, 0x14a5, 0x03e0, 0x7bde, 0x7fbc, 0x7f99, 0x6e6f,
+    0x61cc, 0x037f, 0x029f, 0x0280, 0x3547, 0x37f6, 0x7bd1, 0x4108,
+];
+
+/// The name in flight: one sprite per letter, built once when the chip is
+/// used, and a frame counter.
+struct NamePopup {
+    letters: Vec<SpriteVram>,
+    /// Screen x of the leftmost letter, from centring the strip on x=60.
+    left: i32,
+    t: u16,
+}
+
+impl NamePopup {
+    fn new(name: &str) -> Self {
+        // The RAW half of the battle text font: the asset carries the plain
+        // glyphs and then a colour-added copy, and the popup uses the plain
+        // ones -- checked byte for byte against the tiles the real ROM leaves
+        // at 0x6016E00 for every letter of "Barrier".
+        let font = crate::TEXT_FONT;
+        let at = |o: usize| u32::from_le_bytes(font[o..o + 4].try_into().unwrap()) as usize;
+        let fo = at(0x08);
+        let raw = &font[fo + 4..fo + 4 + at(fo) / 2];
+        let palette = PaletteVramSingle::try_allocate_shared(&agb::display::Palette16::new(
+            POPUP_PALETTE.map(agb::display::Rgb15::new),
+        ))
+        .expect("popup palette should fit in vram");
+        let letters: Vec<SpriteVram> = name
+            .as_bytes()
+            .iter()
+            .map(|&c| {
+                let g = custom::char_code(c) as usize * GLYPH_BYTES;
+                DynamicSprite16::from_bytes(Size::S8x16, &raw[g..g + GLYPH_BYTES])
+                    .to_vram(palette.clone())
+            })
+            .collect();
+        let left = POPUP_CENTRE - letters.len() as i32 * POPUP_CELL / 2;
+        Self { letters, left, t: 0 }
+    }
+
+    /// Advance a frame; false once the popup has rolled up and gone.
+    fn update(&mut self) -> bool {
+        self.t += 1;
+        self.t < POPUP_AT + POPUP_SCALE.len() as u16
+    }
+
+    fn show(&self, frame: &mut GraphicsFrame) {
+        let Some(&scale) = self
+            .t
+            .checked_sub(POPUP_AT)
+            .and_then(|i| POPUP_SCALE.get(i as usize))
+        else {
+            return;
+        };
+        let matrix = AffineMatrixObject::new(AffineMatrix::<Num<i32, 8>> {
+            a: Num::from_raw(0x100),
+            b: Num::from_raw(0),
+            c: Num::from_raw(0),
+            d: Num::from_raw(scale as i32),
+            x: Num::from_raw(0),
+            y: Num::from_raw(0),
+        });
+        for (i, letter) in self.letters.iter().enumerate() {
+            ObjectAffine::new(letter.clone(), matrix.clone(), AffineMode::Affine)
+                .set_priority(Priority::P0)
+                .set_pos((self.left + i as i32 * POPUP_CELL, POPUP_Y))
+                .show(frame);
+        }
+    }
+}
+
+/// Bytes of one 8x16 glyph in the battle text font: two 4bpp tiles.
+const GLYPH_BYTES: usize = 64;
+
 const GAUGE_FULL: u16 = 0x4000;
 const GAUGE_PAUSE: u16 = 60;
 // After the last combatant on a side is gone the game's win or loss
@@ -721,6 +837,11 @@ pub struct Battle<'a> {
     /// starts 128 after for Invisibl -- as the banner's own timing was not
     /// traced. The dim itself is not drawn yet.
     presentation: Option<(Chip, u16)>,
+    /// The chip name in the middle of the screen while a family-0x15 chip
+    /// presents. It outlives the presentation for Barrier (58 frames from the
+    /// attack's 18th against the presentation's 77) and is outlived by it for
+    /// Invisibl, so it runs on its own clock rather than the presentation's.
+    popup: Option<NamePopup>,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1218,6 +1339,7 @@ impl<'a> Battle<'a> {
             step_trail_sword: [None; 4],
             step_dest: (0, 0),
             presentation: None,
+            popup: None,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1689,6 +1811,11 @@ impl<'a> Battle<'a> {
                 ));
             } else {
                 self.sword_in = Some(left - 1);
+            }
+        }
+        if let Some(popup) = self.popup.as_mut() {
+            if !popup.update() {
+                self.popup = None;
             }
         }
         if let Some((chip, left)) = self.presentation {
@@ -2354,16 +2481,23 @@ impl<'a> Battle<'a> {
                     false,
                 ));
             }
-            CHIP_INVISIBL => self.presentation = Some((chip, INVISIBL_PRESENTATION)),
+            CHIP_INVISIBL => {
+                self.presentation = Some((chip, INVISIBL_PRESENTATION));
+                self.popup = Some(NamePopup::new(chip.name()));
+            }
             CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
-                self.presentation = Some((chip, BARRIER_PRESENTATION))
+                self.presentation = Some((chip, BARRIER_PRESENTATION));
+                self.popup = Some(NamePopup::new(chip.name()));
             }
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
             // AreaGrab takes the enemy's front-most column, a row at a time
             // (sub_80E0754, asm31.s:85444, with the chip's first parameter
             // set); it is a presentation chip, so the fight holds first.
-            CHIP_AREAGRAB => self.presentation = Some((chip, AREAGRAB_PRESENTATION)),
+            CHIP_AREAGRAB => {
+                self.presentation = Some((chip, AREAGRAB_PRESENTATION));
+                self.popup = Some(NamePopup::new(chip.name()));
+            }
             _ => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(actor::BUSTER);
@@ -2626,6 +2760,12 @@ impl<'a> Battle<'a> {
             hud.show(frame);
         }
         let bg_id = self.bg.show(frame);
+        // The chip-name popup is OAM entries 0 upward on the real ROM, so it
+        // goes in before anything else the fight draws and stands over all of
+        // it.
+        if let Some(popup) = self.popup.as_ref() {
+            popup.show(frame);
+        }
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
         // fade darkens everything until the field is revealed.

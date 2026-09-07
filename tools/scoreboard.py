@@ -31,6 +31,10 @@ import sys
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
+#: The flags a chip that shows its name popup needs; see the note by the five
+#: of them at the bottom of the list.
+POPUP = ["--rust-start", "123", "--hide-enemy", "--no-banner-zero"]
+
 #: feature, chip id in hex, frames, extra flags.
 CHIPS = [
     ("demo-cannon", "01", 40, []),
@@ -73,11 +77,23 @@ CHIPS = [
     ("demo-recov150", "9f", 40, ["--rust-start", "123"]),
     ("demo-recov200", "a0", 40, ["--rust-start", "123"]),
     ("demo-recov300", "a1", 40, ["--rust-start", "123"]),
-    ("demo-areagrab", "a3", 40, ["--rust-start", "123"]),
-    ("demo-invisibl", "b1", 60, ["--rust-start", "123"]),
-    ("demo-barrier", "b2", 60, ["--rust-start", "123"]),
-    ("demo-barr100", "b3", 60, ["--rust-start", "123"]),
-    ("demo-barr200", "b4", 60, ["--rust-start", "123"]),
+    # The five family-0x15 chips put their NAME up in the middle of the screen
+    # while they present, out of the same tiles the ENEMY DELETED banner uses.
+    # To see it the banner blanking has to come off, and for that the enemy has
+    # to stay alive so no banner is ever asked for -- hence --hide-enemy, which
+    # keeps it immortal and blanks its own tiles instead. 80 frames covers the
+    # popup's whole life: it goes up on the attack's 18th frame and rolls back
+    # up 58 frames later.
+    # AreaGrab stops one frame short of its steal: the column it takes is a
+    # BACKGROUND change, which --disable-bg hides on the real side and cannot
+    # hide on this one, so the frames after the steal compare three drawn
+    # panels against nothing. The popup is over by then (it goes up on the
+    # attack's 18th frame and is gone after its 76th).
+    ("demo-areagrab", "a3", 77, POPUP),
+    ("demo-invisibl", "b1", 80, POPUP),
+    ("demo-barrier", "b2", 80, POPUP),
+    ("demo-barr100", "b3", 80, POPUP),
+    ("demo-barr200", "b4", 80, POPUP),
 ]
 
 MEAN = re.compile(r"^mean ([0-9.]+) px/frame")

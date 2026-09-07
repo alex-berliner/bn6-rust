@@ -167,6 +167,36 @@ ROLLUP_WALKS = [
 ROLLUP_FRAMES = 2600
 
 
+#: The five family-0x15 chips and the box the popup lives in. The scoreboard
+#: already runs these chips, but its window starts at y=40 and the popup runs
+#: y=32..48, so it only ever sees the bottom half. This box takes the whole
+#: strip bar its top two rows, which the real ROM's HP box overlaps at x<46.
+POPUP_CHIPS = [("demo-areagrab", "a3"), ("demo-invisibl", "b1"), ("demo-barrier", "b2"),
+               ("demo-barr100", "b3"), ("demo-barr200", "b4")]
+POPUP_BOX = "24,34,100,52"
+
+
+def check_popup():
+    """The chip-name popup, over its whole life, for every chip that has one."""
+    total, notes = 0, []
+    for feature, chip in POPUP_CHIPS:
+        out = subprocess.run(
+            ["python3", os.path.join(ROOT, "tools", "chip_compare.py"), chip, feature,
+             "--frames", "77", "--rust-start", "123", "--hide-enemy", "--no-banner-zero",
+             "--box", POPUP_BOX],
+            cwd=ROOT, capture_output=True, text=True)
+        line = [l for l in out.stdout.splitlines() if l.startswith("mean ")]
+        if not line:
+            notes.append("%s FAILED" % feature)
+            total += 1
+            continue
+        mean = float(line[0].split()[1])
+        if mean:
+            notes.append("%s %.1f" % (feature, mean))
+        total += int(mean * 77)
+    return total, "; ".join(notes) or "%d chips, whole popup" % len(POPUP_CHIPS)
+
+
 def check_rollup():
     """The full battle, under several long input scripts, must not crash.
 
@@ -221,6 +251,7 @@ CHECKS = [
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 256),  # the chip-in-hand icon, one frame
+    ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("rollup", check_rollup, 0),        # the full battle must survive a long script
 ]
 

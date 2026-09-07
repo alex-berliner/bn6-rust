@@ -88,10 +88,21 @@ XMAX = 140
 BACKGROUNDS = False
 KEEP_ENEMY = False
 HIDE_ENEMY = False
+# The banner tiles are shared with the CHIP-NAME POPUP that family-0x15 chips
+# put up (AreaGrab, Invisibl, Barrier, Barr100, Barr200), so a comparison that
+# wants to see the popup cannot blank them. It only works together with
+# --hide-enemy: the tiles have to be left alone, so the ENEMY DELETED banner
+# has to be kept from happening at all, which means keeping the enemy alive.
+NO_BANNER_ZERO = False
+
+
+#: An explicit diff window, for a fixture that wants one region rather than the
+#: navi's half: --box 24,30,100,50 is the chip-name popup and nothing else.
+BOX = None
 
 
 def differs(a, b, box=None):
-    box = box or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
+    box = box or BOX or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
     d = ImageChops.difference(a.crop(box), b.crop(box))
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
 
@@ -143,7 +154,7 @@ def capture_real(chip, out, count):
           ["--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0"]),
         *library_pokes(int(chip, 16)),
         "--cheat", f"{HAND_SLOT}:0x{chip}",
-        "--zero", BANNER_TILES,
+        *([] if NO_BANNER_ZERO else ["--zero", BANNER_TILES]),
         *(["--zero", ENEMY_TILES] if HIDE_ENEMY else []),
         *([] if BACKGROUNDS else ["--disable-bg"]),
         "--script", f"Start@10,A@{REAL_A_FRAME}",
@@ -208,6 +219,9 @@ def main():
                     help="leave the real capture's enemy alive (immortal) instead of deleting it")
     ap.add_argument("--a-frame", type=int, default=40,
                     help="frame the real capture presses A (default 40); raise it to let the deleted enemy finish dissolving")
+    ap.add_argument("--box", help="diff window as x0,y0,x1,y1 (default: the navi's half)")
+    ap.add_argument("--no-banner-zero", action="store_true",
+                    help="leave the banner tiles alone so the chip-name popup shows; needs --hide-enemy")
     ap.add_argument("--bg", action="store_true",
                     help="keep the real ROM's backgrounds and compare the whole screen")
     ap.add_argument("--xmax", type=int, default=140,
@@ -216,6 +230,10 @@ def main():
                     help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
     global XMAX, BACKGROUNDS, KEEP_ENEMY, HIDE_ENEMY, REAL_A_FRAME, REAL_START
+    global NO_BANNER_ZERO, BOX
+    NO_BANNER_ZERO = args.no_banner_zero
+    if args.box:
+        BOX = tuple(int(v) for v in args.box.split(","))
     KEEP_ENEMY = args.keep_enemy
     HIDE_ENEMY = args.hide_enemy
     REAL_A_FRAME = args.a_frame

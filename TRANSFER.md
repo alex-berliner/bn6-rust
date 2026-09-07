@@ -861,6 +861,49 @@ AND THEN FOUR MORE, of which only one was in the window's own map:
 backdrop outside the window, which the fixture does not reproduce. `demo-resultmatch` carries the
 capture's 60 HP too, as `demo-hudmatch` does.
 
+## 7ap. The chip-name popup, DRAWN rather than patched away (2026-09-07)
+
+Five chips put their NAME up in the middle of the screen while they present, and this build now
+draws it, matched over its whole life. `patch_sterile.py` no longer removes it: something the game
+shows is something to match.
+
+WHICH CHIPS, and the rule is in the data. `attack_family: 0x15` in `data/ChipDataArr.s`, which
+AreaGrab, Invisibl, Barrier, Barr100 and Barr200 carry and nothing else does. Checked the other
+way as well, by dumping OAM on the attack's 40th frame for all 43 scoreboard chips: exactly those
+five put objects up. Recov looks like it should and does not.
+
+WHAT IT IS, read out of OAM frame by frame (`--dump 0x7000000:1024` at each frame in turn):
+- One 8x16 object per letter of the name, all at y=32, in OBJ palette bank 11, at OAM entries 0
+  upward so they stand over everything.
+- CENTRED on x=60: an eight-letter name runs 28..92 and a seven-letter one 32..88.
+- The glyphs are the RAW half of `assets/text_font.bin` -- the asset carries the plain glyphs and
+  then a colour-added copy, and this uses the plain ones. Checked byte for byte against the tiles
+  the real ROM leaves at 0x6016E00 for every letter of "Barrier".
+- OBJ bank 11 is `0000 7ffe 14a5 03e0 7bde 7fbc 7f99 6e6f 61cc 037f 029f 0280 3547 37f6 7bd1
+  4108`, the same sixteen colours for all five chips.
+- Every object shares ONE AFFINE MATRIX whose only moving part is the vertical scale, and it is
+  the same 58-frame sequence for all five: 768, 640, 512, 384, 256, 208, 224, then 256 held for
+  43 frames, then 224, 208, 256, 384, 512, 640, 768, 896, gone. Bigger is FLATTER (the matrix maps
+  screen back to texture), so it unrolls from a flat line, overshoots into a stretch a fifth
+  taller than life, settles, and rolls back up.
+- It goes up 21 frames after the button, which is the attack's 18th frame.
+
+HOW TO COMPARE IT, and this is the part that took the thinking. The popup writes the SAME OBJ
+tiles the ENEMY DELETED banner does, and every chip comparison blanks those tiles every frame to
+keep the banner out. Blanking them hides the popup too. The way through is not to blank at all
+and instead to keep the banner from ever being asked for: `--hide-enemy` leaves the enemy alive
+and immortal with its own tiles blanked, so nothing is ever deleted and no banner is ever
+requested. `chip_compare.py` gained `--no-banner-zero` for that, and `--box x0,y0,x1,y1` to look
+at one region rather than the navi's half. The scoreboard runs those five with both flags now, so
+the popup is inside the normal comparison, and `regress.py`'s new `popup` check compares the whole
+strip (`--box 24,34,100,52`) rather than the bottom half the standard window sees. All five chips:
+0.0 px/frame across the popup's whole life.
+
+TWO FIXTURE NOTES. The box stops at y=34 because the real ROM draws its HP box at x<46, y 28..33
+and the sterile arena does not. And AreaGrab stops at 77 frames: the column it steals is a
+BACKGROUND change, which `--disable-bg` hides on the real side and cannot hide on this one, so the
+frames after the steal compare three drawn panels against nothing. The popup is over by then.
+
 ## 7an. Sixteen palette banks, spent on far fewer than sixteen palettes (2026-09-07)
 
 THE FULL BATTLE CRASHED and no chip fixture could have caught it. `panicked at src/spr.rs:386:

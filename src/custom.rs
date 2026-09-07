@@ -146,6 +146,19 @@ const REGION_NAME: usize = 0;
 /// How many glyphs of the font one glyph of a name takes: 8x16, top over
 /// bottom.
 const GLYPH_TILES: u16 = 2;
+
+/// The game's own character code for an ASCII byte, which is the glyph's index
+/// in the battle text font (constants/bn6-charmap.tbl). Shared with the
+/// chip-name popup in `battle.rs`, which draws the same font as objects.
+pub fn char_code(c: u8) -> u16 {
+    match c {
+        b'0'..=b'9' => 0x01 + (c - b'0') as u16,
+        b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
+        b'a'..=b'z' => 0x26 + (c - b'a') as u16,
+        b'-' => 0x40,
+        _ => 0,
+    }
+}
 /// The element/code/damage row: the code letter, the element icon and the
 /// attack power.
 const REGION_CODE: usize = 2;
@@ -683,18 +696,6 @@ impl Custom<'_> {
         }
     }
 
-    /// The game's own character code for an ASCII byte, which is the glyph's
-    /// index in the battle text font (constants/bn6-charmap.tbl).
-    fn char_code(c: u8) -> u16 {
-        match c {
-            b'0'..=b'9' => 0x01 + (c - b'0') as u16,
-            b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
-            b'a'..=b'z' => 0x26 + (c - b'a') as u16,
-            b'-' => 0x40,
-            _ => 0,
-        }
-    }
-
     /// The chip's name along the top of the card, left-aligned in the row's
     /// eight cells and padded with the font's blank -- which is flat colour 8,
     /// the card's own interior, so the row needs no separate background.
@@ -702,7 +703,7 @@ impl Custom<'_> {
         let r = self.assets.regions[REGION_NAME];
         let bytes = name.as_bytes();
         for col in 0..r.w {
-            let g = Self::char_code(bytes.get(col).copied().unwrap_or(b' '));
+            let g = char_code(bytes.get(col).copied().unwrap_or(b' '));
             for half in 0..r.h {
                 self.bg.set_tile(
                     ((r.x + col) as i32, (r.y + half) as i32),
