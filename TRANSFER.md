@@ -436,10 +436,28 @@ card's picture -- at dword_8732E54 with palette dword_8733394, both matched byte
 a live results screen's char block. It is kept as its own tileset rather than padded into the
 window's blob, which would cost 15 KB of zeroes to reach tile 0x1e8.
 
-WHAT IS LEFT is 553 px, all of it the "100 z" reward text. Its glyphs are composed at runtime and
-are in no data blob -- searching for the exact tile bytes finds nothing, and they match neither
-the window's own digit font at tile 0xa0 nor the battle text font. That is the same proportional
-renderer the chip card's name waits on, and it is now the single blocker for both.
+THE REWARD TEXT WAS NEVER PROPORTIONAL. "100 z" is the fixed battle font `dword_86B7AE0` with 8
+added to every nibble -- `sub_3006C18` (asm/asm38.s:2381-94) adds a colour word from
+`dword_3006B84` to every glyph word on the way to VRAM and this window passes index 8, which is
+why a search for the raw font finds nothing on screen. The zenny symbol is glyph 0xb3, found by
+pulling that line out of VRAM and searching all 448 glyphs. Same path as the chip card's name
+(7z).
+
+AND THEN FOUR MORE, of which only one was in the window's own map:
+- THE GET DATA READOUT'S BOTTOM EDGE. The stored map has a lit tile there (top pixel row colour
+  9) where the live window has ten flat cells, tile 0xc4. The game replaces that run as it draws
+  the reward. 80 px, one pixel row -- the last thing inside the window.
+- THE CUSTOM GAUGE GOES. Label, bar and end caps, all of it, the moment the window comes up; only
+  the HP box stays. `set_gauge` takes a flag for it.
+- SO DOES THE EMOTION WINDOW. Same rule as the ENEMY DELETED banner: it belongs to the fight.
+- THE BADGE AT THE TOP-LEFT IS NOT PART OF THE WINDOW. It is the chip select screen's
+  regular-chip mark hung as OAM entry 0 -- a 16x16 at (37,21), OBJ tile 0x200 in bank 11 -- and
+  both the art at that tile and that bank match the chip window's byte for byte. When a window
+  has an ornament the map cannot explain, dump OAM.
+
+0 px now across the window, its badge and the HP box. What still differs is the field and
+backdrop outside the window, which the fixture does not reproduce. `demo-resultmatch` carries the
+capture's 60 HP too, as `demo-hudmatch` does.
 
 ## 7w. The scoreboard, and two fixtures worth knowing (2026-09-07)
 
@@ -451,8 +469,9 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-36 of 38 exact. The two that are not are BlkBomb (2.2 px/frame over floor) and LilBolr (26.9),
-both a one-pixel wobble on a handful of frames.
+39 of 43 exact (2026-09-07, latest run). The four that are not: LilBolr 26.9 px/frame over floor,
+BugBomb 30.1, VDoll 5.4, PoisSeed 1.6. BlkBomb joined the exact ones after its constants were
+swept against the capture rather than fitted.
 
 TWO FIXTURES, and it matters which:
 - `demo-hudmatch` matches the capture's HUD STATE -- 60 HP, full gauge, Cannon in hand -- and
@@ -462,9 +481,9 @@ TWO FIXTURES, and it matters which:
   is what a whole-screen comparison WITH sprites needs.
 - `demo-custmatch` matches the chip window's five offers and its pick.
 
-OPEN: the RESULTS window has never been compared. `demo-results` needs a chip press to bring it
-up and the capture harness's `--script A@200` does not get there -- the Mettaur survives -- so it
-cannot be captured headlessly as built. The real ROM's is in /tmp/noenemy2.state.
+- `demo-resultmatch` puts the RESULT window up at once with the capture's readout and its 60 HP,
+  against /tmp/noenemy2.state (7x). `demo-cardname` is `demo-custmatch` with the cursor on a slot,
+  which is the only way to see the preview card (7z).
 
 ## 7v. Elements this build was simply missing (2026-09-07)
 
