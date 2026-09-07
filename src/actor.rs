@@ -369,6 +369,17 @@ impl Actor {
         !matches!(self.action, Action::Hidden | Action::Gone)
     }
 
+    /// A still copy of the actor's current sprite frame, for an afterimage.
+    pub fn frozen_sprite(&self) -> spr::Player {
+        self.player.frozen_copy()
+    }
+
+    /// The actor's current animation and frame within it, for rebuilding that
+    /// frame later as an afterimage.
+    pub fn sprite_key(&self) -> (usize, usize) {
+        self.player.frame_key()
+    }
+
     /// Put the navi on a panel at once, as the sword family's step does
     /// (asm31.s:108808-108826: it reserves the panel and sets PanelX/PanelY
     /// rather than running the warp machine).

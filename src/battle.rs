@@ -297,14 +297,18 @@ const BOMB_FLIGHT: u8 = 40;
 /// of 1 is the attack's frame 0. Measured against the real ROM: drawn on the
 /// attack's frames 1-2, 5-6, 9-10, 13-14 and 17-18, and gone from 19 on.
 const STEP_GHOST_LAST: u8 = 19;
-/// The panel the navi steps TO carries a second red afterimage of its own,
-/// two frames on and two off over the attack's frames 8, 9, 12, 13, ... 28,
-/// 29, drawn over a navi that is still in its normal colours (both a red
-/// silhouette and body-coloured pixels are on that panel at once, so it is a
-/// separate object and not the navi recoloured). It outlives the step: the
-/// navi is home from frame 24 and the red copy is still blinking there at 29.
-/// Which pose it holds is not worked out yet, so it is not drawn (TRANSFER.md
-/// 7l).
+/// The panel the navi steps TO gets a second red afterimage of its own from
+/// the attack's frame 8, blinking two on and two off through frame 29. Unlike
+/// the one left at home this is not a single still: it TRAILS the navi by
+/// exactly three frames. Read out of the real ROM's OAM, object for object --
+/// on frame 16 the red copy's four sprites have precisely the sizes and
+/// positions the navi's had on frame 13, and on frame 17 the same, and on
+/// frame 12 those of frame 9. It outlives the step: the navi is home from
+/// frame 24 and the copy is still blinking there at 29.
+const STEP_GHOST2_FIRST: u8 = 9;
+const STEP_GHOST2_LAST: u8 = 30;
+/// The age at which the step's bookkeeping is dropped.
+const STEP_STATE_LAST: u8 = 30;
 const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
 const BOMB_SPAWN_UP: i32 = 0x30 << 16;
 const BOMB_VX: i32 = 0x2e666;
@@ -438,6 +442,13 @@ pub struct Battle<'a> {
     /// cannot show what it should look like over a black field (TRANSFER.md
     /// 7l).
     step_ghost: Option<(spr::Player, (i32, i32), u8)>,
+    /// The second afterimage, on the panel the navi stepped to, built from
+    /// the navi's sprite frame of three frames ago, with the key it was built
+    /// from so it is only rebuilt when that frame changes.
+    step_ghost2: Option<(spr::Player, (i32, i32))>,
+    step_ghost2_key: Option<(usize, usize)>,
+    /// The navi's last four sprite frames, so the afterimage can lag by three.
+    step_trail: [(usize, usize); 4],
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -773,6 +784,9 @@ impl<'a> Battle<'a> {
             sword_in: None,
             step_home: None,
             step_ghost: None,
+            step_ghost2: None,
+            step_ghost2_key: None,
+            step_trail: [(0, 0); 4],
             presentation: None,
             bubble: None,
             vulcan_gun: None,
@@ -1282,8 +1296,27 @@ impl<'a> Battle<'a> {
         // there; it is gone after frame 18.
         if let Some((_, _, age)) = self.step_ghost.as_mut() {
             *age += 1;
-            if *age > STEP_GHOST_LAST {
+            let age = *age;
+            self.step_trail[age as usize % 4] = self.megaman.sprite_key();
+            // Refreshed on the first frame of each blink pair and held for
+            // the second: on frames 16 AND 17 the real copy carries the
+            // navi's frame-13 sprite, not 13 and then 14.
+            if age >= STEP_GHOST2_FIRST && (age - STEP_GHOST2_FIRST) % 4 == 0 {
+                // Three frames back is the next slot round the ring of four.
+                let delayed = self.step_trail[(age as usize + 1) % 4];
+                if self.step_ghost2_key != Some(delayed) {
+                    let mut ghost =
+                        spr::Player::frozen_at(spr::Assets::new(MEGAMAN), delayed.0, delayed.1);
+                    ghost.set_red_only(true);
+                    let (col, row) = self.megaman.panel();
+                    self.step_ghost2 = Some((ghost, field::panel_centre(col, row)));
+                    self.step_ghost2_key = Some(delayed);
+                }
+            }
+            if age > STEP_STATE_LAST {
                 self.step_ghost = None;
+                self.step_ghost2 = None;
+                self.step_ghost2_key = None;
             }
         }
         // An effect with N frames is drawn for N frames, this one included.
@@ -1707,9 +1740,26 @@ impl<'a> Battle<'a> {
                     .show(frame);
             }
         }
+        // Two frames shown, two hidden, from the attack's frame 8.
+        if let (Some((p, (x, y))), Some((_, _, age))) =
+            (self.step_ghost2.as_ref(), self.step_ghost.as_ref())
+        {
+            if (STEP_GHOST2_FIRST..=STEP_GHOST2_LAST).contains(age)
+                && (*age - STEP_GHOST2_FIRST) % 4 < 2
+            {
+                for part in p.parts().iter().rev() {
+                    Object::new(part.sprite.clone())
+                        .set_priority(Priority::P2)
+                        .set_pos((x + part.x, y + part.y))
+                        .set_hflip(part.hflip)
+                        .set_vflip(part.vflip)
+                        .show(frame);
+                }
+            }
+        }
         // Two frames shown, two hidden, starting on the attack's frame 1.
         if let Some((p, (x, y), age)) = self.step_ghost.as_ref() {
-            if *age >= 2 && (*age - 2) % 4 < 2 {
+            if *age <= STEP_GHOST_LAST && *age >= 2 && (*age - 2) % 4 < 2 {
                 for part in p.parts().iter().rev() {
                     Object::new(part.sprite.clone())
                         .set_priority(Priority::P2)

@@ -264,6 +264,34 @@ impl Player {
         self.ticks_left = ticks;
     }
 
+    /// Which animation this player is on, and how far into it. With
+    /// `frozen_at` this is enough to rebuild the same still frame later.
+    pub fn frame_key(&self) -> (usize, usize) {
+        (self.anim, self.frame_in_anim)
+    }
+
+    /// A still player holding one named frame of one animation.
+    pub fn frozen_at(assets: Assets, anim: usize, frame_in_anim: usize) -> Self {
+        let mut p = Self::new(assets, anim);
+        p.frame_in_anim = frame_in_anim;
+        p.done = true;
+        p.load_frame();
+        p
+    }
+
+    /// A still copy of this player as it looks right now: the same animation
+    /// stopped on the same frame, which never advances again. The game leaves
+    /// these behind as afterimages (StepSwrd drops one on the panel it steps
+    /// to, frozen at the pose the navi held when it was made).
+    pub fn frozen_copy(&self) -> Self {
+        let mut p = Self::new(self.assets, self.anim);
+        p.frame_in_anim = self.frame_in_anim;
+        p.palette_add = self.palette_add;
+        p.done = true;
+        p.load_frame();
+        p
+    }
+
     /// Draw every part with green and blue masked off, or normally again.
     pub fn set_red_only(&mut self, on: bool) {
         if on == self.red_on {

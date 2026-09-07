@@ -346,5 +346,11 @@
     "file": "log/shots/1788751699-bigbomb_done.png",
     "caption": "BigBomb matched: its nine-panel blast is now pixel-exact on every frame across the whole screen. The puffs overlap, so the order they are drawn decides which seams show, and that order was the entire remaining difference. Read it straight out of the real ROM's object memory on a blast frame: the nine puffs sit in memory as centre, left, right of the front row, then centre, right, left of the middle row, then the same for the back row, with the lowest index on top.",
     "tag": "bigbomb"
+  },
+  {
+    "t": 1788751984,
+    "file": "log/shots/1788751984-stepswrd_trail.png",
+    "caption": "StepSwrd's second afterimage: the panel the navi steps to carries a red copy that trails the navi by exactly three frames, refreshed on the first frame of each two-frame blink and held for the second. Read object by object out of the real ROM's object memory: the copy on frames 16 and 17 has precisely the sizes and positions the navi's four sprites had on frame 13. StepSwrd is now 79 px/frame over 40 frames, from 340 at the start; frames 0 to 19 are all zero apart from the standing one-frame banner artifact and a single stray pixel.",
+    "tag": "stepswrd"
   }
 ]

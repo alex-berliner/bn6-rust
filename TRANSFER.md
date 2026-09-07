@@ -412,11 +412,15 @@ What is actually true, measured per frame from the framebuffer:
   off on frames 8-9, 12-13, 16-17, 20-21, 24-25 and 28-29. It is a separate object, not the navi
   recoloured: on frames 12-13 and 16-17 the panel holds both a red silhouette and the navi's
   ordinary body colour at once. It outlives the step -- the navi is home from frame 24 and the
-  red copy is still blinking there at 29. Which pose it holds is unresolved; the silhouettes do
-  not cleanly match the navi's pose at any fixed lag. NOT implemented.
-- StepSwrd now scores 164 px/frame over 40 frames, with 20 of them at 0. What is left is exactly
-  the destination afterimage's frames, the return (24-29, 32-33: the real also draws a pink warp
-  ring), and the standing banner artifact at frame 6.
+  red copy is still blinking there at 29. It TRAILS the navi by three frames and is refreshed
+  only on the first frame of each blink pair, then held for the second: object for object out of
+  OAM, the copy on frames 16 AND 17 has exactly the sizes and positions the navi's four sprites
+  had on frame 13, and the copy on frame 12 those of frame 9. Implemented (`step_ghost2`, with a
+  four-entry ring of the navi's sprite frames and `spr::Player::frozen_at`).
+- StepSwrd now scores 79 px/frame over 40 frames. Frames 0-19 are all 0 except the standing
+  banner artifact at 6 and one stray pixel on 16 and 17. What is left is frames 20-21 (206),
+  and the return from 24 on, where the real ROM draws a pink warp ring around the navi that
+  nothing here draws.
 
 Capture modes, and what each costs:
 - A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
