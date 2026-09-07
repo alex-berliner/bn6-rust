@@ -128,6 +128,8 @@ const CARD_INTERIOR_TILE: u16 = 0x011;
 /// their VRAM tiles are uniform 0x11 bytes, not the empty-cell art in another
 /// bank -- so they read as bare panel.
 const PANEL_FLAT_TILE: u16 = 0x03e;
+/// Where the regular-chip mark's ring lands on screen.
+const MARK_AT: (i32, i32) = (95, 4);
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
 const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4];
@@ -208,6 +210,14 @@ pub struct CustomAssets {
     /// while the three variants in the palette section go to bank 13. The
     /// cursor is an object and takes it from OBJ palette space.
     cursor_palette: Palette16,
+    /// The OBJECT palette its sprites draw from, which is NOT the same
+    /// palette: `cursor_palette` is the window's background bank 9 word for
+    /// word and would paint the bracket's corners yellow where the real ROM's
+    /// are orange. Measured against a live menu's OBJ bank 11.
+    cursor_obj_palette: Palette16,
+    /// The regular-chip mark above the pick stack: a gold ring with a red
+    /// disc, four tiles of a 16x16 object.
+    regular_mark: &'static [u8],
     empty_icon: TileSet,
     /// The two tiles that frame the pick stack, alternating down the column
     /// either side of it. The stored map has neither -- the game patches those
@@ -239,6 +249,9 @@ pub struct Custom<'a> {
     phase: Phase,
     /// The two blink phases of the corner tile.
     cursor: [SpriteVram; 2],
+    /// The regular-chip mark, which stands above the pick stack the whole
+    /// time the window is up.
+    mark: SpriteVram,
     cursor_at: u8,
     /// Counted while the window is open, as eS20364C0+0x40 is.
     frames: u32,
@@ -285,6 +298,8 @@ impl CustomAssets {
             regions,
             cursor_tiles: &data[c..c + 64],
             cursor_palette: read_palette(&data[c + 64..c + 96]),
+            cursor_obj_palette: read_palette(&data[c + 96..c + 128]),
+            regular_mark: &data[a + 0x80 + 28 * 0x40 + 0x140..a + 0x80 + 28 * 0x40 + 0x1c0],
             empty_icon: tileset(&data[a..a + 0x80]),
             code_glyphs: tileset(&data[a + 0x80..a + 0x80 + 28 * 0x40]),
             ok_box: tileset(&data[a + 0x80 + 28 * 0x40..a + 0x80 + 28 * 0x40 + 0x100]),
@@ -309,12 +324,16 @@ impl CustomAssets {
             TileFormat::FourBpp,
         );
         bg.set_scroll_pos((SLIDE_FROM, 0));
-        let palette = PaletteVramSingle::try_allocate_new(&self.cursor_palette)
+        let palette = PaletteVramSingle::try_allocate_new(&self.cursor_obj_palette)
             .expect("cursor palette should fit in vram");
         let cursor = [0, 1].map(|i| {
             DynamicSprite16::from_bytes(Size::S8x8, &self.cursor_tiles[i * 32..i * 32 + 32])
                 .to_vram(palette.clone())
         });
+        // The mark shares the cursor's object palette, as the real ROM's OAM
+        // has it: both are bank 11.
+        let mark = DynamicSprite16::from_bytes(Size::S16x16, self.regular_mark)
+            .to_vram(palette.clone());
         let mut slots = [None; OFFERED];
         for (slot, offer) in slots.iter_mut().zip(offered) {
             *slot = Some(*offer);
@@ -325,6 +344,7 @@ impl CustomAssets {
             revealed: 0,
             phase: Phase::Opening { x: SLIDE_FROM },
             cursor,
+            mark,
             cursor_at: 0,
             frames: 0,
             slots,
@@ -733,6 +753,13 @@ impl Custom<'_> {
         if !matches!(self.phase, Phase::Open) {
             return;
         }
+        // The regular-chip mark sits above the pick stack. The real ROM's OAM
+        // has it as a 32x32 object at (87,-4) whose only four non-blank tiles
+        // are the ring, so the ring itself lands here.
+        Object::new(self.mark.clone())
+            .set_priority(Priority::P1)
+            .set_pos(MARK_AT)
+            .show(frame);
         // The card's attack power, in the damage row's cells. The game
         // renders it into those tiles (sub_802869E draws the row); these are
         // the HUD's digit objects at the same place, and the chip name

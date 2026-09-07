@@ -556,5 +556,11 @@
     "file": "log/shots/1788773551-cs_cells_fix.png",
     "caption": "The CHIP SELECT panel, real ROM left and this build middle, sprites off, difference right. This build drew ten slot cells where the real ROM shows eight. The count is fixed, not a function of how many chips are offered: sub_8027E90 copies a template into the twelve per-slot records whose low bytes give cells 1-8 one state and cells 9-10 another, and the palette pass maps the second to the window frame's bank -- where the game writes flat background, not the empty-cell art. Everything left in the difference is the two builds holding different chips.",
     "tag": "chip"
+  },
+  {
+    "t": 1788773763,
+    "file": "log/shots/1788773763-cs_obj_cmp.png",
+    "caption": "Chip select with sprites on: real ROM left, this build right. Two objects were missing or wrong. The gold ring above the pick stack -- the regular-chip mark, and a red disc with a slash when no regular chip is set -- was not drawn at all; the real ROM hangs it in a 32x32 OAM entry at (87,-4) whose only four non-blank tiles are the ring, and those four turned up at byte_86F5834 by searching the disassembly for their bytes. It now matches pixel for pixel. And the cursor bracket was yellow where the real ROM's is orange: the window's stored cursor palette is its BACKGROUND bank word for word, and the bracket sprites draw from the OBJECT bank instead. What is left is the two builds holding different chips.",
+    "tag": "chip"
   }
 ]

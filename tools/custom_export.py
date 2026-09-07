@@ -122,7 +122,24 @@ def main():
     tilemap, firsts = apply_patches(tilemap, records)
     cursor = read_symbol(DAT, "dword_86E55BC", max_bytes=64, through_labels=True)
     cursor_pal = read_symbol(DAT, "byte_86E587C", max_bytes=32, through_labels=True)
+    # The cursor's own OBJECT palette, which is not the same thing: byte_86E587C
+    # is the window's BACKGROUND bank 9 word for word, and the bracket sprites
+    # draw from OBJ bank 11 instead, where their corners are orange rather than
+    # the yellow bank 9 gives them. Read off a live menu's OBJ palette and
+    # matched back to this symbol.
+    cursor_obj_pal = read_symbol(DAT, "byte_86E56FC", max_bytes=32, through_labels=True)[:32]
+    # The regular-chip mark: the gold ring with a red disc above the pick
+    # stack, a 16x16 object the real ROM draws inside a 32x32 OAM entry at
+    # (87,-4), so the ring itself lands at (95,4). Its four tiles are the four
+    # non-blank ones of that entry and they are contiguous here.
+    regular_mark = read_symbol(
+        os.path.join(BN6, "data", "dat38_86.s"),
+        "byte_86F5834",
+        max_bytes=128,
+        through_labels=True,
+    )
     assert len(cursor) == 64 and len(cursor_pal) == 32
+    assert len(cursor_obj_pal) == 32 and len(regular_mark) == 128
     empty = read_symbol(DAT, "byte_86E601C", max_bytes=0x80, through_labels=True)
     codes = read_symbol(DAT, "dword_86E591C", max_bytes=28 * 0x40, through_labels=True)
     ok = read_symbol(DAT, "byte_86E79CC", max_bytes=0x400, through_labels=True)[0x300:0x400]
@@ -158,9 +175,9 @@ def main():
     while len(out) % 4:
         out.append(0)
     off_cursor = len(out)
-    out += cursor + cursor_pal
+    out += cursor + cursor_pal + cursor_obj_pal
     off_slot_art = len(out)
-    out += empty + codes + ok + stack_frame
+    out += empty + codes + ok + stack_frame + regular_mark
     struct.pack_into(
         "<4sIIIIIII",
         out,
