@@ -244,6 +244,65 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7r. The HUD reaches per-pixel parity; FlshBom does too (2026-09-07)
+
+THE BG3 HUD LAYER IS EXACT -- 0 px over the whole strip, real against this build, once the
+gauge animation's phases are lined up. Three things were wrong and all three are the kind a
+still screenshot hides.
+
+THE EMOTION WINDOW (the navi's face under the HP box) was not drawn at all. The real ROM draws
+it as two OBJECTS rather than tiles -- a 32x16 at (0,18) and a 16x16 at (32,18), OBJ palette
+bank 12, OAM objects 2 and 3 -- which is why it survives the field being stripped and appears in
+every sterile chip capture just above the compared window. Twelve tiles out of OBJ VRAM matched
+byte for byte against every assembled label in the disassembly: `dword_872D814` in
+data/dat38_86.s, whose own label holds the wide object's eight tiles and whose next label holds
+the narrow one's four, exactly how the two objects split; the palette is `dword_872F114` beside
+it. The bank continues past them at 0x180 bytes each, one window per emotion, which this build
+has no state to choose between. tools/emotion_export.py. The sterile arena's top strip went from
+195 px to 0.
+BUT: the real ROM DROPS the emotion window the moment the ENEMY DELETED banner shows, so past
+the attack's frame 6 the sterile capture has no window and this build still draws one. That is
+the same class of artifact as the banner itself -- read the top strip only before frame 6.
+
+THE PLAYER'S HP WAS DRAWN TWICE, in the tile box on BG3 and again in object text below it. A
+full battle showed the number twice; the sterile arena showed one where the real capture, its BG
+layers stripped, has none. Only the box is the real ROM's.
+
+A FULL CUSTOM GAUGE FLOWS. The body cell steps through four patterns SEVEN frames each, in VRAM
+tile order 0x234, 0x235, 0x232, 0x233, and the L-or-R marker alternates cyan (0x236) and orange
+(0x23a) every EIGHT. It is a TILEMAP swap, not a palette cycle and not new art: dumping the
+bar's tile bytes and BG palette bank 9 frame by frame shows both standing still while the map's
+tile ids change. NOT VERIFIED: where the cycle starts; one save state cannot say whether the
+phase runs off the battle's frame counter or off the moment the gauge filled.
+This is worth generalising -- a HUD element that looks static in a screenshot may be animated,
+and the way to tell is to dump the map, the tile art and the palette across frames and see which
+of the three moves.
+
+THE CHIP SELECT WINDOW, compared with sprites off on both sides, matches on the window frame,
+the pick stack and its frame, the OK box, the CHIP SELECT panel and the code row. Two notes:
+- The orange knob above the pick stack and the OK box's bracket are OBJECTS, not tiles. With
+  --disable-obj the real ROM's knob is the same dark socket this build draws, and its BG tiles
+  match this build's byte for byte, so the socket is right and the disc on top is missing.
+- The slot icons carry their selectability in the PALETTE BANK: bank 11 is the bright cream
+  icon palette and bank 12 a dimmer copy of it, and in a capture where one chip has been picked
+  the slots whose codes no longer fit are the ones in bank 12. This build has `allowed()`
+  already and gives every slot bank 11, which is right only before the first pick. Bank 12's
+  palette is in neither the window's data nor the chip data, like bank 11's; read it off a live
+  menu: 0000 6739 4e73 4231 39ce 2d6a 292a 14a5 5af7 5eb3 0000 0000 0000 0000 0000 0000.
+- Cells beyond the offer are hidden by writing the empty-cell tiles in BANK 9, where the frame
+  palette renders them as the panel's own background. That is how the real ROM shows eight cells
+  where this build shows ten.
+
+FLSHBOM IS EXACT -- 0 px on every frame of the attack. Three defects: the thrown ball still used
+the MiniBomb sprite, the arc was a bomb's, and the held ball dragged its sprite's ground shadow
+along to the navi's hand. A HELD OBJECT'S SHADOW IS NOT DRAWN -- anchoring it at the navi's
+origin instead is not enough, the real ROM's ground mark there is the navi's own and nothing
+more. On fitting the arc: fit the WHOLE flight, not its first half. Fitting thirty of the forty
+frames gives a curve that is right at the peak and six pixels low at the landing. And fit the
+arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first frame is drawn after
+a step, so the naive simulation is a step ahead of the real thing and solving against it puts
+the constants in the wrong place.
+
 ## 7q. Per-pixel parity needs a MATCHING FIXTURE (2026-09-07)
 
 Reporting a difference as "live state" is not a measurement. Build a fixture that matches the
