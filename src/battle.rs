@@ -936,6 +936,7 @@ impl<'a> Battle<'a> {
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+        #[cfg(not(feature = "demo-sterile"))]
         self.backdrop.update();
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
@@ -1863,6 +1864,10 @@ impl<'a> Battle<'a> {
     }
 
     pub fn draw(&mut self, frame: &mut GraphicsFrame) {
+        // The sterile arena leaves the backdrop out for the same reason it
+        // draws a plain field: the real ROM's captures strip their BG layers
+        // with --disable-bg, so both sides must be MegaMan on black.
+        #[cfg(not(feature = "demo-sterile"))]
         self.backdrop.show(frame);
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
