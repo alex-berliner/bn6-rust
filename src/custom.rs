@@ -75,6 +75,11 @@ const SHARED_ICON_VARIANT: usize = 3;
 /// Chips offered per window: the base count before Custom parts
 /// (sub_802A40C, asm03_0.s:8650).
 pub const OFFERED: usize = 5;
+/// The window has ten slot cells, two rows of five. Only OFFERED of them ever
+/// hold a chip here, and the real ROM draws its empty icon in every one it is
+/// not offering, so the rest have to be filled too -- left alone they stay
+/// transparent and the field shows through the window.
+const SLOT_CELLS: usize = 10;
 /// Picks per window (sub_8028D6C, asm03_0.s:5457).
 pub const HAND_SIZE: usize = 5;
 
@@ -301,6 +306,11 @@ impl CustomAssets {
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);
+        }
+        for slot in OFFERED..SLOT_CELLS {
+            custom.fill(region_slot_icon(slot), &self.empty_icon, None);
+            let r = self.regions[region_slot_code(slot)];
+            custom.fill_from(r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
         }
         custom.draw_stack();
         custom.fill(REGION_OK, &self.ok_box, None);

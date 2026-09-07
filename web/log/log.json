@@ -424,5 +424,11 @@
     "file": "log/shots/1788763953-window_cmp.png",
     "caption": "The chip select window, real ROM left and this build right, after finding the palette its icons actually use. The real ROM draws every chip icon and the vertical meter from a single shared bank, and that bank is a greyscale ramp, so its icons are grey on pale yellow rather than each chip's own colours. This build was giving every slot its own bank and its chip's palette, which is why the meter came out yellow and checkered. The shared palette is in neither the window data nor the chip data, so it is now read off a live menu and carried in the asset. The window area drops from 10321 differing pixels to 8151. What is left is mostly the preview card's name and its code and damage row, which the game composes at runtime with a proportional font.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788764219,
+    "file": "log/shots/1788764219-cust_cmp4.png",
+    "caption": "The chip select window, real ROM above and this build below. The window has ten slot cells in two rows of five, and only five chips are offered here; the real ROM draws its empty icon in every cell it is not offering, while this build drew only the five it had, leaving the lower row transparent so the battle field showed through the window. Filling them takes the window area from 8151 differing pixels to 6999. Still open: the two frame columns flanking the pick stack, where the real ROM alternates two tiles down the column in the shared icon bank and this build has a single tile in the window bank.",
+    "tag": "chipselect"
   }
 ]
