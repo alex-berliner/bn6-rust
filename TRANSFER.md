@@ -324,21 +324,24 @@ slots that share art in one step do not in another), and the palette. tools/back
 still needs only the submodule. The swap uses agb's replace_tile, which rewrites the pixels
 behind a tile in place -- what the real ROM does, since its map never moves.
 
-STILL OPEN, and it is the interesting part. With sprites off the field area went from 279 px a
-frame to 150, but no frame of a 1100-frame capture of this build matches any frame of the real
-one, at any shift. What is known:
-- The map repeats every EIGHT tiles in both axes, so only the scroll offset mod 64 matters --
-  a 64x64 lattice of phases.
-- The game's horizontal and vertical scroll phases are INDEPENDENT. This build derives both from
-  one counter (x = t/2, y = t/4), so it can only reach 64 of those 4096 combinations. A fixture
-  that matches the capture needs the two set separately.
-- A Python renderer built from the real ROM's own map, tiles and palette reproduces the real
-  layer's motif exactly, so map, palette and tile decode are all right, and the best offset for a
-  given frame is recoverable (frame 48 of the capture is sx=254, with sy ambiguous mod 64 as
-  expected). But at that offset only 82% of sampled pixels match, which the phase alone does not
-  explain and the art step does not either. That 18% is the next thing to chase.
-DO NOT take the earlier "backdrop is exact, whole screen 0 px of 38400" as still standing: it was
-measured on a still layer at one frame.
+RESOLVED, and the two false alarms on the way are worth more than the result.
+
+WHOLE-SCREEN TILE PARITY IS 0 px OF 38400 AGAIN, animation and all. It just needs a long enough
+capture: the art loop is 56 frames and the scroll repeats every 128, so the two coincide only
+every 896, and the CUSTOM gauge's flow adds its own 112. A hundred-frame search finds nothing and
+reads as a regression. Search a thousand frames and pick the pair.
+
+FALSE ALARM ONE: the analysis script expanded RGB555 to 8 bits as `v * 255 // 31`. The emulator
+uses `v << 3 | v >> 2`. That is off by one on most values, so every exact comparison against a
+rendered model failed and the backdrop looked structurally wrong when it was not -- 18% of
+sampled pixels "mismatched" at the correct offset. Use the shift-or expansion.
+
+FALSE ALARM TWO: comparing raw .rgb capture bytes compares the ALPHA byte too, and two frames
+that render identically can differ there. Strip every fourth byte, or go through PIL's convert.
+
+A Python renderer built from the map, tiles and palette reproduces either side exactly and will
+solve a frame's (art step, scroll x, scroll y) by search -- the real capture's frame 48 is step 0
+at (62, 31). Both sides keep y = x/2, so the scroll phases are NOT independent after all.
 
 ## 7s. LilBolr, and the digit palette that was never the game's (2026-09-07)
 
