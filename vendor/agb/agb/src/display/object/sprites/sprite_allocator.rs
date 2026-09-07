@@ -48,6 +48,17 @@ impl PaletteId {
 /// This holds loading of static sprites and palettes.
 struct SpriteLoaderInner {
     palettes: HashMap<PaletteId, PaletteVram>,
+    /// Palettes assembled at runtime rather than baked into the ROM, keyed by
+    /// their colours.
+    ///
+    /// `palettes` above can only deduplicate a palette it is able to name, and
+    /// the name it uses is the address of a `&'static Palette16`. A palette
+    /// read out of a file at runtime has no such address, so every request for
+    /// one took a fresh bank: sixteen objects that all wanted the same sixteen
+    /// colours filled object palette memory between them and the seventeenth
+    /// got `PaletteFull`. Keying on the colours themselves lets them share one
+    /// bank, which is what the hardware is for.
+    dynamic_palettes: HashMap<Palette16, PaletteVramSingle>,
     sprites: HashMap<SpriteId, SpriteVramInner>,
 }
 
@@ -62,6 +73,7 @@ impl SpriteLoaderInner {
     pub(crate) const fn new() -> Self {
         Self {
             palettes: HashMap::new(),
+            dynamic_palettes: HashMap::new(),
             sprites: HashMap::new(),
         }
     }
@@ -72,6 +84,32 @@ impl SpriteLoaderInner {
 
     fn garbage_collect_palettes(&mut self) {
         self.palettes.retain(|_, v| v.strong_count() > 1);
+        self.dynamic_palettes.retain(|_, v| v.strong_count() > 1);
+    }
+
+    fn try_allocate_dynamic_palette_inner(
+        &mut self,
+        palette: &Palette16,
+    ) -> Result<PaletteVramSingle, LoaderError> {
+        if let Some(existing) = self.dynamic_palettes.get(palette) {
+            return Ok(existing.clone());
+        }
+        let allocated = PaletteVramSingle::try_allocate_new(palette)?;
+        self.dynamic_palettes
+            .insert(palette.clone(), allocated.clone());
+        Ok(allocated)
+    }
+
+    fn try_allocate_dynamic_palette(
+        &mut self,
+        palette: &Palette16,
+    ) -> Result<PaletteVramSingle, LoaderError> {
+        if let Ok(palette) = self.try_allocate_dynamic_palette_inner(palette) {
+            return Ok(palette);
+        }
+        // A bank the cache alone is holding is a bank nothing is drawing from.
+        self.garbage_collect_palettes();
+        self.try_allocate_dynamic_palette_inner(palette)
     }
 
     fn try_allocate_palette_inner(&mut self, palette: Palette) -> Result<PaletteVram, LoaderError> {
@@ -143,6 +181,18 @@ impl SpriteLoader {
 
     pub unsafe fn palette(&self, palette: Palette) -> Result<PaletteVram, LoaderError> {
         unsafe { self.with(|x| x.try_allocate_palette(palette)) }
+    }
+
+    /// Allocates a palette that was assembled at runtime, sharing a bank with
+    /// an identical palette already in vram rather than taking a new one.
+    ///
+    /// # Safety
+    /// As [`SpriteLoader::palette`]: this must not be called reentrantly.
+    pub unsafe fn dynamic_palette(
+        &self,
+        palette: &Palette16,
+    ) -> Result<PaletteVramSingle, LoaderError> {
+        unsafe { self.with(|x| x.try_allocate_dynamic_palette(palette)) }
     }
 }
 

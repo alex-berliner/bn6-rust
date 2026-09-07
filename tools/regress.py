@@ -11,6 +11,10 @@ a session spent on another. Each check below rebuilds its own ROM, captures
 both sides, aligns them the way that fixture is aligned, and prints the number
 the fixture is judged on against the number it should be.
 
+The last check is not a comparison at all: it runs the full battle under a long
+input script and asserts it does not crash, which is the one thing a fixture
+with two objects on an empty arena can never tell you.
+
 A check's `want` is the measured truth as of the last time it was verified,
 not an aspiration: several are non-zero because that residue is understood and
 recorded in TRANSFER.md. The exit status is non-zero if any check comes out
@@ -150,6 +154,32 @@ def check_buster():
                for k in range(32)), "navi half, 32 frames"
 
 
+def check_rollup():
+    """The full battle, under a long input script, must not crash.
+
+    Every other check here puts one or two objects on an empty arena, which is
+    why none of them caught the game running out of object palette banks 362
+    frames into a real fight (7an). agb's crash screen is a white page, and a
+    battle frame never is, so counting frames that are more than half pure
+    white finds it without knowing what the panic said.
+    """
+    build("default", "/tmp/rg_roll.gba")
+    keys = ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left", "Right", "Up"]
+    script = [held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, 1950, 19))]
+    script += [held("B", at, 2) for at in range(70, 1950, 11)]
+    script += [held("A", at, 2) for at in range(100, 1950, 37)]
+    capture("/tmp/rg_roll.gba", "/tmp/rg_rollcap", 2000, "--script", ",".join(script))
+
+    def crashed(i):
+        px = cc.frame("/tmp/rg_rollcap", i).load()
+        sampled = [(x, y) for y in range(0, 160, 2) for x in range(0, 240, 2)]
+        white = sum(1 for x, y in sampled if px[x, y] == (255, 255, 255))
+        return white > len(sampled) // 2
+    # From 60: the first frames are the boot white before anything is drawn.
+    bad = [i for i in range(60, 2000, 5) if crashed(i)]
+    return len(bad), "no crash in 2000 frames" if not bad else "crashed by frame %d" % bad[0]
+
+
 def check_chip_use():
     build("demo-field", "/tmp/rg_field.gba")
     capture(STERILE, "/tmp/rg_ar", 100, "--loadstate", PAUSED, *ALIVE,
@@ -171,6 +201,7 @@ CHECKS = [
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 256),  # the chip-in-hand icon, one frame
+    ("rollup", check_rollup, 0),        # the full battle must survive a long script
 ]
 
 

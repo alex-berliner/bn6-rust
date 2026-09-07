@@ -164,6 +164,24 @@ impl PaletteVramSingle {
                 .unwrap_unchecked()
         }
     }
+
+    /// Allocates a palette that was built at runtime, sharing the bank with an
+    /// identical palette already in vram.
+    ///
+    /// [`PaletteVramSingle::new`] deduplicates too, but it keys on the address
+    /// of a `&'static Palette16`, so it can only be given a palette that was
+    /// baked into the ROM. Use this one for a palette assembled from data read
+    /// at runtime -- it keys on the colours -- and keep
+    /// [`PaletteVramSingle::try_allocate_new`] for a palette that must have a
+    /// bank to itself because something is going to write over it.
+    pub fn try_allocate_shared(palette: &Palette16) -> Result<Self, LoaderError> {
+        unsafe { SPRITE_LOADER.dynamic_palette(palette) }
+    }
+
+    #[must_use]
+    pub(crate) fn strong_count(&self) -> usize {
+        RefCount::count(&self.0)
+    }
 }
 
 /// A palette that can contain more than 16 colours allocated to vram. To use

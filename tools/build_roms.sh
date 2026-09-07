@@ -11,10 +11,12 @@ set -eu
 cd "$(dirname "$0")/.."
 
 ENTRIES=(
-  # First in the list, so it is what the dropdown opens on: no demo feature at
-  # all, which is the whole game -- chip select, the fight, the results -- with
-  # every matched piece in place at once.
-  "default rollup Everything at once: the full battle, chip select through results, with every matched piece in place"
+  # First in the list, right under the two ROMs the page hard-codes. No demo
+  # feature at all, so it is the whole game as it actually ships: the release
+  # profile, without the debug aids web/bn6-rust.gba is built with (that one
+  # starts the gauge full, opens the chip window on L/R and fields a lone
+  # Mettaur). This is the one to look at to see every change at once.
+  "default rollup Rollup (release build): the whole battle at once -- chip select, the fight, the results, the full enemy line-up"
   "demo-buster buster Buster / charge shot"
   "demo-sword sword Sword / WideSwrd / LongSwrd"
   "demo-minibomb minibomb MiniBomb"

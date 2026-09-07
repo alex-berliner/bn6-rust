@@ -9,7 +9,7 @@ use super::Rgb15;
 /// [`Graphics::set_background_palette`](crate::display::Graphics::set_background_palette)
 /// or [`GraphicsFrame::set_background_palette`](crate::display::GraphicsFrame::set_background_palette)
 #[repr(C)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Palette16 {
     pub(crate) colours: [Rgb15; 16],
 }

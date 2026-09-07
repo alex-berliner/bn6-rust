@@ -800,6 +800,41 @@ AND THEN FOUR MORE, of which only one was in the window's own map:
 backdrop outside the window, which the fixture does not reproduce. `demo-resultmatch` carries the
 capture's 60 HP too, as `demo-hudmatch` does.
 
+## 7an. Sixteen palette banks, spent on far fewer than sixteen palettes (2026-09-07)
+
+THE FULL BATTLE CRASHED and no chip fixture could have caught it. `panicked at src/spr.rs:386:
+sprite palette should fit in vram: PaletteFull`, 362 frames into the rollup build (no demo
+feature, four enemies, buster fire) -- reproducible from one input script, invisible to every
+`demo-*` fixture because each of those puts one or two objects on screen.
+
+THE CAUSE. A GBA has sixteen object palette banks. agb's sprite loader already shares a bank
+between objects that want the same colours, but the key it dedupes on is the ADDRESS of a
+`&'static Palette16`, so it can only do it for a palette baked into the ROM. Every palette in
+this port is read out of an exported sprite file at runtime and handed to
+`PaletteVramSingle::try_allocate_new`, whose own doc comment says it "performs no
+deduplication". So MegaMan, ProtoMan, Colonel, the Mettaur, the Gunner, each shot and each spark
+took a bank of their own, several of them holding the SAME sixteen colours twice, and the
+seventeenth request panicked.
+
+THE FIX IS IN agb, not around it. `SpriteLoaderInner` gains a second map,
+`dynamic_palettes: HashMap<Palette16, PaletteVramSingle>`, keyed on the colours themselves;
+`Palette16` and `Rgb15` gain `PartialEq/Eq/Hash` so they can be that key;
+`garbage_collect_palettes` prunes it the same way it prunes the other (drop every entry nothing
+else holds, then retry), which keeps it bounded at about sixteen entries; and
+`PaletteVramSingle::try_allocate_shared` is the public way in. `spr.rs` calls it in all four
+places it used to call `try_allocate_new` -- the frame palette, the OAM-offset palette, the
+white hit-flash and StepSwrd's red afterimage. `try_allocate_new` stays for a palette that must
+own its bank because something will write over it.
+
+Sharing cannot change a pixel: the colours are identical, only the bank index differs, and
+nothing here depends on which bank an object lands in. Four thousand frames of the same fight
+now run clean, and every fixture is unchanged.
+
+WHAT THIS SAYS ABOUT THE HARNESS. `regress.py` checks nine things and none of them is "the game
+runs". A fixture puts one chip on an empty arena; the crash needed five actors and their
+effects. When something only the full battle can do goes wrong, no amount of per-chip parity
+will say so -- run the rollup build under a long input script now and then.
+
 ## 7w. The scoreboard, and two fixtures worth knowing (2026-09-07)
 
 `tools/scoreboard.py` runs every chip comparison and prints each one's mean against its FLOOR --

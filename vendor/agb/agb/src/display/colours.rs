@@ -6,7 +6,7 @@ use core::fmt::Debug;
 /// This is stored as a 15 bit number as `0b0bbbbbgggggrrrrr`. You can see what would happen to your true-colour
 /// value by using the [utility site](https://agbrs.dev/colour) in the agbrs.dev website.
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Rgb15(pub u16);
 
 impl Rgb15 {

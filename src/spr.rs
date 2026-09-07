@@ -354,7 +354,7 @@ impl Player {
         let palette = if self.white_on {
             self.white
                 .get_or_insert_with(|| {
-                    PaletteVramSingle::try_allocate_new(&Palette16::new([Rgb15::new(WHITE); 16]))
+                    PaletteVramSingle::try_allocate_shared(&Palette16::new([Rgb15::new(WHITE); 16]))
                         .expect("white palette should fit in vram")
                 })
                 .clone()
@@ -369,7 +369,7 @@ impl Player {
                     for (i, c) in colours.iter_mut().enumerate() {
                         *c = Rgb15::new(src.colour(i).0 & 0x001f);
                     }
-                    let palette = PaletteVramSingle::try_allocate_new(&Palette16::new(colours))
+                    let palette = PaletteVramSingle::try_allocate_shared(&Palette16::new(colours))
                         .expect("red-only palette should fit in vram");
                     self.red = Some((index, palette.clone()));
                     palette
@@ -382,7 +382,7 @@ impl Player {
                 _ => {
                     self.palette = None;
                     let palette =
-                        PaletteVramSingle::try_allocate_new(&self.assets.palette(index as usize))
+                        PaletteVramSingle::try_allocate_shared(&self.assets.palette(index as usize))
                             .expect("sprite palette should fit in vram");
                     self.palette = Some((index, palette.clone()));
                     palette
@@ -414,7 +414,7 @@ impl Player {
             {
                 self.offset_palettes[e.pal_offset as usize & 7]
                     .get_or_insert_with(|| {
-                        PaletteVramSingle::try_allocate_new(&self.assets.palette(offset_index))
+                        PaletteVramSingle::try_allocate_shared(&self.assets.palette(offset_index))
                             .expect("offset palette should fit in vram")
                     })
                     .clone()

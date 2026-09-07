@@ -748,5 +748,17 @@
     "file": "log/shots/1788797874-hp_log.png",
     "caption": "The player's HP box after a hit, this build above and the real ROM below, eight frames from the moment the wave lands. It was jumping straight to the new number in white; it now counts down and flashes, and the two sequences are the same shape frame for frame -- a drop of ten goes 5, 4, 1 on both sides. Three things came out of one capture. The step is |difference| / 8 + 4, not + 2 as the code had it, which is what makes the first step five rather than three. The flash holds for seventeen frames, of which three are the countdown. And the flash is NOT a second set of orange digits, which is what I built first: the tiles never change. The real ROM swaps four entries of the box's palette bank -- 4, 5, 6 and 11 go to an orange ramp -- and swaps them back. Reading that out of BG palette RAM on a flashing frame gave the four values directly. One implementation note worth keeping: the palette write has to be held back a frame, because a palette lands on the frame it is made and the box's tile writes land on the next, so swapping the ramp the moment the counter flashes paints the OLD number orange for a frame.",
     "tag": "rust"
+  },
+  {
+    "t": 1788801236,
+    "file": "log/compare/1788801236-palette_fix.png",
+    "caption": "The full-battle ROM crashed, and the cause was sixteen palette banks spent on far fewer than sixteen palettes. Same input, same frame, before and after. A GBA has sixteen object palette banks; agb's sprite loader shares them between objects that want the same colours, but it can only do that for a palette baked into the ROM, because the key it dedupes on is that palette's address. Every palette in this port is read out of an exported sprite file at runtime, so it had no address to be keyed on and each request took a fresh bank -- MegaMan, ProtoMan, Colonel, the Mettaur, the Gunner, their shots and every spark each holding one, several of them holding the SAME sixteen colours twice over. The seventeenth request panicked. The fix is in agb rather than around it: a second cache in the sprite loader keyed on the colours themselves, garbage-collected the same way the existing one is (drop every entry nothing else is holding, then retry), and a PaletteVramSingle::try_allocate_shared that goes through it. Four call sites in spr.rs changed. Four thousand frames of the same fight now run without it.",
+    "tag": "rust"
+  },
+  {
+    "t": 1788801243,
+    "file": "log/game/1788801243-rollup_sheet.png",
+    "caption": "The rollup ROM, now on the site: pick \"Rollup (release build)\" from the demo dropdown. No demo feature, so it is the whole thing at once -- the field, the HUD, the custom gauge, four enemies with their own AI, the buster and its charge, the hit flash, the HP box counting down, and the LOSER window when it goes badly. It is the release profile, so none of the debug aids are in it: the gauge fills at 0xd a frame from empty, which is about twenty-one seconds, and the chip window opens when it is full rather than on L or R. Eight frames from one 1500-frame run.",
+    "tag": "rust"
   }
 ]
