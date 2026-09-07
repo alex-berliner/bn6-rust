@@ -340,7 +340,15 @@ same nine-panel sheet, told apart by palette:
 Neither sets its panels: the field asset has no grass or ice art. That is the one thing still
 missing from them, and it is invisible in the sterile arena either way.
 
-Still unbuilt: BugBomb (id 67) and VDoll (id 150).
+BUGBOMB AND VDOLL ARE BUILT TOO, so the bomb family is complete at eleven chips. Both THROW AND
+STAY: the object stops where it lands and keeps standing, so neither bursts. BugBomb is 35.4
+px/frame against a floor of 5.3 and VDoll 10.7.
+- BugBomb's ball is the SEEDS' sprite in another animation (4 held, 5 thrown) and flies flatter
+  and slower than a bomb.
+- VDoll's doll is its own sprite, byte_83262C0.spr, and arcs to the top of the screen and hangs
+  there -- its own launch, gravity and a sixty-frame flight. Its HELD object is the seeds' sprite
+  again, animation 0. Substituting that alone took it from 233 px/frame to 157 before any arc
+  fitting, so CHECK THE HELD OBJECT SEPARATELY: it need not be the thing that is thrown.
 
 POISSEED WAS THE ONE TO BUILD FIRST because its panel art already exists: the field asset carries
 HOLE, BROKEN, NORMAL, CRACKED and POISON, and the ROM's panel tilemap has only those five, so
