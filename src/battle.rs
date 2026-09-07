@@ -111,6 +111,7 @@ const CHIP_AIRSHOT: u16 = 4;
 const CHIP_VULCAN: u16 = 5;
 const CHIP_VULCAN2: u16 = 6;
 const CHIP_VULCAN3: u16 = 7;
+const CHIP_SUPRVULC: u16 = 8;
 const CHIP_MINIBOMB: u16 = 54;
 const CHIP_BLKBOMB: u16 = 60;
 const CHIP_BIGBOMB: u16 = 202;
@@ -201,6 +202,7 @@ const fn vulcan_shots(id: u16) -> u8 {
     match id {
         CHIP_VULCAN2 => 4,
         CHIP_VULCAN3 => 5,
+        CHIP_SUPRVULC => 10,
         _ => 3,
     }
 }
@@ -216,6 +218,9 @@ const fn vulcan_timing(shots: u8) -> (u8, u8) {
     match shots {
         4 => (34, 10),
         5 => (45, 10),
+        // SuprVulc's ten shots: its flashes run to c101 and the gun is on
+        // screen 112 frames, measured the same way.
+        10 => (100, 10),
         _ => (20, 13),
     }
 }
@@ -235,7 +240,8 @@ const fn vulcan(shots: u8) -> actor::AttackSpec {
 /// 0xd: effect list 0xC index 0x1d = sprite_83195F0, animation 0, at
 /// arm-position row 0xe: +23 forward, 25 up, byte_80188C0[28..30]).
 const fn vulcan_gun_frames(shots: u8) -> u8 {
-    35 + (shots - 3) * 11
+    let (firing, recover) = vulcan_timing(shots);
+    2 + firing + recover
 }
 const VULCAN_ARM: (i32, i32) = (23, -25);
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
@@ -499,6 +505,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_LONGBLDE);
         } else if cfg!(feature = "demo-recov300") {
             hand.push(CHIP_RECOV300);
+        } else if cfg!(feature = "demo-suprvulc") {
+            hand.push(CHIP_SUPRVULC);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1391,7 +1399,7 @@ impl<'a> Battle<'a> {
                 self.effects
                     .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false));
             }
-            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 => {
+            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 | CHIP_SUPRVULC => {
                 self.chip_in_use = Some(chip);
                 let shots = vulcan_shots(chip.id);
                 self.megaman.attack(vulcan(shots));
@@ -1563,7 +1571,7 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 => {
+            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 | CHIP_SUPRVULC => {
                 const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
                 let (fc, fr) = self.megaman.front_panel();
                 // Shots per chip, from the subfamily (dword_80EBFEC =

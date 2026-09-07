@@ -264,7 +264,11 @@ by chip id - Recov10), and Recov80/120 use the same path. **Vulcan2** (06) and *
 scale by shot count: measured on the real ROM the muzzle flashes run every 5 frames from c5 and
 each extra shot lengthens the attack by 11 frames (the gun is on screen 35, 46 and 57 frames for
 Vulcan1/2/3), so the firing state is `20 + (shots-3)*11` and the gun's life `35 + (shots-3)*11`.
-All three now diff to zero. The last differing frame was not the flash but the NAVI: the real
+All four now diff to zero -- SuprVulc's ten shots included, whose firing state is 100 frames
+and gun 112, measured the same way (its (firing, recovery) is (100, 10), so the gun's life is
+just 2 + firing + recovery and no longer needs its own formula). NOTE: keep --frames inside the
+attack, since the Rust demo's auto-fire starts the next use as soon as the navi is free while
+the real capture presses A once. The last differing frame was not the flash but the NAVI: the real
 was still in the firing pose (recoil + muzzle flash) where ours had switched to recovery, so the
 firing state was ending early. Measured, the firing pose's last frame is c21/c35/c46 (the pose
 starts at c2) and the gun lives 35/46/57 frames, giving (firing, recovery) = (20,13), (34,10),
@@ -358,7 +362,7 @@ MiniBomb (36 demo-minibomb, flight in the default window and the landing with --
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
-Recov300 (a1 --rust-start 123), LongSwrd (49 demo-longswrd), Recov30 (9b
+Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,

@@ -310,5 +310,11 @@
     "file": "log/game/1788745929-hpbox.png",
     "caption": "HP numbers: the player's HP is now a box at the top left, and every HP number lags the real value the way the game's does -- on a change the shown number walks by |difference|/8 + 2 a frame and flashes in one of the game's two alternate digit sets (sub_801C168/sub_801C1D0, asm00_2.s:25853). All three pre-coloured digit sets are exported now.",
     "tag": "game"
+  },
+  {
+    "t": 1788747270,
+    "file": "log/proof/1788747270-strip_demo-suprvulc.png",
+    "caption": "SUPRVULC matched: tools/chip_compare.py 08 demo-suprvulc --frames 113 -> 0 px on every frame of the attack. Ten shots, firing state 100 frames and the gun on screen 112, measured from the real ROM the way Vulcan2/3 were. (Comparing past the attack's end shows a false residual: the demo's auto-fire starts a second volley the real capture never fires.)",
+    "tag": "proof"
   }
 ]

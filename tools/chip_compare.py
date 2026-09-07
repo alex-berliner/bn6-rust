@@ -17,6 +17,11 @@ remnant at x>=149). A strip of real/rust/diff crops is written for looking.
 Chips that do not move the navi (Recov) give the aligner nothing to go on:
 pass --rust-start 123, the frame the sterile demo's auto-fire uses its chip.
 
+Keep --frames inside the attack: the real capture presses A once, while the
+Rust demo's auto-fire starts the next use as soon as the navi is free, so
+frames past the attack's end compare a second volley against an idle navi.
+SuprVulc, at 112 frames the longest, needs --frames 113.
+
 Needs /tmp/mgba_capture (tools/mgba_capture.c) and the real ROM/state, which
 are never committed (TRANSFER.md).
 """
