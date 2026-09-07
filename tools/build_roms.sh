@@ -44,6 +44,8 @@ ENTRIES=(
   "demo-elecswrd elecswrd ElecSwrd"
   "demo-wideblde wideblde WideBlde"
   "demo-bigbomb bigbomb BigBomb: a nine-panel blast"
+  "demo-suprvulc suprvulc SuprVulc (ten shots)"
+  "demo-suprvulc,demo-sterile,demo-auto suprvulc-real SuprVulc on black, auto-fire: matched frame-for-frame to the real ROM"
 )
 
 mkdir -p web/roms
