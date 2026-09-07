@@ -639,7 +639,10 @@ pub struct Battle<'a> {
     field_slide: u16,
     emotion: crate::emotion::Emotion,
     /// The palette for the chip-in-hand icon the game hangs over the navi.
-    hand_icon_palette: PaletteVramSingle,
+    /// None in the sterile arena, which does not draw the icon: the bank it
+    /// would hold is one the longest volley needs. SuprVulc panicked with
+    /// "sprite palette should fit in vram" until this was made optional.
+    hand_icon_palette: Option<PaletteVramSingle>,
     hud_tiles: Option<crate::hudtiles::HudTiles>,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
@@ -1047,7 +1050,7 @@ impl<'a> Battle<'a> {
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
-            hand_icon_palette: hand_icon_palette(),
+            hand_icon_palette: (!cfg!(feature = "demo-sterile")).then(hand_icon_palette),
             hud_tiles: if cfg!(feature = "demo-sterile") {
                 None
             } else {
@@ -2205,12 +2208,12 @@ impl<'a> Battle<'a> {
         // closing, not to the hand's contents: the real captures poke a chip
         // straight into the hand slot and show no icon at all, so drawing one
         // there costs every chip comparison a constant 256 px.
-        if self.custom.is_none() && !cfg!(feature = "demo-sterile") {
+        if let (None, Some(palette)) = (&self.custom, self.hand_icon_palette.as_ref()) {
             if let Some(chip) = self.hand.get(self.hand_at) {
                 let (mc, mr) = self.megaman.panel();
                 let (px, py) = field::panel_centre(mc, mr);
                 let sprite = DynamicSprite16::from_bytes(Size::S16x16, chip.icon_bytes())
-                    .to_vram(self.hand_icon_palette.clone());
+                    .to_vram(palette.clone());
                 Object::new(sprite)
                     .set_priority(Priority::P2)
                     .set_pos((px + HAND_ICON_AT.0, py + HAND_ICON_AT.1))
