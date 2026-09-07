@@ -26,20 +26,29 @@ measurement first.
 
 ## A. Measured residues — small, self-contained, all have a number
 
-### A1. The Mettaur's attack tail — 4 frames, 698 px each
-The last five ticks before the virus returns to idle. The real ROM holds three distinct
-poses there (2, 2, 1 ticks); this build holds four (1, 1, 2, 1). Everything earlier in
-the tail matches exactly: run-length analysis of both sides gives the identical sequence
-2,1,1,3,8,4,9,3,2,2,2,2,4,10,6 up to the divergence.
+### A1. The shockwave's DEPARTURE — 4 frames, 115 px each  (was "the Mettaur's tail")
+RENAMED, because the diagnosis was wrong. Splitting the `mettaur` check's window by region:
+the virus's own body is 0 px over all 70 frames -- its animation is exact -- and the entire
+460 px sits to its LEFT, on frames 198-201 of the standard alignment.
 
-Already ruled out, do not repeat: `SWING.frames` 0x40 → 0x3f. It is well motivated —
-`object_exitAttackState` writes CurAnim=0 on the tick Unk_10 reaches zero
-(asm31.s:170737), and animation 1's sub-frames in `assets/mettaur.bin` sum to exactly 63
-— and it changes nothing, because animation 1's last sub-frame is pixel-identical to the
-idle pose. On a wider window it is actively worse. A tick-by-tick simulation of
-`Actor`/`Player` predicts (1,2,2), which matches neither side, so something in the
-attacking-to-idle handoff is not modelled by either reading. That is where to look.
-See `TRANSFER.md` 7ah.
+What it is: the real ROM leaves a thinning spray of blue fragments arcing above the panel
+the shockwave has just hopped off, for about six frames. This build shows it for two and
+then nothing. That fits `TRANSFER.md` 7ai's finding that
+`object_highlightCurrentCollisionPanels` keeps being called from `sub_80C6C14` until the
+SEGMENT'S OWN DEPARTURE ANIMATION finishes (`sprite_getFrameParameters` bit 0x80,
+`sub_80C6CBA`, asm31.s:31552-31567) -- so a hop is not one sprite moving: the old segment
+stays and plays out while the new one appears, and this build moves a single sprite and
+draws nothing behind it.
+
+The job: find the departure animation in `t3_0x16_80C6B40` (asm31.s:31354) and its sprite,
+and make `Shot::shockwave` leave one behind at each hop. `src/shot.rs` already tracks
+`left_panel`/`left_ticks` for the panel light, which is the same event.
+
+Already ruled out, do not repeat: `SWING.frames` 0x40 -> 0x3f. Well motivated --
+`object_exitAttackState` writes CurAnim=0 on the tick Unk_10 reaches zero (asm31.s:170737),
+and animation 1's sub-frames in `assets/mettaur.bin` sum to exactly 63 -- and it changes
+nothing, because animation 1's last sub-frame is pixel-identical to the idle pose. On a
+wider window it is worse. The pickaxe was never involved.
 
 ### A2. The chip window's cursor — FIX THE FIXTURE FIRST
 "At a delay of two the bracket is one frame early; at three the card is one frame late."

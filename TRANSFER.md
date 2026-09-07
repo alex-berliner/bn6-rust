@@ -518,8 +518,28 @@ pre-tick the bombs' effects already do, and `Shot::shockwave` now does it too. T
 four differing frames go to zero; the cycle goes from 16 differing frames and 5117 px to 10 and
 2430.
 
-WHAT IS LEFT: four frames at the end of the cycle, 698 px each, where the real Mettaur holds its
-pickaxe up a frame or two longer than this build.
+WHAT IS LEFT is NOT THE METTAUR (corrected 2026-09-07). Splitting the diff window by region:
+
+    whole region (x145-240, y40-150)   460 px over 4 frames
+    the Mettaur's own body (x190-228)    0 px over all 70
+    everything left of it (x145-190)   412 px over the same 4 frames
+
+The virus's animation is EXACT, frame for frame, for the whole cycle. Its pose runs are identical
+to the real ROM's up to and including the sixth-from-last, and the body box never differs at all.
+The residue is entirely the SHOCKWAVE'S DEPARTURE: a thinning spray of blue fragments that the real
+ROM leaves arcing above the panel the wave has just hopped off, for about six frames, where this
+build shows it for two and then nothing. Frames 198-201 of the standard alignment, 115 px each.
+
+This fits what the panel-light work found in 7ai: `object_highlightCurrentCollisionPanels` keeps
+being called from `sub_80C6C14` until the SEGMENT'S OWN DEPARTURE ANIMATION finishes
+(`sprite_getFrameParameters` bit 0x80, `sub_80C6CBA`, asm31.s:31552-31567). So a hop is not one
+sprite moving: the old segment stays and plays out while the new one appears. This build moves a
+single sprite and draws nothing behind it.
+
+The earlier note here said "the real Mettaur holds its pickaxe up a frame or two longer than this
+build", which is what sent an attempt at `SWING.frames` 0x40 -> 0x3f -- a change that is well
+motivated, changes nothing, and is worse on a wider window. The pickaxe was never involved. Split
+the window by region BEFORE naming what a residue is.
 
 AND A NEGATIVE RESULT WORTH KEEPING (2026-09-07). The obvious fix is wrong. `object_exitAttackState`
 writes CurAnim=0 on the tick Unk_10 is decremented TO zero (asm31.s:170737), so only 63 of the
