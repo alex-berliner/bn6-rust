@@ -971,6 +971,45 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7au. The harness can capture AUDIO now, and the buster is a PSG blip (2026-09-07)
+
+`tools/mgba_capture.c` grows two flags, so that sound can eventually be verified the way pixels
+are rather than merely being present.
+
+- `--dump-audio <dir>` writes the post-mix stereo output as raw signed 16-bit interleaved PCM,
+  `frame.NNNNN.pcm`, one file per video frame with the same numbering as the `.rgb` frames. It
+  drains `core->getAudioChannel(core, 0/1)` directly rather than going through an `mAVStream`
+  callback.
+- `--audio-channel <id>`, repeatable, solos channels through `core->enableAudioChannel`. Either
+  flag prints `listAudioChannels`'s table so the ids mean something.
+
+TWO GOTCHAS, both of which would have cost somebody a day.
+
+THE ADVERTISED SAMPLE RATE IS WRONG. `mAVStream.audioRateChanged` reports 65536 Hz; counting the
+samples actually drained gives a rock-steady 96000 Hz (95998.3 over 299 frames, exactly 96000.0
+over 70). A 1.46x mismatch, on this libmgba 0.10.2. The tool prints both and says which to trust:
+the measured one. Anything that diffs audio must assume 96000 Hz stereo s16le.
+
+AND `struct mCore` HAS AN ABI TRAP. `listAudioChannels` and `enableAudioChannel` sit immediately
+after a block gated by `#ifdef USE_DEBUGGERS` in `/usr/include/mgba/core/core.h`. The installed
+`libmgba.so` was built WITH debuggers; compiling this file without the macro leaves its view of the
+struct one slot short from that point on, so those two calls silently read garbage -- a null
+channel table, an enormous count, a segfault on first use. `mgba_capture.c` now defines
+`USE_DEBUGGERS` before including the headers. Anything added to this file that touches a `mCore`
+field should check which side of that `#ifdef` it falls on. `getAudioChannel` is declared earlier
+and was unaffected, which is why it worked while the other two did not.
+
+THE FIRST THING IT ANSWERED. `SOUND_BUSTER_6A`, the buster's fire sound, is a synthesised PSG
+square/sweep blip on CHANNEL 0, not a DirectSound sample -- which settles the open question in the
+sound plan and means the smallest first step is not "export a sample" after all. Method worth
+copying: fire one shot with each channel soloed, and subtract a control run with no shot, to cancel
+the battle music that is always playing. Channel 0 shows a +1376 RMS spike at frame 67 and +794 at
+68, six or seven frames after the press; every other channel is inside a noise floor of 6 against a
+baseline of 1500-2600. Over 200x separation.
+
+VERIFIED SAFE: with neither flag passed the binary's output is byte-identical to the old one, and
+`field`, `cursor` and `banner` are unchanged at zero with the new binary in place.
+
 ## 7at. The emotion window: what would drive it (2026-09-07)
 
 Researched, not implemented, because almost none of it is reachable in the battle this build

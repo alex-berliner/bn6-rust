@@ -20,16 +20,28 @@
  * pixels (240*160*4 bytes), which tools/mgba_frames.py decodes to PNG.
  *
  *   --dump-audio <dir>  after every frame, drain the core's final stereo
- *                       mix and append it as signed 16-bit interleaved PCM to
+ *                       mix and write it as signed 16-bit interleaved PCM to
  *                       <dir>/frame.####.pcm (one file per frame, same
  *                       numbering as the video). No container, no resampling
- *                       of our own -- whatever rate mgba's blip resampler
- *                       settled on is printed to stderr once
- *                       ("audio sample rate: N Hz"); that is the file's rate.
- *                       Reads core->getAudioChannel(core, 0/1), which is the
- *                       post-mix left/right bus (PSG + both DirectSound
- *                       FIFOs already summed), not a per-voice tap -- combine
- *                       with --audio-channel to isolate one source.
+ *                       of our own. Reads core->getAudioChannel(core, 0/1),
+ *                       which is the post-mix left/right bus (PSG + both
+ *                       DirectSound FIFOs already summed), not a per-voice
+ *                       tap -- combine with --audio-channel to isolate one
+ *                       source. THE RATE IS NOT WHAT mCore ADVERTISES: this
+ *                       build's mAVStream.audioRateChanged callback (fed by
+ *                       gba->audio.sampleInterval) reports 65536 Hz, but
+ *                       counting actual samples drained per frame gives
+ *                       ~96000 Hz, consistently, state-load or not -- a real
+ *                       ~1.46x gap between the two, not measurement noise
+ *                       (confirmed over 299 frames: 95998.3 Hz). Something
+ *                       about libmgba 0.10.2's blip_t rate setup and the
+ *                       sampleInterval scalar have drifted apart. So this
+ *                       flag does not print "the" rate up front; it prints
+ *                       both numbers after the run ("audio: wrote N samples
+ *                       over M frames ... = R Hz measured; ...reported G
+ *                       Hz -- do not trust that number") and the measured
+ *                       one (R) is the one to believe -- divide a file's
+ *                       byte count by 4 * R for its duration in seconds.
  *   --audio-channel <id>  solo channel <id> (repeatable to solo several),
  *                       muting every other PSG/FIFO channel via
  *                       core->enableAudioChannel. The id table (from
@@ -419,13 +431,15 @@ int main(int argc, char** argv) {
 	}
 	struct blip_t* audio_left = NULL;
 	struct blip_t* audio_right = NULL;
+	long audio_samples_written = 0;
 	if (dumpaudio_dir) {
 		if (mkdir(dumpaudio_dir, 0755) != 0 && errno != EEXIST) {
 			fprintf(stderr, "mkdir %s: %s\n", dumpaudio_dir, strerror(errno));
 			return 1;
 		}
+		/* Installed purely for the header comment's honesty check below --
+		 * do not trust this number on its own, see there. */
 		core->setAVStream(core, &g_stream);
-		fprintf(stderr, "audio sample rate: %u Hz (stereo s16le PCM)\n", g_audio_rate);
 		audio_left = core->getAudioChannel(core, 0);
 		audio_right = core->getAudioChannel(core, 1);
 		/* Discard whatever boot/state-load already queued so frame 0's file
@@ -498,6 +512,7 @@ int main(int argc, char** argv) {
 			}
 			fwrite(pcm, sizeof(int16_t) * 2, avail, pf);
 			fclose(pf);
+			audio_samples_written += avail;
 		}
 		if (write_frame(buf, stride)) {
 			return 1;
@@ -549,9 +564,19 @@ int main(int argc, char** argv) {
 	}
 
 	if (dumpaudio_dir) {
-		int cfgrate = -1;
-		mCoreConfigGetIntValue(&core->config, "sampleRate", &cfgrate);
-		fprintf(stderr, "DEBUG config sampleRate=%d\n", cfgrate);
+		/* core->frequency()/frameCycles() give the emulated fps exactly
+		 * (16777216 / 280896 = 59.7275...); dividing the actual sample
+		 * count we wrote by the actual emulated seconds elapsed gives the
+		 * PCM's true rate directly from the data, no library metadata
+		 * required -- see the header comment for why that matters here. */
+		double fps = (double) core->frequency(core) / core->frameCycles(core);
+		double seconds = g_frame / fps;
+		fprintf(stderr,
+		        "audio: wrote %ld samples over %d frames (%.6f s) = %.1f Hz "
+		        "measured; mAVStream.audioRateChanged reported %u Hz (do not "
+		        "trust that number -- see header comment)\n",
+		        audio_samples_written, g_frame, seconds,
+		        seconds > 0 ? audio_samples_written / seconds : 0.0, g_audio_rate);
 	}
 	free(buf);
 	core->deinit(core);

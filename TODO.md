@@ -130,7 +130,20 @@ nothing drives cracked or broken. `object_crackPanel` writes 3 and a broken pane
 (object.s:2301, 2198). Find what cracks a panel in the real ROM and drive it. Verify with
 a capture of something heavy landing.
 
-### B3. Sound — research ticket, not an implementation one
+### B3a. Sound: the harness can hear now  *(the research is done)*
+`tools/mgba_capture.c` has `--dump-audio` and `--audio-channel`; see TRANSFER 7au for the two
+gotchas (the advertised 65536 Hz is really 96000, and `struct mCore` has a `USE_DEBUGGERS` ABI
+trap). The engine is stock Nintendo M4A, agb's mixer sets up the same DMA/FIFO/timer registers,
+and nothing in this project competes for them.
+
+The smallest first step is NOT "export a sample": the buster's fire sound is a PSG square/sweep
+blip on channel 0, confirmed empirically. agb has no PSG API at all, so a first sound means either
+a small hand-written PSG driver (register pokes on 0x4000060-0x4000075, in the style
+`vendor/agb/agb/src/sound/mixer/hw.rs` already uses for DirectSound) or picking a confirmed
+DirectSound effect instead -- `SOUND_HIT_6B`'s sample is already decoded end to end: WaveData at
+`byte_81597A0`, 1881 bytes, 10512 Hz, no loop.
+
+### B3-old. Sound — research ticket, not an implementation one
 Nothing in this build makes a sound. Before anyone writes code, find out what it would
 take: where the sequences and samples live in the ROM, what the driver is, whether agb
 can be given a channel layout that matches, and what the smallest useful first step is
