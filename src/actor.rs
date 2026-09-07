@@ -447,8 +447,9 @@ impl Actor {
     /// flags (byte_8012DD4 via object_getPanelsExceptCurrentFiltered,
     /// asm00_2.s:8933; asm/object.s:2956).
     fn can_move_to(&self, col: i32, row: i32, blocked: u32) -> bool {
-        let (min_col, max_col) = field::half(self.facing_left);
-        (min_col..=max_col).contains(&col)
+        // Which panels belong to this side is in `blocked`: the caller adds
+        // the other side's panels, so a stolen column opens up on its own.
+        (1..=field::COLS).contains(&col)
             && (1..=field::ROWS).contains(&row)
             && blocked & field::panel_bit(col, row) == 0
     }

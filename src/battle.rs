@@ -219,6 +219,9 @@ const BARRIER_HP: u16 = 10;
 /// created a frame before the bubble shows).
 const INVISIBL_PRESENTATION: u16 = 128;
 const BARRIER_PRESENTATION: u16 = 77;
+/// AreaGrab is in the same family; its own length is not measured, so
+/// Barrier's is used.
+const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
 /// The thrown bomb (sub_80C5DBC -> t3_0x8_80C5BB0, asm31.s:29657, 29400):
 /// spawned 4 pixels ahead of the navi and 0x30 up, sprite_82F569C
 /// animation 1 with a shadow; it flies at 0x2e666 (2.9 px) a frame
@@ -379,6 +382,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_HICANNON);
         } else if cfg!(feature = "demo-mcannon") {
             hand.push(CHIP_MCANNON);
+        } else if cfg!(feature = "demo-areagrab") {
+            hand.push(CHIP_AREAGRAB);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -434,6 +439,12 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
         hand.push(CHIP_CANNON);
         hand.push(CHIP_HICANNON);
         return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
+    }
+    // Two grabs, so the boundary moves twice.
+    if cfg!(feature = "demo-areagrab") {
+        hand.push(CHIP_AREAGRAB);
+        hand.push(CHIP_AREAGRAB);
+        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
     }
     if cfg!(feature = "demo-vulcan") {
         hand.push(CHIP_VULCAN);
@@ -771,7 +782,7 @@ impl<'a> Battle<'a> {
                     .enemies
                     .iter()
                     .filter(|e| e.is_present())
-                    .fold(0, |m, e| m | e.occupancy());
+                    .fold(self.panels.other_half(false), |m, e| m | e.occupancy());
                 if self.megaman.step(dx, dy, blocked) {
                     self.moves = self.moves.saturating_add(1);
                 }
@@ -909,6 +920,16 @@ impl<'a> Battle<'a> {
                 self.presentation = None;
                 match chip.id {
                     CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
+                    CHIP_AREAGRAB => {
+                        let occupied = self
+                            .enemies
+                            .iter()
+                            .filter(|e| e.is_present())
+                            .fold(0, |m, e| m | e.occupancy());
+                        for (col, row) in self.panels.steal_column(occupied) {
+                            self.panels.highlight(col, row, 0);
+                        }
+                    }
                     CHIP_BARRIER => {
                         self.megaman.set_barrier(BARRIER_HP);
                         self.bubble = Some(spr::Player::new(spr::Assets::new(BARRIER), 0));
@@ -989,7 +1010,7 @@ impl<'a> Battle<'a> {
                 continue;
             }
             if !paused && !enemy.is_busy() && self.megaman.is_targetable() {
-                let blocked = all_held & !held[i];
+                let blocked = (all_held & !held[i]) | self.panels.other_half(true);
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 self.cross_shape = ai::cross_targets(self.megaman.panel());
@@ -1126,8 +1147,13 @@ impl<'a> Battle<'a> {
             match self.panels.flashing(col, row) {
                 Some(which) => self.field.draw_highlight(&mut self.bg, col, row, which),
                 None => {
-                    self.field
-                        .draw_panel(&mut self.bg, col, row, self.panels.animation(col, row))
+                    self.field.draw_panel(
+                        &mut self.bg,
+                        col,
+                        row,
+                        self.panels.animation(col, row),
+                        self.panels.enemy_owned(col, row),
+                    )
                 }
             }
         }
@@ -1225,7 +1251,10 @@ impl<'a> Battle<'a> {
             CHIP_BARRIER => self.presentation = Some((chip, BARRIER_PRESENTATION)),
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
-            CHIP_AREAGRAB => {}
+            // AreaGrab takes the enemy's front-most column, a row at a time
+            // (sub_80E0754, asm31.s:85444, with the chip's first parameter
+            // set); it is a presentation chip, so the fight holds first.
+            CHIP_AREAGRAB => self.presentation = Some((chip, AREAGRAB_PRESENTATION)),
             _ => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(actor::BUSTER);
@@ -1296,7 +1325,8 @@ impl<'a> Battle<'a> {
                 let blocked = self
                     .enemies
                     .iter()
-                    .fold(self.megaman.occupancy(), |m, e| m | e.occupancy());
+                    .fold(self.megaman.occupancy(), |m, e| m | e.occupancy())
+                    | self.panels.other_half(true);
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if enemy.panel() == (fc, fr) && enemy.take_damage(chip.power) {
                         enemy.hop(dx, 0, blocked);

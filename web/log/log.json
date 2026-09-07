@@ -286,5 +286,11 @@
     "file": "log/proof/1788743505-strip_demo-mcannon.png",
     "caption": "M-CANNON matched: tools/chip_compare.py 03 demo-mcannon -> 0 px on every frame. Same cannon pose and barrel as Cannon/HiCannon, with the barrel's palette 2 (byte_80B8BD4 row 2).",
     "tag": "proof"
+  },
+  {
+    "t": 1788743781,
+    "file": "log/game/1788743781-areagrab.png",
+    "caption": "AREAGRAB: the field now tracks per-panel ownership. Each grab takes the enemy's front-most column a row at a time, skipping any panel someone stands on -- three grabs in this demo move the boundary from 3/3 to 5/1, with the Mettaur's own panel left as the enemy's. Movement bounds follow ownership, so the stolen columns open up for the player.",
+    "tag": "game"
   }
 ]

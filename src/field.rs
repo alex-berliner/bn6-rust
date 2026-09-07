@@ -6,6 +6,8 @@
 //! `sub_800C01C` produces, panel centres land on screen at
 //! `x = col * 40 - 20`, `y = row * 24 + 60`.
 
+use alloc::vec::Vec;
+
 use agb::display::Priority;
 use agb::display::tiled::{
     RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
@@ -89,7 +91,13 @@ impl Field {
         );
         for row in 1..=ROWS {
             for col in 1..=COLS {
-                self.draw_panel(&mut bg, col, row, panels.get(col, row));
+                self.draw_panel(
+                    &mut bg,
+                    col,
+                    row,
+                    panels.get(col, row),
+                    panels.enemy_owned(col, row),
+                );
             }
         }
         bg
@@ -102,11 +110,17 @@ impl Field {
 
     /// Repaint one panel's 5x3 tile block, so a panel that changes state does
     /// not cost a redraw of the whole field.
-    pub fn draw_panel(&self, bg: &mut RegularBackground, col: i32, row: i32, panel_type: usize) {
-        // Columns 1-3 are the player's half, 4-6 the enemy's. The two sides
-        // share tiles and differ only by palette bank; against the real ROM
-        // the player's half is the red one.
-        let side = if col <= 3 { 0 } else { 1 };
+    pub fn draw_panel(
+        &self,
+        bg: &mut RegularBackground,
+        col: i32,
+        row: i32,
+        panel_type: usize,
+        enemy_owned: bool,
+    ) {
+        // The two sides share tiles and differ only by palette bank; against
+        // the real ROM the player's half is the red one.
+        let side = usize::from(enemy_owned);
         self.draw_variant(bg, col, row, 6 * panel_type + 3 * side + (row as usize - 1));
     }
 
@@ -160,6 +174,11 @@ pub struct Panels {
     /// drawn, cleared (asm/object.s:2552, 1732). Value is 1 + overlay index.
     flash: [u8; PANEL_COUNT],
     flash_last: [u8; PANEL_COUNT],
+    /// Which side each panel belongs to: false the player's, true the
+    /// enemy's. Columns 1-3 start the player's and 4-6 the enemy's, and
+    /// AreaGrab moves the boundary a column at a time
+    /// (sub_80E0754, asm31.s:85444).
+    enemy_owned: [bool; PANEL_COUNT],
 }
 
 impl Panels {
@@ -172,7 +191,61 @@ impl Panels {
             dirty: 0,
             flash: [0; PANEL_COUNT],
             flash_last: [0; PANEL_COUNT],
+            enemy_owned: core::array::from_fn(|i| i % COLS as usize >= 3),
         }
+    }
+
+    /// Whose half this panel is on.
+    pub fn enemy_owned(&self, col: i32, row: i32) -> bool {
+        self.enemy_owned[index(col, row)]
+    }
+
+    /// The columns a side may stand on: the panels it owns, which are always
+    /// a contiguous run from its own edge.
+    pub fn half(&self, enemy_side: bool, row: i32) -> (i32, i32) {
+        let owned = |col| self.enemy_owned(col, row) == enemy_side;
+        let mut lo = 1;
+        let mut hi = COLS;
+        while lo < COLS && !owned(lo) {
+            lo += 1;
+        }
+        while hi > lo && !owned(hi) {
+            hi -= 1;
+        }
+        (lo, hi)
+    }
+
+    /// The panels a side may NOT stand on because the other side owns them.
+    pub fn other_half(&self, enemy_side: bool) -> u32 {
+        let mut mask = 0;
+        for row in 1..=ROWS {
+            for col in 1..=COLS {
+                if self.enemy_owned(col, row) != enemy_side {
+                    mask |= panel_bit(col, row);
+                }
+            }
+        }
+        mask
+    }
+
+    /// Take the enemy's front-most column for the player, a row at a time,
+    /// as AreaGrab does; a panel someone is standing on cannot be taken.
+    /// Returns the panels that changed hands.
+    pub fn steal_column(&mut self, occupied: u32) -> Vec<(i32, i32)> {
+        let mut taken = Vec::new();
+        for row in 1..=ROWS {
+            let (lo, _) = self.half(true, row);
+            if lo <= COLS
+                && self.enemy_owned(lo, row)
+                && lo > 1
+                && occupied & panel_bit(lo, row) == 0
+            {
+                self.enemy_owned[index(lo, row)] = false;
+                self.dirty |= panel_bit(lo, row);
+                taken.push((lo, row));
+            }
+        }
+        taken
     }
 
     pub fn get(&self, col: i32, row: i32) -> usize {
@@ -296,6 +369,8 @@ pub fn panel_centre(col: i32, row: i32) -> (i32, i32) {
 
 /// The half of the field a side owns. Columns 1-3 are the player's, 4-6 the
 /// enemy's; a navi cannot leave its own half without a chip that grabs area.
+/// The columns a side starts with, before any panel changes hands; live
+/// bounds come from `Panels::half`.
 pub fn half(enemy_side: bool) -> (i32, i32) {
     if enemy_side { (4, COLS) } else { (1, 3) }
 }

@@ -244,6 +244,18 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7e. AreaGrab and per-panel ownership (2026-09-06)
+
+field::Panels now carries `enemy_owned` per panel instead of the fixed 1-3 / 4-6 split:
+`draw_panel` takes it (so a stolen panel is drawn in the other side's colours), `half(side,
+row)` gives a side's live column range, and `other_half(side)` gives the panels a side may not
+stand on -- folded into the `blocked` mask at the three movement sites, so the actor no longer
+consults the static `field::half`. AreaGrab (a presentation chip, so the fight holds first)
+calls `steal_column(occupied)`, which takes the enemy's front-most column a row at a time and
+skips any panel someone stands on. Verified in a demo (demo-areagrab): three grabs move the
+boundary 3/3 -> 4/2 -> 5/1 -> 6/0 except the Mettaur's own panel, which stays the enemy's.
+Not pixel-compared: the effect is on the field layer, which the parity setup disables.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
