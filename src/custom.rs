@@ -100,6 +100,16 @@ const fn region_slot_icon(slot: usize) -> usize {
 const fn region_slot_code(slot: usize) -> usize {
     6 + 2 * slot
 }
+/// The card's dark interior tile, which the real ROM uses for the parts of the
+/// name and damage rows it is not writing text into (its map has it at the
+/// card's inner edge and in the gap beside the damage). The text itself is
+/// composed at runtime from a proportional font this build does not have, so
+/// those regions are filled with this rather than left transparent -- without
+/// it the backdrop shows straight through the card.
+const CARD_INTERIOR_TILE: u16 = 0x011;
+/// The card regions that hold text: the chip name, and the element, code and
+/// damage row beneath the picture.
+const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4];
 const REGION_OK: usize = 25;
 const REGION_STACK: usize = 26;
 /// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
@@ -321,6 +331,7 @@ impl CustomAssets {
         }
         custom.draw_stack();
         custom.draw_stack_frame();
+        custom.fill_card_text_background();
         custom.fill(REGION_OK, &self.ok_box, None);
         custom.draw_card(gfx);
         custom.reveal(SLIDE_FROM);
@@ -445,6 +456,26 @@ impl Custom<'_> {
                 self.fill(region_slot_icon(slot), &assets.empty_icon, None);
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+            }
+        }
+    }
+
+    /// Paint the card's text regions with its interior tile. A placeholder for
+    /// the runtime text renderer; see CARD_INTERIOR_TILE.
+    fn fill_card_text_background(&mut self) {
+        for index in TEXT_REGIONS {
+            let r = self.assets.regions[index];
+            for dy in 0..r.h {
+                for dx in 0..r.w {
+                    self.bg.set_tile(
+                        ((r.x + dx) as i32, (r.y + dy) as i32),
+                        &self.assets.tiles,
+                        TileSetting::new(
+                            CARD_INTERIOR_TILE,
+                            TileEffect::new(false, false, BANK),
+                        ),
+                    );
+                }
             }
         }
     }
