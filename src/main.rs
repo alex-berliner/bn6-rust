@@ -79,15 +79,26 @@ fn main(mut gba: agb::Gba) -> ! {
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     // The backdrop draws in bank 0, as it does on the real ROM.
-    palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
+    // The backdrop draws in bank 0, as it does on the real ROM -- but ONLY
+    // where it is drawn. The sterile arena shows no backdrop, and handing bank
+    // 0 to it there costs the barrier bubble its colours: Barrier goes from
+    // 0.8 px/frame to 766. The field itself does not use bank 0, which is why
+    // taking it is safe in a full battle.
+    if !cfg!(feature = "demo-sterile") {
+        palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
+    }
     for (i, p) in results.palettes().into_iter().enumerate() {
         palettes[9 + i] = p;
     }
     // After the results windows, which also want bank 9: the gauge holds it
     // while the fight is up and the chip window borrows it back when it opens.
-    let hud_tiles_palettes = hudtiles::HudTiles::new(HUD_TILES, TEXT_FONT);
-    palettes[hudtiles::BANK as usize] = hud_tiles_palettes.palette();
-    palettes[hudtiles::GAUGE_BANK as usize] = hud_tiles_palettes.gauge_palette();
+    // Scoped: these exist only to read their palettes. Held past the block
+    // they keep a background and its tiles claimed for the whole program.
+    {
+        let hud = hudtiles::HudTiles::new(HUD_TILES, TEXT_FONT);
+        palettes[hudtiles::BANK as usize] = hud.palette();
+        palettes[hudtiles::GAUGE_BANK as usize] = hud.gauge_palette();
+    }
     gfx.set_background_palettes(&palettes);
 
     loop {

@@ -338,6 +338,15 @@ ITS TRIGGER IS THE OPPOSITE of the obvious one: the real ROM names the chip ABOU
 not the one in flight. On a capture with A at frame 40, the name stands from frame 0 and clears
 on frame 42, the frame the chip fires, so it follows the front of the hand.
 
+A TRAP WORTH KNOWING: the backdrop takes BG palette bank 0, which is what the real ROM does and
+what makes the backdrop match, but handing it bank 0 in the STERILE arena costs the barrier
+bubble its colours -- Barrier goes from 0.8 px/frame to 766, with the bubble not drawn at all.
+The field does not use bank 0, which is why taking it is safe in a full battle. So the assignment
+is gated on not being sterile. This was found by bisecting the chip scoreboard across the tile
+commits, which is worth doing after any change to palette banks: the chip captures and the tile
+captures use different builds, and a change that is right for one can be silently wrong for the
+other.
+
 WHOLE-SCREEN TILE PARITY, sprites off: 7523 px, from 10134. By band: HUD strip 3610, backdrop
 2808, field 147, name strip 958. None of it is missing art -- it is live state (the captured
 battle is at 60 HP with a full gauge holding a Cannon; a demo is at 100 with an empty gauge and a

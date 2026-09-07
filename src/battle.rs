@@ -551,10 +551,12 @@ pub struct Battle<'a> {
     bombs: Vec<Bomb>,
     panels: Panels,
     bg: RegularBackground,
-    backdrop: crate::backdrop::Backdrop,
+    /// Absent in the sterile arena, which shows neither: building them there
+    /// still claimed video memory and starved the barrier bubble's sprite.
+    backdrop: Option<crate::backdrop::Backdrop>,
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
-    hud_tiles: crate::hudtiles::HudTiles,
+    hud_tiles: Option<crate::hudtiles::HudTiles>,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
     /// the Mettaur alone so the hand and chips can be tried without the
@@ -912,9 +914,20 @@ impl<'a> Battle<'a> {
             bombs: Vec::new(),
             panels,
             bg,
-            backdrop: crate::backdrop::Backdrop::new(crate::BACKDROP),
+            backdrop: if cfg!(feature = "demo-sterile") {
+                None
+            } else {
+                Some(crate::backdrop::Backdrop::new(crate::BACKDROP))
+            },
             field_slide: 0,
-            hud_tiles: crate::hudtiles::HudTiles::new(crate::HUD_TILES, crate::TEXT_FONT),
+            hud_tiles: if cfg!(feature = "demo-sterile") {
+                None
+            } else {
+                Some(crate::hudtiles::HudTiles::new(
+                    crate::HUD_TILES,
+                    crate::TEXT_FONT,
+                ))
+            },
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -946,12 +959,11 @@ impl<'a> Battle<'a> {
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
-        #[cfg(not(feature = "demo-sterile"))]
-        {
-            self.backdrop.update();
-            self.hud_tiles.set_menu(self.custom.is_some());
-            self.hud_tiles.set_hp(self.megaman.hp());
-            self.hud_tiles.set_gauge(self.gauge, GAUGE_FULL);
+        if self.backdrop.is_some() {
+            self.backdrop.as_mut().unwrap().update();
+            self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
+            self.hud_tiles.as_mut().unwrap().set_hp(self.megaman.hp());
+            self.hud_tiles.as_mut().unwrap().set_gauge(self.gauge, GAUGE_FULL);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
@@ -959,9 +971,9 @@ impl<'a> Battle<'a> {
             match self.hand.get(self.hand_at) {
                 Some(&id) => {
                     let chip = self.chips.get(id.id as usize);
-                    self.hud_tiles.set_name(Some((chip.name(), id.power)));
+                    self.hud_tiles.as_mut().unwrap().set_name(Some((chip.name(), id.power)));
                 }
-                None => self.hud_tiles.set_name(None),
+                None => self.hud_tiles.as_mut().unwrap().set_name(None),
             }
             // The field slides down out of the window's way and back again:
             // measured on the real ROM at 1.5 px a frame over ten frames to a
@@ -1004,10 +1016,12 @@ impl<'a> Battle<'a> {
                 // The window borrows banks 9-15, and the gauge's is 9, so it
                 // goes back last. On the real ROM the window covers this whole
                 // layer while it is up, which is why they can share a bank.
-                gfx.set_background_palette(
-                    crate::hudtiles::GAUGE_BANK,
-                    &self.hud_tiles.gauge_palette(),
-                );
+                if let Some(hud) = self.hud_tiles.as_ref() {
+                    gfx.set_background_palette(
+                        crate::hudtiles::GAUGE_BANK,
+                        &hud.gauge_palette(),
+                    );
+                }
                 {
                 }
                 self.gauge = 0;
@@ -1912,10 +1926,12 @@ impl<'a> Battle<'a> {
         // The sterile arena leaves the backdrop out for the same reason it
         // draws a plain field: the real ROM's captures strip their BG layers
         // with --disable-bg, so both sides must be MegaMan on black.
-        #[cfg(not(feature = "demo-sterile"))]
-        self.backdrop.show(frame);
-        #[cfg(not(feature = "demo-sterile"))]
-        self.hud_tiles.show(frame);
+        if let Some(backdrop) = self.backdrop.as_ref() {
+            backdrop.show(frame);
+        }
+        if let Some(hud) = self.hud_tiles.as_ref() {
+            hud.show(frame);
+        }
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
