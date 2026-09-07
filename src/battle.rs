@@ -448,6 +448,8 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
 /// throw, when the attack drops it (the real ROM shows it gone on the
 /// throw frame).
 const HELD_BOMB_FRAMES: u8 = THROW.strike_at - 1;
+/// The attack frame the flash bomb's ball is raised on.
+const HELD_RAISE_AT: u8 = 5;
 /// On a solid panel the landing spreads type-4 effect row 0 -- effect list
 /// 0x14 index 0, sprite_8399578, animation 0, 22 frames -- from the panel
 /// (sub_801BD3C, asm31.s:29569-29589) with sound 0x70.
@@ -572,6 +574,14 @@ pub struct Battle<'a> {
     /// frame-21 sprite -- but only from frames where the navi was still over
     /// there, so the trail is followed by position, not by a cut-off.
     step_dest: (i32, i32),
+    /// The flash bomb's held ball is RAISED partway through the throw, and its
+    /// sprite does not encode that -- every frame of it carries the same part
+    /// offsets, where MiniBomb's animation moves the bomb itself. Measured on
+    /// the real ROM: the ball sits at (37,88) through the attack's frame 4 and
+    /// at (51,64) from frame 5. This counts down to that move and carries
+    /// where to put it. It applies to the first effect, which for a bomb chip
+    /// is the held ball and the only one on the field then.
+    held_raise: Option<(u8, (i32, i32))>,
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -931,6 +941,7 @@ impl<'a> Battle<'a> {
             hand_at: 0,
             chip_in_use: None,
             sword_in: None,
+            held_raise: None,
             step_home: None,
             step_ghost: None,
             step_ghost2: None,
@@ -1518,6 +1529,16 @@ impl<'a> Battle<'a> {
         ) {
             counter.update(hp);
         }
+        if let Some((left, to)) = self.held_raise {
+            if left == 0 {
+                self.held_raise = None;
+                if let Some((_, pos, _, _)) = self.effects.first_mut() {
+                    *pos = to;
+                }
+            } else {
+                self.held_raise = Some((left - 1, to));
+            }
+        }
         // The afterimage is spawned on the attack's frame 0 and ages from
         // there; it is gone after frame 18.
         if let Some((_, _, age)) = self.step_ghost.as_mut() {
@@ -1723,6 +1744,9 @@ impl<'a> Battle<'a> {
                 // ROM against (59,98) drawn at the panel's origin.
                 let at = field::panel_centre(mc, mr);
                 let at = if flash { (at.0 - 22, at.1 - 10) } else { at };
+                if flash {
+                    self.held_raise = Some((HELD_RAISE_AT, (at.0 + 14, at.1 - 24)));
+                }
                 self.effects.push((
                     held,
                     at,

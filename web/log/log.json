@@ -490,5 +490,11 @@
     "file": "log/shots/1788768520-stack_zero.png",
     "caption": "The chip select window's pick stack, real ROM left and this build right, now identical to the pixel. Its two frame columns are the same pair of tiles, but the right column is the left one mirrored, which the real ROM's map does with a flip bit. Drawing both unmirrored left one tile column wrong down the whole stack: the same pixels in the same colours, just facing the wrong way, which is why the colour counts on the two sides matched exactly while 600 pixels differed. That was the hint worth following.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788769152,
+    "file": "log/shots/1788769152-flshbom_held.png",
+    "caption": "FlshBom's held ball, real ROM left and this build right, at both of its positions. The ball is raised partway through the throw, and unlike MiniBomb the sprite does not encode that: every frame of it carries the same part offsets, so the game moves the object itself. Measured, it sits at one spot through the attack's frame 4 and another from frame 5. With that and the sprite's own part offsets, the whole held phase is within 51 pixels a frame and the chip is at 102, from unimplemented.",
+    "tag": "chips"
   }
 ]
