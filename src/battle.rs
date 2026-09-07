@@ -1142,6 +1142,15 @@ impl<'a> Battle<'a> {
                 // has the navi home 24 frames into the attack.
                 if let Some((col, row)) = self.step_home.take() {
                     self.megaman.warp_to(col, row);
+                    // The sword goes with it. On the real ROM the sword's
+                    // last frames are drawn over the HOME panel from frame 24
+                    // -- OAM has its blade tip at (41,58) there while the far
+                    // panel keeps only the afterimage -- so an attack object
+                    // follows the navi rather than staying where it spawned.
+                    let home = field::panel_centre(col, row);
+                    for (_, pos, _, _) in self.effects.iter_mut() {
+                        *pos = home;
+                    }
                 }
             }
             Update::Strike { .. } if self.chip_in_use.is_some() => {

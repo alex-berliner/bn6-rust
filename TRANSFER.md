@@ -420,13 +420,18 @@ What is actually true, measured per frame from the framebuffer:
   It stops taking new frames once the navi goes home and holds the last pose it had on that
   panel: refreshing past the return puts the navi's HOME pose on the far panel and costs 1090 px
   on frames 32-33 instead of 68.
-- StepSwrd now scores 67 px/frame over 40 frames, from 340. Frames 0-19 are all 0 except the
-  standing banner artifact at 6 and one stray pixel on 16 and 17.
-- WHAT IS LEFT, and the lead for it: frames 20-21 (206), 24-29 (152-954) and 32-33 (68). OAM on
-  those frames carries a 16x16 object nothing here draws, sitting above and left of the navi --
-  at (41,58) over the home panel on frames 24 and 26, and at (121,58) over the far panel from
-  frame 20 through 32, growing out of an 8x8 that sits at (124,60) from frame 8. That is the
-  pink ring seen in the strips. Its sprite has not been identified.
+- THE SWORD FOLLOWS THE NAVI. The 16x16 object that appears over the HOME panel at (41,58) from
+  frame 24 is the sword's blade tip, not a warp effect -- pulled out of OBJ VRAM with its palette
+  and drawn, it is plainly the blade. So an attack object is positioned relative to the navi and
+  moves with it, rather than staying where it spawned: when StepSwrd sends the navi home the
+  sword goes too. Implemented in the Recovering branch, and it takes frames 24-27 from 152/168
+  to 68/0.
+- StepSwrd now scores 52 px/frame over 40 frames, from 340, with 30 of the 40 at exactly 0.
+- WHAT IS LEFT: the afterimage copies the SWORD as well as the navi. On frames 20-21 the far
+  panel's blade tip is drawn in the red bank ((24,0,0) and (231,0,0) where this draws the sword's
+  own teal and white), and the same 68 px sits on 24-25, 28 and 32-33. Doing it needs the sword's
+  sprite frame in the trail beside the navi's. Frame 29 (954 px, spanning both panels) is a
+  separate question. Frame 6 is the standing banner artifact.
 
 Capture modes, and what each costs:
 - A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
