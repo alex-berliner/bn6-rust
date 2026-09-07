@@ -16,7 +16,17 @@ Format (little-endian):
   0x04  u32 version
   0x08  u32 variant count, then per variant:
           u32 tiles_len, tiles (4-aligned); u32 w, u32 h, w*h u16 map
-  then  u32 -> palette: 3 banks * 32 bytes (offset stored at 0x0c)
+  then  u32 -> palette: 4 banks * 32 bytes (offset stored at 0x0c), the
+        fourth being the reward picture's own bank 12, then the reward
+        picture's 42 tiles
+
+THE REWARD PICTURE, the coin in the GET DATA box, is a 7x6 image the game
+draws into the window's map at columns 14-20, rows 10-15 in bank 12 -- the
+same shape as a chip card's picture. It is dword_8732E54 and its palette
+dword_8733394, both found by taking the 42 tiles out of a live results
+screen's char block and matching them byte for byte. It is kept as its own
+tileset rather than padded into the window's blob, which would cost 15 KB of
+zeroes to reach tile 0x1e8.
 """
 
 import os
@@ -30,6 +40,8 @@ BN6 = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reference"
 DAT = os.path.join(BN6, "data", "dat38_86.s")
 
 FONT_TILE = 0xA0
+#: The reward picture's size, in tiles: 7 wide by 6 tall, like a chip card's.
+REWARD_TILES = 42
 VARIANTS = [
     ("byte_872F3F4", 0xE60, "dword_8731DF4", True),
     ("dword_8731154", 0xCA0, "dword_87324B4", False),
@@ -60,6 +72,12 @@ def main():
         out.append(0)
     struct.pack_into("<I", out, 0x0C, len(out))
     out += read_symbol(DAT, "dword_8732814", max_bytes=96, through_labels=True)
+    out += read_symbol(DAT, "dword_8733394", max_bytes=32, through_labels=True)[:32]
+    while len(out) % 4:
+        out.append(0)
+    coin = read_symbol(DAT, "dword_8732E54", max_bytes=REWARD_TILES * 32, through_labels=True)
+    assert len(coin) == REWARD_TILES * 32
+    out += coin
     with open(out_path, "wb") as f:
         f.write(out)
     print(f"{out_path}: {len(out)} bytes ({len(VARIANTS)} variants)")

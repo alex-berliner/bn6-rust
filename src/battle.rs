@@ -52,6 +52,8 @@ const PLAYER_HP: u16 = 100;
 /// makes the HUD comparison like for like, so a difference is art rather than
 /// state. Build with demo-hudmatch.
 const HUDMATCH_HP: u16 = 60;
+/// The capture's clear time, 0:29:33, in frames.
+const RESULTMATCH_TIME: u32 = 1760;
 // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
 // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
 // pick a damage row (asm31.s:153414-153526): the cross slash reads
@@ -1100,6 +1102,17 @@ impl<'a> Battle<'a> {
         }
     }
 
+    /// Put the results window up, taking its palette banks back first. The
+    /// window draws in banks 9-11 and the CUSTOM gauge holds bank 9 for the
+    /// whole fight, so without this the window comes up in the gauge's greens
+    /// and yellows instead of its own grey and blue.
+    fn show_results(&mut self, kind: usize, time: u32, level: u8, gfx: &Graphics) {
+        for (i, p) in self.results.palettes().iter().enumerate() {
+            gfx.set_background_palette(custom::BANK + i as u8, p);
+        }
+        self.shown = Some(self.results.show(kind, time, level, 0));
+    }
+
     /// Run one frame of battle logic. Returns true once the results window
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
@@ -1240,6 +1253,13 @@ impl<'a> Battle<'a> {
         if !paused {
             self.clock += 1;
         }
+        // The results fixture puts the window up at once with the capture's
+        // own readout -- 0:29:33 is 1760 frames, busting level 2 -- so the
+        // window can be compared against /tmp/noenemy2.state. Without it the
+        // demo needs a chip press the capture harness cannot land.
+        if cfg!(feature = "demo-resultmatch") && self.shown.is_none() && self.fade_out == 0 {
+            self.show_results(results::WIN, RESULTMATCH_TIME, 2, gfx);
+        }
         if over && self.shown.is_none() && self.fade_out == 0 {
             if self.results_delay > 0 {
                 self.results_delay -= 1;
@@ -1250,12 +1270,8 @@ impl<'a> Battle<'a> {
                     hits_taken: self.megaman.hits_taken(),
                     moves: self.moves,
                 });
-                self.shown = Some(self.results.show(
-                    if won { results::WIN } else { results::LOSE },
-                    self.clock,
-                    level,
-                    0,
-                ));
+                let kind = if won { results::WIN } else { results::LOSE };
+                self.show_results(kind, self.clock, level, gfx);
             }
         }
         if let Some(window) = self.shown.as_mut() {

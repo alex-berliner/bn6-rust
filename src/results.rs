@@ -19,16 +19,28 @@ const MAGIC: &[u8; 4] = b"BNRS";
 pub const WIN: usize = 0;
 pub const LOSE: usize = 1;
 
-const REST_X: i32 = 3;
+/// Where the window rests, measured against the real ROM by aligning the two
+/// windows: 24 px right and 16 px down of what this build had, which is 3
+/// TILES and 2 tiles -- the disassembly's 3 is a tile column, not a pixel.
+const REST_X: i32 = 24;
 const START_X: i32 = -30;
 const SLIDE_STEP: i32 = 2;
-/// The window is 18 tiles tall on a 20-tile screen; where the game puts it
-/// vertically is not read, so it is centred.
-const Y: i32 = 8;
+/// And two tile rows down.
+const Y: i32 = 16;
 const DISMISS_FRAMES: u8 = 0x14;
 /// The clear time is capped at 9'59"99 (dword_802C548).
 const TIME_CAP: u32 = 0x95999;
 const DIGIT_COLS: [usize; 5] = [20, 19, 17, 16, 14];
+/// The reward picture: 7x6 tiles at these window columns and rows, in the
+/// fourth palette bank. Read off a live results screen's map.
+const REWARD_W: usize = 7;
+const REWARD_H: usize = 6;
+const REWARD_TILES: usize = REWARD_W * REWARD_H;
+const REWARD_COL: i32 = 14;
+const REWARD_ROW: i32 = 10;
+/// The palette bank it draws in, which is the fourth this asset carries: the
+/// window's own are 9-11 and the picture's is 12.
+const REWARD_BANK: u8 = 12;
 const FONT_TILE: u16 = 0xa0;
 /// The level readout sits at row 6, columns 16-20, its digits right-aligned;
 /// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
@@ -84,6 +96,10 @@ struct Variant {
 pub struct Results {
     variants: [Variant; 2],
     palette: &'static [u8],
+    /// The reward picture in the GET DATA box -- the zenny coin -- and its
+    /// own bank. The game draws it into the window's map as a 7x6 image, the
+    /// same shape as a chip card's picture.
+    reward: TileSet,
 }
 
 enum Phase {
@@ -141,15 +157,21 @@ impl Results {
         let b = variant();
         Self {
             variants: [a, b],
-            palette: &data[pal..pal + 96],
+            palette: &data[pal..pal + 128],
+            // SAFETY: the exporter 4-aligns the blob and emits whole tiles.
+            reward: unsafe {
+                TileSet::new(&data[pal + 128..pal + 128 + REWARD_TILES * 32], TileFormat::FourBpp)
+            },
         }
     }
 
     /// The three palette banks the windows use, for background banks 9-11.
-    pub fn palettes(&self) -> [Palette16; 3] {
+    pub fn palettes(&self) -> [Palette16; 4] {
         core::array::from_fn(|bank| {
             let mut colours = [Rgb15::new(0); 16];
             for (i, slot) in colours.iter_mut().enumerate() {
+                // Banks 9-11 are the window's; the fourth is the reward
+                // picture's bank 12, which the exporter appends.
                 let o = bank * 32 + i * 2;
                 *slot = Rgb15::new(u16::from_le_bytes(
                     self.palette[o..o + 2].try_into().unwrap(),
@@ -214,6 +236,15 @@ impl Results {
                     }
                     col -= 1;
                 }
+            }
+        }
+        if variant == WIN {
+            for k in 0..REWARD_TILES {
+                bg.set_tile(
+                    (REWARD_COL + (k % REWARD_W) as i32, REWARD_ROW + (k / REWARD_W) as i32),
+                    &self.reward,
+                    TileSetting::new(k as u16, TileEffect::new(false, false, REWARD_BANK)),
+                );
             }
         }
         bg.set_scroll_pos((-START_X, -Y));

@@ -598,5 +598,11 @@
     "file": "log/shots/1788779171-scoreboard.png",
     "caption": "The chip scoreboard, every comparison run in one pass: 36 of 38 exact. Each row is a chip's mean pixels per frame against its FLOOR -- the mean the ENEMY DELETED banner's single unmovable frame alone puts on a run of that length, 369 divided by the frame count -- so a chip is exact when its mean equals its floor. Running them all together immediately caught something a chip-at-a-time check had missed: the chip-in-hand icon's palette was being allocated for every battle, including the sterile arena that never draws it, and SuprVulc -- the longest volley in the game -- then ran out of object palette banks and crashed. It reads its floor now. The two that are not exact are BlkBomb, over by 2.2 a frame, and LilBolr by 26.9, both a one-pixel wobble on a handful of frames.",
     "tag": "chip"
+  },
+  {
+    "t": 1788780208,
+    "file": "log/shots/1788780208-rm_final.png",
+    "caption": "The RESULT window, real ROM left and this build middle: it had never been compared, because the demo needs a chip press the capture harness cannot land. demo-resultmatch puts it up at once with the capture's own readout -- 0:29:33 is 1760 frames, busting level 2 -- and three things came out of it. The window RESTED IN THE WRONG PLACE: 24 px right and 16 px down of where this build had it, which is three tile columns and two tile rows, so the disassembly's 'rests at x = 3' is a tile column and not a pixel. ITS PALETTES WERE THE GAUGE'S: the window draws in banks 9 to 11 and the CUSTOM gauge holds bank 9 all fight, so it came up in the gauge's greens and yellows until the banks were taken back on open. And the REWARD PICTURE was missing -- the coin in the GET DATA box is a 7x6 image, the same shape as a chip card's, at dword_8732E54 with its own palette bank. The window box is down to 553 px, all of it the '100 z' reward text, which is composed at runtime from a proportional font this build does not have yet -- the same thing that blocks the chip card's name.",
+    "tag": "hud"
   }
 ]
