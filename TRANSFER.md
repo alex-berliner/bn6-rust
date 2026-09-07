@@ -417,6 +417,41 @@ What is already known about PoisSeed, from a sterile capture with chip 0x46 poke
   colours, and SWEEP the constants against the capture rather than fitting a parabola to the
   tracked centroid (7x's note on why).
 
+## 7aa. One launcher throws them all (2026-09-07)
+
+Sweeping the three arc constants of the three worst chips landed all three on the SAME across-
+speed, and two of them on the same gravity:
+
+| chip     | vx           | vz      | gravity      | before | after | floor |
+|----------|--------------|---------|--------------|--------|-------|-------|
+| BlkBomb  | 0x2C000      | 0x22051 | 0x27C0       | --     | exact | 7.4   |
+| BugBomb  | = BlkBomb's  | 0x25D60 | = BlkBomb's  | 35.4   | 6.4   | 5.3   |
+| LilBolr  | = BlkBomb's  | 0x22280 | 0x27F0       | 34.6   | 9.1   | 7.7   |
+| VDoll    | 0x1EF00      | 0x31600 | 0x2060       | 10.7   | 7.3   | 5.3   |
+
+So the thrown things share a launcher and differ mostly in how hard it throws. When a new chip's
+arc needs fitting, START from BLKBOMB_VX and BLKBOMB_GRAVITY and sweep vz alone -- that is one
+dimension instead of three, and it is where two of these three ended up anyway. VDoll is the
+exception, and it is the one that is not a bomb.
+
+HOW TO SWEEP. `tools/chip_compare.py` reports a mean; a shell loop that seds the three constants,
+runs it, and restores them at exit does the search in about 25 seconds a point. Do not sweep one
+constant at a time to the end: vz and gravity trade off along a RIDGE (a taller throw with a
+harder pull looks the same), so step along the ridge, not across it. Every minimum found here was
+a plateau several hundred wide; take the middle.
+
+WHAT IS LEFT IS NOT THE ARC. Each of the three now has a handful of pixels on a handful of
+frames, and tracking the object's bounding box frame by frame shows the paths agreeing exactly.
+- BugBomb: one frame, 80 px, the last frame before it lands.
+- LilBolr: three frames at the start, 68 px, the boiler's FLAME animation a step out of phase.
+- PoisSeed (6.9, never an arc problem): the pod's GROUND SHADOW on six frames, 115 px. Measured
+  against a later frame of the same capture, the real shadow covers 218 pixels on the first frame
+  of flight and shrinks to 196 over six -- which is the fixed size this build draws throughout.
+  So the shadow starts LARGER and settles; it does not keep shrinking as the pod climbs, and it
+  never grows back on the way down. NOT EXPLAINED: what drives those six frames.
+Track the bounding box before touching a constant: if it already matches, the arc is right and
+the residue is animation or a part, not physics.
+
 ## 7x. The RESULT window (2026-09-07)
 
 It had never been compared: demo-results needs a chip press the capture harness cannot land, so

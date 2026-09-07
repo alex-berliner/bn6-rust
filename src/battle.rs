@@ -182,18 +182,21 @@ const VDOLL_ANIM: usize = 1;
 const VDOLL_HELD_ANIM: usize = 0;
 /// How long a landed one stands. Nothing removes it in the capture.
 const RESTS_FRAMES: u8 = 255;
-/// BugBomb's ball flies flatter and slower than a bomb: fitted against the
-/// ball tracked by its five grey-violet colours over the whole flight, then
-/// swept against the capture.
-const BUG_VX: i32 = 0x2C3E0;
-const BUG_VZ: i32 = 0x26640;
-const BUG_GRAVITY: i32 = 0x2900;
+/// BugBomb's ball flies flatter than a bomb. Swept against the capture --
+/// tracking the ball and fitting its arc gets close and then stops improving,
+/// as it did for BlkBomb -- and the sweep landed EXACTLY on BlkBomb's own
+/// across-speed and gravity, so the two chips are thrown by one launcher and
+/// differ only in how hard it throws. The sweep's minimum is a plateau
+/// 0x25D40..0x25D80 wide; the middle of it is taken.
+const BUG_VX: i32 = BLKBOMB_VX;
+const BUG_VZ: i32 = 0x25D60;
+const BUG_GRAVITY: i32 = BLKBOMB_GRAVITY;
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
 /// top of the screen and hangs there -- so it gets its own launch, gravity
 /// and flight. Fitted against the doll tracked by its four ochre colours.
-const VDOLL_VX: i32 = 0x1F168;
-const VDOLL_VZ: i32 = 0x30400;
-const VDOLL_GRAVITY: i32 = 0x1F40;
+const VDOLL_VX: i32 = 0x1EF00;
+const VDOLL_VZ: i32 = 0x31600;
+const VDOLL_GRAVITY: i32 = 0x2060;
 const VDOLL_FLIGHT: u8 = 60;
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
@@ -502,9 +505,9 @@ const BOILER_HP_DOWN: i32 = 3;
 /// gravity) pairs give the same five frames, and no parabola reproduces the
 /// real sequence exactly -- which fits the chip being a SUMMON: what it lobs
 /// is the LilBoiler virus, and its arrival path need not be physics at all.
-const LILBOLR_VX: i32 = 0x2C300;
-const LILBOLR_VZ: i32 = 0x226A0;
-const LILBOLR_GRAVITY: i32 = 0x2860;
+const LILBOLR_VX: i32 = BLKBOMB_VX;
+const LILBOLR_VZ: i32 = 0x22280;
+const LILBOLR_GRAVITY: i32 = 0x27F0;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -2489,9 +2492,13 @@ impl<'a> Battle<'a> {
         }
         // The emotion window is OAM objects 2 and 3 on the real ROM, so it
         // goes in before anything the fight draws and stands over all of it.
-        // It goes with the fight: the real ROM drops it once the RESULT window
-        // is up, the same as the gauge (/tmp/noenemy2.state has neither).
-        if self.shown.is_none() && self.fade_out == 0 {
+        // It goes with the fight, and the fight ends when the last enemy does:
+        // /tmp/noenemy2.state has no emotion window with its RESULT window up,
+        // and neither does a sterile capture, whose enemy the harness deletes
+        // on the first frame. So it is drawn only while an enemy is still
+        // standing.
+        let fighting = !self.enemies.is_empty() && !self.enemies.iter().all(|e| e.is_defeated());
+        if fighting && self.shown.is_none() && self.fade_out == 0 {
             self.emotion.show(frame);
         }
         // The chip at the front of the hand hangs over the navi as a 16x16
