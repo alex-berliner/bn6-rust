@@ -190,13 +190,29 @@ const fn vulcan_shots(id: u16) -> u8 {
     }
 }
 
+/// The firing state's length and the recovery that follows, per shot
+/// count. Measured on the real ROM: the firing pose's last frame -- recoil
+/// plus muzzle flash -- is c21, c35 and c46 for Vulcan1/2/3 (the pose
+/// starts at c2), and the gun is on screen 35, 46 and 57 frames, which
+/// leaves the recoveries below. The state machine's own tick rate does not
+/// map to frames one-for-one, so these are the measurements rather than a
+/// formula.
+const fn vulcan_timing(shots: u8) -> (u8, u8) {
+    match shots {
+        4 => (34, 10),
+        5 => (45, 10),
+        _ => (20, 13),
+    }
+}
+
 const fn vulcan(shots: u8) -> actor::AttackSpec {
+    let (frames, recover) = vulcan_timing(shots);
     actor::AttackSpec {
         windup: Some((0xa, 2)),
         anim: 0xd,
-        frames: 20 + (shots - 3) * 11,
+        frames,
         strike_at: 1,
-        recover: 13,
+        recover,
         recover_anim: Some(0xa),
     }
 }

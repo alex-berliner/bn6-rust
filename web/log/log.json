@@ -292,5 +292,11 @@
     "file": "log/game/1788743781-areagrab.png",
     "caption": "AREAGRAB: the field now tracks per-panel ownership. Each grab takes the enemy's front-most column a row at a time, skipping any panel someone stands on -- three grabs in this demo move the boundary from 3/3 to 5/1, with the Mettaur's own panel left as the enemy's. Movement bounds follow ownership, so the stolen columns open up for the player.",
     "tag": "game"
+  },
+  {
+    "t": 1788744549,
+    "file": "log/proof/1788744549-vulcan_diff.png",
+    "caption": "Vulcan2/Vulcan3's last differing frame, before the fix: real (top) still in the firing pose with recoil and muzzle flash, ours (middle) already in recovery. Measuring the firing pose's last frame (c21/c35/c46) and the gun's life (35/46/57) gave the per-volley timings that took both to zero.",
+    "tag": "proof"
   }
 ]
