@@ -539,6 +539,31 @@ and now does -- a drop of ten goes 5, 4, 1 on both sides.
 NOT VERIFIED: the heal flash. Nothing in the capture heals the navi, so the same ramp is used for
 both.
 
+## 7ak. One command for every check (2026-09-07)
+
+`python3 tools/regress.py` runs all of them: the 43-chip scoreboard, the battle screen's tiles,
+a whole frame with sprites, the chip window, the preview card, the RESULT window, the navi's
+warp, the buster and a chip use. Each check rebuilds its own ROM, captures both sides, aligns
+them the way that fixture is aligned, and prints what it got against what it should get.
+`--only name,...` runs a subset; `--list` shows the numbers.
+
+WHY IT EXISTS. The scoreboard covered the chips and everything else was run by hand, one fixture
+at a time -- which is exactly how a regression in one survives a session spent on another. Two of
+today's changes helped one fixture and cost others, and both were caught only because somebody
+remembered to check.
+
+A check's `want` is what it measured when last verified, not zero: `chips` wants 7 (BugBomb,
+VDoll and the five name-flash chips) and `chip-use` wants 256 (the chip-in-hand icon, one frame).
+A check that comes out BETTER says so, and its number should be written down.
+
+AND EXACT NOW MEANS ZERO. The scoreboard's old "floor" -- 369 px of ENEMY DELETED banner on one
+frame of every comparison -- is gone: `patch_sterile.py` patches out sub_801E838, the routine
+that uploads the banner's text. Removing it exposed five chips that had been passing against the
+floor while carrying a real residue: AreaGrab, Invisibl, Barrier, Barr100 and Barr200 each flash
+the CHIP'S NAME as eight 8x16 objects at (28,32) for one frame, out of the same OBJ VRAM the
+banner uses, and this build draws nothing there. That is the argument for patching a thing out
+rather than measuring around it: a floor hides whatever else is under it.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
