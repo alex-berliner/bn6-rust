@@ -376,5 +376,11 @@
     "file": "log/shots/1788760028-field_zero.png",
     "caption": "The field tile layer now matches the real ROM exactly, zero pixels different across the whole layer. It was short by one tilemap row: the real ROM draws a front lip below the bottom panel row, five tiles repeating per column in that column's own side palette, which is the six pixels the field was missing at the bottom. Its tiles were already in the exported tileset, so this added a tilemap row and no new art. Found by teaching the capture harness to leave exactly one background layer on.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788760639,
+    "file": "log/shots/1788760639-backdrop_done.png",
+    "caption": "The battle backdrop is implemented and matches the real ROM: all 1024 cells of its tilemap carry identical tile art and identical flip and palette bits, and it scrolls at the real rate, one pixel left every two frames and one pixel up every four. The hand-off doc had recorded that the tilemap is not in any ROM data blob and that the tile blob's order is not the order the game uploads. Matching every tile byte for byte against the blob resolved both: the map is stored as blob indices, so the exporter needs only the disassembly.",
+    "tag": "tiles"
   }
 ]

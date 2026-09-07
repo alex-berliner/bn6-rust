@@ -8,6 +8,7 @@ extern crate alloc;
 
 mod actor;
 mod ai;
+mod backdrop;
 mod battle;
 mod chips;
 mod custom;
@@ -57,6 +58,7 @@ static CHIPS: &[u8] = &Aligned(*include_bytes!("../assets/chips.bin")).0;
 static CUSTOM: &[u8] = &Aligned(*include_bytes!("../assets/custom.bin")).0;
 static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
+static BACKDROP: &[u8] = &Aligned(*include_bytes!("../assets/backdrop.bin")).0;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -73,6 +75,8 @@ fn main(mut gba: agb::Gba) -> ! {
     let mut rng = deck::Rng::new(0x2f6b_75a1);
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
+    // The backdrop draws in bank 0, as it does on the real ROM.
+    palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
     for (i, p) in results.palettes().into_iter().enumerate() {
         palettes[9 + i] = p;
     }

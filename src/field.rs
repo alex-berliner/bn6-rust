@@ -89,8 +89,10 @@ impl Field {
     }
 
     pub fn background(&self, panels: &Panels) -> RegularBackground {
+        // The real ROM has the field on BG2 at priority 2 with the backdrop
+        // behind it on BG1 at priority 3.
         let mut bg = RegularBackground::new(
-            Priority::P3,
+            Priority::P2,
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );

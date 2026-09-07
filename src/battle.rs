@@ -546,6 +546,7 @@ pub struct Battle<'a> {
     bombs: Vec<Bomb>,
     panels: Panels,
     bg: RegularBackground,
+    backdrop: crate::backdrop::Backdrop,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
     /// the Mettaur alone so the hand and chips can be tried without the
@@ -903,6 +904,7 @@ impl<'a> Battle<'a> {
             bombs: Vec::new(),
             panels,
             bg,
+            backdrop: crate::backdrop::Backdrop::new(crate::BACKDROP),
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -934,6 +936,7 @@ impl<'a> Battle<'a> {
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
     pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+        self.backdrop.update();
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
         // The sterile arena never concludes: MegaMan is alone, so the
@@ -1860,6 +1863,7 @@ impl<'a> Battle<'a> {
     }
 
     pub fn draw(&mut self, frame: &mut GraphicsFrame) {
+        self.backdrop.show(frame);
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen
