@@ -47,10 +47,13 @@ def frame(dirname, i):
 
 
 XMAX = 140
+# With --bg the real ROM keeps its field, background and HUD, so the whole
+# screen is compared rather than the navi's half.
+BACKGROUNDS = False
 
 
 def differs(a, b, box=None):
-    box = box or (0, 40, XMAX, 160)
+    box = box or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
     d = ImageChops.difference(a.crop(box), b.crop(box))
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
 
@@ -96,14 +99,17 @@ def capture_real(chip, out, count):
         "--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0",
         *library_pokes(int(chip, 16)),
         "--cheat", f"{HAND_SLOT}:0x{chip}",
-        "--zero", BANNER_TILES, "--disable-bg",
+        "--zero", BANNER_TILES,
+        *([] if BACKGROUNDS else ["--disable-bg"]),
         "--script", f"Start@10,A@{REAL_A_FRAME}",
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def build_and_capture_rust(feature, out, count):
-    features = f"demo-sterile,{feature},demo-auto"
+    # With backgrounds the Rust side needs its field and HUD, so the sterile
+    # arena is left out; the demo feature places the navi itself.
+    features = f"{feature},demo-auto" if BACKGROUNDS else f"demo-sterile,{feature},demo-auto"
     subprocess.run(
         ["cargo", "build", "--release", "--features", features],
         cwd=ROOT, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -151,13 +157,16 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--bg", action="store_true",
+                    help="keep the real ROM's backgrounds and compare the whole screen")
     ap.add_argument("--xmax", type=int, default=140,
                     help="right edge of the diff window (the real capture's deleted Mettaur remnant sits at x>=149 for ~45 frames)")
     ap.add_argument("--rust-start", type=int, default=None,
                     help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
-    global XMAX
-    XMAX = args.xmax
+    global XMAX, BACKGROUNDS
+    BACKGROUNDS = args.bg
+    XMAX = 240 if args.bg else args.xmax
     real = os.path.join(args.out, "real_" + args.chip)
     rust = os.path.join(args.out, "rust_" + args.feature)
     os.makedirs(args.out, exist_ok=True)

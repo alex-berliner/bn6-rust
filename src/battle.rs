@@ -359,27 +359,7 @@ pub struct Battle<'a> {
 /// (A fires the first at once), and the lone enemy to place so that chip
 /// connects on the first press. Enemy-only demos leave the hand empty and
 /// just field their navi. None when no demo feature is on.
-#[cfg(any(
-    feature = "demo-buster",
-    feature = "demo-sword",
-    feature = "demo-wideswrd",
-    feature = "demo-longswrd",
-    feature = "demo-hicannon",
-    feature = "demo-recov30",
-    feature = "demo-invisibl",
-    feature = "demo-barrier",
-    feature = "demo-minibomb",
-    feature = "demo-cannon",
-    feature = "demo-vulcan",
-    feature = "demo-airshot",
-    feature = "demo-recovery",
-    feature = "demo-mettaur",
-    feature = "demo-gunner",
-    feature = "demo-protoman",
-    feature = "demo-colonel",
-    feature = "demo-results",
-    feature = "demo-sterile",
-))]
+#[cfg(feature = "demo")]
 fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Style, u16)>) {
     let mut hand = alloc::vec::Vec::new();
     // A sterile arena fields MegaMan alone at the same panel the real save
@@ -423,6 +403,15 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
     // three ahead of (3,2), so its target sits at (6,2). The target carries a
     // big HP so a chip demo can land several hits without the fight ending;
     // demo-results uses the real 40 so one hit brings the window up.
+    // The real ROM's pausedwithcannon save state, for whole-screen
+    // comparisons: MegaMan at (2,2), a Mettaur at (5,2) kept alive.
+    if cfg!(feature = "demo-field") {
+        return (
+            hand,
+            2,
+            Some((spr::Assets::new(METTAUR), 5, 2, ai::Style::Mettaur, DEMO_TARGET_HP)),
+        );
+    }
     let megaman_col = 3;
     // Chip demos use a padded-HP target so several hits land without ending
     // the fight; enemy and results demos use the real HP below.
@@ -525,39 +514,11 @@ impl<'a> Battle<'a> {
         // A demo build also moves MegaMan up to the front of his half so the
         // featured chip reaches the target on the first press.
         let (demo_hand, demo_col, demo_enemy) = {
-            #[cfg(any(
-                feature = "demo-buster",
-                feature = "demo-sword",
-                feature = "demo-minibomb",
-                feature = "demo-cannon",
-                feature = "demo-vulcan",
-                feature = "demo-airshot",
-                feature = "demo-recovery",
-                feature = "demo-mettaur",
-                feature = "demo-gunner",
-                feature = "demo-protoman",
-                feature = "demo-colonel",
-                feature = "demo-results",
-                feature = "demo-sterile",
-            ))]
+            #[cfg(feature = "demo")]
             {
                 demo()
             }
-            #[cfg(not(any(
-                feature = "demo-buster",
-                feature = "demo-sword",
-                feature = "demo-minibomb",
-                feature = "demo-cannon",
-                feature = "demo-vulcan",
-                feature = "demo-airshot",
-                feature = "demo-recovery",
-                feature = "demo-mettaur",
-                feature = "demo-gunner",
-                feature = "demo-protoman",
-                feature = "demo-colonel",
-                feature = "demo-results",
-                feature = "demo-sterile",
-            )))]
+            #[cfg(not(feature = "demo"))]
             {
                 (alloc::vec::Vec::new(), 2, None)
             }

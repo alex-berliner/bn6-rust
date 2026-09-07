@@ -25,30 +25,36 @@ debug = true
 # AI can be seen alone. See tools/build_roms.sh.
 [features]
 default = []
-demo-buster = []
-demo-sword = []
-demo-wideswrd = []
-demo-longswrd = []
-demo-hicannon = []
-demo-recov30 = []
-demo-invisibl = []
-demo-barrier = []
-demo-minibomb = []
-demo-cannon = []
-demo-vulcan = []
-demo-airshot = []
-demo-recovery = []
-demo-mettaur = []
-demo-gunner = []
-demo-protoman = []
-demo-colonel = []
-demo-results = []
+# Every demo-* feature turns this on, so the battle only has to test one
+# feature to know it is a demo build.
+demo = []
+demo-buster = ["demo"]
+demo-sword = ["demo"]
+demo-wideswrd = ["demo"]
+demo-longswrd = ["demo"]
+demo-hicannon = ["demo"]
+demo-recov30 = ["demo"]
+demo-invisibl = ["demo"]
+demo-barrier = ["demo"]
+# The real save state's layout: MegaMan at (2,2), a Mettaur at (5,2), for
+# comparing the whole screen with backgrounds on.
+demo-field = ["demo"]
+demo-minibomb = ["demo"]
+demo-cannon = ["demo"]
+demo-vulcan = ["demo"]
+demo-airshot = ["demo"]
+demo-recovery = ["demo"]
+demo-mettaur = ["demo"]
+demo-gunner = ["demo"]
+demo-protoman = ["demo"]
+demo-colonel = ["demo"]
+demo-results = ["demo"]
 # A sterile test arena: MegaMan alone on a plain background, no field tiles,
 # no enemy and no win/lose conclusion, so a chip animation can be captured
 # frame-by-frame and compared pixel-per-pixel against the real ROM (which is
 # patched the same way). Pair with a demo-* chip feature.
-demo-sterile = []
+demo-sterile = ["demo"]
 # When combined with a demo-* chip feature, MegaMan fires the loaded hand
 # chips on a repeating timer instead of waiting for input, so a capture run
 # can watch the attack without key timing.
-demo-auto = []
+demo-auto = ["demo"]
