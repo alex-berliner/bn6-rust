@@ -63,6 +63,7 @@ demo-energbom = ["demo"]
 demo-megenbom = ["demo"]
 demo-lilbolr = ["demo"]
 demo-flshbom = ["demo"]
+demo-hudmatch = ["demo"]
 # The real save state's layout: MegaMan at (2,2), a Mettaur at (5,2), for
 # comparing the whole screen with backgrounds on.
 demo-field = ["demo"]

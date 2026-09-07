@@ -502,5 +502,11 @@
     "file": "log/shots/1788769481-hud_now.png",
     "caption": "HUD parity, real ROM above and this build below. The HP box's right cap is the left one mirrored, the same flip bit the pick stack's frame needed, and setting it takes the box from 149 differing pixels to 33. What is left across the whole HUD is live state and backdrop scroll phase, not art: the box's 33 is 60 against 100, the gauge's 880 is an empty bar against a full one with its marker cyan rather than orange, and the label row's 91 is backdrop showing through the gaps at a different scroll phase. The gauge's own caps are within 2 pixels.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788769996,
+    "file": "log/shots/1788769996-parity_zero.png",
+    "caption": "Per-pixel tile parity for the whole battle screen: zero differing pixels out of 38400, real ROM above and this build below with sprites off. Getting a true number needed a fixture that matches the captured battle's state, 60 HP with a full gauge and a Cannon in hand, so that a difference means art rather than state. Building it exposed a real bug that the state mismatch had been hiding: the chip name was read by indexing the chip table with the chip's id, but the table is in the exporter's own order, so every name was the wrong chip. Taking the name from the chip in hand fixes it, and every layer then reads zero: HUD, backdrop, field and name strip.",
+    "tag": "tiles"
   }
 ]

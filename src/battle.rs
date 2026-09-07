@@ -47,6 +47,11 @@ const DEMO_TARGET_HP: u16 = 900;
 // MegaMan's own HP does come from the disassembly: byte_80210DD
 // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
 const PLAYER_HP: u16 = 100;
+/// A fixture for HUD parity: the save state the tile captures come from has
+/// the navi at 60 HP with a full gauge and a Cannon in hand. Matching that
+/// makes the HUD comparison like for like, so a difference is art rather than
+/// state. Build with demo-hudmatch.
+const HUDMATCH_HP: u16 = 60;
 // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
 // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
 // pick a damage row (asm31.s:153414-153526): the cross slash reads
@@ -679,6 +684,7 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_LILBOLR1);
         } else if cfg!(feature = "demo-flshbom") {
             hand.push(CHIP_FLSHBOM1);
+
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
         } else if cfg!(feature = "demo-barr200") {
@@ -743,6 +749,13 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
     // Chip demos use a padded-HP target so several hits land without ending
     // the fight; enemy and results demos use the real HP below.
     let hp = DEMO_TARGET_HP;
+    // The HUD parity fixture: a Cannon in hand, so the name strip reads what
+    // the captured save state's does, with no enemy to disturb the field.
+    if cfg!(feature = "demo-hudmatch") {
+        hand.clear();
+        hand.push(CHIP_CANNON);
+        return (hand, megaman_col, None);
+    }
     if cfg!(feature = "demo-buster") {
         return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
     }
@@ -835,7 +848,11 @@ impl<'a> Battle<'a> {
         let glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
         let glow_state = 0usize;
         let player = actor::Profile {
-            hp: PLAYER_HP,
+            hp: if cfg!(feature = "demo-hudmatch") {
+                HUDMATCH_HP
+            } else {
+                PLAYER_HP
+            },
             mercy: actor::PLAYER_MERCY_FRAMES,
             death_frames: actor::PLAYER_DEATH_FRAMES,
         };
@@ -911,7 +928,11 @@ impl<'a> Battle<'a> {
         let shots: Vec<Shot> = Vec::new();
         // A debug build starts with the gauge full, so the first chip select
         // comes up right after the intro instead of after the counter runs.
-        let gauge = if cfg!(debug_assertions) { GAUGE_FULL } else { 0 };
+        let gauge = if cfg!(any(debug_assertions, feature = "demo-hudmatch")) {
+            GAUGE_FULL
+        } else {
+            0
+        };
         let gauge_pause = 0u16;
         let results_delay = RESULTS_DELAY;
         let shown: Option<results::Shown> = None;
@@ -1014,9 +1035,15 @@ impl<'a> Battle<'a> {
             // The window covers the name strip while the menu is up, and the
             // real ROM draws no name there then.
             match self.hand.get(self.hand_at).filter(|_| self.custom.is_none()) {
-                Some(&id) => {
-                    let chip = self.chips.get(id.id as usize);
-                    self.hud_tiles.as_mut().unwrap().set_name(Some((chip.name(), id.power)));
+                // The hand holds the chip itself, so take its name from that.
+                // Indexing the chip table BY ID names the wrong chip: the
+                // table is in the exporter's own order, where index 1 is
+                // HiCannon while chip id 1 is Cannon.
+                Some(chip) => {
+                    self.hud_tiles
+                        .as_mut()
+                        .unwrap()
+                        .set_name(Some((chip.name(), chip.power)));
                 }
                 None => self.hud_tiles.as_mut().unwrap().set_name(None),
             }
