@@ -736,5 +736,11 @@
     "file": "log/shots/1788796519-cursor_log.png",
     "caption": "Walking the chip window's cursor, real ROM above and this build below: 108 of the 110 frames of a two-step walk are identical, including the card swapping from the 'sending chip data' message to Cannon and then to MiniBomb, the code letters, the damage and the bracket's blink. THE CURSOR MOVES TWO FRAMES AFTER THE DIRECTION. Held six frames, the real ROM's bracket stays on OK for the two frames after the press and is on the new slot on the third; this build's moved on the press. That is the same two frames that separate every button from what it does -- the buster, the chip button and now the d-pad -- and it is the strongest hint yet that the real ROM simply acts on its pad a couple of frames after reading it, rather than each of these being its own rule. The two frames still differing are the last frame of each move: at a delay of two the bracket is one frame early and at three the card is one frame late, so something inside the move is finer than a single constant.",
     "tag": "rust"
+  },
+  {
+    "t": 1788797120,
+    "file": "log/shots/1788797120-panel_log.png",
+    "caption": "A whole panel effect this build never drew: real ROM above, this build below. The Mettaur's shockwave LIGHTS THE PANEL IT IS STANDING ON -- a solid yellow block, one of the field's two highlight overlays, held for all 22 frames the wave dwells there and travelling with it panel by panel. It was invisible in every comparison so far because the chip captures run with the backgrounds stripped, and the highlight is a background tile. Two details fell out of the same capture and both are in. The light LINGERS: for exactly three frames at each hop, the new panel and the old one are lit together. And a panel somebody is standing on is NOT lit -- the wave passes through the navi's own panel with it dark, and lights the one behind him again on the far side. That last one is a single observation from one capture rather than a rule read out of the disassembly, and it is recorded as such.",
+    "tag": "rust"
   }
 ]

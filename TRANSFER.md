@@ -490,6 +490,22 @@ four differing frames go to zero; the cycle goes from 16 differing frames and 51
 WHAT IS LEFT: four frames at the end of the cycle, where the real Mettaur holds its pickaxe up a
 frame or two longer than this build.
 
+## 7ai. The shockwave lights the panel it stands on (2026-09-07)
+
+A whole effect this build never drew, and the reason it was never noticed is worth as much as the
+effect: THE CHIP CAPTURES RUN WITH THE BACKGROUNDS STRIPPED, and this is a background tile. Turn
+`--disable-bg` off and look at a live field now and then; the comparison that finds everything
+else cannot see this class of thing at all.
+
+The Mettaur's shockwave paints the panel under it with one of the field's two highlight overlays
+-- a solid yellow block -- for all 0x16 frames it dwells there, travelling with it panel by panel.
+Two details from the same capture:
+- THE LIGHT LINGERS three frames. At every hop the new panel and the old one are lit together for
+  exactly three frames.
+- A PANEL SOMEBODY IS STANDING ON IS NOT LIT. The wave passes through the navi's own panel with it
+  dark and lights the one behind him again on the far side. NOT VERIFIED beyond this one capture:
+  it is a single observation, not a rule read out of the disassembly.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five

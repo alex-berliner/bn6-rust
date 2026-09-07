@@ -42,6 +42,9 @@ const COLONEL_HP: u16 = 1200;
 // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
 const METTAUR_HP: u16 = 40;
 const WAVE_DAMAGE: u16 = 10;
+/// Which of the field's two highlight overlays the shockwave paints its panel
+/// with.
+const WAVE_HIGHLIGHT: usize = 0;
 /// HP a chip-demo target carries so several hits can land without the fight
 /// ending; the real value is 40, but that dies to one sword.
 const DEMO_TARGET_HP: u16 = 900;
@@ -1587,6 +1590,29 @@ impl<'a> Battle<'a> {
             if spent {
                 self.shots.swap_remove(i);
             } else {
+                // A shockwave lights the panel it is standing on, every frame
+                // it is there.
+                if self.shots[i].lights_panel {
+                    let here = (self.shots[i].col, self.shots[i].row);
+                    let lit = [Some(here), self.shots[i].left_panel];
+                    for (c, r) in lit.into_iter().flatten() {
+                        // NOT on a panel somebody is standing on: the capture's
+                        // wave lights the panel ahead of the navi and the one
+                        // behind him and leaves his own dark, on the frames it
+                        // is passing through him.
+                        let taken = self.megaman.is_present() && self.megaman.panel() == (c, r)
+                            || self
+                                .enemies
+                                .iter()
+                                .any(|e| e.is_present() && e.panel() == (c, r));
+                        if (1..=field::COLS).contains(&c)
+                            && (1..=field::ROWS).contains(&r)
+                            && !taken
+                        {
+                            self.panels.highlight(c, r, WAVE_HIGHLIGHT);
+                        }
+                    }
+                }
                 i += 1;
             }
         }

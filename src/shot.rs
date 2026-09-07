@@ -21,6 +21,9 @@ use crate::spr;
 const BUSTER_HOP: u8 = 2;
 /// The shockwave's dwell per panel in its first version (byte_80C6B00).
 const WAVE_HOP: u8 = 0x16;
+/// Frames the panel a wave has left stays lit behind it. Measured against the
+/// capture: two panels are lit for exactly three frames at every hop.
+const LIGHT_LINGER: u8 = 3;
 
 /// The buster shot's graphics live in the effect sprite list: byte_80B8BD4's
 /// record selects `SpritePointersList` offset 0xc (`off_8031E00`) slot 2,
@@ -51,6 +54,17 @@ pub struct Shot {
     /// (Vulcan's volley is spawned slightly above/below the row it is aimed
     /// at, sub_80EBF6E via dword_80EBFF0).
     pub y_offset: i32,
+    /// The panel this shot has just left, and how many frames its light
+    /// lingers there. The real ROM lights the new panel three frames before
+    /// the old one goes out, so a moving wave shows two lit panels for three
+    /// frames at every hop.
+    pub left_panel: Option<(i32, i32)>,
+    left_ticks: u8,
+    /// Whether the panel this shot stands on lights up while it is there.
+    /// The Mettaur's shockwave does: the real ROM paints the panel under it
+    /// yellow for the whole 0x16 frames it dwells, and the light travels with
+    /// it panel by panel.
+    pub lights_panel: bool,
     /// Frames to sit on the spawn panel before moving, for a volley whose
     /// shots are released one after another (Vulcan fires every 0xa frames,
     /// sub_80EBF6E, so shot 1 goes at t=0, shot 2 at 0xa, shot 3 at 0x14).
@@ -103,6 +117,7 @@ impl Shot {
         // Measured against the capture's Mettaur: with the wave shifted one
         // frame later, three of its four differing frames go to zero.
         shot.player.update();
+        shot.lights_panel = true;
         shot
     }
 
@@ -130,6 +145,9 @@ impl Shot {
             from_player,
             damage,
             hidden: false,
+            left_panel: None,
+            left_ticks: 0,
+            lights_panel: false,
             y_offset,
             delay,
             player: spr::Player::new(assets, anim),
@@ -172,8 +190,18 @@ impl Shot {
             self.delay -= 1;
             return true;
         }
+        if self.left_ticks > 0 {
+            self.left_ticks -= 1;
+            if self.left_ticks == 0 {
+                self.left_panel = None;
+            }
+        }
         self.ticks -= 1;
         if self.ticks == 0 {
+            if self.lights_panel {
+                self.left_panel = Some((self.col, self.row));
+                self.left_ticks = LIGHT_LINGER;
+            }
             self.col += self.dx;
             self.ticks = self.interval;
         }
