@@ -586,5 +586,11 @@
     "file": "log/shots/1788778213-cm_full.png",
     "caption": "The chip select window is at per-pixel parity: real ROM left, this build middle, difference right -- 0 px, sprites and all. The way in was identifying the capture's own chips: each slot's four icon tiles were pulled out of VRAM and matched against every one of the 411 chips' icons in byte_8725894, which named them Vulcan1 D, AirShot *, Sword S, MiniBomb B and Cannon A -- and the pick stack's icon is that Cannon, so the fifth slot is not empty, it is picked. demo-custmatch offers exactly those five with the Cannon picked and the cursor on OK. Four defects fell out. A picked slot keeps its CODE and loses only its icon. A slot's code comes from the FOLDER ENTRY, not the chip's first code, so a folder's copies letter differently. The card shows a 'sending chip data' message whenever the cursor is not on a previewable chip, and that message is a static 7x6 image at dword_87225B4. And the pick stack's frame is four tiles, not two: its top two rows have their own pair.",
     "tag": "chip"
+  },
+  {
+    "t": 1788778651,
+    "file": "log/shots/1788778651-hand_icon_cmp.png",
+    "caption": "The chip in hand hangs over the navi, and this build was not drawing it. Real ROM left, this build right -- the navi stands a column further along in the fixture, which is why the two icons are forty pixels apart, but the height matches to the pixel. It is a 16x16 object whose four tiles are the chip's own icon, the same art the chip window's slots use, at its panel's centre one left and fifty-six up; only its OBJECT palette was new, byte_872CFD4, which is not the window's icon bank and differs from it at two entries. It is deliberately left out of the sterile arena: the object belongs to the chip window closing rather than to the hand's contents, and the real captures poke a chip straight into the hand slot and show none.",
+    "tag": "hud"
   }
 ]

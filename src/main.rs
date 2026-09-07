@@ -66,6 +66,7 @@ static BACKDROP: &[u8] = &Aligned(*include_bytes!("../assets/backdrop.bin")).0;
 static HUD_TILES: &[u8] = &Aligned(*include_bytes!("../assets/hud_tiles.bin")).0;
 static TEXT_FONT: &[u8] = &Aligned(*include_bytes!("../assets/text_font.bin")).0;
 static EMOTION: &[u8] = &Aligned(*include_bytes!("../assets/emotion.bin")).0;
+static HAND_ICON: &[u8] = &Aligned(*include_bytes!("../assets/hand_icon.bin")).0;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {

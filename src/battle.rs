@@ -5,7 +5,7 @@
 
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
-use agb::display::object::Object;
+use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size};
 #[cfg(feature = "demo-sterile")]
 use agb::display::tiled::{RegularBackgroundSize, TileFormat};
 use agb::display::tiled::RegularBackground;
@@ -388,6 +388,24 @@ const FLSHBOM_VZ: i32 = 0x2BD00;
 const FLSHBOM_GRAVITY: i32 = 0x3000;
 /// The summoned LilBoiler's own HP, which rides under it in the game's object
 /// digits. All three LilBolrs show 40 against powers of 100, 140 and 180.
+/// Where the chip-in-hand icon's top left sits relative to the navi's panel
+/// centre, measured off the real ROM's OAM.
+const HAND_ICON_AT: (i32, i32) = (-1, -56);
+
+/// The icon's OBJECT palette, byte_872CFD4, which the exporter reads: it is
+/// not the chip window's icon bank, which is a background palette and differs
+/// at two entries.
+fn hand_icon_palette() -> PaletteVramSingle {
+    let data = crate::HAND_ICON;
+    assert_eq!(&data[0..4], b"BNHI", "not a BNHI asset");
+    let mut colours = [agb::display::Rgb15::new(0); 16];
+    for (i, slot) in colours.iter_mut().enumerate() {
+        let o = 8 + i * 2;
+        *slot = agb::display::Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
+    }
+    PaletteVramSingle::try_allocate_new(&agb::display::Palette16::new(colours))
+        .expect("hand icon palette should fit in vram")
+}
 const BOILER_HP: u16 = 40;
 /// Where that figure sits relative to the projectile's origin: measured on
 /// the real ROM's frames 13, 20 and 30, its two digits span sixteen pixels
@@ -620,6 +638,8 @@ pub struct Battle<'a> {
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
     emotion: crate::emotion::Emotion,
+    /// The palette for the chip-in-hand icon the game hangs over the navi.
+    hand_icon_palette: PaletteVramSingle,
     hud_tiles: Option<crate::hudtiles::HudTiles>,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
@@ -1027,6 +1047,7 @@ impl<'a> Battle<'a> {
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
+            hand_icon_palette: hand_icon_palette(),
             hud_tiles: if cfg!(feature = "demo-sterile") {
                 None
             } else {
@@ -2174,6 +2195,28 @@ impl<'a> Battle<'a> {
         // The emotion window is OAM objects 2 and 3 on the real ROM, so it
         // goes in before anything the fight draws and stands over all of it.
         self.emotion.show(frame);
+        // The chip at the front of the hand hangs over the navi as a 16x16
+        // object: read out of a live battle's OAM at (59,52) with the navi on
+        // the middle panel of its row, which is that panel's centre one left
+        // and fifty-six up. Its four tiles are the chip's own icon. Not drawn
+        // while the chip window is up, which covers this half of the screen.
+        //
+        // NOT IN THE STERILE ARENA. The object belongs to the chip window
+        // closing, not to the hand's contents: the real captures poke a chip
+        // straight into the hand slot and show no icon at all, so drawing one
+        // there costs every chip comparison a constant 256 px.
+        if self.custom.is_none() && !cfg!(feature = "demo-sterile") {
+            if let Some(chip) = self.hand.get(self.hand_at) {
+                let (mc, mr) = self.megaman.panel();
+                let (px, py) = field::panel_centre(mc, mr);
+                let sprite = DynamicSprite16::from_bytes(Size::S16x16, chip.icon_bytes())
+                    .to_vram(self.hand_icon_palette.clone());
+                Object::new(sprite)
+                    .set_priority(Priority::P2)
+                    .set_pos((px + HAND_ICON_AT.0, py + HAND_ICON_AT.1))
+                    .show(frame);
+            }
+        }
         // Attack objects such as the cannon barrel draw over the navi that
         // spawned them (the real ROM shows the barrel covering the arm), and
         // a later one over an earlier one: the sword's arc, spawned at the

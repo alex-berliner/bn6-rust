@@ -75,6 +75,12 @@ impl Chip {
     }
 
     /// The icon's four 8x8 tiles, row-major.
+    /// The icon's raw four tiles, for the object the game hangs over the
+    /// navi to show the chip in hand.
+    pub fn icon_bytes(&self) -> &'static [u8] {
+        self.icon
+    }
+
     pub fn icon(&self) -> TileSet {
         // SAFETY: the exporter 4-aligns every blob and the asset is held in
         // a word-aligned static.
