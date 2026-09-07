@@ -41,11 +41,31 @@ idle pose. On a wider window it is actively worse. A tick-by-tick simulation of
 attacking-to-idle handoff is not modelled by either reading. That is where to look.
 See `TRANSFER.md` 7ah.
 
-### A2. The chip window's cursor — 2 frames of 110  *(in progress)*
+### A2. The chip window's cursor — FIX THE FIXTURE FIRST
 "At a delay of two the bracket is one frame early; at three the card is one frame late."
 Two things that move on different frames, which is exactly the shape the chip-in-hand
 icon turned out to have — the fix there was to decouple them. `CURSOR_DELAY` is in
 `src/custom.rs`. See `TRANSFER.md` 7ag.
+
+BUT THE FIXTURE CANNOT SETTLE IT, and that is the first job. The real side is scripted
+(Left held six frames at 20, 50, 80, 110, 140) and the rust side is NOT: `demo-cardname`
+walks its cursor on a schedule of its own and `check_card` captures it with no script at
+all, so the two walks are aligned by a lag that is a compromise across the whole run.
+Measured at the best lag (85), 58 of 60 frames match and the two that differ are 3233 px
+each — the whole preview card. Tracking when the card's contents change on each side:
+
+    real  106, 112, 114, 122, 130, 138, 142, 146, 154, 162, 170, 178, 186, 194
+    rust  106,      114, 122, 130, 138,      146, 154, 162, 170, 178, 186, 194
+
+Every eight frames is something in the card BLINKING, on both sides and in phase. The
+real ROM has two changes that are not on that cadence -- 112 and 142, each two frames
+after a Left press -- and this build has none, because its own switches happen to land on
+cadence frames. So one move looks two frames late and the other four frames early, which
+is not a timing rule, it is an artefact of the two sides being driven by different walks.
+
+Make `demo-cardname` take its directions from the pad instead, drive both sides from the
+identical script, and the question becomes answerable. Then decouple the bracket from the
+card if the numbers say so.
 
 ### A3. The shockwave's panel light — 3 frames of 90  *(assigned)*
 Single dwell boundaries a frame out. Also open: is "a panel somebody is standing on is
