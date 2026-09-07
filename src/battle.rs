@@ -55,6 +55,9 @@ const HUDMATCH_HP: u16 = 60;
 /// The capture's clear time, 0:29:33, in frames, and its reward.
 const RESULTMATCH_TIME: u32 = 1760;
 const RESULTMATCH_ZENNY: u16 = 100;
+/// Where the RESULT window's corner badge lands, from OAM entry 0 of a live
+/// results screen.
+const RESULTS_MARK_AT: (i32, i32) = (37, 21);
 // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
 // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
 // pick a damage row (asm31.s:153414-153526): the cross slash reads
@@ -767,6 +770,9 @@ pub struct Battle<'a> {
     gauge_pause: u16,
     results_delay: u16,
     shown: Option<results::Shown>,
+    /// The regular-chip mark the RESULT window hangs at its top-left corner,
+    /// held only while that window is up.
+    results_mark: Option<agb::display::object::SpriteVram>,
     fade_out: u8,
     clock: u32,
     moves: u8,
@@ -1014,7 +1020,10 @@ impl<'a> Battle<'a> {
         let glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
         let glow_state = 0usize;
         let player = actor::Profile {
-            hp: if cfg!(feature = "demo-hudmatch") {
+            // Both parity fixtures come from save states where the navi has
+            // taken damage, and both capture the HP box, so they carry the
+            // capture's own 60 rather than a fresh navi's.
+            hp: if cfg!(any(feature = "demo-hudmatch", feature = "demo-resultmatch")) {
                 HUDMATCH_HP
             } else {
                 PLAYER_HP
@@ -1106,6 +1115,7 @@ impl<'a> Battle<'a> {
         let gauge_pause = 0u16;
         let results_delay = RESULTS_DELAY;
         let shown: Option<results::Shown> = None;
+        let results_mark: Option<agb::display::object::SpriteVram> = None;
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
@@ -1188,6 +1198,7 @@ impl<'a> Battle<'a> {
             gauge_pause,
             results_delay,
             shown,
+            results_mark,
             fade_out,
             clock,
             moves,
@@ -1203,6 +1214,7 @@ impl<'a> Battle<'a> {
         for (i, p) in self.results.palettes().iter().enumerate() {
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
+        self.results_mark = Some(self.custom_assets.mark_sprite());
         self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
     }
 
@@ -1214,7 +1226,11 @@ impl<'a> Battle<'a> {
             self.backdrop.as_mut().unwrap().update(gfx);
             self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
             self.hud_tiles.as_mut().unwrap().set_hp(self.megaman.hp());
-            self.hud_tiles.as_mut().unwrap().set_gauge(self.gauge, GAUGE_FULL);
+            let gauge_up = self.shown.is_none() && self.fade_out == 0;
+            self.hud_tiles
+                .as_mut()
+                .unwrap()
+                .set_gauge(self.gauge, GAUGE_FULL, gauge_up);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
@@ -1376,6 +1392,7 @@ impl<'a> Battle<'a> {
                 self.fade_out = fade;
                 if fade == 16 {
                     self.shown = None;
+                    self.results_mark = None;
                 }
             }
         }
@@ -2434,6 +2451,15 @@ impl<'a> Battle<'a> {
         // enemy in -- pixelates and thins over the field; the intro's screen
         // fade darkens everything until the field is revealed.
         let window_id = self.shown.as_ref().map(|window| window.show(frame));
+        // The RESULT window's corner badge: the chip window's regular-chip
+        // mark, hung as OAM entry 0 at the window's top-left. Read off a live
+        // results screen, where it is a 16x16 at (37,21) in OBJ bank 11.
+        if let Some(mark) = self.results_mark.as_ref() {
+            Object::new(mark.clone())
+                .set_priority(Priority::P0)
+                .set_pos(RESULTS_MARK_AT)
+                .show(frame);
+        }
         if let Some(window) = &self.custom {
             window.show(frame, self.hud);
         }
@@ -2463,7 +2489,11 @@ impl<'a> Battle<'a> {
         }
         // The emotion window is OAM objects 2 and 3 on the real ROM, so it
         // goes in before anything the fight draws and stands over all of it.
-        self.emotion.show(frame);
+        // It goes with the fight: the real ROM drops it once the RESULT window
+        // is up, the same as the gauge (/tmp/noenemy2.state has neither).
+        if self.shown.is_none() && self.fade_out == 0 {
+            self.emotion.show(frame);
+        }
         // The chip at the front of the hand hangs over the navi as a 16x16
         // object: read out of a live battle's OAM at (59,52) with the navi on
         // the middle panel of its row, which is that panel's centre one left

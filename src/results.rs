@@ -47,6 +47,16 @@ const REWARD_TEXT_ROW: i32 = 12;
 const REWARD_TEXT_LAST: i32 = 9;
 const REWARD_TEXT_BANK: u8 = 9;
 const ZENNY_GLYPH: u16 = 0xb3;
+/// The GET DATA readout's bottom edge, which the live window and the stored
+/// map disagree about: the map's tile there carries a lit top pixel row
+/// (colour 9) and the real ROM's cells are flat colour 2, tile 0xc4. The
+/// game replaces the run of ten as it draws the reward, so this build does
+/// the same, in the same place. Read off the real ROM's own map -- the last
+/// 80 pixels of the window, one pixel row of ten cells.
+const REWARD_EDGE_ROW: i32 = 14;
+const REWARD_EDGE_FIRST: i32 = 2;
+const REWARD_EDGE_LAST: i32 = 11;
+const REWARD_EDGE_TILE: u16 = 0x0c4;
 const FONT_TILE: u16 = 0xa0;
 /// The level readout sits at row 6, columns 16-20, its digits right-aligned;
 /// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
@@ -307,6 +317,13 @@ impl Results {
                     (REWARD_COL + (k % REWARD_W) as i32, REWARD_ROW + (k / REWARD_W) as i32),
                     &self.reward,
                     TileSetting::new(k as u16, TileEffect::new(false, false, REWARD_BANK)),
+                );
+            }
+            for col in REWARD_EDGE_FIRST..=REWARD_EDGE_LAST {
+                bg.set_tile(
+                    (col, REWARD_EDGE_ROW),
+                    &v.tiles,
+                    entry(REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12),
                 );
             }
         }

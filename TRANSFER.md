@@ -303,6 +303,56 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7z. The preview card, all four rows, 0 px (2026-09-07)
+
+The chip window's card is exact for all five of the capture's chips -- five elements, five
+codes, five powers -- and the way in was two corrections to a premise.
+
+THE NAME IS NOT PROPORTIONAL. It is the fixed 8x16 battle font `dword_86B7AE0`, the one
+`assets/text_font.bin` already carried for the RESULT window, written into the row's eight
+cells left to right and padded with the font's blank. The glyph index IS the game's own
+character code, so `constants/bn6-charmap.tbl` indexes the font directly, and the tiles are the
+COLOUR-ADDED copy: `sub_3006C18` (asm/asm38.s:2381-94) adds a 32-bit word from `dword_3006B84`
+(0, 0x44444444, 0x88888888, 0xCCCCCCCC) to every glyph word on the way to VRAM, and this window
+passes index 8. The blank it pads with is then flat colour 8 -- which is exactly what
+`CARD_INTERIOR_TILE` is, so the row needs no separate background.
+
+THE OTHER THREE ROWS ARE NOT THAT FONT AT ALL. They are three little tables of the window's own,
+stored READY-COLOURED so nothing is added on the way to VRAM:
+- `dword_86E2E98` -- 28 code letters, 0x40 each: A-Z, then '*' and a blank, ink 0xb. Indexed by
+  the same code byte the slot glyphs use.
+- `dword_86E411C` -- 10 damage digits, 0x40 each, 0-9 in order, ink 9.
+- `dword_86E3598` -- 11 element icons, 0x80 each (16x16), indexed by the chip's element byte,
+  0x0a being null.
+
+HOW TO FIND ART YOU CAN SEE ON A LIVE SCREEN. Searching the ROM for the tiles themselves finds
+nothing, and neither does searching for their SHAPE tile-aligned: every glyph starts with three
+blank rows, so its cell begins twelve bytes before its ink and a 32-byte-aligned scan never
+lines up. Search ROW-aligned (every 4 bytes) for the shape -- the ink mask over any one ink
+value and any one background value, starting at the first NON-BLANK row -- and all three tables
+fall out on the first pass. This is the general trick for anything the game composes at runtime.
+
+AND THE SHARED ICON BANK HAS A PER-ELEMENT TAIL. `dword_86E3B18`, immediately after the icons,
+is 11 rows of six BGR555 words: entries 10 through 15 of BG bank 11. Entries 10-12 are the icon
+frame's colours, the same every row; 13-15 are the ELEMENT'S OWN, and the game writes them as it
+draws the card. Bank 11 had been read off one live menu (7u) -- which happened to be showing a
+null-element chip, whose last three are zero -- so AirShot's wind icon came out black in all 64
+of its colour-13 pixels and Sword's lost 24. This is the same trap as 7t: one save state cannot
+tell you which parts of a palette are per-state.
+
+A PICKED SLOT STILL PREVIEWS ITS CHIP. Walk the real ROM's cursor onto its picked Cannon and the
+Cannon card comes up, even though the slot itself shows the empty-cell art. Only OK and a slot
+with nothing in it leave the card without a chip.
+
+THE FIXTURE. `demo-custmatch` has the cursor on OK, where the real ROM shows its "sending chip
+data" card and CLEARS the name and the row under the picture -- so it cannot see any of this.
+`demo-cardname` is the same window with the cursor on the first slot. On the real ROM, hold Left
+for six frames from `/tmp/chipselect.state`: a one-frame tap does nothing, the menu wants the key
+held. Walking further with `--script` on both sides compares all five cards in one run.
+`demo-custmatch` had also stopped opening its window at all -- it fields no enemy, so the
+all-enemies-deleted win fired on frame one and held the gauge, and the gauge is what opens the
+window.
+
 ## 7y. The five bomb chips left, named and half-found (2026-09-07)
 
 The bomb family (attack_family 0x12) has five chips this build does not draw. Their NAMES come

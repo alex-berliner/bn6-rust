@@ -385,6 +385,17 @@ impl CustomAssets {
         }
     }
 
+    /// The regular-chip mark as an object in the palette it shares with the
+    /// cursor. The RESULT window hangs the SAME one at its top-left corner:
+    /// OAM entry 0 of a live results screen is a 16x16 at (37,21), OBJ tile
+    /// 0x200 in bank 11, and both the art at that tile and that bank match
+    /// this window's byte for byte.
+    pub fn mark_sprite(&self) -> SpriteVram {
+        let palette = PaletteVramSingle::try_allocate_new(&self.cursor_obj_palette)
+            .expect("cursor palette should fit in vram");
+        DynamicSprite16::from_bytes(Size::S16x16, self.regular_mark).to_vram(palette)
+    }
+
     /// One of the window's colour variants, or the two icon banks after them.
     pub fn palette(&self, variant: usize) -> Palette16 {
         read_palette(&self.palette[variant * 32..variant * 32 + 32])

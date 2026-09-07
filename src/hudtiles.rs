@@ -167,8 +167,28 @@ impl HudTiles {
     /// replaces this whole layer, so a draining bar never shows on its own.
     /// The empty body cell is drawn with the label row's filler tile, which is
     /// a guess.
-    pub fn set_gauge(&mut self, filled: u16, full: u16) {
+    /// `show` is false once the fight is over: the real ROM drops the whole
+    /// gauge -- label, bar and end caps -- the moment the RESULT window comes
+    /// up, and keeps only the HP box. Read off /tmp/noenemy2.state, where the
+    /// strip beside the HP box is bare backdrop.
+    pub fn set_gauge(&mut self, filled: u16, full: u16, show: bool) {
         if self.menu {
+            return;
+        }
+        if !show {
+            if self.gauge_shown.is_none() {
+                return;
+            }
+            self.gauge_shown = None;
+            for i in 0..GAUGE_CELLS {
+                for row in 0..2 {
+                    self.bg.set_tile(
+                        ((GAUGE_COL + i) as i32, row),
+                        &self.tiles,
+                        TileSetting::new(BLANK_TILE, TileEffect::new(false, false, BANK)),
+                    );
+                }
+            }
             return;
         }
         let lit = (u32::from(filled) * BAR_CELLS / u32::from(full.max(1))).min(BAR_CELLS);
