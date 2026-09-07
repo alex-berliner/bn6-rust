@@ -303,6 +303,31 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7s. LilBolr, and the digit palette that was never the game's (2026-09-07)
+
+LILBOLR IS DOWN TO 34.6 px/frame from 333.6. Three things.
+
+THE FIGURE UNDER THE BOILER is the summoned LilBoiler's own HP, not the chip's damage: it reads
+40 for all three LilBolrs, whose powers are 100, 140 and 180. Drawn as a constant. Its two
+digits span sixteen pixels from the projectile's own x, top three pixels below it.
+
+FITTING AN ARC WHOSE SPRITE BOBS. The boiler's animation moves its centroid, so fitting a
+parabola to the tracked centroid fights the animation and lands in the wrong place. Take this
+build's own centroid MINUS its modelled parabola -- that difference is the bob, and it is
+identical on both sides because the sprite is -- then fit parabola + bob against the real
+centroid. Seven pixels of total error over thirty-nine frames is the floor of that model, and no
+choice of launch, gravity or spawn subpixel beats it.
+
+THE HP DIGITS WERE IN A MADE-UP PALETTE, flat white on near-black. hud.rs said so in a comment
+and nothing had ever had a real number to compare against, because the sterile arena deletes the
+enemy and no number is drawn. The boiler's 40 is the first. The game's palette is
+`dword_86B7AC0` in data/dat38_60.s, the 32 bytes immediately BEFORE the battle text font, and
+dumping OBJ palette bank 14 out of a live battle gives those sixteen words back word for word:
+the fill is a soft white 0x7bfe and the outline a dark blue 0x28e6. This changes every number
+the game draws -- enemy HP, damage figures, the chip card's power.
+The general lesson: a stand-in that no measurement has ever touched is not a small thing. Look
+for the fixture that would expose it.
+
 ## 7q. Per-pixel parity needs a MATCHING FIXTURE (2026-09-07)
 
 Reporting a difference as "live state" is not a measurement. Build a fixture that matches the
