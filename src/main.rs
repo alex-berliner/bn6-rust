@@ -13,6 +13,7 @@ mod battle;
 mod chips;
 mod custom;
 mod deck;
+mod emotion;
 mod field;
 mod gunner;
 mod hud;
@@ -64,6 +65,7 @@ static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 static BACKDROP: &[u8] = &Aligned(*include_bytes!("../assets/backdrop.bin")).0;
 static HUD_TILES: &[u8] = &Aligned(*include_bytes!("../assets/hud_tiles.bin")).0;
 static TEXT_FONT: &[u8] = &Aligned(*include_bytes!("../assets/text_font.bin")).0;
+static EMOTION: &[u8] = &Aligned(*include_bytes!("../assets/emotion.bin")).0;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {

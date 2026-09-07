@@ -544,5 +544,11 @@
     "file": "log/shots/1788772390-cs_compare.png",
     "caption": "The chip select window, real ROM left and this build middle, sprites turned off on both so only the tile layers are compared. The window frame, the pick stack and its frame, the OK box, the CHIP SELECT panel and the code row are identical. What is left is the card picture and the icons, which are different chips because the two folders differ, and one real defect: the real ROM draws EIGHT slot cells and this build draws ten. Cells nine and ten are written in the frame's palette bank there, which makes them read as the panel's own background rather than as empty cells -- the white block at the bottom right of the difference.",
     "tag": "chip"
+  },
+  {
+    "t": 1788773209,
+    "file": "log/shots/1788773209-hud_parity.png",
+    "caption": "The battle HUD reaches per-pixel parity. Rows one and two are the real ROM and this build with everything on; rows three and four are the HUD layer alone on each side; row five is their difference, which is empty -- 0 px of the whole strip. Three fixes got there. The EMOTION WINDOW, the navi's face under the HP box, was missing: the real ROM draws it as two OBJECTS rather than tiles, which is why it survives the field being stripped, and its art turned up at dword_872D814 by searching the disassembly for the twelve tiles taken out of OBJ VRAM. The player's HP was being drawn TWICE, once in the tile box and once in object text under it, so the object one is gone. And a FULL CUSTOM GAUGE FLOWS: its body cell steps through four patterns seven frames each and the L-or-R marker alternates cyan and orange every eight, which is a tilemap swap -- the tile art and the palette bank never change.",
+    "tag": "hud"
   }
 ]

@@ -28,9 +28,30 @@ const CAP_TOP: u16 = GAUGE_FIRST;
 const CAP_BOTTOM: u16 = GAUGE_FIRST + 1;
 const FILLER: u16 = GAUGE_FIRST + 2;
 const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3;
+/// A full bar FLOWS: its body cell steps through four patterns, seven frames
+/// each, and its L-or-R marker alternates cyan and orange every eight, both
+/// read frame by frame off a live battle's BG3 map (VRAM tiles 0x232, 0x233,
+/// 0x234, 0x235 for the body in the order below, 0x236 and 0x23a for the two
+/// markers). The map is what animates -- the tile art and the palette bank
+/// stay put -- so this is a tile swap, not a palette cycle.
+/// NOT VERIFIED: where the cycle starts. One save state cannot say whether
+/// the phase runs off the battle's frame counter or off the moment the gauge
+/// filled; this build counts from the latter.
+const BAR_CYCLE: [u16; 4] = [
+    GAUGE_FIRST + 9,
+    GAUGE_FIRST + 10,
+    GAUGE_FIRST + 7,
+    GAUGE_FIRST + 8,
+];
+const BAR_FRAMES: u32 = 7;
+const MARKER_FRAMES: u32 = 8;
+/// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
+/// seen full in the capture, so this is the first of the four flow patterns
+/// held still.
 const BAR: u16 = GAUGE_FIRST + 7;
 /// The marker is cyan while the gauge is filling and orange once it is full,
-/// which is the swap the gauge shows instead of any proportional readout.
+/// which is the swap the gauge shows instead of any proportional readout;
+/// full, it alternates between the two.
 const MARKER_WAITING: u16 = GAUGE_FIRST + 11;
 const MARKER_READY: u16 = GAUGE_FIRST + 15;
 /// Columns the gauge spans, and how many of them carry bar body.
@@ -75,7 +96,9 @@ pub struct HudTiles {
     palette: Palette16,
     gauge_palette: Palette16,
     shown: Option<u16>,
-    gauge_shown: Option<u32>,
+    gauge_shown: Option<(u32, u16, bool)>,
+    /// Frames the gauge has stood full, which drives the flow animation.
+    gauge_tick: u32,
     /// Whether the chip menu is up. The real ROM keeps the HP box on screen
     /// then but redraws it fifteen tile columns over, beside the window and
     /// above the field, and drops the gauge, whose place the window takes.
@@ -124,6 +147,7 @@ impl HudTiles {
             gauge_palette: Palette16::new(gauge),
             shown: None,
             gauge_shown: None,
+            gauge_tick: 0,
             menu: false,
         }
     }
@@ -148,11 +172,30 @@ impl HudTiles {
             return;
         }
         let lit = (u32::from(filled) * BAR_CELLS / u32::from(full.max(1))).min(BAR_CELLS);
-        if self.gauge_shown == Some(lit) {
+        let ready = lit >= BAR_CELLS;
+        // A full bar flows; anything less stands still, so the animation only
+        // runs while it is full and starts over each time it fills.
+        if ready {
+            self.gauge_tick = self.gauge_tick.wrapping_add(1);
+        } else {
+            self.gauge_tick = 0;
+        }
+        let (bar, marker) = if ready {
+            (
+                BAR_CYCLE[((self.gauge_tick / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
+                if (self.gauge_tick / MARKER_FRAMES) % 2 == 0 {
+                    MARKER_READY
+                } else {
+                    MARKER_WAITING
+                },
+            )
+        } else {
+            (BAR, MARKER_WAITING)
+        };
+        if self.gauge_shown == Some((lit, bar, marker == MARKER_READY)) {
             return;
         }
-        self.gauge_shown = Some(lit);
-        let ready = lit >= BAR_CELLS;
+        self.gauge_shown = Some((lit, bar, marker == MARKER_READY));
         let mut body = 0;
         for i in 0..GAUGE_CELLS {
             let col = GAUGE_COL + i;
@@ -160,10 +203,9 @@ impl HudTiles {
             let (top, bottom) = if i == 0 || last {
                 (CAP_TOP, CAP_BOTTOM)
             } else if (7..11).contains(&i) {
-                let m = if ready { MARKER_READY } else { MARKER_WAITING };
-                (CUSTOM_TEXT + (i as u16 - 7), m + (i as u16 - 7))
+                (CUSTOM_TEXT + (i as u16 - 7), marker + (i as u16 - 7))
             } else {
-                let cell = if body < lit { BAR } else { FILLER };
+                let cell = if body < lit { bar } else { FILLER };
                 body += 1;
                 (FILLER, cell)
             };

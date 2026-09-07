@@ -91,10 +91,6 @@ const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
 // 0x20 but nothing reading it was found, so it is not applied. When full
 // the battle pauses for about 60 frames of chimes and then opens chip
 // selection (sub_8008840), which clears the gauge on entry (asm03_0.s:540).
-/// Where the player's HP number sits: the right edge and top of the box at
-/// the screen's top left, measured off the real ROM. The box frame around
-/// it is background art, which is not drawn yet.
-const PLAYER_HP_AT: (i32, i32) = (44, 12);
 const GAUGE_STEP: u16 = 0xd;
 /// The field slides 15 px down while the chip menu is up, at 1.5 px a frame:
 /// measured on the real ROM, its top edge runs 72, 74, 75, 77, 78, 80, 81, 83,
@@ -615,6 +611,7 @@ pub struct Battle<'a> {
     backdrop: Option<crate::backdrop::Backdrop>,
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
+    emotion: crate::emotion::Emotion,
     hud_tiles: Option<crate::hudtiles::HudTiles>,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
@@ -1000,6 +997,9 @@ impl<'a> Battle<'a> {
                 Some(crate::backdrop::Backdrop::new(crate::BACKDROP))
             },
             field_slide: 0,
+            // Objects, not tiles, so it shows in the sterile arena too --
+            // which is where it was measured.
+            emotion: crate::emotion::Emotion::new(crate::EMOTION),
             hud_tiles: if cfg!(feature = "demo-sterile") {
                 None
             } else {
@@ -2136,6 +2136,9 @@ impl<'a> Battle<'a> {
                 .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha))
                 .enable_background(bg_id);
         }
+        // The emotion window is OAM objects 2 and 3 on the real ROM, so it
+        // goes in before anything the fight draws and stands over all of it.
+        self.emotion.show(frame);
         // Attack objects such as the cannon barrel draw over the navi that
         // spawned them (the real ROM shows the barrel covering the arm), and
         // a later one over an earlier one: the sword's arc, spawned at the
@@ -2295,12 +2298,10 @@ impl<'a> Battle<'a> {
                 counter.set(),
             );
         }
-        if let Some(counter) = self.hp_shown.first() {
-            if !self.megaman.is_defeated() {
-                let hp = counter.shown();
-                self.hud
-                    .draw_number_in(frame, hp, PLAYER_HP_AT.0, PLAYER_HP_AT.1, counter.set());
-            }
-        }
+        // NOT DRAWN: the player's own HP. The real ROM puts it in the tile
+        // HP box on BG3 (hudtiles.rs), not in object text -- this build drew
+        // both, so a full battle showed the number twice, once in the box and
+        // once under it, and the sterile arena showed a number where the real
+        // capture has none at all because its BG layers are stripped.
     }
 }
