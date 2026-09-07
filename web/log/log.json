@@ -760,5 +760,17 @@
     "file": "log/game/1788801243-rollup_sheet.png",
     "caption": "The rollup ROM, now on the site: pick \"Rollup (release build)\" from the demo dropdown. No demo feature, so it is the whole thing at once -- the field, the HUD, the custom gauge, four enemies with their own AI, the buster and its charge, the hit flash, the HP box counting down, and the LOSER window when it goes badly. It is the release profile, so none of the debug aids are in it: the gauge fills at 0xd a frame from empty, which is about twenty-one seconds, and the chip window opens when it is full rather than on L or R. Eight frames from one 1500-frame run.",
     "tag": "rust"
+  },
+  {
+    "t": 1788802055,
+    "file": "log/compare/1788802055-vdoll_cmp.gif",
+    "caption": "VDoll, real ROM left and this build right, seventy frames with nothing between them: 0.0 pixels a frame. It is the forty-third of forty-three chips to reach zero, and it got there by a change of method. Every arc in this port had been SWEPT -- step the launch speed and the gravity, run the comparison, keep what scores best -- and a sweep cannot finish the job, because a launch a little too weak and a pull a little too soft draw the same pixels. The set of constants that look right is bigger than the set that are right, and the difference shows up as one frame you cannot explain. So read them instead: tools/throw_dump.py dumps all 256K of EWRAM once a frame across the flight, finds the word that advances by the same amount every frame (a thrown thing's across-speed never changes, so that word is its X), reads the object's velocity and gravity off the fields beside it, and walks the velocity back to the spawn height. VDoll's real numbers are vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and the doll MOVES AND THEN FALLS, where a bomb falls and then moves. That half-step was the last pixel.",
+    "tag": "compare"
+  },
+  {
+    "t": 1788802062,
+    "file": "log/compare/1788802062-bugbomb_cmp.gif",
+    "caption": "BugBomb, real ROM left and this build right: 0.0 pixels a frame over seventy. Its residue had been one frame -- the ball a pixel high on the frame before it lands, and nowhere else -- which is what a rounding boundary looks like when the constants are nearly but not quite right. Read out of the object rather than swept, BugBomb's launch is vx 0x2C000, vz 0x26062 and gravity 0x2800 over a timer of 42; the sweep had settled on 0x25D60 and 0x27C0, a launch 1282 too weak and a pull 64 too soft, which cancel over forty frames everywhere except at that one boundary. The same read-out found that LilBolr and BlkBomb are thrown by the SAME launcher, to the digit -- two separate sweeps had produced two different nearby answers and nothing said they should agree. Forty-three chips of forty-three now match the real ROM exactly.",
+    "tag": "compare"
   }
 ]
