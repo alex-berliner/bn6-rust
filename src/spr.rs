@@ -271,6 +271,20 @@ impl Player {
         self.done
     }
 
+    /// True while the currently-displayed frame is the one whose own data
+    /// carries the 0x80 "last frame" flag -- for a looping animation (0x40
+    /// also set) this goes true once every loop, for as many ticks as that
+    /// frame's duration lasts, rather than latching like `finished`. This is
+    /// `sprite_getFrameParameters`'s bit 0x80 (asm/sprite.s:1182-1198),
+    /// which the Mettaur shockwave segment's departure state polls every
+    /// frame to know when to vanish (`sub_80C6CBA`, asm31.s:31552-31567): it
+    /// does not count down a fixed timer, it waits for its own animation to
+    /// come back around to this frame.
+    pub fn on_last_frame(&self) -> bool {
+        let (first, _) = self.assets.anim(self.anim);
+        self.assets.frame(first + self.frame_in_anim).flags & 0x80 != 0
+    }
+
     /// Draw every part solid white, or normally again. Rebuilds the current
     /// frame in place without disturbing its timing.
     pub fn set_white(&mut self, on: bool) {

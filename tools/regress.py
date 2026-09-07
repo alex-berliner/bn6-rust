@@ -378,7 +378,7 @@ CHECKS = [
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
-    ("mettaur", check_mettaur, 460),    # attack tail, 4 of 70 frames, 7ah
+    ("mettaur", check_mettaur, 345),    # departure, 3 of 70 frames, A1/7ah
     ("wave", check_wave, 960),          # panel light, first hop, 1 of 90 frames, 7ai
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames

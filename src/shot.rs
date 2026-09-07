@@ -70,6 +70,29 @@ pub struct Shot {
     /// sub_80EBF6E, so shot 1 goes at t=0, shot 2 at 0xa, shot 3 at 0x14).
     delay: u8,
     player: spr::Player,
+    assets: spr::Assets,
+    /// The segment left behind at the last hop, still playing out its own
+    /// animation at the panel it departed from. A hop is not one sprite
+    /// moving: `t3_0x16_80C6B40` (asm31.s:31354) spawns a whole new object on
+    /// the next panel (`sub_80C6CE4`, asm31.s:31578) while the old one stays
+    /// put and keeps looping until its own animation reports its last frame
+    /// (`sub_80C6CBA`, asm31.s:31552-31567) -- there is no separate departure
+    /// sprite or animation index, it is the same segment continuing to play
+    /// whatever it was already showing. Independent of `left_panel`/
+    /// `left_ticks`, which only linger the panel LIGHT for three frames; the
+    /// visible fragments outlive that by several more.
+    ///
+    /// An `Option`, not a `Vec` -- tried, and measured WORSE on the same
+    /// check (8725px over 20 of 70 frames, up from 460 over 4): this model
+    /// dwells every panel `WAVE_HOP` (0x16) at `anim` 0 regardless of which
+    /// hop it is, where the real ROM's `byte_80C6B00` shortens both the
+    /// dwell and the animation for the later hops in a run (entries 12-15,
+    /// asm31.s:31361-31366). A single fixed anim/dwell pair already makes
+    /// one departure last close to its own dwell, so letting a second one
+    /// start before the first ends compounds the mismatch across the whole
+    /// attack instead of fixing the one hop this ticket measured. Newest
+    /// wins; see `TRANSFER.md`.
+    departure: Option<(spr::Player, (i32, i32))>,
 }
 
 impl Shot {
@@ -151,6 +174,8 @@ impl Shot {
             y_offset,
             delay,
             player: spr::Player::new(assets, anim),
+            assets,
+            departure: None,
         }
     }
 
@@ -161,7 +186,31 @@ impl Shot {
         self.delay == 0 && self.ticks == self.interval
     }
 
+    /// Whether a one-shot leftover (the panel light's linger, or a departing
+    /// segment still playing out) is keeping this shot alive after its own
+    /// hitbox would otherwise be spent -- e.g. a wave that has just dwelt its
+    /// way off the field.
+    pub fn departing(&self) -> bool {
+        self.left_panel.is_some() || self.departure.is_some()
+    }
+
     pub fn show(&self, frame: &mut GraphicsFrame) {
+        if let Some((player, (col, row))) = &self.departure {
+            let (px, py) = field::panel_centre(*col, *row);
+            for part in player.parts().iter().rev() {
+                let x = if self.dx < 0 {
+                    -part.x - part.width
+                } else {
+                    part.x
+                };
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((px + x, py + self.y_offset + part.y))
+                    .set_hflip(part.hflip ^ (self.dx < 0))
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
         if self.hidden {
             return;
         }
@@ -186,6 +235,18 @@ impl Shot {
     /// drops it; bn6f likewise destroys the shot when its panel goes invalid.
     pub fn update(&mut self) -> bool {
         self.player.update();
+        // The segment departed at the previous hop, if any: check its OWN
+        // animation before ticking it, matching `sub_80C6CBA`'s order
+        // (asm31.s:31552-31567) -- read `sprite_getFrameParameters` first
+        // and only call `object_updateSprite` on the frames it does not
+        // vanish.
+        if let Some((player, _)) = &mut self.departure {
+            if player.on_last_frame() {
+                self.departure = None;
+            } else {
+                player.update();
+            }
+        }
         if self.delay > 0 {
             self.delay -= 1;
             return true;
@@ -201,6 +262,13 @@ impl Shot {
             if self.lights_panel {
                 self.left_panel = Some((self.col, self.row));
                 self.left_ticks = LIGHT_LINGER;
+                // The old segment stays at the panel it is leaving and keeps
+                // playing what it was already showing; the continuing shot
+                // gets a fresh one, as `sub_80C6B64` (asm31.s:31389) does for
+                // the new segment it spawns on the next panel.
+                let anim = self.player.anim();
+                let old = core::mem::replace(&mut self.player, spr::Player::new(self.assets, anim));
+                self.departure = Some((old, (self.col, self.row)));
             }
             self.col += self.dx;
             self.ticks = self.interval;

@@ -530,11 +530,33 @@ The residue is entirely the SHOCKWAVE'S DEPARTURE: a thinning spray of blue frag
 ROM leaves arcing above the panel the wave has just hopped off, for about six frames, where this
 build shows it for two and then nothing. Frames 198-201 of the standard alignment, 115 px each.
 
-This fits what the panel-light work found in 7ai: `object_highlightCurrentCollisionPanels` keeps
-being called from `sub_80C6C14` until the SEGMENT'S OWN DEPARTURE ANIMATION finishes
-(`sprite_getFrameParameters` bit 0x80, `sub_80C6CBA`, asm31.s:31552-31567). So a hop is not one
-sprite moving: the old segment stays and plays out while the new one appears. This build moves a
-single sprite and draws nothing behind it.
+This fits what the panel-light work found in 7ai, and tracing it out confirmed the shape exactly.
+A HOP IS NOT ONE SPRITE MOVING. When a travelling segment's dwell runs out, `sub_80C6C6A`
+(asm31.s:31516) spawns a WHOLE NEW segment on the next panel through `sub_80C6CE4` ->
+`object_spawnType3(0x16)`, freshly initialised; the OLD segment merely sets its own CurAction to 4
+and does not move again -- it never calls `object_setCoordinatesFromPanels`. From then on
+`sub_80C6CBA` (asm31.s:31552-31567) polls `sprite_getFrameParameters` bit 0x80 every frame and
+destroys it the instant the bit is set. There is no separate departure sprite or animation: the
+old segment simply keeps playing whatever it was already showing until its own animation comes
+back round to its authored last frame. `assets/wave.bin` agrees -- all three animations are
+five-frame loops whose last frame carries flags 0xc0, which is 0x80 "last" plus 0x40 "loop", so
+the bit the ASM polls comes round once a loop.
+
+MODELLED, and it takes one of the four frames: at each hop the shot hands its mid-animation
+`Player` to a `departure` slot at the old panel and takes a fresh one for itself, exactly as the
+real ROM spawns a new object; the departure is ticked and dropped on the first frame its own last
+frame shows (`Player::on_last_frame`, checked before the tick, as `sub_80C6CBA` does). It lives on
+`Shot` rather than in `battle.rs`'s `effects` vector because `Shot::show` mirrors and flips by
+travel direction and the generic effects renderer has no per-entry direction. 460 px -> 345.
+
+WHAT IS LEFT, and why it was not chased: the last three frames are very probably a hop LATE in the
+attack, where the real ROM is on a different row of `byte_80C6B00` (asm31.s:31361-31366) with a
+shorter dwell and a different animation, while `Shot::shockwave` uses row 0's dwell of 0x16 for
+every hop -- its own doc comment already flags that as "its first version". A negative result on
+the way there is worth keeping: allowing SEVERAL departures to overlap (a `Vec` rather than one
+slot, which the uniform 22-frame dwell makes possible against a 26-tick loop) measures 8725 px
+over 20 frames, far worse, because the real ROM's late hops are too short-lived to leave that many
+fragments. Newest-wins, one slot.
 
 The earlier note here said "the real Mettaur holds its pickaxe up a frame or two longer than this
 build", which is what sent an attempt at `SWING.frames` 0x40 -> 0x3f -- a change that is well

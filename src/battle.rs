@@ -1793,15 +1793,17 @@ impl<'a> Battle<'a> {
                 spent = hit && !self.shots[i].piercing;
             }
             // A wave that dwelt its way off the field still has its parting
-            // light lingering behind it (left_panel/left_ticks, set by the
-            // update() call above): the real ROM's segment keeps re-asserting
-            // its old panel's highlight every frame until ITS OWN departure
-            // finishes (object_highlightCurrentCollisionPanels is called
+            // light lingering behind it, and/or its last departing segment
+            // still playing out at the panel it left (left_panel/left_ticks
+            // and departure, both set by the update() call above): the real
+            // ROM's segment keeps re-asserting its old panel's highlight
+            // every frame until ITS OWN departure finishes
+            // (object_highlightCurrentCollisionPanels is called
             // unconditionally each frame from sub_80C6C14, asm31.s:31491-2,
             // regardless of whether the CurAction is "moving" or "dying"), not
             // just while the hitbox is still on the field. Keep the shot alive
-            // (hidden, harmless) until that lingers out on its own.
-            if off_field && self.shots[i].lights_panel && self.shots[i].left_panel.is_some() {
+            // (hidden, harmless) until both linger out on their own.
+            if off_field && self.shots[i].lights_panel && self.shots[i].departing() {
                 spent = false;
                 self.shots[i].hidden = true;
             }
