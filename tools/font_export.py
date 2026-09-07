@@ -31,20 +31,29 @@ DAT = os.path.join(BN6, "data", "dat38_85.s")
 
 GLYPHS = 10
 GLYPH_BYTES = 0x40
+# The three pre-coloured sets the game switches between: the HP number is
+# drawn from off_801D854 normally and from off_801D880 / off_801D8AC while
+# it flashes after damage or a heal (asm/asm00_2.s:26131). They differ only
+# in the fill colour index (5, 8 and 14) over the same outline.
+VARIANTS = ["dword_86E0AB8", "dword_86E0D38", "dword_86E0FB8"]
 
 
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "font.bin"
-    data = read_symbol(DAT, "dword_86E0AB8", max_bytes=GLYPHS * GLYPH_BYTES,
-                       through_labels=True)
-    if len(data) != GLYPHS * GLYPH_BYTES:
-        raise SystemExit(f"expected {GLYPHS * GLYPH_BYTES} bytes, got {len(data)}")
+    sets = []
+    for symbol in VARIANTS:
+        data = read_symbol(DAT, symbol, max_bytes=GLYPHS * GLYPH_BYTES, through_labels=True)
+        if len(data) != GLYPHS * GLYPH_BYTES:
+            raise SystemExit(f"{symbol}: expected {GLYPHS * GLYPH_BYTES} bytes, got {len(data)}")
+        sets.append(data)
 
-    out = bytearray(struct.pack("<4sII", b"BNFT", 1, GLYPHS))
-    out += data
+    # Glyph n of set v is at index v * GLYPHS + n.
+    out = bytearray(struct.pack("<4sII", b"BNFT", 1, GLYPHS * len(sets)))
+    for data in sets:
+        out += data
     with open(out_path, "wb") as f:
         f.write(out)
-    print(f"{out_path}: {len(out)} bytes ({GLYPHS} glyphs)")
+    print(f"{out_path}: {len(out)} bytes ({len(sets)} sets of {GLYPHS} glyphs)")
 
 
 if __name__ == "__main__":

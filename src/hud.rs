@@ -16,8 +16,65 @@ const MAGIC: &[u8; 4] = b"BNFT";
 const GLYPH_BYTES: usize = 0x40;
 const GLYPH_W: i32 = 8;
 
+/// The digit sets the asset carries: the plain one and the two the game
+/// flashes with after damage or a heal.
+pub const SETS: usize = 3;
+pub const SET_PLAIN: usize = 0;
+pub const SET_DAMAGE: usize = 1;
+pub const SET_HEAL: usize = 2;
+
 pub struct Hud {
     digits: Vec<SpriteVram>,
+}
+
+/// A number on screen that walks toward the value it is meant to show, as
+/// the game's HP boxes do: on a change the shown number moves by
+/// `|difference| / 8 + 2` a frame and the digits flash in the damage or
+/// heal set while a timer runs (sub_801C168, sub_801C1D0, sub_801C1EA;
+/// asm00_2.s:25853-25949).
+pub struct Counter {
+    shown: u16,
+    flash: u8,
+    set: usize,
+}
+
+impl Counter {
+    pub fn new(value: u16) -> Self {
+        Self {
+            shown: value,
+            flash: 0,
+            set: SET_PLAIN,
+        }
+    }
+
+    pub fn shown(&self) -> u16 {
+        self.shown
+    }
+
+    pub fn set(&self) -> usize {
+        if self.flash > 0 { self.set } else { SET_PLAIN }
+    }
+
+    /// One frame of catching up to `actual`.
+    pub fn update(&mut self, actual: u16) {
+        self.flash = self.flash.saturating_sub(1);
+        if self.shown == actual {
+            return;
+        }
+        let (set, flash) = if actual < self.shown {
+            (SET_DAMAGE, 10)
+        } else {
+            (SET_HEAL, 1)
+        };
+        self.set = set;
+        self.flash = self.flash.max(flash);
+        let step = self.shown.abs_diff(actual) / 8 + 2;
+        self.shown = if actual < self.shown {
+            self.shown.saturating_sub(step).max(actual)
+        } else {
+            (self.shown + step).min(actual)
+        };
+    }
 }
 
 impl Hud {
@@ -62,10 +119,22 @@ impl Hud {
     /// always runs once and zero draws a lone '0'. The game blank-pads a
     /// fixed-width field; this draws only the digits the number has.
     pub fn draw_number(&self, frame: &mut GraphicsFrame, value: u16, right_x: i32, y: i32) {
+        self.draw_number_in(frame, value, right_x, y, SET_PLAIN);
+    }
+
+    /// Draw with one of the game's three digit sets.
+    pub fn draw_number_in(
+        &self,
+        frame: &mut GraphicsFrame,
+        value: u16,
+        right_x: i32,
+        y: i32,
+        set: usize,
+    ) {
         let mut remaining = value;
         let mut x = right_x - GLYPH_W;
         loop {
-            Object::new(self.digits[(remaining % 10) as usize].clone())
+            Object::new(self.digits[set * 10 + (remaining % 10) as usize].clone())
                 // With the actors, so the chip select window covers them;
                 // the game's HP boxes are on its priority-0 HUD layer at
                 // the top of the screen, which these placeholders are not.

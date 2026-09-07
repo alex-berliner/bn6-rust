@@ -304,5 +304,11 @@
     "file": "log/proof/1788744996-eswords.png",
     "caption": "The elemental swords before the fix: real (top), ours (middle), diff (bottom) for FireSwrd and ElecSwrd. The sword objects were already exact -- only the arc kept the default blue. The strike ORs (subfamily - 0xb) into the spawn as a palette offset, so the arc takes the element's colour; with that, all four diff to zero.",
     "tag": "proof"
+  },
+  {
+    "t": 1788745929,
+    "file": "log/game/1788745929-hpbox.png",
+    "caption": "HP numbers: the player's HP is now a box at the top left, and every HP number lags the real value the way the game's does -- on a change the shown number walks by |difference|/8 + 2 a frame and flashes in one of the game's two alternate digit sets (sub_801C168/sub_801C1D0, asm00_2.s:25853). All three pre-coloured digit sets are exported now.",
+    "tag": "game"
   }
 ]

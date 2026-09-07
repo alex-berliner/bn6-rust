@@ -319,6 +319,16 @@ shown number walks toward the real HP by |delta|/8 + 2 a frame (sub_801C1D0/sub_
 asm00_2.s:25916-25949) while a flash timer picks the alternate glyph set. That count-up/down
 is worth having as a gameplay detail.
 
+## 7i. HP numbers (2026-09-06)
+
+The HP box is objects, not background (asm00_2.s:25957 DMAs the digits to OBJ VRAM), so it is
+drawn: the player's number sits at the top left (x 44, y 12 -- measured; the box frame around
+it is background art and is not drawn) and every number now lags the real value the way the
+game's does. `hud::Counter` walks the shown number toward the actual by `|difference| / 8 + 2`
+a frame and flashes while it catches up (sub_801C168 -> sub_801C1D0 / sub_801C1EA,
+asm00_2.s:25853-25949); tools/font_export.py now exports all three pre-coloured digit sets
+(dword_86E0AB8 / 86E0D38 / 86E0FB8, off_801D854/880/8AC) and `draw_number_in` picks one.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the

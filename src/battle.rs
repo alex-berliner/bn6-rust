@@ -16,7 +16,7 @@ use crate::chips::{Chip, Chips};
 use crate::custom::{self, Custom, CustomAssets, Offer};
 use crate::deck::{Deck, Rng, FOLDER_SIZE};
 use crate::field::{self, Field, Panels};
-use crate::hud::Hud;
+use crate::hud::{Counter, Hud};
 use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
@@ -83,6 +83,10 @@ const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
 // 0x20 but nothing reading it was found, so it is not applied. When full
 // the battle pauses for about 60 frames of chimes and then opens chip
 // selection (sub_8008840), which clears the gauge on entry (asm03_0.s:540).
+/// Where the player's HP number sits: the right edge and top of the box at
+/// the screen's top left, measured off the real ROM. The box frame around
+/// it is background art, which is not drawn yet.
+const PLAYER_HP_AT: (i32, i32) = (44, 12);
 const GAUGE_STEP: u16 = 0xd;
 // Chips, by id in ChipDataArr_8021DA8 (data/ChipDataArr.s). The swords
 // (attack family 0x13, sub_80EB776, asm31.s:108924) hold animation 5 for
@@ -350,6 +354,9 @@ pub struct Battle<'a> {
     custom: Option<Custom<'a>>,
     chips: &'a Chips,
     deck: Deck,
+    /// The HP numbers on screen, which lag the real values: the player's
+    /// first, then each enemy's.
+    hp_shown: Vec<Counter>,
     /// The picks from the last chip select, in order (byte_20349C0), and
     /// how many have been used (getCurChipInBattleHand_8010004 reads
     /// hand + 2 + 2 * count; sub_800FC7C advances the count).
@@ -705,6 +712,9 @@ impl<'a> Battle<'a> {
             bombs: Vec::new(),
             panels,
             bg,
+            hp_shown: core::iter::once(Counter::new(megaman.hp()))
+                .chain(enemies.iter().map(|e| Counter::new(e.hp())))
+                .collect(),
             megaman,
             enemies,
             ais,
@@ -1189,6 +1199,11 @@ impl<'a> Battle<'a> {
                 *ticks -= 1;
             }
         }
+        for (counter, hp) in self.hp_shown.iter_mut().zip(
+            core::iter::once(self.megaman.hp()).chain(self.enemies.iter().map(|e| e.hp())),
+        ) {
+            counter.update(hp);
+        }
         // An effect with N frames is drawn for N frames, this one included.
         self.effects.retain_mut(|(p, _, ticks, _)| {
             p.update();
@@ -1611,18 +1626,30 @@ impl<'a> Battle<'a> {
         }
 
         // Each enemy's HP sits just under its panel, centred, as the game's
-        // object text does. The player's HP is not drawn here: in the game it
-        // is the HUD box at the top left on the background layer, which this
-        // does not have yet, and the real ROM shows nothing under the navi.
-        for actor in self
+        // object text does; the player's is the box at the top left. Both
+        // show the lagging number, which flashes while it catches up.
+        for (actor, counter) in self
             .enemies
             .iter()
-            .filter(|a| a.is_present() && a.hp() > 0 && a.is_targetable())
+            .zip(self.hp_shown.iter().skip(1))
+            .filter(|(a, _)| a.is_present() && a.hp() > 0 && a.is_targetable())
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
-            let hp = actor.hp();
-            self.hud
-                .draw_number(frame, hp, px + self.hud.width(hp) / 2, py + 6);
+            let hp = counter.shown();
+            self.hud.draw_number_in(
+                frame,
+                hp,
+                px + self.hud.width(hp) / 2,
+                py + 6,
+                counter.set(),
+            );
+        }
+        if let Some(counter) = self.hp_shown.first() {
+            if !self.megaman.is_defeated() {
+                let hp = counter.shown();
+                self.hud
+                    .draw_number_in(frame, hp, PLAYER_HP_AT.0, PLAYER_HP_AT.1, counter.set());
+            }
         }
     }
 }
