@@ -411,6 +411,31 @@ so it is 17. Then the flash's own two big frames landed one early, so the strike
 THIRD frame. One measurement, one constant, re-measure; do not sweep several at once when the
 frames themselves can be counted.
 
+## 7af. Holding the buster: the charge (2026-09-07)
+
+0 px over the 32 frames of a hold that the capture's shockwave leaves comparable. Four findings,
+and the first one is a behaviour, not a constant.
+
+THE BUSTER FIRES ON THE RELEASE, NOT THE PRESS. Hold B on the real ROM and the navi stands in his
+idle, charging, for as long as it is held; he shoots when it is let go. A tap is a press AND a
+release, which is why tapping still fires at once -- and why a two-frame press could not tell the
+two apart. Every buster constant in 7ae is measured from the RELEASE because of this:
+`BUSTER_WINDUP` is 2 and `BUSTER_ARM_DELAY` is 2.
+
+THE CHARGE GLOW WAS THE WRONG SPRITE. The real one is `sprite_83A9190` -- four 32x32 quadrants
+around the navi at (-30,-50), (2,-50), (-30,-18), (2,-18). It is in `data/dat38_33.s`, NOT under
+data/sprites, so a search of all 97 .spr files finds nothing; `spr.load_sprite_bytes` takes
+`file.s:symbol` for exactly this case. This build had a different sprite that drew green dots.
+
+- it rides TWO pixels forward of the panel centre, not eight;
+- it starts on the ELEVENTH frame of the hold, not the tenth;
+- it is drawn OVER the navi. The real ROM's OAM has its quadrants at entries 4-7 and the navi's
+  at 8-10, so its sparks cross his body. Drawn under him they were cut wherever they crossed --
+  the last 53 px a frame, and the third time today that the answer was OAM order (7aa, 7ac).
+
+NOT VERIFIED: the full-charge state. The capture's Mettaur buries the navi in a shockwave at
+exactly the moment it would show, so `CHARGE_FRAMES` and the third animation are still guesses.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five

@@ -706,5 +706,11 @@
     "file": "log/shots/1788794470-buster_zero.png",
     "caption": "The buster is exact: real ROM above, this build below, seven frames of one shot and 0 differing pixels across the whole thirty-frame span of it. The last three constants came out of the same measurement, repeated: find the frames on which the navi's BODY changes, on each side, with the barrel and the flash excluded from the sample box. The real changes on frames 5, 6, 8 and 10 after the button and then holds; this build was changing on 6, 7, 9 and 11 -- one frame late throughout, so the windup is four frames and not five. The pose then ended a frame early, so it is 17. And the muzzle flash's own two big frames landed one early, so the strike is on the third frame of the pose, not the second. Doing it that way -- one measurement, one constant, re-measure -- took the shot from 30 differing frames and about 15000 pixels this morning to nothing. Chips and the field frame are unchanged.",
     "tag": "rust"
+  },
+  {
+    "t": 1788795076,
+    "file": "log/shots/1788795076-charge_log.png",
+    "caption": "Holding the buster: real ROM above, this build below, and 0 differing pixels over the whole 32 frames of the hold that the virus's shockwave leaves comparable. Four things came out of it. THE BUSTER FIRES ON THE RELEASE, not the press -- hold B on the real ROM and the navi stands in his idle and charges for as long as you hold it, and shoots only when you let go. A tap is a press and a release, which is why tapping fires at once and why this went unnoticed against the two-frame press the earlier test used. The charge glow was the WRONG SPRITE: the real one is sprite_83A9190, which lives in a data file rather than under data/sprites, four 32x32 quadrants around the navi; this build had a different sprite that drew green dots. It sits two pixels forward of the panel centre, not eight. It starts on the ELEVENTH frame of the hold, not the tenth. And it is drawn OVER the navi -- the real ROM's OAM puts its four quadrants at entries 4 to 7 and the navi's at 8 to 10, so its sparks cross his body; drawn under him they were cut wherever they crossed, which was the last 53 pixels a frame. The full-charge state is still unverified: the capture's Mettaur buries the navi in a shockwave at exactly the moment it would show.",
+    "tag": "rust"
   }
 ]

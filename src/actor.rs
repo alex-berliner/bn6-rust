@@ -53,10 +53,11 @@ const WARP_DELAY: u8 = 1;
 /// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
 const HOP_FRAMES: u8 = 6;
 const HOP_COOLDOWN: u8 = 0x1e;
-/// The buster does nothing for five frames after the button: measured
-/// against the capture, whose navi is pixel-identical to its idle through
-/// frame 64 with the press at 60 and changes on 65.
-const BUSTER_WINDUP: u8 = 4;
+/// The buster does nothing for two frames after the button is LET GO:
+/// measured against a capture whose navi is pixel-identical to its idle
+/// through frame 64, with B pressed on 60 and released on 62, and changes on
+/// 65.
+const BUSTER_WINDUP: u8 = 2;
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]

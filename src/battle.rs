@@ -83,13 +83,15 @@ const BUSTER_FX_FRAMES: u8 = 7;
 const BUSTER_ARM_FRAMES: u8 = 18;
 /// Frames after the button before the barrel appears, which is the same
 /// windup the pose waits out.
-const BUSTER_ARM_DELAY: u8 = 4;
+const BUSTER_ARM_DELAY: u8 = 2;
 const CHARGED_DAMAGE: u16 = 20;
 // Frames of holding A before a release fires a charged shot: the buster's
 // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
 const CHARGE_FRAMES: u16 = 100;
-// Below this the hold is not yet a charge at all (asm00_2.s:9107).
-const CHARGING_FROM: u16 = 10;
+// Below this the hold is not yet a charge at all (asm00_2.s:9107). Eleven,
+// not ten: the real ROM's sparks first show on the eleventh frame of the
+// hold, this build's on the tenth.
+const CHARGING_FROM: u16 = 11;
 // The glow is one persistent effect object on the navi's arm whose
 // animation index is the charge state, 1 charging and 2 full, hidden at 0
 // (chargeShotChargeObject_update_80E0E20, asm31.s:86354). The game tracks
@@ -97,7 +99,11 @@ const CHARGING_FROM: u16 = 10;
 // centred on the navi's body and pushed a little toward the front (the
 // direction it faces), rather than the old top-right corner offset, so the
 // charge reads as gathering at the buster.
-const GLOW_FORWARD: i32 = 8;
+const GLOW_FORWARD: i32 = 2;
+/// Which of the glow sprite's three animations each charge state plays.
+/// Animations 0 and 1 carry the same OAM offsets and different spark art;
+/// 2 is the full-charge set, which draws in the sprite's third palette.
+const GLOW_ANIM: [usize; 3] = [0, 0, 2];
 // The intro: the screen reveals over a 0x10-step fade (SetScreenFade via
 // the intro object, asm31.s:85280), then the enemy navis materialise one
 // at a time from a fade-in list, and only then does the fight state run
@@ -1481,9 +1487,11 @@ impl<'a> Battle<'a> {
         }
         // B is the buster (pwrAtkRelated_readsFromJoypad_8012FC8,
         // asm00_2.s:9332: JOYPAD_B sets the buster flag; A is the chip
-        // button, asm00_2.s:9492). It fires on the press; holding it
-        // charges, and a release at full charge fires again, harder
-        // (sub_8012EBC, asm00_2.s:9059).
+        // button, asm00_2.s:9492). IT FIRES ON THE RELEASE, not the press:
+        // hold B on the real ROM and the navi stands in his idle and charges
+        // for as long as you hold it, and only shoots when you let go. A tap
+        // is a press and a release, which is why tapping still fires at once
+        // and why this went unnoticed against a two-frame press.
         if !paused {
             // A uses the next chip of the hand when the navi is free
             // (asm00_2.s:9492-9518: AIData flag 4 when the hand has a chip).
@@ -1495,17 +1503,16 @@ impl<'a> Battle<'a> {
                 self.hand_at += 1;
                 self.use_chip(chip);
             }
-            if input.is_just_pressed(Button::B) && !self.megaman.is_busy() {
-                self.megaman.attack(actor::BUSTER);
-                // The barrel comes with the POSE, not with the button: the
-                // real navi stands in his idle for five frames first.
-                self.buster_arm_in = BUSTER_ARM_DELAY;
-            }
             if input.is_pressed(Button::B) {
                 self.charge = self.charge.saturating_add(1);
             } else {
                 if self.charge >= CHARGE_FRAMES {
                     self.megaman.attack_charged();
+                } else if self.charge > 0 && !self.megaman.is_busy() {
+                    self.megaman.attack(actor::BUSTER);
+                    // The barrel comes with the POSE, not with the button:
+                    // the real navi stands in his idle first.
+                    self.buster_arm_in = BUSTER_ARM_DELAY;
                 }
                 self.charge = 0;
             }
@@ -1538,7 +1545,7 @@ impl<'a> Battle<'a> {
         if state != self.glow_state {
             self.glow_state = state;
             if state != 0 {
-                self.glow.play(state);
+                self.glow.play(GLOW_ANIM[state]);
             }
         }
         self.glow.update();
@@ -2689,6 +2696,21 @@ impl<'a> Battle<'a> {
         for s in &self.shots {
             s.show(frame);
         }
+        // THE CHARGE GLOW GOES OVER THE NAVI. The real ROM's OAM has its four
+        // 32x32 quadrants at entries 4-7 and the navi's at 8-10, so its sparks
+        // cross his body; drawn under him they are cut wherever they would.
+        if self.glow_state != 0 && !self.megaman.is_defeated() {
+            let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
+            let dx = self.megaman.facing_dx();
+            for part in self.glow.parts().iter().rev() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((px + dx * GLOW_FORWARD + part.x, py + part.y))
+                    .set_hflip(part.hflip ^ (dx < 0))
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
         if !self.megaman.is_defeated() {
             let bubble = self.bubble.as_ref();
             let (mc, mr) = self.megaman.panel();
@@ -2724,18 +2746,7 @@ impl<'a> Battle<'a> {
                     }
                 }
             });
-            if self.glow_state != 0 {
-                let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
-                let dx = self.megaman.facing_dx();
-                for part in self.glow.parts().iter().rev() {
-                    Object::new(part.sprite.clone())
-                        .set_priority(Priority::P2)
-                        .set_pos((px + dx * GLOW_FORWARD + part.x, py + part.y))
-                        .set_hflip(part.hflip ^ (dx < 0))
-                        .set_vflip(part.vflip)
-                        .show(frame);
-                }
-            }
+
         }
         // Each enemy's HP sits just under its panel, centred, as the game's
         // object text does; the player's is the box at the top left. Both
