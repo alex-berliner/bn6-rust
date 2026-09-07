@@ -1,23 +1,48 @@
 [
   {
+    "file": "captures/bigbomb-compare.gif",
+    "name": "bigbomb-compare",
+    "label": "BigBomb \u2014 exact, frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/blkbomb-compare.gif",
+    "name": "blkbomb-compare",
+    "label": "BlkBomb \u2014 exact, frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/bugbomb-compare.gif",
+    "name": "bugbomb-compare",
+    "label": "BugBomb \u2014 the ball flies flatter than a bomb and stays where it lands; one frame before the landing differs (real ROM left, this build right)"
+  },
+  {
     "file": "captures/cannon.gif",
     "name": "cannon",
     "label": "Cannon"
   },
   {
-    "file": "captures/sword-compare.gif",
-    "name": "sword-compare",
-    "label": "Sword \u2014 matches frame for frame (real ROM left, this build right)"
+    "file": "captures/flshbom-compare.gif",
+    "name": "flshbom-compare",
+    "label": "FlshBom \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
-    "file": "captures/bigbomb-compare.gif",
-    "name": "bigbomb-compare",
-    "label": "BigBomb \u2014 matches frame for frame (real ROM left, this build right)"
+    "file": "captures/grasseed-compare.gif",
+    "name": "grasseed-compare",
+    "label": "GrasSeed \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
-    "file": "captures/suprvulc-compare.gif",
-    "name": "suprvulc-compare",
-    "label": "SuprVulc \u2014 matches frame for frame (real ROM left, this build right)"
+    "file": "captures/iceseed-compare.gif",
+    "name": "iceseed-compare",
+    "label": "IceSeed \u2014 exact, frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/lilbolr-compare.gif",
+    "name": "lilbolr-compare",
+    "label": "LilBolr1 \u2014 the boiler's arc is exact; three frames of its flame animation are still a step out of phase (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/poisseed-compare.gif",
+    "name": "poisseed-compare",
+    "label": "PoisSeed \u2014 the pod, its arc and the poison going down; only its ground shadow differs, on six frames (real ROM left, this build right)"
   },
   {
     "file": "captures/stepswrd-compare.gif",
@@ -25,8 +50,18 @@
     "label": "StepSwrd \u2014 33 of 40 frames exact (real ROM left, this build right)"
   },
   {
-    "file": "captures/flshbom-compare.gif",
-    "name": "flshbom-compare",
-    "label": "FlshBom \u2014 in progress, 102 px/frame (real ROM left, this build right)"
+    "file": "captures/suprvulc-compare.gif",
+    "name": "suprvulc-compare",
+    "label": "SuprVulc \u2014 exact, all ten shots (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/sword-compare.gif",
+    "name": "sword-compare",
+    "label": "Sword \u2014 exact, frame for frame (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/vdoll-compare.gif",
+    "name": "vdoll-compare",
+    "label": "VDoll \u2014 the doll arcs to the top of the screen and stands where it lands (real ROM left, this build right)"
   }
 ]

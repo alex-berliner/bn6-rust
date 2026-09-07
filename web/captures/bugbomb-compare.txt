@@ -1,0 +1,1 @@
+BugBomb — the ball flies flatter than a bomb and stays where it lands; one frame before the landing differs (real ROM left, this build right)
