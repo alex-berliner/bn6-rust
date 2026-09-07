@@ -387,64 +387,55 @@ in the half the navi dashes into and is worse. Both flags are in chip_compare.py
 attempt. StepSwrd is believed correct but is not cleanly measurable with this save state; a
 state with no enemy at all, or one whose enemy is off the dash panel, would settle it.
 
-### 7l (corrected, same day, after looking at the pixels again)
+### 7l (corrected twice, same day)
 
 Most of the paragraph above is wrong and is kept only so the dead ends are not walked twice.
-Measured per frame, not eyeballed: with the enemy deleted the navi's own body colour is in
-x 100..200 (the enemy's front column) for the attack's frames 0..23 and at home from frame 24,
-so the dash is real and immediate and the "identical navi at c0" reading was of the wrong
-object. What stands on the home panel for those 24 frames is an AFTERIMAGE: the navi's idle
-silhouette, 705 of the idle's 766 pixels and a strict subset of them, blinking two frames on,
-two off, from frame 1 to frame 18. That afterimage is what the residual has been all along --
-the recurring 705 in the diff is exactly it -- and nothing draws it on the Rust side.
-Its colour is a capture artifact, not the game: under `--disable-bg` every pixel keeps its red
-component and loses green and blue exactly ((8,57,123) -> (8,0,0)); no such palette exists in
-OBJ palette RAM (dumped all 16 banks) and the blend registers read mode 0 on every frame, and
-with backgrounds ON the same frame's home box matches the plain idle navi's histogram. So the
-afterimage is a semi-transparent object and mGBA's renderer-level BG disable mis-blends it.
-A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
-has run. Proved on one continuous run (no save states involved) -- A at frame 40 fires, A at
-120, 150, 200 and 260 all do nothing. Save states made after the deletion inherit the refusal,
-and one saved at frame 300 is already in the victory fade. `--clean-state` is removed.
-What replaced it is `--hide-enemy`: the enemy is kept alive and immortal and its object tiles
-are blanked every frame (`--zero 0x60103E0:448`; objects 9, 10 and 14, palette 1, tiles 31..44,
-read out of `--dump 0x7000000:1024`). Its HP counter is drawn from tiles the banner blanking
-already covers. This is the only way to capture a chip that needs a live target, but it is not
-a better default: the enemy gets hit, and its sparks, damage numbers and the navi's Full Synchro
-all land in the window -- Cannon scores 0 with the enemy deleted and 346 px/frame with it
-hidden. Under it, StepSwrd's remaining differences are the afterimage and a pink warp ring
-around the navi as it returns at frame 24.
-The afterimage is now implemented (`step_ghost`) and VERIFIED: with `--hide-enemy --semi-mask`,
-StepSwrd's frames 0 through 11 are 0 px, the step and all five blinks included. `--semi-mask`
-forgives the artifact per pixel -- a real pixel matches if it is the Rust pixel or the Rust pixel
-stripped to its red -- and everything else is still compared exactly. The proof that the artifact
-is only colour: the 61 pixels the afterimage appeared to be "missing" are all the single palette
-entry (0,132,222), whose red is 0, so the mis-blend renders them black. The afterimage is the
-navi's whole idle silhouette, in the right place, on the right frames.
-What is still open is the second half, and it is blocked on the same artifact rather than on not
-knowing what happens. Split by region, the home box is 0 px through frame 23 and every remaining
-difference to there is in x 95..140, which is the sliver of the STEPPED navi inside the window
-(it stands at x 124..162; only sixteen columns of it are ever compared, so these are small
-numbers over a small area). Both sides put the navi on the same panel, confirmed frame by frame.
-What differs is how the real ROM draws it: opaque on frames 0-7, then from frame 8 a period-4
-blink -- two frames semi-transparent (the red-only artifact), two frames in a THIRD set of
-colours that is neither the idle palette nor the artifact ((8,57,123) -> (33,74,132),
-(0,132,222) -> (16,115,189)), which is what a semi-transparent draw over the sword arc would
-give. Frames 10 and 11 are opaque again. A frame shift does not explain any of it (offsets -2 to
-+2 all score worse than 0). Two afterimages, not one: at frame 24 the navi is home and something
-semi-transparent is still standing on the panel it left.
-None of that can be settled with backgrounds off, because the capture destroys exactly the
-colours in question. It needs a --bg capture of the real ROM to read the true colours, which
-needs the parked backdrop work to compare against.
-From frame 24 the home box differs by 700-1400: the real ROM draws a pink warp ring around the
-returning navi that nothing here draws, and the recovery pose differs (a flat 667 px from frame
-30 on).
+FIRST, A HARNESS BUG THAT POISONED THE MIDDLE OF THIS INVESTIGATION: `--dump` (and `--peek`) ran
+straight after the save state loaded, BEFORE the frame loop, so every dump was a picture of the
+save state and not of the frame being looked at. Two dumps taken at different frames came back
+identical, which read as "nothing changed" when it meant "nothing was read". --dump now runs
+after the last frame, so `<count> N` dumps memory as it stands once frame N-1 has been drawn.
+Anything dumped before that fix should be re-taken. --peek still reads at load time.
 
-Clearing the entity's visible flag does NOT work as a poke: the object header's Flags byte is at
-struct offset 0 with OBJECT_FLAG_VISIBLE = 0x02 (ObjectHeader.inc:6-9), the Mettaur's struct
-base is 0x0203AB60 (HP at +0x24 = the known 0x0203AB84; T1 battle objects, stride 0xD8, array
-eT1BattleObjects at 0x0203A9A0, ewram.s:2972, with MegaMan at 0x0203A9B0), but the harness writes
-cheats before runFrame and the game re-sets the bit every frame, so it has no effect at all.
+What is actually true, measured per frame from the framebuffer:
+- The navi's own body colour is on the enemy's front column for the attack's frames 0..23 and at
+  home from frame 24. The dash is real and immediate. There is no deletion "flash": what looked
+  like one is the afterimage below.
+- HOME AFTERIMAGE: the navi's idle silhouette stands on the panel it stepped off, drawn two
+  frames on and two off, on frames 1-2, 5-6, 9-10, 13-14 and 17-18. It is drawn with the navi's
+  palette masked down to red -- OBJ palette RAM holds a whole bank that is the navi's palette
+  entry for entry with green and blue zeroed. This is the GAME, not the capture. (An earlier note
+  here called it an mGBA blend artifact; that was the --dump bug talking.)
+  Implemented as `step_ghost` with `spr::Player::set_red_only`, and it lands exactly: those ten
+  frames and everything else through frame 23 are 0 px.
+- DESTINATION AFTERIMAGE: the panel the navi steps TO carries a second red copy, two on and two
+  off on frames 8-9, 12-13, 16-17, 20-21, 24-25 and 28-29. It is a separate object, not the navi
+  recoloured: on frames 12-13 and 16-17 the panel holds both a red silhouette and the navi's
+  ordinary body colour at once. It outlives the step -- the navi is home from frame 24 and the
+  red copy is still blinking there at 29. Which pose it holds is unresolved; the silhouettes do
+  not cleanly match the navi's pose at any fixed lag. NOT implemented.
+- StepSwrd now scores 164 px/frame over 40 frames, with 20 of them at 0. What is left is exactly
+  the destination afterimage's frames, the return (24-29, 32-33: the real also draws a pink warp
+  ring), and the standing banner artifact at frame 6.
+
+Capture modes, and what each costs:
+- A state with no enemy is impossible: the game refuses a chip press once the deletion sequence
+  has run. Proved on one continuous run with no save states involved -- A at frame 40 fires, A at
+  120, 150, 200 and 260 all do nothing. States saved after the deletion inherit the refusal, and
+  one saved at frame 300 is already in the victory fade. `--clean-state` is gone.
+- `--hide-enemy` keeps the enemy alive and immortal and blanks its object tiles every frame
+  (`--zero 0x60103E0:448`; objects 9, 10 and 14, palette 1, tiles 31..44, decoded from
+  `--dump 0x7000000:1024`). Its HP counter comes from tiles the banner blanking already covers.
+  It is the only way to capture a chip that needs a target, and it is expensive: the enemy gets
+  hit, and the hit puts the navi into FULL SYNCHRO, which rewrites the navi's own palette bank in
+  place -- bank 0 stops being the navi's colours. That is what made an earlier reading of "a
+  third set of colours" look mysterious. Cannon scores 0 with the enemy deleted and 346 px/frame
+  with it hidden. Use it only before the strike lands.
+- Clearing the entity's visible flag does NOT work as a poke: the object header's Flags byte is at
+  struct offset 0 with OBJECT_FLAG_VISIBLE = 0x02 (ObjectHeader.inc:6-9), the Mettaur's struct
+  base is 0x0203AB60 (HP at +0x24 = the known 0x0203AB84; T1 battle objects, stride 0xD8, array
+  eT1BattleObjects at 0x0203A9A0, ewram.s:2972, MegaMan at 0x0203A9B0), but cheats are written
+  before runFrame and the game re-sets the bit every frame, so it has no effect at all.
 
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 

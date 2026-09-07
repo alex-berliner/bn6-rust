@@ -186,6 +186,13 @@ pub struct Player {
     /// (sprite_forceWhitePalette, asm/sprite.s:1141).
     white: Option<PaletteVramSingle>,
     white_on: bool,
+    /// The current palette with green and blue masked off, allocated on first
+    /// use and keyed by the index it came from. StepSwrd's afterimage is drawn
+    /// this way: the real ROM loads a whole palette bank that is the navi's
+    /// with only the red component kept, entry for entry (read out of OBJ
+    /// palette RAM on the frame it is drawn).
+    red: Option<(u16, PaletteVramSingle)>,
+    red_on: bool,
     parts: Vec<Part>,
 }
 
@@ -203,6 +210,8 @@ impl Player {
             offset_palettes: Default::default(),
             white: None,
             white_on: false,
+            red: None,
+            red_on: false,
             parts: Vec::new(),
         };
         p.load_frame();
@@ -255,6 +264,17 @@ impl Player {
         self.ticks_left = ticks;
     }
 
+    /// Draw every part with green and blue masked off, or normally again.
+    pub fn set_red_only(&mut self, on: bool) {
+        if on == self.red_on {
+            return;
+        }
+        self.red_on = on;
+        let ticks = self.ticks_left;
+        self.load_frame();
+        self.ticks_left = ticks;
+    }
+
     /// Advance by one hardware frame, loading the next animation frame when the
     /// current one's duration expires. A one-shot animation holds its last
     /// frame rather than wrapping; the caller decides what to play next.
@@ -297,6 +317,23 @@ impl Player {
                         .expect("white palette should fit in vram")
                 })
                 .clone()
+        } else if self.red_on {
+            let index = frame.pal + self.palette_add as u16;
+            match &self.red {
+                Some((cached, palette)) if *cached == index => palette.clone(),
+                _ => {
+                    self.red = None;
+                    let src = self.assets.palette(index as usize);
+                    let mut colours = [Rgb15::new(0); 16];
+                    for (i, c) in colours.iter_mut().enumerate() {
+                        *c = Rgb15::new(src.colour(i).0 & 0x001f);
+                    }
+                    let palette = PaletteVramSingle::try_allocate_new(&Palette16::new(colours))
+                        .expect("red-only palette should fit in vram");
+                    self.red = Some((index, palette.clone()));
+                    palette
+                }
+            }
         } else {
             let index = frame.pal + self.palette_add as u16;
             match &self.palette {
@@ -323,6 +360,7 @@ impl Player {
             let offset_index = frame.pal as usize + e.pal_offset as usize;
             let part_palette = if e.pal_offset != 0
                 && !self.white_on
+                && !self.red_on
                 && offset_index < self.assets.palette_count()
             {
                 self.offset_palettes[e.pal_offset as usize & 7]

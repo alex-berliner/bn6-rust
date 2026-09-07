@@ -260,27 +260,6 @@ int main(int argc, char** argv) {
 			++i;
 		}
 	}
-	/* Dump a memory range to a file: `--dump addr:bytes:file`. Useful for
-	 * reverse-engineering a struct (e.g. the live BattleState) without poking
-	 * word by word. */
-	for (int i = 4; i < argc; ++i) {
-		if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc) {
-			char* p = strdup(argv[i + 1]);
-			char* c1 = strchr(p, ':'); *c1 = 0; char* c2 = strchr(c1 + 1, ':');
-			*c2 = 0;
-			uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
-			int bytes = atoi(c1 + 1);
-			const char* path = c2 + 1;
-			FILE* f = fopen(path, "wb");
-			for (int b = 0; b < bytes; ++b) {
-				uint8_t v = (uint8_t) core->busRead8(core, addr + b);
-				fwrite(&v, 1, 1, f);
-			}
-			fclose(f);
-			fprintf(stderr, "dumped %d bytes @ 0x%08x -> %s\n", bytes, addr, path);
-			free(p); ++i;
-		}
-	}
 	/* A memory poke after the state loads: `--poke addr:value` (16-bit value)
 	 * writes to a 16-bit address, for patching battle RAM (e.g. the hand chip
 	 * list at byte_20349C0). Repeatable. */
@@ -358,6 +337,30 @@ int main(int argc, char** argv) {
 		core->runFrame(core);
 		if (write_frame(buf, stride)) {
 			return 1;
+		}
+	}
+
+	/* Dump a memory range to a file: `--dump addr:bytes:file`, taken AFTER the
+	 * last frame runs, so `<count> N` dumps what memory holds once frame N-1
+	 * has been drawn. It used to run before the loop, which silently made
+	 * every dump a picture of the save state instead of of the frame being
+	 * looked at. --peek still reads at load time. */
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* c1 = strchr(p, ':'); *c1 = 0; char* c2 = strchr(c1 + 1, ':');
+			*c2 = 0;
+			uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
+			int bytes = atoi(c1 + 1);
+			const char* path = c2 + 1;
+			FILE* f = fopen(path, "wb");
+			for (int b = 0; b < bytes; ++b) {
+				uint8_t v = (uint8_t) core->busRead8(core, addr + b);
+				fwrite(&v, 1, 1, f);
+			}
+			fclose(f);
+			fprintf(stderr, "dumped %d bytes @ 0x%08x -> %s\n", bytes, addr, path);
+			free(p); ++i;
 		}
 	}
 

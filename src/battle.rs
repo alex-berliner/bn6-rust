@@ -297,6 +297,14 @@ const BOMB_FLIGHT: u8 = 40;
 /// of 1 is the attack's frame 0. Measured against the real ROM: drawn on the
 /// attack's frames 1-2, 5-6, 9-10, 13-14 and 17-18, and gone from 19 on.
 const STEP_GHOST_LAST: u8 = 19;
+/// The panel the navi steps TO carries a second red afterimage of its own,
+/// two frames on and two off over the attack's frames 8, 9, 12, 13, ... 28,
+/// 29, drawn over a navi that is still in its normal colours (both a red
+/// silhouette and body-coloured pixels are on that panel at once, so it is a
+/// separate object and not the navi recoloured). It outlives the step: the
+/// navi is home from frame 24 and the red copy is still blinking there at 29.
+/// Which pose it holds is not worked out yet, so it is not drawn (TRANSFER.md
+/// 7l).
 const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
 const BOMB_SPAWN_UP: i32 = 0x30 << 16;
 const BOMB_VX: i32 = 0x2e666;
@@ -1390,11 +1398,10 @@ impl<'a> Battle<'a> {
                     } else {
                         self.step_home = Some((col, row));
                         self.megaman.warp_to(step_to, row);
-                        self.step_ghost = Some((
-                            spr::Player::new(spr::Assets::new(MEGAMAN), actor::anim::IDLE),
-                            field::panel_centre(col, row),
-                            0,
-                        ));
+                        let mut ghost =
+                            spr::Player::new(spr::Assets::new(MEGAMAN), actor::anim::IDLE);
+                        ghost.set_red_only(true);
+                        self.step_ghost = Some((ghost, field::panel_centre(col, row), 0));
                     }
                 }
                 self.chip_in_use = Some(chip);

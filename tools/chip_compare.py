@@ -22,8 +22,10 @@ nothing to work with once the enemy is deleted, so it gets --hide-enemy: the
 enemy stays alive and immortal and its tiles are blanked every frame. That is
 not a better default -- a live enemy is hit, and its sparks, damage numbers
 and the navi's Full Synchro all land in the diff -- Cannon scores 0 with the
-enemy deleted and 346 px/frame with it hidden. Use it only where the chip
-cannot work without a target.
+enemy deleted and 346 px/frame with it hidden, and the hit puts the navi into
+Full Synchro, which rewrites its palette bank in place and quietly changes
+every colour you are trying to compare. Use it only where the chip cannot work
+without a target, and only before the strike lands.
 
 Keep --frames inside the attack: the real capture presses A once, while the
 Rust demo's auto-fire starts the next use as soon as the navi is free, so
@@ -47,19 +49,19 @@ STERILE = "/tmp/bn6f_sterile.gba"
 STATE = "/tmp/pausedwithcannon.state"
 HAND_SLOT = "0x020349c2"
 BANNER_TILES = "0x6016E00:1280"
-# The Mettaur's object tiles. Deleting the enemy costs 24 frames of red
-# deletion flash over everything, and the game refuses a chip press once that
-# sequence has run, so a chip that needs a live target cannot be captured that
-# way (--a-frame and a post-deletion save state both hit the refusal). Keeping
-# it alive and blanking its tiles every frame leaves the arena as empty as
-# deleting it, with none of that. Its HP counter is drawn from tiles the
-# banner blanking already covers. Found by decoding OAM (objects 9, 10 and 14,
-# palette 1, tiles 31..44) from `--dump 0x7000000:1024`.
+# The Mettaur's object tiles, blanked every frame to leave the arena as empty
+# as deleting the enemy does while the enemy stays alive and targetable. The
+# game refuses a chip press once the deletion sequence has run (--a-frame and a
+# post-deletion save state both hit the refusal), so this is the only way to
+# capture a chip that needs something to aim at. Its HP counter is drawn from
+# tiles the banner blanking already covers. Found by decoding OAM (objects 9,
+# 10 and 14, palette 1, tiles 31..44) from `--dump 0x7000000:1024`.
 ENEMY_TILES = "0x60103E0:448"
 # The A press, and the frame the attack's effect starts. Deleting the enemy
-# leaves it dissolving for about a hundred frames with a screen flash at the
-# end; a chip that moves the navi toward that remnant (StepSwrd) needs the
-# press late enough for it to be gone, hence --a-frame.
+# leaves it dissolving on the right for about a hundred frames, which is why
+# the diff window stops at x<140; --a-frame exists to press later than that,
+# but the game refuses a chip once the deletion sequence has finished, so it
+# does not actually work.
 REAL_A_FRAME = 40
 REAL_START = 43
 
@@ -84,24 +86,6 @@ def differs(a, b, box=None):
     box = box or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
     d = ImageChops.difference(a.crop(box), b.crop(box))
     return sum(1 for px in d.getdata() if px != (0, 0, 0))
-
-
-def differs_masked(a, b, box=None):
-    """The same diff, forgiving the capture's semi-transparency artifact.
-
-    An object the game draws semi-transparent comes out of the real capture
-    with green and blue zeroed and red untouched -- mGBA's renderer-level BG
-    disable mis-blends it, which is the capture and not the game (TRANSFER.md
-    7l). So a real pixel counts as matching when it is the Rust pixel or the
-    Rust pixel stripped to its red. Every other pixel is compared exactly.
-    This says whether such an object is drawn in the right place with the
-    right sprite; it says nothing about its colour, and it would forgive a
-    genuinely wrong green or blue, so read it beside the raw number."""
-    box = box or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
-    return sum(
-        1 for r, u in zip(a.crop(box).getdata(), b.crop(box).getdata())
-        if r != u and r != (u[0], 0, 0)
-    )
 
 
 LIBRARY = 0x020008A0
@@ -144,10 +128,8 @@ def capture_real(chip, out, count):
         "--loadstate", STATE,
         # The enemy is deleted so only the navi and its chip are on screen.
         # KEEP_ENEMY makes it immortal instead, for watching it react.
-        # HIDE_ENEMY keeps it immortal and blanks its tiles, which a chip that
-        # needs a live target (StepSwrd steps to the enemy's column) has to
-        # have: deleting the enemy takes the target away and paints 24 frames
-        # of deletion flash over the navi as well.
+        # HIDE_ENEMY keeps it immortal and blanks its tiles, for a chip that
+        # needs something to aim at.
         *(["--cheat", "0x0203ab84:0xffff", "--cheat", "0x0203ab86:0xffff"]
           if KEEP_ENEMY or HIDE_ENEMY else
           ["--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0"]),
@@ -212,8 +194,6 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
-    ap.add_argument("--semi-mask", action="store_true",
-                    help="also print the diff with the Rust side's green and blue dropped, for frames holding a semi-transparent object the capture mis-blends")
     ap.add_argument("--hide-enemy", action="store_true",
                     help="keep the enemy alive but blank its tiles, for a chip that needs a live target (StepSwrd)")
     ap.add_argument("--keep-enemy", action="store_true",
@@ -257,7 +237,6 @@ def main():
     print(f"real start {REAL_START} (first change {real_first}); rust start {rust_start}")
 
     total = 0
-    masked = 0
     worst = []
     for c in range(args.frames):
         r = frame(real, REAL_START + c)
@@ -265,15 +244,8 @@ def main():
         d = differs(r, u)
         total += d
         worst.append((d, c))
-        if args.semi_mask:
-            masked += differs_masked(r, u)
-            print("c%02d %5d/%-5d" % (c, d, differs_masked(r, u)),
-                  end="\n" if c % 5 == 4 else "  ")
-        else:
-            print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
+        print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
     print("\nmean %.1f px/frame; worst %s" % (total / args.frames, sorted(worst)[-5:]))
-    if args.semi_mask:
-        print("mean %.1f px/frame with green and blue dropped" % (masked / args.frames))
 
     # A strip of the frames that differ most, plus the first and last.
     picks = sorted({0, args.frames - 1} | {c for _, c in sorted(worst)[-7:]})
