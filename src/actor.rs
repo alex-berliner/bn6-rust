@@ -360,6 +360,10 @@ impl Actor {
         self.barrier = hp;
     }
 
+    pub fn barrier(&self) -> u16 {
+        self.barrier
+    }
+
     /// On the field in some form, so drawn and given an HP number.
     pub fn is_present(&self) -> bool {
         !matches!(self.action, Action::Hidden | Action::Gone)
@@ -728,6 +732,19 @@ impl Actor {
     }
 
     pub fn show(&self, frame: &mut GraphicsFrame) {
+        self.show_with_underlay(frame, |_| {});
+    }
+
+    /// Draw the navi with `underlay` drawn between its body and its shadow:
+    /// the barrier bubble's OAM entries follow the navi's body parts and
+    /// precede its shadow on the real ROM, so it covers the shadow and the
+    /// body covers it.
+    pub fn show_with_underlay(
+        &self,
+        frame: &mut GraphicsFrame,
+        underlay: impl FnOnce(&mut GraphicsFrame),
+    ) {
+        let mut underlay = Some(underlay);
         // While invulnerable the object carries OBJECT_FLAGS_FLASHING
         // (asm00_2.s:23893) and blinks. The mercy handler's blink reads
         // `FlashingInvisTimer >> 2` and hides the object when the carry bit
@@ -743,9 +760,11 @@ impl Actor {
         if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 4) % 2 == 1 {
             return;
         }
-        // Invisibl draws the navi every other frame; the game's exact
-        // flicker under OBJECT_FLAGS_INVIS was not traced.
-        if self.invisible > 0 && self.invisible % 2 == 1 {
+        // Invisibl: the navi is not drawn on the frames where bit 1 of its
+        // timer is set -- two hidden, two shown -- (blindVisualHandledHere_8016934,
+        // asm00_2.s:16787: `lsr r0, r0, #2; bcc` on FlashingInvisTimer),
+        // the timer having been counted down before the draw.
+        if self.invisible & 2 != 0 {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
@@ -753,7 +772,15 @@ impl Actor {
         // the first listed part ends up on top; the shadow is the last part
         // and the body covers it. Against the real ROM the shadow shows 99
         // pixels under the idle navi that way, 146 the other way round.
-        for part in self.player.parts().iter().rev() {
+        // Parts draw last to first, so part 0 -- the shadow -- lands at the
+        // bottom; the underlay goes in just above it.
+        let parts = self.player.parts();
+        for (i, part) in parts.iter().enumerate().rev() {
+            if i == 0 {
+                if let Some(u) = underlay.take() {
+                    u(frame);
+                }
+            }
             // Offsets are authored facing right, so mirroring reflects the
             // whole composed frame about the actor origin, not each part in
             // place: the part's left edge moves to the opposite side.
@@ -778,6 +805,9 @@ impl Actor {
                     .set_graphics_mode(GraphicsMode::AlphaBlending);
             }
             object.show(frame);
+        }
+        if let Some(u) = underlay {
+            u(frame);
         }
     }
 }

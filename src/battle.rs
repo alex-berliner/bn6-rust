@@ -21,8 +21,8 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR,
-    VULCAN_GUN, WAVE,
+    AIRSHOT_BARREL, BARRIER, BOMB_BLAST, HEAL, MINIBOMB, PROTOMAN, SHOTFX, SWORD_ARC,
+    SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
 use agb::display::Graphics;
@@ -213,6 +213,11 @@ const HEAL_FRAMES: u8 = 14;
 const INVISIBL_FRAMES: u16 = 0x68;
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
 const BARRIER_HP: u16 = 10;
+/// Frames from the press to the effect, measured on the real ROM (the
+/// bubble object's first, one-frame dot is behind the navi, so it is
+/// created a frame before the bubble shows).
+const INVISIBL_PRESENTATION: u16 = 128;
+const BARRIER_PRESENTATION: u16 = 77;
 /// The thrown bomb (sub_80C5DBC -> t3_0x8_80C5BB0, asm31.s:29657, 29400):
 /// spawned 4 pixels ahead of the navi and 0x30 up, sprite_82F569C
 /// animation 1 with a shadow; it flies at 0x2e666 (2.9 px) a frame
@@ -295,6 +300,21 @@ pub struct Battle<'a> {
     /// real ROM's gun follows the navi's states this way; how the game
     /// passes the state to the object was not traced.
     vulcan_gun: Option<(spr::Player, (i32, i32), u8)>,
+    /// A family-0x15 chip mid-presentation: the game freezes time, dims the
+    /// screen and shows the chip's name before the effect lands
+    /// (object_timefreezeBegin, object_dimScreen, object_drawChipName;
+    /// object.s:95-287). The lengths are measured on the real ROM -- the
+    /// bubble appears 78 frames after the press for Barrier, the flicker
+    /// starts 128 after for Invisibl -- as the banner's own timing was not
+    /// traced. The dim itself is not drawn yet.
+    presentation: Option<(Chip, u16)>,
+    /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
+    /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
+    /// animation 0 -- a one-frame dot the navi covers, then three frames of
+    /// bubble, four times over, looping -- on the navi's origin and under
+    /// the navi (its OAM entries follow the navi's), for as long as the
+    /// barrier has HP (sub_80E0C74, asm31.s:86011).
+    bubble: Option<spr::Player>,
     /// Frames until the sword object is spawned: the two lead-in states
     /// (sub_80EB79C, sub_80EB84C: one frame each) before the slash state
     /// that creates it.
@@ -627,6 +647,8 @@ impl<'a> Battle<'a> {
             hand_at: 0,
             chip_in_use: None,
             sword_in: None,
+            presentation: None,
+            bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
             panels,
@@ -735,7 +757,9 @@ impl<'a> Battle<'a> {
         } else {
             false
         };
-        let paused = over || self.gauge_pause > 0 || self.custom.is_some() || intro;
+        let presenting = self.presentation.is_some();
+        let paused =
+            over || self.gauge_pause > 0 || self.custom.is_some() || intro || presenting;
         if !paused {
             self.clock += 1;
         }
@@ -914,6 +938,27 @@ impl<'a> Battle<'a> {
                 ));
             } else {
                 self.sword_in = Some(left - 1);
+            }
+        }
+        if let Some((chip, left)) = self.presentation {
+            if left == 0 {
+                self.presentation = None;
+                match chip.id {
+                    CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
+                    CHIP_BARRIER => {
+                        self.megaman.set_barrier(BARRIER_HP);
+                        self.bubble = Some(spr::Player::new(spr::Assets::new(BARRIER), 0));
+                    }
+                    _ => {}
+                }
+            } else {
+                self.presentation = Some((chip, left - 1));
+            }
+        }
+        if let Some(bubble) = self.bubble.as_mut() {
+            bubble.update();
+            if self.megaman.barrier() == 0 {
+                self.bubble = None;
             }
         }
         let navi_update = self.megaman.update();
@@ -1212,8 +1257,8 @@ impl<'a> Battle<'a> {
                     true,
                 ));
             }
-            CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
-            CHIP_BARRIER => self.megaman.set_barrier(BARRIER_HP),
+            CHIP_INVISIBL => self.presentation = Some((chip, INVISIBL_PRESENTATION)),
+            CHIP_BARRIER => self.presentation = Some((chip, BARRIER_PRESENTATION)),
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
             CHIP_AREAGRAB => {}
@@ -1396,7 +1441,23 @@ impl<'a> Battle<'a> {
             s.show(frame);
         }
         if !self.megaman.is_defeated() {
-            self.megaman.show(frame);
+            let bubble = self.bubble.as_ref();
+            let (mc, mr) = self.megaman.panel();
+            let (bx, by) = field::panel_centre(mc, mr);
+            // Two pixels forward of the origin on the real ROM.
+            let bx = bx + 2 * self.megaman.facing_dx();
+            self.megaman.show_with_underlay(frame, |frame| {
+                if let Some(bubble) = bubble {
+                    for part in bubble.parts().iter().rev() {
+                        Object::new(part.sprite.clone())
+                            .set_priority(Priority::P2)
+                            .set_pos((bx + part.x, by + part.y))
+                            .set_hflip(part.hflip)
+                            .set_vflip(part.vflip)
+                            .show(frame);
+                    }
+                }
+            });
             if self.glow_state != 0 {
                 let (px, py) = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 let dx = self.megaman.facing_dx();

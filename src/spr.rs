@@ -106,6 +106,10 @@ impl Assets {
         &self.data[start..start + len]
     }
 
+    pub fn palette_count(&self) -> usize {
+        self.u32_at(self.pal) as usize
+    }
+
     pub fn palette(&self, i: usize) -> Palette16 {
         let o = self.pal + 4 + i * 32;
         let mut colours = [Rgb15::new(0); 16];
@@ -167,14 +171,16 @@ pub struct Player {
     /// animation almost always share a palette, so this avoids reallocating it
     /// on every frame change.
     palette: Option<(u16, PaletteVramSingle)>,
-    /// The flat palettes parts with a palette offset are drawn in, keyed by
-    /// the offset. Measured on the real ROM: offset 1 draws every colour as
-    /// (247,239,222) (BGR555 0x6fbe; the Vulcan gun's first frame), offset 4
-    /// as (239,255,239) (0x77fd; the cannon barrel's silhouette), and offset
-    /// 2 leaves the sprite's own colours (the gun's second frame). The banks
-    /// those offsets land on in the game's object palette layout were not
-    /// identified; the colours were.
-    flat: [Option<PaletteVramSingle>; 8],
+    /// Palettes in VRAM for parts drawn with an OAM palette offset, keyed
+    /// by the palette index they resolve to. The offset indexes the
+    /// sprite's own palette table past the frame's palette: the cannon
+    /// barrel's silhouette is its flat palette 4, the Vulcan gun's first
+    /// frame its flat palette 1, the barrier bubble's later frames its
+    /// lighter palettes 1 and 2 -- all confirmed against the real ROM. An
+    /// offset past the palettes the asset carries falls back to the frame's
+    /// own (the gun's second frame, offset 2, shows its own colours on the
+    /// real ROM; the asset is exported with one extra palette so it does).
+    offset_palettes: [Option<PaletteVramSingle>; 8],
     /// An all-white palette for the hit flash, allocated on first use. The game
     /// does this by forcing the object's palette bank to 15
     /// (sprite_forceWhitePalette, asm/sprite.s:1141).
@@ -194,7 +200,7 @@ impl Player {
             fresh: true,
             done: false,
             palette: None,
-            flat: Default::default(),
+            offset_palettes: Default::default(),
             white: None,
             white_on: false,
             parts: Vec::new(),
@@ -311,21 +317,22 @@ impl Player {
             let (w, h) = e.size.to_tiles_width_height();
             let start = e.tile as usize * 32;
             let len = w * h * 32;
-            let flat_colour = match e.pal_offset {
-                1 => Some(0x6fbe),
-                4 => Some(0x77fd),
-                _ => None,
-            };
-            let part_palette = match flat_colour {
-                Some(colour) if !self.white_on => self.flat[e.pal_offset as usize & 7]
+            // The offset counts from the frame's own palette, not the
+            // shifted one: HiCannon's barrel, palette 1, still flashes the
+            // flat palette 4.
+            let offset_index = frame.pal as usize + e.pal_offset as usize;
+            let part_palette = if e.pal_offset != 0
+                && !self.white_on
+                && offset_index < self.assets.palette_count()
+            {
+                self.offset_palettes[e.pal_offset as usize & 7]
                     .get_or_insert_with(|| {
-                        PaletteVramSingle::try_allocate_new(&Palette16::new(
-                            [Rgb15::new(colour); 16],
-                        ))
-                        .expect("flat palette should fit in vram")
+                        PaletteVramSingle::try_allocate_new(&self.assets.palette(offset_index))
+                            .expect("offset palette should fit in vram")
                     })
-                    .clone(),
-                _ => palette.clone(),
+                    .clone()
+            } else {
+                palette.clone()
             };
             let sprite = DynamicSprite16::from_bytes(e.size, &tiles[start..start + len])
                 .to_vram(part_palette);

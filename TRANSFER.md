@@ -216,11 +216,21 @@ for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere
 asm00_1.s:17303 -> encryption_testPack_8006e84, asm00_1.s:7809: the library count
 byte_20008A0[id] ^ 0x81 must equal its copy byte_2004C20[id]); chip_compare.py now pokes a count
 of 1 and a copy of 0x80 for the chip (preserving the neighbouring byte of the halfword).
-Open, with real captures in hand (190 frames each): Barrier's bubble appears at c78 in a 16-frame
-cycle (3 on, 1 off, growing 58->62 px, green, centred on the navi); Invisibl's flicker starts at
-c128, 2 frames hidden / 2 shown; both are family-0x15 "presentation" chips whose freeze/dim/name
-sequence explains the delays and is being researched. Rust currently draws no bubble and
-flickers 1/1 from the press.
+Invisibl (b1 demo-invisibl --frames 190 --rust-start 123) and Barrier (b2 demo-barrier, same
+flags) are matched too. Both are family-0x15 "presentation" chips (object_timefreezeBegin,
+object_dimScreen, object_drawChipName, effect, undim; object.s:95-287): the battle is frozen
+and the effect lands 128 frames after the press for Invisibl and 77 for Barrier -- measured, the
+banner's own timing not traced; the screen dim is not drawn yet. Invisibl: FlashingInvisTimer
+0x68 and the navi is not drawn while bit 1 of the timer is set (blindVisualHandledHere_8016934,
+asm00_2.s:16787). Barrier: type-4 object 7 = sprite_832F8C8 animation 0 (a one-frame dot the
+navi covers, then three frames of bubble, four times, looping; its later frames use the
+sprite's lighter palettes 1 and 2 through OAM palette offsets), 2 px forward of the origin,
+between the navi's shadow and body in OAM order, alive while the barrier has HP.
+OAM palette offsets are indices into the sprite's own palette table counted from the frame's
+palette (cannon barrel silhouette = its flat palette 4, Vulcan gun flash = its flat palette 1,
+bubble = palettes 1/2); an offset past the palettes the asset carries falls back to the frame's
+own, which reproduces the gun's second frame. The exporter keeps extra palettes with
+--palettes N.
 LongSwrd (0x49), HiCannon (0x02), M-Cannon (0x03) and Barrier (0xb2) do not fire when poked
 into the real ROM's hand slot (a Sonnet pass found no static ChipData gate; unresolved --
 try dumping AIData Unk_44 after the press, or the ChipLockoutTimer, or a release-edge press).

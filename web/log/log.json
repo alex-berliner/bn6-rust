@@ -244,5 +244,17 @@
     "file": "log/proof/1788728075-strip_demo-recov30.png",
     "caption": "RECOV30 matched: tools/chip_compare.py 9b demo-recov30 --rust-start 123 -> 0 px on every frame (same heal effect as Recov10).",
     "tag": "proof"
+  },
+  {
+    "t": 1788740735,
+    "file": "log/proof/1788740735-strip_demo-barrier.png",
+    "caption": "BARRIER matched: tools/chip_compare.py b2 demo-barrier --frames 190 --rust-start 123 -> 0 px on every frame (c18/c159 = banner artifact). Presentation 77 frames (measured), then the bubble sprite_832F8C8 anim 0 (dot + 3 bubble frames, x4, looping; its lighter palettes 1/2 via OAM palette offsets) 2 px forward of the origin, drawn above the navi's shadow and under its body, while the barrier has HP.",
+    "tag": "proof"
+  },
+  {
+    "t": 1788740735,
+    "file": "log/proof/1788740735-strip_demo-invisibl.png",
+    "caption": "INVISIBL matched: tools/chip_compare.py b1 demo-invisibl --frames 190 --rust-start 123 -> 0 px on every frame. Presentation 128 frames (measured), then FlashingInvisTimer 0x68: the navi is not drawn on frames where the timer's bit 1 is set (2 hidden / 2 shown; blindVisualHandledHere_8016934).",
+    "tag": "proof"
   }
 ]
