@@ -406,5 +406,11 @@
     "file": "log/shots/1788762565-gauge_cmp.png",
     "caption": "The CUSTOM gauge is now drawn in tiles, real ROM above and this build below. Its art is in the same data file as the HP font, loaded at a fixed video tile so the mapping is a constant offset. The layout is one label row of white CUSTOM text on a dark filler, and one bar row of an end cap, six body cells, the four-cell L-or-R marker, six more body cells and a mirrored cap. The marker is cyan while the gauge fills and orange once it is full, which is the swap the gauge shows instead of any proportional readout. The remaining difference in this pair is live state, not art: the demo is at 80 HP with a part-filled gauge, the captured battle at 60 with a full one. The HUD strip is down from 5409 pixels to 812.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788763102,
+    "file": "log/shots/1788763102-cust_cmp2.png",
+    "caption": "The chip select screen, real ROM above and this build below, after correcting its palette banks. My asset had two palettes swapped relative to the real ROM: the window's frame belongs in bank 9 and the panel behind it in bank 13, and this build was putting the panel's palette into the frame's bank, which is why the whole window rendered salmon where the real one is grey. With that fixed the header, the CHIP SELECT label, the OK button and the icon row all land. Still to do: the preview card's name and its code and damage row, the vertical meter, and the strip below the icons.",
+    "tag": "chipselect"
   }
 ]

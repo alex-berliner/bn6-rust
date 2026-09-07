@@ -56,6 +56,9 @@ const SLIDE_STEP: i32 = 0xc;
 pub const BANK: u8 = 9;
 /// The card picture's bank, holding the highlighted chip's palette.
 const PICTURE_BANK: u8 = 10;
+/// The panel behind the window's frame, bank 13 on the real ROM. The HUD's
+/// own layer stands down while the menu is up, so they can share it.
+const PANEL_BANK: u8 = 13;
 /// Slot `i`'s icon draws in bank `SLOT_BANK + i`; see the module comment.
 const SLOT_BANK: u8 = 11;
 /// Chips offered per window: the base count before Custom parts
@@ -152,6 +155,11 @@ pub struct CustomAssets {
     palette: &'static [u8],
     regions: Vec<Region>,
     cursor_tiles: &'static [u8],
+    /// The 32 bytes after the cursor's tiles. Despite sitting in the cursor
+    /// section this is the WINDOW's own bank: with the menu open the real ROM
+    /// has it in BG bank 9, which is the bank the window's tilemap draws in,
+    /// while the three variants in the palette section go to bank 13. The
+    /// cursor is an object and takes it from OBJ palette space.
     cursor_palette: Palette16,
     empty_icon: TileSet,
     code_glyphs: TileSet,
@@ -267,7 +275,13 @@ impl CustomAssets {
             picks: Vec::new(),
             pictured: None,
         };
-        gfx.set_background_palette(BANK, &self.palette(0));
+        // Bank 9 is the window's frame, bank 13 the panel behind it. Read off
+        // the real ROM with the menu open: the palette section's variant 0 is
+        // the real's bank 13, and the 32 bytes after the cursor tiles are its
+        // bank 9. Setting variant 0 into bank 9 is what made the frame render
+        // salmon where the real ROM's is grey.
+        gfx.set_background_palette(BANK, &self.cursor_palette);
+        gfx.set_background_palette(PANEL_BANK, &self.palette(0));
         for (i, slot) in custom.slots.iter().enumerate() {
             if let Some(offer) = slot {
                 gfx.set_background_palette(SLOT_BANK + i as u8, &read_palette(offer.chip.palette()));
