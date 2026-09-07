@@ -1498,7 +1498,11 @@ impl<'a> Battle<'a> {
         if !paused {
             // A uses the next chip of the hand when the navi is free
             // (asm00_2.s:9492-9518: AIData flag 4 when the hand has a chip).
-            if input.is_just_pressed(Button::A)
+            // ON THE RELEASE, like the buster: the real ROM's navi holds his
+            // idle while A is down and starts the chip's pose when it comes
+            // up. Measured with a two-frame press -- his pose changes four
+            // frames after the press and this build's changed two.
+            if input.is_just_released(Button::A)
                 && !self.megaman.is_busy()
                 && self.hand_at < self.hand.len()
             {
@@ -2597,6 +2601,12 @@ impl<'a> Battle<'a> {
         // closing, not to the hand's contents: the real captures poke a chip
         // straight into the hand slot and show no icon at all, so drawing one
         // there costs every chip comparison a constant 256 px.
+        // NOT VERIFIED: it goes one frame late. The real ROM drops it on the
+        // frame the button comes UP and this build on the frame after, which
+        // is the one frame of a chip use that still differs -- 256 px, the
+        // icon's own 16x16. This build's input is read a frame later than the
+        // real ROM reads its own, so the release itself arrives late; nothing
+        // here can drop the icon before it knows the button is up.
         if let (None, Some(palette)) = (&self.custom, self.hand_icon_palette.as_ref()) {
             if let Some(chip) = self.hand.get(self.hand_at) {
                 let (mc, mr) = self.megaman.panel();

@@ -447,6 +447,20 @@ to the first and nothing says so.
 STILL NOT VERIFIED: the charged shot itself. Releasing at full charge puts the navi back in the
 shockwave's way in this capture.
 
+## 7ag. The chip button fires on the release too (2026-09-07)
+
+Same as the buster (7af), same measurement. With a two-frame press of A the real ROM's navi steps
+his pose on frames 4, 8, 11 and 17; this build stepped on 2, 6, 9 and 15 -- two early, exactly
+the length of the press. `is_just_released` aligns all four and everything after: a Cannon's use
+goes from 22277 differing pixels to 256.
+
+The 256 are the CHIP-IN-HAND ICON on one frame. The real ROM drops it on the frame the button
+comes UP; this build drops it the frame after, because it reads its input a frame later than the
+real ROM reads its own, so the release itself arrives late. Nothing in the drawing can drop an
+icon before it knows the button is up, so it is recorded rather than papered over -- and it is
+the same one-frame input lag that makes every button-driven comparison here need its offset
+measured rather than assumed.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
