@@ -263,8 +263,10 @@ impl HudTiles {
         }
         self.shown = Some(hp);
         let base = self.hp_col();
-        self.cell(base, CAP_PAIR);
-        self.cell(base + 1 + SLOTS, CAP_PAIR);
+        // The right cap is the left one MIRRORED, as the real ROM's map has
+        // it: same tile pair with h-flip set.
+        self.cell_flipped(base, CAP_PAIR, false);
+        self.cell_flipped(base + 1 + SLOTS, CAP_PAIR, true);
         let mut left = hp;
         for slot in (0..SLOTS).rev() {
             let pair = if left == 0 && slot + 1 != SLOTS {
@@ -279,11 +281,15 @@ impl HudTiles {
 
     /// Paint one two-tile column of the box.
     fn cell(&mut self, col: u32, pair: u16) {
+        self.cell_flipped(col, pair, false);
+    }
+
+    fn cell_flipped(&mut self, col: u32, pair: u16, hflip: bool) {
         for half in 0..2u16 {
             self.bg.set_tile(
                 (col as i32, half as i32),
                 &self.tiles,
-                TileSetting::new(pair * 2 + half, TileEffect::new(false, false, BANK)),
+                TileSetting::new(pair * 2 + half, TileEffect::new(hflip, false, BANK)),
             );
         }
     }

@@ -496,5 +496,11 @@
     "file": "log/shots/1788769152-flshbom_held.png",
     "caption": "FlshBom's held ball, real ROM left and this build right, at both of its positions. The ball is raised partway through the throw, and unlike MiniBomb the sprite does not encode that: every frame of it carries the same part offsets, so the game moves the object itself. Measured, it sits at one spot through the attack's frame 4 and another from frame 5. With that and the sprite's own part offsets, the whole held phase is within 51 pixels a frame and the chip is at 102, from unimplemented.",
     "tag": "chips"
+  },
+  {
+    "t": 1788769481,
+    "file": "log/shots/1788769481-hud_now.png",
+    "caption": "HUD parity, real ROM above and this build below. The HP box's right cap is the left one mirrored, the same flip bit the pick stack's frame needed, and setting it takes the box from 149 differing pixels to 33. What is left across the whole HUD is live state and backdrop scroll phase, not art: the box's 33 is 60 against 100, the gauge's 880 is an empty bar against a full one with its marker cyan rather than orange, and the label row's 91 is backdrop showing through the gaps at a different scroll phase. The gauge's own caps are within 2 pixels.",
+    "tag": "tiles"
   }
 ]
