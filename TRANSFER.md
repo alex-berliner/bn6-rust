@@ -256,13 +256,27 @@ skips any panel someone stands on. Verified in a demo (demo-areagrab): three gra
 boundary 3/3 -> 4/2 -> 5/1 -> 6/0 except the Mettaur's own panel, which stays the enemy's.
 Not pixel-compared: the effect is on the field layer, which the parity setup disables.
 
+## 7f. Sibling chips (2026-09-06)
+
+The families generalise: **Recov50** (9c demo-recov50 --rust-start 123) diffs to zero with no
+code change beyond the amount table (byte_80EC870 = 10,30,50,80,120,150,200,300,1000, indexed
+by chip id - Recov10), and Recov80/120 use the same path. **Vulcan2** (06) and **Vulcan3** (07)
+scale by shot count: measured on the real ROM the muzzle flashes run every 5 frames from c5 and
+each extra shot lengthens the attack by 11 frames (the gun is on screen 35, 46 and 57 frames for
+Vulcan1/2/3), so the firing state is `20 + (shots-3)*11` and the gun's life `35 + (shots-3)*11`.
+Both are down to ONE differing frame -- the volley's last muzzle flash (c35 for Vulcan2, c45-46
+for Vulcan3): the real gun keeps flashing a little past where our recovery switches it to its
+held animation. The flash counts (4 for 3 shots, 7 for 4, 9 for 5) do not fit a single rule yet;
+open.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
 banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
-Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon), LongSwrd (49 demo-longswrd), Recov30 (9b
+Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
+Recov50 (9c demo-recov50 --rust-start 123), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,

@@ -99,9 +99,14 @@ const CHIP_HICANNON: u16 = 2;
 const CHIP_MCANNON: u16 = 3;
 const CHIP_AIRSHOT: u16 = 4;
 const CHIP_VULCAN: u16 = 5;
+const CHIP_VULCAN2: u16 = 6;
+const CHIP_VULCAN3: u16 = 7;
 const CHIP_MINIBOMB: u16 = 54;
 const CHIP_RECOV10: u16 = 154;
 const CHIP_RECOV30: u16 = 155;
+const CHIP_RECOV50: u16 = 156;
+const CHIP_RECOV80: u16 = 157;
+const CHIP_RECOV120: u16 = 158;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
 const CHIP_BARRIER: u16 = 178;
@@ -172,18 +177,35 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
 /// after, three shots (dword_80EBFEC), handing over after the third; the
 /// last state sets animation 0xa again for 0xa ticks and exits. Against the
 /// real ROM the idle is back 35 frames after the press.
-const VULCAN: actor::AttackSpec = actor::AttackSpec {
-    windup: Some((0xa, 2)),
-    anim: 0xd,
-    frames: 20,
-    strike_at: 1,
-    recover: 13,
-    recover_anim: Some(0xa),
-};
+/// Shots per Vulcan, from the subfamily (dword_80EBFEC = 0xA050403:
+/// Vulcan1 3, Vulcan2 4, Vulcan3 5; asm31.s:109878-109892). Measured on
+/// the real ROM, the muzzle flashes run every 5 frames from c5 and each
+/// extra shot lengthens the attack by 11 frames: the gun is on screen 35,
+/// 46 and 57 frames for the three chips.
+const fn vulcan_shots(id: u16) -> u8 {
+    match id {
+        CHIP_VULCAN2 => 4,
+        CHIP_VULCAN3 => 5,
+        _ => 3,
+    }
+}
+
+const fn vulcan(shots: u8) -> actor::AttackSpec {
+    actor::AttackSpec {
+        windup: Some((0xa, 2)),
+        anim: 0xd,
+        frames: 20 + (shots - 3) * 11,
+        strike_at: 1,
+        recover: 13,
+        recover_anim: Some(0xa),
+    }
+}
 /// The Vulcan gun rides the arm for the whole attack (byte_80B8BD4 row
 /// 0xd: effect list 0xC index 0x1d = sprite_83195F0, animation 0, at
 /// arm-position row 0xe: +23 forward, 25 up, byte_80188C0[28..30]).
-const VULCAN_FRAMES: u8 = 35;
+const fn vulcan_gun_frames(shots: u8) -> u8 {
+    35 + (shots - 3) * 11
+}
 const VULCAN_ARM: (i32, i32) = (23, -25);
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
 /// object from the first frame, sound 0xaf; the hit goes out on the frame
@@ -206,8 +228,9 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
 /// row 0xa: +18 forward, 24 up, byte_80188C0[20..22]).
 const AIRSHOT_FRAMES: u8 = 21;
 const AIRSHOT_ARM: (i32, i32) = (18, -24);
-/// Recov10 and Recov30 heal their names (byte_80EC870, asm31.s:111044).
-const RECOV_HP: [u16; 2] = [10, 30];
+/// The Recov chips heal their names; the amounts are byte_80EC870
+/// (asm31.s:111044), one per subfamily.
+const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000];
 /// The heal effect's animation length, from its frame durations.
 const HEAL_FRAMES: u8 = 14;
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
@@ -384,6 +407,12 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_MCANNON);
         } else if cfg!(feature = "demo-areagrab") {
             hand.push(CHIP_AREAGRAB);
+        } else if cfg!(feature = "demo-vulcan2") {
+            hand.push(CHIP_VULCAN2);
+        } else if cfg!(feature = "demo-vulcan3") {
+            hand.push(CHIP_VULCAN3);
+        } else if cfg!(feature = "demo-recov50") {
+            hand.push(CHIP_RECOV50);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1207,16 +1236,17 @@ impl<'a> Battle<'a> {
                 self.effects
                     .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false));
             }
-            CHIP_VULCAN => {
+            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 => {
                 self.chip_in_use = Some(chip);
-                self.megaman.attack(VULCAN);
+                let shots = vulcan_shots(chip.id);
+                self.megaman.attack(vulcan(shots));
                 let (mc, mr) = self.megaman.panel();
                 let (mx, my) = field::panel_centre(mc, mr);
                 let dx = self.megaman.facing_dx();
                 self.vulcan_gun = Some((
                     spr::Player::new(spr::Assets::new(VULCAN_GUN), 0),
                     (mx + dx * VULCAN_ARM.0, my + VULCAN_ARM.1),
-                    VULCAN_FRAMES,
+                    vulcan_gun_frames(shots),
                 ));
             }
             CHIP_AIRSHOT => {
@@ -1232,9 +1262,9 @@ impl<'a> Battle<'a> {
                     false,
                 ));
             }
-            CHIP_RECOV10 | CHIP_RECOV30 => {
+            CHIP_RECOV10 | CHIP_RECOV30 | CHIP_RECOV50 | CHIP_RECOV80 | CHIP_RECOV120 => {
                 self.megaman
-                    .heal(RECOV_HP[(chip.id == CHIP_RECOV30) as usize]);
+                    .heal(RECOV_HP[(chip.id - CHIP_RECOV10) as usize]);
                 // The heal (sub_800E2FC, object.s:4685) adds the HP and
                 // spawns type-4 effect row 6 at the navi's coordinates:
                 // byte_80E0398 row 6 = effect list 0xC index 0x12, animation
@@ -1333,10 +1363,13 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_VULCAN => {
+            CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 => {
                 const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
                 let (fc, fr) = self.megaman.front_panel();
-                for i in 0..3 {
+                // Shots per chip, from the subfamily (dword_80EBFEC =
+                // 0xA050403: Vulcan1 3, Vulcan2 4, Vulcan3 5,
+                // asm31.s:109878-109892).
+                for i in 0..vulcan_shots(chip.id) as usize {
                     self.shots.push(Shot::vulcan(
                         spr::Assets::new(SHOTFX),
                         fc,

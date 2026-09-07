@@ -66,7 +66,11 @@ NAMES = os.path.join(BN6, "data", "textscript", "TextScriptChipNames0.s")
 CHIPS = [
     "Cannon", "HiCannon", "M-Cannon", "AirShot", "Vulcan1", "Sword",
     "WideSwd", "LongSwd", "MiniBomb", "Recov10", "Recov30",
-    "Barrier", "AreaGrab", "Invis", "ShotGun", "CrossGun", "Spreader",
+    "Barrier", "AreaGrab", "Invis",
+    # Siblings of families that are already matched, to test that the
+    # implementations generalise: the Vulcans differ only in shot count
+    # (dword_80EBFEC), the Recovs only in the amount (byte_80EC870).
+    "Vulcan2", "Vulcan3", "Recov50", "Recov80", "Recov120",
 ]
 ALIASES = {"WideSwd": "WideSwrd", "LongSwd": "LongSwrd", "Invis": "Invisibl"}
 ICON_BASE = 0x8725894  # data/dat38_86.s:22229; sub_80281E4 indexes id*0x80

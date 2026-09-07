@@ -37,6 +37,9 @@ ENTRIES=(
   "demo-colonel colonel Colonel AI"
   "demo-results results Results screen"
   "demo-areagrab areagrab AreaGrab: stealing the enemy's front column"
+  "demo-vulcan2 vulcan2 Vulcan2 (four shots)"
+  "demo-vulcan3 vulcan3 Vulcan3 (five shots)"
+  "demo-recov50 recov50 Recov50"
 )
 
 mkdir -p web/roms
