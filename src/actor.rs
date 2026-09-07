@@ -71,14 +71,16 @@ pub struct AttackSpec {
     pub recover_anim: Option<usize>,
 }
 
-/// The buster: animation 14 for five passes, ending once its frame counter
-/// clears 4, with the shot spawned on the second (asm31.s:108536, 108547,
+/// The buster: animation 14. The disassembly's "five passes" are passes of
+/// the ANIMATION, not game frames -- measured against the real ROM, the pose
+/// is held 21 frames and the shot leaves the gun on the eighth, which is
+/// where the capture's Mettaur loses its first HP (asm31.s:108536, 108547,
 /// 108608).
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: None,
     anim: 14,
-    frames: 5,
-    strike_at: 2,
+    frames: 21,
+    strike_at: 14,
     recover: 0,
     recover_anim: None,
 };
