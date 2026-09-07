@@ -461,6 +461,25 @@ icon before it knows the button is up, so it is recorded rather than papered ove
 the same one-frame input lag that makes every button-driven comparison here need its offset
 measured rather than assumed.
 
+## 7ah. Comparing an ENEMY, and the wave that ran a frame late (2026-09-07)
+
+Sixty of the seventy frames of a Mettaur's attack cycle are identical to the real ROM.
+
+HOW TO ALIGN A VIRUS. It acts on an RNG neither side shares, so there is no fixed offset to guess.
+Instead, list the frames on which its own BOUNDING BOX changes on each side and look for the lag
+that lines the two lists up: real 140, 141, 142, 145, 153, 157, 166 against rust 160, 161, 162,
+165, 173, 177, 186 -- a lag of twenty, exact on every boundary. Then compare pixels at that lag.
+This is the general way to compare anything the RNG drives.
+
+WHAT IT FOUND: the shockwave ran ONE FRAME BEHIND for its whole flight. Shots are stepped before
+the actors, so a shot the enemy spawns during its own update misses that frame's tick -- the same
+pre-tick the bombs' effects already do, and `Shot::shockwave` now does it too. Three of the wave's
+four differing frames go to zero; the cycle goes from 16 differing frames and 5117 px to 10 and
+2430.
+
+WHAT IS LEFT: four frames at the end of the cycle, where the real Mettaur holds its pickaxe up a
+frame or two longer than this build.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five

@@ -96,7 +96,14 @@ impl Shot {
     }
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0)
+        let mut shot = Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0);
+        // PRE-TICKED. Shots are stepped before the actors, so one the enemy
+        // spawns during its own update misses this frame's tick and its
+        // animation runs a frame behind the real ROM's for the whole flight.
+        // Measured against the capture's Mettaur: with the wave shifted one
+        // frame later, three of its four differing frames go to zero.
+        shot.player.update();
+        shot
     }
 
     #[allow(clippy::too_many_arguments)]

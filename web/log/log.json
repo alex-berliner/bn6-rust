@@ -724,5 +724,11 @@
     "file": "log/shots/1788795581-chipuse_log.png",
     "caption": "Using a chip from the hand: real ROM above, this build below, from the button to the cannon's shot -- 22277 differing pixels down to 256, on one frame. The chip button behaves like the buster's: THE CHIP FIRES ON THE RELEASE, not the press. Measured the same way, by finding the frames on which the navi's body changes: the real ROM's pose steps on frames 4, 8, 11 and 17 after a two-frame press and this build's stepped on 2, 6, 9 and 15 -- two early, exactly the length of the press. Firing on the release aligns all four and everything after them. The 256 pixels left are the chip-in-hand icon on a single frame: the real ROM drops it on the frame the button comes up and this build on the frame after, because this build reads its input a frame later than the real ROM reads its own, so the release itself arrives late. Nothing in the drawing can drop an icon before it knows the button is up; it is recorded rather than papered over.",
     "tag": "rust"
+  },
+  {
+    "t": 1788796069,
+    "file": "log/shots/1788796069-met_log.png",
+    "caption": "The Mettaur's whole attack, real ROM above and this build below: the hop, the pickaxe raised, and the shockwave rolling out. Sixty of the seventy frames of its cycle are identical. Comparing an enemy at all needed a different alignment from anything so far -- the virus acts on an RNG neither side shares, so instead of a fixed offset the two runs are matched on the frames its own BOUNDING BOX changes, and those turn out to line up exactly at a lag of twenty: 140, 141, 142, 145, 153, 157, 166 on one side and 160, 161, 162, 165, 173, 177, 186 on the other. With the cycle aligned, the wave was one frame behind for its whole flight. Shots are stepped BEFORE the actors, so a shot the enemy spawns during its own update misses that frame's tick; pre-ticking the wave the way the bombs' effects are already pre-ticked takes three of its four differing frames to zero. What is left is four frames at the very end, where the real Mettaur holds its pickaxe up a frame or two longer than this build does.",
+    "tag": "rust"
   }
 ]
