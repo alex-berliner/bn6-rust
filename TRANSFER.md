@@ -244,6 +244,27 @@ screen block 29 -> map at 0x600E800, tiles from 0x6000000, palette bank 0):
 Next: the backdrop's upload routine and map construction (a Sonnet pass is on it), then the
 HUD.
 
+## 7n. How to investigate this ROM (2026-09-07)
+
+Three habits earned their keep tonight and are worth following before reasoning about tables.
+
+1. VERIFY A NULL RESULT BEFORE BELIEVING IT. `--dump` used to read memory before the frame loop
+   ran, so every dump described the save state rather than the frame being looked at. Two dumps
+   taken at different frames came back identical, which read as "the palettes never change" when
+   it meant "nothing was read", and that went into a commit as a confident claim about an mGBA
+   blending bug. When a measurement says identical, not found, or no difference, change something
+   that MUST show up and confirm the measurement moves before concluding anything from absence.
+2. TO IDENTIFY UNKNOWN ART, SEARCH FOR ITS BYTES. Take the tiles out of OBJ or BG VRAM at a
+   chosen frame and search the assembled data files (and the 269 compressed blobs) for that exact
+   sequence. This found BlkBomb's thrown sprite among 97 sprite files, EnergBom's animation, the
+   HUD's fourth font variant, the CUSTOM gauge's tiles and the chip menu's stack frame. It is
+   faster than tracing the tables and it is decisive. Beware only that blank and near-blank tiles
+   collide, so match on a distinctive tile and prefer a multi-tile needle.
+3. FOR SCROLLED OR ANIMATED CONTENT, COMPARE THE DATA, NOT THE PICTURE. Shifting and wrapping a
+   screenshot to undo a scroll reported 2153 differing pixels on two backdrop layers that are
+   byte-identical, because the screen is a 240 px window on a 256 px map. Compare tilemaps in
+   VRAM instead. Pixels are for forming a hypothesis; the underlying data is for confirming it.
+
 ## 7m. Tile parity: the field and the backdrop (2026-09-07)
 
 The capture harness can now isolate layers: `--disable-obj` turns the sprites off and leaves the
