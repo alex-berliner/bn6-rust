@@ -61,6 +61,7 @@ static FONT: &[u8] = &Aligned(*include_bytes!("../assets/font.bin")).0;
 static FIELD: &[u8] = &Aligned(*include_bytes!("../assets/field.bin")).0;
 static BACKDROP: &[u8] = &Aligned(*include_bytes!("../assets/backdrop.bin")).0;
 static HUD_TILES: &[u8] = &Aligned(*include_bytes!("../assets/hud_tiles.bin")).0;
+static TEXT_FONT: &[u8] = &Aligned(*include_bytes!("../assets/text_font.bin")).0;
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -84,7 +85,7 @@ fn main(mut gba: agb::Gba) -> ! {
     }
     // After the results windows, which also want bank 9: the gauge holds it
     // while the fight is up and the chip window borrows it back when it opens.
-    let hud_tiles_palettes = hudtiles::HudTiles::new(HUD_TILES);
+    let hud_tiles_palettes = hudtiles::HudTiles::new(HUD_TILES, TEXT_FONT);
     palettes[hudtiles::BANK as usize] = hud_tiles_palettes.palette();
     palettes[hudtiles::GAUGE_BANK as usize] = hud_tiles_palettes.gauge_palette();
     gfx.set_background_palettes(&palettes);

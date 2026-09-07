@@ -47,8 +47,26 @@ const BLANK_TILE: u16 = 69;
 /// windows 9-11, so this one is free and is the real ROM's own choice.
 pub const BANK: u8 = 13;
 
+/// The game's own character code for an ASCII byte, which is also the index of
+/// its glyph in the text font (constants/bn6-charmap.tbl). Anything without a
+/// code is drawn as a space.
+fn char_code(c: u8) -> u16 {
+    match c {
+        b'0'..=b'9' => 0x01 + (c - b'0') as u16,
+        b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
+        b'a'..=b'z' => 0x26 + (c - b'a') as u16,
+        b'*' => 0x25,
+        _ => 0,
+    }
+}
+
+/// Where the chip name is written, in tile rows, and how wide it can run.
+const NAME_ROW: i32 = 18;
+const NAME_COLS: u32 = 12;
+
 pub struct HudTiles {
     bg: RegularBackground,
+    font: TileSet,
     tiles: TileSet,
     palette: Palette16,
     gauge_palette: Palette16,
@@ -61,7 +79,12 @@ pub struct HudTiles {
 }
 
 impl HudTiles {
-    pub fn new(data: &'static [u8]) -> Self {
+    pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
+        assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
+        let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
+        let flen = u32::from_le_bytes(font[fo..fo + 4].try_into().unwrap()) as usize;
+        let glyphs = &font[fo + 4..fo + 4 + flen];
+        assert_eq!(glyphs.as_ptr() as usize % 4, 0, "font must be word aligned");
         assert_eq!(&data[0..4], b"BNHT", "not a BNHT asset");
         let at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
         let (t, p) = (at(0x08), at(0x0c));
@@ -83,6 +106,8 @@ impl HudTiles {
         }
 
         Self {
+            // SAFETY: alignment asserted above; the exporter emits whole tiles.
+            font: unsafe { TileSet::new(glyphs, TileFormat::FourBpp) },
             bg: RegularBackground::new(
                 Priority::P1,
                 RegularBackgroundSize::Background32x32,
@@ -149,6 +174,33 @@ impl HudTiles {
             &self.tiles,
             TileSetting::new(tile, TileEffect::new(hflip, false, GAUGE_BANK)),
         );
+    }
+
+    /// Write a chip's name along the bottom, as the real ROM does while a chip
+    /// is in use, or clear it. Each glyph is two tiles stacked and its index is
+    /// the game's character code.
+    pub fn set_name(&mut self, name: Option<&str>) {
+        for col in 0..NAME_COLS {
+            let code = name
+                .and_then(|n| n.as_bytes().get(col as usize).copied())
+                .map(char_code);
+            for half in 0..2u16 {
+                let tile = match code {
+                    Some(c) if c != 0 => c * 2 + half,
+                    _ => BLANK_TILE,
+                };
+                let tiles = if code.is_some_and(|c| c != 0) {
+                    &self.font
+                } else {
+                    &self.tiles
+                };
+                self.bg.set_tile(
+                    (col as i32, NAME_ROW + half as i32),
+                    tiles,
+                    TileSetting::new(tile, TileEffect::new(false, false, BANK)),
+                );
+            }
+        }
     }
 
     /// Move the box aside for the chip menu, or bring it back.

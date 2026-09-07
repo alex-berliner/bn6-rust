@@ -914,7 +914,7 @@ impl<'a> Battle<'a> {
             bg,
             backdrop: crate::backdrop::Backdrop::new(crate::BACKDROP),
             field_slide: 0,
-            hud_tiles: crate::hudtiles::HudTiles::new(crate::HUD_TILES),
+            hud_tiles: crate::hudtiles::HudTiles::new(crate::HUD_TILES, crate::TEXT_FONT),
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -952,6 +952,15 @@ impl<'a> Battle<'a> {
             self.hud_tiles.set_menu(self.custom.is_some());
             self.hud_tiles.set_hp(self.megaman.hp());
             self.hud_tiles.set_gauge(self.gauge, GAUGE_FULL);
+            // The real ROM writes the chip's name along the bottom while the
+            // chip is in use.
+            match self.chip_in_use {
+                Some(c) => {
+                    let chip = self.chips.get(c.id as usize);
+                    self.hud_tiles.set_name(Some(chip.name()));
+                }
+                None => self.hud_tiles.set_name(None),
+            }
             // The field slides down out of the window's way and back again:
             // measured on the real ROM at 1.5 px a frame over ten frames to a
             // 15 px offset, held while the menu is up.

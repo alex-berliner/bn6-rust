@@ -442,5 +442,11 @@
     "file": "log/shots/1788764766-card_cmp2.png",
     "caption": "The preview card, real ROM left and this build right. The card's name row and its element, code and damage row are composed at runtime from a proportional font, so this build cannot draw them yet; it was leaving those cells transparent, which let the scrolling backdrop show straight through the card. They are now filled with the card's own dark interior tile, which is what the real ROM puts in the parts of those rows it is not writing text into. The window area drops to 5012 differing pixels, from 10321 when I started on the chip select screen. The picture itself already matched.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788765337,
+    "file": "log/shots/1788765337-font_proof.png",
+    "caption": "The battle text font is solved and drawing. The real ROM writes a chip's name along the bottom from a font of two-tile glyphs, one glyph per label in the ROM data, and the glyph index turns out to be the game's own character code, so the disassembly's character map indexes the font directly. Reading it from one label earlier than I first found makes code 0x0d render as C, 0x26 as a and 0x33 as n, exactly as the map says. This shot is the renderer drawing through that font in the right place and palette. What is left is the trigger: the name should appear while a chip is in use, and the demo that has the HUD does not fire one.",
+    "tag": "tiles"
   }
 ]
