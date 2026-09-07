@@ -27,6 +27,14 @@ Full Synchro, which rewrites its palette bank in place and quietly changes
 every colour you are trying to compare. Use it only where the chip cannot work
 without a target, and only before the strike lands.
 
+Every comparison carries one unavoidable artifact: the ENEMY DELETED banner
+is drawn 39 frames after the Start press and its tiles are written after the
+per-frame blanking pass, so it shows for exactly one frame -- a 369 px band at
+y 70..74, always the attack's frame 6. It cannot be moved: the banner lands at
+Start+39, the game refuses a chip press later than about Start+38 (A at 48
+with Start at 10 does nothing at all), so the banner is always just inside the
+attack. Read a lone 369 at c06 as zero.
+
 Keep --frames inside the attack: the real capture presses A once, while the
 Rust demo's auto-fire starts the next use as soon as the navi is free, so
 frames past the attack's end compare a second volley against an idle navi.
