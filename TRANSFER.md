@@ -326,7 +326,24 @@ a full one.
   that is safe because the window covers this layer, so the gauge takes bank 9 last, gets it back
   when the window closes, and the layer stands down while the window is up.
 
-WHAT IS LEFT is the CHIP NAME, rows 18-19 of BG3, 1224 px. Its glyphs are a font in the ROM at
+THE CHIP NAME IS DRAWN, and with it the last text on the battle screen. The font is at
+dword_86B7AE0 in data/dat38_60.s, one glyph per 64-byte label, each glyph two CONSECUTIVE tiles
+top over bottom, and THE GLYPH INDEX IS THE GAME'S CHARACTER CODE, so constants/bn6-charmap.tbl
+indexes it directly (0x0d renders C, 0x26 a, 0x33 n). tools/text_font_export.py emits codes
+0..0x3f. Two traps: searching the blob for a glyph's bytes gives false matches on near-blank
+tiles, and the symbol that first turns up in such a search is seven glyphs into the font.
+The damage figure after the name is the HUD asset's SECOND digit set, orange, twelve pairs into
+that blob, stepping one pair per digit like the white one.
+ITS TRIGGER IS THE OPPOSITE of the obvious one: the real ROM names the chip ABOUT to be used,
+not the one in flight. On a capture with A at frame 40, the name stands from frame 0 and clears
+on frame 42, the frame the chip fires, so it follows the front of the hand.
+
+WHOLE-SCREEN TILE PARITY, sprites off: 7523 px, from 10134. By band: HUD strip 3610, backdrop
+2808, field 147, name strip 958. None of it is missing art -- it is live state (the captured
+battle is at 60 HP with a full gauge holding a Cannon; a demo is at 100 with an empty gauge and a
+different chip) plus the backdrop's scroll phase, which depends on when the battle started.
+
+FOR THE RECORD, the older note said the chip name was rows 18-19 of BG3, 1224 px. Its glyphs are a font in the ROM at
 dword_86B7CA0 (data/dat38_60.s): each character is two tiles stacked, and the game copies glyphs
 into VRAM to compose a name, which is why the two n's of "Cannon" are the same glyph at different
 VRAM tiles. Searching the blob for a glyph's bytes is NOT a reliable way to index it -- blank and

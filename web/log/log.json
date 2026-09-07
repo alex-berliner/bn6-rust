@@ -454,5 +454,11 @@
     "file": "log/shots/1788765519-name_cmp2.png",
     "caption": "The chip name strip, real ROM above and this build below. The name is drawn from the game's own text font, whose glyph index is its character code, and the damage figure follows it in the second, orange digit set carried in the HUD asset. The trigger was backwards at first: the real ROM names the chip that is ABOUT to be used, not the one in flight. Measured on a capture where the name stands from the first frame and clears on the frame the chip fires, so it follows the front of the hand. The two strips differ only in which chip each build is holding.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788765679,
+    "file": "log/shots/1788765679-tiles_cmp2.png",
+    "caption": "Battle tile parity, real ROM above and this build below, sprites off so only the tilemaps show. Every layer is now drawn: the backdrop scrolling behind, the field with its front lip, the HP box, the CUSTOM gauge with its label and marker, and the chip name with its damage figure. Nothing structural is missing. What still differs is live state rather than art: the captured battle is at 60 HP with a full gauge holding a Cannon, this build at 100 with an empty gauge holding a HiCannon, and the backdrop sits at a different scroll phase because the two battles started at different times. The whole screen is down from 10134 differing pixels to 7523, and the field alone is within 147.",
+    "tag": "tiles"
   }
 ]
