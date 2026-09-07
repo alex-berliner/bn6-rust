@@ -664,5 +664,11 @@
     "file": "log/shots/1788787976-arcs_log.png",
     "caption": "The two worst arcs in the scoreboard, fixed by sweeping rather than fitting. Each pair is real ROM above, this build below: LilBolr's boiler at the four frames that used to differ most (430, 358, 251 and 165 pixels), then BugBomb's ball at its four. All eight are 0 now. The sweep put both chips on BlkBomb's own across-speed, and BugBomb on BlkBomb's gravity as well, so the thrown things share a launcher and differ mostly in how hard it throws -- start a new chip's arc from those two constants and sweep the launch speed alone. Sweeping needs care in one respect: the launch speed and the gravity trade off along a ridge, because a taller throw with a harder pull looks the same, so step ALONG the ridge and not across it, and every minimum found here was a plateau several hundred wide. LilBolr goes from 26.9 pixels a frame over its floor to 1.4, BugBomb from 30.1 to 1.1, VDoll from 5.4 to 2.0. What is left in each is no longer the arc: tracking the object's bounding box frame by frame shows the paths now agreeing exactly, and the residue is one frame before a landing, a boiler's flame a step out of phase, and a ground shadow that starts larger than this build draws it and settles over six frames. The emotion window is gone from the sterile arena too, which the real ROM drops with the last enemy.",
     "tag": "rust"
+  },
+  {
+    "t": 1788788299,
+    "file": "log/shots/1788788299-boiler_hp.png",
+    "caption": "LilBolr is exact. The last three frames that differed were not the flame and not the arc: they were the summoned boiler's HP figure passing behind the navi's head. Real ROM above, this build below, at the three frames in question. The figure was drawn with the rest of the thrown object, and the thrown object is drawn after the actors, so the navi's helmet cut the digits -- 69 white pixels in the real ROM against 50 in mine on the first of them. The real ROM's OAM puts the figure ahead of the navi, so it is drawn ahead of him now. Worth generalising: when a residue sits where two objects overlap, count the pixels of ONE colour on each side before assuming the position is wrong. The figure's bounding box was identical in both all along.",
+    "tag": "rust"
   }
 ]

@@ -2523,6 +2523,26 @@ impl<'a> Battle<'a> {
                     .show(frame);
             }
         }
+        // The summoned boiler's HP figure goes ABOVE the navi. Drawn with the
+        // rest of the bomb -- which comes after the actors, so under them --
+        // the navi's arm cut the digits on the two frames the figure passes
+        // behind him, and the real ROM's is whole there.
+        for b in self.bombs.iter().filter(|b| b.show_damage) {
+            let (x, y) = b.position();
+            // LilBolr carries a figure under the thing it lobs, in the same
+            // number objects the HP counters use. Measured on the real ROM:
+            // two 32x16 objects at (84,64) and (116,64) on the attack's frame
+            // 19, where the boiler's centre is (93,35). It shows with the
+            // enemy deleted, so it belongs to the projectile rather than to a
+            // hit.
+            // It is NOT this chip's damage: it reads 40 for all three
+            // LilBolrs, whose powers are 100, 140 and 180. It is the summoned
+            // LilBoiler virus's own HP, which fits the thrown object being a
+            // virus sprite -- so it is a constant, not b.damage, and drawing
+            // b.damage there scored worse (404 px/frame against 352).
+            self.hud
+                .draw_number(frame, BOILER_HP, x + BOILER_HP_RIGHT, y + BOILER_HP_DOWN);
+        }
         // Attack objects such as the cannon barrel draw over the navi that
         // spawned them (the real ROM shows the barrel covering the arm), and
         // a later one over an earlier one: the sword's arc, spawned at the
@@ -2659,14 +2679,6 @@ impl<'a> Battle<'a> {
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
                     .show(frame);
-            }
-            if b.show_damage {
-                self.hud.draw_number(
-                    frame,
-                    BOILER_HP,
-                    x + BOILER_HP_RIGHT,
-                    y + BOILER_HP_DOWN,
-                );
             }
         }
 

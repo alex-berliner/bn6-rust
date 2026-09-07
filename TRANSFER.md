@@ -426,7 +426,7 @@ speed, and two of them on the same gravity:
 |----------|--------------|---------|--------------|--------|-------|-------|
 | BlkBomb  | 0x2C000      | 0x22051 | 0x27C0       | --     | exact | 7.4   |
 | BugBomb  | = BlkBomb's  | 0x25D60 | = BlkBomb's  | 35.4   | 6.4   | 5.3   |
-| LilBolr  | = BlkBomb's  | 0x22280 | 0x27F0       | 34.6   | 9.1   | 7.7   |
+| LilBolr  | = BlkBomb's  | 0x22280 | 0x27F0       | 34.6   | exact | 7.7   |
 | VDoll    | 0x1EF00      | 0x31600 | 0x2060       | 10.7   | 7.3   | 5.3   |
 
 So the thrown things share a launcher and differ mostly in how hard it throws. When a new chip's
@@ -443,7 +443,12 @@ a plateau several hundred wide; take the middle.
 WHAT IS LEFT IS NOT THE ARC. Each of the three now has a handful of pixels on a handful of
 frames, and tracking the object's bounding box frame by frame shows the paths agreeing exactly.
 - BugBomb: one frame, 80 px, the last frame before it lands.
-- LilBolr: three frames at the start, 68 px, the boiler's FLAME animation a step out of phase.
+- LilBolr: DONE. The last three frames were the boiler's HP FIGURE passing behind the navi's
+  head -- the figure is drawn with the thrown object, the thrown object after the actors, so his
+  helmet cut the digits: 69 white pixels in the real ROM against 50 in this build. The real ROM's
+  OAM puts the figure ahead of the navi. When a residue sits where two objects overlap, count the
+  pixels of ONE colour on each side before assuming a position is wrong; the figure's bounding
+  box had been identical all along.
 - PoisSeed (6.9, never an arc problem): the pod's GROUND SHADOW on six frames, 115 px. Measured
   against a later frame of the same capture, the real shadow covers 218 pixels on the first frame
   of flight and shrinks to 196 over six -- which is the fixed size this build draws throughout.
@@ -504,9 +509,10 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-39 of 43 exact (2026-09-07, latest run). The four that are not: LilBolr 26.9 px/frame over floor,
-BugBomb 30.1, VDoll 5.4, PoisSeed 1.6. BlkBomb joined the exact ones after its constants were
-swept against the capture rather than fitted.
+40 of 43 exact (2026-09-07, latest run). The three that are not: VDoll 2.0 px/frame over floor,
+PoisSeed 1.6, BugBomb 1.1 -- a few hundred pixels between them, none of it the arc (7aa).
+BlkBomb, LilBolr and the seeds joined the exact ones after their constants were SWEPT against the
+capture rather than fitted.
 
 TWO FIXTURES, and it matters which:
 - `demo-hudmatch` matches the capture's HUD STATE -- 60 HP, full gauge, Cannon in hand -- and
