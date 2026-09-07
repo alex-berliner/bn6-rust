@@ -4,11 +4,13 @@
 usage: python3 scoreboard.py [--only NAME,...] [--out FILE]
 
 Each row is one chip: its demo feature, the frames compared and the mean
-pixels per frame chip_compare.py reports. Read a lone 369 at frame 6 as zero
--- that is the ENEMY DELETED banner, which shows for exactly one frame and
-cannot be moved (chip_compare.py's docstring explains why) -- so the column
-"floor" is what the banner alone contributes and a chip is exact when its mean
-equals its floor.
+pixels per frame chip_compare.py reports. EXACT MEANS ZERO. It used to mean
+"equals a floor", because the ENEMY DELETED banner contributed 369 px on one
+frame of every comparison and could not be zeroed from the harness -- the
+harness writes before each frame and the game uploads the banner during the
+frame that shows it. tools/patch_sterile.py now patches the routine that
+uploads it (sub_801E838) out of the capture ROM, so there is no floor left to
+subtract and a chip is exact when its mean is 0.
 
 The frame counts are the length of each attack: too few misses its end, too
 many compares a second volley against an idle navi, because the sterile demo
@@ -73,8 +75,6 @@ CHIPS = [
 ]
 
 MEAN = re.compile(r"^mean ([0-9.]+) px/frame")
-#: The banner's one frame, and the mean it alone puts on a run of N frames.
-BANNER = 369
 
 
 def main():
@@ -98,11 +98,11 @@ def main():
             m = MEAN.match(line)
             if m:
                 mean = float(m.group(1))
-        floor = BANNER / frames
+        floor = 0.0
         rows.append((feature, frames, mean, floor))
-        state = "?" if mean is None else ("EXACT" if mean <= floor + 0.05 else "%.1f" % (mean - floor))
-        print("%-16s %3d frames  mean %-8s floor %-6.1f %s" % (
-            feature, frames, "n/a" if mean is None else "%.1f" % mean, floor, state))
+        state = "?" if mean is None else ("EXACT" if mean <= 0.05 else "%.1f" % mean)
+        print("%-16s %3d frames  mean %-8s %s" % (
+            feature, frames, "n/a" if mean is None else "%.1f" % mean, state))
         sys.stdout.flush()
 
     exact = sum(1 for _, _, m, f in rows if m is not None and m <= f + 0.05)

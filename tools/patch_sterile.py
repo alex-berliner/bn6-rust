@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Patch the canon bn6f ROM so battle_isBattleOver always returns "not over".
+"""Patch the canon bn6f ROM for the capture harness.
+
+Two patches: battle_isBattleOver always returns "not over", and the ENEMY
+DELETED banner is never uploaded.
 
 This is the first half of a sterile real-battle arena: it stops the win/lose
 check from concluding the fight, so a battle with the enemy deleted stays live.
@@ -21,9 +24,23 @@ def main():
     if d[off:off+2] != b'\x01\x20':
         print(f"warning: expected mov r0,#1 at 0x{off:08x}, got {d[off:off+2].hex()}")
     d[off:off+4] = b'\x00\x20\x70\x47'  # mov r0,#0 ; bx lr  (always not-over)
+
+    # And stop the ENEMY DELETED banner being drawn at all. sub_801E838
+    # (asm00_2.s:31106) is the routine that uploads its text to OBJ VRAM
+    # 0x6016E00 -- five transfers, one per 32x16 object -- and with it gone
+    # those objects draw from whatever is in the tiles, which the harness
+    # zeroes, so nothing shows. Without this the banner costs every chip
+    # comparison exactly 369 px on one frame and "exact" has to mean "equals a
+    # floor" rather than zero. Zeroing the tiles alone cannot work: the harness
+    # writes before each frame and the game uploads the banner during the very
+    # frame that shows it.
+    banner = 0x0801E838 - base
+    if d[banner:banner + 2] != b'\xf0\xb5':
+        print(f"warning: expected push at 0x{banner:08x}, got {d[banner:banner+2].hex()}")
+    d[banner:banner + 2] = b'\x70\x47'  # bx lr
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print(f"patched battle_isBattleOver -> always not-over: {sys.argv[2]}")
+    print(f"patched battle_isBattleOver and the ENEMY DELETED banner: {sys.argv[2]}")
 
 if __name__ == '__main__':
     main()
