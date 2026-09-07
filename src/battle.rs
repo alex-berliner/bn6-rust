@@ -87,6 +87,8 @@ const BUSTER_ARM_FRAMES: u8 = 18;
 /// Frames after the button before the barrel appears, which is the same
 /// windup the pose waits out.
 const BUSTER_ARM_DELAY: u8 = 2;
+/// Frames between the chip button going down and the chip being used.
+const CHIP_USE_DELAY: u8 = 3;
 const CHARGED_DAMAGE: u16 = 20;
 // Frames of holding B before a release fires a charged shot: the buster's
 // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
@@ -804,6 +806,8 @@ pub struct Battle<'a> {
     results_mark: Option<agb::display::object::SpriteVram>,
     /// Frames until the buster's barrel joins the pose.
     buster_arm_in: u8,
+    /// Frames until the pressed chip button uses a chip.
+    chip_use_in: u8,
     /// Whether the HP box's bank is currently on its orange ramp, and what
     /// it should be on the next frame.
     hp_flashing: bool,
@@ -1158,6 +1162,7 @@ impl<'a> Battle<'a> {
         let shown: Option<results::Shown> = None;
         let results_mark: Option<agb::display::object::SpriteVram> = None;
         let buster_arm_in = 0u8;
+        let chip_use_in = 0u8;
         let hp_flashing = false;
         let hp_flash_next = false;
         let fade_out = 0u8;
@@ -1244,6 +1249,7 @@ impl<'a> Battle<'a> {
             shown,
             results_mark,
             buster_arm_in,
+            chip_use_in,
             hp_flashing,
             hp_flash_next,
             fade_out,
@@ -1508,17 +1514,22 @@ impl<'a> Battle<'a> {
         if !paused {
             // A uses the next chip of the hand when the navi is free
             // (asm00_2.s:9492-9518: AIData flag 4 when the hand has a chip).
-            // ON THE RELEASE, like the buster: the real ROM's navi holds his
-            // idle while A is down and starts the chip's pose when it comes
-            // up. Measured with a two-frame press -- his pose changes four
-            // frames after the press and this build's changed two.
-            if input.is_just_released(Button::A)
-                && !self.megaman.is_busy()
-                && self.hand_at < self.hand.len()
-            {
-                let chip = self.hand[self.hand_at];
-                self.hand_at += 1;
-                self.use_chip(chip);
+            // ON THE PRESS, two frames later -- NOT on the release, which is
+            // what a two-frame press cannot tell apart. Held down for sixty
+            // frames on the real ROM, the chip still goes off on the second
+            // frame after the press and the icon leaves the navi's hand then;
+            // only the BUSTER waits for the button to come up.
+            if input.is_just_pressed(Button::A) && self.chip_use_in == 0 {
+                self.chip_use_in = CHIP_USE_DELAY;
+            }
+            if self.chip_use_in > 0 {
+                self.chip_use_in -= 1;
+                if self.chip_use_in == 0 && !self.megaman.is_busy() && self.hand_at < self.hand.len()
+                {
+                    let chip = self.hand[self.hand_at];
+                    self.hand_at += 1;
+                    self.use_chip(chip);
+                }
             }
             if input.is_pressed(Button::B) {
                 self.charge = self.charge.saturating_add(1);

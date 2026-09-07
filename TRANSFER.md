@@ -454,6 +454,12 @@ his pose on frames 4, 8, 11 and 17; this build stepped on 2, 6, 9 and 15 -- two 
 the length of the press. `is_just_released` aligns all four and everything after: a Cannon's use
 goes from 22277 differing pixels to 256.
 
+CORRECTED: THE CHIP BUTTON IS PRESS-DRIVEN, NOT RELEASE-DRIVEN. Holding A for sixty frames on the
+real ROM still fires the chip two frames after the press and drops the icon then; a two-frame
+press cannot tell "release" from "press + 2" apart, and reading it as a release was wrong for
+every longer hold. Only the BUSTER waits for the button to come up -- verified separately by
+holding B for eighty frames, through which the navi stands in his idle and charges.
+
 AND THE D-PAD IS THE SAME TWO FRAMES. The chip window's cursor moves TWO frames after the
 direction: held six frames, the real ROM's bracket stays on OK for two and is on the new slot on
 the third. 108 of the 110 frames of a two-step walk then match, card and all. Three findings with
