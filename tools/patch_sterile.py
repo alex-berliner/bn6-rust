@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Patch the canon bn6f ROM for the capture harness.
 
-Two patches: battle_isBattleOver always returns "not over", and the ENEMY
-DELETED banner is never uploaded.
+Three patches: battle_isBattleOver always returns "not over", the ENEMY
+DELETED banner is never uploaded, and neither is the chip-name popup.
 
 This is the first half of a sterile real-battle arena: it stops the win/lose
 check from concluding the fight, so a battle with the enemy deleted stays live.
@@ -38,9 +38,25 @@ def main():
     if d[banner:banner + 2] != b'\xf0\xb5':
         print(f"warning: expected push at 0x{banner:08x}, got {d[banner:banner+2].hex()}")
     d[banner:banner + 2] = b'\x70\x47'  # bx lr
+
+    # The same OBJ VRAM carries the chip-name popup -- the name of the chip
+    # you just used, eight 8x16 objects at (28,32) in OBJ palette 11, with the
+    # damage number beside it. sub_801E95C (asm00_2.s:31261) builds it: it
+    # looks the chip up (getChip8021DA8), picks the buffer and destination for
+    # the local player (sub_801EA5A -> byte_203EDA0 / 0x6016E00), renders the
+    # name through renderTextGfx_8045F8C and queues the damage digits through
+    # sub_801EA34. Uploading it during the frame that shows it defeats the
+    # harness's zeroing exactly as the banner did, and it costs one frame of
+    # every chip comparison: 127 px for AreaGrab at the attack's frame 18.
+    # Its only caller is sub_801E8CC, which discards the return value.
+    popup = 0x0801E95C - base
+    if d[popup:popup + 2] != b'\xf0\xb5':
+        print(f"warning: expected push at 0x{popup:08x}, got {d[popup:popup+2].hex()}")
+    d[popup:popup + 2] = b'\x70\x47'  # bx lr
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print(f"patched battle_isBattleOver and the ENEMY DELETED banner: {sys.argv[2]}")
+    print(f"patched battle_isBattleOver, the ENEMY DELETED banner and the\n"
+          f"chip-name popup: {sys.argv[2]}")
 
 if __name__ == '__main__':
     main()

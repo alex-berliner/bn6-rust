@@ -162,7 +162,7 @@ def check_chip_use():
 #: name -> (function, the number it produced when last verified). A non-zero
 #: `want` is a residue that is understood; TRANSFER.md says why for each.
 CHECKS = [
-    ("chips", check_chips, 7),        # BugBomb, VDoll and the five name-flash chips
+    ("chips", check_chips, 2),        # BugBomb and VDoll, both one rounding step
     ("tiles", check_tiles, 0),
     ("field", check_field, 0),
     ("window", check_window, 0),

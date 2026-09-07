@@ -11,6 +11,10 @@ set -eu
 cd "$(dirname "$0")/.."
 
 ENTRIES=(
+  # First in the list, so it is what the dropdown opens on: no demo feature at
+  # all, which is the whole game -- chip select, the fight, the results -- with
+  # every matched piece in place at once.
+  "default rollup Everything at once: the full battle, chip select through results, with every matched piece in place"
   "demo-buster buster Buster / charge shot"
   "demo-sword sword Sword / WideSwrd / LongSwrd"
   "demo-minibomb minibomb MiniBomb"

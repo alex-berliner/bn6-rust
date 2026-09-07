@@ -10,7 +10,10 @@ frame of every comparison and could not be zeroed from the harness -- the
 harness writes before each frame and the game uploads the banner during the
 frame that shows it. tools/patch_sterile.py now patches the routine that
 uploads it (sub_801E838) out of the capture ROM, so there is no floor left to
-subtract and a chip is exact when its mean is 0.
+subtract and a chip is exact when its mean is 0. The same patch file also
+removes the chip-name popup (sub_801E95C), which the banner's floor had been
+hiding: it costs one frame of every comparison and is what kept AreaGrab,
+Invisibl, Barrier, Barr100 and Barr200 off zero.
 
 The frame counts are the length of each attack: too few misses its end, too
 many compares a second volley against an idle navi, because the sterile demo

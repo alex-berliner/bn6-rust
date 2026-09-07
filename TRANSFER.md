@@ -552,8 +552,8 @@ at a time -- which is exactly how a regression in one survives a session spent o
 today's changes helped one fixture and cost others, and both were caught only because somebody
 remembered to check.
 
-A check's `want` is what it measured when last verified, not zero: `chips` wants 7 (BugBomb,
-VDoll and the five name-flash chips) and `chip-use` wants 256 (the chip-in-hand icon, one frame).
+A check's `want` is what it measured when last verified, not zero: `chips` wants 2 (BugBomb and
+VDoll) and `chip-use` wants 256 (the chip-in-hand icon, one frame).
 A check that comes out BETTER says so, and its number should be written down.
 
 AND EXACT NOW MEANS ZERO. The scoreboard's old "floor" -- 369 px of ENEMY DELETED banner on one
@@ -563,6 +563,34 @@ floor while carrying a real residue: AreaGrab, Invisibl, Barrier, Barr100 and Ba
 the CHIP'S NAME as eight 8x16 objects at (28,32) for one frame, out of the same OBJ VRAM the
 banner uses, and this build draws nothing there. That is the argument for patching a thing out
 rather than measuring around it: a floor hides whatever else is under it.
+
+## 7am. The chip-name popup, patched out; 41 of 43 exact (2026-09-07)
+
+Those five are now zero, and the fix was the same move again: find the routine, patch it out.
+
+The popup is `sub_801E95C` (asm/asm00_2.s:31261). It looks the chip up
+(`getChip8021DA8`), calls `sub_801EA5A` to pick the local player's buffer and destination
+(`byte_203EDA0` -> `0x6016E00`; player two gets `byte_203EFA0` -> `0x6017280`), renders the
+name through `renderTextGfx_8045F8C`, and queues the damage digits beside it through
+`sub_801EA34` (`0x6017060` / `0x6017160`). Its only caller is `sub_801E8CC`, one entry in the
+state table at `off_801E944`, and that caller pushes and pops its own `r0` around the call, so
+the return value is discarded and a bare `bx lr` at the entry is safe. `patch_sterile.py` writes
+`70 47` at `0x0801E95C`.
+
+WHY IT ONLY EVER COST ONE FRAME. The tiles are uploaded once and the objects then live off VRAM
+for the ~58 frames the name is up. The harness zeroes `0x6016E00` before every frame, so every
+frame but the upload frame draws transparent -- the same shape of artifact the banner had. For
+AreaGrab that frame was the attack's c18, 127 px at x 29..91, y 40..42: the bottom three rows of
+eight 8x16 glyphs, the rest of them above the diff window's y=40.
+
+WHY sub_801E838 WAS NOT ENOUGH. It is the banner AND it writes to the same `0x6016E00`, which is
+what made it look like one problem. It is not: the banner is five 32x16 objects written in a 5x4
+loop up to `0x6017300`, the name is eight 8x16 glyphs written by the text renderer, and they are
+two routines that happen to share a tile region.
+
+SCOREBOARD: **41 of 43 exact**, every chip at literal 0.0 except BugBomb 1.1 and VDoll 1.6, and
+both of those are one frame of one-pixel rounding, not an arc (7aa). `regress.py`'s `chips`
+check now wants 2.
 
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
@@ -782,8 +810,9 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-41 of 43 exact (2026-09-07, latest run). The two that are not: VDoll 1.6 px/frame over floor and
-BugBomb 1.1 -- about 190 pixels between them, none of it the arc (7aa).
+41 of 43 exact (2026-09-07, latest run, and now at a floor of zero -- 7am). The two that are
+not: VDoll 1.6 px/frame and BugBomb 1.1 -- about 190 pixels between them, none of it the arc
+(7aa).
 BlkBomb, LilBolr and the seeds joined the exact ones after their constants were SWEPT against the
 capture rather than fitted.
 
