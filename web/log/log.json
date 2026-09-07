@@ -340,5 +340,11 @@
     "file": "log/shots/1788751424-stepswrd_red.png",
     "caption": "StepSwrd's afterimage is a real red palette, not a capture artifact. Found a harness bug first: --dump ran before the frame loop, so every dump pictured the save state instead of the frame being examined. Fixed, and re-reading OBJ palette RAM on the right frame shows the game loads a bank that is the navi's palette with green and blue zeroed. Implemented as a red-only palette mode; StepSwrd is now 164 px/frame over 40 frames with 20 frames at exactly 0, down from 340. What remains is a second afterimage on the panel the navi steps to, which blinks on its own schedule over a navi still drawn in normal colours.",
     "tag": "stepswrd"
+  },
+  {
+    "t": 1788751699,
+    "file": "log/shots/1788751699-bigbomb_done.png",
+    "caption": "BigBomb matched: its nine-panel blast is now pixel-exact on every frame across the whole screen. The puffs overlap, so the order they are drawn decides which seams show, and that order was the entire remaining difference. Read it straight out of the real ROM's object memory on a blast frame: the nine puffs sit in memory as centre, left, right of the front row, then centre, right, left of the middle row, then the same for the back row, with the lowest index on top.",
+    "tag": "bigbomb"
   }
 ]

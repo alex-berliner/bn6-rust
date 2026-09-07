@@ -1309,17 +1309,24 @@ impl<'a> Battle<'a> {
         });
         for ((col, row), damage, wide) in landed {
             // The landing panel, and its eight neighbours for BigBomb.
+            // The nine puffs overlap, so the order they are pushed decides
+            // which seams show. Effects are drawn last-pushed-first, so this
+            // list runs back to front. Read straight out of the real ROM's
+            // OAM on a blast frame (`--dump 0x7000000:1024`): its nine puffs
+            // occupy OAM in the order centre, left, right of the FRONT row,
+            // then centre, right, left of the middle row, then centre, right,
+            // left of the back row, lowest index on top.
             let spread: &[(i32, i32)] = if wide {
                 &[
-                    (0, 0),
-                    (0, -1),
-                    (0, 1),
-                    (1, 0),
-                    (-1, 0),
-                    (1, -1),
-                    (-1, 1),
-                    (1, 1),
                     (-1, -1),
+                    (1, -1),
+                    (0, -1),
+                    (-1, 0),
+                    (1, 0),
+                    (0, 0),
+                    (1, 1),
+                    (-1, 1),
+                    (0, 1),
                 ]
             } else {
                 &[(0, 0)]

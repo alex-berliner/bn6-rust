@@ -446,7 +446,11 @@ MiniBomb (36 demo-minibomb, flight in the default window and the landing with --
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
-Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd), Recov30 (9b
+Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd),
+BigBomb (ca demo-bigbomb --frames 60, and 0 across the whole screen with --xmax 240 from c10 on:
+its nine puffs overlap and the draw order was the entire difference -- read out of the real ROM's
+OAM on a blast frame, they occupy OAM centre/left/right of the front row, then centre/right/left
+of the middle row, then centre/right/left of the back row, lowest index on top), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,
