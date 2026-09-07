@@ -303,6 +303,35 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7y. The five bomb chips left, named and half-found (2026-09-07)
+
+The bomb family (attack_family 0x12) has five chips this build does not draw. Their NAMES come
+straight out of the ROM -- tools/chip_export.py already parses
+data/textscript/TextScriptChipNames0.s, so `chip_names()` gives them without guessing:
+
+  id 67  BugBomb   subfamily 07, power 0
+  id 68  GrasSeed  subfamily 0d, power 10, params 2,2, element 3
+  id 69  IceSeed   subfamily 09, power 10, params 1,1, element 1
+  id 70  PoisSeed  subfamily 0c, power 10, param2 3, element 10
+  id 150 VDoll     subfamily 08, power 10, element 7
+
+POISSEED IS THE ONE TO BUILD FIRST, because its panel art already exists: the field asset carries
+HOLE, BROKEN, NORMAL, CRACKED and POISON, and the ROM's panel tilemap has only those five, so
+GrasSeed's and IceSeed's panels are art this project does not have at all.
+
+What is already known about PoisSeed, from a sterile capture with chip 0x46 poked in:
+- The navi throws a small magenta pod in an arc. In OAM mid-flight it is a 16x16 object at tile
+  0x23 in OBJ palette 1, with its ground shadow a 16x8 at tile 0x21 -- the same shadow-as-part-0
+  shape the bombs use.
+- Those four tiles are byte_82F569C.spr, found by pulling them out of OBJ VRAM and searching all
+  97 sprite files. tools/spr_export.py reads it: 10 animations, 25 frames.
+- When it lands, a pale green three-by-three grid appears over the ENEMY's half. With the
+  backgrounds stripped it still shows, so the poison overlay is drawn with OBJECTS, not by
+  swapping panel tiles.
+- Its arc can be fitted the way FlshBom's and BlkBomb's were: track the pod by its magenta
+  colours, and SWEEP the constants against the capture rather than fitting a parabola to the
+  tracked centroid (7x's note on why).
+
 ## 7x. The RESULT window (2026-09-07)
 
 It had never been compared: demo-results needs a chip press the capture harness cannot land, so
