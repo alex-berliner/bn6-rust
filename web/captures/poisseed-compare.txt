@@ -1,1 +1,1 @@
-PoisSeed — the pod, its arc and the poison going down; only its ground shadow differs, on six frames (real ROM left, this build right)
+PoisSeed — exact: the pod, its arc and the poison going down (real ROM left, this build right)

@@ -1,1 +1,1 @@
-VDoll — the doll arcs to the top of the screen and stands where it lands (real ROM left, this build right)
+VDoll — the doll arcs to the top of the screen and stands where it lands; five frames at the edge of the window still differ (real ROM left, this build right)
