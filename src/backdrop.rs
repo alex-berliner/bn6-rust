@@ -134,7 +134,9 @@ impl Backdrop {
             .set_scroll_pos((-((self.x_q / 4) as i32), -((self.y_q / 4) as i32)));
     }
 
-    pub fn show(&self, frame: &mut GraphicsFrame) {
-        self.bg.show(frame);
+    /// Returns its background id, so a blend can include this layer -- the
+    /// battle's opening whitens EVERY layer, not just the field's.
+    pub fn show(&self, frame: &mut GraphicsFrame) -> agb::display::tiled::RegularBackgroundId {
+        self.bg.show(frame)
     }
 }

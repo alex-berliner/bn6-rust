@@ -193,8 +193,11 @@ const GLOW_ANIM: [usize; 3] = [0, 0, 2];
 const SCREEN_FADE_FRAMES: u16 = if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
     0x10 * 2
 } else {
-    71
+    71 + INTRO_RAMP
 };
+/// Frames the white takes to come off at the end of the hold. Measured: full
+/// white through frame 70, then 92, 85, 77, 70, 62, 56, 48 and settled at 86.
+const INTRO_RAMP: u16 = 14;
 // The custom gauge: a u16 at BattleState+0x20 that the fight state adds
 // 0xd to each frame, full at 0x4000 (sub_800855E, asm00_1.s:11100;
 // accessors asm00_2.s:29821-29883). A speed word at +0x22 defaults to
@@ -2969,11 +2972,13 @@ impl<'a> Battle<'a> {
         // The sterile arena leaves the backdrop out for the same reason it
         // draws a plain field: the real ROM's captures strip their BG layers
         // with --disable-bg, so both sides must be MegaMan on black.
+        let mut backdrop_id = None;
+        let mut hud_id = None;
         if let Some(backdrop) = self.backdrop.as_ref() {
-            backdrop.show(frame);
+            backdrop_id = Some(backdrop.show(frame));
         }
         if let Some(hud) = self.hud_tiles.as_ref() {
-            hud.show(frame);
+            hud_id = Some(hud.show(frame));
         }
         let bg_id = self.bg.show(frame);
         // The chip-name popup is OAM entries 0 upward on the real ROM, so it
@@ -3020,11 +3025,25 @@ impl<'a> Battle<'a> {
                     .enable_background(bg_id)
                     .enable_object();
             } else {
-                frame
-                    .blend()
-                    .brighten(Num::from_raw(16))
-                    .enable_background(bg_id)
-                    .enable_object();
+                // Pure white while the hold lasts, then RAMPED OFF over the
+                // last INTRO_RAMP frames. Measured: the real ROM is 100% white
+                // through frame 70 and then comes down 92, 85, 77, 70, 62, 56,
+                // 48 to its settled level at 86 -- sixteen frames of ramp, not
+                // the instant cut this first had.
+                let left = self.intro_fade.min(INTRO_RAMP);
+                let amount = (16 * left / INTRO_RAMP) as u8;
+                let mut blend = frame.blend();
+                let mut fade = blend.brighten(Num::from_raw(amount));
+                fade.enable_background(bg_id).enable_object();
+                // EVERY layer, not just the field's: the backdrop and the HUD
+                // are their own backgrounds and stayed coloured underneath,
+                // which is why the "white" measured 70 out of 100.
+                if let Some(id) = backdrop_id {
+                    fade.enable_background(id);
+                }
+                if let Some(id) = hud_id {
+                    fade.enable_background(id);
+                }
             }
         } else if let Some((mosaic, alpha)) = core::iter::once(&self.megaman)
             .chain(self.enemies.iter())

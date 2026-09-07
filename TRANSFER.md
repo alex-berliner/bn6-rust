@@ -1029,12 +1029,23 @@ THE REAL OPENING, from `/tmp/battlestart.state`:
     frame    173     the third         (+32)
     frame    173     the chip window opens
 
-THE WHITE IS NOT A FADE. It is a hold: 100% white from frame 0 through 70 and 0% at 71, with no
-ramp between. This build fades in from BLACK over 32 frames (`SCREEN_FADE_FRAMES`, a stand-in the
-file has always flagged as unread), which is both the wrong colour and less than half the length.
-Note the sampling trap that hid this for a while: a "brightness" measure reads white as full
-brightness and therefore reads a white screen as a finished fade. Measure the COLOUR, not the
-level.
+THE WHITE IS A HOLD AND THEN A RAMP, and getting this right took being wrong twice about how to
+measure it.
+
+    frames 0..70   pure white, held
+    frames 71..86  ramping off: 92, 85, 77, 70, 62, 56, 48, then settled at 42
+
+FIRST WRONG MEASURE: a "brightness" sum reads white as FULL brightness, so a white screen looks
+like a finished fade. It reported the field at full brightness from frame 0. Measure the colour,
+not the level.
+SECOND WRONG MEASURE, and it survived into a commit: counting only PURE (255,255,255) pixels reads
+a 90%-white screen as 0% white, so the ramp was invisible and this section first said "a HOLD, not
+a fade -- 100% at 70 and 0% at 71, no ramp between". There IS a ramp; a threshold that strict
+cannot see one. The fix both times is the same: measure a continuous quantity, not a predicate.
+
+This build fades in from BLACK over 32 frames (`SCREEN_FADE_FRAMES`, a stand-in the file has
+always flagged as unread), which is the wrong colour, less than half the length, and ramping the
+wrong way.
 
 WHAT THIS BUILD DOES, same fixture: field at ~32, viruses at 59, 92 and 125 (+33, +33), window at
 134. So the SPACING is right -- about thirty frames a virus, against the real 28 and 32 -- and
@@ -1046,8 +1057,14 @@ SETTLED, AND IMPLEMENTED. The question was whether the white belongs to the BATT
 map-to-battle transition this build has no map to run. It is the battle's: `battlestart.state`'s
 scroll counters (`eBGScrollCBCounters`, zeroed exactly once at battle init) read 0x0000 there, so
 init has already happened, and the screen is white for 71 frames AFTER it. `SCREEN_FADE_FRAMES` is
-71 and the intro holds full white rather than ramping from black. Measured back: 71 frames of
-white on both sides.
+71 + 14 and the intro holds full white and then ramps it off, rather than ramping up from black.
+Measured back, the two curves run 100, 100, 100, 95/100, 92/93, 88/89, 85/86 ... 44/43, 42/43 --
+a maximum difference of 5 across the whole ramp.
+
+AND THE WHITE HAD TO COVER EVERY LAYER. A first attempt whitened only the field's background and
+the objects, and measured 70 out of 100 rather than pure white, because the BACKDROP and the HUD
+are their own backgrounds and stayed coloured underneath. `Backdrop::show` and `HudTiles::show`
+now return their ids so the blend can include them.
 
 AND IT BROKE EIGHT CHECKS AT ONCE, which is worth recording as the cost of the change. Every
 fixture but `tiles` compares against a capture taken MID-BATTLE, where no intro is running, and

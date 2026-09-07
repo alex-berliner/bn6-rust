@@ -386,7 +386,9 @@ impl HudTiles {
         }
     }
 
-    pub fn show(&self, frame: &mut GraphicsFrame) {
-        self.bg.show(frame);
+    /// Returns its background id, so a blend can include this layer -- the
+    /// battle's opening whitens EVERY layer, not just the field's.
+    pub fn show(&self, frame: &mut GraphicsFrame) -> agb::display::tiled::RegularBackgroundId {
+        self.bg.show(frame)
     }
 }
