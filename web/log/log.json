@@ -592,5 +592,11 @@
     "file": "log/shots/1788778651-hand_icon_cmp.png",
     "caption": "The chip in hand hangs over the navi, and this build was not drawing it. Real ROM left, this build right -- the navi stands a column further along in the fixture, which is why the two icons are forty pixels apart, but the height matches to the pixel. It is a 16x16 object whose four tiles are the chip's own icon, the same art the chip window's slots use, at its panel's centre one left and fifty-six up; only its OBJECT palette was new, byte_872CFD4, which is not the window's icon bank and differs from it at two entries. It is deliberately left out of the sterile arena: the object belongs to the chip window closing rather than to the hand's contents, and the real captures poke a chip straight into the hand slot and show none.",
     "tag": "hud"
+  },
+  {
+    "t": 1788779171,
+    "file": "log/shots/1788779171-scoreboard.png",
+    "caption": "The chip scoreboard, every comparison run in one pass: 36 of 38 exact. Each row is a chip's mean pixels per frame against its FLOOR -- the mean the ENEMY DELETED banner's single unmovable frame alone puts on a run of that length, 369 divided by the frame count -- so a chip is exact when its mean equals its floor. Running them all together immediately caught something a chip-at-a-time check had missed: the chip-in-hand icon's palette was being allocated for every battle, including the sterile arena that never draws it, and SuprVulc -- the longest volley in the game -- then ran out of object palette banks and crashed. It reads its floor now. The two that are not exact are BlkBomb, over by 2.2 a frame, and LilBolr by 26.9, both a one-pixel wobble on a handful of frames.",
+    "tag": "chip"
   }
 ]
