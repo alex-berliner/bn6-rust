@@ -44,6 +44,9 @@ const WAVE_DAMAGE: u16 = 10;
 /// HP a chip-demo target carries so several hits can land without the fight
 /// ending; the real value is 40, but that dies to one sword.
 const DEMO_TARGET_HP: u16 = 900;
+/// What the field fixture's Mettaur carries: the same 0xffff the capture
+/// writes into its HP every frame to keep it standing.
+const FIELDMATCH_HP: u16 = 0xffff;
 // MegaMan's own HP does come from the disassembly: byte_80210DD
 // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
 const PLAYER_HP: u16 = 100;
@@ -899,10 +902,16 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
     // The real ROM's pausedwithcannon save state, for whole-screen
     // comparisons: MegaMan at (2,2), a Mettaur at (5,2) kept alive.
     if cfg!(feature = "demo-field") {
+        // The capture keeps its Mettaur alive by writing 0xffff into its HP
+        // every frame, and the readout under it shows what that leaves: the
+        // low four digits, 5535. The fixture carries the same number so the
+        // readout can be compared too, and a Cannon in hand so the icon the
+        // window leaves over the navi is there as well.
+        hand.push(CHIP_CANNON);
         return (
             hand,
             2,
-            Some((spr::Assets::new(METTAUR), 5, 2, ai::Style::Mettaur, DEMO_TARGET_HP)),
+            Some((spr::Assets::new(METTAUR), 5, 2, ai::Style::Mettaur, FIELDMATCH_HP)),
         );
     }
     let megaman_col = 3;
@@ -2661,6 +2670,28 @@ impl<'a> Battle<'a> {
                 }
             }
         }
+        // Each enemy's HP sits just under its panel, centred, as the game's
+        // object text does; the player's is the box at the top left. Both
+        // show the lagging number, which flashes while it catches up.
+        for (actor, counter) in self
+            .enemies
+            .iter()
+            .zip(self.hp_shown.iter().skip(1))
+            .filter(|(a, _)| a.is_present() && a.hp() > 0 && a.is_targetable())
+        {
+            let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
+            let hp = counter.shown();
+            // Level with the panel's centre, not six below it: measured
+            // against the capture, whose Mettaur's readout occupies rows
+            // 112-119 where this build's sat at 118-125.
+            self.hud.draw_number_in(
+                frame,
+                hp,
+                px + self.hud.width(hp) / 2,
+                py,
+                counter.set(),
+            );
+        }
         for enemy in self.enemies.iter().filter(|e| e.is_present()) {
             enemy.show(frame);
         }
@@ -2699,25 +2730,6 @@ impl<'a> Battle<'a> {
             }
         }
 
-        // Each enemy's HP sits just under its panel, centred, as the game's
-        // object text does; the player's is the box at the top left. Both
-        // show the lagging number, which flashes while it catches up.
-        for (actor, counter) in self
-            .enemies
-            .iter()
-            .zip(self.hp_shown.iter().skip(1))
-            .filter(|(a, _)| a.is_present() && a.hp() > 0 && a.is_targetable())
-        {
-            let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
-            let hp = counter.shown();
-            self.hud.draw_number_in(
-                frame,
-                hp,
-                px + self.hud.width(hp) / 2,
-                py + 6,
-                counter.set(),
-            );
-        }
         // NOT DRAWN: the player's own HP. The real ROM puts it in the tile
         // HP box on BG3 (hudtiles.rs), not in object text -- this build drew
         // both, so a full battle showed the number twice, once in the box and

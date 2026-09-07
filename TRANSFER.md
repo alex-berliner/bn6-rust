@@ -330,6 +330,30 @@ AND THE LIMIT. Two phases in that screen CANNOT be settled by one save state:
   state was saved is not something the state explains. Do not chase it with a constant; capture a
   battle FROM ITS FIRST FRAME if it ever matters.
 
+## 7ac. A whole frame WITH SPRITES, live virus included (2026-09-07)
+
+0 of 38400 pixels: MegaMan, a Mettaur mid-swing, its shockwave, the emotion window, the
+chip-in-hand icon and the enemy's HP readout, all identical to the real ROM. The first comparison
+with a live virus rather than an empty arena.
+
+THE FIXTURE. `demo-field` -- MegaMan (2,2), Mettaur (5,2) -- with two additions: a Cannon in hand,
+so the icon the chip window leaves over the navi is there, and the Mettaur's HP set to 0xffff,
+which is what the capture writes into it every frame to keep it standing. The real side is
+`/tmp/mgba_capture /tmp/bn6f_sterile.gba out N --loadstate /tmp/pausedwithcannon.state --cheat
+0x0203ab84:0xffff --cheat 0x0203ab86:0xffff --disable-bg --script "Start@10"`; the Rust side is
+the same ROM captured with `--disable-bg`. Align by searching rust frames against one real frame.
+
+WHAT THE ENEMY'S HP READOUT GOT WRONG, all three worth knowing:
+- it sits LEVEL with its panel's centre, not six pixels below;
+- it draws at most FOUR digits -- 0xffff reads 5535, not 65535;
+- it goes ABOVE the enemy. With it behind, the Mettaur's helmet ate the outline row above the
+  digits: thirteen pixels, the last thing left. Same lesson as LilBolr's HP figure (7aa): the
+  game's object text is drawn ahead of the thing it belongs to.
+
+WHAT IT DOES NOT SHOW. Only that frame matches. The virus's next move comes from an RNG this
+build does not reproduce, so the frame after is already 765 px apart. The result is that every
+OBJECT on the screen is right, not that the fight runs the same.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five

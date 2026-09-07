@@ -23,6 +23,9 @@ pub const SET_PLAIN: usize = 0;
 pub const SET_DAMAGE: usize = 1;
 pub const SET_HEAL: usize = 2;
 
+/// Digits the game's object-text HP readout has room for.
+const MAX_DIGITS: u32 = 4;
+
 pub struct Hud {
     digits: Vec<SpriteVram>,
 }
@@ -138,6 +141,11 @@ impl Hud {
     ) {
         let mut remaining = value;
         let mut x = right_x - GLYPH_W;
+        // FOUR DIGITS AND NO MORE. The capture keeps its Mettaur alive by
+        // writing 0xffff into its HP, and the readout under it shows 5535,
+        // not 65535 -- so the object text has four slots and the rest is
+        // dropped.
+        let mut left = MAX_DIGITS;
         loop {
             Object::new(self.digits[set * 10 + (remaining % 10) as usize].clone())
                 // With the actors, so the chip select window covers them;
@@ -147,7 +155,8 @@ impl Hud {
                 .set_pos((x, y))
                 .show(frame);
             remaining /= 10;
-            if remaining == 0 {
+            left -= 1;
+            if remaining == 0 || left == 0 {
                 break;
             }
             x -= GLYPH_W;
