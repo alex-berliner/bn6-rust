@@ -330,7 +330,19 @@ and poison all matching. Three things it taught:
   frame later AND already one tick in, so its first frame shows for exactly one frame -- the real
   ROM's landing frame carries neither pod nor sheet.
 
-IT WAS THE ONE TO BUILD FIRST because its panel art already exists: the field asset carries
+ICESEED AND GRASSEED CAME FREE WITH IT and are both EXACT. They are the same pod sprite and the
+same nine-panel sheet, told apart by palette:
+- THE POD's palette is the chip's attack_param_2 as a shift on top of the OAM offset of 9 every
+  part carries -- IceSeed 1, GrasSeed 2, PoisSeed 3, landing on the sprite's palettes 10, 11, 12.
+- THE SHEET's DOES NOT FOLLOW IT. Shifting the sheet by the same amount took PoisSeed from 6.9
+  px/frame to 178.8. PoisSeed and IceSeed share the sheet sprite's own palette 0; GrasSeed takes
+  8. Dump OBJ bank 1 while a sheet is up and compare it against the asset's palettes.
+Neither sets its panels: the field asset has no grass or ice art. That is the one thing still
+missing from them, and it is invisible in the sterile arena either way.
+
+Still unbuilt: BugBomb (id 67) and VDoll (id 150).
+
+POISSEED WAS THE ONE TO BUILD FIRST because its panel art already exists: the field asset carries
 HOLE, BROKEN, NORMAL, CRACKED and POISON, and the ROM's panel tilemap has only those five, so
 GrasSeed's and IceSeed's panels are art this project does not have at all.
 
