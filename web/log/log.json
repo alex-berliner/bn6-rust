@@ -538,5 +538,11 @@
     "file": "log/shots/1788771691-barrier.gif",
     "caption": "Barrier, real left and this build right. The bubble's palette bank is the one the sterile arena would otherwise hand to the backdrop, which is why the backdrop's bank is assigned only in a full battle.",
     "tag": "chip"
+  },
+  {
+    "t": 1788772390,
+    "file": "log/shots/1788772390-cs_compare.png",
+    "caption": "The chip select window, real ROM left and this build middle, sprites turned off on both so only the tile layers are compared. The window frame, the pick stack and its frame, the OK box, the CHIP SELECT panel and the code row are identical. What is left is the card picture and the icons, which are different chips because the two folders differ, and one real defect: the real ROM draws EIGHT slot cells and this build draws ten. Cells nine and ten are written in the frame's palette bank there, which makes them read as the panel's own background rather than as empty cells -- the white block at the bottom right of the difference.",
+    "tag": "chip"
   }
 ]
