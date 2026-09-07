@@ -316,5 +316,11 @@
     "file": "log/proof/1788747270-strip_demo-suprvulc.png",
     "caption": "SUPRVULC matched: tools/chip_compare.py 08 demo-suprvulc --frames 113 -> 0 px on every frame of the attack. Ten shots, firing state 100 frames and the gun on screen 112, measured from the real ROM the way Vulcan2/3 were. (Comparing past the attack's end shows a false residual: the demo's auto-fire starts a second volley the real capture never fires.)",
     "tag": "proof"
+  },
+  {
+    "t": 1788749030,
+    "file": "log/proof/1788749030-stepswrd.png",
+    "caption": "StepSwrd: real (top), ours (middle), diff (bottom) at c0, c4, c10, c16, c29. The navi and the slash are identical wherever they can be compared -- the differences are the deleted enemy dissolving beside the dashed navi and the screen-wide red flash of its DELETED sequence, both artifacts of the capture setup rather than the chip.",
+    "tag": "proof"
   }
 ]

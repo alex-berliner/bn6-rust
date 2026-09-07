@@ -39,6 +39,10 @@ STERILE = "/tmp/bn6f_sterile.gba"
 STATE = "/tmp/pausedwithcannon.state"
 HAND_SLOT = "0x020349c2"
 BANNER_TILES = "0x6016E00:1280"
+# The A press, and the frame the attack's effect starts. Deleting the enemy
+# leaves it dissolving for about a hundred frames with a screen flash at the
+# end; a chip that moves the navi toward that remnant (StepSwrd) needs the
+# press late enough for it to be gone, hence --a-frame.
 REAL_A_FRAME = 40
 REAL_START = 43
 
@@ -55,6 +59,7 @@ XMAX = 140
 # With --bg the real ROM keeps its field, background and HUD, so the whole
 # screen is compared rather than the navi's half.
 BACKGROUNDS = False
+KEEP_ENEMY = False
 
 
 def differs(a, b, box=None):
@@ -101,7 +106,13 @@ def capture_real(chip, out, count):
     cmd = [
         CAPTURE, STERILE, out, str(count),
         "--loadstate", STATE,
-        "--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0",
+        # The enemy is deleted so only the navi and its chip are on screen.
+        # KEEP_ENEMY makes it immortal instead, for a chip that moves the navi
+        # toward where the deleted one would be dissolving (StepSwrd): the
+        # remnant and its screen flash would otherwise land in the window.
+        *(["--cheat", "0x0203ab84:0xffff", "--cheat", "0x0203ab86:0xffff"]
+          if KEEP_ENEMY else
+          ["--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0"]),
         *library_pokes(int(chip, 16)),
         "--cheat", f"{HAND_SLOT}:0x{chip}",
         "--zero", BANNER_TILES,
@@ -162,6 +173,10 @@ def main():
     ap.add_argument("--rust-frames", type=int, default=260)
     ap.add_argument("--out", default="/tmp/chip_compare")
     ap.add_argument("--no-build", action="store_true")
+    ap.add_argument("--keep-enemy", action="store_true",
+                    help="leave the real capture's enemy alive (immortal) instead of deleting it")
+    ap.add_argument("--a-frame", type=int, default=40,
+                    help="frame the real capture presses A (default 40); raise it to let the deleted enemy finish dissolving")
     ap.add_argument("--bg", action="store_true",
                     help="keep the real ROM's backgrounds and compare the whole screen")
     ap.add_argument("--xmax", type=int, default=140,
@@ -169,7 +184,10 @@ def main():
     ap.add_argument("--rust-start", type=int, default=None,
                     help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
     args = ap.parse_args()
-    global XMAX, BACKGROUNDS
+    global XMAX, BACKGROUNDS, KEEP_ENEMY, REAL_A_FRAME, REAL_START
+    KEEP_ENEMY = args.keep_enemy
+    REAL_A_FRAME = args.a_frame
+    REAL_START = REAL_A_FRAME + 3
     BACKGROUNDS = args.bg
     XMAX = 240 if args.bg else args.xmax
     real = os.path.join(args.out, "real_" + args.chip)

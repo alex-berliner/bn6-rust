@@ -374,10 +374,18 @@ attack parameter is 1, which sends the family's state 0 through sub_8015B00 to r
 across the boundary and move the navi there (asm31.s:108790-108826). Implemented that way
 (`Actor::warp_to`, and back on Recovering), and against the real ROM the DASH PANEL matches
 exactly (body box x 123-157 on both) and every frame from the slash's start (c10) is identical.
-The gap is the first ten frames: the real plays a step pose of its own and draws no navi at all
-for two of them (c8, c9 -- an illusion object, spawnIllusionObject_80E33FA), while this holds
-the idle, so those frames differ by ~705 px. Which MegaMan animation the step uses is not
-identified yet.
+Looking at the frames rather than the numbers settled it: at c0, c4 and c10 the NAVI IS
+IDENTICAL -- pose, position, everything -- and so is the slash. The residual is entirely the
+capture: the enemy is deleted for these runs, and because StepSwrd dashes the navi across the
+boundary the deleted Mettaur's dissolving remnant (and the screen-wide red flash of its
+"DELETED" sequence at c16+) now fall inside the x<140 window, where for every other chip they
+sat outside it. So the earlier "the step's ten frames differ" reading was wrong -- what differed
+was the enemy, not the navi.
+Neither escape works: pressing A later (--a-frame) is refused, the game stops accepting chip use
+after the deletion sequence; keeping the enemy alive (--keep-enemy) puts a live, moving Mettaur
+in the half the navi dashes into and is worse. Both flags are in chip_compare.py for the next
+attempt. StepSwrd is believed correct but is not cleanly measurable with this save state; a
+state with no enemy at all, or one whose enemy is off the dash panel, would settle it.
 
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
