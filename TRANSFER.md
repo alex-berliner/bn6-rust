@@ -303,6 +303,31 @@ arc THIS BUILD DRAWS: the ball's z carries 0x8c00 of subpixel and its first fram
 a step, so the naive simulation is a step ahead of the real thing and solving against it puts
 the constants in the wrong place.
 
+## 7w. The scoreboard, and two fixtures worth knowing (2026-09-07)
+
+`tools/scoreboard.py` runs every chip comparison and prints each one's mean against its FLOOR --
+the mean the ENEMY DELETED banner's single frame alone puts on a run of that length, 369/N. A
+chip is exact when its mean equals its floor. Run it after any change that touches drawing, not
+just the chip you were working on: the first run caught the chip-in-hand icon's palette being
+allocated for every battle including the sterile arena that never draws it, which left SuprVulc's
+volley short of object palette banks and panicking with "sprite palette should fit in vram". A
+chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
+
+36 of 38 exact. The two that are not are BlkBomb (2.2 px/frame over floor) and LilBolr (26.9),
+both a one-pixel wobble on a handful of frames.
+
+TWO FIXTURES, and it matters which:
+- `demo-hudmatch` matches the capture's HUD STATE -- 60 HP, full gauge, Cannon in hand -- and
+  puts the navi at column 3 with no enemy. It is for TILE comparisons, where the navi's column
+  does not matter, and it deliberately never opens the chip window.
+- `demo-field` matches the capture's FIELD state -- MegaMan at (2,2), a Mettaur at (5,2) -- which
+  is what a whole-screen comparison WITH sprites needs.
+- `demo-custmatch` matches the chip window's five offers and its pick.
+
+OPEN: the RESULTS window has never been compared. `demo-results` needs a chip press to bring it
+up and the capture harness's `--script A@200` does not get there -- the Mettaur survives -- so it
+cannot be captured headlessly as built. The real ROM's is in /tmp/noenemy2.state.
+
 ## 7v. Elements this build was simply missing (2026-09-07)
 
 Three of them turned up in one afternoon, all by looking at a live battle rather than at a chip:
