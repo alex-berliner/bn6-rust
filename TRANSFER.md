@@ -1013,6 +1013,52 @@ animation, and that the RESULT window starts sliding 110 frames after the banner
 number. NOT measured: how long after the last enemy is gone the banner itself goes up. This build
 puts it up the moment the fight is over.
 
+## 7aw. A SAVE STATE AT A BATTLE'S FIRST FRAME (2026-09-07)
+
+`/tmp/battlestart.state`. Two open questions wanted it and it immediately found two bugs neither
+of them was about. It is the most useful thing added to the harness in a while.
+
+HOW ENCOUNTERS WORK, since making one required triggering a real battle. The step accumulator is
+`eStruct2001c04.Unk_12` at 0x02001c16 (ewram.s:334, S2001c04.inc:14), INCREMENTED by the player's
+per-frame movement in `sub_809D348` (ow_player.s:341-346). `sub_80AA4C0` (asm29.s:10100) rolls
+whenever `Unk_12 - Unk_14 >= 0x40`: `GetRNG() & 0x1F` against a threshold from `byte_8020C5C`
+(dat01.s:213) indexed by `[min(Unk_12>>6,16)][map category]`, the category coming from
+`byte_8020CE4` (dat01.s:222) where 7 means no encounters.
+
+AND A TRAP THAT COST THE FIRST ATTEMPT. Forcing the roll every frame (`--cheat 0x02001c16:2000
+--cheat 0x02001c18:0`) while HOLDING ONE DIRECTION for 200 frames -- about a 37% chance a frame --
+produced ZERO encounters. Identical input every frame makes the rotate-based RNG advance by the
+same stride every frame, so the low five bits walk a correlated subsequence. Varying the held
+direction broke it and a battle came within twenty frames. Anything in this harness that leans on
+the game's RNG must vary its input, or it is sampling one orbit.
+
+FINDING FRAME 0. `eBGScrollCBCounters` holds stale values through frame 18 of the walk, reads
+0x0000/0x0000 at frame 19, and -8/-4 at 20 -- so frame 19 is the tick `sub_8080D90` (asm21.s:2)
+zeroes them, and the state is written there. Verified by reloading: both counters read zero,
+against the -63128/-31564 `pausedwithcannon.state` carries.
+
+WHAT IT IMMEDIATELY SHOWED, and neither could have been seen from the old state:
+
+1. A BATTLE OPENS WITH THE CHIP WINDOW. It comes up on its own at frame 165 with nothing pressed.
+   This build started the gauge EMPTY in a release build -- 0x4000 / 0xd = 1260 frames, twenty-one
+   seconds of an unarmed navi before the first chip. The gauge now starts full and the pause that
+   follows opens the window, as the real ROM does. A demo build keeps the old behaviour: the
+   sterile arena forces the fight open forever, so a window opening in it would land in the middle
+   of every chip comparison.
+
+2. BATTLE START! FOLLOWS THE CHIP WINDOW, NOT THE INTRO. Measured: window opens 165, confirmed,
+   closes 259, banner up at 289 -- thirty frames after the window. 7as had it at the end of the
+   intro, before any chip select, which is simply not where it goes. With it armed from the
+   window's close this build puts it at 291 against the real ROM's 292.
+
+   To get past chip select in a capture you must press START first: that moves the cursor to OK.
+   Pressing A alone picks chips and leaves the window open, and confirming with nothing selected
+   gives a "Sending chip data..." screen that never resolves.
+
+THE WINDOW STILL OPENS EARLIER HERE, 134 against 173, and that is expected rather than wrong: the
+captured battle materialises THREE Mettaurs one at a time and this build fields one. Comparing the
+opening properly needs a fixture with the same line-up.
+
 ## 7av. The backdrop's scroll phase, pinned (2026-09-07)
 
 `regress.py`'s `tiles` check used to compare real frame 43 against whichever of rust frames

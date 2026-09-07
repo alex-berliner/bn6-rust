@@ -170,7 +170,17 @@ estimate, not code.
 
 ## C. Research tickets — read-only, no build, good to run several at once
 
-### C1. How many frames into a battle does BATTLE START! go up?
+### C1. How many frames into a battle does BATTLE START! go up?  *(answered -- TRANSFER 7aw)*
+`/tmp/battlestart.state` exists now. The answer: it does not follow the intro at all, it follows
+the FIRST CHIP WINDOW -- thirty frames after that window closes. The build was corrected and lands
+within a frame of the real ROM. The same state also showed that a battle OPENS with the chip
+window, which this build was getting wrong by 1260 frames.
+
+Still open from the same state: our window opens at 134 against the real 173, because the captured
+battle fields three Mettaurs and this one fields one. A fixture with a matching line-up would
+settle the intro's length and the screen fade's real frame count in one go.
+
+### C1-old. How many frames into a battle does BATTLE START! go up?
 Currently placed, not measured: this build raises it the moment the last enemy has
 finished materialising. `sub_8008064` (asm00_1.s:10386) is state 1 of the dispatcher
 `off_8008038`, driven by `dword_203CA70` through `sub_800801C`. Trace the battle-scene

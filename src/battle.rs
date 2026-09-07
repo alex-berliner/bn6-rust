@@ -800,6 +800,10 @@ const GAUGE_PAUSE: u16 = 60;
 // This build puts it up the moment the fight is over, which is the same order
 // the real ROM does it in but not necessarily the same gap.
 const BANNER_AFTER_OVER: u16 = 0;
+/// Frames from the first chip window closing to BATTLE START!. Measured on the
+/// real ROM from a save state at a battle's first frame: the window opens at
+/// 165 on its own, is confirmed, closes at 259, and the banner goes up at 289.
+const BATTLE_START_AFTER_WINDOW: u16 = 30;
 /// The frame `demo-banner` puts its banner up on.
 const BANNER_DEMO_AT: u32 = 100;
 const BANNER_TO_RESULTS: u16 = 110;
@@ -853,6 +857,8 @@ pub struct Battle<'a> {
     banner_done: bool,
     /// Whether BATTLE START! has been put up, likewise once.
     opened: bool,
+    /// Frames until it goes up, counting down from the chip window closing.
+    banner_at: u16,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1285,16 +1291,23 @@ impl<'a> Battle<'a> {
         }
         let cross_shape: Option<&[(i32, i32)]> = None;
         let shots: Vec<Shot> = Vec::new();
-        // A debug build starts with the gauge full, so the first chip select
-        // comes up right after the intro instead of after the counter runs.
-        let gauge = if cfg!(any(
-            debug_assertions,
+        // A BATTLE OPENS WITH THE CHIP WINDOW. Measured on the real ROM from a
+        // save state at a battle's first frame: the field fades in, the
+        // viruses materialise, and the window comes up on its own at frame
+        // 165 with nothing pressed. This build used to start the gauge empty
+        // in a release build, which is 0x4000 / 0xd = 1260 frames -- twenty-one
+        // seconds of an unarmed navi before the first chip. The gauge starts
+        // FULL, and the pause that follows it opens the window.
+        // A demo build keeps the old behaviour: the sterile arena forces the
+        // fight open forever, so a window opening in it would land in the
+        // middle of every chip comparison.
+        let gauge = if cfg!(feature = "demo") && !cfg!(any(
             feature = "demo-hudmatch",
             feature = "demo-custmatch"
         )) {
-            GAUGE_FULL
-        } else {
             0
+        } else {
+            GAUGE_FULL
         };
         let gauge_pause = 0u16;
         let results_delay = RESULTS_DELAY;
@@ -1346,6 +1359,7 @@ impl<'a> Battle<'a> {
             banner_assets: banner::Assets::new(crate::BANNER),
             banner_done: false,
             opened: false,
+            banner_at: 0,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1510,6 +1524,16 @@ impl<'a> Battle<'a> {
                     self.hand.push(offer.chip);
                 }
                 self.custom = None;
+                // BATTLE START! follows the FIRST chip window, thirty frames
+                // after it closes. Measured from a save state at a battle's
+                // first frame: window opens 165, closes 259, banner 289.
+                // Not in a demo build: every fixture that fields an enemy
+                // compares against a capture taken mid-battle where no banner
+                // is up, and the earliest of them starts at frame 130.
+                if !self.opened && !cfg!(feature = "demo") {
+                    self.opened = true;
+                    self.banner_at = BATTLE_START_AFTER_WINDOW;
+                }
                 for (i, p) in self.results.palettes().iter().enumerate() {
                     gfx.set_background_palette(custom::BANK + i as u8, p);
                 }
@@ -1588,18 +1612,11 @@ impl<'a> Battle<'a> {
                 // is left only when sub_801E754 reports the banner idle, which
                 // for a KIND 0 record like BATTLE START!'s has no early-out.
                 // So the pause covers the banner's whole 58 frames.
-                // NOT VERIFIED: how many frames after the intro it goes up.
-                // There is no save state at a battle's start to compare with.
-                // NOT IN A DEMO BUILD. Every fixture that fields an enemy
-                // compares against a capture taken mid-battle, where no
-                // banner is up, and the earliest of them starts at frame 130
-                // against a banner that ends at 126 -- four frames of margin
-                // is not margin.
-                if self.intro_next >= self.enemies.len() && !self.opened && !cfg!(feature = "demo")
-                {
-                    self.opened = true;
-                    self.banner = Some(Banner::new(self.banner_assets, banner::BATTLE_START));
-                }
+                // The banner does NOT go up here. Measured from a save state at
+                // a battle's first frame: the chip window opens at 165 and is
+                // confirmed, closes at 259, and BATTLE START! goes up at 289 --
+                // thirty frames AFTER the window, not after the intro. See
+                // where `banner_at` is armed below.
             }
             true
         } else {
@@ -1880,6 +1897,12 @@ impl<'a> Battle<'a> {
         if let Some(popup) = self.popup.as_mut() {
             if !popup.update() {
                 self.popup = None;
+            }
+        }
+        if self.banner_at > 0 {
+            self.banner_at -= 1;
+            if self.banner_at == 0 {
+                self.banner = Some(Banner::new(self.banner_assets, banner::BATTLE_START));
             }
         }
         if let Some(banner) = self.banner.as_mut() {
