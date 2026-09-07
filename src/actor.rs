@@ -39,9 +39,15 @@ pub mod anim {
 ///
 /// The timings are the state machine's, not the animations': the dissolve is
 /// cut off after three of its four frames when the panel is committed.
-const LEAVING_FRAMES: u8 = 3;
+const LEAVING_FRAMES: u8 = 4;
 const ARRIVING_FRAMES: u8 = 5;
 const RECOVERING_FRAMES: u8 = 4;
+/// The washed-out palette the commit frame is drawn in, and how long it
+/// lasts: one frame.
+const WARP_PALETTE: usize = 1;
+const WARP_PALE_FRAMES: u8 = 1;
+/// Frames between the press and the warp starting.
+const WARP_DELAY: u8 = 1;
 /// A Mettaur's hop is three frames up and three down, landing in its idle
 /// pose, then a per-version cooldown of 0x1e frames in the first
 /// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
@@ -255,6 +261,8 @@ pub struct Actor {
     max_hp: u16,
     invulnerable: u8,
     flash: u8,
+    /// Frames left of the warp's pale palette.
+    pale: u8,
     /// Frames left of Invisibl: OBJECT_FLAGS_INVIS with FlashingInvisTimer
     /// (sub_8010474, asm00_2.s:3288), during which nothing lands.
     invisible: u16,
@@ -289,6 +297,7 @@ impl Actor {
             death_frames: profile.death_frames,
             invulnerable: 0,
             flash: 0,
+            pale: 0,
             invisible: 0,
             barrier: 0,
             hits_taken: 0,
@@ -481,9 +490,8 @@ impl Actor {
         }
         self.action = Action::Leaving {
             to: (to_col, to_row),
-            ticks: LEAVING_FRAMES,
+            ticks: LEAVING_FRAMES + WARP_DELAY,
         };
-        self.player.play(anim::WARP_OUT);
         true
     }
 
@@ -574,6 +582,12 @@ impl Actor {
     pub fn update(&mut self) -> Update {
         self.invisible = self.invisible.saturating_sub(1);
         self.invulnerable = self.invulnerable.saturating_sub(1);
+        if self.pale > 0 {
+            self.pale -= 1;
+            if self.pale == 0 {
+                self.player.set_palette_add(0);
+            }
+        }
         if self.flash > 0 {
             self.flash -= 1;
             if self.flash == 0 && !matches!(self.action, Action::Dying { .. }) {
@@ -583,13 +597,26 @@ impl Actor {
         let mut update = Update::Nothing;
         self.action = match self.action {
             Action::Idle => Action::Idle,
-            Action::Leaving { to, ticks } if ticks > 1 => Action::Leaving {
-                to,
-                ticks: ticks - 1,
-            },
+            Action::Leaving { to, ticks } if ticks > 1 => {
+                if ticks == LEAVING_FRAMES {
+                    self.player.play(anim::WARP_OUT);
+                }
+                Action::Leaving {
+                    to,
+                    ticks: ticks - 1,
+                }
+            }
             Action::Leaving { to, .. } => {
                 (self.col, self.row) = to;
                 self.player.play(anim::WARP_IN);
+                // The frame the panel is committed on is drawn in the
+                // sprite's SECOND palette, a washed-out copy of the first --
+                // not forced white, which is what a hit does. Read off the
+                // real ROM: five of that frame's colours are palette 1 of
+                // battleSpriteMegaMan.spr word for word, and the frames
+                // either side of it are palette 0.
+                self.player.set_palette_add(WARP_PALETTE);
+                self.pale = WARP_PALE_FRAMES;
                 Action::Arriving {
                     ticks: ARRIVING_FRAMES,
                 }

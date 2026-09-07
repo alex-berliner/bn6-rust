@@ -354,6 +354,31 @@ WHAT IT DOES NOT SHOW. Only that frame matches. The virus's next move comes from
 build does not reproduce, so the frame after is already 765 px apart. The result is that every
 OBJECT on the screen is right, not that the fight runs the same.
 
+## 7ad. The navi's warp, frame for frame (2026-09-07)
+
+0 differing pixels over the 66 frames that cover two scripted moves, the warp's seven frames
+included. The method is new and worth reusing: SCRIPT THE SAME INPUTS INTO BOTH SIDES and track
+one object frame by frame.
+
+HOW TO SET IT UP.
+- The sterile arena CANNOT test movement: with its enemy deleted the real ROM stops taking input
+  and the navi will not move however long the key is held. Keep the enemy alive instead
+  (`--cheat 0x0203ab84:0xffff --cheat 0x0203ab86:0xffff`), and compare only the navi's half until
+  the virus's shockwave crosses into it -- about 30 frames in this capture.
+- Press the direction on the real side at frame 60, before anything has hit the navi; a navi
+  mid-mercy-blink is invisible on half the frames and unreadable.
+- Track by COLOUR, not by bounding box: `(0,132,222)` is one of the navi's blues and nothing else
+  on that half of the screen has it.
+
+WHAT WAS WRONG, three things:
+- the dissolve began a frame too early. `step()` now sets the state and the WARP_OUT animation
+  starts on the NEXT update (`WARP_DELAY`), which is what the real ROM does;
+- and ran a frame too short: LEAVING_FRAMES 3 -> 4;
+- the frame the panel is COMMITTED on is drawn in the sprite's SECOND palette -- a washed-out
+  copy of the first, five of whose colours are palette 1 of battleSpriteMegaMan.spr word for word.
+  It is NOT the forced white a hit uses, and it could not have been drawn at all: the exporter
+  was taking one palette for the navi. `spr_export.py --palettes 1` now gives it two.
+
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
 The chip window's card is exact for all five of the capture's chips -- five elements, five
