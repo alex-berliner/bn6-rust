@@ -203,7 +203,12 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
   37/38/39 at c14/15/16 (body x 43->39->38->37), 40 at c17-29 (x 35); barrel white c5-7,
   green from c8; muzzle orb small c14, big c15; chevrons c16-22; recovery c30-32; idle c33.
 
-## 7d. Backgrounds-on whole-screen match (in progress, 2026-09-06)
+## 7d. Backgrounds-on whole-screen match (PARKED by the user, 2026-09-06)
+
+The user's call: the backdrop is not worth the effort, so pixel-parity work stays on the
+backgrounds-off setup (`chip_compare.py` defaults to `--disable-bg`; `--bg` is opt-in and left
+in place). Everything below is the record of how far it got, for whoever picks it up.
+
 
 `tools/chip_compare.py <id> demo-field --bg` keeps the real ROM's backgrounds and diffs all
 240x160; the Rust side is then built without demo-sterile, and `demo-field` fields the save
