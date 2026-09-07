@@ -152,6 +152,15 @@ pub struct Part {
 }
 
 /// Plays one animation, rebuilding VRAM sprites only when the frame changes.
+/// The colour a forced-white sprite is drawn in. NOT 0x7fff: that renders
+/// (255,255,255) and the real ROM shows that colour NOWHERE -- three
+/// captures, 476 frames between them, including the Cannon's and the Sword's
+/// flashes, contain not one pure-white pixel. Every white in the game is
+/// (247,255,255), which is 0x7ffe.
+/// NOT VERIFIED directly: the one flash available to compare is the navi
+/// being hit, and the Mettaur's wave covers him whenever that happens.
+const WHITE: u16 = 0x7ffe;
+
 pub struct Player {
     assets: Assets,
     anim: usize,
@@ -345,7 +354,7 @@ impl Player {
         let palette = if self.white_on {
             self.white
                 .get_or_insert_with(|| {
-                    PaletteVramSingle::try_allocate_new(&Palette16::new([Rgb15::new(0x7fff); 16]))
+                    PaletteVramSingle::try_allocate_new(&Palette16::new([Rgb15::new(WHITE); 16]))
                         .expect("white palette should fit in vram")
                 })
                 .clone()
