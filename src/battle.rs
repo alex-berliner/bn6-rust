@@ -210,21 +210,28 @@ const VDOLL_ANIM: usize = 1;
 const VDOLL_HELD_ANIM: usize = 0;
 /// How long a landed one stands. Nothing removes it in the capture.
 const RESTS_FRAMES: u8 = 255;
-/// BugBomb's ball flies flatter than a bomb. Swept against the capture --
-/// tracking the ball and fitting its arc gets close and then stops improving,
-/// as it did for BlkBomb -- and the sweep landed EXACTLY on BlkBomb's own
-/// across-speed and gravity, so the two chips are thrown by one launcher and
-/// differ only in how hard it throws. The sweep's minimum is a plateau
-/// 0x25D40..0x25D80 wide; the middle of it is taken.
+/// BugBomb's ball flies flatter than a bomb, and these are the game's own
+/// numbers rather than a sweep's: `tools/throw_dump.py 43` finds the thrown
+/// object in EWRAM and reads them out of it. X steps by exactly 0x2C000 a
+/// frame, Z starts at 0x300000 -- the shared spawn height -- and the Z
+/// velocity starts at 0x26062 and loses 0x2800 a frame, over a timer of 42.
+/// The sweep that preceded this landed on 0x25D60 and 0x27C0, which is a
+/// point on the ridge where a launch 1282 too weak and a pull 64 too soft
+/// cancel over forty frames: it drew the same pixels everywhere except one
+/// rounding boundary, which is what the last frame of BugBomb's residue was.
 const BUG_VX: i32 = BLKBOMB_VX;
-const BUG_VZ: i32 = 0x25D60;
-const BUG_GRAVITY: i32 = BLKBOMB_GRAVITY;
+const BUG_VZ: i32 = 0x26062;
+const BUG_GRAVITY: i32 = 0x2800;
+const BUG_FLIGHT: u8 = 42;
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
-/// top of the screen and hangs there -- so it gets its own launch, gravity
-/// and flight. Fitted against the doll tracked by its four ochre colours.
-const VDOLL_VX: i32 = 0x1EEA0;
-const VDOLL_VZ: i32 = 0x31600;
-const VDOLL_GRAVITY: i32 = 0x2060;
+/// top of the screen and hangs there -- so it gets its own launch, gravity and
+/// flight, and `tools/throw_dump.py 96` reads all four out of the object while
+/// it is in the air. The doll also steps the OTHER WAY ROUND: its update moves
+/// it and then applies the pull (t3_0x7a, sub_80D47C0 loc_80D4848,
+/// asm31.s:60530), where a bomb applies the pull and then moves.
+const VDOLL_VX: i32 = 0x1EEEE;
+const VDOLL_VZ: i32 = 0x2F333;
+const VDOLL_GRAVITY: i32 = 0x2000;
 const VDOLL_FLIGHT: u8 = 60;
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
@@ -467,16 +474,14 @@ const BOMB_FLIGHT: u8 = 40;
 /// horizontal speed scales down with that and the launch speed up, so the arc
 /// still lands flat.
 const BLKBOMB_FLIGHT: u8 = 42;
-/// BlkBomb falls a shade slower than the other bombs. Found by tracking its
-/// ball through the capture by its four brown colours: with the shared bomb
-/// gravity it sat a pixel low on four frames of fifty, and nothing else about
-/// the flight was out. Fitting a parabola to the real arc and setting that
-/// gives a WORSE result -- the fit lands on a curve this build cannot draw,
-/// because its first frame comes a step in -- so this is the measured value,
-/// swept against the capture.
-const BLKBOMB_GRAVITY: i32 = 0x27C0;
+/// BlkBomb is thrown flatter and slower than a MiniBomb: the same 0x2800 pull
+/// but less of both speeds. Read out of the object by `tools/throw_dump.py 3c`
+/// rather than swept -- the sweep that preceded it landed on 0x27C0 and
+/// 0x22051, which draws the same pixels because a pull 0x40 too soft and a
+/// launch 0x31D too weak cancel over the flight.
+const BLKBOMB_GRAVITY: i32 = 0x2800;
 const BLKBOMB_VX: i32 = 0x2C000;
-const BLKBOMB_VZ: i32 = 0x22051;
+const BLKBOMB_VZ: i32 = 0x2236E;
 /// LilBolr lobs its boiler far higher than a bomb: measured on the real ROM
 /// the ball rises to y=10, about a hundred pixels above the panel, peaking
 /// eleven frames in and landing on the same fortieth frame a bomb does. That
@@ -493,13 +498,13 @@ const DAMAGE_TAG_DOWN: i32 = 30;
 /// the peak and six pixels low at the end, so the fit has to run to the
 /// landing.
 ///
-/// The fit is on the arc this build actually draws, which is a step behind
-/// the naive one: the ball's z carries 0x8c00 of subpixel from the panel
-/// geometry and its first frame is drawn after a step, so simulating
-/// `vz - gravity` from 0x8c00 reproduces the drawn pixels exactly. The pair
-/// below is the centre of the region of (vz, gravity) that reproduces every
-/// one of the forty positions.
-const FLSHBOM_VZ: i32 = 0x2BD00;
+/// Read out of the object by `tools/throw_dump.py 39`, which also says why the
+/// earlier fit had to be "a step behind": FlshBom's ball, like VDoll's doll,
+/// MOVES AND THEN FALLS rather than falling and then moving, so a build that
+/// applies the pull first needs a launch one whole gravity step higher to draw
+/// the same arc. The fit had found 0x2BD00, which is 0x28CCC + 0x3000 to
+/// within 0x34. With the order right the launch is the game's own number.
+const FLSHBOM_VZ: i32 = 0x28CCC;
 const FLSHBOM_GRAVITY: i32 = 0x3000;
 /// The summoned LilBoiler's own HP, which rides under it in the game's object
 /// digits. All three LilBolrs show 40 against powers of 100, 140 and 180.
@@ -527,15 +532,15 @@ const BOILER_HP: u16 = 40;
 /// starting at the projectile's own x and its top is three below.
 const BOILER_HP_RIGHT: i32 = 16;
 const BOILER_HP_DOWN: i32 = 3;
-/// LilBolr's flight. NOT EXACT: five frames of forty-eight put the boiler a
-/// pixel out, which costs 27 px/frame over the banner's floor because the
-/// sprite is large. It is a plateau, not a local minimum -- several (vz,
-/// gravity) pairs give the same five frames, and no parabola reproduces the
-/// real sequence exactly -- which fits the chip being a SUMMON: what it lobs
-/// is the LilBoiler virus, and its arrival path need not be physics at all.
+/// LilBolr's flight is BLKBOMB'S, exactly: `tools/throw_dump.py 62` reads the
+/// same 0x2C000 across, 0x2236E up and 0x2800 down out of the boiler that
+/// `throw_dump.py 3c` reads out of the bomb. Two sweeps had found two nearby
+/// but different answers, which is the sweep's weakness -- a ridge of
+/// (vz, gravity) pairs all draw the same pixels, so nothing tells you the two
+/// chips share one launcher until you read the numbers.
 const LILBOLR_VX: i32 = BLKBOMB_VX;
-const LILBOLR_VZ: i32 = 0x22280;
-const LILBOLR_GRAVITY: i32 = 0x27F0;
+const LILBOLR_VZ: i32 = BLKBOMB_VZ;
+const LILBOLR_GRAVITY: i32 = BLKBOMB_GRAVITY;
 
 /// The afterimage's age when it is drawn for the last time. It is spawned
 /// during the frame that uses the chip and aged in that same frame, so an age
@@ -645,13 +650,24 @@ struct Bomb {
     seed_palette: usize,
     /// BugBomb and VDoll land and stay: the object rests on its panel.
     rests: bool,
+    /// Whether the object moves and then feels the pull, rather than feeling
+    /// it and then moving. A bomb does the pull first (sub_80C5C9C,
+    /// asm31.s:29536); VDoll's doll does it last (sub_80D47C0, asm31.s:60530).
+    /// It is half a step of difference, which is a pixel wherever the arc is
+    /// steep.
+    moves_before_falling: bool,
 }
 
 impl Bomb {
     fn step(&mut self) {
         self.x += self.vx;
-        self.vz -= self.gravity;
-        self.z += self.vz;
+        if self.moves_before_falling {
+            self.z += self.vz;
+            self.vz -= self.gravity;
+        } else {
+            self.vz -= self.gravity;
+            self.z += self.vz;
+        }
     }
 
     /// Screen position of the bomb; the game truncates Y and Z separately.
@@ -2476,6 +2492,8 @@ impl<'a> Battle<'a> {
                     wide: chip.id == CHIP_BIGBOMB,
                     flight: if chip.id == CHIP_VDOLL {
                         VDOLL_FLIGHT
+                    } else if chip.id == CHIP_BUGBOMB {
+                        BUG_FLIGHT
                     } else if chip.id == CHIP_BLKBOMB {
                         BLKBOMB_FLIGHT
                     } else {
@@ -2497,6 +2515,7 @@ impl<'a> Battle<'a> {
                     show_damage: lilbolr,
                     poison: seed,
                     rests,
+                    moves_before_falling: chip.id == CHIP_VDOLL || flash,
                     seed_palette: sheet_palette(chip.id),
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,

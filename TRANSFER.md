@@ -552,8 +552,10 @@ at a time -- which is exactly how a regression in one survives a session spent o
 today's changes helped one fixture and cost others, and both were caught only because somebody
 remembered to check.
 
-A check's `want` is what it measured when last verified, not zero: `chips` wants 2 (BugBomb and
-VDoll) and `chip-use` wants 256 (the chip-in-hand icon, one frame).
+A check's `want` is what it measured when last verified, not zero: `chips` wants 0 now that the
+arcs are read rather than fitted (7ao), and `chip-use` wants 256 (the chip-in-hand icon, one
+frame). There is a tenth check, `rollup`, which is not a comparison: it runs the full battle
+under a long input script and asserts it does not crash (7an).
 A check that comes out BETTER says so, and its number should be written down.
 
 AND EXACT NOW MEANS ZERO. The scoreboard's old "floor" -- 369 px of ENEMY DELETED banner on one
@@ -588,9 +590,9 @@ what made it look like one problem. It is not: the banner is five 32x16 objects 
 loop up to `0x6017300`, the name is eight 8x16 glyphs written by the text renderer, and they are
 two routines that happen to share a tile region.
 
-SCOREBOARD: **41 of 43 exact**, every chip at literal 0.0 except BugBomb 1.1 and VDoll 1.6, and
-both of those are one frame of one-pixel rounding, not an arc (7aa). `regress.py`'s `chips`
-check now wants 2.
+SCOREBOARD: **41 of 43 exact** after this, every chip at literal 0.0 except BugBomb 1.1 and
+VDoll 1.6. Both of those turned out to be one frame of one-pixel rounding on a fitted arc, and
+reading the real constants out of the object took them to zero as well (7ao): **43 of 43**.
 
 ## 7z. The preview card, all four rows, 0 px (2026-09-07)
 
@@ -705,6 +707,65 @@ What is already known about PoisSeed, from a sterile capture with chip 0x46 poke
 - Its arc can be fitted the way FlshBom's and BlkBomb's were: track the pod by its magenta
   colours, and SWEEP the constants against the capture rather than fitting a parabola to the
   tracked centroid (7x's note on why).
+
+## 7ao. Stop sweeping arcs: read them out of the object (2026-09-07)
+
+`tools/throw_dump.py <chip>` prints a thrown chip's launch constants out of the
+running game, and every arc in this port is now the game's own numbers rather
+than a fit. The two chips that were still off -- BugBomb 1.1 px/frame and VDoll
+1.6 -- went to ZERO on the first try with them. **43 of 43 exact.**
+
+HOW IT WORKS. Dump all 256K of EWRAM once per frame across the flight and look
+for a word that advances by the same non-zero step every frame: a thrown thing's
+across-speed never changes, so that word is its X. The battle object's layout
+follows (sub_80C5C9C, asm31.s:29505, reads XYZ from +0x34 and VX/gravity/VZ from
++0x40), and walking the Z velocity back a frame at a time -- the gravity step is
+constant, so this is exact -- reaches the spawn height 0x300000 and gives the
+launch velocity and the frame it was thrown on.
+
+WHY SWEEPING COULD NEVER FINISH THE JOB. A launch a little too weak and a pull a
+little too soft draw the SAME PIXELS, because the two errors cancel over the
+flight; that is the ridge 7aa describes. Every fitted constant in this file was
+sitting on one:
+
+| chip     | swept              | actual             |
+|----------|--------------------|--------------------|
+| BlkBomb  | vz 0x22051 g 0x27C0| vz 0x2236E g 0x2800|
+| LilBolr  | vz 0x22280 g 0x27F0| vz 0x2236E g 0x2800|
+| BugBomb  | vz 0x25D60 g 0x27C0| vz 0x26062 g 0x2800|
+| FlshBom  | vz 0x2BD00 g 0x3000| vz 0x28CCC g 0x3000|
+| VDoll    | vx 0x1EEA0 vz 0x31600 g 0x2060 | vx 0x1EEEE vz 0x2F333 g 0x2000 |
+
+Everything on the left drew the right pixels except at a rounding boundary, and
+a rounding boundary is exactly where BugBomb's and VDoll's last residues were.
+
+TWO THINGS THE READ-OUT FOUND THAT NO SWEEP COULD.
+
+1. **LilBolr is BlkBomb.** Identical vx, vz and gravity, to the digit. Two
+   separate sweeps had found two nearby but different answers and nothing said
+   they were the same launcher.
+2. **SOME OBJECTS MOVE AND THEN FALL.** A bomb applies the pull and then moves
+   (sub_80C5C9C, asm31.s:29536); VDoll's doll (sub_80D47C0 loc_80D4848,
+   asm31.s:60530) and FlshBom's ball move and then apply it. That is half a
+   step, and it is a pixel wherever the arc is steep. It also explains the note
+   7aa left behind about FlshBom's fit having to be "a step behind the naive
+   one": 0x2BD00 is 0x28CCC + one gravity step to within 0x34. `Bomb` now
+   carries `moves_before_falling` and does it in the right order.
+
+THE FIVE LAUNCHERS, all spawning at Z 0x300000 and X + 4 ahead of the navi:
+
+| launcher | chips                                        | vx      | vz      | g      | timer |
+|----------|----------------------------------------------|---------|---------|--------|-------|
+| MiniBomb | MiniBomb EnergBom MegEnBom BigBomb, 3 seeds  | 0x2E666 | 0x20666 | 0x2800 | 40    |
+| BlkBomb  | BlkBomb LilBolr                              | 0x2C000 | 0x2236E | 0x2800 | 42    |
+| BugBomb  | BugBomb                                      | 0x2C000 | 0x26062 | 0x2800 | 42    |
+| FlshBom  | FlshBom (moves first)                        | 0x2E666 | 0x28CCC | 0x3000 | 40    |
+| VDoll    | VDoll (moves first)                          | 0x1EEEE | 0x2F333 | 0x2000 | 60    |
+
+THE LESSON, and it generalises past arcs: when a constant lives in the game's
+memory while you can see its effect, READ IT. A sweep converges on the set of
+values that draw what you are looking at, which is bigger than the set of true
+values, and the difference shows up later as one frame you cannot explain.
 
 ## 7aa. One launcher throws them all (2026-09-07)
 
@@ -845,11 +906,10 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-41 of 43 exact (2026-09-07, latest run, and now at a floor of zero -- 7am). The two that are
-not: VDoll 1.6 px/frame and BugBomb 1.1 -- about 190 pixels between them, none of it the arc
-(7aa).
-BlkBomb, LilBolr and the seeds joined the exact ones after their constants were SWEPT against the
-capture rather than fitted.
+43 OF 43 EXACT (2026-09-07, latest run, at a floor of zero -- 7am for the floor, 7ao for the
+last two). Every chip in the list is at literal 0.0 px/frame. The arcs got there by having their
+constants READ OUT OF THE RUNNING GAME (`tools/throw_dump.py`), which is strictly better than the
+sweep that preceded it: see 7ao.
 
 TWO FIXTURES, and it matters which:
 - `demo-hudmatch` matches the capture's HUD STATE -- 60 HP, full gauge, Cannon in hand -- and
