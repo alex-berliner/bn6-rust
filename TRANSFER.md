@@ -449,24 +449,17 @@ frames, and tracking the object's bounding box frame by frame shows the paths ag
   OAM puts the figure ahead of the navi. When a residue sits where two objects overlap, count the
   pixels of ONE colour on each side before assuming a position is wrong; the figure's bounding
   box had been identical all along.
-- PoisSeed (6.9, never an arc problem): 115 px over six frames in the GROUND SHADOW, and it is
-  not the pod's arc. Counting the shadow colour (16,16,16) between x 40 and 140, both sides hold
-  106 pixels on the frame before the throw and 132 six frames later, but in between the real ROM
-  goes 75, 96, 127 while this build goes 118, 118, 132. IceSeed and GrasSeed -- the same sprite,
-  the same arc, a different palette -- are 106/143/158/182/195 on BOTH sides, exact.
-  WHAT THE OAM SAYS. Dumping OAM at that frame: the real ROM's thrown object is ABOVE the navi
-  (MiniBomb's bomb is entry 9, the navi entries 10-13 and 15) and its ground shadow is entry 14 --
-  between the navi's body and the navi's OWN shadow. This build draws the whole bomb after the
-  actors, so under all of them.
-  MOVING THE WHOLE BOMB ABOVE THE NAVI IS WORSE, and the measurement is worth keeping: PoisSeed
+- PoisSeed: DONE, and the answer was OAM ORDER. A thrown object's GROUND SHADOW goes BETWEEN the
+  navi's body and the navi's OWN shadow: dumping OAM at the throw, MiniBomb's bomb is entry 9,
+  the navi's body 10-13, the bomb's shadow 14 and the navi's shadow 15. This build drew the whole
+  thrown object after the actors, under all of them. PoisSeed's pod shadow is BLACK in its palette
+  and so bites a notch out of the navi's grey shadow where they overlap; IceSeed's and GrasSeed's
+  are grey, the same colour as the navi's, which is why only PoisSeed ever showed it.
+  MOVING THE WHOLE BOMB ABOVE THE NAVI IS WRONG, and the measurement is worth keeping: PoisSeed
   6.9 -> 6.0 but IceSeed and GrasSeed 5.3 -> 6.0, MiniBomb 6.2 -> 7.0, BlkBomb 7.4 -> 10.1,
-  LilBolr 7.7 -> 18.2, FlshBom 7.7 -> 9.9, BigBomb 4.9 -> 5.6. The order is not one rule for the
-  whole object: the body goes over the navi and the shadow goes between his body and his shadow,
-  and until both are separated the flat move costs more than it buys.
-  ALSO UNEXPLAINED: the real PoisSeed capture's NAVI is on a different OAM layout at that frame
-  from the real MiniBomb capture's (four entries against five), which should not happen if both
-  play the same throw animation. Somebody should check whether the seeds' throw is a different
-  animation before chasing the shadow further.
+  LilBolr 7.7 -> 18.2, FlshBom 7.7 -> 9.9, BigBomb 4.9 -> 5.6. Only the SHADOW moves, and
+  `Actor::show_with_underlay` already offers exactly that slot -- it runs the closure immediately
+  before the navi's part 0. Every other bomb chip is unchanged and PoisSeed is exact.
 Track the bounding box before touching a constant: if it already matches, the arc is right and
 the residue is animation or a part, not physics.
 
@@ -522,8 +515,8 @@ allocated for every battle including the sterile arena that never draws it, whic
 volley short of object palette banks and panicking with "sprite palette should fit in vram". A
 chip-at-a-time check had missed it because SuprVulc is the only chip long enough to run out.
 
-40 of 43 exact (2026-09-07, latest run). The three that are not: VDoll 2.0 px/frame over floor,
-PoisSeed 1.6, BugBomb 1.1 -- a few hundred pixels between them, none of it the arc (7aa).
+41 of 43 exact (2026-09-07, latest run). The two that are not: VDoll 2.0 px/frame over floor and
+BugBomb 1.1 -- about 220 pixels between them, none of it the arc (7aa).
 BlkBomb, LilBolr and the seeds joined the exact ones after their constants were SWEPT against the
 capture rather than fitted.
 

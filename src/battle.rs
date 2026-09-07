@@ -2619,7 +2619,24 @@ impl<'a> Battle<'a> {
             let (bx, by) = field::panel_centre(mc, mr);
             // Two pixels forward of the origin on the real ROM.
             let bx = bx + 2 * self.megaman.facing_dx();
+            let bombs = &self.bombs;
             self.megaman.show_with_underlay(frame, |frame| {
+                // A thrown object's GROUND SHADOW goes between the navi's
+                // body and the navi's own shadow: the real ROM's OAM has
+                // MiniBomb's bomb at entry 9, the navi's body at 10-13, the
+                // bomb's shadow at 14 and the navi's shadow at 15. The
+                // underlay lands in exactly that slot.
+                for b in bombs.iter() {
+                    let (gx, gy) = b.ground();
+                    if let Some(part) = b.player.parts().first() {
+                        Object::new(part.sprite.clone())
+                            .set_priority(Priority::P2)
+                            .set_pos((gx + part.x, gy + part.y))
+                            .set_hflip(part.hflip)
+                            .set_vflip(part.vflip)
+                            .show(frame);
+                    }
+                }
                 if let Some(bubble) = bubble {
                     for part in bubble.parts().iter().rev() {
                         Object::new(part.sprite.clone())
@@ -2655,7 +2672,6 @@ impl<'a> Battle<'a> {
         }
         for b in &self.bombs {
             let (x, y) = b.position();
-            let (gx, gy) = b.ground();
             // LilBolr carries its damage under the thing it lobs, in the same
             // number objects the HP counters use. Measured on the real ROM:
             // two 32x16 objects at (84,64) and (116,64) on the attack's frame
@@ -2668,11 +2684,12 @@ impl<'a> Battle<'a> {
             // HP, which fits the thrown object being a virus sprite -- so it
             // is a constant, not b.damage, and drawing b.damage there scored
             // worse (404 px/frame against 352).
-            // The frame's first part is the shadow (sprite_hasShadow): it is
-            // drawn on the ground, the rest at the bomb's height -- the real
-            // ROM keeps the shadow at y 106-111 under the whole arc.
-            for (i, part) in b.player.parts().iter().enumerate().rev() {
-                let (px, py) = if i == 0 { (gx, gy) } else { (x, y) };
+            // The frame's first part is the shadow (sprite_hasShadow) and it
+            // is NOT drawn here: it goes on the ground, in the navi's underlay,
+            // which is the only slot that puts it under his body and over his
+            // own shadow the way the real ROM's OAM does.
+            for part in b.player.parts().iter().skip(1).rev() {
+                let (px, py) = (x, y);
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)
                     .set_pos((px + part.x, py + part.y))

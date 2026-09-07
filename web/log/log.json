@@ -670,5 +670,11 @@
     "file": "log/shots/1788788299-boiler_hp.png",
     "caption": "LilBolr is exact. The last three frames that differed were not the flame and not the arc: they were the summoned boiler's HP figure passing behind the navi's head. Real ROM above, this build below, at the three frames in question. The figure was drawn with the rest of the thrown object, and the thrown object is drawn after the actors, so the navi's helmet cut the digits -- 69 white pixels in the real ROM against 50 in mine on the first of them. The real ROM's OAM puts the figure ahead of the navi, so it is drawn ahead of him now. Worth generalising: when a residue sits where two objects overlap, count the pixels of ONE colour on each side before assuming the position is wrong. The figure's bounding box was identical in both all along.",
     "tag": "rust"
+  },
+  {
+    "t": 1788789091,
+    "file": "log/shots/1788789091-pod_shadow2.png",
+    "caption": "PoisSeed is exact, and the last 115 pixels were a question of OAM ORDER. Real ROM above, this build below, at three frames of the throw, with every shadow pixel painted orange so it can be seen at all -- note the notch bitten out of the navi's shadow on the left frame. That notch is the thrown pod's OWN shadow, which is BLACK in PoisSeed's palette and paints out the navi's grey where the two overlap. This build drew the whole thrown object after the actors, under all of them, so the notch never appeared. Dumping OAM says where it belongs: MiniBomb's bomb is entry 9, the navi's body is 10 to 13, the bomb's shadow is 14 and the navi's OWN shadow is 15 -- so a thrown object's shadow goes between the navi's body and his shadow, and nowhere else. Moving the whole bomb above the navi instead costs six other chips their exact scores; moving only the shadow, into the slot the navi's own draw already offers for exactly this, costs nothing and makes PoisSeed exact. IceSeed and GrasSeed never showed it because their shadows are grey, the same colour as the navi's.",
+    "tag": "rust"
   }
 ]
