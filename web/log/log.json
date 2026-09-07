@@ -412,5 +412,11 @@
     "file": "log/shots/1788763102-cust_cmp2.png",
     "caption": "The chip select screen, real ROM above and this build below, after correcting its palette banks. My asset had two palettes swapped relative to the real ROM: the window's frame belongs in bank 9 and the panel behind it in bank 13, and this build was putting the panel's palette into the frame's bank, which is why the whole window rendered salmon where the real one is grey. With that fixed the header, the CHIP SELECT label, the OK button and the icon row all land. Still to do: the preview card's name and its code and damage row, the vertical meter, and the strip below the icons.",
     "tag": "chipselect"
+  },
+  {
+    "t": 1788763651,
+    "file": "log/shots/1788763651-cust_cmp3.png",
+    "caption": "The chip select screen after three more fixes, real ROM above and this build below. The field slides fifteen pixels down out of the window's way when the menu opens, at one and a half pixels a frame over ten frames, which the real ROM does and this build did not. The HP box is not hidden by the menu: the real ROM redraws it fifteen tile columns over, beside the window and above the field, so it does that now too. And the icon slots were taking one palette bank each, running over the bank the HP box shares with the window's panel, which painted the box in a chip's colours. The right half of the screen goes from 15443 differing pixels to 6618. Still off: the preview card's name and its code and damage row, the vertical meter, and the strip below the icons.",
+    "tag": "chipselect"
   }
 ]

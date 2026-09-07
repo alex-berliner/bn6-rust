@@ -89,6 +89,11 @@ const SCREEN_FADE_FRAMES: u16 = 0x10 * 2;
 /// it is background art, which is not drawn yet.
 const PLAYER_HP_AT: (i32, i32) = (44, 12);
 const GAUGE_STEP: u16 = 0xd;
+/// The field slides 15 px down while the chip menu is up, at 1.5 px a frame:
+/// measured on the real ROM, its top edge runs 72, 74, 75, 77, 78, 80, 81, 83,
+/// 84, 86, 87 over ten frames and holds at 87. Kept in half-pixels.
+const FIELD_SLIDE: u16 = 30;
+const FIELD_SLIDE_STEP: u16 = 3;
 // Chips, by id in ChipDataArr_8021DA8 (data/ChipDataArr.s). The swords
 // (attack family 0x13, sub_80EB776, asm31.s:108924) hold animation 5 for
 // 0x15 frames with the hit when the timer reads 0xc -- the ninth frame --
@@ -547,6 +552,8 @@ pub struct Battle<'a> {
     panels: Panels,
     bg: RegularBackground,
     backdrop: crate::backdrop::Backdrop,
+    /// How far the field has slid out of the chip menu's way, in half-pixels.
+    field_slide: u16,
     hud_tiles: crate::hudtiles::HudTiles,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
@@ -906,6 +913,7 @@ impl<'a> Battle<'a> {
             panels,
             bg,
             backdrop: crate::backdrop::Backdrop::new(crate::BACKDROP),
+            field_slide: 0,
             hud_tiles: crate::hudtiles::HudTiles::new(crate::HUD_TILES),
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
@@ -941,8 +949,19 @@ impl<'a> Battle<'a> {
         #[cfg(not(feature = "demo-sterile"))]
         {
             self.backdrop.update();
+            self.hud_tiles.set_menu(self.custom.is_some());
             self.hud_tiles.set_hp(self.megaman.hp());
             self.hud_tiles.set_gauge(self.gauge, GAUGE_FULL);
+            // The field slides down out of the window's way and back again:
+            // measured on the real ROM at 1.5 px a frame over ten frames to a
+            // 15 px offset, held while the menu is up.
+            let want = if self.custom.is_some() { FIELD_SLIDE } else { 0 };
+            self.field_slide = if self.field_slide < want {
+                (self.field_slide + FIELD_SLIDE_STEP).min(want)
+            } else {
+                self.field_slide.saturating_sub(FIELD_SLIDE_STEP).max(want)
+            };
+            self.bg.set_scroll_pos((0, -((self.field_slide / 2) as i32)));
         }
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
@@ -1884,12 +1903,8 @@ impl<'a> Battle<'a> {
         // with --disable-bg, so both sides must be MegaMan on black.
         #[cfg(not(feature = "demo-sterile"))]
         self.backdrop.show(frame);
-        // The chip window covers the HUD strip on the real ROM and borrows
-        // its palette bank, so this layer stands down while it is up.
         #[cfg(not(feature = "demo-sterile"))]
-        if self.custom.is_none() {
-            self.hud_tiles.show(frame);
-        }
+        self.hud_tiles.show(frame);
         let bg_id = self.bg.show(frame);
         // Whichever navi is fading -- the deleted player out, an arriving
         // enemy in -- pixelates and thins over the field; the intro's screen

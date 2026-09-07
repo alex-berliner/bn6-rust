@@ -59,8 +59,15 @@ const PICTURE_BANK: u8 = 10;
 /// The panel behind the window's frame, bank 13 on the real ROM. The HUD's
 /// own layer stands down while the menu is up, so they can share it.
 const PANEL_BANK: u8 = 13;
-/// Slot `i`'s icon draws in bank `SLOT_BANK + i`; see the module comment.
-const SLOT_BANK: u8 = 11;
+/// Banks the slot icons draw in, one per slot. NOTE: the real ROM puts EVERY
+/// icon in bank 11 -- read off a live menu, every icon cell in the window's
+/// map carries bank 11 -- which means its icons share one 16-colour palette
+/// this build does not have; that palette is in neither the window asset nor
+/// the chip asset, so the icons here still take one bank each and their own
+/// chip's colours. What the list avoids is bank 13, which is the window's
+/// panel and the HP box beside it: running 11 through 15 painted the HP box in
+/// a chip's colours.
+const SLOT_BANKS: [u8; 5] = [11, 12, 14, 15, 11];
 /// Chips offered per window: the base count before Custom parts
 /// (sub_802A40C, asm03_0.s:8650).
 pub const OFFERED: usize = 5;
@@ -284,7 +291,7 @@ impl CustomAssets {
         gfx.set_background_palette(PANEL_BANK, &self.palette(0));
         for (i, slot) in custom.slots.iter().enumerate() {
             if let Some(offer) = slot {
-                gfx.set_background_palette(SLOT_BANK + i as u8, &read_palette(offer.chip.palette()));
+                gfx.set_background_palette(SLOT_BANKS[i % SLOT_BANKS.len()], &read_palette(offer.chip.palette()));
             }
         }
         for slot in 0..OFFERED {
@@ -406,7 +413,7 @@ impl Custom<'_> {
         match self.slots[slot] {
             Some(offer) if !self.picks.contains(&slot) => {
                 let icon = offer.chip.icon();
-                self.fill(region_slot_icon(slot), &icon, Some(SLOT_BANK + slot as u8));
+                self.fill(region_slot_icon(slot), &icon, Some(SLOT_BANKS[slot % SLOT_BANKS.len()]));
                 let code = offer.chip.codes[0] as usize;
                 let r = assets.regions[region_slot_code(slot)];
                 self.fill_from(r, &assets.code_glyphs, (code * 2) as u16, r.bank);
@@ -436,7 +443,7 @@ impl Custom<'_> {
             match self.picks.get(row).and_then(|&slot| self.slots[slot].map(|o| (slot, o))) {
                 Some((slot, offer)) => {
                     let icon = offer.chip.icon();
-                    self.fill_from(cell, &icon, 0, SLOT_BANK + slot as u8);
+                    self.fill_from(cell, &icon, 0, SLOT_BANKS[slot % SLOT_BANKS.len()]);
                 }
                 None => self.fill_from(cell, &assets.empty_icon, 0, stack.bank),
             }

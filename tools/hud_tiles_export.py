@@ -65,6 +65,9 @@ def main():
     if len(gauge) != want:
         raise SystemExit(f"{GAUGE_BLOB}: expected {want} bytes, got {len(gauge)}")
     tiles += gauge[(GAUGE_FROM - GAUGE_BASE) * 32:]
+    # A blank tile at the end, for clearing cells. Tile 0 of this asset is the
+    # top half of digit zero, so it cannot serve as one.
+    tiles += bytes(32)
 
     out = bytearray(struct.pack("<4sIII", b"BNHT", 1, 0, 0))
     while len(out) % 4:

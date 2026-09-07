@@ -39,6 +39,9 @@ const GAUGE_CELLS: u32 = 18;
 const BAR_CELLS: u32 = 12;
 /// The palette bank the gauge draws in on the real ROM.
 pub const GAUGE_BANK: u8 = 9;
+/// A blank tile the exporter appends, for clearing cells: tile 0 of this asset
+/// is the top half of digit zero and cannot serve as one.
+const BLANK_TILE: u16 = 69;
 
 /// The palette bank the box draws in. The field uses 0-8 and the results
 /// windows 9-11, so this one is free and is the real ROM's own choice.
@@ -51,6 +54,10 @@ pub struct HudTiles {
     gauge_palette: Palette16,
     shown: Option<u16>,
     gauge_shown: Option<u32>,
+    /// Whether the chip menu is up. The real ROM keeps the HP box on screen
+    /// then but redraws it fifteen tile columns over, beside the window and
+    /// above the field, and drops the gauge, whose place the window takes.
+    menu: bool,
 }
 
 impl HudTiles {
@@ -88,6 +95,7 @@ impl HudTiles {
             gauge_palette: Palette16::new(gauge),
             shown: None,
             gauge_shown: None,
+            menu: false,
         }
     }
 
@@ -107,6 +115,9 @@ impl HudTiles {
     /// The empty body cell is drawn with the label row's filler tile, which is
     /// a guess.
     pub fn set_gauge(&mut self, filled: u16, full: u16) {
+        if self.menu {
+            return;
+        }
         let lit = (u32::from(filled) * BAR_CELLS / u32::from(full.max(1))).min(BAR_CELLS);
         if self.gauge_shown == Some(lit) {
             return;
@@ -140,6 +151,34 @@ impl HudTiles {
         );
     }
 
+    /// Move the box aside for the chip menu, or bring it back.
+    pub fn set_menu(&mut self, menu: bool) {
+        if self.menu == menu {
+            return;
+        }
+        self.menu = menu;
+        self.shown = None;
+        self.gauge_shown = None;
+        for col in 0..32 {
+            for row in 0..2 {
+                self.bg.set_tile(
+                    (col, row),
+                    &self.tiles,
+                    TileSetting::new(BLANK_TILE, TileEffect::new(false, false, BANK)),
+                );
+            }
+        }
+    }
+
+    /// Where the HP box starts, in tile columns.
+    fn hp_col(&self) -> u32 {
+        if self.menu {
+            15
+        } else {
+            0
+        }
+    }
+
     /// Repaint the box when the number changes. The digits are laid out
     /// right-aligned, with the leading slots blank rather than zeroed.
     pub fn set_hp(&mut self, hp: u16) {
@@ -147,8 +186,9 @@ impl HudTiles {
             return;
         }
         self.shown = Some(hp);
-        self.cell(0, CAP_PAIR);
-        self.cell(1 + SLOTS, CAP_PAIR);
+        let base = self.hp_col();
+        self.cell(base, CAP_PAIR);
+        self.cell(base + 1 + SLOTS, CAP_PAIR);
         let mut left = hp;
         for slot in (0..SLOTS).rev() {
             let pair = if left == 0 && slot + 1 != SLOTS {
@@ -157,7 +197,7 @@ impl HudTiles {
                 (left % 10) as u16
             };
             left /= 10;
-            self.cell(1 + slot, pair);
+            self.cell(base + 1 + slot, pair);
         }
     }
 
