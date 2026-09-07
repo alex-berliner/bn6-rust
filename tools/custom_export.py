@@ -25,7 +25,7 @@ Format (little-endian):
   0x08  u32 -> tiles   : u32 byte_len, then tiles (tile 0 blank, then the
                          block, so the map's ids index it directly)
   0x0c  u32 -> map     : u32 w, u32 h, w*h u16 entries (patched)
-  0x10  u32 -> palette : 3 banks * 32 bytes
+  0x10  u32 -> palette : 3 banks * 32 bytes, then the shared icon bank
   0x14  u32 -> regions : u32 count, then count * 8 bytes:
                          x, y, w, h, bank, column_major, u16 first VRAM
                          tile id the game assigns (0x9b onwards)
@@ -102,6 +102,10 @@ def apply_patches(tilemap, records):
     return bytes(tilemap), firsts
 
 
+#: BG palette bank 11 of a live menu: the shared icon and meter palette.
+SHARED_ICON_PALETTE = [0, 32767, 27483, 22198, 16944, 13739, 10538, 5285, 17277, 24243, 22198, 5285, 15823, 0, 0, 0]
+
+
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "custom.bin"
     tiles = bytes(32) + read_symbol(DAT, "dword_86E1D38", max_bytes=TILES * 32, through_labels=True)
@@ -127,6 +131,13 @@ def main():
     out += struct.pack("<II", 15, 20) + tilemap
     off_pal = len(out)
     out += pal
+    # A FOURTH bank after the three variants: the one palette every chip icon
+    # and the vertical meter draw in. The real ROM keeps it in BG bank 11 and
+    # draws every icon from it, so its icons are greyscale rather than each
+    # chip's own colours -- read off a live menu, since it is in neither this
+    # window's data nor the chip data.
+    for c in SHARED_ICON_PALETTE:
+        out += struct.pack("<H", c)
     off_regions = len(out)
     out += struct.pack("<I", len(records))
     for record, first in zip(records, firsts):

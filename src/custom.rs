@@ -67,7 +67,11 @@ const PANEL_BANK: u8 = 13;
 /// chip's colours. What the list avoids is bank 13, which is the window's
 /// panel and the HP box beside it: running 11 through 15 painted the HP box in
 /// a chip's colours.
-const SLOT_BANKS: [u8; 5] = [11, 12, 14, 15, 11];
+const SLOT_BANKS: [u8; 5] = [11, 11, 11, 11, 11];
+/// The palette every icon and the vertical meter share, variant 3 of the
+/// asset's palette section. The real ROM's icons are GREYSCALE, all drawn from
+/// this one bank rather than each chip's own colours.
+const SHARED_ICON_VARIANT: usize = 3;
 /// Chips offered per window: the base count before Custom parts
 /// (sub_802A40C, asm03_0.s:8650).
 pub const OFFERED: usize = 5;
@@ -235,7 +239,7 @@ impl CustomAssets {
         Self {
             tiles: tileset(tiles),
             map: &data[m + 8..m + 8 + w * h * 2],
-            palette: &data[p..p + 96],
+            palette: &data[p..p + 128],
             regions,
             cursor_tiles: &data[c..c + 64],
             cursor_palette: read_palette(&data[c + 64..c + 96]),
@@ -289,9 +293,10 @@ impl CustomAssets {
         // salmon where the real ROM's is grey.
         gfx.set_background_palette(BANK, &self.cursor_palette);
         gfx.set_background_palette(PANEL_BANK, &self.palette(0));
+        gfx.set_background_palette(SLOT_BANKS[0], &self.palette(SHARED_ICON_VARIANT));
         for (i, slot) in custom.slots.iter().enumerate() {
             if let Some(offer) = slot {
-                gfx.set_background_palette(SLOT_BANKS[i % SLOT_BANKS.len()], &read_palette(offer.chip.palette()));
+                let _ = i;
             }
         }
         for slot in 0..OFFERED {
