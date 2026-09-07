@@ -209,7 +209,18 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
 banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
-Vulcan1 (05 demo-vulcan). That is every chip on the list that the real ROM will fire;
+Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), LongSwrd (49 demo-longswrd), Recov30 (9b
+demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
+the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
+for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,
+asm00_1.s:17303 -> encryption_testPack_8006e84, asm00_1.s:7809: the library count
+byte_20008A0[id] ^ 0x81 must equal its copy byte_2004C20[id]); chip_compare.py now pokes a count
+of 1 and a copy of 0x80 for the chip (preserving the neighbouring byte of the halfword).
+Open, with real captures in hand (190 frames each): Barrier's bubble appears at c78 in a 16-frame
+cycle (3 on, 1 off, growing 58->62 px, green, centred on the navi); Invisibl's flicker starts at
+c128, 2 frames hidden / 2 shown; both are family-0x15 "presentation" chips whose freeze/dim/name
+sequence explains the delays and is being researched. Rust currently draws no bubble and
+flickers 1/1 from the press.
 LongSwrd (0x49), HiCannon (0x02), M-Cannon (0x03) and Barrier (0xb2) do not fire when poked
 into the real ROM's hand slot (a Sonnet pass found no static ChipData gate; unresolved --
 try dumping AIData Unk_44 after the press, or the ChipLockoutTimer, or a release-edge press).
