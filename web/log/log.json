@@ -622,5 +622,11 @@
     "file": "log/shots/1788781992-poisseed_full.png",
     "caption": "PoisSeed, whole attack: real ROM on top, this build in the middle, the difference below -- 6.9 px/frame over seventy frames against a floor of 5.3. The throw, the arc, the landing and the POISON going down all match. The sheet is nine pairs of 32x32 objects, one pair per panel of the enemy's half because a panel is forty wide, all from byte_830E44C.spr; it grows from an ellipse to a full green sheet and then fades, leaving the panels poison underneath. Its timing took two measurements to place: spawned the moment the pod lands it runs a frame early, spawned a frame later it runs a frame late -- it is spawned a frame later AND already one tick in, so its first frame shows for exactly one frame. What is left is a shadow under the pod for six frames just after the throw.",
     "tag": "chip"
+  },
+  {
+    "t": 1788782410,
+    "file": "log/shots/1788782410-seeds_mine.png",
+    "caption": "All three seeds, this build: IceSeed, GrasSeed and PoisSeed. Two of them are EXACT against the real ROM over seventy frames and PoisSeed is 1.6 px/frame over its floor. They are one chip's worth of work between them -- the same pod sprite and the same nine-panel sheet, told apart by palette. The POD's palette is the chip's attack_param_2 as a shift on top of the OAM offset of 9 that every part carries: IceSeed 1, GrasSeed 2, PoisSeed 3, landing on the sprite's palettes 10, 11 and 12. The SHEET's does not follow it: PoisSeed and IceSeed share the sheet sprite's own palette 0 while GrasSeed takes 8, matched by dumping OBJ bank 1 while each sheet is up. Their panels are left alone in the sterile arena, where the real capture's field layer is stripped and cannot show them.",
+    "tag": "chip"
   }
 ]

@@ -158,6 +158,8 @@ const CHIP_MEGENBOM: u16 = 56;
 /// PoisSeed, the one of the three seeds whose panels this build already has
 /// art for: the field asset carries POISON, and the ROM's panel tilemap has
 /// no grass or ice at all.
+const CHIP_GRASSEED: u16 = 68;
+const CHIP_ICESEED: u16 = 69;
 const CHIP_POISSEED: u16 = 70;
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
@@ -166,7 +168,26 @@ const CHIP_POISSEED: u16 = 70;
 /// count FROM the shifted palette here, as Barr100's bubble does.
 const SEED_HELD_ANIM: usize = 8;
 const SEED_THROWN_ANIM: usize = 9;
-const SEED_PALETTE: usize = 3;
+/// The SHEET's palette, which does NOT follow the pod's: PoisSeed and IceSeed
+/// share the sprite's index 0 and GrasSeed takes 8. Matched by dumping OBJ
+/// bank 1 while each sheet is up and comparing it against the asset's own
+/// palettes.
+const fn sheet_palette(id: u16) -> usize {
+    match id {
+        CHIP_GRASSEED => 8,
+        _ => 0,
+    }
+}
+
+/// One palette per seed, and it is the chip's attack_param_2: IceSeed 1,
+/// GrasSeed 2, PoisSeed 3.
+const fn seed_palette(id: u16) -> usize {
+    match id {
+        CHIP_ICESEED => 1,
+        CHIP_GRASSEED => 2,
+        _ => 3,
+    }
+}
 /// The poison sheet's animation and how long it runs, from the sprite's own
 /// frame durations.
 const POISON_ANIM: usize = 1;
@@ -550,9 +571,10 @@ struct Bomb {
     flight: u8,
     /// LilBolr shows its damage riding under the projectile; the bombs do not.
     show_damage: bool,
-    /// PoisSeed lays poison over the enemy's half where it lands instead of
-    /// bursting.
+    /// A seed lays its sheet over the enemy's half where it lands instead of
+    /// bursting, in the chip's own palette.
     poison: bool,
+    seed_palette: usize,
 }
 
 impl Bomb {
@@ -673,8 +695,10 @@ pub struct Battle<'a> {
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
     emotion: crate::emotion::Emotion,
-    /// Frames until PoisSeed's sheet goes down, counted from the pod landing.
+    /// Frames until a seed's sheet goes down, counted from the pod landing,
+    /// and the palette it takes.
     poison_pending: u8,
+    poison_palette: usize,
     /// The palette for the chip-in-hand icon the game hangs over the navi.
     /// None in the sterile arena, which does not draw the icon: the bank it
     /// would hold is one the longest volley needs. SuprVulc panicked with
@@ -767,6 +791,10 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_FLSHBOM1);
         } else if cfg!(feature = "demo-poisseed") {
             hand.push(CHIP_POISSEED);
+        } else if cfg!(feature = "demo-iceseed") {
+            hand.push(CHIP_ICESEED);
+        } else if cfg!(feature = "demo-grasseed") {
+            hand.push(CHIP_GRASSEED);
 
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
@@ -1087,6 +1115,7 @@ impl<'a> Battle<'a> {
             },
             field_slide: 0,
             poison_pending: 0,
+            poison_palette: 0,
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
@@ -1775,6 +1804,7 @@ impl<'a> Battle<'a> {
                         // runs a frame early or a frame late.
                         let mut sheet =
                             spr::Player::new(spr::Assets::new(POISAREA), POISON_ANIM);
+                        sheet.set_palette_add(self.poison_palette);
                         sheet.update();
                         self.effects.push((
                             sheet,
@@ -1795,7 +1825,7 @@ impl<'a> Battle<'a> {
             b.step();
             b.ticks += 1;
             if b.ticks >= b.flight {
-                landed.push((b.target, b.damage, b.wide, b.poison));
+                landed.push((b.target, b.damage, b.wide, b.poison.then_some(b.seed_palette)));
                 false
             } else {
                 true
@@ -1810,13 +1840,14 @@ impl<'a> Battle<'a> {
             // sprite, byte_830E44C.spr, in the seed's own palette bank. The
             // panels themselves are POISON underneath, which the field asset
             // already carries.
-            if poison {
+            if let Some(sheet_palette) = poison {
                 // The pod is gone for ONE frame before the sheet starts: the
                 // real ROM's landing frame shows neither. Measured -- with the
                 // sheet spawned the moment the pod goes, its whole animation
                 // is a frame early and c48 carries nine ellipses the real ROM
                 // does not have.
                 self.poison_pending = 1;
+                self.poison_palette = sheet_palette;
                 continue;
             }
             // The landing panel, and its eight neighbours for BigBomb.
@@ -1928,7 +1959,8 @@ impl<'a> Battle<'a> {
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
-            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 | CHIP_POISSEED => {
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
+            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
@@ -1947,7 +1979,7 @@ impl<'a> Battle<'a> {
                 // one and a 16x8 for the thrown. The magenta is palette 12 of
                 // the sprite's own block, which carries a palette per seed;
                 // index 0 is the blue one IceSeed uses.
-                let seed = chip.id == CHIP_POISSEED;
+                let seed = matches!(chip.id, CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED);
                 let mut held = if seed {
                     spr::Player::new(spr::Assets::new(POISSEED), SEED_HELD_ANIM)
                 } else if flash {
@@ -1958,7 +1990,7 @@ impl<'a> Battle<'a> {
                 if seed {
                     held.set_offsets_follow_shift(true);
                 }
-                held.set_palette_add(if seed { SEED_PALETTE } else { bomb_palette(chip.id, false) });
+                held.set_palette_add(if seed { seed_palette(chip.id) } else { bomb_palette(chip.id, false) });
                 // The flash bomb's sprite carries its own part offsets, which
                 // sit 22 right and 10 down of where the bomb sprite's do:
                 // measured from the held ball's centre, (37,88) on the real
@@ -2138,13 +2170,14 @@ impl<'a> Battle<'a> {
             }
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
-            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3 | CHIP_POISSEED => {
+            | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
+            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED => {
                 let (mx, my) = field::panel_centre(col, row);
                 let lilbolr = matches!(
                     chip.id,
                     CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
                 );
-                let seed = chip.id == CHIP_POISSEED;
+                let seed = matches!(chip.id, CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb
                 // sprite in another palette: a dark brown ball with a fuse
@@ -2174,7 +2207,7 @@ impl<'a> Battle<'a> {
                 if seed {
                     thrown.set_offsets_follow_shift(true);
                 }
-                thrown.set_palette_add(if seed { SEED_PALETTE } else { bomb_palette(chip.id, true) });
+                thrown.set_palette_add(if seed { seed_palette(chip.id) } else { bomb_palette(chip.id, true) });
                 self.bombs.push(Bomb {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
@@ -2194,6 +2227,7 @@ impl<'a> Battle<'a> {
                     },
                     show_damage: lilbolr,
                     poison: seed,
+                    seed_palette: sheet_palette(chip.id),
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
