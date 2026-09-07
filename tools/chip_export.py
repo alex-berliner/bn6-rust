@@ -64,7 +64,7 @@ NAMES = os.path.join(BN6, "data", "textscript", "TextScriptChipNames0.s")
 
 # Requested chips, with the ROM's 8-char display names where they differ.
 CHIPS = [
-    "Cannon", "HiCannon", "AirShot", "Vulcan1", "Sword",
+    "Cannon", "HiCannon", "M-Cannon", "AirShot", "Vulcan1", "Sword",
     "WideSwd", "LongSwd", "MiniBomb", "Recov10", "Recov30",
     "Barrier", "AreaGrab", "Invis", "ShotGun", "CrossGun", "Spreader",
 ]

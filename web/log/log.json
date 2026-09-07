@@ -280,5 +280,11 @@
     "file": "log/proof/1788743337-bg1_map.png",
     "caption": "The battle backdrop, rendered from the real ROM's BG1 VRAM: a 32x32-tile map of the teal-arc motif on navy, palette bank 0. It scrolls 1 px left every 2 frames and 1 px up every 4. Its tiles are dword_8617488 (data/dat38_60.s:49372, 138 tiles) -- though the ROM order is not the VRAM order, and the tilemap itself is not in any data blob, so the upload routine is next.",
     "tag": "proof"
+  },
+  {
+    "t": 1788743505,
+    "file": "log/proof/1788743505-strip_demo-mcannon.png",
+    "caption": "M-CANNON matched: tools/chip_compare.py 03 demo-mcannon -> 0 px on every frame. Same cannon pose and barrel as Cannon/HiCannon, with the barrel's palette 2 (byte_80B8BD4 row 2).",
+    "tag": "proof"
   }
 ]

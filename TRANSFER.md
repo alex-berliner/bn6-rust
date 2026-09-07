@@ -250,7 +250,7 @@ HUD.
 banner-tile artifact): Cannon (01 demo-cannon), Sword (47 demo-sword), WideSwrd (48
 demo-wideswrd), AirShot (04 demo-airshot), Recov10 (9a demo-recovery --rust-start 123).
 MiniBomb (36 demo-minibomb, flight in the default window and the landing with --xmax 240),
-Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), LongSwrd (49 demo-longswrd), Recov30 (9b
+Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon), LongSwrd (49 demo-longswrd), Recov30 (9b
 demo-recov30 --rust-start 123), Barrier (b2 demo-barrier: nothing visible on either side for
 the first 60 frames -- see below). The chips that "would not fire" when poked were being swapped
 for the bug chip 0x185 by the hand validation (someChipHandValidationHappensHere_800B090,

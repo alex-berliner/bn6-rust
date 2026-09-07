@@ -96,6 +96,7 @@ const CHIP_WIDESWRD: u16 = 72;
 const CHIP_LONGSWRD: u16 = 73;
 const CHIP_CANNON: u16 = 1;
 const CHIP_HICANNON: u16 = 2;
+const CHIP_MCANNON: u16 = 3;
 const CHIP_AIRSHOT: u16 = 4;
 const CHIP_VULCAN: u16 = 5;
 const CHIP_MINIBOMB: u16 = 54;
@@ -376,6 +377,8 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_LONGSWRD);
         } else if cfg!(feature = "demo-hicannon") {
             hand.push(CHIP_HICANNON);
+        } else if cfg!(feature = "demo-mcannon") {
+            hand.push(CHIP_MCANNON);
         } else if cfg!(feature = "demo-recov30") {
             hand.push(CHIP_RECOV30);
         } else if cfg!(feature = "demo-invisibl") {
@@ -1155,7 +1158,7 @@ impl<'a> Battle<'a> {
                     false,
                 ));
             }
-            CHIP_CANNON | CHIP_HICANNON => {
+            CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(CANNON);
                 // The barrel is the t1_0x5 object spawned on the navi's arm
@@ -1327,7 +1330,7 @@ impl<'a> Battle<'a> {
             // (byte_82FE704 anim 0), spawned off the front panel at the strike
             // (counter 0xf, asm31.s:109531). The barrel itself was spawn at
             // the start of the pose in use_chip, so only the shot runs here.
-            CHIP_CANNON | CHIP_HICANNON => {
+            CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
                 let (fc, fr) = self.megaman.front_panel();
                 self.shots
                     .push(Shot::cannon(spr::Assets::new(CANNON_ORB), fc, fr, dx, chip.power));

@@ -23,6 +23,7 @@ ENTRIES=(
   "demo-minibomb,demo-sterile,demo-auto minibomb-real MiniBomb on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-vulcan,demo-sterile,demo-auto vulcan-real Vulcan1 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-hicannon,demo-sterile,demo-auto hicannon-real HiCannon on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-mcannon,demo-sterile,demo-auto mcannon-real M-Cannon on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-longswrd,demo-sterile,demo-auto longswrd-real LongSwrd on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-recov30,demo-sterile,demo-auto recov30-real Recov30 on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-invisibl,demo-sterile,demo-auto invisibl-real Invisibl on black, auto-fire: matched frame-for-frame to the real ROM"
