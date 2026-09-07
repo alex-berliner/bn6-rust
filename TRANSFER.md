@@ -467,7 +467,8 @@ MiniBomb (36 demo-minibomb, flight in the default window and the landing with --
 Vulcan1 (05 demo-vulcan), HiCannon (02 demo-hicannon), M-Cannon (03 demo-mcannon),
 Recov50 (9c demo-recov50 --rust-start 123), Vulcan2 (06 demo-vulcan2), Vulcan3 (07 demo-vulcan3),
 FireSwrd (4c), AquaSwrd (4d), ElecSwrd (4e), BambSwrd (4f), WideBlde (4a), LongBlde (4b),
-Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd),
+Recov80 (9d demo-recov80 --rust-start 123), Recov120 (9e demo-recov120, same),
+Recov150 (9f demo-recov150, same), Recov200 (a0 demo-recov200, same), Recov300 (a1 --rust-start 123), SuprVulc (08 demo-suprvulc --frames 113), Muramasa (55), LongSwrd (49 demo-longswrd),
 EnergBom (37 demo-energbom --frames 45) and MegEnBom (38 demo-megenbom, same),
 BlkBomb (3c demo-blkbomb --frames 45: 12.8 px/frame, 0 on all but three frames -- see 7h),
 BigBomb (ca demo-bigbomb --frames 60, and 0 across the whole screen with --xmax 240 from c10 on:

@@ -620,6 +620,14 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_LONGBLDE);
         } else if cfg!(feature = "demo-recov300") {
             hand.push(CHIP_RECOV300);
+        } else if cfg!(feature = "demo-recov80") {
+            hand.push(CHIP_RECOV80);
+        } else if cfg!(feature = "demo-recov120") {
+            hand.push(CHIP_RECOV120);
+        } else if cfg!(feature = "demo-recov150") {
+            hand.push(CHIP_RECOV150);
+        } else if cfg!(feature = "demo-recov200") {
+            hand.push(CHIP_RECOV200);
         } else if cfg!(feature = "demo-suprvulc") {
             hand.push(CHIP_SUPRVULC);
         } else if cfg!(feature = "demo-muramasa") {
