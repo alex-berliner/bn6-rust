@@ -479,7 +479,18 @@ asm00_1.s:17303 -> encryption_testPack_8006e84, asm00_1.s:7809: the library coun
 byte_20008A0[id] ^ 0x81 must equal its copy byte_2004C20[id]); chip_compare.py now pokes a count
 of 1 and a copy of 0x80 for the chip (preserving the neighbouring byte of the halfword).
 Invisibl (b1 demo-invisibl --frames 190 --rust-start 123) and Barrier (b2 demo-barrier, same
-flags) are matched too. Both are family-0x15 "presentation" chips (object_timefreezeBegin,
+flags) are matched too, and so are Barr100 (b3 demo-barr100) and Barr200 (b4 demo-barr200) at
+`--frames 120 --rust-start 123`: 0.9 px/frame, the same residual Barrier itself has. The three
+are one chip -- family 0x15 subfamily 4, off_802CCB4[4] = sub_80E3B50 -- whose first attack
+parameter indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP: 1 -> 10, 5 -> 0x64,
+7 -> 0xc8. The bubble is the same object in another colour, gold for Barr100 and pink for
+Barr200, matched against sprite_832F8C8's thirteen palettes (3 and 6); the asset is now exported
+with all of them.
+WHICH PALETTE AN OAM OFFSET COUNTS FROM IS PER OBJECT, and both halves are measured. HiCannon's
+barrel sits in palette 1 and its silhouette frame, offset 4, shows the flat palette 4, ignoring
+the shift. Barr100's bubble is Barrier's shifted by 3 and its later frames, offsets 1 and 2, show
+the gold set's lighter shades 4 and 5. Forcing either rule on both breaks the other -- HiCannon
+goes to 29 px/frame, Barr100 to 273 -- so `spr::Player::set_offsets_follow_shift` picks. Both are family-0x15 "presentation" chips (object_timefreezeBegin,
 object_dimScreen, object_drawChipName, effect, undim; object.s:95-287): the battle is frozen
 and the effect lands 128 frames after the press for Invisibl and 77 for Barrier -- measured, the
 banner's own timing not traced; the screen dim is not drawn yet. Invisibl: FlashingInvisTimer

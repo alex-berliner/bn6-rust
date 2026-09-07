@@ -128,6 +128,10 @@ const CHIP_RECOV300: u16 = 161;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
 const CHIP_BARRIER: u16 = 178;
+const CHIP_BARR100: u16 = 179;
+const CHIP_BARR200: u16 = 180;
+const CHIP_ENERGBOM: u16 = 55;
+const CHIP_MEGENBOM: u16 = 56;
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
 const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
@@ -276,6 +280,30 @@ const HEAL_FRAMES: u8 = 14;
 const INVISIBL_FRAMES: u16 = 0x68;
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
 const BARRIER_HP: u16 = 10;
+/// Barrier, Barr100 and Barr200 are one chip with one handler: family 0x15
+/// subfamily 4 (off_802CCB4[4] = sub_80E3B50), whose first attack parameter
+/// indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP. Barrier's
+/// parameter is 1 -> row 1 = 10, Barr100's is 5 -> 0x64, Barr200's is 7 ->
+/// 0xc8. Nothing else about them differs.
+/// The bubble is the same object in another colour: Barrier's is teal,
+/// Barr100's gold and Barr200's pink, matched colour for colour against the
+/// real captures against sprite_832F8C8's thirteen palettes. The asset is
+/// exported with all of them for this.
+const fn barrier_palette(id: u16) -> usize {
+    match id {
+        CHIP_BARR100 => 3,
+        CHIP_BARR200 => 6,
+        _ => 0,
+    }
+}
+
+const fn barrier_hp(id: u16) -> u16 {
+    match id {
+        CHIP_BARR100 => 100,
+        CHIP_BARR200 => 200,
+        _ => BARRIER_HP,
+    }
+}
 /// Frames from the press to the effect, measured on the real ROM (the
 /// bubble object's first, one-frame dot is behind the navi, so it is
 /// created a frame before the bubble shows).
@@ -324,6 +352,14 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
     match (id, thrown) {
         (CHIP_BLKBOMB, false) => 4,
         (CHIP_BIGBOMB, _) => 3,
+        // EnergBom and MegEnBom are MiniBomb's own held sprite row in
+        // another palette (byte_80EB738 pair 1, asm31.s:108898), and they
+        // throw through the same sub_80C5DBC. The exporter's palette order is
+        // not the ROM's, so the index is the measured one: the real held bomb
+        // is grey with brown and orange, and palette 5 is the only one of
+        // sprite_82F569C's thirteen that holds all of those colours. The
+        // asset is exported with every palette so that index exists.
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => 5,
         _ => 0,
     }
 }
@@ -545,6 +581,14 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_BLKBOMB);
         } else if cfg!(feature = "demo-bigbomb") {
             hand.push(CHIP_BIGBOMB);
+        } else if cfg!(feature = "demo-energbom") {
+            hand.push(CHIP_ENERGBOM);
+        } else if cfg!(feature = "demo-megenbom") {
+            hand.push(CHIP_MEGENBOM);
+        } else if cfg!(feature = "demo-barr100") {
+            hand.push(CHIP_BARR100);
+        } else if cfg!(feature = "demo-barr200") {
+            hand.push(CHIP_BARR200);
         } else if cfg!(feature = "demo-wideblde") {
             hand.push(CHIP_WIDEBLDE);
         } else if cfg!(feature = "demo-longblde") {
@@ -1129,9 +1173,12 @@ impl<'a> Battle<'a> {
                             self.panels.highlight(col, row, 0);
                         }
                     }
-                    CHIP_BARRIER => {
-                        self.megaman.set_barrier(BARRIER_HP);
-                        self.bubble = Some(spr::Player::new(spr::Assets::new(BARRIER), 0));
+                    CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
+                        self.megaman.set_barrier(barrier_hp(chip.id));
+                        let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
+                        bubble.set_offsets_follow_shift(true);
+                        bubble.set_palette_add(barrier_palette(chip.id));
+                        self.bubble = Some(bubble);
                     }
                     _ => {}
                 }
@@ -1503,7 +1550,7 @@ impl<'a> Battle<'a> {
                 self.megaman.attack(SWORD);
                 self.sword_in = Some(SWORD.windup.map_or(0, |(_, f)| f));
             }
-            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
@@ -1582,7 +1629,9 @@ impl<'a> Battle<'a> {
                 ));
             }
             CHIP_INVISIBL => self.presentation = Some((chip, INVISIBL_PRESENTATION)),
-            CHIP_BARRIER => self.presentation = Some((chip, BARRIER_PRESENTATION)),
+            CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
+                self.presentation = Some((chip, BARRIER_PRESENTATION))
+            }
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
             // AreaGrab takes the enemy's front-most column, a row at a time
@@ -1664,7 +1713,7 @@ impl<'a> Battle<'a> {
                     }
                 }
             }
-            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB => {
+            CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM => {
                 let (mx, my) = field::panel_centre(col, row);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 let mut thrown = spr::Player::new(spr::Assets::new(MINIBOMB), 1);

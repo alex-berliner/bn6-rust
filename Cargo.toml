@@ -53,6 +53,10 @@ demo-stepswrd = ["demo"]
 demo-recov30 = ["demo"]
 demo-invisibl = ["demo"]
 demo-barrier = ["demo"]
+demo-barr100 = ["demo"]
+demo-barr200 = ["demo"]
+demo-energbom = ["demo"]
+demo-megenbom = ["demo"]
 # The real save state's layout: MegaMan at (2,2), a Mettaur at (5,2), for
 # comparing the whole screen with backgrounds on.
 demo-field = ["demo"]

@@ -193,6 +193,9 @@ pub struct Player {
     /// palette RAM on the frame it is drawn).
     red: Option<(u16, PaletteVramSingle)>,
     red_on: bool,
+    /// Whether an OAM palette offset counts from the shifted palette or the
+    /// frame's own; see `load_frame`.
+    offsets_follow_shift: bool,
     parts: Vec<Part>,
 }
 
@@ -212,6 +215,7 @@ impl Player {
             white_on: false,
             red: None,
             red_on: false,
+            offsets_follow_shift: false,
             parts: Vec::new(),
         };
         p.load_frame();
@@ -268,6 +272,12 @@ impl Player {
     /// `frozen_at` this is enough to rebuild the same still frame later.
     pub fn frame_key(&self) -> (usize, usize) {
         (self.anim, self.frame_in_anim)
+    }
+
+    /// Count OAM palette offsets from the shifted palette rather than the
+    /// frame's own. Set before the palette shift; see `load_frame`.
+    pub fn set_offsets_follow_shift(&mut self, on: bool) {
+        self.offsets_follow_shift = on;
     }
 
     /// A still player holding one named frame of one animation.
@@ -369,10 +379,18 @@ impl Player {
             let (w, h) = e.size.to_tiles_width_height();
             let start = e.tile as usize * 32;
             let len = w * h * 32;
-            // The offset counts from the frame's own palette, not the
-            // shifted one: HiCannon's barrel, palette 1, still flashes the
-            // flat palette 4.
-            let offset_index = frame.pal as usize + e.pal_offset as usize;
+            // Which palette an OAM offset counts from is not the same for
+            // every object, and both halves of this are measured. HiCannon's
+            // barrel sits in palette 1 and its silhouette frame, offset 4,
+            // still shows the flat palette 4 -- so by default the offset
+            // counts from the FRAME's palette and ignores the shift. Barr100's
+            // bubble is Barrier's shifted by 3, and its later frames, which
+            // carry offsets 1 and 2, show the gold set's lighter shades 4 and
+            // 5 rather than the teal 1 and 2 -- so it counts from the SHIFTED
+            // palette. `offsets_follow_shift` picks which.
+            let offset_index = frame.pal as usize
+                + if self.offsets_follow_shift { self.palette_add } else { 0 }
+                + e.pal_offset as usize;
             let part_palette = if e.pal_offset != 0
                 && !self.white_on
                 && !self.red_on
