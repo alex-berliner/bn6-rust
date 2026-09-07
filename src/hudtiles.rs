@@ -63,6 +63,10 @@ fn char_code(c: u8) -> u16 {
 /// Where the chip name is written, in tile rows, and how wide it can run.
 const NAME_ROW: i32 = 18;
 const NAME_COLS: u32 = 12;
+/// The damage figure follows the name in a second digit set carried in this
+/// asset, orange rather than white: pair 12 is its zero and it steps by one
+/// pair per digit, the same as the HP box's set.
+const DAMAGE_ZERO_PAIR: u16 = 12;
 
 pub struct HudTiles {
     bg: RegularBackground,
@@ -179,20 +183,40 @@ impl HudTiles {
     /// Write a chip's name along the bottom, as the real ROM does while a chip
     /// is in use, or clear it. Each glyph is two tiles stacked and its index is
     /// the game's character code.
-    pub fn set_name(&mut self, name: Option<&str>) {
+    pub fn set_name(&mut self, name: Option<(&str, u16)>) {
+        // The damage runs straight on from the name, so lay it out first.
+        let mut digits = [0u16; 4];
+        let mut count = 0;
+        if let Some((_, power)) = name {
+            if power > 0 {
+                let mut left = power;
+                while left > 0 && count < digits.len() {
+                    digits[count] = left % 10;
+                    left /= 10;
+                    count += 1;
+                }
+            }
+        }
+        let len = name.map_or(0, |(n, _)| n.len());
         for col in 0..NAME_COLS {
-            let code = name
-                .and_then(|n| n.as_bytes().get(col as usize).copied())
-                .map(char_code);
+            let at = col as usize;
+            let code = if at < len {
+                name.and_then(|(n, _)| n.as_bytes().get(at).copied()).map(char_code)
+            } else if at < len + count {
+                None
+            } else {
+                None
+            };
+            let digit = if at >= len && at < len + count {
+                Some(digits[len + count - 1 - at])
+            } else {
+                None
+            };
             for half in 0..2u16 {
-                let tile = match code {
-                    Some(c) if c != 0 => c * 2 + half,
-                    _ => BLANK_TILE,
-                };
-                let tiles = if code.is_some_and(|c| c != 0) {
-                    &self.font
-                } else {
-                    &self.tiles
+                let (tile, tiles) = match (code, digit) {
+                    (Some(c), _) if c != 0 => (c * 2 + half, &self.font),
+                    (_, Some(d)) => ((DAMAGE_ZERO_PAIR + d) * 2 + half, &self.tiles),
+                    _ => (BLANK_TILE, &self.tiles),
                 };
                 self.bg.set_tile(
                     (col as i32, NAME_ROW + half as i32),

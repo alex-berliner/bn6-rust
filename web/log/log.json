@@ -448,5 +448,11 @@
     "file": "log/shots/1788765337-font_proof.png",
     "caption": "The battle text font is solved and drawing. The real ROM writes a chip's name along the bottom from a font of two-tile glyphs, one glyph per label in the ROM data, and the glyph index turns out to be the game's own character code, so the disassembly's character map indexes the font directly. Reading it from one label earlier than I first found makes code 0x0d render as C, 0x26 as a and 0x33 as n, exactly as the map says. This shot is the renderer drawing through that font in the right place and palette. What is left is the trigger: the name should appear while a chip is in use, and the demo that has the HUD does not fire one.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788765519,
+    "file": "log/shots/1788765519-name_cmp2.png",
+    "caption": "The chip name strip, real ROM above and this build below. The name is drawn from the game's own text font, whose glyph index is its character code, and the damage figure follows it in the second, orange digit set carried in the HUD asset. The trigger was backwards at first: the real ROM names the chip that is ABOUT to be used, not the one in flight. Measured on a capture where the name stands from the first frame and clears on the frame the chip fires, so it follows the front of the hand. The two strips differ only in which chip each build is holding.",
+    "tag": "tiles"
   }
 ]

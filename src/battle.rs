@@ -952,12 +952,14 @@ impl<'a> Battle<'a> {
             self.hud_tiles.set_menu(self.custom.is_some());
             self.hud_tiles.set_hp(self.megaman.hp());
             self.hud_tiles.set_gauge(self.gauge, GAUGE_FULL);
-            // The real ROM writes the chip's name along the bottom while the
-            // chip is in use.
-            match self.chip_in_use {
-                Some(c) => {
-                    let chip = self.chips.get(c.id as usize);
-                    self.hud_tiles.set_name(Some(chip.name()));
+            // The real ROM names the chip that is ABOUT to be used, not the
+            // one in flight: measured on a capture where the name stands from
+            // the first frame and clears on the frame the chip fires. So it
+            // follows the front of the hand.
+            match self.hand.get(self.hand_at) {
+                Some(&id) => {
+                    let chip = self.chips.get(id.id as usize);
+                    self.hud_tiles.set_name(Some((chip.name(), id.power)));
                 }
                 None => self.hud_tiles.set_name(None),
             }
