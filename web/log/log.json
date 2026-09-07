@@ -628,5 +628,11 @@
     "file": "log/shots/1788782410-seeds_mine.png",
     "caption": "All three seeds, this build: IceSeed, GrasSeed and PoisSeed. Two of them are EXACT against the real ROM over seventy frames and PoisSeed is 1.6 px/frame over its floor. They are one chip's worth of work between them -- the same pod sprite and the same nine-panel sheet, told apart by palette. The POD's palette is the chip's attack_param_2 as a shift on top of the OAM offset of 9 that every part carries: IceSeed 1, GrasSeed 2, PoisSeed 3, landing on the sprite's palettes 10, 11 and 12. The SHEET's does not follow it: PoisSeed and IceSeed share the sheet sprite's own palette 0 while GrasSeed takes 8, matched by dumping OBJ bank 1 while each sheet is up. Their panels are left alone in the sterile arena, where the real capture's field layer is stripped and cannot show them.",
     "tag": "chip"
+  },
+  {
+    "t": 1788783088,
+    "file": "log/shots/1788783088-bug_vdoll_cmp.png",
+    "caption": "BugBomb and VDoll, the last two chips of the bomb family. Real ROM above this build in each pair. Both THROW AND STAY -- the object stops where it lands and keeps standing there, so neither bursts. BugBomb's ball is the seeds' own sprite in another animation and flies flatter and slower than a bomb; VDoll's doll is its own sprite, byte_83262C0, and arcs to the top of the screen and hangs there, needing its own launch, gravity and a sixty-frame flight. VDoll's HELD object is not the doll at all: it is the seeds' sprite again, animation 0, whose 16x16 part sits thirty left and twenty-eight up of the panel centre, exactly where the real ROM's OAM puts it. BugBomb is 35.4 px/frame against a floor of 5.3 and VDoll 10.7. With these the bomb family is complete: eleven chips.",
+    "tag": "chip"
   }
 ]

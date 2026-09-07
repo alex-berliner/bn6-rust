@@ -38,6 +38,8 @@ ENTRIES=(
   "demo-poisseed,demo-sterile,demo-auto poisseed-real PoisSeed on black, auto-fire: the pod, its arc and the poison going down, matched to the real ROM"
   "demo-iceseed,demo-sterile,demo-auto iceseed-real IceSeed on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-grasseed,demo-sterile,demo-auto grasseed-real GrasSeed on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-bugbomb,demo-sterile,demo-auto bugbomb-real BugBomb on black, auto-fire: the ball flies flatter than a bomb and stays where it lands"
+  "demo-vdoll,demo-sterile,demo-auto vdoll-real VDoll on black, auto-fire: the doll arcs to the top of the screen and stands where it lands"
   "demo-results results Results screen"
   "demo-hudmatch hudmatch HUD fixture: 60 HP, full gauge, Cannon in hand -- the battle screen matched to the real ROM tile for tile"
   "demo-custmatch custmatch Chip select fixture: the same five chips the real ROM's window offers, matched to it pixel for pixel"

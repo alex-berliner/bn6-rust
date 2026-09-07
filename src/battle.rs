@@ -24,7 +24,7 @@ use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, COLONEL, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
-    FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED,
+    FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     PROTOMAN, SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
@@ -158,9 +158,39 @@ const CHIP_MEGENBOM: u16 = 56;
 /// PoisSeed, the one of the three seeds whose panels this build already has
 /// art for: the field asset carries POISON, and the ROM's panel tilemap has
 /// no grass or ice at all.
+const CHIP_BUGBOMB: u16 = 67;
 const CHIP_GRASSEED: u16 = 68;
 const CHIP_ICESEED: u16 = 69;
 const CHIP_POISSEED: u16 = 70;
+const CHIP_VDOLL: u16 = 150;
+/// BugBomb throws a spiked ball and VDoll a small doll, and both LAND AND
+/// STAY: the object rests on its panel rather than bursting. BugBomb's ball
+/// is the seeds' own sprite in another animation -- animations 4 held and 5
+/// thrown, matched by their OAM shapes -- and VDoll has its own,
+/// byte_83262C0.spr, whose two animations share their three parts and differ
+/// only in a palette flash on spawn.
+const BUG_HELD_ANIM: usize = 4;
+const BUG_THROWN_ANIM: usize = 5;
+const VDOLL_ANIM: usize = 1;
+/// VDoll's HELD object is not the doll: it is the seeds' own sprite,
+/// animation 0, whose 16x16 part sits thirty left and twenty-eight up of the
+/// panel centre -- exactly where the real ROM's OAM puts it.
+const VDOLL_HELD_ANIM: usize = 0;
+/// How long a landed one stands. Nothing removes it in the capture.
+const RESTS_FRAMES: u8 = 255;
+/// BugBomb's ball flies flatter and slower than a bomb: fitted against the
+/// ball tracked by its five grey-violet colours over the whole flight, then
+/// swept against the capture.
+const BUG_VX: i32 = 0x2C3E0;
+const BUG_VZ: i32 = 0x26640;
+const BUG_GRAVITY: i32 = 0x2900;
+/// VDoll's doll flies far higher and slower than any bomb -- it rises to the
+/// top of the screen and hangs there -- so it gets its own launch, gravity
+/// and flight. Fitted against the doll tracked by its four ochre colours.
+const VDOLL_VX: i32 = 0x1F168;
+const VDOLL_VZ: i32 = 0x30400;
+const VDOLL_GRAVITY: i32 = 0x1F40;
+const VDOLL_FLIGHT: u8 = 60;
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
 /// live palette is the sprite's index 12, so the chip's own shift is 3 -- its
@@ -180,12 +210,15 @@ const fn sheet_palette(id: u16) -> usize {
 }
 
 /// One palette per seed, and it is the chip's attack_param_2: IceSeed 1,
-/// GrasSeed 2, PoisSeed 3.
-const fn seed_palette(id: u16) -> usize {
+/// GrasSeed 2, PoisSeed 3. BugBomb shares their sprite and takes 0; VDoll has
+/// its own sprite and takes 0 too.
+const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
     match id {
         CHIP_ICESEED => 1,
         CHIP_GRASSEED => 2,
-        _ => 3,
+        CHIP_POISSEED => 3,
+        CHIP_BUGBOMB | CHIP_VDOLL => 0,
+        _ => bomb_palette(id, thrown),
     }
 }
 /// The poison sheet's animation and how long it runs, from the sprite's own
@@ -575,6 +608,8 @@ struct Bomb {
     /// bursting, in the chip's own palette.
     poison: bool,
     seed_palette: usize,
+    /// BugBomb and VDoll land and stay: the object rests on its panel.
+    rests: bool,
 }
 
 impl Bomb {
@@ -795,6 +830,10 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
             hand.push(CHIP_ICESEED);
         } else if cfg!(feature = "demo-grasseed") {
             hand.push(CHIP_GRASSEED);
+        } else if cfg!(feature = "demo-bugbomb") {
+            hand.push(CHIP_BUGBOMB);
+        } else if cfg!(feature = "demo-vdoll") {
+            hand.push(CHIP_VDOLL);
 
         } else if cfg!(feature = "demo-barr100") {
             hand.push(CHIP_BARR100);
@@ -1825,13 +1864,40 @@ impl<'a> Battle<'a> {
             b.step();
             b.ticks += 1;
             if b.ticks >= b.flight {
-                landed.push((b.target, b.damage, b.wide, b.poison.then_some(b.seed_palette)));
+                if b.rests {
+                    // The thrown object is not replaced: it stops where it
+                    // lands and keeps its animation.
+                    let mut resting = core::mem::replace(
+                        &mut b.player,
+                        spr::Player::new(spr::Assets::new(MINIBOMB), 0),
+                    );
+                    resting.update();
+                    self.effects.push((
+                        resting,
+                        b.position(),
+                        RESTS_FRAMES,
+                        false,
+                        false,
+                    ));
+                }
+                landed.push((
+                    b.target,
+                    b.damage,
+                    b.wide,
+                    b.poison.then_some(b.seed_palette),
+                    b.rests,
+                ));
                 false
             } else {
                 true
             }
         });
-        for ((col, row), damage, wide, poison) in landed {
+        for ((col, row), damage, wide, poison, rests) in landed {
+            // A resting object does not burst: BugBomb's ball and VDoll's
+            // doll just stop where they land.
+            if rests {
+                continue;
+            }
             // PoisSeed does not burst: it lays poison over the enemy's whole
             // half, nine panels, each with a pale green sheet that grows out
             // of an ellipse over sixteen frames. Read off the real ROM's OAM
@@ -1960,7 +2026,8 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
             | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
-            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED => {
+            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED
+            | CHIP_BUGBOMB | CHIP_VDOLL => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(THROW);
                 let (mc, mr) = self.megaman.panel();
@@ -1980,17 +2047,24 @@ impl<'a> Battle<'a> {
                 // the sprite's own block, which carries a palette per seed;
                 // index 0 is the blue one IceSeed uses.
                 let seed = matches!(chip.id, CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED);
-                let mut held = if seed {
+                // BugBomb and VDoll throw and LAND AND STAY rather than
+                // bursting or laying a sheet.
+                let rests = matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL);
+                let mut held = if chip.id == CHIP_VDOLL {
+                    spr::Player::new(spr::Assets::new(POISSEED), VDOLL_HELD_ANIM)
+                } else if chip.id == CHIP_BUGBOMB {
+                    spr::Player::new(spr::Assets::new(POISSEED), BUG_HELD_ANIM)
+                } else if seed {
                     spr::Player::new(spr::Assets::new(POISSEED), SEED_HELD_ANIM)
                 } else if flash {
                     spr::Player::new(spr::Assets::new(FLSHBOM), 0)
                 } else {
                     spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false))
                 };
-                if seed {
+                if seed || chip.id == CHIP_BUGBOMB {
                     held.set_offsets_follow_shift(true);
                 }
-                held.set_palette_add(if seed { seed_palette(chip.id) } else { bomb_palette(chip.id, false) });
+                held.set_palette_add(seed_or_bomb_palette(chip.id, false));
                 // The flash bomb's sprite carries its own part offsets, which
                 // sit 22 right and 10 down of where the bomb sprite's do:
                 // measured from the held ball's centre, (37,88) on the real
@@ -2171,13 +2245,17 @@ impl<'a> Battle<'a> {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
             | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
-            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED => {
+            | CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED
+            | CHIP_BUGBOMB | CHIP_VDOLL => {
                 let (mx, my) = field::panel_centre(col, row);
                 let lilbolr = matches!(
                     chip.id,
                     CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
                 );
                 let seed = matches!(chip.id, CHIP_GRASSEED | CHIP_ICESEED | CHIP_POISSEED);
+                // BugBomb and VDoll throw and LAND AND STAY rather than
+                // bursting or laying a sheet.
+                let rests = matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL);
                 let target = ((col + 3 * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb
                 // sprite in another palette: a dark brown ball with a fuse
@@ -2189,7 +2267,11 @@ impl<'a> Battle<'a> {
                     chip.id,
                     CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
                 );
-                let mut thrown = if seed {
+                let mut thrown = if chip.id == CHIP_VDOLL {
+                    spr::Player::new(spr::Assets::new(VDOLL), VDOLL_ANIM)
+                } else if chip.id == CHIP_BUGBOMB {
+                    spr::Player::new(spr::Assets::new(POISSEED), BUG_THROWN_ANIM)
+                } else if seed {
                     spr::Player::new(spr::Assets::new(POISSEED), SEED_THROWN_ANIM)
                 } else if flash {
                     // The thrown ball is the same sprite as the held one.
@@ -2204,19 +2286,25 @@ impl<'a> Battle<'a> {
                 } else {
                     spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
                 };
-                if seed {
+                if seed || chip.id == CHIP_BUGBOMB {
                     thrown.set_offsets_follow_shift(true);
                 }
-                thrown.set_palette_add(if seed { seed_palette(chip.id) } else { bomb_palette(chip.id, true) });
+                thrown.set_palette_add(seed_or_bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
-                    flight: if chip.id == CHIP_BLKBOMB {
+                    flight: if chip.id == CHIP_VDOLL {
+                        VDOLL_FLIGHT
+                    } else if chip.id == CHIP_BLKBOMB {
                         BLKBOMB_FLIGHT
                     } else {
                         BOMB_FLIGHT
                     },
-                    gravity: if flash {
+                    gravity: if chip.id == CHIP_VDOLL {
+                        VDOLL_GRAVITY
+                    } else if chip.id == CHIP_BUGBOMB {
+                        BUG_GRAVITY
+                    } else if flash {
                         FLSHBOM_GRAVITY
                     } else if lilbolr {
                         LILBOLR_GRAVITY
@@ -2227,18 +2315,27 @@ impl<'a> Battle<'a> {
                     },
                     show_damage: lilbolr,
                     poison: seed,
+                    rests,
                     seed_palette: sheet_palette(chip.id),
                     x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
                     y: my << 16,
                     z: BOMB_SPAWN_UP,
-                    vx: if lilbolr {
+                    vx: if chip.id == CHIP_VDOLL {
+                        dx * VDOLL_VX
+                    } else if chip.id == CHIP_BUGBOMB {
+                        dx * BUG_VX
+                    } else if lilbolr {
                         dx * LILBOLR_VX
                     } else if chip.id == CHIP_BLKBOMB {
                         dx * BLKBOMB_VX
                     } else {
                         dx * BOMB_VX
                     },
-                    vz: if flash {
+                    vz: if chip.id == CHIP_VDOLL {
+                        VDOLL_VZ
+                    } else if chip.id == CHIP_BUGBOMB {
+                        BUG_VZ
+                    } else if flash {
                         FLSHBOM_VZ
                     } else if lilbolr {
                         LILBOLR_VZ

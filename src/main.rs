@@ -49,6 +49,7 @@ static LILBOILER: &[u8] = &Aligned(*include_bytes!("../assets/lilboiler.bin")).0
 static FLSHBOM: &[u8] = &Aligned(*include_bytes!("../assets/flshbom.bin")).0;
 static POISSEED: &[u8] = &Aligned(*include_bytes!("../assets/poisseed.bin")).0;
 static POISAREA: &[u8] = &Aligned(*include_bytes!("../assets/poisarea.bin")).0;
+static VDOLL: &[u8] = &Aligned(*include_bytes!("../assets/vdoll.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
 static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
 static BARRIER: &[u8] = &Aligned(*include_bytes!("../assets/barrier.bin")).0;
