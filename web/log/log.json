@@ -268,5 +268,11 @@
     "file": "log/proof/1788742691-bgon_cmp.png",
     "caption": "Backgrounds-on comparison, step 1: the field's halves were the opposite colours to the real ROM's (the player's half is the red one). Whole-screen difference 99.2% -> 59.4%; the field region now differs only by the two actors (the real capture is mid-cannon, ours idle) and a bottom strip. The backdrop layer is still missing.",
     "tag": "proof"
+  },
+  {
+    "t": 1788742749,
+    "file": "log/proof/1788742749-idle_cmp.png",
+    "caption": "Idle-vs-idle with backgrounds on (real enemy HP poked to match): the field region is now 92.6% identical -- the only difference there is the Mettaur's pose. What remains is the backdrop layer, the HUD (HP box, emotion window, CUSTOM gauge) and the chip-name strip at the bottom.",
+    "tag": "proof"
   }
 ]

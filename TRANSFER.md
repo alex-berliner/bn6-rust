@@ -203,6 +203,27 @@ What it took (all in the commit "Match the Cannon frame-for-frame..."):
   37/38/39 at c14/15/16 (body x 43->39->38->37), 40 at c17-29 (x 35); barrel white c5-7,
   green from c8; muzzle orb small c14, big c15; chevrons c16-22; recovery c30-32; idle c33.
 
+## 7d. Backgrounds-on whole-screen match (in progress, 2026-09-06)
+
+`tools/chip_compare.py <id> demo-field --bg` keeps the real ROM's backgrounds and diffs all
+240x160; the Rust side is then built without demo-sterile, and `demo-field` fields the save
+state's layout (MegaMan at (2,2), a Mettaur at (5,2)). Every demo-* feature now enables one
+umbrella `demo` feature, so the two hand-maintained cfg lists that had already drifted are gone.
+
+Fixed: the field's halves were the opposite colours to the real ROM's -- **the player's half is
+the red one** (src/field.rs draw_panel's side index). Whole screen 99.2% -> 59.4% differing.
+
+Measured on an idle frame (real: enemy HP poked to 900 to match ours, no A press; rust:
+demo-field):
+- backdrop, y < 72: 99.9% differing -- we draw black. Missing: the navy/teal-arc backdrop
+  layer, the HP box ("60"), the emotion window, the CUSTOM gauge bar.
+- field, y 72-144: 7.4% differing, and all of it is the Mettaur's pose (mid-pickaxe in the
+  real capture) -- the panels themselves match.
+- bottom, y >= 145: 100% differing -- the backdrop continues below the field and the chip
+  name ("Cannon 40") is drawn there.
+Next: the backdrop layer (a Sonnet pass is locating its tiles/map/palette and whether it
+scrolls), then the HUD.
+
 ## 7c. Scoreboard (2026-09-06, later): five chips at zero, and the timing rules
 
 `tools/chip_compare.py <id> <feature> --frames 40` -> 0 px on every frame (c6 is always the
