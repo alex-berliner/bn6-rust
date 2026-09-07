@@ -420,6 +420,12 @@ const BOILER_HP: u16 = 40;
 /// starting at the projectile's own x and its top is three below.
 const BOILER_HP_RIGHT: i32 = 16;
 const BOILER_HP_DOWN: i32 = 3;
+/// LilBolr's flight. NOT EXACT: five frames of forty-eight put the boiler a
+/// pixel out, which costs 27 px/frame over the banner's floor because the
+/// sprite is large. It is a plateau, not a local minimum -- several (vz,
+/// gravity) pairs give the same five frames, and no parabola reproduces the
+/// real sequence exactly -- which fits the chip being a SUMMON: what it lobs
+/// is the LilBoiler virus, and its arrival path need not be physics at all.
 const LILBOLR_VX: i32 = 0x2C300;
 const LILBOLR_VZ: i32 = 0x226A0;
 const LILBOLR_GRAVITY: i32 = 0x2860;
