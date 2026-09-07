@@ -454,6 +454,16 @@ his pose on frames 4, 8, 11 and 17; this build stepped on 2, 6, 9 and 15 -- two 
 the length of the press. `is_just_released` aligns all four and everything after: a Cannon's use
 goes from 22277 differing pixels to 256.
 
+AND THE D-PAD IS THE SAME TWO FRAMES. The chip window's cursor moves TWO frames after the
+direction: held six frames, the real ROM's bracket stays on OK for two and is on the new slot on
+the third. 108 of the 110 frames of a two-step walk then match, card and all. Three findings with
+the same two frames -- the buster, the chip button, the cursor -- is the strongest hint yet that
+the real ROM simply acts on its pad a couple of frames after reading it, rather than each of
+these being its own rule. Anyone refactoring that should re-derive 7ae's constants, which absorb
+the same two frames in their own way.
+NOT RESOLVED: the last frame of a cursor move. At a delay of two the bracket is one frame early;
+at three the card is one frame late.
+
 The 256 are the CHIP-IN-HAND ICON on one frame. The real ROM drops it on the frame the button
 comes UP; this build drops it the frame after, because it reads its input a frame later than the
 real ROM reads its own, so the release itself arrives late. Nothing in the drawing can drop an

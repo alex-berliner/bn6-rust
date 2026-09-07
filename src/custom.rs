@@ -105,6 +105,12 @@ const OK: u8 = 0xa;
 /// The bracket swaps tile and shrinks a pixel every 8 frames (sub_8028820,
 /// asm03_0.s:4807: frame counter >> 3 & 1).
 const BLINK_SHIFT: u32 = 3;
+/// Frames between a direction and the cursor moving. Measured against the
+/// real ROM with Left held six frames: its bracket is still on OK for the two
+/// frames after the press and on the new slot on the third. Two leaves one
+/// frame of the bracket differing and three leaves one frame of the card, so
+/// two it is; the last frame of a cursor move is not resolved.
+const CURSOR_DELAY: u8 = 2;
 
 /// Indices into the asset's patch records, in byte_8027B2C's order.
 const REGION_PICTURE: usize = 1;
@@ -306,6 +312,9 @@ pub struct Custom<'a> {
     /// time the window is up.
     mark: SpriteVram,
     cursor_at: u8,
+    /// A direction waiting out CURSOR_DELAY, and the frames left of it.
+    pending_move: i8,
+    move_in: u8,
     /// Counted while the window is open, as eS20364C0+0x40 is.
     frames: u32,
     slots: [Option<Offer>; OFFERED],
@@ -445,6 +454,8 @@ impl CustomAssets {
             cursor,
             mark,
             cursor_at: 0,
+            pending_move: 0,
+            move_in: 0,
             frames: 0,
             slots,
             picks: Vec::new(),
@@ -915,22 +926,38 @@ impl Custom<'_> {
 
     /// One frame of the open window's input (custMenuSomeHandler_8028B74).
     fn navigate(&mut self, input: &ButtonController, gfx: &Graphics) -> Phase {
+        // THE CURSOR MOVES TWO FRAMES AFTER THE DIRECTION. Measured against
+        // the real ROM with Left held six frames: its bracket stays on OK for
+        // two of them and this build's had already moved. The same two frames
+        // separate every button from what it does here (7ag).
         match input.just_pressed_x_tri() {
             Tri::Positive => {
-                self.cursor_at = match self.cursor_at {
-                    4 => OK,
-                    OK => 0,
-                    i => i + 1,
-                }
+                self.pending_move = 1;
+                self.move_in = CURSOR_DELAY;
             }
             Tri::Negative => {
-                self.cursor_at = match self.cursor_at {
-                    0 => OK,
-                    OK => 4,
-                    i => i - 1,
-                }
+                self.pending_move = -1;
+                self.move_in = CURSOR_DELAY;
             }
             Tri::Zero => {}
+        }
+        if self.move_in > 0 {
+            self.move_in -= 1;
+            if self.move_in == 0 {
+                self.cursor_at = if self.pending_move > 0 {
+                    match self.cursor_at {
+                        4 => OK,
+                        OK => 0,
+                        i => i + 1,
+                    }
+                } else {
+                    match self.cursor_at {
+                        0 => OK,
+                        OK => 4,
+                        i => i - 1,
+                    }
+                };
+            }
         }
         if input.is_just_pressed(Button::Start) {
             self.cursor_at = OK;
