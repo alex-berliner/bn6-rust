@@ -574,5 +574,11 @@
     "file": "log/shots/1788777223-bd_anim.png",
     "caption": "The battle backdrop ANIMATES, which this build had missed. Top row is the real ROM's backdrop layer at three moments, bottom row is this build's: the little magenta digits inside the rings fade in and out. It is the TILE ART that cycles -- seven complete sets of the layer's 37 tiles, eight frames each, a 56-frame loop -- while the map's 1024 entries, the palette bank and the scroll all stand still. Dumping BG1's char data frame by frame is what shows it; dumping the map or the palette shows nothing at all. All 259 tiles were matched byte for byte against the disassembly's blob, so the exporter still needs only the submodule. A still backdrop differs from the real ROM by about 280 px a frame; with the animation the best alignment found is 150. The rest is phase: the game's horizontal and vertical scroll phases are independent, and this build ties them to one counter, so most of the 64x64 phase lattice is unreachable and the two rings' grids sit at different offsets above.",
     "tag": "tiles"
+  },
+  {
+    "t": 1788777748,
+    "file": "log/shots/1788777748-tile_parity.png",
+    "caption": "Whole-screen tile parity, restored with the animation in: real ROM left, this build middle, difference right -- 0 px of 38400, every background layer, sprites off. Getting here needed a longer capture than before. The backdrop's art loop is 56 frames and its scroll repeats every 128, so the two only line up every 896; add the CUSTOM gauge's own 112-frame flow and a matching frame is rare. The earlier measurement searched a hundred frames and found nothing, which read as a regression and was not one. Two other things had to be fixed to measure it at all: the RGB555-to-8-bit expansion in the analysis script was v*255/31 where the emulator uses v<<3|v>>2, which put a one-off on most pixels and made every exact match fail; and the HUD fixture held a full gauge, which opened the chip window that the demo -- pressing nothing -- could never close, so a long capture had no battle screen in it.",
+    "tag": "tiles"
   }
 ]

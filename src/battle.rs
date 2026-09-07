@@ -1122,7 +1122,11 @@ impl<'a> Battle<'a> {
                 }
                 self.gauge = 0;
             }
-        } else if self.gauge_pause > 0 {
+        } else if self.gauge_pause > 0 && !cfg!(feature = "demo-hudmatch") {
+            // The HUD fixture holds a full gauge to match the capture, which
+            // would otherwise open the chip window and never close it -- the
+            // demo presses nothing -- leaving no frames of a long capture with
+            // the battle screen up.
             self.gauge_pause -= 1;
             if self.gauge_pause == 0 {
                 // The survivors pack to the front and the first five are
