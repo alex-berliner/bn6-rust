@@ -47,6 +47,7 @@ ENTRIES=(
   "demo-suprvulc suprvulc SuprVulc (ten shots)"
   "demo-muramasa muramasa Muramasa"
   "demo-suprvulc,demo-sterile,demo-auto suprvulc-real SuprVulc on black, auto-fire: matched frame-for-frame to the real ROM"
+  "demo-blkbomb,demo-sterile,demo-auto blkbomb-real BlkBomb on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-energbom,demo-sterile,demo-auto energbom-real EnergBom on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-megenbom,demo-sterile,demo-auto megenbom-real MegEnBom on black, auto-fire: matched frame-for-frame to the real ROM"
   "demo-barr100,demo-sterile,demo-auto barr100-real Barr100 on black, auto-fire: matched frame-for-frame to the real ROM"
