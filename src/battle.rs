@@ -360,6 +360,14 @@ const BOMB_FLIGHT: u8 = 40;
 /// horizontal speed scales down with that and the launch speed up, so the arc
 /// still lands flat.
 const BLKBOMB_FLIGHT: u8 = 42;
+/// BlkBomb falls a shade slower than the other bombs. Found by tracking its
+/// ball through the capture by its four brown colours: with the shared bomb
+/// gravity it sat a pixel low on four frames of fifty, and nothing else about
+/// the flight was out. Fitting a parabola to the real arc and setting that
+/// gives a WORSE result -- the fit lands on a curve this build cannot draw,
+/// because its first frame comes a step in -- so this is the measured value,
+/// swept against the capture.
+const BLKBOMB_GRAVITY: i32 = 0x27C0;
 const BLKBOMB_VX: i32 = 0x2C000;
 const BLKBOMB_VZ: i32 = 0x22051;
 /// LilBolr lobs its boiler far higher than a bomb: measured on the real ROM
@@ -2059,6 +2067,8 @@ impl<'a> Battle<'a> {
                         FLSHBOM_GRAVITY
                     } else if lilbolr {
                         LILBOLR_GRAVITY
+                    } else if chip.id == CHIP_BLKBOMB {
+                        BLKBOMB_GRAVITY
                     } else {
                         BOMB_GRAVITY
                     },
