@@ -421,9 +421,24 @@ stripped to its red -- and everything else is still compared exactly. The proof 
 is only colour: the 61 pixels the afterimage appeared to be "missing" are all the single palette
 entry (0,132,222), whose red is 0, so the mis-blend renders them black. The afterimage is the
 navi's whole idle silhouette, in the right place, on the right frames.
-What is still open is the second half: frames 12-23 differ by about 200 px around the slash, and
-from frame 24, where the navi returns, by 700-1400 -- the real ROM draws a pink warp ring around
-it that nothing here draws, and the recovery pose differs (a flat 667 px from frame 30 on).
+What is still open is the second half, and it is blocked on the same artifact rather than on not
+knowing what happens. Split by region, the home box is 0 px through frame 23 and every remaining
+difference to there is in x 95..140, which is the sliver of the STEPPED navi inside the window
+(it stands at x 124..162; only sixteen columns of it are ever compared, so these are small
+numbers over a small area). Both sides put the navi on the same panel, confirmed frame by frame.
+What differs is how the real ROM draws it: opaque on frames 0-7, then from frame 8 a period-4
+blink -- two frames semi-transparent (the red-only artifact), two frames in a THIRD set of
+colours that is neither the idle palette nor the artifact ((8,57,123) -> (33,74,132),
+(0,132,222) -> (16,115,189)), which is what a semi-transparent draw over the sword arc would
+give. Frames 10 and 11 are opaque again. A frame shift does not explain any of it (offsets -2 to
++2 all score worse than 0). Two afterimages, not one: at frame 24 the navi is home and something
+semi-transparent is still standing on the panel it left.
+None of that can be settled with backgrounds off, because the capture destroys exactly the
+colours in question. It needs a --bg capture of the real ROM to read the true colours, which
+needs the parked backdrop work to compare against.
+From frame 24 the home box differs by 700-1400: the real ROM draws a pink warp ring around the
+returning navi that nothing here draws, and the recovery pose differs (a flat 667 px from frame
+30 on).
 
 Clearing the entity's visible flag does NOT work as a poke: the object header's Flags byte is at
 struct offset 0 with OBJECT_FLAG_VISIBLE = 0x02 (ObjectHeader.inc:6-9), the Mettaur's struct
