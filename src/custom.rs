@@ -102,8 +102,16 @@ pub const HAND_SIZE: usize = 5;
 /// The cursor's index for the OK box; 0-4 are the offered slots
 /// (S20364C0.inc:14, eS20364C0+7).
 const OK: u8 = 0xa;
-/// The bracket swaps tile and shrinks a pixel every 8 frames (sub_8028820,
-/// asm03_0.s:4807: frame counter >> 3 & 1).
+/// The bracket swaps tile and shrinks a pixel every 8 frames: `sub_8028820`
+/// loads the counter with `ldr r5,[r5,#0x40]` (asm03_0.s:4801) and reduces it
+/// with `lsr r5,r5,#3 / and r5,r4` (asm03_0.s:4803-4804), then adds the bit to
+/// the base tile 0xb764 (asm03_0.s:4812-4813) -- so neither phase hides the
+/// bracket, they are two tiles a pixel apart. The counter is a 32-bit field of
+/// the window's own struct at 0x02036500 (`oS20364C0_Extra_Unk_40`,
+/// S20364C0.inc:47-58), seeded to 0x78 by the slide-in and counted down by 0xc
+/// (asm03_0.s:910-916), then incremented once a frame by state 4
+/// (asm03_0.s:1163-1165) and re-zeroed when the selection ends
+/// (asm03_0.s:1151-1152). `self.frames` below is that counter.
 const BLINK_SHIFT: u32 = 3;
 /// Frames between a direction and the cursor moving. Measured against the
 /// real ROM with Left held six frames: its bracket is still on OK for the two
@@ -926,7 +934,18 @@ impl Custom<'_> {
                 let x = (x - SLIDE_STEP).max(0);
                 self.bg.set_scroll_pos((x, 0));
                 self.reveal(x);
-                Phase::Opening { x }
+                // The real ROM's slide-in is state 0 of the window's own state
+                // machine (sub_8026B04, asm03_0.s:910-916): it seeds the same
+                // 0x78 and subtracts the same 0xc, and on the tenth call --
+                // the one where the counter reaches exactly 0 -- it advances
+                // to state 4 IN THAT CALL (asm03_0.s:1011-1012). Falling
+                // through to a separate arm on the NEXT frame spent an extra
+                // frame here, which nothing could see except the bracket: the
+                // window is fully revealed either way, but the blink counts
+                // from state 4, so it started one frame late. Measured on a
+                // static window against /tmp/chipselect.state: 368 px over 32
+                // frames at the old timing, 0 at this one.
+                if x == 0 { Phase::Open } else { Phase::Opening { x } }
             }
             Phase::Opening { .. } => Phase::Open,
             Phase::Open => {
