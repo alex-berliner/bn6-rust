@@ -100,6 +100,11 @@ class State:
     base: Optional[str] = None          # another state's --loadstate, or None for a cold boot
     script: Optional[str] = None        # tools/mgba_capture.c's "--script" syntax
     cheats: Tuple[str, ...] = field(default_factory=tuple)  # each "--cheat" argument
+    #: Each "frame:addr:val" argument for tools/mgba_capture.c's --poke-at
+    #: (AUDIT wave 3c "encounter-roll" ticket): a ONE-SHOT write, unlike
+    #: `cheats` above (re-applied every frame). For a condition that must
+    #: fire on exactly one named frame -- see "emptyfield_start"'s own use.
+    poke_at: Tuple[str, ...] = field(default_factory=tuple)
     #: Frames to run before --savestate fires. NOTE THE OFF-BY-ONE THAT
     #: ISN'T ONE: mgba_capture's loop runs frame indices 0..frames-1 and
     #: writes the state AFTER the last of them, so the state is poised to
@@ -358,108 +363,70 @@ STATES = [
     State(
         name="emptyfield_start",
         path="/tmp/emptyfield_start.state",
-        # KEPT AS THE RECORD OF A STALLED ROUTE, per the same doctrine as
-        # chip_ready above -- NOT LOADED BY ANYTHING IN tools/harness.py.
-        root=True,
+        root=False,
         rom="/tmp/bn6f_sterile_emptynet.gba",  # STERILE_BASE + --empty-net-encounter (patch_sterile.py)
         base="/tmp/overworld_net.state",
-        script="held direction varying frame to frame (TRANSFER 7aw's "
-               "RNG-correlation trap: a direction repeated every frame can "
-               "roll zero encounters for hundreds of frames) -- see the "
-               "note for why even this is not reliably reproducible today",
-        cheats=("0x02001c16:2000", "0x02001c18:0"),  # force the encounter roll every frame
-        frames=None,  # never reached a working endpoint -- see note
-        description="AUDIT wave 3c 'fresh-state' ticket step 2 (route step "
-                     "1, overworld_net, succeeded -- see that entry), "
-                     "REDIRECTED BY THE COORDINATOR MID-TICKET from a code "
-                     "patch to a data patch. First attempt (patch_sterile.py's "
-                     "--never-spawn, formerly always-on): walking a real "
-                     "encounter into a battle that actually STARTS on a "
-                     "--never-spawn ROM crashes to the console's own "
-                     "cold-boot logo -- see --never-spawn's own comment in "
-                     "patch_sterile.py for the isolation. Second attempt, "
-                     "THIS entry: 'cheat a value, patch a behaviour' applied "
-                     "to the game's DATA instead of its code -- "
-                     "patch_sterile.py's --empty-net-encounter terminates "
-                     "the ONE specific ROM encounter-table entry this route's "
-                     "walk lands on (0x080b5306, decoded and verified byte "
-                     "for byte against the live game -- see that flag's own "
-                     "comment) right after MegaMan, so the dispatch loop's "
-                     "OWN terminator check stops it before either Mettaur "
-                     "entry is read. This DOES NOT crash (unlike "
-                     "--never-spawn, it never touches spawnEnemy_80073E2's "
-                     "code at all -- the loop just sees a shorter list, "
-                     "exactly as a genuinely-authored 1-navi encounter "
-                     "would). NOT YET VERIFIED END TO END, for an unrelated "
-                     "reason found while trying: see the note.",
-        note="THE DATA PATCH ITSELF IS VERIFIED CORRECT (this ticket): "
-             "walked the live pointer chain (eToolkit 0x020093b0 -> "
-             "BattleStatePtr -> oBattleState_BattleSettings +0x3c -> "
-             "oBattleSettings_EnemySetupArrPtr +0xc) from a state captured "
-             "moments after this exact encounter's battle init and got ROM "
-             "address 0x080b5306, confirmed byte-for-byte identical between "
-             "a live --dump at that address and /tmp/bn6f_real.gba's own "
-             "file bytes at the matching offset (so a data patch is valid "
-             "here, no RAM copy in the way); its 4-byte entries (MegaMan, "
-             "Mettaur enemy_idx 1, Mettaur enemy_idx 1, terminator) matched "
-             "the SAME 2-Mettaur 'Mettaur Mettaur' composition an unpatched "
-             "control ROM actually showed after the identical walk. "
-             "reference/bn6f's own SpawnBattleObjectUsingBattleEntityConfig_"
-             "8007368 area (wt/fresh-state branch) and --never-spawn's "
-             "comment in patch_sterile.py both record the crash finding "
-             "that motivated switching to a data patch. "
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(160)),  # cycled one per frame, TRANSFER 7aw's own shape
+        poke_at=("100:0x02001c16:0x2000", "100:0x02001c18:0"),  # ONE roll attempt, at frame 100
+        cheats=DELETE_ENEMY_3,  # kill whichever slot(s) spawn, every frame from load
+        frames=119,
+        description="AUDIT wave 3c/3d 'fresh-state'/'encounter-roll' ticket, ROUTE CHANGED THIS "
+                     "SESSION from patching the encounter table to the technique every other "
+                     "zero-enemy check in this harness already uses (AUDIT pair 3): let a real "
+                     "encounter spawn, then DELETE it (force HP=0 every frame). See the note for "
+                     "why the encounter-table patch route (this entry's previous recipe) turned "
+                     "out to be unreliable even once the RNG-freeze root cause (below) was fixed.",
+        note="THE ROLL'S OWN FREEZE, ROOT-CAUSED (this session): --trace-pc on sub_80AA4C0's own "
+             "`bl GetRNG` (ROM 0x080AA51E) and its masked-value/threshold compare (completing by "
+             "0x080AA52A) shows that the OLD recipe -- 0x02001c16/0x02001c18 forced EVERY frame "
+             "from load -- leaves GetRNG's masked draw effectively frozen: nothing on this code "
+             "path perturbs it between one frame's draw and the next when the accumulator itself "
+             "is pinned open every frame, so the roll's outcome is fixed at load (TRANSFER 7aw's "
+             "held-direction orbit trap, walked through the accumulator instead of input). "
+             "mgba_capture.c gained --poke-at frame:addr:value (a ONE-SHOT write, applied "
+             "immediately before the named frame instead of every frame) as the fix: real "
+             "per-frame play runs untouched up to the poke, so sweeping the frame samples "
+             "GetRNG's actual state each time instead of repeating frame 0's fixed draw. "
+             "VERIFIED: sweeping N in 1-frame steps flips between roll success and failure and "
+             "lands on many distinct nearby EnemySetupArr addresses (0x080b52f9, 5313, 5320, "
+             "532d, 5347, 5354, 5365, 5376, 5387, 5398 all seen, N=80..230) -- genuine variation, "
+             "not a frozen repeat. "
              ""
-             "WHAT IS NOT VERIFIED, and why: this entry's own walk (needed "
-             "to CONFIRM the patched ROM produces a clean empty-field "
-             "battle rather than just trusting the decoded table) stopped "
-             "reproducing partway through this same ticket. EARLY IN THE "
-             "SESSION the walk reliably reached this encounter at frame 93 "
-             "(confirmed repeatedly, with two differently-phased direction "
-             "scripts, on three different ROM builds). LATER IN THE SAME "
-             "SESSION, the IDENTICAL recipe (same overworld_net.state, same "
-             "cheats, same or equivalent varying-direction scripts, tried "
-             "cyclic 4-direction, a Right/Left bounce to bound net "
-             "displacement, and a seeded-random direction sequence, out to "
-             "1500 frames) produced ZERO encounters. RULED OUT by direct "
-             "measurement, not guessed: (a) map-boundary drift -- "
-             "oGameState_MapGroup (0x02001b84, GameStatePtr+4) reads 0x90 "
-             "both before and after a failed walk, unchanged, and "
-             "sub_80AA4C0's own first gate (asm29.s:10112) only requires "
-             "MapGroup>=0x80, which holds; (b) the map's encounter CATEGORY "
-             "being 7 ('no encounters', TRANSFER 7aw) -- byte_8020CE4 "
-             "indexed by this exact MapGroup/MapNumber pair reads 5 in the "
-             "ROM file directly, not 7, and the row-16/category-5 threshold "
-             "(byte_8020C5C+0x80+5) reads 12 (of 31), a normal ~37% "
-             "per-attempt rate; (c) the sterile patches interfering -- the "
-             "identical walk on the completely UNPATCHED /tmp/bn6f_real.gba "
-             "fails exactly the same way; (d) GetRNG (ePrimaryRngSeed, "
-             "0x020013f0) being frozen -- watched every frame of a walk, it "
-             "visibly advances, with values well under the 12-of-31 "
-             "threshold recurring (e.g. 1, 1, 1, 6, 11 in one 8-frame "
-             "window) without an encounter following. NOT YET EXPLAINED: "
-             "why a roll that reads as favourable by every gate this "
-             "session could read from the disassembly (asm29.s:10100-10214, "
-             "sub_80AA4C0) still never lands -- the two live differences "
-             "identified but not chased further are (i) --trace-pc confirms "
-             "sub_80AA4C0 runs every frame (r5 matches the live GameStatePtr "
-             "each time), but the --watch on ePrimaryRngSeed samples "
-             "whatever GetRNG's LAST caller that frame left behind, not "
-             "necessarily sub_80AA4C0's own draw, if anything else in the "
-             "frame also calls GetRNG (very plausible -- SeedRNG/GetRNG are "
-             "tagged '#mod_rng' broadly in ewram.s, suggesting many "
-             "callers); (ii) the watched low-5-bit sequence repeats with an "
-             "8-frame period, which is exactly TRANSFER 7aw's own "
-             "documented correlation trap in a different guise -- varying "
-             "the HELD DIRECTION was enough there, but may not be here if "
-             "something else (the forced Unk_12/Unk_14 cheat's own "
-             "constant values, not the direction) is what is now walking a "
-             "correlated RNG stride. NOT PURSUED FURTHER given the time "
-             "already spent this ticket; the concrete next step is a "
-             "--trace-pc directly on sub_80AA4C0's own `bl GetRNG` call "
-             "site (not yet located to an address) or on the `cmp r2,r3; "
-             "bge` roll comparison, reading r2/r3 each hit, to see whether "
-             "the roll is even being reached with the RNG value --watch "
-             "observes, or a DIFFERENT value entirely.",
+             "WHY THE ENCOUNTER-TABLE PATCH ROUTE WAS ABANDONED, not merely left unfinished: a "
+             "controlled A/B test (this session) proved that PATCHING a naturally-reached entry "
+             "makes THE SAME recipe that found it reach a DIFFERENT entry instead. N=100 with "
+             "block=1 deterministically selects EnemySetupArr=0x080b52f9 (re-run twice, "
+             "byte-identical) on the ROM with only 0x080b5306 patched; after ALSO patching "
+             "0x080b52f9's own entry (byte at +4, ROM 0x080b52fd, 0x11->0xf0, the exact same "
+             "patch shape as 0x080b530a), the IDENTICAL N=100 recipe selects 0x080b5398 instead "
+             "-- proof that whatever selects an entry for a given roll is sensitive to an "
+             "entry's own encoded content/length, not just to table position, so 'find it on an "
+             "unpatched ROM, then patch it, then walk the same recipe again' is not a sound "
+             "method for ANY entry this way (not just 0x080b5306) -- once an entry is emptied it "
+             "stops being reachable by the walk that found it. A wide re-search for 0x080b5306 "
+             "itself (one-shot poke N=0..700 in 1-frame steps, block=1) never landed on it "
+             "either. patch_sterile.py's --empty-net-encounter patch (0x080b530a) is UNCHANGED "
+             "and still correct as a description of that one table entry; it is simply not "
+             "used by this recipe any more. "
+             ""
+             "THIS RECIPE, VERIFIED END TO END (this session): from overworld_net.state, cycle "
+             "Right/Down/Left/Up one per frame (TRANSFER 7aw's own shape), one-shot-poke the "
+             "roll's gate open at frame 100 only -- reliably (re-run twice) reaches "
+             "EnemySetupArr=0x080b52f9 (MegaMan + 2 Mettaur, HP 40/40 each at BattleObject slots "
+             "0x0203aa88/0x0203ab60), held at HP 0 the whole run by DELETE_ENEMY_3 (harmless on "
+             "the never-populated third slot). SubsystemIndex: 4 (map) through frame 99, 8 "
+             "(battle_init trigger) at 100, 12 (battle main) from 116 onward, UNCHANGED through "
+             "the rest of a 320-frame capture -- no crash, no reversion. eBGScrollCBCounters "
+             "(0x02009690/0x02009694) read 0/0 at capture frame 118 (battle's own frame 0, "
+             "TRANSFER 7aw) -- confirmed by reloading a state built at frames=119: --peek both "
+             "addresses immediately after load, before running anything, reads 0x0000/0x0000. "
+             "MegaMan HP/MaxHP 60/100, all three enemy slots 0/0 at capture frame 199 (81 real "
+             "frames into the battle) -- OAM at that frame decodes to 12 non-hidden entries (the "
+             "y=240/x=0/tile=0 rest are the standard GBA 'unused slot' sentinel), all consistent "
+             "with MegaMan's own multi-tile sprite, none matching a live enemy (which the HP "
+             "dump already rules out structurally, the same proof states.py's own noenemy2 entry "
+             "uses).",
     ),
 ]
 
@@ -472,6 +439,8 @@ def run_capture(state, out_dir, count, extra=()):
         cmd += ["--loadstate", state.base]
     for c in state.cheats:
         cmd += ["--cheat", c]
+    for p in state.poke_at:
+        cmd += ["--poke-at", p]
     if state.script:
         cmd += ["--script", state.script]
     cmd += list(extra)
