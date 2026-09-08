@@ -2,4 +2,4 @@ wave (isolated), FAILED: per-frame max 6071 px, total 288491 px over 90 frames. 
 
 Enemy IS the subject (AUDIT pair 3: mettaur and wave get their own checks rather than a zero-enemy arena). canon: STERILE+PAUSED+ALIVE, Start@10, --disable-obj (panel lighting is BG, not sprites) -- canon_ref=71 unchanged from regress.py's check_wave (the shockwave's first visible hop). rust: FIELD_ROW through the descriptor (not the demo-field FEATURE `mettaur` above still uses -- this is the wave 3 cutover) -- marker origin 8 plus a band around regress.py's old compared rust frame (start=71 PLUS lag[120,132] = 191..203, 183..195 once origin is subtracted).
 
-commit 08856fa
+commit 20586a1
