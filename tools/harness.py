@@ -56,6 +56,17 @@ REAL = "/tmp/bn6f_real.gba"
 STERILE = "/tmp/bn6f_sterile.gba"
 PAUSED = "/tmp/pausedwithcannon.state"
 BATTLESTART = "/tmp/battlestart.state"
+#: states.py's own patch_sterile.py build: STERILE + --empty-net-encounter.
+EMPTYNET = "/tmp/bn6f_sterile_emptynet.gba"
+#: states.py's DELETE_ENEMY_3 -- kills whichever of the three enemy
+#: BattleObject slots a genuinely-spawned encounter populates. Named
+#: distinctly from any local `DELETE_ENEMY_3` a future check might define,
+#: since this file has no such constant of its own yet.
+DELETE_ENEMY_3_HARNESS = (
+    "0x0203aaac:0", "0x0203aaae:0",
+    "0x0203ab84:0", "0x0203ab86:0",
+    "0x0203ac5c:0", "0x0203ac5e:0",
+)
 #: tools/states.py's "chip_ready" state (wave 3b ticket step 1) is built but
 #: NOT loaded by anything below -- it is PAUSED run forward past the frame
 #: its leftover chip-window-close OAM garbage clears, kept in the manifest
@@ -562,6 +573,80 @@ def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
                     pokes=_chip_pokes(chip_hex), zero=tuple(zero),
                     script="Start@10,A@%d" % a_frame, extra=("--disable-bg",))
     return make
+
+
+#: AUDIT wave 3c/3d "encounter-roll" ticket step 4: the CHIP_READY_EMPTY route --
+#: states.py's chip_ready_empty (a genuinely fresh battle that never had an enemy,
+#: not PAUSED's hand-made snapshot with its own leftover portrait-box/corpse
+#: artifacts -- see ALIGN_CHIP's own comment above for the 14388/2350 baseline
+#: those artifacts cost every chip). library_pokes_empty mirrors chip_compare.
+#: library_pokes()'s formula but peeks THIS state's own library bytes, not
+#: PAUSED's (chip_ready_empty.state already carries chip 1/Cannon's own
+#: ownership bit set -- see states.py's own build note -- but a different chip
+#: id needs its own byte poked the same way).
+CHIP_READY_EMPTY = "/tmp/chip_ready_empty.state"
+
+
+def library_pokes_empty(chip_id: int) -> Tuple[str, ...]:
+    pokes = []
+    for base in (cc.LIBRARY, cc.LIBRARY_COPY):
+        addr = base + chip_id
+        half = addr & ~1
+        out = cc.scratch("h_libpeek")
+        r = subprocess.run([CAPTURE, EMPTYNET, out, "0", "--loadstate", CHIP_READY_EMPTY,
+                            "--peek", "0x%08x" % half],
+                           capture_output=True, text=True)
+        old = 0
+        for line in (r.stdout + r.stderr).splitlines():
+            if line.startswith("peek"):
+                old = int(line.split("=")[1], 16)
+        value = 1 if base == cc.LIBRARY else (1 ^ 0x81)
+        new = (old & 0xff00) | value if addr == half else (old & 0x00ff) | (value << 8)
+        pokes.append("0x%08x:0x%04x" % (half, new))
+    return tuple(pokes)
+
+
+def _chip_canon_empty(chip_hex: str, a_frame: int = 2) -> Callable[[str], Side]:
+    """The SAME chip-in-hand-on-a-sterile-arena comparison ALIGN_CHIP's rows use,
+    but based on a battle that never had an enemy (states.py's chip_ready_empty)
+    instead of PAUSED's hand-made snapshot -- no portrait-box artifact (nothing
+    was ever paused mid-window-close to leave one) and no corpse to dissolve
+    (nothing was ever spawned to delete). One-shot --poke for the hand slot and
+    library, at load, not a per-frame --cheat: chip_ready_empty's own window-
+    pick machinery has already settled by the state's own frame 0 (verified,
+    states.py's own note), so nothing is still writing that address that a
+    one-time poke would race.
+    """
+    def make(ui: str) -> Side:
+        pokes = list(library_pokes_empty(int(chip_hex, 16)))
+        pokes.append("%s:0x%s" % (cc.HAND_SLOT, chip_hex))
+        return Side(rom=EMPTYNET, loadstate=CHIP_READY_EMPTY, cheats=DELETE_ENEMY_3_HARNESS,
+                    pokes=tuple(pokes), script="A@%d" % a_frame, extra=("--disable-bg",))
+    return make
+
+
+# NOT WIRED INTO ANY Check BELOW -- reported, not hidden (AUDIT wave 3c/3d
+# "encounter-roll" ticket step 4, run out of time before this converged).
+# The premise itself is answered (states.py's chip_ready_empty note / this
+# ticket's own report: a chip DOES fire with no enemy alive), which is what
+# unblocks re-pointing `cannon` at this route at all -- but the ALIGNMENT
+# needed to actually score it did not converge in the time this ticket had.
+# _chip_canon_empty('01') run against the existing rust `cannon` fixture
+# (h._chip_rust('01')) over canon_ref in {3,4,5,6,8,10,12,15,20,25,30,35,40,
+# 45,50} x rust_offset search bands up to 160 wide: monotonically improving
+# from 134634 (canon_ref=3) down to a PLATEAU around 43700-44631 (canon_ref
+# 40-50, worst ~1100-1200/frame) that two different rust_offset search
+# windows (0..90 and 80..160) both converge on from opposite edges (offset
+# 31 and 80, 49 apart, same score) -- consistent with a periodic/looping
+# element creating more than one comparably-good false alignment rather than
+# one sharp minimum, OR a genuine ~44000 px residue at the true alignment
+# that this search never actually reached. Either way it is WORSE than the
+# 14388 PAUSED-based baseline it was meant to replace, so wiring it into the
+# `cannon` Check as-is would be a regression, not a fix -- left as free
+# functions (library_pokes_empty, _chip_canon_empty, above) for a future
+# session to pick up, not silently declared done. banner/popup/the family-
+# 0x15 chips were NOT attempted at all this ticket, for the same reason
+# (time) -- see the ticket report.
 
 
 def _chip_checks() -> List[Check]:
