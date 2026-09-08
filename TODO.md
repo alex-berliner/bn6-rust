@@ -706,11 +706,20 @@ SongHeader for SOUND_HIT_6B points at). So the real ROM plays this sample at 112
 this build played it at agb's default 1.0. Predicted 4603 * 112/127 = 4060 against the real 4074,
 a third of a percent out; measured after the change, 4001 against 4074, within 1.8%.
 
-WHAT IS LEFT is the envelope's SHAPE rather than its height: `audio` 37223 -> 32562 across 24
-frames while the peaks now agree. The likely candidate is timing -- agb's mixer double-buffers, so
-a channel started in `play_sound` is not in the buffer the DMA is draining until the following
-`Mixer::frame()`, which `BUSTER_HIT_DELAY`'s comment already records as a frame this build does
-not control. Compare the two envelopes frame by frame and see whether ours is simply shifted.
+AND IT WAS ALSO SIX FRAMES LATE. Printing both residual envelopes rather than only their peaks:
+
+    real  96, 2, 855, 3661, 4074, 3756, 3489, 3468, 3609, 3171, ...   onset at press+10
+    ours  0 x8, then 3558, 4001, 3102, 3651, ...                      onset at press+16
+
+`BUSTER_HIT_DELAY` was 9, set against a frame accounting that counted "+k" from a different origin
+than this check does. On the check's convention -- press+k on both sides, the same one `buster`
+uses to compare the visuals at 0 -- it needed to be 4. Swept, and it is a clean minimum rather
+than a plateau: 2 -> 25101, 3 -> 17738, **4 -> 11971**, 5 -> 13160, 6 -> 16607, 7 -> 22207.
+
+`audio` 37223 -> 32562 (volume) -> 11971 (timing). WHAT IS LEFT is the envelope's SHAPE: the peaks
+agree to 0.3%, the onsets line up, and the residue is in how the two DECAY. Compare the tails --
+the real one still has 500-700 RMS out at press+25..+31 where ours is at 2 and then silent, so
+ours may simply stop sooner than the ROM's does.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it

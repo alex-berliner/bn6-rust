@@ -155,8 +155,17 @@ const BUSTER_BLIP_FREQ: u16 = 2023;
 // `play_sound` is not the buffer the timer/DMA is actively draining until
 // the FOLLOWING `Mixer::frame()`, an extra frame of latency this build does
 // not control and that was found by building and capturing, not assumed.
-// 9 is the delay that measures right, not the delay that computes right.
-const BUSTER_HIT_DELAY: u8 = 9;
+// 4, NOT 9. The value was 9 when this was wired, chosen against a frame
+// accounting that counted "+k" from a different origin than the `audio` check
+// does. Comparing the two residual envelopes on the check's own convention --
+// press+k on both sides, the same one `buster` uses to compare the visuals at
+// 0 -- the real ROM's onset is at press+10 and 9 put ours at press+16, six
+// frames late. Swept: 2 -> 25101, 3 -> 17738, 4 -> 11971, 5 -> 13160,
+// 6 -> 16607, 7 -> 22207. A clean minimum, not a plateau.
+// Still the delay that measures right rather than the one that computes right:
+// agb's mixer double-buffers, so a channel started in `play_sound` is not in
+// the buffer the DMA is draining until the following `Mixer::frame()`.
+const BUSTER_HIT_DELAY: u8 = 4;
 /// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
 /// offsets, and how long its four frames last (1,2,2,3).
 const BUSTER_ARM_FRAMES: u8 = 18;

@@ -390,8 +390,10 @@ def check_warp():
 #: The want is 32562 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
 #: residual RMS is 4074 on the real ROM against 4001 here, within 1.8%: the
 #: sound was 13% loud until the sample was played at ITS TRACK'S OWN VOLUME,
-#: `0xBE 0x70` = 112 of M4A's 0..127 (data/dat37.s:41543). What is left is the
-#: ENVELOPE'S SHAPE across the 24 frames, not its height.
+#: `0xBE 0x70` = 112 of M4A's 0..127 (data/dat37.s:41543), and six frames late
+#: until BUSTER_HIT_DELAY came down from 9 to 4. What is left is the ENVELOPE'S
+#: SHAPE: the peaks agree to 0.3% and the onsets line up, and the residue is in
+#: how the two decay.
 #: THIS CHECK WAS WRONG TWICE BEFORE IT AGREED WITH THAT, and both ways are
 #: worth keeping because both look like results:
 #:   1. Not soloing the FIFOs measured the whole mix, and the buster's PSG FIRE
@@ -694,7 +696,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
-    ("audio", check_audio, 32562),  # the hit's envelope; drive to 0, do not raise
+    ("audio", check_audio, 11971),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),
