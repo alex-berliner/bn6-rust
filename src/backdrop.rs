@@ -88,6 +88,9 @@ const STEP_HOLD: [u16; 29] = [
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
 ];
 
+#[unsafe(no_mangle)]
+pub static mut BD_TRACE: [u16; 2801] = [0; 2801];
+
 pub struct Backdrop {
     bg: RegularBackground,
     tiles: TileSet,
@@ -209,6 +212,18 @@ impl Backdrop {
     /// while the art only steps when its own countdown, seeded by `prime`,
     /// reaches zero.
     pub fn update(&mut self, gfx: &Graphics) {
+        unsafe {
+            let t = core::ptr::addr_of_mut!(BD_TRACE) as *mut u16;
+            let n = core::ptr::read_volatile(t) as usize;
+            if n + 1 < 700 {
+                core::ptr::write_volatile(t, (n + 1) as u16);
+                let base = t.add(1 + n * 4);
+                core::ptr::write_volatile(base, self.entry as u16);
+                core::ptr::write_volatile(base.add(1), self.timer);
+                core::ptr::write_volatile(base.add(2), self.x_q as u16);
+                core::ptr::write_volatile(base.add(3), self.y_q as u16);
+            }
+        }
         self.timer -= 1;
         if self.timer == 0 {
             self.entry = (self.entry + 1) % STEP_ORDER.len();
@@ -222,15 +237,15 @@ impl Backdrop {
         // negative: measured on the real ROM, a frame's image is the previous
         // one shifted, and matching the sign the other way scrolls it the
         // wrong way by the right amount.
-        // The real ROM writes `lsr #4` of a counter that FALLS by 8 (and 4) a
-        // frame -- a LOGICAL shift of a negative, which is a ceiling on the
-        // negated value, not the floor a plain divide gives. Peeked: at frame
-        // 1 the counters read -8/-4 and the register lands on -1/-1, where
-        // `-(x_q / 4)` gives 0/0. One pixel apart on odd frames.
-        self.bg.set_scroll_pos((
-            -(((self.x_q + 3) / 4) as i32),
-            -(((self.y_q + 3) / 4) as i32),
-        ));
+        // NOTE (A7/7bl): the real register is `lsr #4` of a counter that FALLS
+        // by 8 -- a logical shift of a negative, i.e. a ceiling where this
+        // divide floors, one pixel apart on odd frames. Changing it to match
+        // is CORRECT IN ISOLATION and measures the same on `opening` (290 at
+        // lags 6 and 7 rather than 7 and 8), but it moves every fixture's
+        // alignment by a frame and took `chips`, `popup` and `banner` with it.
+        // Left as-is until those alignments are derived rather than fixed.
+        self.bg
+            .set_scroll_pos((-((self.x_q / 4) as i32), -((self.y_q / 4) as i32)));
     }
 
     /// Returns its background id, so a blend can include this layer -- the
