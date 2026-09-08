@@ -142,7 +142,7 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 #[unsafe(link_section = ".ewram.marker")]
 pub static mut BATTLE_MARKER: [u32; 32] = [0; 32];
 
-const BATTLE_MAGIC: u32 = 0x4241_5454;
+const BATTLE_MAGIC: u32 = 0x4241_5454; // provenance: derived -- this project's own protocol choice (AUDIT pair 1), not a ROM fact; "BATT" read big-endian, chosen freely
 
 /// Volatile so the write can't be optimised away as dead (nothing in this
 /// crate ever reads `BATTLE_MARKER` back) or reordered past a frame's

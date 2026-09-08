@@ -30,23 +30,23 @@
 /// `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` (FIXTURE.md), which
 /// land bytes `54 58 49 46` at 0x40..0x44 -- read back as one little-endian
 /// u32 that is this constant.
-const MAGIC: u32 = 0x4649_5854;
+const MAGIC: u32 = 0x4649_5854; // provenance: derived -- this project's own protocol choice (FIXTURE.md), not a ROM fact; "FIXT" chosen freely, fixed once the harness cheats above were written against it
 
 /// Base address of the descriptor, per FIXTURE.md.
-pub const ADDR: usize = 0x0200_0040;
+pub const ADDR: usize = 0x0200_0040; // provenance: derived -- this project's own protocol choice (FIXTURE.md): EWRAM's base plus BATTLE_MARKER's own 64-byte reservation (see main.rs's BATTLE_MARKER doc), not a ROM address
 
 /// bit0: open with the chip window (gate the gauge-pause -> chip-window-open
 /// sequence; UNSET reproduces `demo-hudmatch`'s own special case, which
 /// freezes a full gauge and never opens the window -- see `read()`'s doc and
 /// the descriptor table below).
-pub const FLAG_OPEN_WINDOW: u8 = 1 << 0;
+pub const FLAG_OPEN_WINDOW: u8 = 1 << 0; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit1: blank HUD. UNSET means the real HUD (`HudTiles`) is always drawn
 /// with a descriptor -- AUDIT pair 6: the old sterile arena drew NOTHING at
 /// all where canon shows the HP box (no stub currently exists in this code
 /// to draw a bare "100" either; see the report), which made every chip
 /// comparison a box instead of a full screen. SET reproduces
 /// `demo-sterile`'s `hud_tiles: None`.
-pub const FLAG_BLANK_HUD: u8 = 1 << 1;
+pub const FLAG_BLANK_HUD: u8 = 1 << 1; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit2: blank backdrop. Reproduces `demo-sterile`'s WHOLE non-HUD
 /// background, not just the `backdrop` module: `backdrop: None`, the field
 /// layer (`self.bg`) replaced with a blank tilemap, and the hand-chip icon
@@ -54,16 +54,16 @@ pub const FLAG_BLANK_HUD: u8 = 1 << 1;
 /// `cfg!(feature = "demo-sterile")` already gates. Broader than its name
 /// suggests; flagged in the report as worth a name/scope check with
 /// FIXTURE.md's author.
-pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2;
+pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit3: auto-fire the hand, on the schedule `fire_frame` seeds -- see its
 /// own field doc.
-pub const FLAG_AUTO_FIRE: u8 = 1 << 3;
+pub const FLAG_AUTO_FIRE: u8 = 1 << 3; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit4: skip the white intro. SET reproduces every `demo-*` fixture's own
 /// legacy short black ramp (`SCREEN_FADE_FRAMES`'s `demo && !demo-open`
 /// branch, `0x10 * 2` = 32 frames); UNSET plays the real 71-frame white hold
 /// + 14-frame ramp, which is what `demo-open` and the default release build
 /// already do.
-pub const FLAG_SKIP_INTRO: u8 = 1 << 4;
+pub const FLAG_SKIP_INTRO: u8 = 1 << 4; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's
