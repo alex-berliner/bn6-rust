@@ -187,6 +187,32 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
+### A7. The backdrop's ART ANIMATION is ~7 frames out of step with its own SCROLL
+The backdrop is not just a scrolling picture: parts of it ANIMATE, in steps of about 8 frames.
+Counting one of its own colours, magenta (90,0,140), over the whole screen from a battle's
+first frame gives a clean staircase on both sides:
+
+    real  934 958 958 959 | 707 725 725 725 725 737 737 737 | 388 x8 | 220 x8 | 0 x8 | 426 ...
+    ours  884 884         | 649 673 673 672 672 691 691 691 | 358-377 | 208-220 | 0 x8 | 431 ...
+
+THE TWO CLOCKS DISAGREE WITH EACH OTHER. The SCROLL aligns at lag +7 (our capture starts at
+boot, the real one at battle frame 0). The ART ANIMATION aligns at lag **0** -- the staircases
+above are absolute capture frames on both sides and they nearly coincide. So relative to our own
+battle start, our art animation is running about seven frames early, or is counting from
+something other than battle init while the scroll counts from battle init correctly.
+
+That is a real one-clock-per-thing bug of the same family as the three fixed on 2026-09-07, not
+the unrecoverable phase that 7bi settled for. It is very likely the whole of the 86 px that the
+backdrop band bottoms out at in the `demo-open` fixture, and it is what makes the magenta
+elements appear pink in the real strip and absent in ours at the same frame.
+
+WHERE TO LOOK: `src/backdrop.rs` -- what drives the frame it picks for the animated tiles, and
+whether that counter is the same `ticks` the scroll uses. On the real side, the scroll is
+`BGScrollCB_BG1Diagonal3to2Scroll` (asm00_0.s:3272-3288) off `eBGScrollCBCounters`, zeroed at
+battle init; find what advances the ART and whether it shares that origin.
+NOTE the amounts differ slightly too (934 against 884 at the same step), so check the count as
+well as the timing -- it may be a second, smaller thing.
+
 ### A6. The HUD does not match at a battle's opening
 Falls out of A4's measurement and deserves its own number. Real from `/tmp/battlestart.state`
 against `demo-open`, `--disable-obj`, HUD strip box (0, 0, 240, 24): **1102 px**, and it looks
@@ -203,7 +229,8 @@ plates. Rendering the two strips one above the other answered it in one glance:
 
 Two separate things, one of them real:
 
-1. **THE CUSTOM GAUGE SHOULD NOT BE DRAWN DURING THE OPENING.** Measured by rendering the real
+1. **THE CUSTOM GAUGE SHOULD NOT BE DRAWN DURING THE OPENING.**  *(DONE -- gated on a new
+   `window_closed` flag; the strip went 1102 px to 85.)* Measured by rendering the real
    ROM's HUD strip at frames 75, 100, 125, 150, 165, 175 and 185 from `/tmp/battlestart.state`:
    **there is no gauge on ANY of them.** Just the HP box, and backdrop everywhere else. By 200
    the chip window is up and the strip is the chip-select screen. Ours draws the gauge, full,
