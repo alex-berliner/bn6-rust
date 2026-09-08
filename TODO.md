@@ -43,13 +43,23 @@ measurement first.
 460 px to 345. The mechanism is modelled: a hop spawns a NEW segment and the old one stops
 where it is and plays its own animation out until its authored last frame comes round.
 
-What is left is very probably a hop LATE in the attack, where the real ROM is on a different
-row of `byte_80C6B00` (asm31.s:31361-31366) with a shorter dwell and a different animation,
-while `Shot::shockwave` uses row 0's dwell of 0x16 for every hop -- its own doc comment
-already calls that "its first version". Modelling the per-hop table is the job. A negative
-result on the way there: allowing SEVERAL departures to overlap measures 8725 px over 20
-frames, far worse, because the real ROM's late hops are too short-lived to leave that many
-fragments. One slot, newest wins.
+THE PER-HOP TABLE IS A DEAD END -- DISPROVED, TRANSFER 7bh. `byte_80C6B00` is 16 rows of 4
+bytes indexed by `Param1 * 4` (asm31.s:31411-31416), and `Param1` is INHERITED across a hop:
+the respawn goes through `SpawnBattleObjectCommon`, which copies the whole Params word
+(asm00_1.s:254). Every hop of one attack reads the same row, and a Version 0 Mettaur is on
+row 0 -- dwell 0x16, animation 0 -- from first hop to last. Do not model the table.
+
+THE REAL LEAD is the departing segment's own animation hold. The three frames are real
+199-201 against ours 220-222, 115 px each, and they are the fragment spray at the panel just
+vacated (`wave.bin` animation 0 frame 4, the one flagged 0x80). The real ROM's spray shows
+several distinct sub-poses over that window; ours shows one pose for about two ticks and
+then vanishes. So the segment is being destroyed a few ticks too early -- look at
+`on_last_frame()` and the departure's destroy sequencing, not at the table.
+
+Two negative results already recorded, do not repeat them: allowing SEVERAL departures to
+overlap measures 8725 px over 20 frames; and pre-ticking every new segment's `Player` the
+way `Shot::shockwave()` pre-ticks only the first measures the same 8725 and takes `wave` to
+3840. One slot, newest wins, and only the first segment is pre-ticked.
 
 
 ### A2. The chip window's cursor  *(done -- TRANSFER 7ag)*

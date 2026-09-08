@@ -1192,6 +1192,47 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bh. The shockwave's per-hop table is a dead end, with a citation (2026-09-07)
+
+`mettaur` stays at 345 and `wave` at 960, and the leading theory for both is now DISPROVED
+rather than untried, which is worth more than another plausible attempt.
+
+The theory, carried in TODO A1 since 7ah: a hop LATE in the attack is on a different row of
+`byte_80C6B00`, with a shorter dwell and a different animation, while `Shot::shockwave` uses
+row 0's dwell of 0x16 for every hop.
+
+WHAT THE TABLE IS. 16 rows of 4 bytes indexed by `Param1 * 4` (asm31.s:31411-31416). Byte 0
+is a constant 3 in every row -- a sprite_load size argument, not data. Byte 1 is the
+animation. Byte 2 is the DWELL. Byte 3 is a panel effect passed to `sub_80C6CFC`
+(asm31.s:31604-31611): 0xff nothing, 3 crack, 1 break, anything else `object_setPanelType`.
+Only rows 4 and 5 carry an effect. Row 0 is {3, 0, 0x16, 0xff} -- exactly what this build
+already hardcodes.
+
+WHY NO HOP CAN BE ON ANOTHER ROW. A hop respawns the wave through `sub_80C6CE4` ->
+`object_spawnType3` -> `SpawnBattleObjectCommon`, and that copies the WHOLE Params word from
+the old segment into the new one (`str r4,[r5,#oBattleObject_Params]`, asm00_1.s:254). So
+`Param1` -- the virus's Version tier -- is inherited across every hop of one attack. A
+Version 0 Mettaur is on row 0 from its first hop to its last. The short-dwell rows can only
+be reached by a Param1 >= 12 virus, never by a later hop of a low one.
+
+WHERE THE THREE FRAMES ACTUALLY ARE. Real frames 199-201 against ours 220-222, 115 px each,
+and it is the departing segment's fragment spray at the panel it just left -- `wave.bin`
+animation 0 frame 4, the one flagged 0x80. The real ROM's spray shows several distinct
+sub-poses across that window; ours shows one pose for about two ticks and then vanishes. So
+the residue is in the departure's own animation hold and destroy sequencing, not in the
+table. That is the lead for whoever picks it up.
+
+A second negative result, recorded so nobody repeats it: pre-ticking EVERY new segment's
+`Player` the way `Shot::shockwave()` pre-ticks only the first measures `mettaur` 8725 (20 of
+70 frames differing, up from 3) and `wave` 3840. Reverted.
+
+AND THE TICKET RULES WERE THE BUG. `regress.py`'s `build()` hardcoded `ROOT/target/...`
+while every worker is told to set `CARGO_TARGET_DIR` so builds cannot race. cargo honoured
+the variable, the ROM was packed from whatever stale ELF sat in the repo, and the harness
+reported `mettaur` 95436 and `wave` 1461850 without an error. The advice written to PREVENT
+wrong captures was causing them. It now asks `cargo metadata` where the target directory is.
+Check any other script that packs a ROM for the same assumption.
+
 ## 7bg. Panel damage: the chain was read to the end, and it breaks at the citation (2026-09-07)
 
 The charge shot does NOT break the panel it hits, the measurement in 7-B2 stands, and the reason is
