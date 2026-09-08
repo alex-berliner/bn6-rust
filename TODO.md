@@ -716,10 +716,25 @@ than this check does. On the check's convention -- press+k on both sides, the sa
 uses to compare the visuals at 0 -- it needed to be 4. Swept, and it is a clean minimum rather
 than a plateau: 2 -> 25101, 3 -> 17738, **4 -> 11971**, 5 -> 13160, 6 -> 16607, 7 -> 22207.
 
-`audio` 37223 -> 32562 (volume) -> 11971 (timing). WHAT IS LEFT is the envelope's SHAPE: the peaks
-agree to 0.3%, the onsets line up, and the residue is in how the two DECAY. Compare the tails --
-the real one still has 500-700 RMS out at press+25..+31 where ours is at 2 and then silent, so
-ours may simply stop sooner than the ROM's does.
+`audio` 37223 -> 32562 (volume) -> 11971 (timing). WHAT IS LEFT is that THE REAL SOUND IS ABOUT
+FIVE TIMES LONGER THAN OURS. Measured out to press+69, the real residual decays smoothly all the
+way to zero rather than plateauing, so it is a sound and not control drift:
+
+    press+8   96 2 855 3661 4074 3756 3489 3468 3609 3171 3188 3107 3007 2127
+    press+22  1514 1023 673 701 684 668 662 531 417 329 235 199 206 203 187 293
+    press+38  150 133 211 105 314 129 86 88 246 326 103 59 129 47 83 52 41 121
+    press+56  37 27 13 20 13 27 23 13 0 24 0 0 19 0
+
+Ours is silent from about press+21, which is right for the sample we play: 1881 samples at
+10512 Hz is 10.7 frames. So the real ROM's response to a buster hit is NOT just SOUND_HIT_6B.
+
+THREE CANDIDATES, and they are distinguishable: a SECOND, quieter cue starting around press+24
+(the flat 660-700 stretch at +24..+28 looks like an onset rather than a decay -- the earlier
+sound-wiring session flagged exactly this and could not rule out an HP-tick); the engine playing
+the sample with a release envelope this build does not model (its ToneData reads attack 0xff,
+sustain 0xff, release 0x00, so probably not); or reverb (the SongHeader says reverb 0, so also
+probably not). Solo the FIFOs and dump the raw PCM of the tail -- if it is a second sample it will
+have its own onset shape, and it can then be found in dat37.s the way SOUND_HIT_6B was.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
