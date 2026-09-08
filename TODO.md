@@ -317,43 +317,25 @@ not others.
 The rendering evidence supports the map over the palette: ours draws FEWER glyphs rather than
 differently-coloured ones.
 
-THE ACTUAL BLOCKER IS NOT `tiles` ANY MORE -- it is what a correct backdrop does to every other
-fixture. With the true schedule in, the full suite on the branch reads:
+MERGED. `opening` 0, `gauge` 446, and every other check still 0 -- seventeen checks, sixteen of
+them zero.
 
-    tiles 0   gauge 470   opening 0   (mettaur, wave, cursor, field, window, card, result, warp,
-    buster, chip-use and rollup all still 0)
-    chips  13 of 43 off -- every recov* chip and all five popup chips
-    popup  7366     banner 5162
+What landed: the scripted art schedule, and `Backdrop::seed`, which gives a fixture the phase of
+the save state it is compared against instead of starting its clocks at zero. That also brought
+`tiles`' alignment back to rust 435 against real 44, so the check captures 438 frames rather than
+the 1800 it needed to reach the only unseeded alignment at 1798.
 
-Reverting the scroll rounding leaves `opening` at 0 and does NOT fix those three, so it is the ART
-SCHEDULE that moves them. The reason is the one this file keeps rediscovering: the old model's
-period was 56, which DIVIDES the scroll's 896, so a wrong-but-simple animation could still
-coincide with the real ROM at a fixed frame. The true period is 192, which does not. Every fixture
-whose comparison frame was calibrated against the old backdrop now needs its alignment DERIVED the
-way `tiles`' was -- and for the chip fixtures that means frames in the thousands, a real cost in
-capture time.
+AND THE "FIXTURE REALIGNMENT PROGRAMME" I WROTE HERE WAS MY OWN DEBUG CODE. `chips` 13 off,
+`popup` 7366 and `banner` 5162 came from a `BD_TRACE` static I added to instrument the clocks and
+forgot to remove -- 5.6 KB and a write every frame. I measured its effects, concluded that a
+correct backdrop invalidates every fixture calibrated against the old one, reasoned out why that
+followed from the periods, and wrote it up as a programme of work with three options. Removing the
+diagnostic took all three checks to 0. The art schedule never touched them.
 
-So merging is a fixture-realignment programme, not a one-line landing. Three ways out, in the
-order I would try them:
+The reasoning was plausible and the arithmetic about the periods was right; it was attached to a
+cause I had introduced myself and not checked for. Before explaining a regression, check what is
+in the tree.
 
-1. **SEED THE FIXTURES WITH THE CAPTURE'S OWN BACKDROP PHASE.** This is the same move that fixed
-   the HP a few hours ago and that 7bc used for the chip window's bracket: a fixture compared
-   against a save state should START where that state is, not at zero. Add a `Backdrop::seed`
-   taking `(entry, timer, x_q, y_q)` and give each demo fixture the values peeked out of its own
-   save state, exactly as `HUDMATCH_HP` carries 60. Then every existing comparison FRAME stays
-   valid and nothing needs realigning. Numbers already in hand for `pausedwithcannon.state`: the
-   art is entry 13 / Timer 8 forty-four frames in, and the scroll counters read -63128 / -31564 at
-   load. Mind the sign convention between the counter, the `lsr #4` register and this build's
-   quarter-pixel `x_q` -- that is where the care goes.
-2. Realign each fixture's comparison frame the way `tiles`' was derived. Correct, but it means
-   captures thousands of frames long for 43 chips, and it re-earns the same cost every time the
-   backdrop changes again.
-3. `--disable-bg` on those fixtures. Cheapest and worst: it makes them immune to backdrop work by
-   MEASURING LESS, and this project has just spent an evening learning what stops being visible
-   when a check quietly narrows.
-
-DO NOT MERGE until that is decided: the branch trades a `tiles` 0 for a non-zero, and a zero
-that came partly from luck still beats a residue nobody has explained.
 MY ORIGINAL FRAMING WAS WRONG. The art clock does NOT have a different origin from the scroll:
 `LoadGFXAnims` is called at battle init from `sub_8080DA0`, in the same routine as the scroll's
 own zero, back to back (asm00_1.s:8434-8435).
