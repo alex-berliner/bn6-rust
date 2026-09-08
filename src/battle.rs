@@ -1334,19 +1334,42 @@ impl<'a> Battle<'a> {
             *entry = Deck::entry(chip.id, chip.codes[0]);
         }
         let mut deck = Deck::new(folder, rng);
-        // The chip-window fixture offers exactly what the capture's window
-        // does, read off the real ROM by matching each slot's four icon tiles
-        // against every chip's icon in byte_8725894: Vulcan1 D, AirShot *,
-        // Sword S, MiniBomb B and Cannon A, with the Cannon already picked
-        // (its icon is the one in the pick stack).
-        if cfg!(feature = "demo-custmatch") {
-            deck = Deck::stacked([
-                Deck::entry(CHIP_VULCAN, 3),
-                Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
-                Deck::entry(CHIP_SWORD, 18),
-                Deck::entry(CHIP_MINIBOMB, 1),
-                Deck::entry(CHIP_CANNON, 0),
-            ]);
+        // AUDIT pairs 6/14/17: the chip window fixture offers exactly what
+        // the capture's window does, read off the real ROM by matching each
+        // slot's four icon tiles against every chip's icon in byte_8725894:
+        // Vulcan1 D, AirShot *, Sword S, MiniBomb B and Cannon A, with the
+        // Cannon already picked (its icon is the one in the pick stack).
+        // A fixture's own `deck_count`/`deck` (FIXTURE.md +34/+35) drive this
+        // instead of the hardcoded stack when one is present; `deck_codes`
+        // (this module's own reserved-region addition -- see its doc) covers
+        // the two slots whose captured code is not the chip's own `codes[0]`
+        // default that FIXTURE.md's field alone would give.
+        match fixture {
+            Some(f) if f.deck_count > 0 => {
+                let mut entries = [crate::deck::EMPTY; 5];
+                for i in 0..f.deck_count as usize {
+                    let id = f.deck[i] as u16;
+                    let code = if f.deck_codes[i] != 0xff {
+                        f.deck_codes[i]
+                    } else {
+                        chips.by_id(id).map(|c| c.codes[0]).unwrap_or(0)
+                    };
+                    entries[i] = Deck::entry(id, code);
+                }
+                deck = Deck::stacked(entries);
+            }
+            Some(_) => {}
+            None => {
+                if cfg!(feature = "demo-custmatch") {
+                    deck = Deck::stacked([
+                        Deck::entry(CHIP_VULCAN, 3),
+                        Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
+                        Deck::entry(CHIP_SWORD, 18),
+                        Deck::entry(CHIP_MINIBOMB, 1),
+                        Deck::entry(CHIP_CANNON, 0),
+                    ]);
+                }
+            }
         }
         let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
@@ -1589,6 +1612,20 @@ impl<'a> Battle<'a> {
             .into_iter()
             .filter_map(|id| chips.by_id(id))
             .collect();
+        let mut hud_tiles = if blank_hud {
+            None
+        } else {
+            Some(crate::hudtiles::HudTiles::new(crate::HUD_TILES, crate::TEXT_FONT))
+        };
+        // AUDIT pairs 6/14/17: a fixture's own `gauge_tick` (FIXTURE.md +28)
+        // seeds the bar's flow phase directly -- see `HudTiles::seed_gauge`'s
+        // own doc. 0xFFFF ("default" throughout this contract) leaves the
+        // fresh `new()` value above.
+        if let (Some(hud), Some(f)) = (hud_tiles.as_mut(), fixture) {
+            if f.gauge_tick != 0xffff {
+                hud.seed_gauge(f.gauge_tick as u32);
+            }
+        }
 
         Self {
             field,
@@ -1640,14 +1677,7 @@ impl<'a> Battle<'a> {
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
-            hud_tiles: if blank_hud {
-                None
-            } else {
-                Some(crate::hudtiles::HudTiles::new(
-                    crate::HUD_TILES,
-                    crate::TEXT_FONT,
-                ))
-            },
+            hud_tiles,
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -1720,12 +1750,12 @@ impl<'a> Battle<'a> {
     /// window draws in banks 9-11 and the CUSTOM gauge holds bank 9 for the
     /// whole fight, so without this the window comes up in the gauge's greens
     /// and yellows instead of its own grey and blue.
-    fn show_results(&mut self, kind: usize, time: u32, level: u8, gfx: &Graphics) {
+    fn show_results(&mut self, kind: usize, time: u32, level: u8, zenny: u16, gfx: &Graphics) {
         for (i, p) in self.results.palettes().iter().enumerate() {
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
         self.results_mark = Some(self.custom_assets.mark_sprite());
-        self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
+        self.shown = Some(self.results.show(kind, time, level, 0, zenny));
     }
 
     /// Bring the backdrop's art to the real ROM's state at a battle's first
@@ -1788,23 +1818,37 @@ impl<'a> Battle<'a> {
         }
         if self.backdrop.is_some() {
             self.backdrop.as_mut().unwrap().update(gfx);
-            self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
-            // NO GAUGE BEFORE THE FIRST CHIP WINDOW HAS CLOSED. A battle opens
-            // with that window (7aw), so there is nothing for a gauge to do
-            // until it has been through once -- and the real ROM draws none:
-            // rendering its HUD strip from a battle's first frame shows the HP
-            // box and nothing else at frames 75, 100, 125, 150, 165, 175 and
-            // 185, with the window itself up by 200.
-            // Only in the builds that actually start at a battle's beginning.
-            // Every other demo is calibrated against a capture taken mid-battle,
-            // where the gauge is up and belongs there.
-            let before_first_window = !self.window_closed && !self.skip_intro();
-            let gauge_up =
-                self.shown.is_none() && self.fade_out == 0 && !before_first_window;
-            self.hud_tiles
-                .as_mut()
-                .unwrap()
-                .set_gauge(self.gauge, GAUGE_FULL, gauge_up);
+        }
+        // AUDIT pair 6: the HUD is the real HUD whenever it is not blanked,
+        // regardless of the backdrop -- gated on `self.hud_tiles.is_some()`
+        // rather than folded into the `backdrop.is_some()` block above (which
+        // is what this was before this ticket). Every existing fixture and
+        // demo build has always carried FLAG_BLANK_HUD == FLAG_BLANK_BACKDROP
+        // (both set or both clear -- see fixture.rs's own descriptor table),
+        // so this split changes nothing for any of them; it only matters for
+        // a fixture that blanks the backdrop but NOT the HUD (a sterile arena
+        // with the real HUD up), which the old single gate never let update
+        // at all -- `hud_tiles.as_mut().unwrap()` would have been reached
+        // with backdrop still None only by a bug, never by this combination,
+        // because nothing built that combination before.
+        // NO GAUGE BEFORE THE FIRST CHIP WINDOW HAS CLOSED. A battle opens
+        // with that window (7aw), so there is nothing for a gauge to do
+        // until it has been through once -- and the real ROM draws none:
+        // rendering its HUD strip from a battle's first frame shows the HP
+        // box and nothing else at frames 75, 100, 125, 150, 165, 175 and
+        // 185, with the window itself up by 200.
+        // Only in the builds that actually start at a battle's beginning.
+        // Every other demo is calibrated against a capture taken mid-battle,
+        // where the gauge is up and belongs there.
+        // Computed here, ahead of the `hud_tiles.as_mut()` borrow below,
+        // because `skip_intro()` takes `&self` and the borrow checker cannot
+        // see that it only reads `self.fixture` -- calling it while `hud`
+        // still holds `self.hud_tiles` mutably does not compile.
+        let before_first_window = !self.window_closed && !self.skip_intro();
+        let gauge_up = self.shown.is_none() && self.fade_out == 0 && !before_first_window;
+        if let Some(hud) = self.hud_tiles.as_mut() {
+            hud.set_menu(self.custom.is_some());
+            hud.set_gauge(self.gauge, GAUGE_FULL, gauge_up);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
@@ -1816,17 +1860,19 @@ impl<'a> Battle<'a> {
                 // Indexing the chip table BY ID names the wrong chip: the
                 // table is in the exporter's own order, where index 1 is
                 // HiCannon while chip id 1 is Cannon.
-                Some(chip) => {
-                    self.hud_tiles
-                        .as_mut()
-                        .unwrap()
-                        .set_name(Some((chip.name(), chip.power)));
-                }
-                None => self.hud_tiles.as_mut().unwrap().set_name(None),
+                Some(chip) => hud.set_name(Some((chip.name(), chip.power))),
+                None => hud.set_name(None),
             }
+        }
+        if self.backdrop.is_some() {
             // The field slides down out of the window's way and back again:
             // measured on the real ROM at 1.5 px a frame over ten frames to a
-            // 15 px offset, held while the menu is up.
+            // 15 px offset, held while the menu is up. Left gated on the
+            // backdrop (unchanged by this ticket) rather than the HUD: no
+            // fixture exercises a chip window with the backdrop blanked and
+            // the HUD live within the frame ranges any check covers, so there
+            // is nothing to measure this against yet -- flagged in the
+            // ticket report rather than guessed at.
             let want = if self.custom.is_some() { FIELD_SLIDE } else { 0 };
             self.field_slide = if self.field_slide < want {
                 (self.field_slide + FIELD_SLIDE_STEP).min(want)
@@ -1925,7 +1971,7 @@ impl<'a> Battle<'a> {
                             })
                     })
                     .collect();
-                self.custom = Some(self.custom_assets.open(&offered, gfx));
+                self.custom = Some(self.custom_assets.open(&offered, gfx, self.fixture));
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             // Debug: L or R opens the chip window at once, without waiting for
@@ -1989,8 +2035,26 @@ impl<'a> Battle<'a> {
         // own readout -- 0:29:33 is 1760 frames, busting level 2 -- so the
         // window can be compared against /tmp/noenemy2.state. Without it the
         // demo needs a chip press the capture harness cannot land.
-        if cfg!(feature = "demo-resultmatch") && self.shown.is_none() && self.fade_out == 0 {
-            self.show_results(results::WIN, RESULTMATCH_TIME, 2, gfx);
+        // AUDIT pairs 6/14/17: `start_state` = 1 (FIXTURE.md +40) drives the
+        // same thing from a descriptor, with `result_level`/`result_frames`/
+        // `result_zenny` (+41/+42/+44) in place of the hardcoded
+        // RESULTMATCH_TIME/2/RESULTMATCH_ZENNY.
+        let fixture_results = self.fixture.filter(|f| f.start_state == 1);
+        if (cfg!(feature = "demo-resultmatch") || fixture_results.is_some())
+            && self.shown.is_none()
+            && self.fade_out == 0
+        {
+            if let Some(f) = fixture_results {
+                self.show_results(
+                    results::WIN,
+                    f.result_frames as u32,
+                    f.result_level,
+                    f.result_zenny,
+                    gfx,
+                );
+            } else {
+                self.show_results(results::WIN, RESULTMATCH_TIME, 2, RESULTMATCH_ZENNY, gfx);
+            }
         }
         if over && self.shown.is_none() && self.fade_out == 0 {
             // The banner the fight ends on, put up once: the real ROM shows it
@@ -2014,7 +2078,7 @@ impl<'a> Battle<'a> {
                     moves: self.moves,
                 });
                 let kind = if won { results::WIN } else { results::LOSE };
-                self.show_results(kind, self.clock, level, gfx);
+                self.show_results(kind, self.clock, level, RESULTMATCH_ZENNY, gfx);
             }
         }
         if let Some(window) = self.shown.as_mut() {
@@ -2308,7 +2372,22 @@ impl<'a> Battle<'a> {
         // Once. The clock STOPS while an opening banner is up, so a bare
         // `clock == BANNER_DEMO_AT` stays true every frame and rebuilds the
         // banner forever -- which is what it did the moment the pause went in.
-        if cfg!(feature = "demo-banner") && self.clock == BANNER_DEMO_AT && !self.opened {
+        // AUDIT pairs 6/14/17: a fixture's own `banner_at` (FIXTURE.md +46,
+        // 0xFFFF = never forced) drives the same thing from a descriptor,
+        // in place of the hardcoded BANNER_DEMO_AT -- note this is NOT the
+        // same thing as `self.banner_at` a few lines up, an unrelated
+        // existing countdown field for the real BATTLE START banner that a
+        // fixture never arms (see the `!self.opened && self.fixture.is_none()`
+        // guard above).
+        let fixture_banner_frame = self.fixture.map(|f| f.banner_at).filter(|&v| v != 0xffff);
+        let banner_target = if fixture_banner_frame.is_some() {
+            fixture_banner_frame.map(|v| v as u32)
+        } else if cfg!(feature = "demo-banner") {
+            Some(BANNER_DEMO_AT)
+        } else {
+            None
+        };
+        if banner_target == Some(self.clock) && !self.opened {
             self.opened = true;
             self.banner = Some(Banner::new(self.banner_assets, banner::ENEMY_DELETED));
         }

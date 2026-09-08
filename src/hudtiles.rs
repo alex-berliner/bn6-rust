@@ -203,6 +203,18 @@ impl HudTiles {
         self.gauge_palette.clone()
     }
 
+    /// AUDIT pairs 6/14/17: seed the flow counter directly, for a fixture
+    /// compared against a save state where the CUSTOM gauge has already
+    /// been full (and flowing) for an unknown time -- see TRANSFER.md 7ab,
+    /// "two phases in that screen CANNOT be settled by one save state". A
+    /// fresh `new()` leaves this at 0, which is right for every fixture
+    /// verified against a save state so far (`gauge_tick`'s own doc in
+    /// fixture.rs), so this exists as a knob rather than because any current
+    /// fixture needs a nonzero seed.
+    pub fn seed_gauge(&mut self, tick: u32) {
+        self.gauge_tick = tick;
+    }
+
     /// Repaint the CUSTOM label and the bar. `filled` is the gauge's value
     /// over its full value; the marker turns from cyan to orange at one.
     /// NOTE: only the full bar is verified against the real ROM, because the

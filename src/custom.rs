@@ -456,7 +456,18 @@ impl CustomAssets {
     }
 
     /// Open the window over the offered chips, at most one per slot.
-    pub fn open(&self, offered: &[Offer], gfx: &Graphics) -> Custom<'_> {
+    ///
+    /// AUDIT pairs 6/14/17: `fixture` is `Battle`'s own `self.fixture`,
+    /// threaded through so `demo-custmatch`/`demo-cardname` can be
+    /// reproduced by descriptor -- see `fixture::Fixture::window_pick_count`'s
+    /// own doc for why this needs fields outside FIXTURE.md's published
+    /// contract.
+    pub fn open(
+        &self,
+        offered: &[Offer],
+        gfx: &Graphics,
+        fixture: Option<crate::fixture::Fixture>,
+    ) -> Custom<'_> {
         // BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD
         // layer and over the actors (sub_801DA24, asm00_2.s:29038).
         let mut bg = RegularBackground::new(
@@ -508,13 +519,25 @@ impl CustomAssets {
             let _ = (i, slot);
         }
         // The window fixture reproduces the capture's state: its Cannon A is
-        // already picked and the cursor sits on OK.
-        if cfg!(feature = "demo-custmatch") {
-            custom.picks.push(4);
-            // demo-cardname is the same window with the cursor walked onto the
-            // first slot, which is the only way to see the card's NAME: with
-            // the cursor on OK the real ROM shows its message card instead.
-            custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
+        // already picked and the cursor sits on OK (demo-cardname: the first
+        // slot instead, the only way to see the card's NAME -- with the
+        // cursor on OK the real ROM shows its message card instead).
+        // AUDIT pairs 6/14/17: `window_pick_count`/`window_pick_slot`/
+        // `window_cursor` drive this from the fixture instead when one is
+        // present -- see their own doc in fixture.rs for why they are not
+        // FIXTURE.md fields.
+        match fixture {
+            Some(f) if f.window_pick_count > 0 => {
+                custom.picks.push(f.window_pick_slot as usize);
+                custom.cursor_at = f.window_cursor;
+            }
+            Some(_) => {}
+            None => {
+                if cfg!(feature = "demo-custmatch") {
+                    custom.picks.push(4);
+                    custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
+                }
+            }
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);
