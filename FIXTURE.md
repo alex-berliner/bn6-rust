@@ -29,18 +29,24 @@ little-endian.
 | +30 | u16 | fire_frame | battle frame on which auto-fire presses A (with bit3) |
 | +32 | u16 | enemy_hp | first enemy's HP; 0 = the kind's default (what `fixture::read()` implements; the harness pokes 0 by default). `demo-field` pins its Mettaur at the literal 0xffff. |
 | +34 | u8  | deck_count | 0..5: chips the chip WINDOW offers (distinct from `hand`, the already-picked ones) |
-| +35 | u8[5] | deck | chip ids offered, in order; codes are the game's own per-id defaults |
+| +35 | u8[5] | deck | chip ids offered, in order; each slot's code is `deck_codes[i]` unless that is 0xFF |
 | +40 | u8  | start_state | 0 = battle; 1 = at the RESULT window already |
 | +41 | u8  | result_level | busting level shown when `start_state` = 1 |
 | +42 | u16 | result_frames | battle time shown when `start_state` = 1 |
 | +44 | u16 | result_zenny | reward shown when `start_state` = 1 |
 | +46 | u16 | banner_at | battle frame on which to raise ENEMY DELETED, 0xFFFF = never forced |
-| +48.. | | reserved | zero |
+| +48 | u8[5] | deck_codes | per-slot chip code for `deck`; 0xFF = that chip's own `codes[0]`. Needed because `demo-custmatch` shows Vulcan1 at D and Sword at S, neither its default code. |
+| +53 | u8  | window_pick_count | 0 = the chip window opens fresh; 1 = one offered chip is already picked when it opens |
+| +54 | u8  | window_pick_slot | the offered slot index pre-picked when `window_pick_count` = 1 |
+| +55 | u8  | window_cursor | cursor position when `window_pick_count` = 1: 0..9 a slot, 0x0a = OK |
+| +56.. | | reserved | zero |
 
 Fields +32 onward were added after wave 2's `src/` agent found the original contract could not
 express `demo-field`'s pinned enemy HP, `demo-custmatch`/`demo-cardname`'s offered deck,
-`demo-resultmatch`'s start-at-results, or `demo-banner`'s forced banner. `enemy_hp` at +32 is
-already read by `src/fixture.rs`; the other four are the wave 3 work.
+`demo-resultmatch`'s start-at-results, or `demo-banner`'s forced banner. Fields +48..+55 were
+added by wave 3's `src/` agent: the offered deck alone does not reproduce `demo-custmatch`
+(non-default codes, and its window opens with the Cannon already picked and the cursor on OK;
+`demo-cardname` is the same window with the cursor on slot 0). All are read by `src/fixture.rs`.
 
 Every existing `demo-*` fixture must be expressible as one descriptor. The flags stay until
 wave 3 confirms the new harness reproduces every check at zero through descriptors; then they go.
