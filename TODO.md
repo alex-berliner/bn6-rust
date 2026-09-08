@@ -478,6 +478,42 @@ chip and a number in the popup.
 measured rather than copied. A `cursor` check was added too. Fifteen checks now.
 
 
+### D5. A short capture used to pass for a real result  *(fixed)*
+`capture()` ran mGBA and never checked it wrote the frames it asked for. Under load it
+sometimes does not, and a short capture does not announce itself: the frames that exist
+compare normally, and the missing ones either raise a FileNotFoundError deep inside a check
+or are never asked for at all -- which means a truncated capture can produce a WRONG NUMBER
+rather than an error.
+
+Twice on 2026-09-07, a full suite run alongside other heavy work reported failures that did
+not reproduce on a quiet re-run: `chips` 10 of 43 off, and `opening` erroring on a missing
+frame 148. Both were this. FIXED: `capture()` counts the `.rgb` files and refuses to continue
+if the count is short, naming the directory and telling you to re-run it alone.
+
+WHAT IS STILL TRUE AND MATTERS: the suite is not trustworthy while the box is busy. That is
+now loud instead of silent, but it is still the case, and the two spurious runs cost more
+attention tonight than the bug they pretended to find.
+
+### D4. FIVE CHECKS COMPARE A SINGLE FRAME
+`tiles`, `field`, `window`, `card` and `result` each match ONE frame and report 0. A single
+frame can be right while its neighbours are wrong, and at least one of them demonstrably is.
+
+Measured on `field`, which searches rust 190..240 for the best match against real frame 90:
+the winner is exact (rust 212, 0 px), and holding that same lag the next twenty frames read
+
+    0  765 1243 1371 1371 1596 1236 1340 1215 1215 986 582 622 364 364 364 364 838 800 800
+
+Part of that is legitimate -- the Mettaur acts on an RNG the two sides do not share, which is
+exactly why `mettaur` and `wave` search for a lag around a specific attack instead of trusting
+a fixed one. But "one frame in fifty matched exactly" is a weaker claim than `field 0` sounds,
+and nobody looking at the suite would know the difference.
+
+WHAT TO DECIDE (planning, not a ticket to fire off): for each of the five, either widen it to a
+window of frames where the two sides are genuinely comparable, or state in its docstring what
+it does and does not establish. `tiles` and `card` are probably widenable as they stand --
+their fixtures are deterministic. `field` needs its window chosen before the enemy's first
+independent decision, or an alignment like `mettaur`'s.
+
 ### D3. `--dump`'s byte count silently reads 0 from hex  *(fixed)*
 `tools/mgba_capture.c`'s `--dump addr:bytes:file` parses the middle field with `atoi`,
 which returns 0 for `0x1c0` and dumps an empty file with no error. The address beside it

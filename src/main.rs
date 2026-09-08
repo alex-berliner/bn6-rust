@@ -24,6 +24,7 @@ mod shot;
 mod spr;
 
 use agb::input::ButtonController;
+use agb::sound::mixer::Frequency;
 use battle::Battle;
 
 /// `include_bytes!` gives no alignment guarantee, but the field tile data has
@@ -78,6 +79,11 @@ static HUD_TILES: &[u8] = &Aligned(*include_bytes!("../assets/hud_tiles.bin")).0
 static TEXT_FONT: &[u8] = &Aligned(*include_bytes!("../assets/text_font.bin")).0;
 static EMOTION: &[u8] = &Aligned(*include_bytes!("../assets/emotion.bin")).0;
 static HAND_ICON: &[u8] = &Aligned(*include_bytes!("../assets/hand_icon.bin")).0;
+// SOUND_HIT_6B's sample (byte_81597A0, dat37.s): the buster's HIT, not its
+// fire -- see TRANSFER.md 7bb. Exported by tools/sample_export.py, 1881
+// samples at 10512 Hz, no loop. The mixer frequency below must match exactly
+// (agb::include_wav! does no resampling).
+static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/buster_hit.wav");
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -117,6 +123,11 @@ fn main(mut gba: agb::Gba) -> ! {
     }
     gfx.set_background_palettes(&palettes);
 
+    // 10512 Hz: the mixer's own output rate, chosen to match SOUND_HIT_6B's
+    // sample exactly (assets/buster_hit.wav) so agb's include_wav! does no
+    // resampling.
+    let mut mixer = gba.mixer.mixer(Frequency::Hz10512);
+
     loop {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
@@ -125,11 +136,12 @@ fn main(mut gba: agb::Gba) -> ! {
         loop {
             input.update();
             rng.next();
-            if battle.update(&input, &gfx) {
+            if battle.update(&input, &gfx, &mut mixer) {
                 break;
             }
             let mut frame = gfx.frame();
             battle.draw(&mut frame);
+            mixer.frame();
             frame.commit();
         }
     }
