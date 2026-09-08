@@ -926,6 +926,11 @@ pub struct Battle<'a> {
     banner_done: bool,
     /// Whether BATTLE START! has been put up, likewise once.
     opened: bool,
+    /// Whether the FIRST chip window has closed yet, in every build rather
+    /// than only outside the demos. `opened` cannot serve: it is deliberately
+    /// left false in demo builds so `banner_at` is not armed for fixtures that
+    /// compare against mid-battle captures, and the gauge needs the plain fact.
+    window_closed: bool,
     /// Frames until it goes up, counting down from the chip window closing.
     banner_at: u16,
     /// Frames until the buster's blip sounds; see BUSTER_BLIP_DELAY.
@@ -1453,6 +1458,7 @@ impl<'a> Battle<'a> {
             banner_assets: banner::Assets::new(crate::BANNER),
             banner_done: false,
             opened: false,
+            window_closed: false,
             banner_at: 0,
             blip_in: 0,
             blip_off: 0,
@@ -1573,7 +1579,19 @@ impl<'a> Battle<'a> {
         if self.backdrop.is_some() {
             self.backdrop.as_mut().unwrap().update(gfx);
             self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
-            let gauge_up = self.shown.is_none() && self.fade_out == 0;
+            // NO GAUGE BEFORE THE FIRST CHIP WINDOW HAS CLOSED. A battle opens
+            // with that window (7aw), so there is nothing for a gauge to do
+            // until it has been through once -- and the real ROM draws none:
+            // rendering its HUD strip from a battle's first frame shows the HP
+            // box and nothing else at frames 75, 100, 125, 150, 165, 175 and
+            // 185, with the window itself up by 200.
+            // Only in the builds that actually start at a battle's beginning.
+            // Every other demo is calibrated against a capture taken mid-battle,
+            // where the gauge is up and belongs there.
+            let before_first_window = !self.window_closed
+                && (!cfg!(feature = "demo") || cfg!(feature = "demo-open"));
+            let gauge_up =
+                self.shown.is_none() && self.fade_out == 0 && !before_first_window;
             self.hud_tiles
                 .as_mut()
                 .unwrap()
@@ -1641,6 +1659,7 @@ impl<'a> Battle<'a> {
                 // Not in a demo build: every fixture that fields an enemy
                 // compares against a capture taken mid-battle where no banner
                 // is up, and the earliest of them starts at frame 130.
+                self.window_closed = true;
                 if !self.opened && !cfg!(feature = "demo") {
                     self.opened = true;
                     self.banner_at = BATTLE_START_AFTER_WINDOW;
