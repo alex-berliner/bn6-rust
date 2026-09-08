@@ -162,6 +162,17 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     struct.pack_into("<H", buf, 42, descriptor.get("result_frames", 0))
     struct.pack_into("<H", buf, 44, descriptor.get("result_zenny", 0))
     struct.pack_into("<H", buf, 46, descriptor.get("banner_at", 0xFFFF))
+    # +48..52 deck_codes, +53 window_pick_count, +54 window_pick_slot, +55
+    # window_cursor: NOT in FIXTURE.md (src/fixture.rs's own reserved-region
+    # additions -- see Fixture::deck_codes/window_pick_count's doc there).
+    # 0xFF per deck_codes slot = that slot's own codes[0] (the "no override"
+    # sentinel src/fixture.rs's table comment gives).
+    deck_codes = descriptor.get("deck_codes", [])
+    for i in range(5):
+        buf[48 + i] = deck_codes[i] if i < len(deck_codes) else 0xFF
+    buf[53] = descriptor.get("window_pick_count", 0)
+    buf[54] = descriptor.get("window_pick_slot", 0)
+    buf[55] = descriptor.get("window_cursor", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -418,12 +429,12 @@ def _cannon_canon(ui: str) -> Side:
 # skip-intro), fire_frame 90 -- AUTO_FIRE_GAP, battle.rs confirms it seeds
 # and reseeds `auto_ticks` exactly as the old demo-auto harness did.
 #
-# THE OLD SHARED 14388 BASELINE, ROOT-CAUSED (wave 3b ticket step 1). Full
-# screen (pair 6) surfaced two DISTINCT artifacts inside canon frames 43-52,
-# both from the PAUSED save state (`--disable-bg` isolates OBJ; both
-# verified directly against a live capture, not inherited from wave 3's
-# note, which undercounted the portrait box at "~694px" -- it is exactly
-# 528px):
+# THE SHARED 14388 BASELINE, ROOT-CAUSED BUT NOT YET FIXED (wave 3b ticket
+# step 1). Full screen (pair 6) surfaced two DISTINCT artifacts inside canon
+# frames 43-52, both from the PAUSED save state (`--disable-bg` isolates
+# OBJ; both verified directly against a live capture, not inherited from
+# wave 3's note, which undercounted the portrait box at "~694px" -- it is
+# exactly 528px):
 #
 #   1. A 528px "portrait box" (top-left, rows 0-30 cols 0-150) for EXACTLY
 #      canon frames 43-48 (2350/2350/1914/1842/1842/1842 px of each of
@@ -432,65 +443,78 @@ def _cannon_canon(ui: str) -> Side:
 #      the deleted enemy's own corpse, dissolving in OBJ at approximately
 #      x149-196,y70-120, fully gone by canon frame 53.
 #
-# TWO FIXES TRIED FOR #1, BOTH VERIFIED TO FAIL (this ticket) -- rebuilding
-# the base state (tools/states.py's "chip_ready" -- kept in the manifest
-# for the record, NOT used below):
-#   (a) A state saved AFTER the enemy dies (so the portrait garbage has
-#       already cleared -- confirmed it clears only as a side effect of the
-#       enemy's own death/dissolve processing running, NOT from elapsed
-#       frames alone: a parallel run that keeps the enemy ALIVE the whole
-#       time never clears it, out to 390 frames tried) makes the game
-#       REFUSE every further chip-fire input, at ANY delay after reload (1
-#       through 120 frames tried, all identical output) -- while ordinary
-#       movement input on the SAME reload works fine (tested the same way),
-#       so this is specific to the attack command, not a general
-#       post-reload input bug. The chip-fire path evidently needs a valid,
-#       not-yet-dead target at the moment the battle state is (re)loaded.
-#   (b) Poking the hand chip in at load (one-time, matching how
-#       capture_real/`_chip_pokes` already validates the library) instead
-#       of a late A-press changes nothing -- the refusal in (a) is not
-#       about how the poke lands.
-#   A state saved WHILE the enemy is still alive (preserving fireability)
-#   never triggers the clearing at all, so the two requirements -- a valid
-#   target at reload, and having already run the enemy through its death
-#   processing -- are mutually exclusive for a single base state. A real
-#   fix needs ROM code (whatever check refuses further chip input once the
-#   enemy-defeat sequence has run, alongside the battle_isBattleOver patch
-#   tools/patch_sterile.py already carries); bounded search for it found
-#   eT1BattleObjects (0x0203a9a0, 16 slots of 0x1b0 bytes, MegaMan=slot0/
-#   +0x10, Mettaur=slot1/+0x1c0 -- both match TRANSFER.md's known addresses
-#   exactly) and eActiveT1BattleObjectsBitfield (0x02034000) as candidates,
-#   but neither the slot-to-bit mapping nor a safe patch was established in
-#   the time available -- out of this ticket's scope (tools/, not ROM
-#   code).
+# THREE FIXES TRIED, ALL VERIFIED TO FAIL. A state rebuild (tools/states.py's
+# "chip_ready" -- kept in the manifest as the record, NOT used below) and a
+# ROM code patch (this ticket's own third attempt, described below and NOT
+# carried in tools/patch_sterile.py -- it did not work) were both AUDIT
+# pair-6-compliant (no window shrinking); a fourth attempt that only shifted
+# the compared window later was REJECTED during review as exactly the
+# "shrink the box in time" pair 6 forbids, and is not here.
 #
-# THE FIX ACTUALLY USED needs no new state at all: #1's own garbage is
-# confined to canon frames 43-48 and #2's corpse is fully gone by 53, so
-# simply starting the compared window at canon frame 49 (instead of 43,
-# still well inside the SAME attack the un-shifted window compared, which
-# starts around 49 anyway -- the strip of frames 43-48 is the pre-fire
-# idle/windup pose on both sides, not lost attack content) skips BOTH
-# artifacts using the ORIGINAL PAUSED recipe unchanged, at the cost of only
-# the 4 frames (49-52) where the corpse has not QUITE finished (562px each,
-# 2248 total -- down from 14388, verified live, not blind: the negative
-# fixture reads 9849). The remaining 2248 is reported per-chip below, not
-# hidden by narrowing further.
+#   (a) STATE REBUILD. A state saved AFTER the enemy dies (so the portrait
+#       garbage has already cleared -- confirmed it clears only as a side
+#       effect of the enemy's own death/dissolve processing running, NOT
+#       from elapsed frames alone: a parallel run that keeps the enemy
+#       ALIVE the whole time never clears it, out to 390 frames tried)
+#       makes the game REFUSE every further chip-fire input, at ANY delay
+#       after reload (1 through 120 frames tried, all identical output) --
+#       while ordinary movement input on the SAME reload works fine (tested
+#       the same way), so this is specific to the attack command, not a
+#       general post-reload input bug. Poking the hand chip in at load
+#       (one-time, matching how capture_real/`_chip_pokes` already
+#       validates the library) instead of a late A-press changes nothing.
+#       A state saved WHILE the enemy is still alive (preserving
+#       fireability) never triggers the portrait-clearing at all, so the
+#       two requirements -- a valid target at reload, and having already
+#       run the enemy through its death processing -- are mutually
+#       exclusive for a single base state.
+#   (b) ROM PATCH. Found the actual gate: `sub_800938A` (asm00_1.s:13037,
+#       ROM 0x800938A) is MegaMan's own "process a chip-use request"
+#       handler. It calls `sub_800801C` (asm00_1.s:10361), which runs one
+#       step of the GENERIC BANNER SEQUENCER (TRANSFER.md 7bf's own prior
+#       finding: the same state machine drives BATTLE START!, TURN START!,
+#       ENEMY DELETED and the result messages, selected by
+#       `dword_203CA70`), then checks the result: `cmp r0, #6 / bne
+#       loc_80093B0` (ROM 0x80093A2, bytes `06 28`) -- when the sequencer
+#       reports 6, CurState is forced back to 8 (idle) and the function
+#       returns without firing, exactly the "stuck at idle, A does nothing"
+#       behaviour measured live (MegaMan's own CurState/CurAction bytes at
+#       0x0203a9b0+8/+9 stay `08 04` forever when refused, transition to
+#       `14 00` when a fire succeeds). PATCHED (this ticket, as a test, not
+#       committed): changed the compare immediate from 6 to 0xFF (byte
+#       0x06 -> 0xFF at ROM 0x80093A2) so `bne` always takes the
+#       non-refusal branch, on a throwaway ROM built the same way
+#       patch_sterile.py builds STERILE. VERIFIED NOT SUFFICIENT: an A
+#       press at any delay after loading a state saved past the corpse's
+#       full dissolve (frame 110, portrait and corpse both independently
+#       confirmed 0 at load) still produces NO change over 40 frames on the
+#       patched ROM -- the same symptom as the unpatched one. Either r0==6
+#       is not actually reached in this path once the enemy is dead at
+#       reload (the sequencer may be stuck in a DIFFERENT state that
+#       returns something else `sub_800938A` also treats as "do nothing",
+#       past the `cmp r0,#0; beq locret_800945A` at loc_80093B0), or a
+#       SEPARATE gate exists elsewhere. Not resolved further in the time
+#       this ticket had; a live debugger/tracer in mgba_capture.c (not
+#       present today) would settle which, and is the concrete next step
+#       for whoever picks this up.
+#
+# REPORTED FOR THE ROM SIDE, precisely: canon frames 43-52 (10 of the 40
+# compared for `cannon`, proportionally more or less for other chips' own
+# frame counts), OBJ layer. Frames 43-48: x0-150,y0-30, the portrait box.
+# Frames 43-52: x149-196,y70-120 (partially overlapping), the corpse. Rust
+# shows nothing in either region at any frame (its arena is genuinely
+# empty) -- nothing to fix on the rust side. The 14388/2350 baseline is
+# UNCHANGED from before this ticket; it is ticketed, not silently carried.
 ALIGN_CHIP = Align(
-    canon_ref=49,
-    search=range(104, 130),
-    note="canon: chip_compare.py's REAL_START=43 (A pressed at 40) plus 6 "
-         "frames, to start the compared window past the portrait-box "
-         "garbage and (almost entirely) past the deleted enemy's corpse -- "
-         "see the ticket report above; unchanged PAUSED recipe otherwise. "
-         "rust: marker origin (1, flags 0x1F skips the intro and blanks "
-         "HUD/backdrop, same as `cannon`) plus a band shifted 6 frames "
-         "from the old canon_ref=43/offset=122 pairing -- unique zero at "
-         "offset 122 for chip 01 (unchanged: shifting BOTH sides by the "
-         "same 6 frames does not move the offset). Verified live for chip "
-         "01 (this ticket); the other 42 rows are NOT individually "
-         "re-verified against this exact band (their own frame counts and "
-         "attack shapes differ -- see scoreboard.CHIPS), reported honestly "
-         "in the ticket report rather than assumed identical.",
+    canon_ref=43,
+    search=range(110, 136),
+    note="canon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack "
+         "begins at 43') -- a documented scripted-event landing, not searched. rust: "
+         "marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, "
+         "same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 "
+         "for every chip verified (unchanged from before this ticket -- see the "
+         "comment above for what was tried against the residue and why it is still "
+         "here).",
 )
 
 def _chip_pokes(chip_hex: str) -> Tuple[str, ...]:
