@@ -20,6 +20,20 @@ Started 2026-09-08. One line each way; the reasoning lives in TRANSFER.md.
 | 14 | A full suite run is ~40 minutes, most of it 43 separate cargo builds for the chip fixtures — which collides with "every change through the harness". | **One ROM, chip chosen at runtime.** The harness pokes the chip id into a known RAM address before the run and our ROM reads it at startup; the canon side already gets its chip by `--poke`. 43 captures against one build. All run by default; a chip-specific change may iterate on its own isolated + integrated pair, then run the full list before commit. |
 | 15 | Tickets have encoded my hypothesis as the task, and agents spent runs chasing it. | **Tickets state what to measure, not what I think the answer is.** Any guess goes on a separate "unverified" line the agent is free to disprove first. |
 | 16 | Chip comparisons run against the *sterile* ROM — a patched original with two behaviours removed and the enemy deleted — but captions and checks call it "real ROM". | **Name the canon variant** wherever a modified original is the comparison: "canon (sterile)". |
+| 17 | Fixtures are 55+ `demo-*` compile-time feature flags, one build each, existing only to bake a state into a binary. | **Fixtures become data, not features.** One ROM reads a fixture descriptor from RAM at startup — chip in hand, HP, enemy count, gauge state, backdrop phase, which UI elements to blank — poked by the harness. Keep a flag only where the *code* differs. |
+
+## Optimisations
+
+Where the harness work would actually benefit from parallelism, and one thing to do first.
+
+| Where | What |
+|-------|------|
+| **The diff itself** — do this first | The pixel comparison is pure Python looping over 38,400 pixels per frame. Vectorise it with numpy: likely 50–100× on the comparison step, bigger than any parallelism, and it makes every parallel worker cheaper. |
+| The chip scoreboard | 43 independent captures, run serially today. With one build (pair 14) they are embarrassingly parallel, bounded by memory — which stream-not-store (pair 13) makes small. |
+| The suite | 18 independent checks, run serially. Same. |
+| The audit's extra runs | Isolated + integrated (pair 9) and the negative fixture (pair 10) triple the captures per check, all independent. |
+| Lag searches | Each candidate lag's diff is independent. |
+| **Where it does not help** | Agent-level edits to the same file. Worktrees made parallel agents safe; they did not make merge conflicts free. Research and measurement fan out cleanly; concurrent edits to `battle.rs` do not. |
 
 ## First job after the audit
 
