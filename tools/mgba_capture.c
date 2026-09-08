@@ -57,6 +57,18 @@
  *                       channels, 4-5 are DirectSound FIFOs A/B) is printed
  *                       to stderr whenever this or --dump-audio is used, so
  *                       the ids are legible without reading this comment.
+ *   --poke-at <frame>:<addr>:<value>  (repeatable, max 32) AUDIT wave 3c
+ *                       "encounter-roll" ticket: a 16-bit write applied
+ *                       exactly ONCE, immediately before the named frame
+ *                       index runs -- unlike --cheat (every frame from the
+ *                       start) and --poke (once, at load, before frame 0).
+ *                       For triggering a one-shot condition partway through
+ *                       an otherwise-untouched run (e.g. forcing the
+ *                       overworld encounter-roll accumulator open on just
+ *                       one specific frame so real per-frame play runs
+ *                       right up to it), so a swept N samples whatever game
+ *                       state has actually evolved to by frame N rather than
+ *                       repeating frame 0's forced condition on every frame.
  *   --watch <addr>:<len>:<file>  (repeatable) after EVERY rendered frame,
  *                       read <len> bytes at <addr> and append them to
  *                       <file>, so it ends up frames*<len> bytes long -- one
@@ -394,6 +406,50 @@ int main(int argc, char** argv) {
 			++i;
 		}
 	}
+	/* `--poke-at frame:addr:value` (repeatable, max 32): the SAME 16-bit
+	 * write as --poke, but applied exactly ONCE, immediately before the
+	 * named frame index runs, instead of at load and instead of every frame
+	 * (--cheat). AUDIT wave 3c "encounter-roll" ticket step 1: a per-frame
+	 * --cheat that forces the encounter-roll accumulator
+	 * (0x02001c16/0x02001c18) EVERY frame makes sub_80AA4C0's own GetRNG
+	 * draw (traced live to ROM 0x080AA51E, its masked value/threshold
+	 * compare completing by 0x080AA52A -- see the ticket report) behave as
+	 * if frozen: the roll either succeeds on the very first frame it is
+	 * evaluated or, if that first draw loses, keeps losing every frame after
+	 * (nothing else appears to perturb GetRNG's state on this code path
+	 * between successive per-frame draws when the accumulator itself is
+	 * pinned open every frame) -- which is TRANSFER 7aw's own
+	 * held-direction orbit trap, just walked through the accumulator cheat
+	 * instead of through input. A one-shot poke lets the frame count leading
+	 * up to it run untouched (real per-frame movement, real intervening
+	 * GetRNG consumers), so the roll this triggers samples whatever GetRNG
+	 * has actually reached BY frame N, not frame 0's fixed value -- sweeping
+	 * N across separate captures samples a different draw each time instead
+	 * of repeating the same one. */
+	struct { int frame; uint32_t addr; uint16_t val; } poke_ats[32];
+	int npoke_at = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--poke-at") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* c1 = strchr(p, ':');
+			char* c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+			if (!c1 || !c2) {
+				fprintf(stderr, "--poke-at: expected frame:addr:value, got '%s'\n", argv[i + 1]);
+				return 1;
+			}
+			*c1 = 0; *c2 = 0;
+			if (npoke_at >= 32) {
+				fprintf(stderr, "--poke-at: too many (max 32)\n");
+				return 1;
+			}
+			poke_ats[npoke_at].frame = atoi(p);
+			poke_ats[npoke_at].addr = (uint32_t) strtoul(c1 + 1, NULL, 0);
+			poke_ats[npoke_at].val = (uint16_t) strtoul(c2 + 1, NULL, 0);
+			++npoke_at;
+			free(p);
+			++i;
+		}
+	}
 
 	/* `--disable-obj` turns the sprites off and leaves the BG layers on, and
 	 * `--only-bg <n>` leaves exactly one BG layer on and turns everything else
@@ -696,6 +752,12 @@ int main(int argc, char** argv) {
 		for (int z = 0; z < nzero; ++z) {
 			for (int b = 0; b < zeros[z].bytes; b += 2) {
 				core->busWrite16(core, zeros[z].addr + b, 0);
+			}
+		}
+		/* --poke-at: a ONE-SHOT write, the frame it names and no other. */
+		for (int p = 0; p < npoke_at; ++p) {
+			if (poke_ats[p].frame == i) {
+				core->busWrite16(core, poke_ats[p].addr, poke_ats[p].val);
 			}
 		}
 		if (ntrace > 0) {
