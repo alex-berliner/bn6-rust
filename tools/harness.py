@@ -56,6 +56,17 @@ REAL = "/tmp/bn6f_real.gba"
 STERILE = "/tmp/bn6f_sterile.gba"
 PAUSED = "/tmp/pausedwithcannon.state"
 BATTLESTART = "/tmp/battlestart.state"
+#: states.py's own patch_sterile.py build: STERILE + --empty-net-encounter.
+EMPTYNET = "/tmp/bn6f_sterile_emptynet.gba"
+#: states.py's DELETE_ENEMY_3 -- kills whichever of the three enemy
+#: BattleObject slots a genuinely-spawned encounter populates. Named
+#: distinctly from any local `DELETE_ENEMY_3` a future check might define,
+#: since this file has no such constant of its own yet.
+DELETE_ENEMY_3_HARNESS = (
+    "0x0203aaac:0", "0x0203aaae:0",
+    "0x0203ab84:0", "0x0203ab86:0",
+    "0x0203ac5c:0", "0x0203ac5e:0",
+)
 #: tools/states.py's "chip_ready" state (wave 3b ticket step 1) is built but
 #: NOT loaded by anything below -- it is PAUSED run forward past the frame
 #: its leftover chip-window-close OAM garbage clears, kept in the manifest
@@ -564,6 +575,80 @@ def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
     return make
 
 
+#: AUDIT wave 3c/3d "encounter-roll" ticket step 4: the CHIP_READY_EMPTY route --
+#: states.py's chip_ready_empty (a genuinely fresh battle that never had an enemy,
+#: not PAUSED's hand-made snapshot with its own leftover portrait-box/corpse
+#: artifacts -- see ALIGN_CHIP's own comment above for the 14388/2350 baseline
+#: those artifacts cost every chip). library_pokes_empty mirrors chip_compare.
+#: library_pokes()'s formula but peeks THIS state's own library bytes, not
+#: PAUSED's (chip_ready_empty.state already carries chip 1/Cannon's own
+#: ownership bit set -- see states.py's own build note -- but a different chip
+#: id needs its own byte poked the same way).
+CHIP_READY_EMPTY = "/tmp/chip_ready_empty.state"
+
+
+def library_pokes_empty(chip_id: int) -> Tuple[str, ...]:
+    pokes = []
+    for base in (cc.LIBRARY, cc.LIBRARY_COPY):
+        addr = base + chip_id
+        half = addr & ~1
+        out = cc.scratch("h_libpeek")
+        r = subprocess.run([CAPTURE, EMPTYNET, out, "0", "--loadstate", CHIP_READY_EMPTY,
+                            "--peek", "0x%08x" % half],
+                           capture_output=True, text=True)
+        old = 0
+        for line in (r.stdout + r.stderr).splitlines():
+            if line.startswith("peek"):
+                old = int(line.split("=")[1], 16)
+        value = 1 if base == cc.LIBRARY else (1 ^ 0x81)
+        new = (old & 0xff00) | value if addr == half else (old & 0x00ff) | (value << 8)
+        pokes.append("0x%08x:0x%04x" % (half, new))
+    return tuple(pokes)
+
+
+def _chip_canon_empty(chip_hex: str, a_frame: int = 2) -> Callable[[str], Side]:
+    """The SAME chip-in-hand-on-a-sterile-arena comparison ALIGN_CHIP's rows use,
+    but based on a battle that never had an enemy (states.py's chip_ready_empty)
+    instead of PAUSED's hand-made snapshot -- no portrait-box artifact (nothing
+    was ever paused mid-window-close to leave one) and no corpse to dissolve
+    (nothing was ever spawned to delete). One-shot --poke for the hand slot and
+    library, at load, not a per-frame --cheat: chip_ready_empty's own window-
+    pick machinery has already settled by the state's own frame 0 (verified,
+    states.py's own note), so nothing is still writing that address that a
+    one-time poke would race.
+    """
+    def make(ui: str) -> Side:
+        pokes = list(library_pokes_empty(int(chip_hex, 16)))
+        pokes.append("%s:0x%s" % (cc.HAND_SLOT, chip_hex))
+        return Side(rom=EMPTYNET, loadstate=CHIP_READY_EMPTY, cheats=DELETE_ENEMY_3_HARNESS,
+                    pokes=tuple(pokes), script="A@%d" % a_frame, extra=("--disable-bg",))
+    return make
+
+
+# NOT WIRED INTO ANY Check BELOW -- reported, not hidden (AUDIT wave 3c/3d
+# "encounter-roll" ticket step 4, run out of time before this converged).
+# The premise itself is answered (states.py's chip_ready_empty note / this
+# ticket's own report: a chip DOES fire with no enemy alive), which is what
+# unblocks re-pointing `cannon` at this route at all -- but the ALIGNMENT
+# needed to actually score it did not converge in the time this ticket had.
+# _chip_canon_empty('01') run against the existing rust `cannon` fixture
+# (h._chip_rust('01')) over canon_ref in {3,4,5,6,8,10,12,15,20,25,30,35,40,
+# 45,50} x rust_offset search bands up to 160 wide: monotonically improving
+# from 134634 (canon_ref=3) down to a PLATEAU around 43700-44631 (canon_ref
+# 40-50, worst ~1100-1200/frame) that two different rust_offset search
+# windows (0..90 and 80..160) both converge on from opposite edges (offset
+# 31 and 80, 49 apart, same score) -- consistent with a periodic/looping
+# element creating more than one comparably-good false alignment rather than
+# one sharp minimum, OR a genuine ~44000 px residue at the true alignment
+# that this search never actually reached. Either way it is WORSE than the
+# 14388 PAUSED-based baseline it was meant to replace, so wiring it into the
+# `cannon` Check as-is would be a regression, not a fix -- left as free
+# functions (library_pokes_empty, _chip_canon_empty, above) for a future
+# session to pick up, not silently declared done. banner/popup/the family-
+# 0x15 chips were NOT attempted at all this ticket, for the same reason
+# (time) -- see the ticket report.
+
+
 def _chip_checks() -> List[Check]:
     import scoreboard
     out: List[Check] = []
@@ -610,13 +695,21 @@ CHECKS: List[Check] = [
         frames=70,
         align=Align(
             canon_ref=140,
-            search=range(145, 161),
+            search=range(295, 325),
             note="canon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock "
                  "shared with rust's cold boot, so canon_ref=140 is the same documented fixed "
                  "point regress.py's check_mettaur used (its own frame-140 window start), not "
-                 "searched. rust: marker origin (frame 8 for demo-field) plus a 16-frame band "
-                 "for the Mettaur's own attack-cycle timing -- unique zero at offset 153, i.e. "
-                 "rust frame 161, EXACTLY regress.py's old lag-21 answer (140+21 == 8+153).",
+                 "searched. rust: marker origin (frame 8 for demo-field) plus a band re-centred "
+                 "this ticket (AUDIT wave 3d follow-up) after the src agent replaced the "
+                 "Mettaur's flat timer with the real 5-state machine (attack 0x40 + recovery "
+                 "0x28 + decision, a 106-frame cycle, not the old ~64) -- the OLD band "
+                 "(145..161, centred on offset 153) no longer reaches the true alignment. "
+                 "RE-SWEPT WIDE (this ticket, range(250,400)) and confirmed a single sharp "
+                 "V-shaped minimum, not a plateau: offset 308 scores 46297, 309 scores 30864 "
+                 "(the joint minimum -- matches worst=1566), 310 scores 37873, climbing steeply "
+                 "either side. This band (295..325) brackets it with margin. NOT YET ZERO "
+                 "(30864 px over 70 frames, worst 1566/frame) -- unresolved by this ticket, "
+                 "which only re-centred the search; the residue itself is src/ territory.",
         ),
         rust=lambda ui: Side(features="demo-field", extra=("--disable-bg",)),
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
@@ -920,19 +1013,29 @@ PORTED_CHECKS: List[Check] = [
         frames=90,
         align=Align(
             canon_ref=71,
-            search=range(178, 202),
+            search=range(337, 353),
             note="Enemy IS the subject (AUDIT pair 3: mettaur and wave get their own checks "
-                 "rather than a zero-enemy arena). canon: STERILE+PAUSED+ALIVE, Start@10, "
-                 "--disable-obj (panel lighting is BG, not sprites) -- canon_ref=71 unchanged "
-                 "from regress.py's check_wave (the shockwave's first visible hop). rust: "
-                 "FIELD_ROW through the descriptor (not the demo-field FEATURE `mettaur` above "
-                 "still uses -- this is the wave 3 cutover) -- marker origin 8 plus a band "
-                 "around regress.py's old compared rust frame (start=71 PLUS lag[120,132] = "
-                 "191..203, 183..195 once origin is subtracted).",
+                 "rather than a zero-enemy arena). canon: STERILE+PAUSED+ALIVE, Start@10 -- "
+                 "canon_ref=71 unchanged from regress.py's check_wave (the shockwave's first "
+                 "visible hop). rust: FIELD_ROW through the descriptor. RE-CENTRED AND "
+                 "RE-ISOLATED this ticket (AUDIT wave 3d follow-up), two changes together: (1) "
+                 "after the src agent replaced the Mettaur's flat timer with the real 5-state "
+                 "machine (106-frame cycle, not the old ~64), the OLD band (178..202, centred on "
+                 "offset ~190) no longer reaches the true alignment -- re-swept wide "
+                 "(range(300,400)) on the OLD --disable-obj isolation found only a shallow, "
+                 "non-zero minimum (offset 326, 353137 px), because that isolation leaves BG1 "
+                 "and BG3 in the comparison too and 'panel lighting is BG, not sprites' names "
+                 "BG2 specifically as the subject -- and (2) the bg3-merge agent's own landing "
+                 "(AUDIT wave 3d) made `--only-bg N` finally symmetric between the two sides "
+                 "(pair 2), which this check could not exploit before. Switching BOTH sides from "
+                 "--disable-obj to --only-bg 2 and re-sweeping the SAME wide band finds a sharp, "
+                 "unique zero at offset 345 (337..353 climbs steeply either side, e.g. 344 -> "
+                 "4800, 346 -> 3840) -- BG2 alone, unshifted, is EXACT, unlike the multi-layer "
+                 "capture. This band (337..353) brackets it with margin.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-obj",)),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--only-bg", "2")),
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
-                              extra=("--disable-obj",)),
+                              extra=("--only-bg", "2")),
         canon_variant="canon (sterile)",
     ),
     Check(
@@ -945,19 +1048,32 @@ PORTED_CHECKS: List[Check] = [
             note="Wave 3b ticket step 2: the deck/deck_codes/window_pick_* fields now land in "
                  "CUSTMATCH_ROW (src/fixture.rs reads them, verified byte-identical there except "
                  "a small 371px/2-frame card-picture residual -- zero-src's own ticket). isolated "
-                 "= the window's own layer, not the whole screen: canon --only-bg 3 (measured "
-                 "live, this ticket -- BG3 is the chip-select window itself; BG1 is a flat fill, "
-                 "BG2 the field panels underneath), which also turns OBJ/WIN off "
-                 "(tools/mgba_capture.c's own --only-bg behaviour); rust gets FLAG_BLANK_HUD | "
-                 "FLAG_BLANK_BACKDROP added on top of CUSTMATCH_ROW's own flags so nothing but "
-                 "the window renders there either -- ISOLATED_CUSTMATCH_ROW, not a --only-bg on "
-                 "the rust side (its window may not live on the same BG index; matching by "
-                 "content, not by layer number). canon: REAL+CHIPSELECT unchanged otherwise. "
-                 "rust: marker origin 8 plus a band around regress.py's old compared rust frame "
-                 "(its own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is "
-                 "subtracted).",
+                 "= the window's own layer, not the whole screen: --only-bg 3 on BOTH sides "
+                 "(BG3 is the chip-select window itself; BG1 is a flat fill, BG2 the field panels "
+                 "underneath). SYMMETRIC AS OF THIS TICKET (AUDIT wave 3d bg3-merge follow-up): "
+                 "the rust side used to blank its own HUD/backdrop (ISOLATED_CUSTMATCH_ROW, "
+                 "flags 0x17) as a workaround for a BG-index mismatch bg3-merge has since fixed "
+                 "-- our HudTiles/Custom/Results now sit on canon's own BG3, so --only-bg 3 "
+                 "reaches the SAME layer on both sides without the workaround (dropped: plain "
+                 "CUSTMATCH_ROW, flags 0x11, HUD not blanked). Reads 0 (PASS) -- but measured, "
+                 "not assumed, and NOT hidden: canon's own BG3 does not change AT ALL for at "
+                 "least 260 consecutive frames from CHIPSELECT with no script (diffed live, this "
+                 "ticket) -- the window sits open and unchanging with nothing pressed, so a 1-BG "
+                 "capture of it is unchanging too, on BOTH sides, at every offset in a swept "
+                 "150..295 range (all exactly 0). AUDIT pair 10 in its own terms: this check is "
+                 "BLIND (the negative fixture -- canon shifted +1 frame at the SAME found offset, "
+                 "not re-searched -- also reads 0, confirmed live), which run_check() reports "
+                 "honestly rather than silently passing. NOT FIXED this ticket (out of the scope "
+                 "the coordinator asked for -- 'drop the workaround, compare symmetrically, "
+                 "report what they read'): a non-blind version needs the compared window to "
+                 "straddle a real BG3 transition, and this Check has no script at all to cause "
+                 "one (unlike `card` below, which does and is blind for a different, related "
+                 "reason -- see its own note). canon: REAL+CHIPSELECT unchanged otherwise. rust: "
+                 "marker origin 8 plus a band around regress.py's old compared rust frame (its "
+                 "own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is subtracted) "
+                 "-- kept, still inside the wide zero-and-blind plateau just measured.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=ISOLATED_CUSTMATCH_ROW),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, extra=("--only-bg", "3")),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, extra=("--only-bg", "3")),
         canon_variant="canon",
     ),
@@ -968,15 +1084,28 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=144,
             search=range(205, 240),
-            note="Same wiring as `window` (deck fields land, --only-bg 3 isolates the window "
-                 "layer on canon, ISOLATED_CARDNAME_ROW blanks HUD/backdrop on rust). canon: "
-                 "REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: "
-                 "ISOLATED_CARDNAME_ROW (window_cursor=0, the one byte that distinguishes "
-                 "demo-cardname from demo-custmatch) with the same script -- marker origin 8 "
-                 "plus a band around regress.py's old compared rust frame (start=144 PLUS "
-                 "lag[74,96] = 218..240, 210..232 once origin is subtracted).",
+            note="Same wiring as `window`: --only-bg 3 on BOTH sides, SYMMETRIC as of this "
+                 "ticket (bg3-merge follow-up) -- the rust side's own HUD/backdrop blanking "
+                 "workaround (ISOLATED_CARDNAME_ROW) is dropped for plain CARDNAME_ROW "
+                 "(window_cursor=0, the one byte that distinguishes demo-cardname from "
+                 "demo-custmatch), HUD not blanked. Reads 0 (PASS) but is ALSO BLIND, measured "
+                 "live this ticket: unlike `window`, canon's BG3 here DOES move (the 5-press-Left "
+                 "script highlights a different slot each press -- diffed live: consecutive-frame "
+                 "changes at capture frames 22, 52, 82, 112, 142, ~2 frames after each press), but "
+                 "canon_ref=144 sits just past the LAST of those (142) with no sixth press to "
+                 "follow it, so the compared window (144..159) is itself in a static stretch -- "
+                 "the negative fixture (+1 frame at the found offset) also reads 0. NOT FIXED this "
+                 "ticket, same reason as `window`: re-centring on one of the real transitions "
+                 "(e.g. near 22) would need re-deriving canon_ref/rust_offset together and risks "
+                 "comparing a different semantic moment (cursor mid-move vs settled showing this "
+                 "card's info) than what this check was built to verify -- flagged for a future "
+                 "session, not silently passed over. canon: REAL+CHIPSELECT, the SAME 5-press-Left "
+                 "script as `cursor` below. rust: marker origin 8 plus a band around regress.py's "
+                 "old compared rust frame (start=144 PLUS lag[74,96] = 218..240, 210..232 once "
+                 "origin is subtracted).",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=ISOLATED_CARDNAME_ROW, script=_CURSOR_WALK_REAL),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CARDNAME_ROW, script=_CURSOR_WALK_REAL,
+                             extra=("--only-bg", "3")),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL,
                               extra=("--only-bg", "3")),
         canon_variant="canon",
@@ -1037,10 +1166,28 @@ PORTED_CHECKS: List[Check] = [
                  "this recipe does not reach the same way real play did', i.e. RESULT_ARRIVAL's "
                  "own reward content (chip/zenny rolled by real play) has nothing in "
                  "RESULT_ROW/FIXTURE.md to match it against, not a timing field like "
-                 "result_elapsed. NEXT STEP (src/ or FIXTURE.md, not tools/): a reward-content "
-                 "descriptor field (what RESULT_ARRIVAL's own capture actually rolled) is "
-                 "probably what closes the remaining ~6600-32000 px/frame gap, not further "
-                 "tuning of result_elapsed or the offset search.",
+                 "result_elapsed. THE REWARD-CONTENT HYPOTHESIS ABOVE IS NOW DISPROVEN (AUDIT "
+                 "wave 3c/3d 'encounter-roll' ticket): decoded RESULT_ARRIVAL's own captured "
+                 "frames to PNG and read the window by eye after paging through it (A@70/100/"
+                 "130/160/190) -- DeleteTime 0:29:33 (MM:SS:CC, = 29.333s = exactly 1760 frames "
+                 "at 60fps), Busting LV. 2, reward 100z, no chip -- EVERY ONE of RESULT_ROW's "
+                 "existing result_frames=1760/result_level=2/result_zenny=100 (inherited from "
+                 "RESULTMATCH_ROW) already matches this state's own reward EXACTLY, and "
+                 "megaman_hp=60 matches too (peeked live: HP 0x3c/MaxHP 0x64 at RESULT_ARRIVAL's "
+                 "own frame 0). So the reward-content descriptor field the previous note called "
+                 "for is not what's missing -- these three fields were already right. Also ruled "
+                 "out: gauge=1 instead of RESULT_ROW's 0 (peeked live: word_20352a0, "
+                 "eStruct2035280+0x20, reads 0x4000 -- the same 'full' value 7aw's own gauge-"
+                 "fill note gives) changes NOTHING (identical 497967/31882) -- either the gauge "
+                 "field is not read for start_state=1 at all, or it is not the source. NOT "
+                 "SETTLED, and worth the next session's own measurement rather than a guess: "
+                 "RESULT_ARRIVAL's own eBGScrollCBCounters (0x02009690/0x02009694, the backdrop-"
+                 "phase clock 7av documents) read 0x0530/0x8298 (1328/-32104 signed) at its own "
+                 "frame 0 -- a real elapsed-battle value FIXTURE.md's result_elapsed (already "
+                 "swept 0..40, no field wide enough for a number this size even if it were) "
+                 "cannot represent, and item 5's own 'pre-arrival battle tail' framing (backdrop "
+                 "phase / HP / gauge) named exactly this before HP and gauge were ruled out -- "
+                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),

@@ -235,6 +235,51 @@ def main():
     # encounter-group tables suggest a great many more exist) -- scoped to
     # exactly the encounter tools/states.py's route needs, not a general
     # "no wild encounters" patch, so it stays off unless asked for.
+    #
+    # WHY THE WALK TO THIS ENTRY STOPPED REPRODUCING, root-caused this
+    # session (AUDIT wave 3c "encounter-roll" ticket) rather than left as
+    # the open question the previous session's note left it as: traced live
+    # (--trace-pc on sub_80AA4C0's own `bl GetRNG`, ROM 0x080AA51E, and its
+    # masked-value/threshold compare, completing by 0x080AA52A) that with
+    # the per-frame forced-roll cheat (0x02001c16:2000, 0x02001c18:0)
+    # written EVERY frame from load, nothing on this code path perturbs
+    # GetRNG's state between one frame's draw and the next, so the roll's
+    # outcome -- and, downstream, WHICH EnemySetup table entry a success
+    # reaches -- is fixed at load and does not change with more frames or a
+    # different held/cycled direction: TRANSFER 7aw's own held-direction
+    # orbit trap again, just walked through the forced accumulator instead
+    # of through input. On this session's build the very first evaluated
+    # frame draws masked value 6 against threshold 12 (row 16, category 5 --
+    # matches the documented threshold), 6 < 12, so it ALWAYS succeeds on
+    # frame 0, landing on EnemySetupArrPtr 0x080b5398 (a 3-Mettaur
+    # composition), never on 0x080b5306.
+    #
+    # tools/mgba_capture.c gained `--poke-at frame:addr:value` this ticket
+    # (a ONE-SHOT write applied immediately before the named frame instead
+    # of every frame) as the fix the previous session's note called for --
+    # real per-frame play runs untouched up to the named frame, so a swept N
+    # samples GetRNG's actual state at frame N rather than repeating frame
+    # 0's fixed draw. VERIFIED this restores real frame-to-frame variation
+    # (sweeping N in 1-frame steps from overworld_net's own "cycled
+    # Right/Down/Left/Up one per frame" script flips between roll success
+    # and failure, e.g. N=80..119 succeeds at 80,86,90,94,100,101,102,104,
+    # 106,108,109,110,111,112,113,115,119 and fails at every other N in that
+    # range), and the successes land on a whole neighbourhood of DISTINCT
+    # nearby table entries -- but NOT reliably back on 0x080b5306 itself: a
+    # first attempt at patching a differently-reached neighbour instead
+    # (0x080b52f9, also MegaMan + 2 Mettaur, reached at N=100) measurably
+    # BACKFIRED -- rebuilding the ROM with that byte also terminated moved
+    # what N=100 itself selects (0x080b5398 post-patch, not 0x080b52f9),
+    # proof that whatever selects an entry for a given roll is sensitive to
+    # an EARLIER entry's own encoded length, not just to table position: a
+    # patched (shortened) entry is not safe to select-and-later-patch by
+    # this route unless it is provably the LAST entry any candidate N's scan
+    # passes through. NOT settled further this session (broader N range,
+    # -- or the original 7aw-documented walk's exact undocumented phase --
+    # was not tried before time ran out); the ONE patch below (0x080b530a,
+    # unchanged from the prior session) is left as the sole encounter-table
+    # edit, still correct and still the only verified-safe one -- reaching
+    # it again is next session's concrete first step, not guessed at here.
     if empty_net_encounter:
         enemy_entry = 0x080b530a - base
         if d[enemy_entry:enemy_entry + 1] != b'\x11':
