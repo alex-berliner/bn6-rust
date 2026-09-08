@@ -1,9 +1,15 @@
 [
   {
+    "file": "captures/wave-panel-light-compare.gif",
+    "name": "wave-panel-light-compare",
+    "label": "The shockwave's panel light, real ROM above and this build below, backgrounds only so the wave's own sprite is hidden and only the yellow highlight it leaves on each panel shows: 90 frames, 0 pixels. This was the last non-zero check in the suite. The hop itself was never the hard part -- what took three attempts was the ends of a segment's life. A hop spawns a NEW segment and abandons the old one where it is, and our build was destroying the abandoned one a frame before it could show its final animation frame, and lighting the newly spawned one a frame late. The real ROM has the same asymmetry in its own code: the handler that runs on a segment's first tick builds its sprite and collision data and never highlights, and highlighting only begins on the tick after.",
+    "added": null
+  },
+  {
     "file": "captures/mettaur-attack-compare.gif",
     "name": "mettaur-attack-compare",
     "label": "The Mettaur's whole 70-frame attack cycle, real ROM left and this build right: 0.0 pixels a frame. It hides, swings, and sends a shockwave down the row. The virus acts on an RNG neither side shares, so there is no fixed offset to compare on -- the two are aligned by finding the lag that lines up the frames on which its own bounding box changes, and 16 of the real side's 17 boundaries land exactly. This was the last animated residue: it fell from 460 pixels to 345 when a hop turned out to spawn a new segment rather than move one, and from 345 to 0 when the segment left behind turned out to be destroyed a frame too early.",
-    "added": null
+    "added": "2026-09-07"
   },
   {
     "file": "captures/bambswrd-compare.gif",

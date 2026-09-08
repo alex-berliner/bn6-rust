@@ -838,5 +838,11 @@
     "file": "log/shots/1788835310-mettaur-attack-compare.gif",
     "caption": "Every check in the regression suite is at zero. Fifteen of them: 43 chip animations, the battle screen's tiles, a whole frame with sprites, the chip window and its cursor walk, the preview card, the chip-name popup, the RESULT window, the BATTLE START banner, the navi's warp, the buster, a chip use, the Mettaur's attack cycle, the shockwave's panel light, and a full battle surviving three 2600-frame random-input walks without crashing. The last two to fall were both one-tick errors in the same object's life -- the shockwave segment left behind by a hop was destroyed one frame before it could show its final animation frame, and a freshly spawned one lit its panel one frame late.",
     "tag": "milestone"
+  },
+  {
+    "t": 1788835450,
+    "file": "log/shots/1788835450-gg_wave.gif",
+    "caption": "The shockwave's panel light, 90 frames at 0 px -- the last non-zero check in the suite. Backgrounds only, so what you see is just the yellow highlight each panel gets as the wave passes.",
+    "tag": "wave"
   }
 ]
