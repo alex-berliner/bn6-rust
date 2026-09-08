@@ -400,4 +400,29 @@ impl Shown {
     ) -> agb::display::tiled::RegularBackgroundId {
         self.bg.show(frame)
     }
+
+    /// Advance the arriving slide-in by `frames` frames with no input, for
+    /// FIXTURE.md's `result_elapsed` (+56): "frames of the RESULT sequence
+    /// already elapsed at boot". Just `update(false)` called that many
+    /// times -- the exact per-frame motion a real capture would show,
+    /// replayed at construction instead of waited out frame by frame, so a
+    /// fixture can land the capture on an arbitrary point of the slide
+    /// instead of only its two endpoints (AUDIT wave 3c item 2; the
+    /// `result` harness row's own note: "MISSING FIELD: something like
+    /// 'frames since the RESULT window's own arrival'"). Calls past
+    /// `Phase::Waiting` are harmless no-ops (`update`'s own `Phase::Waiting
+    /// => Phase::Waiting` arm), so `SETTLED` below only needs to be large
+    /// enough, not exact.
+    pub fn fast_forward(&mut self, frames: u32) {
+        for _ in 0..frames {
+            self.update(false);
+        }
+    }
+
+    /// `frames` for `fast_forward` that is guaranteed to reach
+    /// `Phase::Waiting` from a fresh `Results::show` -- FIXTURE.md's
+    /// `result_elapsed` = 0xFFFF ("settled", today's demo-resultmatch
+    /// picture). Ceiling of `(REST_X - START_X) / SLIDE_STEP` so an
+    /// off-by-one never leaves the window a frame short of settled.
+    pub const SETTLED: u32 = ((REST_X - START_X + SLIDE_STEP - 1) / SLIDE_STEP) as u32; // provenance: derived -- this file's own slide constants (REST_X, START_X, SLIDE_STEP; sub_802C34E, asm03_0.s:12353), not a separate measurement
 }

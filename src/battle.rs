@@ -1773,12 +1773,29 @@ impl<'a> Battle<'a> {
     /// window draws in banks 9-11 and the CUSTOM gauge holds bank 9 for the
     /// whole fight, so without this the window comes up in the gauge's greens
     /// and yellows instead of its own grey and blue.
-    fn show_results(&mut self, kind: usize, time: u32, level: u8, zenny: u16, gfx: &Graphics) {
+    ///
+    /// `elapsed` is FIXTURE.md's `result_elapsed` (+56, AUDIT wave 3c item
+    /// 2): frames of the slide-in to fast-forward through with no input
+    /// before the window is ever drawn, 0 = none (today's only behaviour
+    /// for every caller but the fixture path -- see `results::Shown::
+    /// fast_forward`'s own doc). Both non-fixture callers below pass 0, so
+    /// they are byte-for-byte unaffected by this parameter's addition.
+    fn show_results(
+        &mut self,
+        kind: usize,
+        time: u32,
+        level: u8,
+        zenny: u16,
+        elapsed: u32,
+        gfx: &Graphics,
+    ) {
         for (i, p) in self.results.palettes().iter().enumerate() {
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
         self.results_mark = Some(self.custom_assets.mark_sprite());
-        self.shown = Some(self.results.show(kind, time, level, 0, zenny));
+        let mut shown = self.results.show(kind, time, level, 0, zenny);
+        shown.fast_forward(elapsed);
+        self.shown = Some(shown);
     }
 
     /// Bring the backdrop's art to the real ROM's state at a battle's first
@@ -2070,15 +2087,25 @@ impl<'a> Battle<'a> {
             && self.fade_out == 0
         {
             if let Some(f) = fixture_results {
+                // result_elapsed: 0xFFFF = settled (results::Shown::SETTLED
+                // frames is always enough -- extra fast_forward calls past
+                // Phase::Waiting are no-ops), otherwise the field's own
+                // frame count.
+                let elapsed = if f.result_elapsed == 0xFFFF {
+                    results::Shown::SETTLED
+                } else {
+                    f.result_elapsed as u32
+                };
                 self.show_results(
                     results::WIN,
                     f.result_frames as u32,
                     f.result_level,
                     f.result_zenny,
+                    elapsed,
                     gfx,
                 );
             } else {
-                self.show_results(results::WIN, RESULTMATCH_TIME, 2, RESULTMATCH_ZENNY, gfx);
+                self.show_results(results::WIN, RESULTMATCH_TIME, 2, RESULTMATCH_ZENNY, 0, gfx);
             }
         }
         if over && self.shown.is_none() && self.fade_out == 0 {
@@ -2103,7 +2130,7 @@ impl<'a> Battle<'a> {
                     moves: self.moves,
                 });
                 let kind = if won { results::WIN } else { results::LOSE };
-                self.show_results(kind, self.clock, level, RESULTMATCH_ZENNY, gfx);
+                self.show_results(kind, self.clock, level, RESULTMATCH_ZENNY, 0, gfx);
             }
         }
         if let Some(window) = self.shown.as_mut() {
