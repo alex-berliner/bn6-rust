@@ -2099,7 +2099,17 @@ impl<'a> Battle<'a> {
         if self.hit_in > 0 {
             self.hit_in -= 1;
             if self.hit_in == 0 {
-                mixer.play_sound(agb::sound::mixer::SoundChannel::new(BUSTER_HIT));
+                // AT THE TRACK'S OWN VOLUME, not full. The sound's M4A track
+                // opens `0xBE 0x70` -- VOL 0x70 = 112 of M4A's 0..127 -- so the
+                // real ROM plays this sample at 112/127 of full
+                // (data/dat37.s:41543, byte_81B8308, the track the SongHeader
+                // for SOUND_HIT_6B points at). Playing it at agb's default 1.0
+                // measured 4603 peak residual RMS against the real ROM's 4074,
+                // about 13% loud; 4603 * 112/127 = 4060, which is the real
+                // figure to within a third of a percent.
+                let mut channel = agb::sound::mixer::SoundChannel::new(BUSTER_HIT);
+                channel.volume(agb::fixnum::Num::<i16, 8>::new(112) / 127);
+                mixer.play_sound(channel);
             }
         }
         if self.banner_at > 0 {

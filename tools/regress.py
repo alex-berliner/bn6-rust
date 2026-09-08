@@ -387,10 +387,11 @@ def check_warp():
 #: residual is taken sample by sample before the RMS. Frames are counted from
 #: the press, and the score is the summed absolute difference between the two
 #: sides' residual envelopes over the sample's body.
-#: The want is 37223 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
-#: residual RMS is 4074 on the real ROM against 4603 here -- our hit is about
-#: 13% loud, which is exactly what the session that wired the sound up
-#: measured (4074 against 4605).
+#: The want is 32562 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
+#: residual RMS is 4074 on the real ROM against 4001 here, within 1.8%: the
+#: sound was 13% loud until the sample was played at ITS TRACK'S OWN VOLUME,
+#: `0xBE 0x70` = 112 of M4A's 0..127 (data/dat37.s:41543). What is left is the
+#: ENVELOPE'S SHAPE across the 24 frames, not its height.
 #: THIS CHECK WAS WRONG TWICE BEFORE IT AGREED WITH THAT, and both ways are
 #: worth keeping because both look like results:
 #:   1. Not soloing the FIFOs measured the whole mix, and the buster's PSG FIRE
@@ -693,7 +694,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
-    ("audio", check_audio, 37223),  # the hit's envelope; drive to 0, do not raise
+    ("audio", check_audio, 32562),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),

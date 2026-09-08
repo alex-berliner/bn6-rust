@@ -697,12 +697,20 @@ same samples the other measurement called +19..+34 -- the two count "the press f
 -- so this check began five frames after the onset and called a mid-decay value the peak.
 Widened to 8..31 it reads 4074 real against 4603 ours: the wiring's numbers, to the digit.
 
-SO THE ORIGINAL 13% WAS RIGHT AND BOTH OF MY CORRECTIONS TO IT WERE WRONG. Want 37223 over 24
-frames. What is actually left is the defect itself: our hit is about 13% loud, with no volume
-scaling applied anywhere -- `SoundChannel::new` defaults to full and the WAV is a byte-for-byte
-export of the ROM's own PCM. So either the real ROM plays this sample below full volume (its
-ToneData's attack/sustain are 0xff/0xff, so look at the engine's master DirectSound level), or
-agb's mixer scales differently. That is the thing to find.
+SO THE ORIGINAL 13% WAS RIGHT AND BOTH OF MY CORRECTIONS TO IT WERE WRONG.
+
+AND THEN THE 13% ITSELF WAS FIXED, from the ROM data rather than by fitting. The sound's M4A track
+opens `0xBC 0x00, 0xBB 0x4B, 0xBD 0x00, 0xBF 0x40, 0xBE 0x70` -- KEYSH, TEMPO, VOICE, PAN, and
+then **VOL 0x70 = 112 of M4A's 0..127** (data/dat37.s:41543, byte_81B8308, the track the
+SongHeader for SOUND_HIT_6B points at). So the real ROM plays this sample at 112/127 of full and
+this build played it at agb's default 1.0. Predicted 4603 * 112/127 = 4060 against the real 4074,
+a third of a percent out; measured after the change, 4001 against 4074, within 1.8%.
+
+WHAT IS LEFT is the envelope's SHAPE rather than its height: `audio` 37223 -> 32562 across 24
+frames while the peaks now agree. The likely candidate is timing -- agb's mixer double-buffers, so
+a channel started in `play_sound` is not in the buffer the DMA is draining until the following
+`Mixer::frame()`, which `BUSTER_HIT_DELAY`'s comment already records as a frame this build does
+not control. Compare the two envelopes frame by frame and see whether ours is simply shifted.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
