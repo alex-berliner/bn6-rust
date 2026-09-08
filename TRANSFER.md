@@ -1192,6 +1192,42 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bm. EVERY CHECK IS AT ZERO, AND FOUR OF TONIGHT'S ZEROS WERE FALSE (2026-09-08)
+
+    chips 0  tiles 0  gauge 0  field 0  window 0  card 0  cursor 0  opening 0
+    result 0  warp 0  buster 0  chip-use 0  mettaur 0  wave 0  popup 0  banner 0  rollup 0
+
+Seventeen checks. What makes the number worth anything is the four zeros that turned out not to
+mean what they said, all found in one evening:
+
+  - `tiles` read 0 for weeks, whole screen, while hiding a wrong art schedule, a scroll rounding
+    error and an unmodelled gauge. Its single frame sat where three defects cancelled.
+  - `opening` read 0 because I wrote it sampling every FOURTH frame, and every fourth frame was
+    exactly the set that matched -- the scroll moves a pixel every 2 frames across and every 4
+    down, so a rounding error hides on one frame in four. I reported that zero as a headline.
+  - `window` read 0 on a single frame that could not distinguish lag 181 from 182. Over sixteen
+    frames 181 is 184 px and 182 is 0; the check had been on the wrong alignment.
+  - `result` reads 0 over sixteen frames that are the SAME PICTURE -- the region does not change
+    at all across them. It is still effectively one frame and its comment now says so.
+
+THE SCROLL ROUNDING, WHICH I REVERTED TWICE. The register is `lsr #4` of a counter that FALLS by
+8: a logical shift of a negative, so a ceiling where a plain divide floors, one pixel apart on odd
+frames. I reverted it once after measuring at a fixture's stale fixed lag (290 -> 30304, which
+searching the lag shows is 290 -> 290), and again when `opening` "confirmed" it was no better --
+using the sampling above. It was right both times.
+
+WHAT THE ZEROS REST ON, stated so nobody has to guess. `gauge` stands on two MEASURED constants,
+`BAR_EXTRA = 9` and `MARKER_EXTRA = 8`, whose mechanism is unknown: this build drives the bar and
+marker off one counter and the real ROM cannot, since no single phase satisfies 9 mod 28 and 0 mod
+16 together. That is a shallower zero than the rest and is labelled as such in the source, in the
+ticket and here.
+
+THE HABIT, four times over: render the two sides, or hash the region frame by frame, BEFORE
+reasoning. The pink lines a user asked about, the HUD strips, the bar's cycle and the gauge's cell
+shapes were each settled in one step by a picture or a table after a chain of inference had
+pointed somewhere else. On the gauge alone six confident readings of mine were wrong, and every
+one of them died to a measurement that took less time than the reasoning had.
+
 ## 7bl. The backdrop is pixel-exact, and what one zero was hiding (2026-09-08)
 
 `opening` 16788 -> 0. The backdrop band, the field and the bottom strip all compare at ZERO
