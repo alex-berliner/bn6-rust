@@ -6,6 +6,29 @@
 //! positions, and a right cap, all in one palette bank. Read off a live
 //! battle's BG3 map, whose top row is cap, blank, blank, six, zero, cap for an
 //! HP of 60.
+//!
+//! AUDIT wave 3d "bg3-merge" ticket: canon assigns hardware backgrounds
+//! BG0 unused, BG1 backdrop (P3), BG2 field panels (P2), BG3 HUD + chip
+//! window + RESULT, ONE tilemap (P1) -- peeked, identical across
+//! pausedwithcannon/chipselect/result_arrival. Before this ticket agb's
+//! `.show()` call order gave `backdrop` 0, `HudTiles` 1, `field` 2,
+//! `Custom`/`Results` 3 -- three separate `RegularBackground`s where canon
+//! has one, and none at canon's own index. BEFORE measurement
+//! (`tools/harness.py`'s `opening`/`CUSTMATCH_ROW`, `--only-bg N` on BOTH
+//! sides, full 240x160, no isolation flags):
+//!
+//! | state (frames) | --only-bg 1 | --only-bg 2 | --only-bg 3 |
+//! |---|---|---|---|
+//! | opening (40) | 1536000 (38400 px/frame, EVERY frame full-screen: canon's backdrop vs our HudTiles) | 0 (both sides happen to be `field`) | 28160 (704 px/frame: canon's HP box, ours shows nothing -- `custom` is `None`) |
+//! | window (16) | 614400 (38400 px/frame, same full mismatch) | 0 (`field` again) | 11264 (704 px/frame: canon's HP box beside its window, ours shows the window alone) |
+//!
+//! `--only-bg 2` reads 0 only because our `field` already happened to land
+//! on hardware index 2 by coincidence of call order, not because the index
+//! was chosen to match. `--only-bg 1`/`--only-bg 3` are meaningless as a
+//! same-content comparison before this ticket: our index 1 is the HUD, not
+//! the backdrop, and our index 3 is the chip window alone (or nothing),
+//! never the HUD+window pair canon draws together. See battle.rs's `draw()`
+//! and this ticket's own report for the after numbers and the merge itself.
 
 use agb::display::tiled::{
     RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
