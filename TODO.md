@@ -675,7 +675,7 @@ VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster a
 the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
 poked into the hand for the poison case.
 
-### B3c. The `audio` check  *(the contradiction is resolved; a magnitude question is left)*
+### B3c. The `audio` check  *(resolved -- the check was wrong twice, the wiring's 13% was right)*
 The suite hears. `check_audio` captures each side twice -- with the press and without -- takes the
 residual sample by sample before the RMS (TRANSFER 7ax's method), and compares the two envelopes
 over the sample's body. Want 23620, peak residual 4864 real against 4603 here.
@@ -690,11 +690,19 @@ ours louder, the same direction the original measurement found.
 THE LESSON, and it is the audio version of a sampling error: a control-subtracted envelope only
 measures one sound if that sound is the only one on the channels captured.
 
-WHAT IS LEFT is a magnitude question, not a sign one. Ours is 4603 against 3609, about 27% loud,
-where the wiring measured 4605 against 4074, about 13%. The two agree on OUR peak almost exactly
-(4603 vs 4605) and differ on the REAL one (3609 vs 4074), so the remaining difference is in how
-the real side is captured -- this check passes `--zero 0x6016E00:1280` and the cheats that keep
-the enemy alive, and that measurement may not have. Settle that, then drive the number down.
+AND THEN THE MAGNITUDE WAS THE CHECK'S FAULT TOO. I suspected the real side's capture flags, and
+measured it: `--zero`, the alive cheats and `--disable-bg` make NO difference at all, the envelope
+is byte-identical with and without them. What differed was the WINDOW. Frames 14..29 here are the
+same samples the other measurement called +19..+34 -- the two count "the press frame" differently
+-- so this check began five frames after the onset and called a mid-decay value the peak.
+Widened to 8..31 it reads 4074 real against 4603 ours: the wiring's numbers, to the digit.
+
+SO THE ORIGINAL 13% WAS RIGHT AND BOTH OF MY CORRECTIONS TO IT WERE WRONG. Want 37223 over 24
+frames. What is actually left is the defect itself: our hit is about 13% loud, with no volume
+scaling applied anywhere -- `SoundChannel::new` defaults to full and the WAV is a byte-for-byte
+export of the ROM's own PCM. So either the real ROM plays this sample below full volume (its
+ToneData's attack/sustain are 0xff/0xff, so look at the engine's master DirectSound level), or
+agb's mixer scales differently. That is the thing to find.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it

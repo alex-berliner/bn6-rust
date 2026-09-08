@@ -387,15 +387,28 @@ def check_warp():
 #: residual is taken sample by sample before the RMS. Frames are counted from
 #: the press, and the score is the summed absolute difference between the two
 #: sides' residual envelopes over the sample's body.
-#: The want is 24029 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
-#: residual RMS is 3609 on the real ROM against 4603 here: OUR HIT IS LOUDER.
-#: THE FIRST VERSION OF THIS CHECK GOT THE SIGN WRONG, and how is worth keeping.
-#: Without soloing the FIFOs it measured the whole mix, which also carries the
-#: buster's PSG FIRE blip -- and the blip's own residual lands in the same
-#: frames, inflating the REAL side's peak from 3609 to 4864 and making our hit
-#: look 5% quiet when it is louder. A control-subtracted envelope is only
-#: measuring one sound if that sound is the only one on the channels captured.
-AUDIO_FRAMES = range(14, 30)
+#: The want is 37223 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
+#: residual RMS is 4074 on the real ROM against 4603 here -- our hit is about
+#: 13% loud, which is exactly what the session that wired the sound up
+#: measured (4074 against 4605).
+#: THIS CHECK WAS WRONG TWICE BEFORE IT AGREED WITH THAT, and both ways are
+#: worth keeping because both look like results:
+#:   1. Not soloing the FIFOs measured the whole mix, and the buster's PSG FIRE
+#:      blip has its own residual in the same frames. That inflated the REAL
+#:      peak to 4864 and made our hit look 5% QUIET -- the wrong SIGN.
+#:   2. Then the window, frames 14..29, turned out to be the same samples the
+#:      other measurement called +19..+34: it began five frames after the onset
+#:      and reported a mid-decay value as the peak, 3609 instead of 4074 -- the
+#:      wrong MAGNITUDE.
+#: A control-subtracted envelope measures one sound only if that sound is alone
+#: on the captured channels, and only if the window contains its onset.
+#: The window has to CONTAIN the onset, and the first version did not. Its
+#: frames 14..29 turned out to be the same samples the wiring measurement called
+#: +19..+34 -- an offset in what "the press frame" means between the two -- so
+#: it started five frames after the rise and reported a mid-decay value as the
+#: peak. Widened to cover the whole event on both sides: the sample's body is
+#: about 11 frames (1881 samples at 10512 Hz) and this holds 24.
+AUDIO_FRAMES = range(8, 32)
 
 
 def _envelope(rom, press, extra, *args):
@@ -680,7 +693,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
-    ("audio", check_audio, 24029),  # the hit's envelope; drive to 0, do not raise
+    ("audio", check_audio, 37223),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),
