@@ -125,6 +125,12 @@ pub struct Fixture {
     /// +46 FIXTURE.md: battle frame to raise ENEMY DELETED on, 0xFFFF =
     /// never forced.
     pub banner_at: u16,
+    /// +56 FIXTURE.md (AUDIT wave 3c item 2): when `start_state` = 1, frames
+    /// of the RESULT sequence already elapsed at boot. 0 = the slide-in
+    /// starts on the first battle frame (today's only behaviour, unchanged
+    /// when this field is absent/0); 0xFFFF = settled (the old
+    /// `demo-resultmatch` picture). See `results::Shown::fast_forward`.
+    pub result_elapsed: u16,
     /// NOT IN FIXTURE.md, offset +48 (the reserved region past this ticket's
     /// own new fields). FIXTURE.md's own words for `deck` are "codes are the
     /// game's own per-id defaults" (`chips::Chip::codes[0]`), which covers 3
@@ -244,6 +250,7 @@ pub fn read() -> Option<Fixture> {
             result_frames: r16(42),
             result_zenny: r16(44),
             banner_at: r16(46),
+            result_elapsed: r16(56),
             deck_codes,
             // NOT IN FIXTURE.md, offsets +53..+55: see `window_pick_count`'s
             // own doc.
@@ -325,7 +332,19 @@ pub fn read() -> Option<Fixture> {
 //   this addition included, is identical.
 // demo-resultmatch: start_state 1, result_level 2, result_frames 1760,
 //   result_zenny 100 (RESULTMATCH_TIME/RESULTMATCH_ZENNY/the hardcoded 2 in
-//   battle.rs's own demo-resultmatch cfg site, battle.rs:1993).
+//   battle.rs's own demo-resultmatch cfg site, battle.rs:1993),
+//   result_elapsed 0 (+56, AUDIT wave 3c item 2's own new field -- see its
+//   doc above). 0 is the DEFAULT (this row predates the field, and the "0
+//   px, 200/200 frames" byte-identical verification below already used it
+//   implicitly, since absent/unset always reads back 0 from a
+//   zero-initialised descriptor buffer) -- it reproduces exactly what this
+//   row always has: the window's slide-in starting fresh on the fixture's
+//   own first battle frame, same as `demo-resultmatch`'s own cfg-driven
+//   code path (which does not read this field at all and is therefore
+//   unaffected by its addition either). `result_elapsed` is for a NEW
+//   capability this row does not itself need: landing the capture
+//   mid-slide (or pre-settled, 0xFFFF) instead of only at "fresh" or
+//   "however far a many-frame capture happened to carry it".
 // demo-banner: banner_at 100 (BANNER_DEMO_AT).
 //
 // VERIFIED BYTE-IDENTICAL (2026-09-08), ticket step 3: a plain (no `demo-*`

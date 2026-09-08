@@ -234,7 +234,24 @@ impl Results {
     pub fn show(&self, variant: usize, time: u32, level: u8, rank: u8, zenny: u16) -> Shown {
         let v = &self.variants[variant];
         let mut bg = RegularBackground::new(
-            Priority::P0,
+            // AUDIT wave 3c zero-layers (pair 2): was P0. The real ROM
+            // draws the RESULT window on the SAME background as the HUD's
+            // HP box and the chip-select window -- peeked live,
+            // --only-bg 3 on /tmp/result_arrival.state shows both the "60"
+            // HP box and the sliding-in window together, and that layer's
+            // BGxCNT (0x1f09, reference/bn6f wt/zero-layers's own comment
+            // on sub_801DA24) is priority 1, not 0. Matching the priority
+            // here (this struct still owns its OWN RegularBackground --
+            // see the ticket report on why the harder part, sharing the
+            // SAME hardware BG index/tilemap as HudTiles, is not done: the
+            // window's own scroll-driven slide-in and HudTiles' always-
+            // fixed HP box cannot share one scroll register without the HP
+            // box also being made scroll-compensated, which needs more
+            // real-ROM measurement than this ticket had room for) costs
+            // nothing when the two do not visually overlap (confirmed on
+            // the captures above -- the HP box sits above the window, not
+            // over it) and removes one more needless mismatch.
+            Priority::P1,
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
@@ -383,4 +400,29 @@ impl Shown {
     ) -> agb::display::tiled::RegularBackgroundId {
         self.bg.show(frame)
     }
+
+    /// Advance the arriving slide-in by `frames` frames with no input, for
+    /// FIXTURE.md's `result_elapsed` (+56): "frames of the RESULT sequence
+    /// already elapsed at boot". Just `update(false)` called that many
+    /// times -- the exact per-frame motion a real capture would show,
+    /// replayed at construction instead of waited out frame by frame, so a
+    /// fixture can land the capture on an arbitrary point of the slide
+    /// instead of only its two endpoints (AUDIT wave 3c item 2; the
+    /// `result` harness row's own note: "MISSING FIELD: something like
+    /// 'frames since the RESULT window's own arrival'"). Calls past
+    /// `Phase::Waiting` are harmless no-ops (`update`'s own `Phase::Waiting
+    /// => Phase::Waiting` arm), so `SETTLED` below only needs to be large
+    /// enough, not exact.
+    pub fn fast_forward(&mut self, frames: u32) {
+        for _ in 0..frames {
+            self.update(false);
+        }
+    }
+
+    /// `frames` for `fast_forward` that is guaranteed to reach
+    /// `Phase::Waiting` from a fresh `Results::show` -- FIXTURE.md's
+    /// `result_elapsed` = 0xFFFF ("settled", today's demo-resultmatch
+    /// picture). Ceiling of `(REST_X - START_X) / SLIDE_STEP` so an
+    /// off-by-one never leaves the window a frame short of settled.
+    pub const SETTLED: u32 = ((REST_X - START_X + SLIDE_STEP - 1) / SLIDE_STEP) as u32; // provenance: derived -- this file's own slide constants (REST_X, START_X, SLIDE_STEP; sub_802C34E, asm03_0.s:12353), not a separate measurement
 }
