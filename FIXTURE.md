@@ -27,7 +27,20 @@ little-endian.
 | +26 | u16 | scroll_yq | |
 | +28 | u16 | gauge_tick | gauge animation seed, 0xFFFF = default |
 | +30 | u16 | fire_frame | battle frame on which auto-fire presses A (with bit3) |
-| +32.. | | reserved | zero |
+| +32 | u16 | enemy_hp | first enemy's HP; 0xFFFF = the kind's default. (`demo-field` pins its Mettaur at 0xffff.) |
+| +34 | u8  | deck_count | 0..5: chips the chip WINDOW offers (distinct from `hand`, the already-picked ones) |
+| +35 | u8[5] | deck | chip ids offered, in order; codes are the game's own per-id defaults |
+| +40 | u8  | start_state | 0 = battle; 1 = at the RESULT window already |
+| +41 | u8  | result_level | busting level shown when `start_state` = 1 |
+| +42 | u16 | result_frames | battle time shown when `start_state` = 1 |
+| +44 | u16 | result_zenny | reward shown when `start_state` = 1 |
+| +46 | u16 | banner_at | battle frame on which to raise ENEMY DELETED, 0xFFFF = never forced |
+| +48.. | | reserved | zero |
+
+Fields +32 onward were added after wave 2's `src/` agent found the original contract could not
+express `demo-field`'s pinned enemy HP, `demo-custmatch`/`demo-cardname`'s offered deck,
+`demo-resultmatch`'s start-at-results, or `demo-banner`'s forced banner. `enemy_hp` at +32 is
+already read by `src/fixture.rs`; the other four are the wave 3 work.
 
 Every existing `demo-*` fixture must be expressible as one descriptor. The flags stay until
 wave 3 confirms the new harness reproduces every check at zero through descriptors; then they go.
