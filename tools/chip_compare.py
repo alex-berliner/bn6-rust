@@ -51,6 +51,7 @@ import os
 import subprocess
 import sys
 
+import numpy as np
 from PIL import Image, ImageChops
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
@@ -84,6 +85,56 @@ def frame(dirname, i):
     return load(os.path.join(dirname, "frame.%05d.rgb" % i))
 
 
+def frame_path(dirname, i):
+    return os.path.join(dirname, "frame.%05d.rgb" % i)
+
+
+def load_array(path):
+    """A raw frame.#####.rgb file as a (160, 240, 3) uint8 array.
+
+    mgba_capture.c writes each pixel as 4 bytes, R,G,B,x (mgba_frames.py's
+    decode() comment; the 4th byte is mGBA's unused high byte of its 32-bit
+    native colour, not real alpha). Reshape straight into rows x cols x
+    channel and drop that 4th byte -- no PIL round trip, which is most of
+    what made the old per-pixel comparison slow (Image.frombytes + a Python
+    loop over 38,400 pixel tuples)."""
+    raw = np.fromfile(path, dtype=np.uint8)
+    return raw.reshape(160, 240, 4)[:, :, :3]
+
+
+def frame_array(dirname, i):
+    return load_array(frame_path(dirname, i))
+
+
+def _count_diff(a, b):
+    """Count of pixels where the (h, w, 3) uint8 arrays `a` and `b` differ in
+    any channel. Written as an explicit 3-way OR of per-channel not-equal
+    masks rather than `np.any(a != b, axis=-1)` -- both give the same
+    answer, but np.any's generic reduction over a length-3 trailing axis
+    takes its own generic path and measured ~8x slower than just OR-ing the
+    three (h, w) boolean planes together directly, on frames this size."""
+    d = a != b
+    return int(np.count_nonzero(d[..., 0] | d[..., 1] | d[..., 2]))
+
+
+def diff_frames(dir_a, fa, dir_b, fb, box=None):
+    """Count of differing pixels between frame `fa` of `dir_a` and frame `fb`
+    of `dir_b`, optionally restricted to a (x0, y0, x1, y1) box -- the
+    vectorised replacement for the pure-Python "sum(1 for ... if p[x,y] !=
+    q[x,y])" loop that used to back every diff in the project (AUDIT pair 13
+    / Optimisations table: "vectorise the pixel diff with numpy... likely
+    50-100x, bigger than any parallelism"). See load_array() for the file
+    format; comparison is RGB only, matching the old convert("RGB") drop of
+    the 4th byte."""
+    a = frame_array(dir_a, fa)
+    b = frame_array(dir_b, fb)
+    if box is not None:
+        x0, y0, x1, y1 = box
+        a = a[y0:y1, x0:x1]
+        b = b[y0:y1, x0:x1]
+    return _count_diff(a, b)
+
+
 XMAX = 140
 # With --bg the real ROM keeps its field, background and HUD, so the whole
 # screen is compared rather than the navi's half.
@@ -104,9 +155,16 @@ BOX = None
 
 
 def differs(a, b, box=None):
+    """Differing-pixel count between two already-loaded PIL images (as
+    frame() returns), vectorised with numpy. Kept for the strip/alignment
+    code below that already has Images in hand from frame(); new code with
+    a directory and a frame number should call diff_frames() instead and
+    skip the PIL conversion entirely -- that is where the real speedup is."""
     box = box or BOX or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
-    d = ImageChops.difference(a.crop(box), b.crop(box))
-    return sum(1 for px in d.getdata() if px != (0, 0, 0))
+    x0, y0, x1, y1 = box
+    pa = np.asarray(a)[y0:y1, x0:x1]
+    pb = np.asarray(b)[y0:y1, x0:x1]
+    return _count_diff(pa, pb)
 
 
 LIBRARY = 0x020008A0
@@ -142,10 +200,62 @@ def library_pokes(chip_id):
     return pokes
 
 
+def _frames_written(out, diff_file):
+    """How much output a capture actually produced: .rgb files in `out`
+    normally, or -- in streaming mode, where none of those exist -- the
+    number of per-frame records already appended to `diff_file` (its size
+    in u32s; see capture()'s docstring and mgba_capture.c's --diff-against)."""
+    if diff_file:
+        return os.path.getsize(diff_file) // 4 if os.path.exists(diff_file) else 0
+    return len([f for f in os.listdir(out) if f.endswith(".rgb")])
+
+
+def capture(rom, out, count, *args, retries=2):
+    """Run mgba_capture and make sure it actually produced `count` frames of
+    output before trusting it, re-running up to `retries` times on a short
+    capture instead of failing outright.
+
+    AUDIT pair 13: captures under memory pressure used to write fewer frames
+    than asked, silently -- the frames that exist compare normally and the
+    ones that don't either raise deep in a check or never get asked for.
+    regress.py's own capture() (which this is meant to replace, see its
+    docstring there) catches the short count but only to raise; a machine
+    that was briefly busy gets a wasted run instead of a working one. This
+    gives it a couple of quiet retries first and only raises if it is still
+    short after all of them.
+
+    Works for both capture styles: a normal run writes frame.#####.rgb into
+    `out`, and streaming mode (`--diff-against <dir>:<lag>:<file>` somewhere
+    in `args`, see mgba_capture.c) writes none of those -- it appends one
+    differing-pixel count per rendered frame to <file> instead, so short is
+    judged by how many of those records exist rather than by listing `out`.
+    """
+    diff_file = None
+    for i, a in enumerate(args):
+        if a == "--diff-against" and i + 1 < len(args):
+            diff_file = args[i + 1].rsplit(":", 1)[-1]
+
+    got = -1
+    for attempt in range(retries + 1):
+        subprocess.run(["rm", "-rf", out], check=True)
+        if diff_file:
+            subprocess.run(["rm", "-f", diff_file], check=True)
+        subprocess.run([CAPTURE, rom, out, str(count), *args], check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        got = _frames_written(out, diff_file)
+        if got == count:
+            return
+        if attempt < retries:
+            print("capture wrote %d of %d frames to %s -- retrying (%d/%d)" %
+                  (got, count, diff_file or out, attempt + 1, retries), file=sys.stderr)
+    raise SystemExit(
+        "capture wrote %d of %d frames to %s -- the box was probably busy; "
+        "re-run it alone before believing any number from this run" %
+        (got, count, diff_file or out))
+
+
 def capture_real(chip, out, count):
-    subprocess.run(["rm", "-rf", out])
-    cmd = [
-        CAPTURE, STERILE, out, str(count),
+    cmd_args = [
         "--loadstate", STATE,
         # The enemy is deleted so only the navi and its chip are on screen.
         # KEEP_ENEMY makes it immortal instead, for watching it react.
@@ -161,7 +271,7 @@ def capture_real(chip, out, count):
         *([] if BACKGROUNDS else ["--disable-bg"]),
         "--script", f"Start@10,A@{REAL_A_FRAME}",
     ]
-    subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    capture(STERILE, out, count, *cmd_args)
 
 
 def scratch(name=""):
@@ -218,9 +328,7 @@ def build_and_capture_rust(feature, out, count):
         ["python3", os.path.join(ROOT, "tools", "gbafix.py"), elf, rom],
         check=True, stdout=subprocess.DEVNULL,
     )
-    subprocess.run(["rm", "-rf", out])
-    subprocess.run([CAPTURE, rom, out, str(count)], check=True,
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    capture(rom, out, count)
 
 
 BODY = (8, 57, 123)
@@ -309,12 +417,14 @@ def main():
         rust_start = rust_first - (real_first - REAL_START)
     print(f"real start {REAL_START} (first change {real_first}); rust start {rust_start}")
 
+    # diff_frames() reads both .rgb files straight into numpy arrays -- no
+    # per-frame PIL Image needed just to count differing pixels, which is
+    # the actual per-frame comparison this loop used to spend its time on.
+    box = BOX or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
     total = 0
     worst = []
     for c in range(args.frames):
-        r = frame(real, REAL_START + c)
-        u = frame(rust, rust_start + c)
-        d = differs(r, u)
+        d = diff_frames(real, REAL_START + c, rust, rust_start + c, box)
         total += d
         worst.append((d, c))
         print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
