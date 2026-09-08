@@ -194,13 +194,26 @@ static rather than drifting, so it is probably content and not timing -- MegaMan
 counts, the enemy names. `demo-open` already fields that capture's own three Mettaurs, so whatever
 differs is something the fixture is not setting up.
 
-LOCALISED, and it is NOT a couple of wrong digits, which is what I first assumed. Broken down
-by 8x8 tile at real 120 / rust 127: **49 tiles differ**, spanning x = 16..192 and 200..216
-across all three tile rows -- very nearly the whole width of the strip. So the two sides are
-not showing the same THINGS in the HUD at that moment, rather than the same things with
-different numbers in them. Likely candidates, in order: the enemy name and HP plates (the
-capture has three viruses whose plates appear as they materialise, and their timing is a
-known difference at this point in the opening), then MegaMan's own HP block.
+LOCALISED, AND THEN LOOKED AT, which should have been the first move rather than the third.
+Counting differing tiles said "49 tiles, nearly the whole width" and suggested enemy name
+plates. Rendering the two strips one above the other answered it in one glance:
+
+    real   HP box reading 60,  and NOTHING else -- no gauge
+    ours   HP box reading 100, and a full CUSTOM gauge with its L-or-R prompt
+
+Two separate things, one of them real:
+
+1. **THE CUSTOM GAUGE SHOULD NOT BE DRAWN DURING THE OPENING.** The real ROM shows no gauge at
+   frame 120; ours draws it, full, from the start. That is a parity gap, not a fixture problem,
+   and it is worth fixing on its own -- the gauge's arrival is part of how a battle opens. Find
+   when the real ROM first draws it (it must be up by the first chip window at 173) and gate it.
+   NOTE the gauge and its "L or R" prompt are the real game's own art out of the HUD tiles, not
+   a debug affordance -- the only `cfg!(debug_assertions)` in battle.rs is the L/R shortcut at
+   battle.rs:1694, which is a different thing.
+2. MegaMan's HP: the captured battle's navi has 60, `demo-open` starts at 100. Fixture setup.
+
+Lesson worth keeping: a pixel count tells you how much differs and a picture tells you WHAT.
+Two rounds of tile arithmetic here produced a wrong guess that one 8-line render replaced.
 The existing `tiles` check uses `demo-hudmatch` against `pausedwithcannon` and reads 0, so the HUD
 CAN match -- it is this fixture's setup that does not.
 
