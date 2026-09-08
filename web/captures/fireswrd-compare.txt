@@ -1,1 +1,1 @@
-FireSwrd, real ROM left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette.
+FireSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette.

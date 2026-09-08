@@ -13,5 +13,11 @@ cargo build
 TARGET_DIR="$(cargo metadata --format-version 1 --no-deps \
   | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')"
 python3 tools/gbafix.py "$TARGET_DIR/thumbv4t-none-eabi/debug/bn" web/bn6-rust.gba
-{ git rev-parse --short HEAD; git diff --quiet || echo "(with uncommitted changes)"; } | tr '\n' ' ' > web/build.txt
+# Stamp the moment THIS run packed the ROM, same format and reason as
+# build_roms.sh's manifest labels (AUDIT.md pair 8): the page can only tell a
+# fresh build from a stale one if this is written at pack time, not derived
+# later from the file's mtime.
+STAMP="$(date '+%Y-%m-%d %H:%M')"
+{ printf '%s — ' "$STAMP"; git rev-parse --short HEAD; git diff --quiet || echo "(with uncommitted changes)"; } \
+  | tr '\n' ' ' > web/build.txt
 echo "web/build.txt: $(cat web/build.txt)"

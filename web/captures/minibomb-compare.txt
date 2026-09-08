@@ -1,1 +1,1 @@
-MiniBomb, real ROM left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight.
+MiniBomb, canon (sterile) left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight.

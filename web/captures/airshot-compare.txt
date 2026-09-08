@@ -1,1 +1,1 @@
-AirShot, real ROM left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back.
+AirShot, canon (sterile) left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back.

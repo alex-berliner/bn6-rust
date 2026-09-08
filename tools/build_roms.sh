@@ -108,6 +108,11 @@ build_one() {
   CARGO_TARGET_DIR="$target" cargo build --release --features "$feature" \
     || { echo "FAILED $feature"; return 1; }
   python3 tools/gbafix.py "$target/thumbv4t-none-eabi/release/bn" "web/roms/$file.gba"
+  # Stamp the moment THIS run packed the ROM -- not derived later from the
+  # file's mtime, which survives a stale re-run of this same script and would
+  # lie. The manifest-writing loop below refuses to label a ROM without one
+  # (AUDIT.md pair 8).
+  date '+%Y-%m-%d %H:%M' > "$BUILD_ROOT/stamp_$file.txt"
 }
 export -f build_one
 export BUILD_ROOT
@@ -122,16 +127,27 @@ for entry in "${ENTRIES[@]}"; do
 done | xargs -0 -n 3 -P "$JOBS" bash -c 'build_one "$0" "$1" "$2"'
 
 # The manifest is written after the builds, in the order of ENTRIES, so the
-# dropdown does not depend on which job finished first.
+# dropdown does not depend on which job finished first. Each label is
+# prefixed "YYYY-MM-DD HH:MM — " with the moment build_one packed that ROM
+# (AUDIT.md pair 8), so the page can tell a fresh build from a stale one and
+# sort the dropdown newest first. A ROM missing its stamp file -- build_one
+# never ran for it, or was interrupted before it could write one -- gets no
+# manifest entry at all rather than one silently missing its timestamp.
 : > web/roms/manifest.json
 printf '[' >> web/roms/manifest.json
 first=1
 for entry in "${ENTRIES[@]}"; do
   read -r feature file label <<< "$entry"
   if [ ! -f "web/roms/$file.gba" ]; then echo "missing web/roms/$file.gba"; exit 1; fi
+  stamp_file="$BUILD_ROOT/stamp_$file.txt"
+  if [ ! -s "$stamp_file" ]; then
+    echo "refusing to write a manifest entry for $file with no pack timestamp ($stamp_file missing)"
+    exit 1
+  fi
+  ts="$(cat "$stamp_file")"
   if [ "$first" -eq 0 ]; then printf ',' >> web/roms/manifest.json; fi
-  printf '\n  {"feature": "%s", "file": "roms/%s.gba", "label": "%s"}' \
-    "$feature" "$file" "$label" >> web/roms/manifest.json
+  printf '\n  {"feature": "%s", "file": "roms/%s.gba", "label": "%s — %s"}' \
+    "$feature" "$file" "$ts" "$label" >> web/roms/manifest.json
   first=0
 done
 
