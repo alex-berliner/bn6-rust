@@ -1,0 +1,5 @@
+mettaur (isolated), FAILED: per-frame max 1527 px, total 42175 px over 70 frames. Alignment: canon frame 140+k, rust frame 8(marker)+153+k. canon (sterile)
+
+canon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock shared with rust's cold boot, so canon_ref=140 is the same documented fixed point regress.py's check_mettaur used (its own frame-140 window start), not searched. rust: marker origin (frame 8 for demo-field) plus a 16-frame band for the Mettaur's own attack-cycle timing -- unique zero at offset 153, i.e. rust frame 161, EXACTLY regress.py's old lag-21 answer (140+21 == 8+153).
+
+commit ef88550
