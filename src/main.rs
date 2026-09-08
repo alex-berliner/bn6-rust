@@ -16,6 +16,7 @@ mod custom;
 mod deck;
 mod emotion;
 mod field;
+mod fixture;
 mod gunner;
 mod hud;
 mod hudtiles;
@@ -109,9 +110,37 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 /// around under an unrelated edit or a compiler change. Find it any time
 /// with `nm <elf> | grep BATTLE_MARKER`; read it live with
 /// `mgba_capture <rom> <out> <N> --dump 0x02000000:8:<file>`.
+///
+/// AUDIT pairs 6/14/17, FIXTURE.md: 32 `u32`s, not 2 -- the extra 120 bytes
+/// (indices 2..32) are the fixture descriptor's own reservation: 14 words
+/// of padding so the descriptor proper starts at byte 64 (FIXTURE.md's own
+/// 0x02000000 + 0x40), then 16 words (64 bytes) for the descriptor itself.
+/// `write_battle_marker` below only ever touches indices 0 and 1, so this
+/// is not a behaviour change to the marker -- same address, same first 8
+/// bytes, same meaning.
+///
+/// ONE static, not a second one in its own `.ewram.fixture` section: TWO
+/// separate `#[link_section]`'d statics do not reliably keep their relative
+/// order across builds of this same crate. Built with
+/// `--features demo-hudmatch`, an earlier cut of this (a standalone
+/// `FIXTURE_REGION: [u8; 120]` in its own `.ewram.fixture` section,
+/// declared textually AFTER this one) landed BEFORE `BATTLE_MARKER` in the
+/// linked binary -- `nm` showed `FIXTURE_REGION` at 0x02000000 and
+/// `BATTLE_MARKER` pushed to 0x02000078, breaking the marker's own contract
+/// for that build alone (the plain build ordered them correctly by
+/// coincidence). A single array has no cross-symbol order to get wrong: the
+/// fixture's byte 0 is `BATTLE_MARKER`'s own byte 64, always, by Rust's own
+/// array-layout guarantee, not by hoping the linker keeps two same-named
+/// input sections in source order.
+///
+/// VERIFIED (2026-09-08), after that fix, on both the plain build and
+/// `--features demo-hudmatch`: `nm` shows this static at 0x02000000 in
+/// both, and poking the magic with
+/// `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` for 5 frames then
+/// dumping `0x02000040:8` reads it back unchanged on both.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".ewram.marker")]
-pub static mut BATTLE_MARKER: [u32; 2] = [0, 0];
+pub static mut BATTLE_MARKER: [u32; 32] = [0; 32];
 
 const BATTLE_MAGIC: u32 = 0x4241_5454;
 
@@ -124,6 +153,16 @@ fn write_battle_marker(magic: u32, frame: u32) {
         core::ptr::write_volatile(p, magic);
         core::ptr::write_volatile(p.add(1), frame);
     }
+}
+
+/// The fixture descriptor's own start address, for `fixture::read()`: byte
+/// 64 of `BATTLE_MARKER`'s own reservation (see its doc comment for why
+/// this lives there instead of in a separate static), i.e. 0x02000040.
+/// Taking `BATTLE_MARKER`'s address here is a real reference, which is what
+/// keeps the whole reservation from being linked away as dead -- see
+/// `write_battle_marker` above for the other one.
+pub fn fixture_ptr() -> *const u8 {
+    unsafe { core::ptr::addr_of!(BATTLE_MARKER).cast::<u8>().add(64) }
 }
 
 #[agb::entry]
@@ -139,6 +178,16 @@ fn main(mut gba: agb::Gba) -> ! {
     // The folder shuffle's generator; stepped every frame, as the game's
     // secondary RNG is, so each battle deals differently.
     let mut rng = deck::Rng::new(0x2f6b_75a1);
+    // AUDIT pairs 6/14/17: read once at startup, not per-battle -- the
+    // harness pokes the descriptor before this ROM boots and keeps poking it
+    // every frame after, so it is already stable by the time this runs (see
+    // fixture.rs), and every battle this program ever runs uses the same
+    // fixture (or none). Read here, ahead of the palette setup below, which
+    // also needs to know whether the backdrop is blanked.
+    let fixture = fixture::read();
+    let blank_backdrop = fixture
+        .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
+        .unwrap_or(cfg!(feature = "demo-sterile"));
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     // The backdrop draws in bank 0, as it does on the real ROM.
@@ -147,7 +196,7 @@ fn main(mut gba: agb::Gba) -> ! {
     // 0 to it there costs the barrier bubble its colours: Barrier goes from
     // 0.8 px/frame to 766. The field itself does not use bank 0, which is why
     // taking it is safe in a full battle.
-    if !cfg!(feature = "demo-sterile") {
+    if !blank_backdrop {
         palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
     }
     for (i, p) in results.palettes().into_iter().enumerate() {
@@ -172,7 +221,9 @@ fn main(mut gba: agb::Gba) -> ! {
     loop {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
-        let mut battle = Battle::new(&field, &results, &hud, &custom_assets, &chips, &mut rng);
+        let mut battle = Battle::new(
+            &field, &results, &hud, &custom_assets, &chips, &mut rng, fixture,
+        );
         battle.prime_backdrop(&gfx);
         // Not yet -- this battle's own clocks (backdrop, gauge) start inside
         // the first `battle.update()` call below, not here: `Battle::new`
