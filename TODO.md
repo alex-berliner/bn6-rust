@@ -20,7 +20,10 @@ a worker its correct measurement was contamination on the strength of one of tho
 What the script handles that a bare `git worktree add` does not:
 - `reference/bn6f` is a submodule and a fresh worktree checks it out EMPTY. It is symlinked to
   the main checkout, because it is only ever READ -- disassembly comments are made by the
-  coordinator in the main tree, so an agent must not commit inside it.
+  coordinator in the main tree, so an agent must not commit inside it. The script marks the
+  path `--skip-worktree` so that a stray `git add -A` cannot stage the symlink over the
+  gitlink -- doing that once merged a self-referential symlink into main and deleted the
+  disassembly from the working tree. Agents should stage by path regardless.
 - Each worktree needs its own `CARGO_TARGET_DIR` or the builds serialise on one lock. A build in
   a fresh worktree takes about 30 seconds and produces a BYTE-IDENTICAL ROM to the main tree's --
   verified, three ways, so a number measured in a worktree is directly comparable to one measured

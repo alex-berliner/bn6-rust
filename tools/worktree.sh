@@ -34,6 +34,12 @@ else
   git -C "$main" worktree add -b "$branch" "$dir" HEAD >&2
   rm -rf "$dir/reference/bn6f"
   ln -s "$main/reference/bn6f" "$dir/reference/bn6f"
+  # And make the symlink UNSTAGEABLE. Without this, a `git add -A` in the
+  # worktree stages it over the gitlink, and merging that back turns the
+  # submodule into a 120000 symlink pointing at itself -- which deletes the
+  # disassembly from the main checkout. That happened once; skip-worktree
+  # makes git ignore the local version of the path entirely.
+  git -C "$dir" update-index --skip-worktree reference/bn6f
 fi
 
 cat <<EOF
