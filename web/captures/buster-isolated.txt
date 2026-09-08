@@ -2,4 +2,4 @@ buster (isolated), FAILED: per-frame max 177 px, total 3172 px over 32 frames. A
 
 canon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at battle-frame 100/101 (marker origin 8 + 100/101), not the first tried (origin+22) -- verified live that a press that early is BEFORE the navi is free to act at all (the diff at that offset was the SAME idle-pose-settling transition `field` has, not a shot); battle-frame 100 is well past it, in the same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).
 
-commit 20586a1
+commit a8ef7ed

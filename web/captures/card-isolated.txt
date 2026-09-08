@@ -2,4 +2,4 @@ card (isolated), FAILED: per-frame max 4654 px, total 74464 px over 16 frames. A
 
 Same wiring as `window` (deck fields land, --only-bg 3 isolates the window layer on canon, ISOLATED_CARDNAME_ROW blanks HUD/backdrop on rust). canon: REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: ISOLATED_CARDNAME_ROW (window_cursor=0, the one byte that distinguishes demo-cardname from demo-custmatch) with the same script -- marker origin 8 plus a band around regress.py's old compared rust frame (start=144 PLUS lag[74,96] = 218..240, 210..232 once origin is subtracted).
 
-commit 20586a1
+commit a8ef7ed
