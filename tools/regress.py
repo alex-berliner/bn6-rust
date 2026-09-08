@@ -52,6 +52,18 @@ def capture(rom, out, count, *args):
     subprocess.run(["rm", "-rf", out], check=True)
     subprocess.run([CAPTURE, rom, out, str(count), *args],
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # AND CHECK IT ACTUALLY WROTE THEM. A short capture does not announce
+    # itself: the frames that exist compare normally and the ones that do not
+    # either raise a FileNotFoundError deep in a check or, worse, never get
+    # asked for. Twice on 2026-09-07 a suite run under load reported checks
+    # WORSE -- once `chips` 10 of 43 off, once `opening` missing frame 148 --
+    # and neither reproduced on a quiet re-run. A count is cheap; a day spent
+    # chasing a regression that was a truncated capture is not.
+    got = len([f for f in os.listdir(out) if f.endswith(".rgb")])
+    if got != count:
+        raise SystemExit(
+            "capture wrote %d of %d frames to %s -- the box was probably busy; "
+            "re-run it alone before believing any number from this run" % (got, count, out))
 
 
 def build(features, rom):

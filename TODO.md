@@ -478,6 +478,22 @@ chip and a number in the popup.
 measured rather than copied. A `cursor` check was added too. Fifteen checks now.
 
 
+### D5. A short capture used to pass for a real result  *(fixed)*
+`capture()` ran mGBA and never checked it wrote the frames it asked for. Under load it
+sometimes does not, and a short capture does not announce itself: the frames that exist
+compare normally, and the missing ones either raise a FileNotFoundError deep inside a check
+or are never asked for at all -- which means a truncated capture can produce a WRONG NUMBER
+rather than an error.
+
+Twice on 2026-09-07, a full suite run alongside other heavy work reported failures that did
+not reproduce on a quiet re-run: `chips` 10 of 43 off, and `opening` erroring on a missing
+frame 148. Both were this. FIXED: `capture()` counts the `.rgb` files and refuses to continue
+if the count is short, naming the directory and telling you to re-run it alone.
+
+WHAT IS STILL TRUE AND MATTERS: the suite is not trustworthy while the box is busy. That is
+now loud instead of silent, but it is still the case, and the two spurious runs cost more
+attention tonight than the bug they pretended to find.
+
 ### D4. FIVE CHECKS COMPARE A SINGLE FRAME
 `tiles`, `field`, `window`, `card` and `result` each match ONE frame and report 0. A single
 frame can be right while its neighbours are wrong, and at least one of them demonstrably is.
