@@ -387,13 +387,14 @@ def check_warp():
 #: residual is taken sample by sample before the RMS. Frames are counted from
 #: the press, and the score is the summed absolute difference between the two
 #: sides' residual envelopes over the sample's body.
-#: The want is 23620 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
-#: residual RMS is 4864 on the real ROM against 4603 here, so the sample is
-#: close but not equal, and the envelope differs across the body. Note this
-#: does not reproduce the "13% louder" figure from the session that wired the
-#: sound up: that was measured over a different window with peaks the other way
-#: round (4074 real against 4605 ours). Two methods disagreeing about the sign
-#: of the error is itself worth resolving before either is trusted.
+#: The want is 24029 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
+#: residual RMS is 3609 on the real ROM against 4603 here: OUR HIT IS LOUDER.
+#: THE FIRST VERSION OF THIS CHECK GOT THE SIGN WRONG, and how is worth keeping.
+#: Without soloing the FIFOs it measured the whole mix, which also carries the
+#: buster's PSG FIRE blip -- and the blip's own residual lands in the same
+#: frames, inflating the REAL side's peak from 3609 to 4864 and making our hit
+#: look 5% quiet when it is louder. A control-subtracted envelope is only
+#: measuring one sound if that sound is the only one on the channels captured.
 AUDIO_FRAMES = range(14, 30)
 
 
@@ -414,6 +415,12 @@ def _envelope(rom, press, extra, *args):
         subprocess.run(["rm", "-rf", d], check=True)
         subprocess.run([CAPTURE, rom, cc.scratch("rg_aud_frames"), str(press + 40),
                         *args, "--disable-bg", "--script", script.strip(","),
+                        # SOLO THE FIFOs. The hit is a DirectSound sample and
+                        # lives on channels 4 and 5 (the harness's numbering,
+                        # 0-3 being the PSG). Without this the mix also carries
+                        # the buster's PSG FIRE blip, whose own residual lands
+                        # in the same frames and moves the measured peak.
+                        "--audio-channel", "4", "--audio-channel", "5",
                         "--dump-audio", d],
                        check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         out.append(d)
@@ -673,7 +680,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
-    ("audio", check_audio, 23620),  # the hit's envelope; drive to 0, do not raise
+    ("audio", check_audio, 24029),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),

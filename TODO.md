@@ -675,18 +675,26 @@ VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster a
 the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
 poked into the hand for the poison case.
 
-### B3c. The `audio` check exists now, and it does not agree with the wiring's own measurement
+### B3c. The `audio` check  *(the contradiction is resolved; a magnitude question is left)*
 The suite hears. `check_audio` captures each side twice -- with the press and without -- takes the
 residual sample by sample before the RMS (TRANSFER 7ax's method), and compares the two envelopes
 over the sample's body. Want 23620, peak residual 4864 real against 4603 here.
 
-THAT DISAGREES WITH THE MEASUREMENT MADE WHEN THE SOUND WAS WIRED UP, which put the peak at 4074
-real against 4605 ours -- ours 13% LOUDER, where this check has ours 5% QUIETER. Same sound, two
-methods, opposite signs. One of them is wrong and it matters which, because "13% loud" is what
-went into the write-up. Differences to chase: the window (that measurement used frames +14..+29
-from the press with its own alignment, this one uses the same range but counts from a different
-press frame per side), and whether the control run is subtracted before or after the RMS.
-Resolve this before trusting either number, and before adding a second sound on top of it.
+IT FIRST DISAGREED WITH THE MEASUREMENT MADE WHEN THE SOUND WAS WIRED UP -- that one had ours 13%
+LOUDER, this one had ours 5% QUIETER -- AND THE CHECK WAS THE ONE THAT WAS WRONG. It was not
+soloing the FIFOs, so it measured the whole mix, and the buster's PSG FIRE blip has its own
+residual in the same frames. That inflated the REAL side's peak from 3609 to 4864 and flipped the
+sign. Soloing channels 4 and 5 (the harness's numbering) fixes it: 3609 real against 4603 ours,
+ours louder, the same direction the original measurement found.
+
+THE LESSON, and it is the audio version of a sampling error: a control-subtracted envelope only
+measures one sound if that sound is the only one on the channels captured.
+
+WHAT IS LEFT is a magnitude question, not a sign one. Ours is 4603 against 3609, about 27% loud,
+where the wiring measured 4605 against 4074, about 13%. The two agree on OUR peak almost exactly
+(4603 vs 4605) and differ on the REAL one (3609 vs 4074), so the remaining difference is in how
+the real side is captured -- this check passes `--zero 0x6016E00:1280` and the cheats that keep
+the enemy alive, and that measurement may not have. Settle that, then drive the number down.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
