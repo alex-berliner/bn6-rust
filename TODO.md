@@ -220,15 +220,24 @@ The SAME FOUR TILES IN THE SAME ORDER, ours one step behind. Our asset has all f
 (indices 57, 58, 59, 60 = VRAM 0x234, 0x235, 0x232, 0x233, exactly what the docstring on
 `BAR_CYCLE` already claimed).
 
-SO WHAT IS ACTUALLY LEFT, and it is two small things:
-1. A one-step (7-frame) phase offset in `BAR_CYCLE`. Note this cannot be fixed by seeding alone:
-   sweeping our frames over ~3 full cycles, the bar's best score is 224 at the alignment frame and
-   the one-step-shifted frame scores WORSE (371), which means something else is also off --
-2. A ONE-PIXEL HORIZONTAL OFFSET. The lit bar spans 64..183 on the real ROM and 65..182 here: our
-   art sits a pixel in at both ends. That alone would stop every cell from matching at any phase,
-   and it explains why shifting the phase does not help until it is fixed. Fix this FIRST, then
-   re-measure the phase -- in that order, because the pixel offset is what makes the phase
-   unmeasurable.
+WHAT IS VERIFIED, AND NOTHING MORE. The four tiles are right and in the right order; at the
+alignment frame the two sides are on different steps of that cycle. Everything else I claimed
+about this bar tonight was wrong, six times over, and the last one is worth spelling out because
+it is a trap anyone would fall into:
+
+I measured the lit bar's EXTENT with a green-colour test and got 64..183 on the real ROM against
+65..182 here, and wrote that up as "our art sits one pixel in at both ends". Reading the actual
+pixels instead: at y=14 the real is green at x=64,65,66 with a blue pixel at 67, and ours is green
+at 66,67,68,69. Different PATTERNS, not a shifted one. The extents differ because the two sides
+are on different cycle steps -- which is the thing already known. An extent computed over a whole
+box across differing patterns says nothing about position.
+
+WHAT TO DO NEXT, and please do it systematically rather than as more one-off measurements: for a
+full 28-frame cycle on BOTH sides, identify which of the four tiles each side is showing on each
+frame, and tabulate the two sequences against each other. That gives the phase relationship
+outright -- including whether the step BOUNDARIES land on the same frames, which is what a single
+one-step shift scoring worse (371 against 224) suggests they do not. Six single measurements have
+each produced a plausible wrong answer here; one table would settle it.
 
 The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at the alignment
 frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
