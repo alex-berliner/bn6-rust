@@ -85,6 +85,47 @@ static HAND_ICON: &[u8] = &Aligned(*include_bytes!("../assets/hand_icon.bin")).0
 // (agb::include_wav! does no resampling).
 static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/buster_hit.wav");
 
+/// AUDIT pair 1 / TRANSFER 7bj: the harness used to align a real capture
+/// against ours by a frame count from power-on, and our boot length moves
+/// with the compiler, so a fixed offset breaks on unrelated edits. This is
+/// the fix -- an event the harness can read out of RAM instead of counting
+/// frames itself.
+///
+/// Eight bytes at a fixed EWRAM address, written with volatile stores every
+/// frame from the main loop below:
+///   +0  u32 magic, little-endian: 0 until the battle has started, then
+///       `BATTLE_MAGIC` (0x42415454, "BATT" read big-endian).
+///   +4  u32 battle frame counter: 0 on the battle's first frame (the same
+///       frame `Battle::new`'s backdrop and gauge begin counting from --
+///       for a non-demo build and `demo-open`, the first frame of the white
+///       intro; see TRANSFER 7ba), +1 every battle frame after.
+///
+/// `#[link_section = ".ewram.marker"]` is a dedicated input section that
+/// `vendor/agb/agb/src/gba.ld`'s `.ewram : { *(.ewram .ewram.*); ... }` rule
+/// places ahead of `.data`/`.bss` -- nothing else in this build uses a
+/// `.ewram*` section (agb's own use of `.ewram` is behind `#[cfg(test)]`),
+/// so `BATTLE_MARKER` is the sole occupant and lands at EWRAM's base,
+/// 0x02000000, independent of how the rest of the binary's statics shuffle
+/// around under an unrelated edit or a compiler change. Find it any time
+/// with `nm <elf> | grep BATTLE_MARKER`; read it live with
+/// `mgba_capture <rom> <out> <N> --dump 0x02000000:8:<file>`.
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".ewram.marker")]
+pub static mut BATTLE_MARKER: [u32; 2] = [0, 0];
+
+const BATTLE_MAGIC: u32 = 0x4241_5454;
+
+/// Volatile so the write can't be optimised away as dead (nothing in this
+/// crate ever reads `BATTLE_MARKER` back) or reordered past a frame's
+/// `commit()`.
+fn write_battle_marker(magic: u32, frame: u32) {
+    unsafe {
+        let p = core::ptr::addr_of_mut!(BATTLE_MARKER) as *mut u32;
+        core::ptr::write_volatile(p, magic);
+        core::ptr::write_volatile(p.add(1), frame);
+    }
+}
+
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
     let mut gfx = gba.graphics.get();
@@ -133,10 +174,42 @@ fn main(mut gba: agb::Gba) -> ! {
         // field back in from the black, so one follows the other seamlessly.
         let mut battle = Battle::new(&field, &results, &hud, &custom_assets, &chips, &mut rng);
         battle.prime_backdrop(&gfx);
+        // Not yet -- this battle's own clocks (backdrop, gauge) start inside
+        // the first `battle.update()` call below, not here: `Battle::new`
+        // has no `Graphics` to draw with, and `prime_backdrop` only seeds
+        // the backdrop's art step (see its doc comment), it does not tick.
+        write_battle_marker(0, 0);
+        let mut battle_frame: u32 = 0;
+        // The very first `commit()` this program ever calls does not
+        // actually reach the screen. `VBlank::get()` records the vblank
+        // count once, early, inside `gba.graphics.get()` above; by the time
+        // this loop's first `commit()` calls `wait_for_vblank()`, all of
+        // `main`'s asset loading (into VRAM, well over a frame of DMA and
+        // copying) has already let at least one vblank pass, so
+        // `wait_for_vblank` (agb's interrupt.rs) sees the count has already
+        // moved and returns immediately instead of blocking -- see its
+        // `last_waited_number < NUM_VBLANKS` check. That first commit's
+        // drawn content is then silently overwritten by the next
+        // iteration's before any real vblank displays it: measured with
+        // `--dump`, the marker's counter is never externally observed at 0
+        // -- it jumps straight from "not started" to 1 -- and the
+        // independently-derived alignment in tools/regress.py's `opening`
+        // check (searched over OPENING_LAGS, a unique zero at lag 7, +-1
+        // frame off by 63-65k px) confirms the frame that is genuinely
+        // displayed first is the SECOND `battle.update()` call's, not the
+        // first's. So the first call's tick is real (backdrop and gauge do
+        // start counting there) but never visible, and is not counted here.
+        let mut clocks_visible = false;
         loop {
             input.update();
             rng.next();
-            if battle.update(&input, &gfx, &mut mixer) {
+            let over = battle.update(&input, &gfx, &mut mixer);
+            if clocks_visible {
+                write_battle_marker(BATTLE_MAGIC, battle_frame);
+                battle_frame += 1;
+            }
+            clocks_visible = true;
+            if over {
                 break;
             }
             let mut frame = gfx.frame();
