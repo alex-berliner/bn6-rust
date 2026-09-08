@@ -39,25 +39,25 @@ pub mod anim {
 ///
 /// The timings are the state machine's, not the animations': the dissolve is
 /// cut off after three of its four frames when the panel is committed.
-const LEAVING_FRAMES: u8 = 4;
-const ARRIVING_FRAMES: u8 = 5;
-const RECOVERING_FRAMES: u8 = 4;
+const LEAVING_FRAMES: u8 = 4; // provenance: derived -- sub_80EB088..sub_80EB1C4, asm31.s:108036 onwards
+const ARRIVING_FRAMES: u8 = 5; // provenance: derived -- sub_80EB088..sub_80EB1C4, asm31.s:108036 onwards
+const RECOVERING_FRAMES: u8 = 4; // provenance: derived -- sub_8010332, asm00_2.s:3121 (per-navi default)
 /// The washed-out palette the commit frame is drawn in, and how long it
 /// lasts: one frame.
-const WARP_PALETTE: usize = 1;
-const WARP_PALE_FRAMES: u8 = 1;
+const WARP_PALETTE: usize = 1; // provenance: peeked -- measured against the real ROM
+const WARP_PALE_FRAMES: u8 = 1; // provenance: peeked -- measured against the real ROM
 /// Frames between the press and the warp starting.
-const WARP_DELAY: u8 = 1;
+const WARP_DELAY: u8 = 1; // provenance: peeked -- measured against the real ROM
 /// A Mettaur's hop is three frames up and three down, landing in its idle
 /// pose, then a per-version cooldown of 0x1e frames in the first
 /// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
-const HOP_FRAMES: u8 = 6;
-const HOP_COOLDOWN: u8 = 0x1e;
+const HOP_FRAMES: u8 = 6; // provenance: derived -- sub_8109CE6, asm31.s:170580
+const HOP_COOLDOWN: u8 = 0x1e; // provenance: derived -- byte_8109F46, asm31.s:170689
 /// The buster does nothing for two frames after the button is LET GO:
 /// measured against a capture whose navi is pixel-identical to its idle
 /// through frame 64, with B pressed on 60 and released on 62, and changes on
 /// 65.
-const BUSTER_WINDUP: u8 = 2;
+const BUSTER_WINDUP: u8 = 2; // provenance: peeked -- measured against the real ROM
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]
@@ -81,6 +81,7 @@ pub struct AttackSpec {
 /// is held 21 frames and the shot leaves the gun on the eighth, which is
 /// where the capture's Mettaur loses its first HP (asm31.s:108536, 108547,
 /// 108608).
+// provenance: peeked -- measured against the real ROM (asm31.s:108536/108547/108608 cross-checked).
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: Some((anim::IDLE, BUSTER_WINDUP)),
     anim: 14,
@@ -91,6 +92,7 @@ pub const BUSTER: AttackSpec = AttackSpec {
 };
 /// Colonel's overhead slash: animation 0xc held for 0x28 frames, the hit
 /// spawned when the countdown reads 0x14 (asm31.s:157462, 157464-157479).
+// provenance: derived -- asm31.s:157462, 157464-157479.
 pub const DIVIDE: AttackSpec = AttackSpec {
     windup: None,
     anim: 12,
@@ -104,6 +106,7 @@ pub const DIVIDE: AttackSpec = AttackSpec {
 /// hit when the countdown reads 0x14 -- ten frames in -- on the one panel in
 /// front, then 20 frames of recovery (sub_80FC226, sub_80FC26A, sub_80FC2DC;
 /// asm31.s:142671, 142716; V1 tiers dword_80FBD28, dword_80FBD14).
+// provenance: derived -- sub_80FC226/sub_80FC26A/sub_80FC2DC, asm31.s:142671/142716.
 pub const THRUST: AttackSpec = AttackSpec {
     windup: Some((15, 16)),
     anim: 5,
@@ -115,6 +118,7 @@ pub const THRUST: AttackSpec = AttackSpec {
 /// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
 /// the shockwave spawned at the front panel when it reads 0x1b
 /// (sub_8109DD2, asm31.s:170721; sub_80C6CE4, 31563).
+// provenance: derived -- sub_8109DD2, asm31.s:170721; sub_80C6CE4, asm31.s:31563.
 pub const SWING: AttackSpec = AttackSpec {
     windup: None,
     anim: 1,
@@ -126,6 +130,7 @@ pub const SWING: AttackSpec = AttackSpec {
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery
 /// (asm31.s:157045-157102).
+// provenance: derived -- asm31.s:157045-157102.
 pub const CROSS: AttackSpec = AttackSpec {
     windup: Some((6, 30)),
     anim: 5,
@@ -136,16 +141,16 @@ pub const CROSS: AttackSpec = AttackSpec {
 };
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
-const AIM_FRAMES: u8 = 5;
+const AIM_FRAMES: u8 = 5; // provenance: derived -- megamanChargeShotAiAttack_80EBE00, asm31.s:109703
 /// The flinch timer is set to 0x17 (asm00_2.s:18309).
-const FLINCH_FRAMES: u8 = 23;
+const FLINCH_FRAMES: u8 = 23; // provenance: derived -- asm00_2.s:18309
 /// After a hit the player flashes and cannot be hit again for 0x78 frames;
 /// the flash timer is seeded to 0x78 in the post-hit invulnerability handler
 /// (sub_801A5EE, asm00_2.s:22261) and counts down each frame, holding the
 /// OBJECT_FLAGS_FLASHING invisibility until it reaches zero (asm00_2.s:23893).
 /// Whether enemies get the same grace is not verified, so they are
 /// constructed without it.
-pub const PLAYER_MERCY_FRAMES: u8 = 120;
+pub const PLAYER_MERCY_FRAMES: u8 = 120; // provenance: derived -- sub_801A5EE, asm00_2.s:22261
 
 /// What an actor starts with and how it dies.
 #[derive(Clone, Copy)]
@@ -160,19 +165,19 @@ pub struct Profile {
     pub death_frames: u8,
 }
 
-pub const ENEMY_DEATH_FRAMES: u8 = 92;
-pub const PLAYER_DEATH_FRAMES: u8 = 55;
-const PLAYER_FADE_FRAMES: u8 = 0x20;
+pub const ENEMY_DEATH_FRAMES: u8 = 92; // provenance: derived -- sub_8017122, asm00_2.s:17808
+pub const PLAYER_DEATH_FRAMES: u8 = 55; // provenance: derived -- asm00_2.s:18173-18212
+const PLAYER_FADE_FRAMES: u8 = 0x20; // provenance: derived -- asm00_2.s:18173-18212
 /// An enemy navi fades in over sixteen steps taken every other frame
 /// (sub_801641A, asm00_2.s:16099-16137). How each step maps to the mosaic
 /// and alpha values was not read; they are stepped linearly here.
-const APPEAR_STEPS: u8 = 0x10;
-const APPEAR_FRAMES: u8 = APPEAR_STEPS * 2;
+const APPEAR_STEPS: u8 = 0x10; // provenance: derived -- sub_801641A, asm00_2.s:16099-16137
+const APPEAR_FRAMES: u8 = APPEAR_STEPS * 2; // provenance: derived -- sub_801641A, asm00_2.s:16099-16137
 /// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
 /// and the OAM builder keeps it so until the palette is reassigned
 /// (asm38.s:30060BE). Where that happens was not traced, so this length is a
 /// stand-in chosen to look right.
-const FLASH_FRAMES: u8 = 4;
+const FLASH_FRAMES: u8 = 4; // provenance: fitted -- "a stand-in chosen to look right", not traced
 
 /// What the actor is doing. bn6f keeps one `CurAction` and movement and attack
 /// are mutually exclusive, so all of these are states of one slot.

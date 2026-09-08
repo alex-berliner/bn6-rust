@@ -49,8 +49,8 @@ use crate::hud::Hud;
 const MAGIC: &[u8; 4] = b"BNCW";
 const MAP_W: usize = 15;
 const MAP_H: usize = 20;
-const SLIDE_FROM: i32 = 0x78;
-const SLIDE_STEP: i32 = 0xc;
+const SLIDE_FROM: i32 = 0x78; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
+const SLIDE_STEP: i32 = 0xc; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
 /// The window's palette bank; the results windows use 9-11 too, so the
 /// banks are set on open and the results' restored on close.
 pub const BANK: u8 = 9;
@@ -112,13 +112,13 @@ const OK: u8 = 0xa;
 /// (asm03_0.s:910-916), then incremented once a frame by state 4
 /// (asm03_0.s:1163-1165) and re-zeroed when the selection ends
 /// (asm03_0.s:1151-1152). `self.frames` below is that counter.
-const BLINK_SHIFT: u32 = 3;
+const BLINK_SHIFT: u32 = 3; // provenance: derived -- asm03_0.s:1163-1165/1151-1152
 /// Frames between a direction and the cursor moving. Measured against the
 /// real ROM with Left held six frames: its bracket is still on OK for the two
 /// frames after the press and on the new slot on the third. Two leaves one
 /// frame of the bracket differing and three leaves one frame of the card, so
 /// two it is; the last frame of a cursor move is not resolved.
-const CURSOR_DELAY: u8 = 2;
+const CURSOR_DELAY: u8 = 2; // provenance: fitted -- two vs. three both leave one frame wrong; not fully resolved
 
 /// Indices into the asset's patch records, in byte_8027B2C's order.
 const REGION_PICTURE: usize = 1;
@@ -456,7 +456,18 @@ impl CustomAssets {
     }
 
     /// Open the window over the offered chips, at most one per slot.
-    pub fn open(&self, offered: &[Offer], gfx: &Graphics) -> Custom<'_> {
+    ///
+    /// AUDIT pairs 6/14/17: `fixture` is `Battle`'s own `self.fixture`,
+    /// threaded through so `demo-custmatch`/`demo-cardname` can be
+    /// reproduced by descriptor -- see `fixture::Fixture::window_pick_count`'s
+    /// own doc for why this needs fields outside FIXTURE.md's published
+    /// contract.
+    pub fn open(
+        &self,
+        offered: &[Offer],
+        gfx: &Graphics,
+        fixture: Option<crate::fixture::Fixture>,
+    ) -> Custom<'_> {
         // BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD
         // layer and over the actors (sub_801DA24, asm00_2.s:29038).
         let mut bg = RegularBackground::new(
@@ -508,13 +519,25 @@ impl CustomAssets {
             let _ = (i, slot);
         }
         // The window fixture reproduces the capture's state: its Cannon A is
-        // already picked and the cursor sits on OK.
-        if cfg!(feature = "demo-custmatch") {
-            custom.picks.push(4);
-            // demo-cardname is the same window with the cursor walked onto the
-            // first slot, which is the only way to see the card's NAME: with
-            // the cursor on OK the real ROM shows its message card instead.
-            custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
+        // already picked and the cursor sits on OK (demo-cardname: the first
+        // slot instead, the only way to see the card's NAME -- with the
+        // cursor on OK the real ROM shows its message card instead).
+        // AUDIT pairs 6/14/17: `window_pick_count`/`window_pick_slot`/
+        // `window_cursor` drive this from the fixture instead when one is
+        // present -- see their own doc in fixture.rs for why they are not
+        // FIXTURE.md fields.
+        match fixture {
+            Some(f) if f.window_pick_count > 0 => {
+                custom.picks.push(f.window_pick_slot as usize);
+                custom.cursor_at = f.window_cursor;
+            }
+            Some(_) => {}
+            None => {
+                if cfg!(feature = "demo-custmatch") {
+                    custom.picks.push(4);
+                    custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
+                }
+            }
         }
         for slot in 0..OFFERED {
             custom.draw_slot(slot);

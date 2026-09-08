@@ -49,52 +49,52 @@ use agb::display::Graphics;
 // asm00_1.s:9155). First version: ProtoMan byte_80FB8BC 0x708
 // (asm31.s:141547), Colonel byte_8101244 0x4b0 (asm31.s:152949).
 #[cfg(feature = "demo")]
-const PROTOMAN_HP: u16 = 1800;
+const PROTOMAN_HP: u16 = 1800; // provenance: derived -- byte_80FB8BC, asm31.s:141547
 #[cfg(feature = "demo")]
-const COLONEL_HP: u16 = 1200;
+const COLONEL_HP: u16 = 1200; // provenance: derived -- byte_8101244, asm31.s:152949
 // The Mettaur's first-version record: HP 0x28, and its shockwave deals
 // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
-const METTAUR_HP: u16 = 40;
-const WAVE_DAMAGE: u16 = 10;
+const METTAUR_HP: u16 = 40; // provenance: derived -- MettaurEnemyStruct2_8109BD8, asm31.s:170519
+const WAVE_DAMAGE: u16 = 10; // provenance: derived -- byte_8109F28, asm31.s:170519
 /// Which of the field's two highlight overlays the shockwave paints its panel
 /// with.
 const WAVE_HIGHLIGHT: usize = 0;
 /// HP a chip-demo target carries so several hits can land without the fight
 /// ending; the real value is 40, but that dies to one sword.
-const DEMO_TARGET_HP: u16 = 900;
+const DEMO_TARGET_HP: u16 = 900; // provenance: fitted -- a chosen test-scaffold value (survives several hits), not from ROM data
 /// What the field fixture's Mettaur carries: the same 0xffff the capture
 /// writes into its HP every frame to keep it standing.
-const FIELDMATCH_HP: u16 = 0xffff;
+const FIELDMATCH_HP: u16 = 0xffff; // provenance: peeked -- the same value the real capture's own per-frame cheat pokes
 // MegaMan's own HP does come from the disassembly: byte_80210DD
 // (data/dat01.s:295) row 0 gives 50 * 2 = 100, via init_8013B64.
-const PLAYER_HP: u16 = 100;
+const PLAYER_HP: u16 = 100; // provenance: derived -- byte_80210DD, data/dat01.s:295, via init_8013B64
 /// A fixture for HUD parity: the save state the tile captures come from has
 /// the navi at 60 HP with a full gauge and a Cannon in hand. Matching that
 /// makes the HUD comparison like for like, so a difference is art rather than
 /// state. Build with demo-hudmatch.
-const HUDMATCH_HP: u16 = 60;
+const HUDMATCH_HP: u16 = 60; // provenance: peeked -- read off the live save state's own HP value
 /// The capture's clear time, 0:29:33, in frames, and its reward.
-const RESULTMATCH_TIME: u32 = 1760;
-const RESULTMATCH_ZENNY: u16 = 100;
+const RESULTMATCH_TIME: u32 = 1760; // provenance: peeked -- the capture's own displayed clear time
+const RESULTMATCH_ZENNY: u16 = 100; // provenance: peeked -- the capture's own displayed reward
 /// Where the RESULT window's corner badge lands, from OAM entry 0 of a live
 /// results screen.
-const RESULTS_MARK_AT: (i32, i32) = (37, 21);
+const RESULTS_MARK_AT: (i32, i32) = (37, 21); // provenance: peeked -- OAM entry 0 of a live results screen
 // ProtoMan's strike reads byte_80FBFFC, 0x64 in the first version
 // (sub_80FBF92, asm31.s:142402, 142437). Colonel's launchers each
 // pick a damage row (asm31.s:153414-153526): the cross slash reads
 // byte_81017D8 and the overhead slash byte_81017F0 (asm31.s:153623,
 // 153629), whose first-version hwords are 80 and 30. The version column
 // comes from the AI data's version byte (sub_800FE12, asm00_2.s:2370).
-const SWORD_DAMAGE: u16 = 100;
-const CROSS_DAMAGE: u16 = 80;
-const DIVIDE_DAMAGE: u16 = 30;
+const SWORD_DAMAGE: u16 = 100; // provenance: derived -- byte_80FBFFC, sub_80FBF92, asm31.s:142402/142437
+const CROSS_DAMAGE: u16 = 80; // provenance: derived -- byte_81017D8, asm31.s:153623
+const DIVIDE_DAMAGE: u16 = 30; // provenance: derived -- byte_81017F0, asm31.s:153629
 // Buster damage is Attack + 1 for MegaMan (sub_801265A, asm00_2.s:7908)
 // and a charged shot is (Attack + 1) * 10 (asm00_2.s:5988), at Attack 1.
-const BUSTER_DAMAGE: u16 = 2;
+const BUSTER_DAMAGE: u16 = 2; // provenance: derived -- sub_801265A, asm00_2.s:7908
 /// The muzzle flash's origin above the front panel's centre, and how long its
 /// animation runs (durations 2,1,1,2,1).
-const BUSTER_FX_UP: i32 = 26;
-const BUSTER_FX_FRAMES: u8 = 7;
+const BUSTER_FX_UP: i32 = 26; // provenance: peeked -- measured off the real ROM's OAM
+const BUSTER_FX_FRAMES: u8 = 7; // provenance: peeked -- measured off the real ROM's OAM
 // SOUND_BUSTER_6A (id 0x6A, reference/bn6f/constants/enums/SoundOffsets.inc:50), played the
 // instant the fire phase starts by sub_80BCF7A (asm31.s:10516-10528). It is a PSG channel-1
 // (square/sweep) blip, not a DirectSound sample: its song header (dat37.s:41516-41519,
@@ -110,6 +110,8 @@ const BUSTER_FX_FRAMES: u8 = 7;
 // volume over about 130-150 ms with no sharp cutoff, exactly matching that reading of the ROM
 // data. BUSTER_BLIP_FREQ is that measured onset frequency's register value, not a note-table
 // guess.
+// provenance: derived -- dat37.s:2755-2756, byte_8156D6C, cross-checked
+// against a captured channel-0 sweep reading.
 const BUSTER_BLIP_SWEEP: agb::sound::psg::Sweep =
     agb::sound::psg::Sweep { time: 1, decreasing: true, shift: 7 };
 /// MEASURED AGAINST THE REAL ROM, not taken from the instrument's own bytes.
@@ -123,6 +125,9 @@ const BUSTER_BLIP_SWEEP: agb::sound::psg::Sweep =
 /// and the note is cut by the hardware LENGTH COUNTER, which the instrument
 /// itself does not use -- an approximation of the real envelope's shape rather
 /// than a reproduction of its mechanism, and recorded here as one.
+// provenance: fitted -- explicitly "an approximation of the real envelope's
+// shape rather than a reproduction of its mechanism" (M4A runs the real
+// envelope in software, not the hardware envelope this reuses).
 const BUSTER_BLIP_ENVELOPE: agb::sound::psg::Envelope =
     agb::sound::psg::Envelope { initial_volume: 6, increasing: false, period: 1 };
 /// Frames the blip sounds for. The real one is full on the frame it lands, half
@@ -133,15 +138,15 @@ const BUSTER_BLIP_ENVELOPE: agb::sound::psg::Envelope =
 /// channel is stopped in software after two frames, which is what M4A does
 /// anyway -- it runs its envelopes itself rather than leaving them to the APU,
 /// which is exactly why its blips are shorter than the hardware's fastest.
-const BUSTER_BLIP_FRAMES: u8 = 2;
+const BUSTER_BLIP_FRAMES: u8 = 2; // provenance: fitted -- stopped in software to approximate M4A's own envelope, not a hardware-length-counter value
 /// Frames between the buster firing and the blip. The real ROM does not play a
 /// sound where it asks for one: `PlaySoundEffect` (asm00_0.s:26) appends a
 /// {function, args} record to a 32-entry ring buffer that something else drains
 /// (`sound_8000808`, asm00_0.s:380), so the note lands a frame after the frame
 /// that asked for it. Measured: the real blip is on the press's seventh frame
 /// and this build's, played immediately, was on the sixth.
-const BUSTER_BLIP_DELAY: u8 = 1;
-const BUSTER_BLIP_FREQ: u16 = 2023;
+const BUSTER_BLIP_DELAY: u8 = 1; // provenance: fitted -- measures right (matches the captured onset frame), not computed from a cited mechanism
+const BUSTER_BLIP_FREQ: u16 = 2023; // provenance: peeked -- the measured onset frequency's register value, not a note-table guess
 // SOUND_HIT_6B (TRANSFER.md 7bb): the enemy's own hit-flash/HP-decrement
 // reaction, not the buster's fire -- soloing the harness's channels 4 and 5
 // (both FIFOs, its numbering, not the hardware's) and control-subtracting a
@@ -169,26 +174,26 @@ const BUSTER_BLIP_FREQ: u16 = 2023;
 // Still the delay that measures right rather than the one that computes right:
 // agb's mixer double-buffers, so a channel started in `play_sound` is not in
 // the buffer the DMA is draining until the following `Mixer::frame()`.
-const BUSTER_HIT_DELAY: u8 = 4;
+const BUSTER_HIT_DELAY: u8 = 4; // provenance: fitted -- swept to a clean residual-RMS minimum against the captured onset, not derived from a cited mechanism
 /// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
 /// offsets, and how long its four frames last (1,2,2,3).
-const BUSTER_ARM_FRAMES: u8 = 18;
+const BUSTER_ARM_FRAMES: u8 = 18; // provenance: derived -- byte_82F6ECC.spr's own OAM offsets
 /// Frames after the button before the barrel appears, which is the same
 /// windup the pose waits out.
-const BUSTER_ARM_DELAY: u8 = 2;
+const BUSTER_ARM_DELAY: u8 = 2; // provenance: peeked -- measured off the real ROM
 /// Frames between the chip button going down and the chip being used.
-const CHIP_USE_DELAY: u8 = 3;
+const CHIP_USE_DELAY: u8 = 3; // provenance: peeked -- measured off the real ROM
 const CHARGED_DAMAGE: u16 = 20;
 // Frames of holding B before a release fires a charged shot: the buster's
 // row of powerAttackChargeTimes_8020404 (data/dat01.s) at Charge stat 1.
 // Measured rather than read: the real ROM's glow turns magenta on the 101st
 // frame of the hold, in a capture whose navi was first moved off the virus's
 // row so its shockwave would not bury him at that moment.
-const CHARGE_FRAMES: u16 = 101;
+const CHARGE_FRAMES: u16 = 101; // provenance: peeked -- measured onset frame in a live capture, not read from the charge-time table directly
 // Below this the hold is not yet a charge at all (asm00_2.s:9107). Eleven,
 // not ten: the real ROM's sparks first show on the eleventh frame of the
 // hold, this build's on the tenth.
-const CHARGING_FROM: u16 = 11;
+const CHARGING_FROM: u16 = 11; // provenance: peeked -- measured onset frame in a live capture
 // The glow is one persistent effect object on the navi's arm whose
 // animation index is the charge state, 1 charging and 2 full, hidden at 0
 // (chargeShotChargeObject_update_80E0E20, asm31.s:86354). The game tracks
@@ -196,11 +201,11 @@ const CHARGING_FROM: u16 = 11;
 // centred on the navi's body and pushed a little toward the front (the
 // direction it faces), rather than the old top-right corner offset, so the
 // charge reads as gathering at the buster.
-const GLOW_FORWARD: i32 = 2;
+const GLOW_FORWARD: i32 = 2; // provenance: fitted -- a stand-in offset for the game's own per-frame tracked arm position, chosen to read as gathering at the buster
 /// Which of the glow sprite's three animations each charge state plays.
 /// Animations 0 and 1 carry the same OAM offsets and different spark art;
 /// 2 is the full-charge set, which draws in the sprite's third palette.
-const GLOW_ANIM: [usize; 3] = [0, 0, 2];
+const GLOW_ANIM: [usize; 3] = [0, 0, 2]; // provenance: derived -- chargeShotChargeObject_update_80E0E20, asm31.s:86354
 // The intro: the screen holds WHITE, then the field appears whole, then the
 // enemies materialise one at a time from a fade-in list, and only then does
 // the fight state run and lift the pause (sub_8009658 onwards, asm00_1.s:
@@ -222,6 +227,11 @@ const GLOW_ANIM: [usize; 3] = [0, 0, 2];
 // intro is running, and each has a frame offset calibrated against the 32 this
 // used to be; lengthening it to the real 71 moved eight of them at once. The
 // intro's length is a fixture artefact for them, exactly as BATTLE START! is.
+// provenance: peeked (the `else` branch, 71 + INTRO_RAMP) -- measured from a
+// save state at a battle's first frame, full white through frame 70; the
+// `0x10 * 2` branch is fitted -- every other demo's own frame offsets were
+// calibrated against this legacy black-ramp length and moving it shifted
+// eight checks at once (see the comment above).
 const SCREEN_FADE_FRAMES: u16 = if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
     0x10 * 2
 } else {
@@ -229,19 +239,19 @@ const SCREEN_FADE_FRAMES: u16 = if cfg!(feature = "demo") && !cfg!(feature = "de
 };
 /// Frames the white takes to come off at the end of the hold. Measured: full
 /// white through frame 70, then 92, 85, 77, 70, 62, 56, 48 and settled at 86.
-const INTRO_RAMP: u16 = 14;
+const INTRO_RAMP: u16 = 14; // provenance: peeked -- measured against the real ROM's own fade-out readings
 // The custom gauge: a u16 at BattleState+0x20 that the fight state adds
 // 0xd to each frame, full at 0x4000 (sub_800855E, asm00_1.s:11100;
 // accessors asm00_2.s:29821-29883). A speed word at +0x22 defaults to
 // 0x20 but nothing reading it was found, so it is not applied. When full
 // the battle pauses for about 60 frames of chimes and then opens chip
 // selection (sub_8008840), which clears the gauge on entry (asm03_0.s:540).
-const GAUGE_STEP: u16 = 0xd;
+const GAUGE_STEP: u16 = 0xd; // provenance: derived -- sub_800855E, asm00_1.s:11100
 /// The field slides 15 px down while the chip menu is up, at 1.5 px a frame:
 /// measured on the real ROM, its top edge runs 72, 74, 75, 77, 78, 80, 81, 83,
 /// 84, 86, 87 over ten frames and holds at 87. Kept in half-pixels.
-const FIELD_SLIDE: u16 = 30;
-const FIELD_SLIDE_STEP: u16 = 3;
+const FIELD_SLIDE: u16 = 30; // provenance: peeked -- measured on the real ROM (kept in half-pixels)
+const FIELD_SLIDE_STEP: u16 = 3; // provenance: peeked -- measured on the real ROM (kept in half-pixels)
 // Chips, by id in ChipDataArr_8021DA8 (data/ChipDataArr.s). The swords
 // (attack family 0x13, sub_80EB776, asm31.s:108924) hold animation 5 for
 // 0x15 frames with the hit when the timer reads 0xc -- the ninth frame --
@@ -312,15 +322,15 @@ const CHIP_VDOLL: u16 = 150;
 /// thrown, matched by their OAM shapes -- and VDoll has its own,
 /// byte_83262C0.spr, whose two animations share their three parts and differ
 /// only in a palette flash on spawn.
-const BUG_HELD_ANIM: usize = 4;
-const BUG_THROWN_ANIM: usize = 5;
-const VDOLL_ANIM: usize = 1;
+const BUG_HELD_ANIM: usize = 4; // provenance: peeked -- matched by OAM shapes against the real ROM
+const BUG_THROWN_ANIM: usize = 5; // provenance: peeked -- matched by OAM shapes against the real ROM
+const VDOLL_ANIM: usize = 1; // provenance: peeked -- matched against the real ROM's OAM
 /// VDoll's HELD object is not the doll: it is the seeds' own sprite,
 /// animation 0, whose 16x16 part sits thirty left and twenty-eight up of the
 /// panel centre -- exactly where the real ROM's OAM puts it.
-const VDOLL_HELD_ANIM: usize = 0;
+const VDOLL_HELD_ANIM: usize = 0; // provenance: peeked -- exactly where the real ROM's OAM puts it
 /// How long a landed one stands. Nothing removes it in the capture.
-const RESTS_FRAMES: u8 = 255;
+const RESTS_FRAMES: u8 = 255; // provenance: fitted -- u8's own max as a "never expires" stand-in; nothing removes the object within any capture
 /// BugBomb's ball flies flatter than a bomb, and these are the game's own
 /// numbers rather than a sweep's: `tools/throw_dump.py 43` finds the thrown
 /// object in EWRAM and reads them out of it. X steps by exactly 0x2C000 a
@@ -330,20 +340,20 @@ const RESTS_FRAMES: u8 = 255;
 /// point on the ridge where a launch 1282 too weak and a pull 64 too soft
 /// cancel over forty frames: it drew the same pixels everywhere except one
 /// rounding boundary, which is what the last frame of BugBomb's residue was.
-const BUG_VX: i32 = BLKBOMB_VX;
-const BUG_VZ: i32 = 0x26062;
-const BUG_GRAVITY: i32 = 0x2800;
-const BUG_FLIGHT: u8 = 42;
+const BUG_VX: i32 = BLKBOMB_VX; // provenance: peeked -- tools/throw_dump.py 43 reads it out of the live thrown object
+const BUG_VZ: i32 = 0x26062; // provenance: peeked -- tools/throw_dump.py 43
+const BUG_GRAVITY: i32 = 0x2800; // provenance: peeked -- tools/throw_dump.py 43
+const BUG_FLIGHT: u8 = 42; // provenance: peeked -- tools/throw_dump.py 43's own timer of 42
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
 /// top of the screen and hangs there -- so it gets its own launch, gravity and
 /// flight, and `tools/throw_dump.py 96` reads all four out of the object while
 /// it is in the air. The doll also steps the OTHER WAY ROUND: its update moves
 /// it and then applies the pull (t3_0x7a, sub_80D47C0 loc_80D4848,
 /// asm31.s:60530), where a bomb applies the pull and then moves.
-const VDOLL_VX: i32 = 0x1EEEE;
-const VDOLL_VZ: i32 = 0x2F333;
-const VDOLL_GRAVITY: i32 = 0x2000;
-const VDOLL_FLIGHT: u8 = 60;
+const VDOLL_VX: i32 = 0x1EEEE; // provenance: peeked -- tools/throw_dump.py 96 reads it out of the live object
+const VDOLL_VZ: i32 = 0x2F333; // provenance: peeked -- tools/throw_dump.py 96
+const VDOLL_GRAVITY: i32 = 0x2000; // provenance: peeked -- tools/throw_dump.py 96
+const VDOLL_FLIGHT: u8 = 60; // provenance: peeked -- tools/throw_dump.py 96
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
 /// live palette is the sprite's index 12, so the chip's own shift is 3 -- its
@@ -376,11 +386,11 @@ const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
 }
 /// The poison sheet's animation and how long it runs, from the sprite's own
 /// frame durations.
-const POISON_ANIM: usize = 1;
-const POISON_FRAMES: u8 = 16;
+const POISON_ANIM: usize = 1; // provenance: derived -- the sprite's own frame durations
+const POISON_FRAMES: u8 = 16; // provenance: derived -- the sprite's own frame durations
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
-const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
+const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10]; // provenance: derived -- the sprite's own frame durations
 // Against the real ROM (tools/chip_compare.py 47 demo-sword): the two
 // lead-in states take a frame each (sub_80EB79C, sub_80EB84C), so two frames
 // of the idle pose lead in; the slash pose is then on screen 27 frames --
@@ -388,6 +398,8 @@ const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10];
 // exit, the exit frame, and the five of recovery with its last frame held
 // -- and the idle is back 29 frames after the press. Every frame of that,
 // with the sword object and the arc, diffs to zero against the real ROM.
+// provenance: derived -- sub_80EB79C/sub_80EB84C/asm31.s:109141, cross-checked
+// pixel-for-pixel against the real ROM (tools/chip_compare.py 47 demo-sword).
 const SWORD: actor::AttackSpec = actor::AttackSpec {
     windup: Some((0, 2)),
     anim: 5,
@@ -403,6 +415,7 @@ const SWORD: actor::AttackSpec = actor::AttackSpec {
 /// in the recovery pose (917 non-black pixels at home, 178 of them body
 /// colour) and idle on 30, where every other sword is idle on 29. The frame
 /// the step spends going home is the likely cause.
+// provenance: peeked -- the +1 is measured against the real ROM's own recovery-pose frame count.
 const STEP_SWORD: actor::AttackSpec = actor::AttackSpec {
     windup: SWORD.windup,
     anim: SWORD.anim,
@@ -418,6 +431,7 @@ const STEP_SWORD: actor::AttackSpec = actor::AttackSpec {
 /// but the second state's timer is never re-seeded and counts the same
 /// counter back down, so the navi holds animation 6 (whose last frame is
 /// the idle pose) until the exit 42 frames in (sub_80EB758, asm31.s:108904).
+// provenance: derived -- sub_80EB644/sub_80EB758, asm31.s:108790/108904.
 const THROW: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 6,
@@ -431,16 +445,17 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 /// runs the frame after, so the pose is on screen for 0x1e frames -- the real
 /// ROM shows the idle again 30 frames after the attack starts (TRANSFER.md).
 /// The barrel object lives exactly as long.
-const CANNON_FRAMES: u8 = 0x1d + 1;
+const CANNON_FRAMES: u8 = 0x1d + 1; // provenance: derived -- sub_80EBC28, asm31.s:109532/109554
 /// Frames between auto-fire chip uses in the demo-auto harness: long enough
 /// for an attack's pose and shot to run out before the next one begins.
 #[cfg(feature = "demo-auto")]
-const AUTO_FIRE_GAP: u16 = 90;
+const AUTO_FIRE_GAP: u16 = 90; // provenance: fitted -- a chosen test-harness gap, not from ROM data
 /// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
 /// animation 8 and the projectile is spawned off the front panel when the
 /// frame counter reads 0xf, the pose exiting once it reads 0x1d
 /// (asm31.s:109454, 109532, 109549). Both subfamilies are under 4, so the
 /// illusions at counter 8 do not apply (asm31.s:109480).
+// provenance: derived -- sub_80EBC28, asm31.s:109454/109532/109549, recover/recover_anim peeked (TRANSFER.md).
 const CANNON: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 8,
@@ -464,6 +479,7 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
 /// the real ROM, the muzzle flashes run every 5 frames from c5 and each
 /// extra shot lengthens the attack by 11 frames: the gun is on screen 35,
 /// 46 and 57 frames for the three chips.
+// provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892.
 const fn vulcan_shots(id: u16) -> u8 {
     match id {
         CHIP_VULCAN2 => 4,
@@ -480,6 +496,8 @@ const fn vulcan_shots(id: u16) -> u8 {
 /// leaves the recoveries below. The state machine's own tick rate does not
 /// map to frames one-for-one, so these are the measurements rather than a
 /// formula.
+// provenance: peeked -- "the measurements rather than a formula" (the state
+// machine's own tick rate does not map to frames one-for-one).
 const fn vulcan_timing(shots: u8) -> (u8, u8) {
     match shots {
         4 => (34, 10),
@@ -509,7 +527,7 @@ const fn vulcan_gun_frames(shots: u8) -> u8 {
     let (firing, recover) = vulcan_timing(shots);
     2 + firing + recover
 }
-const VULCAN_ARM: (i32, i32) = (23, -25);
+const VULCAN_ARM: (i32, i32) = (23, -25); // provenance: derived -- byte_80B8BD4 row 0xd, byte_80188C0[28..30]
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
 /// object from the first frame, sound 0xaf; the hit goes out on the frame
 /// the counter reads 5 -- the sixth -- as an instant one-panel hitbox one
@@ -517,6 +535,7 @@ const VULCAN_ARM: (i32, i32) = (23, -25);
 /// first state hands over when the counter reads 10 and the second counts
 /// it back down, exiting on the 22nd frame (sub_80EC8A0, sub_80EC90E;
 /// asm31.s:111067-111142). So the pose is on screen 21 frames.
+// provenance: derived -- sub_80EC8A0/sub_80EC90E, asm31.s:111067-111142.
 const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 0x9,
@@ -529,17 +548,17 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
 /// 0x13: effect list 0xC index 0x18 = sprite_83138C4, animation 0 -- the
 /// barrel, four frames of muzzle gust, the barrel held -- at arm-position
 /// row 0xa: +18 forward, 24 up, byte_80188C0[20..22]).
-const AIRSHOT_FRAMES: u8 = 21;
-const AIRSHOT_ARM: (i32, i32) = (18, -24);
+const AIRSHOT_FRAMES: u8 = 21; // provenance: derived -- sub_80EC8A0/sub_80EC90E, asm31.s:111067-111142
+const AIRSHOT_ARM: (i32, i32) = (18, -24); // provenance: derived -- byte_80B8BD4 row 0x13, byte_80188C0[20..22]
 /// The Recov chips heal their names; the amounts are byte_80EC870
 /// (asm31.s:111044), one per subfamily.
-const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000];
+const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- byte_80EC870, asm31.s:111044
 /// The heal effect's animation length, from its frame durations.
-const HEAL_FRAMES: u8 = 14;
+const HEAL_FRAMES: u8 = 14; // provenance: derived -- the sprite's own frame durations
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
-const INVISIBL_FRAMES: u16 = 0x68;
+const INVISIBL_FRAMES: u16 = 0x68; // provenance: derived -- ChipDataArr.s:5490
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
-const BARRIER_HP: u16 = 10;
+const BARRIER_HP: u16 = 10; // provenance: derived -- byte_8020B2C, dat01.s:189
 /// Barrier, Barr100 and Barr200 are one chip with one handler: family 0x15
 /// subfamily 4 (off_802CCB4[4] = sub_80E3B50), whose first attack parameter
 /// indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP. Barrier's
@@ -549,6 +568,7 @@ const BARRIER_HP: u16 = 10;
 /// Barr100's gold and Barr200's pink, matched colour for colour against the
 /// real captures against sprite_832F8C8's thirteen palettes. The asset is
 /// exported with all of them for this.
+// provenance: peeked -- matched colour for colour against the real captures.
 const fn barrier_palette(id: u16) -> usize {
     match id {
         CHIP_BARR100 => 3,
@@ -557,6 +577,7 @@ const fn barrier_palette(id: u16) -> usize {
     }
 }
 
+// provenance: derived -- byte_8020B2C, data/dat01.s:189.
 const fn barrier_hp(id: u16) -> u16 {
     match id {
         CHIP_BARR100 => 100,
@@ -567,8 +588,8 @@ const fn barrier_hp(id: u16) -> u16 {
 /// Frames from the press to the effect, measured on the real ROM (the
 /// bubble object's first, one-frame dot is behind the navi, so it is
 /// created a frame before the bubble shows).
-const INVISIBL_PRESENTATION: u16 = 128;
-const BARRIER_PRESENTATION: u16 = 77;
+const INVISIBL_PRESENTATION: u16 = 128; // provenance: peeked -- measured on the real ROM
+const BARRIER_PRESENTATION: u16 = 77; // provenance: peeked -- measured on the real ROM
 /// AreaGrab is in the same family; its own length is not measured, so
 /// Barrier's is used.
 const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
@@ -578,29 +599,29 @@ const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
 /// forward, its vertical speed starting at 0x20666 (2.02 px) a frame and
 /// losing 0x2800 (0.156 px) a frame (byte_80C5D58, asm31.s:29609), for a
 /// fixed 0x28 frames (asm31.s:29531), which is about three panels.
-const BOMB_FLIGHT: u8 = 40;
+const BOMB_FLIGHT: u8 = 40; // provenance: derived -- byte_80C5D58, asm31.s:29531/29609, the disassembly's own data table
 /// BlkBomb's ball covers the same three panels more slowly: measured against
 /// the real ROM, its leading edge moves 70 px over the 27 frames where
 /// MiniBomb's moves 74, so the flight is 42 frames rather than 40. The
 /// horizontal speed scales down with that and the launch speed up, so the arc
 /// still lands flat.
-const BLKBOMB_FLIGHT: u8 = 42;
+const BLKBOMB_FLIGHT: u8 = 42; // provenance: peeked -- measured against the real ROM's leading-edge pixel movement
 /// BlkBomb is thrown flatter and slower than a MiniBomb: the same 0x2800 pull
 /// but less of both speeds. Read out of the object by `tools/throw_dump.py 3c`
 /// rather than swept -- the sweep that preceded it landed on 0x27C0 and
 /// 0x22051, which draws the same pixels because a pull 0x40 too soft and a
 /// launch 0x31D too weak cancel over the flight.
-const BLKBOMB_GRAVITY: i32 = 0x2800;
-const BLKBOMB_VX: i32 = 0x2C000;
-const BLKBOMB_VZ: i32 = 0x2236E;
+const BLKBOMB_GRAVITY: i32 = 0x2800; // provenance: peeked -- read out of the live object by tools/throw_dump.py, not swept
+const BLKBOMB_VX: i32 = 0x2C000; // provenance: peeked -- read out of the live object by tools/throw_dump.py
+const BLKBOMB_VZ: i32 = 0x2236E; // provenance: peeked -- read out of the live object by tools/throw_dump.py
 /// LilBolr lobs its boiler far higher than a bomb: measured on the real ROM
 /// the ball rises to y=10, about a hundred pixels above the panel, peaking
 /// eleven frames in and landing on the same fortieth frame a bomb does. That
 /// needs a faster launch and a stronger pull, solved from those two figures.
 /// Where the damage tag sits relative to the projectile's origin, measured
 /// off the real ROM's object list.
-const DAMAGE_TAG_RIGHT: i32 = 32;
-const DAMAGE_TAG_DOWN: i32 = 30;
+const DAMAGE_TAG_RIGHT: i32 = 32; // provenance: peeked -- measured off the real ROM's object list
+const DAMAGE_TAG_DOWN: i32 = 30; // provenance: peeked -- measured off the real ROM's object list
 /// FlshBom's arc is taller than a bomb's and it comes down harder. Solved
 /// against the real ROM's ball tracked frame by frame by its four yellow
 /// colours over the whole forty-frame flight: it leaves the hand at y48,
@@ -615,13 +636,13 @@ const DAMAGE_TAG_DOWN: i32 = 30;
 /// applies the pull first needs a launch one whole gravity step higher to draw
 /// the same arc. The fit had found 0x2BD00, which is 0x28CCC + 0x3000 to
 /// within 0x34. With the order right the launch is the game's own number.
-const FLSHBOM_VZ: i32 = 0x28CCC;
-const FLSHBOM_GRAVITY: i32 = 0x3000;
+const FLSHBOM_VZ: i32 = 0x28CCC; // provenance: peeked -- read out of the live object by tools/throw_dump.py 39
+const FLSHBOM_GRAVITY: i32 = 0x3000; // provenance: peeked -- read out of the live object by tools/throw_dump.py 39
 /// The summoned LilBoiler's own HP, which rides under it in the game's object
 /// digits. All three LilBolrs show 40 against powers of 100, 140 and 180.
 /// Where the chip-in-hand icon's top left sits relative to the navi's panel
 /// centre, measured off the real ROM's OAM.
-const HAND_ICON_AT: (i32, i32) = (-1, -56);
+const HAND_ICON_AT: (i32, i32) = (-1, -56); // provenance: peeked -- measured off the real ROM's OAM
 
 /// The icon's OBJECT palette, byte_872CFD4, which the exporter reads: it is
 /// not the chip window's icon bank, which is a background palette and differs
@@ -641,14 +662,16 @@ const BOILER_HP: u16 = 40;
 /// Where that figure sits relative to the projectile's origin: measured on
 /// the real ROM's frames 13, 20 and 30, its two digits span sixteen pixels
 /// starting at the projectile's own x and its top is three below.
-const BOILER_HP_RIGHT: i32 = 16;
-const BOILER_HP_DOWN: i32 = 3;
+const BOILER_HP_RIGHT: i32 = 16; // provenance: peeked -- measured on the real ROM's frames 13, 20 and 30
+const BOILER_HP_DOWN: i32 = 3; // provenance: peeked -- measured on the real ROM's frames 13, 20 and 30
 /// LilBolr's flight is BLKBOMB'S, exactly: `tools/throw_dump.py 62` reads the
 /// same 0x2C000 across, 0x2236E up and 0x2800 down out of the boiler that
 /// `throw_dump.py 3c` reads out of the bomb. Two sweeps had found two nearby
 /// but different answers, which is the sweep's weakness -- a ridge of
 /// (vz, gravity) pairs all draw the same pixels, so nothing tells you the two
 /// chips share one launcher until you read the numbers.
+// provenance: peeked -- tools/throw_dump.py 62 reads the same three values out
+// of the live boiler that throw_dump.py 3c reads out of the bomb.
 const LILBOLR_VX: i32 = BLKBOMB_VX;
 const LILBOLR_VZ: i32 = BLKBOMB_VZ;
 const LILBOLR_GRAVITY: i32 = BLKBOMB_GRAVITY;
@@ -657,7 +680,7 @@ const LILBOLR_GRAVITY: i32 = BLKBOMB_GRAVITY;
 /// during the frame that uses the chip and aged in that same frame, so an age
 /// of 1 is the attack's frame 0. Measured against the real ROM: drawn on the
 /// attack's frames 1-2, 5-6, 9-10, 13-14 and 17-18, and gone from 19 on.
-const STEP_GHOST_LAST: u8 = 19;
+const STEP_GHOST_LAST: u8 = 19; // provenance: peeked -- measured against the real ROM's drawn frames
 /// The panel the navi steps TO gets a second red afterimage of its own from
 /// the attack's frame 8, blinking two on and two off through frame 29. Unlike
 /// the one left at home this is not a single still: it TRAILS the navi by
@@ -666,15 +689,15 @@ const STEP_GHOST_LAST: u8 = 19;
 /// positions the navi's had on frame 13, and on frame 17 the same, and on
 /// frame 12 those of frame 9. It outlives the step: the navi is home from
 /// frame 24 and the copy is still blinking there at 29.
-const STEP_GHOST2_FIRST: u8 = 9;
-const STEP_GHOST2_LAST: u8 = 34;
+const STEP_GHOST2_FIRST: u8 = 9; // provenance: peeked -- read out of the real ROM's OAM, object for object
+const STEP_GHOST2_LAST: u8 = 34; // provenance: peeked -- read out of the real ROM's OAM, object for object
 /// The age at which the step's bookkeeping is dropped.
 const STEP_STATE_LAST: u8 = 34;
-const BOMB_SPAWN_AHEAD: i32 = 4 << 16;
-const BOMB_SPAWN_UP: i32 = 0x30 << 16;
-const BOMB_VX: i32 = 0x2e666;
-const BOMB_VZ: i32 = 0x20666;
-const BOMB_GRAVITY: i32 = 0x2800;
+const BOMB_SPAWN_AHEAD: i32 = 4 << 16; // provenance: derived -- sub_80C5DBC, asm31.s:29657
+const BOMB_SPAWN_UP: i32 = 0x30 << 16; // provenance: derived -- sub_80C5DBC, asm31.s:29657
+const BOMB_VX: i32 = 0x2e666; // provenance: derived -- byte_80C5D58, asm31.s:29609
+const BOMB_VZ: i32 = 0x20666; // provenance: derived -- byte_80C5D58, asm31.s:29609
+const BOMB_GRAVITY: i32 = 0x2800; // provenance: derived -- byte_80C5D58, asm31.s:29609
 /// The bomb's palette. The held object takes byte_80EB738's packed row
 /// (asm31.s:108898): MiniBomb and BigBomb row 4, BlkBomb row 0x2d, which
 /// is the same sprite with palette 4. The thrown object takes
@@ -727,13 +750,13 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
 /// 4: effect list 0xC index 2 = sprite_82F569C, animation 0) until the
 /// throw, when the attack drops it (the real ROM shows it gone on the
 /// throw frame).
-const HELD_BOMB_FRAMES: u8 = THROW.strike_at - 1;
+const HELD_BOMB_FRAMES: u8 = THROW.strike_at - 1; // provenance: derived -- byte_80B8BD4 row 4, the real ROM shows it gone on the throw frame
 /// The attack frame the flash bomb's ball is raised on.
-const HELD_RAISE_AT: u8 = 5;
+const HELD_RAISE_AT: u8 = 5; // provenance: peeked -- measured off the real ROM
 /// On a solid panel the landing spreads type-4 effect row 0 -- effect list
 /// 0x14 index 0, sprite_8399578, animation 0, 22 frames -- from the panel
 /// (sub_801BD3C, asm31.s:29569-29589) with sound 0x70.
-const BLAST_FRAMES: u8 = 22;
+const BLAST_FRAMES: u8 = 22; // provenance: derived -- sub_801BD3C, asm31.s:29569-29589
 
 /// A thrown MiniBomb in flight, in the game's 16.16 coordinates.
 struct Bomb {
@@ -802,20 +825,20 @@ impl Bomb {
 /// One 8x16 object per letter, all at y=32, in OBJ palette bank 11, drawn
 /// ahead of everything else (they are OAM entries 0 upward). The strip is
 /// CENTRED on x=60: eight letters run 28..92 and seven 32..88.
-const POPUP_Y: i32 = 32;
-const POPUP_CENTRE: i32 = 60;
-const POPUP_CELL: i32 = 8;
+const POPUP_Y: i32 = 32; // provenance: peeked -- read out of the real ROM's OAM frame by frame
+const POPUP_CENTRE: i32 = 60; // provenance: peeked -- read out of the real ROM's OAM frame by frame
+const POPUP_CELL: i32 = 8; // provenance: peeked -- read out of the real ROM's OAM frame by frame
 /// Frames from the chip's use to the popup's first frame. The real ROM puts it
 /// up 21 frames after the button and the attack starts 3 frames after it, so
 /// it is the attack's 18th frame -- and 19 counted from here, because the
 /// presentation is set on the frame before the attack's first.
-const POPUP_AT: u16 = 19;
+const POPUP_AT: u16 = 19; // provenance: peeked -- measured against the real ROM
 /// The popup's roll-out is the BANNER's, frame for frame: the same 58-entry
 /// vertical-scale sequence, read out of OAM for both. `banner::SCALE` holds it.
 /// OBJ palette bank 11 while the popup is up, read straight out of palette RAM
 /// at 0x5000360. It is the battle text font's own object bank, and it is the
 /// same sixteen colours for every one of the five chips.
-const POPUP_PALETTE: [u16; 16] = [
+const POPUP_PALETTE: [u16; 16] = [ // provenance: peeked -- read straight out of palette RAM at 0x5000360
     0x0000, 0x7ffe, 0x14a5, 0x03e0, 0x7bde, 0x7fbc, 0x7f99, 0x6e6f,
     0x61cc, 0x037f, 0x029f, 0x0280, 0x3547, 0x37f6, 0x7bd1, 0x4108,
 ];
@@ -890,8 +913,8 @@ impl NamePopup {
 /// Bytes of one 8x16 glyph in the battle text font: two 4bpp tiles.
 const GLYPH_BYTES: usize = 64;
 
-const GAUGE_FULL: u16 = 0x4000;
-const GAUGE_PAUSE: u16 = 60;
+const GAUGE_FULL: u16 = 0x4000; // provenance: derived -- sub_800855E, asm00_1.s:11100
+const GAUGE_PAUSE: u16 = 60; // provenance: peeked -- "about 60 frames of chimes" measured on the real ROM
 // After the last combatant on a side is gone the game shows its BANNER and
 // then, 110 frames after the banner goes up, slides the RESULT window in.
 // The 110 is measured: on the real ROM, from the save state with the enemy's
@@ -900,14 +923,14 @@ const GAUGE_PAUSE: u16 = 60;
 // NOT VERIFIED: how long after the enemy is gone the banner itself goes up.
 // This build puts it up the moment the fight is over, which is the same order
 // the real ROM does it in but not necessarily the same gap.
-const BANNER_AFTER_OVER: u16 = 0;
+const BANNER_AFTER_OVER: u16 = 0; // provenance: fitted -- NOT VERIFIED against the real gap, same order but not necessarily the same timing
 /// Frames from the first chip window closing to BATTLE START!. Measured on the
 /// real ROM from a save state at a battle's first frame: the window opens at
 /// 165 on its own, is confirmed, closes at 259, and the banner goes up at 289.
-const BATTLE_START_AFTER_WINDOW: u16 = 30;
+const BATTLE_START_AFTER_WINDOW: u16 = 30; // provenance: peeked -- measured on the real ROM
 /// The frame `demo-banner` puts its banner up on.
-const BANNER_DEMO_AT: u32 = 100;
-const BANNER_TO_RESULTS: u16 = 110;
+const BANNER_DEMO_AT: u32 = 100; // provenance: fitted -- a chosen test-fixture frame, not from ROM data
+const BANNER_TO_RESULTS: u16 = 110; // provenance: peeked -- measured on the real ROM
 const RESULTS_DELAY: u16 = BANNER_AFTER_OVER + BANNER_TO_RESULTS;
 
 /// Everything that belongs to one battle, so a finished battle can be
@@ -1334,19 +1357,42 @@ impl<'a> Battle<'a> {
             *entry = Deck::entry(chip.id, chip.codes[0]);
         }
         let mut deck = Deck::new(folder, rng);
-        // The chip-window fixture offers exactly what the capture's window
-        // does, read off the real ROM by matching each slot's four icon tiles
-        // against every chip's icon in byte_8725894: Vulcan1 D, AirShot *,
-        // Sword S, MiniBomb B and Cannon A, with the Cannon already picked
-        // (its icon is the one in the pick stack).
-        if cfg!(feature = "demo-custmatch") {
-            deck = Deck::stacked([
-                Deck::entry(CHIP_VULCAN, 3),
-                Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
-                Deck::entry(CHIP_SWORD, 18),
-                Deck::entry(CHIP_MINIBOMB, 1),
-                Deck::entry(CHIP_CANNON, 0),
-            ]);
+        // AUDIT pairs 6/14/17: the chip window fixture offers exactly what
+        // the capture's window does, read off the real ROM by matching each
+        // slot's four icon tiles against every chip's icon in byte_8725894:
+        // Vulcan1 D, AirShot *, Sword S, MiniBomb B and Cannon A, with the
+        // Cannon already picked (its icon is the one in the pick stack).
+        // A fixture's own `deck_count`/`deck` (FIXTURE.md +34/+35) drive this
+        // instead of the hardcoded stack when one is present; `deck_codes`
+        // (this module's own reserved-region addition -- see its doc) covers
+        // the two slots whose captured code is not the chip's own `codes[0]`
+        // default that FIXTURE.md's field alone would give.
+        match fixture {
+            Some(f) if f.deck_count > 0 => {
+                let mut entries = [crate::deck::EMPTY; 5];
+                for i in 0..f.deck_count as usize {
+                    let id = f.deck[i] as u16;
+                    let code = if f.deck_codes[i] != 0xff {
+                        f.deck_codes[i]
+                    } else {
+                        chips.by_id(id).map(|c| c.codes[0]).unwrap_or(0)
+                    };
+                    entries[i] = Deck::entry(id, code);
+                }
+                deck = Deck::stacked(entries);
+            }
+            Some(_) => {}
+            None => {
+                if cfg!(feature = "demo-custmatch") {
+                    deck = Deck::stacked([
+                        Deck::entry(CHIP_VULCAN, 3),
+                        Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
+                        Deck::entry(CHIP_SWORD, 18),
+                        Deck::entry(CHIP_MINIBOMB, 1),
+                        Deck::entry(CHIP_CANNON, 0),
+                    ]);
+                }
+            }
         }
         let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
@@ -1589,6 +1635,20 @@ impl<'a> Battle<'a> {
             .into_iter()
             .filter_map(|id| chips.by_id(id))
             .collect();
+        let mut hud_tiles = if blank_hud {
+            None
+        } else {
+            Some(crate::hudtiles::HudTiles::new(crate::HUD_TILES, crate::TEXT_FONT))
+        };
+        // AUDIT pairs 6/14/17: a fixture's own `gauge_tick` (FIXTURE.md +28)
+        // seeds the bar's flow phase directly -- see `HudTiles::seed_gauge`'s
+        // own doc. 0xFFFF ("default" throughout this contract) leaves the
+        // fresh `new()` value above.
+        if let (Some(hud), Some(f)) = (hud_tiles.as_mut(), fixture) {
+            if f.gauge_tick != 0xffff {
+                hud.seed_gauge(f.gauge_tick as u32);
+            }
+        }
 
         Self {
             field,
@@ -1640,14 +1700,7 @@ impl<'a> Battle<'a> {
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
-            hud_tiles: if blank_hud {
-                None
-            } else {
-                Some(crate::hudtiles::HudTiles::new(
-                    crate::HUD_TILES,
-                    crate::TEXT_FONT,
-                ))
-            },
+            hud_tiles,
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -1720,12 +1773,12 @@ impl<'a> Battle<'a> {
     /// window draws in banks 9-11 and the CUSTOM gauge holds bank 9 for the
     /// whole fight, so without this the window comes up in the gauge's greens
     /// and yellows instead of its own grey and blue.
-    fn show_results(&mut self, kind: usize, time: u32, level: u8, gfx: &Graphics) {
+    fn show_results(&mut self, kind: usize, time: u32, level: u8, zenny: u16, gfx: &Graphics) {
         for (i, p) in self.results.palettes().iter().enumerate() {
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
         self.results_mark = Some(self.custom_assets.mark_sprite());
-        self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
+        self.shown = Some(self.results.show(kind, time, level, 0, zenny));
     }
 
     /// Bring the backdrop's art to the real ROM's state at a battle's first
@@ -1764,6 +1817,8 @@ impl<'a> Battle<'a> {
                             feature = "demo-resultmatch",
                         ))
                     ))]
+                    // provenance: peeked -- entry/timer/scroll read off the
+                    // live save state's own backdrop animation state.
                     backdrop.seed(5, 4, 424, 724);
                 }
             }
@@ -1788,23 +1843,37 @@ impl<'a> Battle<'a> {
         }
         if self.backdrop.is_some() {
             self.backdrop.as_mut().unwrap().update(gfx);
-            self.hud_tiles.as_mut().unwrap().set_menu(self.custom.is_some());
-            // NO GAUGE BEFORE THE FIRST CHIP WINDOW HAS CLOSED. A battle opens
-            // with that window (7aw), so there is nothing for a gauge to do
-            // until it has been through once -- and the real ROM draws none:
-            // rendering its HUD strip from a battle's first frame shows the HP
-            // box and nothing else at frames 75, 100, 125, 150, 165, 175 and
-            // 185, with the window itself up by 200.
-            // Only in the builds that actually start at a battle's beginning.
-            // Every other demo is calibrated against a capture taken mid-battle,
-            // where the gauge is up and belongs there.
-            let before_first_window = !self.window_closed && !self.skip_intro();
-            let gauge_up =
-                self.shown.is_none() && self.fade_out == 0 && !before_first_window;
-            self.hud_tiles
-                .as_mut()
-                .unwrap()
-                .set_gauge(self.gauge, GAUGE_FULL, gauge_up);
+        }
+        // AUDIT pair 6: the HUD is the real HUD whenever it is not blanked,
+        // regardless of the backdrop -- gated on `self.hud_tiles.is_some()`
+        // rather than folded into the `backdrop.is_some()` block above (which
+        // is what this was before this ticket). Every existing fixture and
+        // demo build has always carried FLAG_BLANK_HUD == FLAG_BLANK_BACKDROP
+        // (both set or both clear -- see fixture.rs's own descriptor table),
+        // so this split changes nothing for any of them; it only matters for
+        // a fixture that blanks the backdrop but NOT the HUD (a sterile arena
+        // with the real HUD up), which the old single gate never let update
+        // at all -- `hud_tiles.as_mut().unwrap()` would have been reached
+        // with backdrop still None only by a bug, never by this combination,
+        // because nothing built that combination before.
+        // NO GAUGE BEFORE THE FIRST CHIP WINDOW HAS CLOSED. A battle opens
+        // with that window (7aw), so there is nothing for a gauge to do
+        // until it has been through once -- and the real ROM draws none:
+        // rendering its HUD strip from a battle's first frame shows the HP
+        // box and nothing else at frames 75, 100, 125, 150, 165, 175 and
+        // 185, with the window itself up by 200.
+        // Only in the builds that actually start at a battle's beginning.
+        // Every other demo is calibrated against a capture taken mid-battle,
+        // where the gauge is up and belongs there.
+        // Computed here, ahead of the `hud_tiles.as_mut()` borrow below,
+        // because `skip_intro()` takes `&self` and the borrow checker cannot
+        // see that it only reads `self.fixture` -- calling it while `hud`
+        // still holds `self.hud_tiles` mutably does not compile.
+        let before_first_window = !self.window_closed && !self.skip_intro();
+        let gauge_up = self.shown.is_none() && self.fade_out == 0 && !before_first_window;
+        if let Some(hud) = self.hud_tiles.as_mut() {
+            hud.set_menu(self.custom.is_some());
+            hud.set_gauge(self.gauge, GAUGE_FULL, gauge_up);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
@@ -1816,17 +1885,19 @@ impl<'a> Battle<'a> {
                 // Indexing the chip table BY ID names the wrong chip: the
                 // table is in the exporter's own order, where index 1 is
                 // HiCannon while chip id 1 is Cannon.
-                Some(chip) => {
-                    self.hud_tiles
-                        .as_mut()
-                        .unwrap()
-                        .set_name(Some((chip.name(), chip.power)));
-                }
-                None => self.hud_tiles.as_mut().unwrap().set_name(None),
+                Some(chip) => hud.set_name(Some((chip.name(), chip.power))),
+                None => hud.set_name(None),
             }
+        }
+        if self.backdrop.is_some() {
             // The field slides down out of the window's way and back again:
             // measured on the real ROM at 1.5 px a frame over ten frames to a
-            // 15 px offset, held while the menu is up.
+            // 15 px offset, held while the menu is up. Left gated on the
+            // backdrop (unchanged by this ticket) rather than the HUD: no
+            // fixture exercises a chip window with the backdrop blanked and
+            // the HUD live within the frame ranges any check covers, so there
+            // is nothing to measure this against yet -- flagged in the
+            // ticket report rather than guessed at.
             let want = if self.custom.is_some() { FIELD_SLIDE } else { 0 };
             self.field_slide = if self.field_slide < want {
                 (self.field_slide + FIELD_SLIDE_STEP).min(want)
@@ -1925,7 +1996,7 @@ impl<'a> Battle<'a> {
                             })
                     })
                     .collect();
-                self.custom = Some(self.custom_assets.open(&offered, gfx));
+                self.custom = Some(self.custom_assets.open(&offered, gfx, self.fixture));
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             // Debug: L or R opens the chip window at once, without waiting for
@@ -1989,8 +2060,26 @@ impl<'a> Battle<'a> {
         // own readout -- 0:29:33 is 1760 frames, busting level 2 -- so the
         // window can be compared against /tmp/noenemy2.state. Without it the
         // demo needs a chip press the capture harness cannot land.
-        if cfg!(feature = "demo-resultmatch") && self.shown.is_none() && self.fade_out == 0 {
-            self.show_results(results::WIN, RESULTMATCH_TIME, 2, gfx);
+        // AUDIT pairs 6/14/17: `start_state` = 1 (FIXTURE.md +40) drives the
+        // same thing from a descriptor, with `result_level`/`result_frames`/
+        // `result_zenny` (+41/+42/+44) in place of the hardcoded
+        // RESULTMATCH_TIME/2/RESULTMATCH_ZENNY.
+        let fixture_results = self.fixture.filter(|f| f.start_state == 1);
+        if (cfg!(feature = "demo-resultmatch") || fixture_results.is_some())
+            && self.shown.is_none()
+            && self.fade_out == 0
+        {
+            if let Some(f) = fixture_results {
+                self.show_results(
+                    results::WIN,
+                    f.result_frames as u32,
+                    f.result_level,
+                    f.result_zenny,
+                    gfx,
+                );
+            } else {
+                self.show_results(results::WIN, RESULTMATCH_TIME, 2, RESULTMATCH_ZENNY, gfx);
+            }
         }
         if over && self.shown.is_none() && self.fade_out == 0 {
             // The banner the fight ends on, put up once: the real ROM shows it
@@ -2014,7 +2103,7 @@ impl<'a> Battle<'a> {
                     moves: self.moves,
                 });
                 let kind = if won { results::WIN } else { results::LOSE };
-                self.show_results(kind, self.clock, level, gfx);
+                self.show_results(kind, self.clock, level, RESULTMATCH_ZENNY, gfx);
             }
         }
         if let Some(window) = self.shown.as_mut() {
@@ -2308,7 +2397,22 @@ impl<'a> Battle<'a> {
         // Once. The clock STOPS while an opening banner is up, so a bare
         // `clock == BANNER_DEMO_AT` stays true every frame and rebuilds the
         // banner forever -- which is what it did the moment the pause went in.
-        if cfg!(feature = "demo-banner") && self.clock == BANNER_DEMO_AT && !self.opened {
+        // AUDIT pairs 6/14/17: a fixture's own `banner_at` (FIXTURE.md +46,
+        // 0xFFFF = never forced) drives the same thing from a descriptor,
+        // in place of the hardcoded BANNER_DEMO_AT -- note this is NOT the
+        // same thing as `self.banner_at` a few lines up, an unrelated
+        // existing countdown field for the real BATTLE START banner that a
+        // fixture never arms (see the `!self.opened && self.fixture.is_none()`
+        // guard above).
+        let fixture_banner_frame = self.fixture.map(|f| f.banner_at).filter(|&v| v != 0xffff);
+        let banner_target = if fixture_banner_frame.is_some() {
+            fixture_banner_frame.map(|v| v as u32)
+        } else if cfg!(feature = "demo-banner") {
+            Some(BANNER_DEMO_AT)
+        } else {
+            None
+        };
+        if banner_target == Some(self.clock) && !self.opened {
             self.opened = true;
             self.banner = Some(Banner::new(self.banner_assets, banner::ENEMY_DELETED));
         }

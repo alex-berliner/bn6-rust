@@ -177,10 +177,10 @@ impl Field {
 
 /// How long a broken panel takes to come back, from `sub_800C488`
 /// (asm/object.s:1541). The shorter 0x1e0 applies only in battle mode 1.
-const REGEN_FRAMES: u16 = 0x258;
+const REGEN_FRAMES: u16 = 0x258; // provenance: derived -- sub_800C488, asm/object.s:1541
 /// Over the last second the panel alternates between drawing itself broken and
 /// normal, warning that it is about to return (asm/object.s:1458).
-const BLINK_FRAMES: u16 = 60;
+const BLINK_FRAMES: u16 = 60; // provenance: derived -- asm/object.s:1458
 
 const PANEL_COUNT: usize = (COLS * ROWS) as usize;
 
