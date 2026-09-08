@@ -74,34 +74,37 @@
  *                       run's own are written when this flag is given. A
  *                       frame whose N-lag reference does not exist on disk
  *                       records the sentinel 0xFFFFFFFF.
- *   --trace-pc <addr>  (repeatable, max 4) AUDIT wave 3c "zero-enemy" ticket:
- *                       a coarse execution trace for finding a gate the
- *                       existing tools (a memory --watch, a --dump) cannot
- *                       see because it lives in a register or a branch, not
- *                       a value that sits in RAM long enough to read. When
- *                       given, EVERY frame of the capture is run by single-
- *                       stepping the ARM core (core->step) instead of one
- *                       core->runFrame() call, checking the CPU's PC
- *                       (cpu->gprs[15]) after each instruction against every
- *                       traced address (both raw and -4, to allow for
- *                       Thumb's 2-instruction prefetch offset some mgba
- *                       builds expose on gprs[15]) and printing to stderr
- *                       "TRACE frame=N step=S PC=0x%08x r0..r3=... r6=...
- *                       lr=..." on a hit -- one line per hit, not deduped,
- *                       so a loop that revisits the address shows every
- *                       pass. A frame ends when the accumulated per-step
- *                       cycle deltas (cpu->cycles) reach core->frameCycles()
- *                       or, as a safety valve against a miscounted frame
- *                       hanging the capture, after 2,000,000 steps -- the
- *                       cap is generous (a GBA frame is ~280,896 cycles and
- *                       even single-cycle Thumb ops cannot exceed that many
- *                       steps) and its own stderr line says so if ever hit.
- *                       Video frames ARE still written in this mode (each
- *                       step-loop "frame" ends with the same write_frame()
- *                       call the normal loop uses), but single-stepping is
- *                       orders of magnitude slower than runFrame(), so this
- *                       is for a short diagnostic capture, never the full
- *                       harness.
+ *   --trace-pc <addr>  (repeatable, max 4) AUDIT wave 3c "zero-enemy"/
+ *                       "inert-enemy" tickets: a coarse execution trace for
+ *                       finding a gate the existing tools (a memory --watch,
+ *                       a --dump) cannot see because it lives in a register
+ *                       or a branch, not a value that sits in RAM long
+ *                       enough to read. `--trace-steps N` (default 200000)
+ *                       bounds it: at the START of every frame, the ARM core
+ *                       is single-stepped (core->step) up to N instructions,
+ *                       checking PC (cpu->gprs[15]) after each one against
+ *                       every traced address (both raw and -4, for Thumb's
+ *                       prefetch offset on gprs[15]) and printing to stderr
+ *                       "TRACE frame=N step=S PC=0x%08x r0..r3=... r5=...
+ *                       r6=... r7=... lr=..." on a hit -- one line per hit,
+ *                       not deduped, so a loop that revisits the address
+ *                       shows every pass -- then the frame is finished with
+ *                       one normal core->runFrame() call and video frames
+ *                       ARE still written (same write_frame() the untraced
+ *                       path uses). FOUND THE HARD WAY: single-stepping a
+ *                       WHOLE frame (gating on cpu->cycles vs
+ *                       core->frameCycles()) does not work -- cpu->cycles is
+ *                       not the simple monotonic counter it looks like (the
+ *                       observed delta went negative), so that loop never
+ *                       saw its target and free-ran past the point where raw
+ *                       core->step() keeps mgba's BIOS HLE dispatch coherent
+ *                       ("Bad BIOS Load32" / "Bad memory Load8" on stderr
+ *                       past ~1.9M consecutive steps -- actual emulator-
+ *                       state corruption, not just slowness). The bounded,
+ *                       runFrame()-terminated design is what ships; single-
+ *                       stepping is still orders of magnitude slower than
+ *                       runFrame() alone, so this is for a short diagnostic
+ *                       capture, never the full harness.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -715,9 +718,10 @@ int main(int argc, char** argv) {
 					if (pc == trace_pcs[t] || pc - 4 == trace_pcs[t]) {
 						fprintf(stderr,
 						        "TRACE frame=%d step=%ld PC=0x%08x r0=0x%08x r1=0x%08x "
-						        "r2=0x%08x r3=0x%08x r6=0x%08x lr=0x%08x\n",
+						        "r2=0x%08x r3=0x%08x r5=0x%08x r6=0x%08x r7=0x%08x lr=0x%08x\n",
 						        i, steps, pc, tcpu->gprs[0], tcpu->gprs[1], tcpu->gprs[2],
-						        tcpu->gprs[3], tcpu->gprs[6], tcpu->gprs[14]);
+						        tcpu->gprs[3], tcpu->gprs[5], tcpu->gprs[6], tcpu->gprs[7],
+						        tcpu->gprs[14]);
 					}
 				}
 			}
