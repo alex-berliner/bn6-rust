@@ -757,18 +757,41 @@ FIELD_ORIGIN = 8
 
 #: demo-custmatch's row (demo-cardname is a feature alias, not a different
 #: descriptor -- fixture.rs's table). The offered deck is NOT expressible
-#: yet (FIXTURE.md +34..39, not read by src/fixture.rs -- pending_src).
-#: Marker origin 8 (measured live).
+#: now read by src/fixture.rs (see its own table's "WAVE 3 ADDITIONS" and
+#: "WAVE 3 VERIFICATION" comments -- 371/862px residual on 2 of 200 frames,
+#: in the card-picture region, not from the deck/window fields themselves;
+#: zero-src's own ticket). window_cursor=0xa (OK) matches demo-custmatch's
+#: own capture. Marker origin 8 (measured live).
 CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=100,
                      megaman_col=3, megaman_row=2, hand=[], hand_count=0, gauge=1,
-                     flags=0x11)
+                     flags=0x11,
+                     deck_count=5, deck=[5, 4, 71, 54, 1],
+                     deck_codes=[3, 0xFF, 18, 0xFF, 0xFF],
+                     window_pick_count=1, window_pick_slot=4, window_cursor=0xa)
 CUSTMATCH_ORIGIN = 8
 
-#: demo-resultmatch's row. start_state is NOT expressible yet (FIXTURE.md
-#: +40, not read -- pending_src). Marker origin 8 (measured live).
+#: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
+#: window_cursor (0 = cursor on the first slot, showing the card's NAME
+#: rather than the OK confirmation message -- fixture.rs's own table
+#: comment; `card` below is demo-cardname's check, `window` is
+#: demo-custmatch's).
+CARDNAME_ROW = dict(CUSTMATCH_ROW, window_cursor=0)
+
+#: `window`/`card` isolated variants: CUSTMATCH_ROW/CARDNAME_ROW with
+#: FLAG_BLANK_HUD|FLAG_BLANK_BACKDROP added on top of their own
+#: FLAG_OPEN_WINDOW|FLAG_SKIP_INTRO (0x11 | 0x06 = 0x17), so nothing but
+#: the window itself renders on the rust side -- the full-screen match for
+#: canon's --only-bg 3 (see the `window` Check's own note).
+ISOLATED_CUSTMATCH_ROW = dict(CUSTMATCH_ROW, flags=0x17)
+ISOLATED_CARDNAME_ROW = dict(CARDNAME_ROW, flags=0x17)
+
+#: demo-resultmatch's row: start_state/result_level/result_frames/
+#: result_zenny now read by src/fixture.rs (verified byte-identical there,
+#: 0px over 200 frames). Marker origin 8 (measured live).
 RESULTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=60,
                        megaman_col=3, megaman_row=2, hand=[], hand_count=0, gauge=0,
-                       flags=0x11)
+                       flags=0x11,
+                       start_state=1, result_level=2, result_frames=1760, result_zenny=100)
 RESULTMATCH_ORIGIN = 8
 
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
@@ -903,19 +926,24 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=55,
             search=range(215, 245),
-            note="pending-src (FIXTURE.md's offered-deck field, +34..39, not read by "
-                 "src/fixture.rs yet). canon: REAL+CHIPSELECT unchanged. rust: CUSTMATCH_ROW "
-                 "through the descriptor -- marker origin 8 plus a band around regress.py's "
-                 "old compared rust frame (its own start=55 PLUS lag[174,190] = 229..245, not "
-                 "lag alone -- 221..237 once origin is subtracted). Will not read 0 until the "
-                 "deck field lands: with no offered-deck field the window opens on a random "
-                 "folder-derived deck, not the real capture's Vulcan1/AirShot/Sword/MiniBomb/"
-                 "Cannon stack.",
+            note="Wave 3b ticket step 2: the deck/deck_codes/window_pick_* fields now land in "
+                 "CUSTMATCH_ROW (src/fixture.rs reads them, verified byte-identical there except "
+                 "a small 371px/2-frame card-picture residual -- zero-src's own ticket). isolated "
+                 "= the window's own layer, not the whole screen: canon --only-bg 3 (measured "
+                 "live, this ticket -- BG3 is the chip-select window itself; BG1 is a flat fill, "
+                 "BG2 the field panels underneath), which also turns OBJ/WIN off "
+                 "(tools/mgba_capture.c's own --only-bg behaviour); rust gets FLAG_BLANK_HUD | "
+                 "FLAG_BLANK_BACKDROP added on top of CUSTMATCH_ROW's own flags so nothing but "
+                 "the window renders there either -- ISOLATED_CUSTMATCH_ROW, not a --only-bg on "
+                 "the rust side (its window may not live on the same BG index; matching by "
+                 "content, not by layer number). canon: REAL+CHIPSELECT unchanged otherwise. "
+                 "rust: marker origin 8 plus a band around regress.py's old compared rust frame "
+                 "(its own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is "
+                 "subtracted).",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW),
-        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=ISOLATED_CUSTMATCH_ROW),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, extra=("--only-bg", "3")),
         canon_variant="canon",
-        pending_src="offered deck (FIXTURE.md +34..39)",
     ),
     Check(
         name="card",
@@ -924,17 +952,18 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=144,
             search=range(205, 240),
-            note="pending-src, same field as `window`. canon: REAL+CHIPSELECT, the SAME "
-                 "5-press-Left script as `cursor` below. rust: CUSTMATCH_ROW (demo-cardname is "
-                 "a feature alias for demo-custmatch with no cfg site of its own -- same "
-                 "descriptor) with the same script -- marker origin 8 plus a band around "
-                 "regress.py's old compared rust frame (start=144 PLUS lag[74,96] = 218..240, "
-                 "210..232 once origin is subtracted).",
+            note="Same wiring as `window` (deck fields land, --only-bg 3 isolates the window "
+                 "layer on canon, ISOLATED_CARDNAME_ROW blanks HUD/backdrop on rust). canon: "
+                 "REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: "
+                 "ISOLATED_CARDNAME_ROW (window_cursor=0, the one byte that distinguishes "
+                 "demo-cardname from demo-custmatch) with the same script -- marker origin 8 "
+                 "plus a band around regress.py's old compared rust frame (start=144 PLUS "
+                 "lag[74,96] = 218..240, 210..232 once origin is subtracted).",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_REAL),
-        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=ISOLATED_CARDNAME_ROW, script=_CURSOR_WALK_REAL),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL,
+                              extra=("--only-bg", "3")),
         canon_variant="canon",
-        pending_src="offered deck (FIXTURE.md +34..39)",
     ),
     Check(
         name="cursor",
@@ -965,21 +994,38 @@ PORTED_CHECKS: List[Check] = [
         frames=40,
         align=Align(
             canon_ref=0,
-            search=range(1, 60),
-            note="pending-src (FIXTURE.md's start_state, +40, not read by src/fixture.rs "
-                 "yet). canon: RESULT_ARRIVAL (AUDIT pair 4/tools/states.py, wave 1's `states` "
-                 "agent) -- captured 32 frames earlier than regress.py's old NOENEMY, so the "
-                 "window's WHOLE slide-in (frames 21..32 of a 40-frame capture, per "
-                 "states.py's own measurement) is inside the window instead of already over: "
-                 "strictly more than regress.py's check_result ever compared. rust: "
-                 "RESULTMATCH_ROW through the descriptor -- will not read 0 until start_state "
-                 "lands, since a plain battle at frame ~1 looks nothing like a battle already "
-                 "resolved into RESULT.",
+            search=range(120, 145),
+            note="Wave 3b ticket step 2: start_state/result_level/result_frames/result_zenny "
+                 "now land in RESULTMATCH_ROW (src/fixture.rs reads them, verified "
+                 "byte-identical there against demo-resultmatch's OWN reference, over 200 "
+                 "frames). canon: RESULT_ARRIVAL (AUDIT pair 4/tools/states.py) -- captured 32 "
+                 "frames earlier than regress.py's old NOENEMY, so the window's WHOLE slide-in "
+                 "(frames 21..32 of a 40-frame capture, states.py's own measurement) is inside "
+                 "the window. MEASURED (this ticket): swept rust offsets 10..380 against both "
+                 "the full 40-frame canon window and just its settled tail (canon frames "
+                 "33..39, after states.py's own note that the slide-in is over by 35) -- NO "
+                 "offset gets close to 0 either way (best full-window ~896k/40f, best "
+                 "settled-tail ~22k/7f = ~3145 px/frame). start_state=1 does not reproduce an "
+                 "ARRIVING result window: rust's own output is in steady motion (6500-10000px "
+                 "swings, alternating roughly every other frame) from marker origin+11 through "
+                 "at least +58 -- a period-~8 blink, matching noenemy2's own documented 'press "
+                 "to continue' cursor blink (tools/states.py's note on NOENEMY), not a one-time "
+                 "slide-in-then-settle curve. FIXTURE.md's start_state is a binary switch ('at "
+                 "the RESULT window already'/not); it has no field for HOW LONG the window has "
+                 "been sitting there, so a fixture can land on 'settled, blinking' but not on "
+                 "'mid slide-in', and even the settled comparison does not match closely -- "
+                 "result_level=2/result_frames=1760/result_zenny=100 are demo-resultmatch's OWN "
+                 "hardcoded values (battle.rs:1993), not verified to be what RESULT_ARRIVAL's "
+                 "particular capture shows. MISSING FIELD: something like 'frames since the "
+                 "RESULT window's own arrival', so the fixture can be aimed at an arbitrary "
+                 "point in its slide-in/settle timeline instead of only its two endpoints "
+                 "(mid-battle, or long-settled). Reported per the ticket rather than worked "
+                 "around; rust_offset below is the best settled-tail candidate, not a real "
+                 "alignment.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULTMATCH_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
         canon_variant="canon",
-        pending_src="start_state (FIXTURE.md +40)",
     ),
     Check(
         name="banner",
