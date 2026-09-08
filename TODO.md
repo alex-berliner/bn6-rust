@@ -187,7 +187,45 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A7. The backdrop's ART ANIMATION is ~7 frames out of step with its own SCROLL
+### A7. The backdrop's art animation  *(mechanism SOLVED; a residue remains -- branch wt/backdrop-art)*
+MY ORIGINAL FRAMING WAS WRONG. The art clock does NOT have a different origin from the scroll:
+`LoadGFXAnims` is called at battle init from `sub_8080DA0`, in the same routine as the scroll's
+own zero, back to back (asm00_1.s:8434-8435).
+
+THE REAL MECHANISM: the art is the same scripted GFXAnim engine the overworld uses
+(`ProcessGFXAnims`, asm00_0.s:3510-3697), driven by a list of (tile-table, delay) entries in
+`eGFXAnimStates` (0x020094c0, GFXAnimState.inc). For this background the script is `off_807FB98`
+(data/dat20.s:140-172): TEN 4-frame entries, then NINETEEN 8-frame entries, a 192-frame loop --
+not the uniform 8-frames-forever, 56-frame loop this build assumed.
+
+VERIFIED EXACT. Simulating the transcribed schedule against `--dump 0x020094c0:24` peeks of the
+real ROM's own `entry`/`Timer`:
+
+    battle frame   1      2      3      5      9        7935
+    real         (0,2)  (0,1)  (1,4)  (1,2)  (2,2)    (13,8)
+    model        (0,2)  (0,1)  (1,4)  (1,2)  (2,2)    (13,8)
+
+The deep-battle column needed care: `pausedwithcannon` is 7891 frames in and the capture runs 44
+frames to reach index 43, so the battle frame is 7935, not 7934. An off-by-one there looks
+exactly like a broken model.
+
+WHERE IT STANDS: `opening` 16788 -> 290 (worst frame 29 px, from 2740). But `tiles` 0 -> 282.
+That is not a regression in the model, it is a phase move: the art period is now 192 rather than
+56, so matching art AND scroll needs LCM(192,896) = 2688 instead of 896, and the check's window
+(390..394, capture 395 frames) no longer contains the match. Derived rather than searched, the
+match is at rust 2184, and a sweep confirms a sharp minimum there -- 282 px against ~3200 and
+~4000 on either side.
+
+WHAT IS LEFT, and it is the honest part: 282 is not 0. At 2184 it splits HUD 55, backdrop 136,
+field 58, bottom 33. The backdrop band never reaches 0 anywhere in a 2760-frame sweep (best 68,
+recurring every 384). Since the OLD model DID reach 0 at frame 391, the tile art itself must be
+exact, so a correct schedule plus exact art should give an exact frame somewhere and does not.
+Something small is still wrong -- most likely our scroll's phase relative to the art differs from
+the real ROM's by a frame or two. THAT is the remaining question, and it is a much smaller one
+than the ticket started with.
+
+DO NOT MERGE THE BRANCH UNTIL THAT IS ANSWERED, because merging as-is turns a `tiles` 0 into a
+282, and a 0 that came partly from luck is still worth more than a non-zero nobody has explained.
 The backdrop is not just a scrolling picture: parts of it ANIMATE, in steps of about 8 frames.
 Counting one of its own colours, magenta (90,0,140), over the whole screen from a battle's
 first frame gives a clean staircase on both sides:
