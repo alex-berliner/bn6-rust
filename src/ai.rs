@@ -12,11 +12,11 @@ use crate::field;
 /// and attacks once a counter fed 1-2 per tick reaches 4, so roughly 87
 /// frames on average (sub_80FBA24, asm31.s:141641); that average stands in
 /// for the counter. The others are placeholders.
-const MOVE_PAUSE: u16 = 29;
-const ATTACK_PAUSE: u16 = 87;
-const DIVIDE_PAUSE: u16 = 150;
+const MOVE_PAUSE: u16 = 29; // provenance: derived -- ProtoMan's planner tick, sub_80FBA24 asm31.s:141641
+const ATTACK_PAUSE: u16 = 87; // provenance: derived -- ProtoMan's counter-of-4-at-1..2-per-tick average, sub_80FBA24 asm31.s:141641
+const DIVIDE_PAUSE: u16 = 150; // provenance: fitted -- Colonel's real planner (five attacks, HP/position driven) is not reproduced; this is a placeholder pace, not read off its own counter
 /// The Mettaur re-arms its alignment check on a 0x1e counter (asm31.s:171029).
-const METTAUR_PAUSE: u16 = 0x1e;
+const METTAUR_PAUSE: u16 = 0x1e; // provenance: derived -- asm31.s:171029
 
 #[derive(Clone, Copy)]
 pub enum Style {
@@ -41,7 +41,12 @@ pub enum Style {
 /// asm00_2.s:20990-21025). Which shape the game picks for which position is
 /// not fully read, so the first shape covering the player is used, and the
 /// last, the 3x3 block without its side centres, when none does.
-pub const CROSS_BASE: (i32, i32) = (2, 2);
+pub const CROSS_BASE: (i32, i32) = (2, 2); // provenance: derived -- dword_8103A04, asm31.s:158121
+// provenance: derived -- the four offset shapes themselves are byte_8103990's
+// own tables (asm31.s:158062, listed at asm00_2.s:20990-21025); WHICH shape
+// the game picks for a given player position is not fully read (see
+// `cross_targets`'s own doc below, "fitted": first-match-wins is a stand-in
+// for that unread selection rule, not itself derived).
 const CROSS_SHAPES: [&[(i32, i32)]; 4] = [
     &[(0, 0), (1, -1), (-1, 1)],
     &[(0, 0), (-1, -1), (1, 1)],
@@ -51,6 +56,9 @@ const CROSS_SHAPES: [&[(i32, i32)]; 4] = [
 
 /// The panels the cross slash will hit for a player at `target`, or None if
 /// the player is out of its reach and the overhead slash should be used.
+/// provenance: fitted -- the selection rule (first shape covering the
+/// player, last shape as fallback) is a stand-in for the game's own unread
+/// per-position table; see `CROSS_SHAPES`'s own doc.
 pub fn cross_targets(target: (i32, i32)) -> Option<&'static [(i32, i32)]> {
     let rel = (target.0 - CROSS_BASE.0, target.1 - CROSS_BASE.1);
     CROSS_SHAPES.iter().copied().find(|s| s.contains(&rel))

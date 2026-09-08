@@ -22,49 +22,49 @@ pub const LOSE: usize = 1;
 /// Where the window rests, measured against the real ROM by aligning the two
 /// windows: 24 px right and 16 px down of what this build had, which is 3
 /// TILES and 2 tiles -- the disassembly's 3 is a tile column, not a pixel.
-const REST_X: i32 = 24;
-const START_X: i32 = -30;
-const SLIDE_STEP: i32 = 2;
+const REST_X: i32 = 24; // provenance: peeked -- aligned against the real ROM's own window (see the doc comment above)
+const START_X: i32 = -30; // provenance: derived -- sub_802C34E, asm03_0.s:12353
+const SLIDE_STEP: i32 = 2; // provenance: derived -- sub_802C34E, asm03_0.s:12353 ("two pixels a frame")
 /// And two tile rows down.
-const Y: i32 = 16;
-const DISMISS_FRAMES: u8 = 0x14;
+const Y: i32 = 16; // provenance: peeked -- aligned against the real ROM's own window (see the doc comment above)
+const DISMISS_FRAMES: u8 = 0x14; // provenance: derived -- sub_802C280, asm03_0.s:12234
 /// The clear time is capped at 9'59"99 (dword_802C548).
-const TIME_CAP: u32 = 0x95999;
-const DIGIT_COLS: [usize; 5] = [20, 19, 17, 16, 14];
+const TIME_CAP: u32 = 0x95999; // provenance: derived -- dword_802C548
+const DIGIT_COLS: [usize; 5] = [20, 19, 17, 16, 14]; // provenance: derived -- sub_802C4E8, asm03_0.s:12558; byte_802C538
 /// The reward picture: 7x6 tiles at these window columns and rows, in the
 /// fourth palette bank. Read off a live results screen's map.
-const REWARD_W: usize = 7;
-const REWARD_H: usize = 6;
+const REWARD_W: usize = 7; // provenance: peeked -- read off a live results screen's own map
+const REWARD_H: usize = 6; // provenance: peeked -- read off a live results screen's own map
 const REWARD_TILES: usize = REWARD_W * REWARD_H;
-const REWARD_COL: i32 = 14;
-const REWARD_ROW: i32 = 10;
+const REWARD_COL: i32 = 14; // provenance: peeked -- read off a live results screen's own map
+const REWARD_ROW: i32 = 10; // provenance: peeked -- read off a live results screen's own map
 /// The palette bank it draws in, which is the fourth this asset carries: the
 /// window's own are 9-11 and the picture's is 12.
-const REWARD_BANK: u8 = 12;
+const REWARD_BANK: u8 = 12; // provenance: peeked -- read off a live results screen's own map
 /// The reward line's row and its last digit column, in window coordinates,
 /// and the bank it draws in.
-const REWARD_TEXT_ROW: i32 = 12;
-const REWARD_TEXT_LAST: i32 = 9;
-const REWARD_TEXT_BANK: u8 = 9;
-const ZENNY_GLYPH: u16 = 0xb3;
+const REWARD_TEXT_ROW: i32 = 12; // provenance: peeked -- read off the capture's own map ("100 z" at rows 12-13)
+const REWARD_TEXT_LAST: i32 = 9; // provenance: peeked -- read off the capture's own map, columns 7-9 and 11
+const REWARD_TEXT_BANK: u8 = 9; // provenance: peeked -- read off the capture's own map
+const ZENNY_GLYPH: u16 = 0xb3; // provenance: peeked -- found by searching all 448 glyphs of the real ROM's own font for the reward line's symbol
 /// The GET DATA readout's bottom edge, which the live window and the stored
 /// map disagree about: the map's tile there carries a lit top pixel row
 /// (colour 9) and the real ROM's cells are flat colour 2, tile 0xc4. The
 /// game replaces the run of ten as it draws the reward, so this build does
 /// the same, in the same place. Read off the real ROM's own map -- the last
 /// 80 pixels of the window, one pixel row of ten cells.
-const REWARD_EDGE_ROW: i32 = 14;
-const REWARD_EDGE_FIRST: i32 = 2;
-const REWARD_EDGE_LAST: i32 = 11;
-const REWARD_EDGE_TILE: u16 = 0x0c4;
-const FONT_TILE: u16 = 0xa0;
+const REWARD_EDGE_ROW: i32 = 14; // provenance: peeked -- read off the real ROM's own map
+const REWARD_EDGE_FIRST: i32 = 2; // provenance: peeked -- read off the real ROM's own map
+const REWARD_EDGE_LAST: i32 = 11; // provenance: peeked -- read off the real ROM's own map
+const REWARD_EDGE_TILE: u16 = 0x0c4; // provenance: peeked -- read off the real ROM's own map
+const FONT_TILE: u16 = 0xa0; // provenance: derived -- sub_802C4E8, asm03_0.s:12558
 /// The level readout sits at row 6, columns 16-20, its digits right-aligned;
 /// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
 /// (sub_802C6EC, asm03_0.s:12830-12888).
-const LEVEL_ROW: i32 = 6;
-const LEVEL_COL: i32 = 16;
-const S_TILE: u16 = 0xb6;
-pub const LEVEL_S: u8 = 0xb;
+const LEVEL_ROW: i32 = 6; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+const LEVEL_COL: i32 = 16; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+const S_TILE: u16 = 0xb6; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+pub const LEVEL_S: u8 = 0xb; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
 
 /// What went into the busting level, from the game's per-alliance counters
 /// (byte_203EAE0; sub_800AC20, asm00_1.s:16678-17055).
@@ -85,6 +85,8 @@ pub struct Tally {
 /// hits and a counter 0xb that stays zero here -- none of which this battle
 /// can produce yet -- so those terms are left out rather than scored as free
 /// points.
+/// provenance: derived (every constant below) -- off_800ADDC/byte_800AE00,
+/// sub_800AC20 asm00_1.s:16678-17055.
 pub fn busting_level(t: &Tally) -> u8 {
     let seconds = t.time / 60;
     let base: i32 = if seconds < 5 {
@@ -133,7 +135,10 @@ enum Phase {
     },
     /// The screen fade the game runs on dismissal (sub_802C280 ends with a
     /// SetScreenFade of 0x10 steps); one step a frame stands in for its
-    /// cadence, which was not read.
+    /// cadence, which was not read. provenance: the step COUNT (16) is
+    /// derived -- sub_802C280's own SetScreenFade call; the RATE (one step a
+    /// frame, in `Shown::update` below) is fitted -- the real cadence was
+    /// not read.
     Fading {
         step: u8,
     },

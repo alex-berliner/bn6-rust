@@ -13,18 +13,18 @@ use agb::display::{Palette16, Rgb15};
 use alloc::vec::Vec;
 
 const MAGIC: &[u8; 4] = b"BNFT";
-const GLYPH_BYTES: usize = 0x40;
-const GLYPH_W: i32 = 8;
+const GLYPH_BYTES: usize = 0x40; // provenance: derived -- dword_86E0AB8's own per-glyph stride, two stacked 8x8 tiles (tools/font_export.py)
+const GLYPH_W: i32 = 8; // provenance: derived -- an 8x16 OBJ glyph's own pixel width
 
 /// The digit sets the asset carries: the plain one and the two the game
 /// flashes with after damage or a heal.
-pub const SETS: usize = 3;
+pub const SETS: usize = 3; // provenance: derived -- the exporter's own asset layout (dword_86E0AB8)
 pub const SET_PLAIN: usize = 0;
 pub const SET_DAMAGE: usize = 1;
 pub const SET_HEAL: usize = 2;
 
 /// Digits the game's object-text HP readout has room for.
-const MAX_DIGITS: u32 = 4;
+const MAX_DIGITS: u32 = 4; // provenance: peeked -- a capture with HP forced to 0xffff reads back "5535", not "65535"
 
 pub struct Hud {
     digits: Vec<SpriteVram>,
@@ -66,7 +66,8 @@ impl Counter {
         }
         // Fifteen, measured: the real ROM's HP box holds its orange ramp for
         // seventeen frames after a ten-point hit, of which three are the
-        // countdown itself.
+        // countdown itself. provenance: peeked (15, 1) -- measured off a
+        // live capture's own flash duration.
         let (set, flash) = if actual < self.shown {
             (SET_DAMAGE, 15)
         } else {
@@ -76,7 +77,8 @@ impl Counter {
         self.flash = self.flash.max(flash);
         // Measured on a capture whose navi drops from 60 to 50: the box shows
         // 55, then 51, then 50 -- steps of 5, 4 and 1, which is
-        // |difference| / 8 + 4, not + 2.
+        // |difference| / 8 + 4, not + 2. provenance: peeked (8, 4) -- fits
+        // that one capture's own step sequence; no disassembly citation.
         let step = self.shown.abs_diff(actual) / 8 + 4;
         self.shown = if actual < self.shown {
             self.shown.saturating_sub(step).max(actual)

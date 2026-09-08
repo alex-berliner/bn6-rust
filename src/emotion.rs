@@ -14,10 +14,10 @@ use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, Spr
 use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
 
 /// Where the two objects go, measured off the real ROM's OAM.
-const LEFT: (i32, i32) = (0, 18);
-const RIGHT: (i32, i32) = (32, 18);
+const LEFT: (i32, i32) = (0, 18); // provenance: peeked -- read off the sterile arena's own OAM (object 2)
+const RIGHT: (i32, i32) = (32, 18); // provenance: peeked -- read off the sterile arena's own OAM (object 3)
 /// Tiles in the wide object; the rest belong to the narrow one.
-const WIDE_TILES: usize = 8;
+const WIDE_TILES: usize = 8; // provenance: derived -- a 32x16 object is 4x2 8x8 tiles, the exporter's own asset layout
 
 pub struct Emotion {
     wide: SpriteVram,

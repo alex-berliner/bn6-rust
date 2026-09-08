@@ -6,12 +6,12 @@
 use agb::display::tiled::{TileFormat, TileSet};
 
 const MAGIC: &[u8; 4] = b"BNCH";
-const RECORD: usize = 36;
+const RECORD: usize = 36; // provenance: derived -- tools/chip_export.py's own fixed-width record layout, not a ROM constant
 /// A card picture is 7 x 6 tiles (sub_80284E2 copies 0x540 bytes,
 /// asm03_0.s:4399).
-pub const PICTURE_TILES: (usize, usize) = (7, 6);
+pub const PICTURE_TILES: (usize, usize) = (7, 6); // provenance: derived -- sub_80284E2, asm03_0.s:4399 (0x540 bytes = 42 4bpp tiles = 7x6)
 /// Code byte for '*', which matches any other (sub_8028E4C, asm03_0.s:5595).
-pub const WILDCARD: u8 = 0x1a;
+pub const WILDCARD: u8 = 0x1a; // provenance: derived -- sub_8028E4C, asm03_0.s:5595
 
 pub struct Chips {
     data: &'static [u8],
@@ -56,7 +56,7 @@ impl Chips {
             power: u16_at(4),
             codes: r[6..10].try_into().unwrap(),
             name: r[10..19].try_into().unwrap(),
-            icon: &self.data[icon..icon + 0x80],
+            icon: &self.data[icon..icon + 0x80], // provenance: derived -- byte_8725894's own per-chip stride, four 8x8 4bpp tiles
             picture: &self.data[picture..picture + len],
             palette: &self.data[palette..palette + 32],
         }
