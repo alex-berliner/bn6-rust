@@ -121,15 +121,32 @@ def check_chips():
 #: out to rust frame 7560. Zero drift over 7168 elapsed frames also says our scroll
 #: RATE matches the real ROM's exactly, which is the thing a single matching frame
 #: could never have shown on its own.
-TILES_RUST_FRAME = 392
+#: WHY THIS IS A SMALL WINDOW AGAIN, AND NOT A SINGLE FRAME. Pinning one frame
+#: turned out to pin the wrong thing. `tiles` is the only check anchored to an
+#: absolute BOOT-relative frame -- no script, no event, just "the 392nd frame
+#: after reset" -- and boot length is not invariant under a source change. Fat
+#: LTO reorders and re-inlines globally, so a change in `Shot::update` moved the
+#: intro: the pre-fix and post-fix builds first differ at frame SEVEN, nowhere
+#: near a shockwave, and the whole timeline lands a frame later. Every other
+#: check survived it, because they align on a script, an event or a `best()`
+#: window; only this one broke, and it broke by exactly the one frame.
+#: A window of five restores that tolerance without giving up the strictness the
+#: single frame was for. The neighbours are not near-misses -- 390 differs by
+#: 110 px and 393 by 3295 -- and the backdrop's period is 896 frames, so there is
+#: no second phase to land on by accident inside a five-frame window. A real
+#: phase or rate error still finds no zero anywhere in it.
+TILES_RUST_FRAMES = range(390, 395)
 
 
 def check_tiles():
     build("demo-hudmatch", "/tmp/rg_hud.gba")
     capture(REAL, "/tmp/rg_tr", 60, "--loadstate", PAUSED, "--script", "Start@10", "--disable-obj")
-    capture("/tmp/rg_hud.gba", "/tmp/rg_tu", TILES_RUST_FRAME + 1, "--disable-obj")
-    return (diff("/tmp/rg_tr", 43, "/tmp/rg_tu", TILES_RUST_FRAME, (0, 0, 240, 160)),
-            "whole screen, fixed frame %d" % TILES_RUST_FRAME)
+    capture("/tmp/rg_hud.gba", "/tmp/rg_tu", max(TILES_RUST_FRAMES) + 1, "--disable-obj")
+    scores = [(diff("/tmp/rg_tr", 43, "/tmp/rg_tu", f, (0, 0, 240, 160)), f)
+              for f in TILES_RUST_FRAMES]
+    got, at = min(scores)
+    return got, "whole screen, best of %d..%d (at %d)" % (
+        min(TILES_RUST_FRAMES), max(TILES_RUST_FRAMES), at)
 
 
 def check_field():
@@ -415,7 +432,7 @@ CHECKS = [
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
-    ("mettaur", check_mettaur, 345),    # departure, 3 of 70 frames, A1/7ah
+    ("mettaur", check_mettaur, 0),
     ("wave", check_wave, 960),          # panel light, first hop, 1 of 90 frames, 7ai
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames

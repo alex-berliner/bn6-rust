@@ -241,10 +241,10 @@ impl Shot {
         // and only call `object_updateSprite` on the frames it does not
         // vanish.
         if let Some((player, _)) = &mut self.departure {
-            if player.on_last_frame() {
+            let was_last = player.on_last_frame();
+            player.update();
+            if was_last && player.frame_key().1 == 0 {
                 self.departure = None;
-            } else {
-                player.update();
             }
         }
         if self.delay > 0 {

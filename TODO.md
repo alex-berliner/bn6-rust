@@ -39,9 +39,14 @@ measurement first.
 
 ## A. Measured residues — small, self-contained, all have a number
 
-### A1. The shockwave's departure — 3 frames left of 4  *(mostly done -- TRANSFER 7ah)*
-460 px to 345. The mechanism is modelled: a hop spawns a NEW segment and the old one stops
-where it is and plays its own animation out until its authored last frame comes round.
+### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
+460 px to 345 to ZERO. The mechanism was modelled -- a hop spawns a NEW segment and the old
+one stops where it is and plays its own animation out -- and the last three frames were the
+segment being destroyed too early. `on_last_frame()` was checked BEFORE ticking, so the
+fragment spray (`wave.bin` anim 0 frame 4) was never ticked and never shown.
+`sprite_getFrameParameters` masks 0x80 out unless the frame's own duration counter has
+already reached zero (sprite.s:1182-1198), so the bit means "held for its full duration",
+not "reached". Real and ours are now both 2 poses over 5 frames, hash-identical.
 
 THE PER-HOP TABLE IS A DEAD END -- DISPROVED, TRANSFER 7bh. `byte_80C6B00` is 16 rows of 4
 bytes indexed by `Param1 * 4` (asm31.s:31411-31416), and `Param1` is INHERITED across a hop:

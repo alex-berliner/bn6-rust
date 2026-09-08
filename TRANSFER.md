@@ -1192,6 +1192,84 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bj. The departing segment: mettaur 345 -> 0, and a fixture that was pinned wrong (2026-09-07)
+
+FOURTEEN OF FIFTEEN CHECKS ARE AT ZERO. Only `wave` (960) is left.
+
+THE FIX, one condition. `Shot::update` dropped the departing segment the instant
+`on_last_frame()` went true, before ticking it. So `wave.bin` animation 0 frame 4 -- the
+fragment spray at the panel just vacated -- was never ticked and never shown. Measured on
+the spray's own box, both sides at lag 21:
+
+    real          pose A 2 frames, then pose B 3 frames, gone on the 6th   2 poses, 5 frames
+    ours, before  pose A 2 frames, gone immediately                        1 pose,  2 frames
+    ours, after   pose A 2 frames, then pose B 3 frames, gone on the 6th   2 poses, 5 frames
+
+and the after row is hash-identical to the real one, not merely the same pixel count.
+
+WHY, and it is a general rule rather than a detail about this object.
+`sprite_getFrameParameters` (sprite.s:1182-1198) BIC's bits 0x80 and 0x40 out of the flags
+it returns unless `Unk_01`, the frame's own remaining duration counter, has already reached
+zero. So polling for 0x80 does not tell you "the last frame has been reached". It tells you
+"the last frame has been reached AND has already been held for its full authored duration".
+Anything that destroys an object on first sight of the bit drops that object's final frame
+entirely. `object_updateSprite` also runs unconditionally every tick whatever the CurAction
+is (asm31.s:31409), so a departed segment keeps animating exactly like a live one.
+
+AND THEN `tiles` BROKE, AND THE INTERESTING PART IS WHY. It went 0 -> 3295, which is exactly
+the value its own comment records for the NEXT frame. Not a broken backdrop: the whole
+screen -- HUD 1120, backdrop 1571, field 362, bottom 242 -- had moved one frame on.
+
+I got this wrong first and told the worker its result was contamination. It was not; I had
+measured a build with the fix REVERTED. The worker was right and said so with three
+from-scratch builds. Its own explanation, path-length-sensitive layout, was wrong too, and
+that was cheap to settle: `demo-hudmatch` built under three different `CARGO_TARGET_DIR`s,
+one of them deliberately long, is byte-identical all three times. The target directory does
+not change the ROM.
+
+What actually happens: the pre-fix and post-fix builds first differ at FRAME SEVEN, nowhere
+near a shockwave, and it is not a clean one-frame slide either. This is 7bd's own caveat --
+under fat LTO, growing one function changes the global inliner's decisions elsewhere -- and
+it moves the intro. `tiles` was the ONLY check anchored to an absolute BOOT-relative frame,
+with no script and no event to align on, so it was the only one that could break this way,
+and every other check rode through unmoved.
+
+So the single frame was pinning the wrong thing. It is a five-frame window again, 390..394,
+and that gives up nothing: 390 differs by 110 and 393 by 3295, and the backdrop's period is
+896 frames, so there is no second phase to land on by accident inside five. A real phase or
+rate error still finds no zero anywhere in it.
+
+TWO LESSONS. A check anchored to "the Nth frame after reset" is measuring the compiler as
+well as the game. And when a worker's number disagrees with yours, build the thing yourself
+before telling them they are wrong -- I had the tree in a different state than I thought,
+which is exactly the mistake the hygiene rules exist to prevent.
+
+## 7bi. The backdrop's period is 896, and the rate is right (2026-09-07)
+
+`battlestart.state` reads 0/0 in both `eBGScrollCBCounters` words against `pausedwithcannon`'s
+-63128/-31564, and 63128/8 = 31564/4 = 7891 exactly. So a capture with a KNOWN phase origin
+exists now, which A4 had called the single most valuable thing the harness did not have.
+
+It does not produce a better fixture, and that is worth recording so nobody tries again. Real
+from `battlestart.state` against `demo-open`, backgrounds only: the best the backdrop band
+alone reaches anywhere in the usable window is 86 px, never 0. The residual is thin, scattered
+over rows 32-54 and mirrored at x+128 -- the art's own 8-frame animation step not landing on
+the same integer frame as the scroll phase. Below real frame 90 is the white intro; above 190
+the third virus's materialisation diverges. Neither end offers anything better.
+
+WHAT IT DID SETTLE, and this is the valuable part. The lag does NOT drift: it sits at 7 or 8
+from real 90 to real 185 with no creep, alternating only because HOFS moves once every two
+frames. And the backdrop's VISUAL period is 896 frames, not the 1024 the register modulus
+implies -- the motif repeats within the map at x+128, taking an eighth off -- confirmed by
+`diff(real 43, rust 392 + k*896) == 0` for k = 0..8, out to rust frame 7560.
+
+Nine matching frames 896 apart say the RATE matches, which one matching frame never could.
+The worry that our backdrop advanced at a different speed and that frame 392 was hiding it is
+answered: it does not.
+
+`BGScrollCB_BG1Diagonal3to2Scroll` is at asm00_0.s:3272-3288, not the 2165 this file and
+`regress.py` both cited -- the submodule's line numbers have shifted since.
+
 ## 7bh. The shockwave's per-hop table is a dead end, with a citation (2026-09-07)
 
 `mettaur` stays at 345 and `wave` at 960, and the leading theory for both is now DISPROVED
