@@ -144,7 +144,25 @@ from `TextScript86F0300`, sound effects 0x91/0x92 on cursor moves, and
 The banner half is nearly free — `src/banner.rs` already carries all 45 messages and the
 freeze is one condition. Verify against a capture that presses Start mid-battle.
 
-### B2. Panel damage  *(researched -- ready to implement)*
+### B2. Panel damage  *(CLOSED, not reachable -- TRANSFER 7bg)*
+DO NOT IMPLEMENT THE CHARGE-SHOT CLAIM. It was read to the end and it breaks at its own
+citation. `Unk_03` was peeked and is 0 on every frame (0x02034123, MegaMan's slot) -- the
+one part that was right -- so the shot really does carry `Param1` = 1. But `Param1` only
+chooses the BRANCH: the default branch then overwrites r2 with
+`[RelatedObject1Ptr]->CurState` and passes THAT to `object_setPanelType`
+(asm31.s:27869-27873). The panel bookkeeping moves at the hit exactly as it should and the
+type stays NORMAL. Only `Param1` in {7, 0x15, 0x16} cracks or breaks, and nothing this
+build fields produces those. The charge shot joins the NOT REACHABLE list below.
+
+Two harness notes from the attempt, both worth keeping: `--dump`'s byte count is parsed
+with `atoi` and silently reads 0 from a `0x`-prefixed string, so it must be DECIMAL; and
+holding B for 150 frames does NOT charge the buster on this fixture, because the Mettaur
+re-tracks MegaMan's row -- oscillating rows every ~15 frames through both attack windows
+and then holding still is what reaches a full undamaged charge.
+
+The rest of the entry stands as the record of a well-cited claim that did not survive.
+
+### B2 (original research, kept for the record)
 `src/field.rs` carries the art for all five panel states and nothing drives cracked or
 broken. The research says what is reachable and what is not, and the answer is narrower
 and more useful than expected.
@@ -291,6 +309,13 @@ chip and a number in the popup.
 `mettaur` (345) and `wave` (960) both have checks, alignment done the 7ah way, wants
 measured rather than copied. A `cursor` check was added too. Fifteen checks now.
 
+
+### D3. `--dump`'s byte count silently reads 0 from hex
+`tools/mgba_capture.c`'s `--dump addr:bytes:file` parses the middle field with `atoi`,
+which returns 0 for `0x1c0` and dumps an empty file with no error. The address beside it
+uses `strtoul(..., 0)` and does accept hex, so the two halves of the same argument disagree
+about their base -- which is exactly the sort of thing that costs an hour. Use `strtoul`
+with base 0 for the count too, and refuse a count of 0 loudly. Found during B2.
 
 ### D2. Make the harness clean up after itself, everywhere  *(done)*
 `regress.py`'s rollup check, `chip_compare.py --clean` (which `scoreboard.py` now always

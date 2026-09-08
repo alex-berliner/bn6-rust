@@ -1192,6 +1192,55 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bg. Panel damage: the chain was read to the end, and it breaks at the citation (2026-09-07)
+
+The charge shot does NOT break the panel it hits, the measurement in 7-B2 stands, and the reason is
+now known to the instruction. This is the third time a well-cited static claim in this project has
+turned out to be wrong in its LAST link, and it is worth reading as a pattern.
+
+The claim was: buster and charge shot share the type-0 straight-shot object; on a hit it switches on
+`Param1`; the default branch calls `object_setPanelType(hit_panel, Param1)`; the charge shot's
+`Param1` comes from `byte_80EBD34[Unk_03]` and index 0 gives 1, which is PANEL_BROKEN. Its author
+flagged the weak link themselves: `Unk_03` was inferred, never read.
+
+`Unk_03` WAS THE ONE PART THAT WAS RIGHT. Read out of RAM at `AIDataPtr + 0xa0 + 3` = 0x02034123 for
+MegaMan's slot, it is 0 on every frame from 59 to 238, and it is 0 for a reason: every write site in
+the ROM is virus AI script logic, and MegaMan's `AIData.ActorType` is 2, PLAYER. Nothing resets it
+because nothing in the player's path ever sets it. So `byte_80EBD34[0]` = 1 and the shot really does
+carry `Param1` = 1.
+
+THE BREAK IS AT asm31.s:27869-27873, the exact lines the claim cited. `Param1` is read into r2 once
+at 27818 and compared against 7, 0x15, 0x16, 0x22 and 0x24. 1 matches none of them, so it does reach
+the default branch -- and then the default branch OVERWRITES r2:
+
+	ldr  r3, [r5,#oBattleObject_RelatedObject1Ptr]
+	ldrb r2, [r3,#oBattleObject_CurState]
+	cmp  r2, #0xff
+	beq  loc_80C4FF0
+	bl   object_setPanelType
+
+The type it sets comes from the RELATED OBJECT, not from `Param1`. `Param1` only ever chose the
+branch. Reading four lines further than the claim did would have shown it.
+
+The measurement agrees in detail rather than just in outcome. Panels (5,1) and (5,2) read Type 2
+(NORMAL) on every frame from 205 to 359, unchanged through the hit -- but the panel bookkeeping DID
+move exactly at the hit: `ReserverObjectPtr` at (5,1) went 0 -> 0x0203ab60, the Mettaur's own
+header, and Flags briefly gained bit 0x80000000 at frames 219-220. So the hit registered, the
+panel-solid gate passed, `object_setPanelType` almost certainly ran, and it wrote back the type the
+panel already had.
+
+Extend the NOT REACHABLE list: the charge shot belongs on it, alongside the Version-0 shockwave and
+the bombs. Only `Param1` in {7, 0x15, 0x16} cracks or breaks, and nothing this build fields produces
+those.
+
+TWO THINGS FOR THE HARNESS, both learned the hard way here. `--dump addr:bytes:file` parses its byte
+count with `atoi`, which silently returns 0 for a `0x`-prefixed string -- byte counts must be
+DECIMAL. And holding B for 150 frames does not charge the buster on this fixture: the Mettaur
+re-tracks MegaMan's row within tens of frames, so a single row change does not dodge its ~70-frame
+cycle and the charge is interrupted at 89 of 100. Oscillating rows every ~15 frames through both
+attack windows and then holding still reaches `PwrAtkCurChargeTime` 100 and `PwrAtkState` 2
+undamaged. Any future charge-shot capture needs that script.
+
 ## 7bd. The build is deterministic; the layout scare is retired (2026-09-07)
 
 A worker had reported that ANY source edit, including to code that never runs, shifts the Mettaur's
