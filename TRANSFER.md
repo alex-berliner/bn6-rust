@@ -1154,6 +1154,119 @@ is exactly the kind of plausible-sounding wrong answer this file keeps warning a
 The useful shape of the finding: THE FIRE IS PSG AND THE HIT IS A SAMPLE. Any further sound should
 be soloed first to find out which of the two it is, before a single line is written.
 
+## 7bc. The bracket's blink: an origin that was said not to exist (2026-09-07)
+
+`cursor` 3152 -> 0, and the fourteenth check reaches zero. The interesting part is not the fix,
+which is one line, but that this file and `regress.py` both carried a written-down claim that the
+residue was UNFIXABLE IN PRINCIPLE -- "two clocks with no shared origin cannot be compared, only
+coincided" -- and the claim was false. Nobody had read `sub_8028820`. It had been blamed on
+`CURSOR_DELAY`, and then on `Battle::new` growing enough to cross a vblank during construction.
+Neither was involved.
+
+WHAT IT ACTUALLY IS. The phase is `(counter >> 3) & 1`: `ldr r5,[r5,#0x40]` (asm03_0.s:4801),
+`lsr r5,r5,#3 / and r5,r4` (asm03_0.s:4803-4804), and the bit is added to base tile 0xb764
+(asm03_0.s:4812-4813). Neither phase hides the bracket -- they are two tiles a pixel apart at the
+corners, which is why a toggle costs 92 px and not the whole bracket. The counter is a 32-bit field
+of the window's own struct at **0x02036500** (`oS20364C0_Extra_Unk_40`, S20364C0.inc:47-58), and
+its life is entirely window-relative: state 0 of the window's state machine seeds it to 0x78 and
+subtracts 0xc a frame (asm03_0.s:910-916), state 4 increments it once a frame
+(asm03_0.s:1163-1165), and selecting re-zeroes it (asm03_0.s:1151-1152). So it is window-relative on
+BOTH sides. An origin exists. The save state's value is simply not zero.
+
+Peeked: `--peek 0x02036500` on /tmp/chipselect.state reads **0x647**, and 0x020364C0 reads 4, the
+interactive state, which confirms the slot. Measured rather than assumed: with the real side static
+the bracket toggles at capture frames 2, 10, 18, ... so the DRAWN counter at capture frame f is
+1606 + f. Sweeping the rust side's frame offset against the real side, both static, the totals fall
+in a clean V -- 368 px at +0, **0 at +1**, 368 at +2 -- so the phases agree mod 16, not merely mod 8,
+and the error is exactly one frame.
+
+AND THE FRAME WAS OURS. `Custom::update` reduced `Phase::Opening { x }` to `x == 0` and then reached
+`Phase::Open` through a SECOND match arm on the following frame, where the real ROM advances to
+state 4 inside the same call that zeroes the counter (asm03_0.s:1011-1012). One frame, and nothing
+in the game could see it: the window is fully revealed during it, so `window` and `card` sat at 0
+throughout and still do. Only the blink counts from that transition.
+
+THE LESSON, and it is the same one as 7ah and 7ai. A residue that has been explained twice and is
+still there has not been explained. "These two clocks have no shared origin" is a claim about the
+real ROM, and claims about the real ROM are readable. The measurement that settled it -- hold both
+sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
+should have come first.
+
+## 7bd. The build is deterministic; the layout scare is retired (2026-09-07)
+
+A worker had reported that ANY source edit, including to code that never runs, shifts the Mettaur's
+attack timing by whole frames. If true it would have invalidated every fixed-frame check in
+`regress.py`. Tested properly, with a private `CARGO_TARGET_DIR`, it is FALSE.
+
+Identical source gives a byte-identical ROM and a byte-identical 290-frame capture, including after
+a forced recompile. A comment in a file off the battle path, a dead `const`, a dead
+`#[inline(never)] fn`, and a dead local INSIDE the Mettaur strike arm itself all left the spawn
+frame at 198 and the capture hash unchanged.
+
+The ROM hash does move, and the reason is worth keeping: exactly six bytes differ, each the old
+value plus one, five of them clustered in 96 bytes of `.rodata`. `assert_eq!` is `#[track_caller]`
+and bakes a `core::panic::Location { line, .. }` per call site; `src/results.rs` has five, and
+adding one comment line shifts all five line numbers by one. Dead data that is only read if an
+assertion fails. A DIFFERENT ROM HASH IS NOT A DIFFERENT ROM.
+
+The mechanism the original report was reaching for is real but far away: the harness samples the
+framebuffer on a fixed cycle schedule from reset, so anything that burns real cycles before the
+frame loop delays every later index. It took a deliberate two-million-iteration `black_box` spin
+loop to move it -- 198 to 376. Nothing resembling an ordinary edit gets near that, and such an edit
+would move every cold-boot check together, which is a loud signature and not silent nondeterminism.
+There is no RNG anywhere near the Mettaur's timing to begin with: `METTAUR_PAUSE` is a plain frame
+counter (src/ai.rs:19,110) and the only `Rng` has a fixed seed and feeds the folder shuffle.
+
+Most likely cause of the original observation: two builds racing the shared target directory, which
+is the exact footgun TODO.md's rules already warn about. It produces precisely this symptom, because
+the cause has nothing to do with the edit.
+
+## 7be. The chip-name popup does not gate on the chip (2026-09-07)
+
+`object_drawChipName` (object.s:183-239) tests no chip category and no ChipData flag to decide
+whether to draw. Its gate is `sub_800B892(Alliance ^ 1)`, which is `byte_203CF00[a * 0x50 + 1]`
+(object.s:934-939) -- a per-alliance RAM synchronisation byte that serialises the two sides'
+announcer slots so both popups do not animate at once. Its argument is the OPPOSING alliance and it
+has nothing to do with the chip. `ChipData+9` bit 1 (object.s:210-217) does not gate anything
+either: both branches reach the draw, and the bit only decides whether `Damage` and `Unk_32` ride
+along as a number beside the name.
+
+Which chips get a popup is therefore not a runtime test at all -- it is which OBJECT the chip's use
+spawns. `object_drawChipName` is referenced exactly 16 times in the ROM, each a literal phase-table
+entry of the form `[object_dimScreen, object_drawChipName, <own effect>, object_undimScreen]`.
+
+So `attack_family == 0x15` stays. It is right for all 43 implemented chips, and the wider table is
+consistent with it: 84 of the 411 chips carry family 0x15, and they group into exactly the tiers
+(Barrier/100/200, AirRaid1-3, BurnSqr1-3, Sensor1-3, SumnBlk1-3, TimeBom1-3) that would collapse
+onto those 16 shared objects. THE ONE GAP: those 84 split cleanly by `ChipData+9` bit 1 into "no
+damage number" (AreaGrab, Invisibl, the barriers, Wind, Geddon, ...) and "damage number" (the traps
+and obstacles -- Mine, TimeBom, AirRaid, Guardian, AntiDmg, ElemTrap). `NamePopup` draws letters
+only. The first trap chip implemented will need the number too, and that means exporting one bit
+per chip.
+
+## 7bf. The pre-RESULT countdown is 94, not 102, and states 6-9 are a dead end (2026-09-07)
+
+`off_8008038` (asm00_1.s:10370-10380) is not an end-of-battle pipeline at all -- it is the GENERIC
+BANNER SEQUENCER, reused for BATTLE START!, TURN START!, ENEMY DELETED, MEGAMAN DELETED and the
+result messages, selected by writing pre-multiplied byte offsets into `dword_203CA70`. States 6-9
+(`sub_800834A`/`sub_80083E4`/`sub_8008452`/`sub_8008492`, asm00_1.s:10753/10842/10898/10930) are a
+sibling branch entered only when `sub_800A152()` returns 7, a different battle outcome. They never
+run on the enemy-kill path and cost nothing. C2's premise was wrong.
+
+The real correction is to the countdown. It is not always 0x66: state 3 (`sub_80081A4`,
+asm00_1.s:10542) picks between `mov r4,#0x5e` (94) with `SONG_WINNER_0` and `mov r4,#0x66` (102)
+with `SONG_WINNER_1` on `BATTLE_EFFECT_SHOW_RESULTS`, bit 0x2 of `GetBattleEffects()`
+(asm00_1.s:10580-10592). The one field-encounter row of `BattleSettings` (data/BattleSettings.s:6)
+has that bit SET, so a field battle counts **94**, and the banner's own idle at frame 106 is not the
+binding constraint -- 49 + 94 = 143 is. The dispatch out of state 3 costs no frame
+(asm00_1.s:13089-13104).
+
+That leaves 143 + 1 + N + 1 against a measured 159, so N = 14 frames of the reward tally in
+`sub_8009478` (asm00_1.s:13129), which waits on two completion sentinels driven by a transfer-buffer
+consumer with a fixed 5-step decrement (asm01.s:254-258). The derivation is now 150 of the 159
+rather than 151 of a wrong 159; the rest needs a frame-by-frame dump of `dword_203F4A0` and
+`dword_203F5A0` from frame 143. This build's measured 110 is unaffected either way.
+
 ## 7ay. THE LOOP CLOSES (2026-09-07)
 
 A whole battle now runs end to end in the rollup build, which it could not do this morning: the

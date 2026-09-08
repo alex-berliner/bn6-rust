@@ -54,12 +54,13 @@ cursor statically and never walks, so a scripted real walk was being compared ag
 still picture. `demo-custmatch` starts on OK as the save state does, so both sides run the
 same script.
 
-STILL OPEN, and it is a fixture problem not a build one: the check's `want` is 3152, which
-is entirely the bracket's blink one frame out. That blink counts from the window's own
-opening and the two sides have no shared origin for it. It read 0 for a while and then did
-not, after a change that cannot affect this fixture's logic. Anchoring it needs something
-both sides share -- most likely a battle-relative counter rather than a window-relative
-one. Check what `sub_8028820` (asm03_0.s:4807) actually reads its frame counter FROM.
+CLOSED at 0 -- TRANSFER 7bc. The paragraph that used to stand here said the residue was a
+fixture problem with no shared origin and could only ever coincide. That was wrong, and
+nobody had read `sub_8028820`. The blink counter is window-relative on both sides (a field
+at 0x02036500, asm03_0.s:4801-4804 and 1163-1165); the save state's value is just not zero
+(0x647, peeked). Held static and swept, the offset was exactly +1 frame, and the frame was
+ours: the slide-in reached `Phase::Open` through a second match arm a frame after the real
+ROM advances to state 4 in the call that zeroes the counter (asm03_0.s:1011-1012).
 
 
 ### A3. The shockwave's panel light — 89 of 90, one frame left
@@ -83,15 +84,14 @@ post-hit invincibility, and it went dark only when a hit actually landed. The si
 window because that window covers a first hit on a fresh target. Modelling it properly
 means modelling mercy invincibility.
 
-WHAT IS LEFT is the wave's FIRST hop, one frame, and one claim to check before trusting
-it. The agent reported that ANY source edit -- including in code that never runs before
-the wave spawns -- shifts the Mettaur's whole attack timing by whole frames uniformly,
-identical source always reproducing identical frames, which it read as binary-layout
-sensitivity in boot or vblank sync rather than RNG. That would be a serious problem for
-every RNG-driven comparison, so it deserves independent confirmation: it sits awkwardly
-beside the fact that `field`, `warp`, `buster` and `chip-use` all compare at FIXED frame
-numbers and have stayed at zero across dozens of builds today. Confirm or refute it
-first; if it is real it is a bigger ticket than this one.
+WHAT IS LEFT is the wave's FIRST hop, one frame. THE LAYOUT SCARE IS RETIRED (TRANSFER
+7bd): the claim that any source edit shifts the Mettaur's timing was tested with a private
+target directory and is false. Identical source gives byte-identical ROMs and captures; a
+comment, a dead const, a dead function and a dead local inside the strike arm itself all
+left the spawn frame at 198. The ROM hash moves only because `assert_eq!` bakes
+`panic::Location` line numbers into `.rodata` -- six dead bytes. The likely cause of the
+original report was two builds racing the shared target directory. So the first hop can be
+chased directly, with no methodology worry attached to it.
 
 ### A4. Pin the backdrop's scroll phase  *(done -- see TRANSFER 7av)*
 `tiles` compares a fixed frame 392 now, not the best of sixty. The phase counts from battle init
@@ -246,12 +246,21 @@ battle fields three Mettaurs and this one fields one. A fixture with a matching 
 settle the intro's length and the screen fade's real frame count in one go.
 
 
-### C2. The last 8 frames before the RESULT window
-The handler that raises the banner arms a countdown of 0x66 = 102 frames
-(asm00_1.s:10577-10592) and leaving the state needs both that and the banner reporting
-idle. 102 frames from the banner's frame 49 is 151; the window is measured starting at
-159. States 6-9 of `off_8008038` (asm00_1.s:10370) were not traced. This build uses the
-measured 110; finding the real source would replace a measurement with a derivation.
+### C2. The last frames before the RESULT window  *(mostly traced -- TRANSFER 7bf)*
+STATES 6-9 ARE A DEAD END: `off_8008038` is the generic banner sequencer for every message
+in the game, and 6-9 are a sibling branch entered only when `sub_800A152()` returns 7, a
+different outcome. They never run on an enemy kill.
+
+THE COUNTDOWN IS 94, NOT 102. State 3 picks 0x5e or 0x66 on `BATTLE_EFFECT_SHOW_RESULTS`
+(asm00_1.s:10580-10592), and the field-encounter `BattleSettings` row has that bit set
+(data/BattleSettings.s:6). So the expiry is 49 + 94 = 143, not 151, and the banner's idle
+at 106 is not the binding constraint. Dispatch out of state 3 is free.
+
+WHAT IS LEFT is 14 frames, not 8: the reward tally in `sub_8009478` (asm00_1.s:13129),
+waiting on two sentinels driven by a fixed 5-step transfer-buffer decrement
+(asm01.s:254-258). Settle it by dumping `dword_203F4A0` and `dword_203F5A0` frame by frame
+from 143. This build's measured 110 is unaffected either way, so this is derivation for its
+own sake and ranks below anything visible.
 
 ### C3. The emotion window  *(researched; see TRANSFER 7at)*
 Answered: only Calm and Angry are reachable without a Cross or a Navi Customizer bug, and Angry
@@ -262,12 +271,17 @@ IS worth doing cheaply: `tools/emotion_export.py` takes only state 0's tiles and
 and the other 22 states sit right after at a fixed stride -- exporting them is mechanical.
 
 
-### C4. Does the chip-name popup's gate match ours?
-This build shows the popup for `attack_family == 0x15`, which is right for all 43 chips
-in the scoreboard. The real gate is a `ChipData+9` flag bit plus a chip-category check
-(`sub_800B892`), read in `object_drawChipName` (object.s:183-239). Work out the exact
-predicate and say whether any chip in the game disagrees with the family rule. Cheap, and
-it turns a proxy into the real thing.
+### C4. Does the chip-name popup's gate match ours?  *(answered -- TRANSFER 7be)*
+KEEP THE PROXY. `object_drawChipName` gates on nothing about the chip: `sub_800B892` is a
+per-alliance announcer-slot sync byte (object.s:934-939) and `ChipData+9` bit 1 only adds a
+damage number beside the name (object.s:210-217). Which chips get a popup is decided by
+which OBJECT the chip spawns -- 16 phase tables in the ROM, all of the same shape. 84 of
+411 chips carry family 0x15 and they group into exactly those tiers.
+
+WHAT IS LEFT, and only when a trap chip is implemented: those 84 split by `ChipData+9`
+bit 1 into "no number" and "number" (Mine, TimeBom, AirRaid, Guardian, AntiDmg, ElemTrap,
+...). `NamePopup` draws letters only, so the first trap chip needs one exported bit per
+chip and a number in the popup.
 
 ---
 
