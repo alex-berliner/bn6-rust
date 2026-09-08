@@ -16,6 +16,7 @@ mod custom;
 mod deck;
 mod emotion;
 mod field;
+mod fixture;
 mod gunner;
 mod hud;
 mod hudtiles;
@@ -126,6 +127,44 @@ fn write_battle_marker(magic: u32, frame: u32) {
     }
 }
 
+/// AUDIT pairs 6/14/17, FIXTURE.md: 120 bytes reserved right after
+/// `BATTLE_MARKER` -- 56 bytes of padding, so the descriptor starting at
+/// byte 56 lands at FIXTURE.md's own contract address (`BATTLE_MARKER`'s 8
+/// bytes + this 56 = 64, i.e. 0x02000040), then the 64-byte descriptor
+/// itself. Reserved the same way `BATTLE_MARKER` reserves its own 8 bytes
+/// (see its doc comment above): a dedicated `.ewram.fixture` input section
+/// that `gba.ld`'s `*(.ewram .ewram.*)` rule places in EWRAM ahead of
+/// `.data`/`.bss`, so it is never zeroed as `.bss` or overwritten by `.data`
+/// init. Declared here, immediately after `BATTLE_MARKER`, so the two
+/// `.ewram.*` sections land in that order in the final binary.
+///
+/// ONE static, not a separate pad-then-descriptor pair: a static with
+/// nothing anywhere taking its address is dead as far as the linker's
+/// dead-code elimination is concerned, `#[no_mangle]` or not. An earlier cut
+/// of this used two such statics and read the descriptor through a
+/// hardcoded literal address rather than either symbol -- `nm` on the built
+/// ELF showed NEITHER symbol at all, and something else (agb's own
+/// `SPRITE_LOADER`) had moved into 0x02000040 instead. `fixture_ptr()`
+/// below takes this static's own address, which is a real reference and
+/// keeps it alive.
+///
+/// VERIFIED (2026-09-08), after that fix, by building, poking the magic
+/// with `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` for 5 frames
+/// and dumping `0x02000040:8` back out afterwards: it reads the magic
+/// unchanged, and `nm` on the built ELF shows this static at 0x02000000 +
+/// 8 = 0x02000008, so its descriptor half starts at 0x02000008 + 56 =
+/// 0x02000040 exactly.
+#[unsafe(no_mangle)]
+#[unsafe(link_section = ".ewram.fixture")]
+static mut FIXTURE_REGION: [u8; 120] = [0; 120];
+
+/// The fixture descriptor's own start address, for `fixture::read()`. See
+/// `FIXTURE_REGION` above for why this is a real reference (keeps the
+/// reservation from being linked away) and why it lands at 0x02000040.
+pub fn fixture_ptr() -> *const u8 {
+    unsafe { core::ptr::addr_of!(FIXTURE_REGION).cast::<u8>().add(56) }
+}
+
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
     let mut gfx = gba.graphics.get();
@@ -139,6 +178,16 @@ fn main(mut gba: agb::Gba) -> ! {
     // The folder shuffle's generator; stepped every frame, as the game's
     // secondary RNG is, so each battle deals differently.
     let mut rng = deck::Rng::new(0x2f6b_75a1);
+    // AUDIT pairs 6/14/17: read once at startup, not per-battle -- the
+    // harness pokes the descriptor before this ROM boots and keeps poking it
+    // every frame after, so it is already stable by the time this runs (see
+    // fixture.rs), and every battle this program ever runs uses the same
+    // fixture (or none). Read here, ahead of the palette setup below, which
+    // also needs to know whether the backdrop is blanked.
+    let fixture = fixture::read();
+    let blank_backdrop = fixture
+        .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
+        .unwrap_or(cfg!(feature = "demo-sterile"));
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     // The backdrop draws in bank 0, as it does on the real ROM.
@@ -147,7 +196,7 @@ fn main(mut gba: agb::Gba) -> ! {
     // 0 to it there costs the barrier bubble its colours: Barrier goes from
     // 0.8 px/frame to 766. The field itself does not use bank 0, which is why
     // taking it is safe in a full battle.
-    if !cfg!(feature = "demo-sterile") {
+    if !blank_backdrop {
         palettes[0] = backdrop::Backdrop::new(BACKDROP).palette();
     }
     for (i, p) in results.palettes().into_iter().enumerate() {
@@ -172,7 +221,9 @@ fn main(mut gba: agb::Gba) -> ! {
     loop {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
-        let mut battle = Battle::new(&field, &results, &hud, &custom_assets, &chips, &mut rng);
+        let mut battle = Battle::new(
+            &field, &results, &hud, &custom_assets, &chips, &mut rng, fixture,
+        );
         battle.prime_backdrop(&gfx);
         // Not yet -- this battle's own clocks (backdrop, gauge) start inside
         // the first `battle.update()` call below, not here: `Battle::new`

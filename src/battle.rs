@@ -10,7 +10,10 @@ use agb::display::object::{
     AffineMatrixObject, AffineMode, DynamicSprite16, Object, ObjectAffine,
     PaletteVramSingle, Size, SpriteVram,
 };
-#[cfg(feature = "demo-sterile")]
+// Unconditional now (AUDIT pairs 6/14/17): a fixture-driven battle can ask
+// for a blank arena at runtime (FLAG_BLANK_BACKDROP) in a build that has no
+// demo-sterile feature at all, so the blank background's own constructor
+// must exist in every build, not just one gated on that cfg.
 use agb::display::tiled::{RegularBackgroundSize, TileFormat};
 use agb::display::tiled::RegularBackground;
 use agb::fixnum::Num;
@@ -37,6 +40,7 @@ use crate::{
 #[cfg(feature = "demo")]
 use crate::{COLONEL, GUNNER, PROTOMAN};
 use crate::{ai, gunner, spr};
+use crate::fixture::{self, Fixture};
 use agb::display::Graphics;
 
 // Boss HP comes from each navi's enemy-definition rows, six bytes per
@@ -1079,8 +1083,13 @@ pub struct Battle<'a> {
     fade_out: u8,
     clock: u32,
     moves: u8,
-    /// Countdown to the next automatic chip use, for the demo-auto harness.
+    /// Countdown to the next automatic chip use, for the demo-auto harness
+    /// and, when present, a fixture's own FLAG_AUTO_FIRE.
     auto_ticks: u16,
+    /// AUDIT pairs 6/14/17: the fixture this battle was built from, if any --
+    /// kept so `update`/`draw` can consult its flags too (`skip_intro`,
+    /// `open_window_allowed` below), not just `Battle::new`.
+    fixture: Option<Fixture>,
 }
 
 /// What a demo build fields: the chip ids to preload straight into the hand
@@ -1282,6 +1291,32 @@ fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Styl
 }
 
 impl<'a> Battle<'a> {
+    /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
+    /// hold + 14-frame ramp (`false`) or the `demo-*` fixtures' own legacy
+    /// 32-frame black ramp (`true`) -- `SCREEN_FADE_FRAMES`'s own condition,
+    /// mirrored here so a fixture's FLAG_SKIP_INTRO can drive the same
+    /// choice at runtime instead of at compile time. Every existing
+    /// `cfg!(feature = "demo") && !cfg!(feature = "demo-open")` site in this
+    /// file reduces to this when there is no fixture.
+    fn skip_intro(&self) -> bool {
+        match self.fixture {
+            Some(f) => f.flag(fixture::FLAG_SKIP_INTRO),
+            None => cfg!(feature = "demo") && !cfg!(feature = "demo-open"),
+        }
+    }
+
+    /// Whether the gauge-pause -> chip-window-open sequence is allowed to
+    /// run at all. UNSET (via FLAG_OPEN_WINDOW) reproduces `demo-hudmatch`'s
+    /// own `!cfg!(feature = "demo-hudmatch")` guard, which freezes a full
+    /// gauge and never opens the window so a long HUD capture never loses
+    /// the battle screen to it.
+    fn open_window_allowed(&self) -> bool {
+        match self.fixture {
+            Some(f) => f.flag(fixture::FLAG_OPEN_WINDOW),
+            None => !cfg!(feature = "demo-hudmatch"),
+        }
+    }
+
     pub fn new(
         field: &'a Field,
         results: &'a Results,
@@ -1289,6 +1324,7 @@ impl<'a> Battle<'a> {
         custom_assets: &'a CustomAssets,
         chips: &'a Chips,
         rng: &mut Rng,
+        fixture: Option<Fixture>,
     ) -> Self {
         // A stand-in folder: the asset's chips over and over, each with its
         // first code, in place of the PET navi's thirty (sub_800A3E4).
@@ -1314,17 +1350,32 @@ impl<'a> Battle<'a> {
         }
         let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
+        // AUDIT pairs 6/14/17: FLAG_BLANK_HUD and FLAG_BLANK_BACKDROP,
+        // reduced to their old cfg!(feature = "demo-sterile") meaning when
+        // there is no fixture, so every site below that used to check that
+        // cfg directly keeps reading exactly what it read before.
+        // FLAG_BLANK_BACKDROP is broader than its name: it reproduces
+        // demo-sterile's WHOLE non-HUD arena (backdrop module, field bg
+        // layer and the hand-chip icon object), not just the backdrop --
+        // see fixture.rs's own doc on the flag.
+        let blank_hud = fixture
+            .map(|f| f.flag(fixture::FLAG_BLANK_HUD))
+            .unwrap_or(cfg!(feature = "demo-sterile"));
+        let blank_backdrop = fixture
+            .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
+            .unwrap_or(cfg!(feature = "demo-sterile"));
         // The sterile arena draws a plain background so the real ROM's field can
         // be stripped via the harness's --disable-bg (BG layers) and the two
         // captures diff cleanly whole-frame: MegaMan + attack on black on both.
-        #[cfg(feature = "demo-sterile")]
-        let bg = RegularBackground::new(
-            Priority::P3,
-            RegularBackgroundSize::Background32x32,
-            TileFormat::FourBpp,
-        );
-        #[cfg(not(feature = "demo-sterile"))]
-        let bg = field.background(&panels);
+        let bg = if blank_backdrop {
+            RegularBackground::new(
+                Priority::P3,
+                RegularBackgroundSize::Background32x32,
+                TileFormat::FourBpp,
+            )
+        } else {
+            field.background(&panels)
+        };
 
         let charge = 0u16;
         let glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
@@ -1333,18 +1384,23 @@ impl<'a> Battle<'a> {
             // Both parity fixtures come from save states where the navi has
             // taken damage, and both capture the HP box, so they carry the
             // capture's own 60 rather than a fresh navi's.
-            hp: if cfg!(any(
-                feature = "demo-hudmatch",
-                feature = "demo-resultmatch",
-                // demo-open compares against /tmp/battlestart.state, whose navi
-                // is on 60 like the others'. Without this the HP box differs by
-                // a constant 29 px a frame and nothing else does, which is a
-                // fixture reading a real number wrong.
-                feature = "demo-open",
-            )) {
-                HUDMATCH_HP
-            } else {
-                PLAYER_HP
+            hp: match fixture {
+                Some(f) => f.megaman_hp,
+                None => {
+                    if cfg!(any(
+                        feature = "demo-hudmatch",
+                        feature = "demo-resultmatch",
+                        // demo-open compares against /tmp/battlestart.state, whose
+                        // navi is on 60 like the others'. Without this the HP box
+                        // differs by a constant 29 px a frame and nothing else
+                        // does, which is a fixture reading a real number wrong.
+                        feature = "demo-open",
+                    )) {
+                        HUDMATCH_HP
+                    } else {
+                        PLAYER_HP
+                    }
+                }
             },
             mercy: actor::PLAYER_MERCY_FRAMES,
             death_frames: actor::PLAYER_DEATH_FRAMES,
@@ -1355,27 +1411,69 @@ impl<'a> Battle<'a> {
             death_frames: actor::ENEMY_DEATH_FRAMES,
         };
         // A demo build also moves MegaMan up to the front of his half so the
-        // featured chip reaches the target on the first press.
-        let (demo_hand, demo_col, demo_enemy) = {
-            #[cfg(feature = "demo")]
-            {
-                demo()
-            }
-            #[cfg(not(feature = "demo"))]
-            {
-                (alloc::vec::Vec::new(), 2, None)
+        // featured chip reaches the target on the first press. A fixture
+        // takes the hand and column straight from the descriptor instead;
+        // its own enemies are built separately below (it can field more than
+        // the one `demo_enemy` this tuple carries -- demo-open's three
+        // Mettaurs never went through it either, see the `enemies` match
+        // below).
+        let (demo_hand, demo_col, demo_enemy): (
+            alloc::vec::Vec<u16>,
+            i32,
+            Option<(spr::Assets, i32, i32, ai::Style, u16)>,
+        ) = match fixture {
+            Some(f) => (
+                f.hand[..f.hand_count as usize]
+                    .iter()
+                    .map(|&id| id as u16)
+                    .collect(),
+                f.megaman_col as i32,
+                None,
+            ),
+            None => {
+                #[cfg(feature = "demo")]
+                {
+                    demo()
+                }
+                #[cfg(not(feature = "demo"))]
+                {
+                    (alloc::vec::Vec::new(), 2, None)
+                }
             }
         };
-        let megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, 2, false, player);
+        let demo_row = fixture.map(|f| f.megaman_row as i32).unwrap_or(2);
+        let megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, demo_row, false, player);
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
         // A debug build fights just the Mettaur, to exercise the hand, chips
         // and deletion without the bosses; the release build keeps the game's
         // lineup. A demo build fields its one featured enemy instead. The
         // sterile arena fields nobody.
-        let mut enemies: Vec<Actor> = if cfg!(feature = "demo-sterile") {
-            alloc::vec::Vec::new()
-        } else if let Some((assets, col, row, _style, hp)) = demo_enemy {
-            alloc::vec![Actor::new(assets, col, row, true, enemy(hp))]
+        let (mut enemies, ais): (Vec<Actor>, Vec<ai::Ai>) = if let Some(f) = fixture {
+            // enemy_kind 0 = Mettaur, the only kind FIXTURE.md defines yet.
+            // Laid out on the diagonal demo-open's own three-Mettaur line-up
+            // uses -- (enemy_col, enemy_row), (+1, +1), (+2, +1)... -- which
+            // is the only multi-enemy shape any existing fixture needs.
+            let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
+            let mut es = alloc::vec::Vec::new();
+            let mut ai_list = alloc::vec::Vec::new();
+            for i in 0..f.enemies as i32 {
+                es.push(Actor::new(
+                    spr::Assets::new(METTAUR),
+                    f.enemy_col as i32 + i,
+                    f.enemy_row as i32 + i,
+                    true,
+                    enemy(hp),
+                ));
+                ai_list.push(ai::Ai::new(ai::Style::Mettaur));
+            }
+            (es, ai_list)
+        } else if cfg!(feature = "demo-sterile") {
+            (alloc::vec::Vec::new(), alloc::vec::Vec::new())
+        } else if let Some((assets, col, row, style, hp)) = demo_enemy {
+            (
+                alloc::vec![Actor::new(assets, col, row, true, enemy(hp))],
+                alloc::vec![ai::Ai::new(style)],
+            )
         } else if cfg!(feature = "demo-open") {
             // THE BATTLE-START CAPTURE'S OWN LINE-UP. /tmp/battlestart.state is
             // a battle's first frame with THREE Mettaurs in a diagonal --
@@ -1385,24 +1483,34 @@ impl<'a> Battle<'a> {
             // many there are. With the same three, the whole opening becomes
             // comparable: the screen fade, the materialise sequence, and the
             // frame the chip window comes up on.
-            alloc::vec![
-                Actor::new(spr::Assets::new(METTAUR), 4, 1, true, enemy(METTAUR_HP)),
-                Actor::new(spr::Assets::new(METTAUR), 5, 2, true, enemy(METTAUR_HP)),
-                Actor::new(spr::Assets::new(METTAUR), 6, 3, true, enemy(METTAUR_HP)),
-            ]
+            (
+                alloc::vec![
+                    Actor::new(spr::Assets::new(METTAUR), 4, 1, true, enemy(METTAUR_HP)),
+                    Actor::new(spr::Assets::new(METTAUR), 5, 2, true, enemy(METTAUR_HP)),
+                    Actor::new(spr::Assets::new(METTAUR), 6, 3, true, enemy(METTAUR_HP)),
+                ],
+                alloc::vec![
+                    ai::Ai::new(ai::Style::Mettaur),
+                    ai::Ai::new(ai::Style::Mettaur),
+                    ai::Ai::new(ai::Style::Mettaur),
+                ],
+            )
         } else {
             // ONE METTAUR, in every other build. The four-strong line-up that
             // used to stand here in release builds -- ProtoMan, Colonel, a
             // Mettaur and a Gunner -- kills the navi in about fifteen seconds,
             // which is before the custom gauge has filled even once, so nobody
             // playing the rollup ever reached the chip window.
-            alloc::vec![Actor::new(
-                spr::Assets::new(METTAUR),
-                5,
-                3,
-                true,
-                enemy(METTAUR_HP)
-            )]
+            (
+                alloc::vec![Actor::new(
+                    spr::Assets::new(METTAUR),
+                    5,
+                    3,
+                    true,
+                    enemy(METTAUR_HP)
+                )],
+                alloc::vec![ai::Ai::new(ai::Style::Mettaur)],
+            )
         };
         let gunner_ctl = gunner::Gunner::new();
         let impacts: Vec<gunner::Impact> = Vec::new();
@@ -1410,20 +1518,18 @@ impl<'a> Battle<'a> {
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
         let effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)> = Vec::new();
-        let ais: Vec<ai::Ai> = if cfg!(feature = "demo-sterile") {
-            alloc::vec::Vec::new()
-        } else if let Some((_, _, _, style, _)) = demo_enemy {
-            alloc::vec![ai::Ai::new(style)]
-        } else if cfg!(feature = "demo-open") {
-            alloc::vec![
-                ai::Ai::new(ai::Style::Mettaur),
-                ai::Ai::new(ai::Style::Mettaur),
-                ai::Ai::new(ai::Style::Mettaur),
-            ]
+        // AUDIT pairs 6/14/17: SCREEN_FADE_FRAMES's own formula, made a
+        // runtime choice via `skip_intro` (see that method) so a fixture's
+        // FLAG_SKIP_INTRO can drive it too; unchanged for fixture = None,
+        // where `skip_intro`'s None-branch is exactly the const's condition.
+        let intro_fade: u16 = if fixture
+            .map(|f| f.flag(fixture::FLAG_SKIP_INTRO))
+            .unwrap_or(cfg!(feature = "demo") && !cfg!(feature = "demo-open"))
+        {
+            0x10 * 2
         } else {
-            alloc::vec![ai::Ai::new(ai::Style::Mettaur)]
+            71 + INTRO_RAMP
         };
-        let intro_fade = SCREEN_FADE_FRAMES;
         let intro_next = 0usize;
         for enemy in enemies.iter_mut() {
             enemy.hide();
@@ -1440,13 +1546,16 @@ impl<'a> Battle<'a> {
         // A demo build keeps the old behaviour: the sterile arena forces the
         // fight open forever, so a window opening in it would land in the
         // middle of every chip comparison.
-        let gauge = if cfg!(feature = "demo") && !cfg!(any(
-            feature = "demo-hudmatch",
-            feature = "demo-custmatch"
-        )) {
-            0
-        } else {
-            GAUGE_FULL
+        let gauge = match fixture {
+            Some(f) => if f.gauge != 0 { GAUGE_FULL } else { 0 },
+            None => if cfg!(feature = "demo") && !cfg!(any(
+                feature = "demo-hudmatch",
+                feature = "demo-custmatch"
+            )) {
+                0
+            } else {
+                GAUGE_FULL
+            },
         };
         let gauge_pause = 0u16;
         let results_delay = RESULTS_DELAY;
@@ -1459,10 +1568,21 @@ impl<'a> Battle<'a> {
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
-        #[cfg(feature = "demo-auto")]
-        let auto_ticks = AUTO_FIRE_GAP;
-        #[cfg(not(feature = "demo-auto"))]
-        let auto_ticks = 0u16;
+        // AUDIT pairs 6/14/17: a fixture's FLAG_AUTO_FIRE seeds this with its
+        // own `fire_frame` instead of the demo-auto harness's fixed
+        // AUTO_FIRE_GAP -- see the per-frame firing block in `update` below.
+        let auto_ticks: u16 = if let Some(f) = fixture {
+            if f.flag(fixture::FLAG_AUTO_FIRE) { f.fire_frame } else { 0 }
+        } else {
+            #[cfg(feature = "demo-auto")]
+            {
+                AUTO_FIRE_GAP
+            }
+            #[cfg(not(feature = "demo-auto"))]
+            {
+                0u16
+            }
+        };
         // A demo build loads its chips straight into the hand, so A fires the
         // first one at once without the chip-select window.
         let hand: alloc::vec::Vec<Chip> = demo_hand
@@ -1508,7 +1628,7 @@ impl<'a> Battle<'a> {
             bombs: Vec::new(),
             panels,
             bg,
-            backdrop: if cfg!(feature = "demo-sterile") {
+            backdrop: if blank_backdrop {
                 None
             } else {
                 Some(crate::backdrop::Backdrop::new(crate::BACKDROP))
@@ -1519,8 +1639,8 @@ impl<'a> Battle<'a> {
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
-            hand_icon_palette: (!cfg!(feature = "demo-sterile")).then(hand_icon_palette),
-            hud_tiles: if cfg!(feature = "demo-sterile") {
+            hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
+            hud_tiles: if blank_hud {
                 None
             } else {
                 Some(crate::hudtiles::HudTiles::new(
@@ -1557,6 +1677,7 @@ impl<'a> Battle<'a> {
             clock,
             moves,
             auto_ticks,
+            fixture,
         }
     }
 
@@ -1618,16 +1739,34 @@ impl<'a> Battle<'a> {
             // fixtures that compare against a DIFFERENT state are excluded:
             // demo-open runs against a battle's first frame, where zero is
             // right, and the window fixtures cover the backdrop entirely.
-            #[cfg(all(
-                feature = "demo",
-                not(any(
-                    feature = "demo-open",
-                    feature = "demo-custmatch",
-                    feature = "demo-cardname",
-                    feature = "demo-resultmatch",
-                ))
-            ))]
-            backdrop.seed(5, 4, 424, 724);
+            //
+            // AUDIT pairs 6/14/17: a fixture carries its own seed in
+            // art_entry/art_timer/scroll_xq/scroll_yq, 0xFFFF (in
+            // art_entry) meaning "no seed, use Backdrop::new's own fresh-
+            // battle defaults" -- exactly the excluded demos above.
+            match self.fixture {
+                Some(f) if f.art_entry != 0xFFFF => {
+                    backdrop.seed(
+                        f.art_entry as usize,
+                        f.art_timer,
+                        f.scroll_xq as u32,
+                        f.scroll_yq as u32,
+                    );
+                }
+                Some(_) => {}
+                None => {
+                    #[cfg(all(
+                        feature = "demo",
+                        not(any(
+                            feature = "demo-open",
+                            feature = "demo-custmatch",
+                            feature = "demo-cardname",
+                            feature = "demo-resultmatch",
+                        ))
+                    ))]
+                    backdrop.seed(5, 4, 424, 724);
+                }
+            }
             backdrop.prime(gfx);
         }
     }
@@ -1659,8 +1798,7 @@ impl<'a> Battle<'a> {
             // Only in the builds that actually start at a battle's beginning.
             // Every other demo is calibrated against a capture taken mid-battle,
             // where the gauge is up and belongs there.
-            let before_first_window = !self.window_closed
-                && (!cfg!(feature = "demo") || cfg!(feature = "demo-open"));
+            let before_first_window = !self.window_closed && !self.skip_intro();
             let gauge_up =
                 self.shown.is_none() && self.fade_out == 0 && !before_first_window;
             self.hud_tiles
@@ -1705,7 +1843,14 @@ impl<'a> Battle<'a> {
         // The chip-window fixture fields nobody, so the all-enemies-deleted
         // win would fire on its first frame and hold the gauge -- and the
         // gauge is what opens the window. Keep the fight open for it too.
-        let over = if cfg!(any(feature = "demo-sterile", feature = "demo-custmatch")) {
+        // AUDIT pairs 6/14/17: the same rule, generalised -- ANY fixture that
+        // fields zero enemies keeps the fight open forever, the same reason
+        // demo-sterile/demo-custmatch do (an empty `enemies` makes `.all()`
+        // vacuously true, which would end the fight on frame one).
+        let over = if self.fixture.is_some() {
+            !self.enemies.is_empty()
+                && (self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated()))
+        } else if cfg!(any(feature = "demo-sterile", feature = "demo-custmatch")) {
             false
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
@@ -1730,8 +1875,12 @@ impl<'a> Battle<'a> {
                 // Not in a demo build: every fixture that fields an enemy
                 // compares against a capture taken mid-battle where no banner
                 // is up, and the earliest of them starts at frame 130.
+                // AUDIT pairs 6/14/17: not with a descriptor either -- a
+                // fixture is by definition testing one scene, not playing
+                // the game from a fresh boot, so it never arms this banner
+                // regardless of which flags it carries.
                 self.window_closed = true;
-                if !self.opened && !cfg!(feature = "demo") {
+                if !self.opened && self.fixture.is_none() && !cfg!(feature = "demo") {
                     self.opened = true;
                     self.banner_at = BATTLE_START_AFTER_WINDOW;
                 }
@@ -1751,7 +1900,7 @@ impl<'a> Battle<'a> {
                 }
                 self.gauge = 0;
             }
-        } else if self.gauge_pause > 0 && !cfg!(feature = "demo-hudmatch") {
+        } else if self.gauge_pause > 0 && self.open_window_allowed() {
             // The HUD fixture holds a full gauge to match the capture, which
             // would otherwise open the chip window and never close it -- the
             // demo presses nothing -- leaving no frames of a long capture with
@@ -1966,6 +2115,26 @@ impl<'a> Battle<'a> {
                 self.hand_at = (self.hand_at + 1) % self.hand.len();
                 self.use_chip(chip);
                 self.auto_ticks = AUTO_FIRE_GAP;
+            }
+        }
+        // AUDIT pairs 6/14/17: the same mechanism, for a fixture's own
+        // FLAG_AUTO_FIRE -- its `fire_frame` seeds `auto_ticks` in
+        // `Battle::new` and reseeds it here between shots, exactly as
+        // AUTO_FIRE_GAP does for the demo-auto harness above.
+        if let Some(f) = self.fixture {
+            if f.flag(fixture::FLAG_AUTO_FIRE)
+                && !paused
+                && self.intro_next >= self.enemies.len()
+            {
+                self.gauge = 0;
+                if self.auto_ticks > 0 {
+                    self.auto_ticks -= 1;
+                } else if !self.megaman.is_busy() && !self.hand.is_empty() {
+                    let chip = self.hand[self.hand_at];
+                    self.hand_at = (self.hand_at + 1) % self.hand.len();
+                    self.use_chip(chip);
+                    self.auto_ticks = f.fire_frame;
+                }
             }
         }
 
@@ -2516,8 +2685,11 @@ impl<'a> Battle<'a> {
                         // layer is stripped, so its poison panels cannot show,
                         // while this build's field would paint them and cost
                         // the comparison 1440 px a frame. The sheet itself is
-                        // objects and shows on both sides.
-                        if !cfg!(feature = "demo-sterile") {
+                        // objects and shows on both sides. `self.backdrop` is
+                        // None under exactly the same condition (sterile, or
+                        // a fixture's FLAG_BLANK_BACKDROP) so it stands in for
+                        // the old cfg! check without a second stored flag.
+                        if self.backdrop.is_some() {
                             self.panels.set(c, r, field::PANEL_POISON);
                         }
                         // Spawned a frame after the pod lands and already one
@@ -3156,8 +3328,9 @@ impl<'a> Battle<'a> {
         } else if self.intro_fade > 0 {
             // FULL WHITE, held, not a ramp: the real ROM is 100% white through
             // its 71st frame and 0% on the 72nd. A demo build keeps the old
-            // black ramp, so its fixtures' offsets still hold.
-            if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
+            // black ramp, so its fixtures' offsets still hold; a fixture's
+            // FLAG_SKIP_INTRO reproduces the same choice at runtime.
+            if self.skip_intro() {
                 let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2));
                 frame
                     .blend()
