@@ -14,20 +14,20 @@ use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
 
 /// Two-tile pairs within the asset: ten digits, then the blank slot and the
 /// cap.
-const BLANK_PAIR: u16 = 10;
-const CAP_PAIR: u16 = 11;
+const BLANK_PAIR: u16 = 10; // provenance: derived -- the exporter's own known asset layout
+const CAP_PAIR: u16 = 11; // provenance: derived -- the exporter's own known asset layout
 /// Digit slots between the two caps.
-const SLOTS: u32 = 4;
+const SLOTS: u32 = 4; // provenance: peeked -- read off a live battle's BG3 map
 /// The CUSTOM gauge, in the same asset after the HP tiles. Its art is loaded
 /// at VRAM tile 0x222 on the real ROM, so the asset index of VRAM tile t is
 /// GAUGE_FIRST + (t - 0x22b). The bar is one tile row: an end cap, six body
 /// cells, the four-cell L-or-R marker, six more body cells and a mirrored end
 /// cap, with the CUSTOM label on the row above it.
-const GAUGE_FIRST: u16 = 50;
-const CAP_TOP: u16 = GAUGE_FIRST;
-const CAP_BOTTOM: u16 = GAUGE_FIRST + 1;
-const FILLER: u16 = GAUGE_FIRST + 2;
-const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3;
+const GAUGE_FIRST: u16 = 50; // provenance: peeked -- VRAM tile 0x222 on the real ROM
+const CAP_TOP: u16 = GAUGE_FIRST; // provenance: peeked -- VRAM tile offset read off the real ROM
+const CAP_BOTTOM: u16 = GAUGE_FIRST + 1; // provenance: peeked -- VRAM tile offset read off the real ROM
+const FILLER: u16 = GAUGE_FIRST + 2; // provenance: peeked -- VRAM tile offset read off the real ROM
+const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3; // provenance: peeked -- VRAM tile offset read off the real ROM
 /// A full bar FLOWS: its body cell steps through four patterns, seven frames
 /// each, and its L-or-R marker alternates cyan and orange every eight, both
 /// read frame by frame off a live battle's BG3 map (VRAM tiles 0x232, 0x233,
@@ -37,14 +37,15 @@ const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3;
 /// NOT VERIFIED: where the cycle starts. One save state cannot say whether
 /// the phase runs off the battle's frame counter or off the moment the gauge
 /// filled; this build counts from the latter.
+// provenance: peeked -- VRAM tile ids read off a live battle's BG3 map.
 const BAR_CYCLE: [u16; 4] = [
     GAUGE_FIRST + 9,
     GAUGE_FIRST + 10,
     GAUGE_FIRST + 7,
     GAUGE_FIRST + 8,
 ];
-const BAR_FRAMES: u32 = 7;
-const MARKER_FRAMES: u32 = 8;
+const BAR_FRAMES: u32 = 7; // provenance: derived -- read off the real ROM's BG3 map frame by frame (each of the 4 flow tiles holds for 7 frames)
+const MARKER_FRAMES: u32 = 8; // provenance: derived -- read off the real ROM's BG3 map frame by frame (cyan/orange alternate every 8 frames)
 /// The flow runs one frame behind the counter that drives it. Found by
 /// aligning a whole battle screen against the real ROM on the BACKDROP's
 /// animation -- which leaves every tile but this bar identical, 360 px -- and
@@ -54,7 +55,7 @@ const MARKER_FRAMES: u32 = 8;
 /// time, so its phase relative to the backdrop is not fixed by anything this
 /// save state can show; -1 is what makes this capture match, and its being so
 /// small is the only reason to think the two counters are related at all.
-const BAR_PHASE: u32 = 1;
+const BAR_PHASE: u32 = 1; // provenance: fitted -- matches at -1 and nowhere else against one save state; not verified as a rule (TODO.md A8)
 /// The bar runs on its own offset from the marker, and this is a MEASURED
 /// number, not a derived one. Matching tiles by hash across a full cycle: the
 /// real ROM shows its frame-44 tile on frames 42..48 and this build showed the
@@ -64,35 +65,35 @@ const BAR_PHASE: u32 = 1;
 /// What advances the real ROM's bar is still unknown; see TODO A8. Same
 /// footing as BUSTER_HIT_DELAY in battle.rs: the value that measures right
 /// rather than the value that computes right, and labelled as such.
-const BAR_EXTRA: u32 = 9;
+const BAR_EXTRA: u32 = 9; // provenance: fitted -- measures right, not derived; TODO.md A8: "no single phase fixes both [BAR_EXTRA and MARKER_EXTRA] -- 9 mod 28 with 0 mod 16 has no solution", confirmed again by this ticket's own sterile-HUD test finding the same inconsistency under a different alignment
 /// And the marker sits half a blink from where this build put it -- measured
 /// the same way, and the residue it removes is exactly the 110 orange pixels
 /// the lit marker draws.
-const MARKER_EXTRA: u32 = 8;
+const MARKER_EXTRA: u32 = 8; // provenance: fitted -- measures right, not derived; see BAR_EXTRA's own note
 /// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
-const BAR: u16 = GAUGE_FIRST + 7;
+const BAR: u16 = GAUGE_FIRST + 7; // provenance: fitted -- NOT VERIFIED, the gauge is only ever seen full in the capture (own doc above)
 /// The marker is cyan while the gauge is filling and orange once it is full,
 /// which is the swap the gauge shows instead of any proportional readout;
 /// full, it alternates between the two.
-const MARKER_WAITING: u16 = GAUGE_FIRST + 11;
-const MARKER_READY: u16 = GAUGE_FIRST + 15;
+const MARKER_WAITING: u16 = GAUGE_FIRST + 11; // provenance: peeked -- VRAM tile id read off the real ROM
+const MARKER_READY: u16 = GAUGE_FIRST + 15; // provenance: peeked -- VRAM tile id read off the real ROM
 /// Columns the gauge spans, and how many of them carry bar body.
-const GAUGE_COL: u32 = 6;
-const GAUGE_CELLS: u32 = 18;
-const BAR_CELLS: u32 = 12;
+const GAUGE_COL: u32 = 6; // provenance: peeked -- read off a live battle's BG3 map
+const GAUGE_CELLS: u32 = 18; // provenance: peeked -- read off a live battle's BG3 map
+const BAR_CELLS: u32 = 12; // provenance: peeked -- read off a live battle's BG3 map
 /// The palette bank the gauge draws in on the real ROM.
-pub const GAUGE_BANK: u8 = 9;
+pub const GAUGE_BANK: u8 = 9; // provenance: peeked -- the real ROM's own choice
 /// A blank tile the exporter appends, for clearing cells: tile 0 of this asset
 /// is the top half of digit zero and cannot serve as one.
-const BLANK_TILE: u16 = 69;
+const BLANK_TILE: u16 = 69; // provenance: derived -- the exporter's own known asset layout
 
 /// The palette bank the box draws in. The field uses 0-8 and the results
 /// windows 9-11, so this one is free and is the real ROM's own choice.
-pub const BANK: u8 = 13;
+pub const BANK: u8 = 13; // provenance: peeked -- the real ROM's own choice
 /// The entries that bank swaps while the HP figure catches up after a hit.
-const HP_FLASH: [(usize, u16); 4] = [(4, 22463), (5, 13087), (6, 4767), (11, 127)];
+const HP_FLASH: [(usize, u16); 4] = [(4, 22463), (5, 13087), (6, 4767), (11, 127)]; // provenance: peeked -- read straight out of BG palette RAM on a flashing frame
 
 /// The game's own character code for an ASCII byte, which is also the index of
 /// its glyph in the text font (constants/bn6-charmap.tbl). Anything without a
@@ -108,12 +109,12 @@ fn char_code(c: u8) -> u16 {
 }
 
 /// Where the chip name is written, in tile rows, and how wide it can run.
-const NAME_ROW: i32 = 18;
-const NAME_COLS: u32 = 12;
+const NAME_ROW: i32 = 18; // provenance: peeked -- measured against the real ROM's own strip
+const NAME_COLS: u32 = 12; // provenance: peeked -- measured against the real ROM's own strip
 /// The damage figure follows the name in a second digit set carried in this
 /// asset, orange rather than white: pair 12 is its zero and it steps by one
 /// pair per digit, the same as the HP box's set.
-const DAMAGE_ZERO_PAIR: u16 = 12;
+const DAMAGE_ZERO_PAIR: u16 = 12; // provenance: derived -- the exporter's own known asset layout
 
 pub struct HudTiles {
     bg: RegularBackground,

@@ -49,8 +49,8 @@ use crate::hud::Hud;
 const MAGIC: &[u8; 4] = b"BNCW";
 const MAP_W: usize = 15;
 const MAP_H: usize = 20;
-const SLIDE_FROM: i32 = 0x78;
-const SLIDE_STEP: i32 = 0xc;
+const SLIDE_FROM: i32 = 0x78; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
+const SLIDE_STEP: i32 = 0xc; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
 /// The window's palette bank; the results windows use 9-11 too, so the
 /// banks are set on open and the results' restored on close.
 pub const BANK: u8 = 9;
@@ -112,13 +112,13 @@ const OK: u8 = 0xa;
 /// (asm03_0.s:910-916), then incremented once a frame by state 4
 /// (asm03_0.s:1163-1165) and re-zeroed when the selection ends
 /// (asm03_0.s:1151-1152). `self.frames` below is that counter.
-const BLINK_SHIFT: u32 = 3;
+const BLINK_SHIFT: u32 = 3; // provenance: derived -- asm03_0.s:1163-1165/1151-1152
 /// Frames between a direction and the cursor moving. Measured against the
 /// real ROM with Left held six frames: its bracket is still on OK for the two
 /// frames after the press and on the new slot on the third. Two leaves one
 /// frame of the bracket differing and three leaves one frame of the card, so
 /// two it is; the last frame of a cursor move is not resolved.
-const CURSOR_DELAY: u8 = 2;
+const CURSOR_DELAY: u8 = 2; // provenance: fitted -- two vs. three both leave one frame wrong; not fully resolved
 
 /// Indices into the asset's patch records, in byte_8027B2C's order.
 const REGION_PICTURE: usize = 1;

@@ -32,6 +32,7 @@ const OBJECT_BYTES: usize = 8 * 32;
 /// entry per frame of the 58 the banner is up. BIGGER IS FLATTER, because the
 /// matrix maps the screen back to the texture: 0x100 is life size, 896 is a
 /// sixth of the height and 208 is a fifth taller than life.
+// provenance: peeked -- read out of OAM frame by frame against the real ROM.
 pub const SCALE: [u16; 58] = [
     768, 640, 512, 384, 256, 208, 224, // unrolling, with an overshoot
     256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,

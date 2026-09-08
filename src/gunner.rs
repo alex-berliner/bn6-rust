@@ -17,15 +17,15 @@ use crate::spr;
 
 /// Gunner first-version stats: HP 0x3c, 10 damage
 /// (GunnerEnemyStruct2_8112B9C, asm32.s:9538).
-pub const HP: u16 = 60;
-pub const DAMAGE: u16 = 10;
+pub const HP: u16 = 60; // provenance: derived -- GunnerEnemyStruct2_8112B9C, asm32.s:9538
+pub const DAMAGE: u16 = 10; // provenance: derived -- GunnerEnemyStruct2_8112B9C, asm32.s:9538
 
 const AIM: usize = 1;
 const FIRE: usize = 2;
 const RECOVER: usize = 3;
-const SHOTS: u8 = 3;
-const SHOT_GAP: u8 = 10;
-const RECOVER_FRAMES: u8 = 24;
+const SHOTS: u8 = 3; // provenance: derived -- sub_8112F4E/sub_8113002/ai_8113038, asm32.s:9958-10102
+const SHOT_GAP: u8 = 10; // provenance: derived -- sub_8112F4E/sub_8113002/ai_8113038, asm32.s:9958-10102
+const RECOVER_FRAMES: u8 = 24; // provenance: derived -- sub_8112F4E/sub_8113002/ai_8113038, asm32.s:9958-10102
 
 /// The lock-on cursor, sprite_8372F34: spawned on the gunner's own panel, it
 /// moves at the version's speed, 3 px a frame in the first, and re-checks the
@@ -42,10 +42,10 @@ pub struct Cursor {
     player: spr::Player,
 }
 
-const CURSOR_SPEED: i32 = 3;
+const CURSOR_SPEED: i32 = 3; // provenance: derived -- t4_0x30_80E3B70/sub_80E3CC4, asm31.s:92489-92682
 /// 0x280000 / 0x30000 frames per panel, rounded down.
-const CURSOR_BEAT: u8 = 13;
-const LOCK_FRAMES: u8 = 24;
+const CURSOR_BEAT: u8 = 13; // provenance: derived -- t4_0x30_80E3B70/sub_80E3CC4, asm31.s:92489-92682
+const LOCK_FRAMES: u8 = 24; // provenance: derived -- byte_81130A8/byte_81130C6, asm31.s:92489-92682
 
 pub enum CursorState {
     Travelling,
@@ -120,7 +120,7 @@ pub struct Impact {
     player: spr::Player,
 }
 
-const WARN_FRAMES: u8 = 10;
+const WARN_FRAMES: u8 = 10; // provenance: peeked -- measured against the real ROM
 
 impl Impact {
     pub fn new(assets: spr::Assets, at: (i32, i32)) -> Self {
