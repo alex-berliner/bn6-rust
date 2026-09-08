@@ -210,14 +210,29 @@ I was hashing, which is exactly what a slanted cell does.
 
     HP box 28    bar left 112    marker 194    bar right 112
 
-TWO THINGS TO FIX, in order:
-1. The bar cell tiles. Find the real ROM's gauge tiles and re-export them; `tools/hud_tiles_export.py`
-   is where they come from, and `set_gauge`'s docstring already admits one cell in that area is a
-   guess. The 224 px across the two bar halves is this.
-2. The marker: real is ORANGE at the alignment frame and ours is CYAN. Both sides blink on the
-   same 16-frame beat with exactly 110 orange pixels lit, so this is the last half-cycle of phase
-   -- but do not chase it until the cells are right, because the cells are what makes the whole
-   strip fail to align.
+AND THE TILES ARE NOT WRONG EITHER -- that was my fifth reading and it lasted about ten minutes.
+Rendering one body cell across a full cycle on both sides, seven frames apart:
+
+    real   slant   slant'  small-squares  big-square  slant  slant'
+    ours   big-square  slant   slant'  small-squares  big-square  slant
+
+The SAME FOUR TILES IN THE SAME ORDER, ours one step behind. Our asset has all four
+(indices 57, 58, 59, 60 = VRAM 0x234, 0x235, 0x232, 0x233, exactly what the docstring on
+`BAR_CYCLE` already claimed).
+
+SO WHAT IS ACTUALLY LEFT, and it is two small things:
+1. A one-step (7-frame) phase offset in `BAR_CYCLE`. Note this cannot be fixed by seeding alone:
+   sweeping our frames over ~3 full cycles, the bar's best score is 224 at the alignment frame and
+   the one-step-shifted frame scores WORSE (371), which means something else is also off --
+2. A ONE-PIXEL HORIZONTAL OFFSET. The lit bar spans 64..183 on the real ROM and 65..182 here: our
+   art sits a pixel in at both ends. That alone would stop every cell from matching at any phase,
+   and it explains why shifting the phase does not help until it is fixed. Fix this FIRST, then
+   re-measure the phase -- in that order, because the pixel offset is what makes the phase
+   unmeasurable.
+
+The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at the alignment
+frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
+after the two above.
 
 ### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
