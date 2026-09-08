@@ -131,6 +131,15 @@ pub struct Fixture {
     /// when this field is absent/0); 0xFFFF = settled (the old
     /// `demo-resultmatch` picture). See `results::Shown::fast_forward`.
     pub result_elapsed: u16,
+    /// +58 FIXTURE.md (AUDIT wave 3d ticket): the real ROM's primary RNG
+    /// state (`ePrimaryRngSeed`, EWRAM 0x020013f0) at the capture's own
+    /// frame 0, peeked from the canon state so an RNG-gated enemy takes the
+    /// same decisions on both sides -- see `ai::Rng`'s own doc for the
+    /// generator this seeds and how the value below was measured. 0 = this
+    /// project's own default seed (`ai::DEFAULT_SEED`, `SeedRNG`'s own
+    /// constant), not literal zero -- same "0 = sensible default" convention
+    /// as `enemy_hp` above.
+    pub rng: u32,
     /// NOT IN FIXTURE.md, offset +48 (the reserved region past this ticket's
     /// own new fields). FIXTURE.md's own words for `deck` are "codes are the
     /// game's own per-id defaults" (`chips::Chip::codes[0]`), which covers 3
@@ -251,6 +260,7 @@ pub fn read() -> Option<Fixture> {
             result_zenny: r16(44),
             banner_at: r16(46),
             result_elapsed: r16(56),
+            rng: r32(58),
             deck_codes,
             // NOT IN FIXTURE.md, offsets +53..+55: see `window_pick_count`'s
             // own doc.
@@ -346,6 +356,26 @@ pub fn read() -> Option<Fixture> {
 //   mid-slide (or pre-settled, 0xFFFF) instead of only at "fresh" or
 //   "however far a many-frame capture happened to carry it".
 // demo-banner: banner_at 100 (BANNER_DEMO_AT).
+//
+// AUDIT WAVE 3D ADDITION (this ticket): rng (+58, NEW FIXTURE.md field, see
+// `Fixture::rng`'s own doc). tools/harness.py's `mettaur` and `wave` rows
+// both compare against the SAME real recipe -- STERILE+PAUSED+ALIVE,
+// script "Start@10" (mettaur also passes --disable-bg, wave --disable-obj,
+// neither of which can affect CPU-side RNG state) -- so both take the SAME
+// peeked value:
+//   rng = 0xdd340be4, ePrimaryRngSeed (EWRAM 0x020013f0) read at CAPTURE
+//   frame 0, i.e. immediately after `--loadstate /tmp/pausedwithcannon.state`
+//   and before the "Start@10" script's own first press -- measured this
+//   ticket with `--watch 0x020013f0:4:<file>` on that exact recipe (see
+//   `ai::Rng`'s own doc for the full 220-frame verification this value's
+//   capture also produced). `mettaur`/`wave` do not draw from this seed
+//   today regardless of its value (see `ai.rs`'s own module doc: neither
+//   fixture's Mettaur ever reaches an RNG-gated branch), so this number
+//   does not move either check's pixel count by itself -- written down here
+//   so the tools agent can wire it into `fixture_cheats()`/these two rows
+//   without re-deriving it, and so it is ready the day a fixture DOES need
+//   it. The harness does not poke this field yet (`fixture_cheats()` is the
+//   tools agent's own file, out of this ticket's ownership).
 //
 // VERIFIED BYTE-IDENTICAL (2026-09-08), ticket step 3: a plain (no `demo-*`
 // feature) build with the demo-hudmatch/demo-field/chip-fixture rows above

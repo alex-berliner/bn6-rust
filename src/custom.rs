@@ -38,7 +38,7 @@ use alloc::vec::Vec;
 
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
 use agb::display::tiled::{
-    RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
+    RegularBackground, TileEffect, TileFormat, TileSet, TileSetting,
 };
 use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 use agb::input::{Button, ButtonController, Tri};
@@ -324,9 +324,14 @@ pub struct Offer {
     pub deck_index: usize,
 }
 
+/// AUDIT wave 3d "bg3-merge": no longer owns its own `RegularBackground`.
+/// Canon draws the chip window on the SAME hardware BG3 as the HUD's HP box
+/// and the RESULT window (peeked, identical across pausedwithcannon/
+/// chipselect/result_arrival) -- see battle.rs's `hud_bg` field, which every
+/// method below that used to write `self.bg` now takes as a
+/// `&mut RegularBackground` parameter instead.
 pub struct Custom<'a> {
     assets: &'a CustomAssets,
-    bg: RegularBackground,
     /// Columns drawn so far; the rest of the map is left as tile 0.
     revealed: usize,
     phase: Phase,
@@ -465,19 +470,19 @@ impl CustomAssets {
     /// reproduced by descriptor -- see `fixture::Fixture::window_pick_count`'s
     /// own doc for why this needs fields outside FIXTURE.md's published
     /// contract.
+    /// `bg` is the SAME `RegularBackground` the HUD's HP box draws on
+    /// (`Battle::hud_bg`, lazily created there if this is the first time
+    /// anything has needed it -- AUDIT wave 3d "bg3-merge") -- canon's own
+    /// BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD layer
+    /// and over the actors (sub_801DA24, asm00_2.s:29038), ONE tilemap
+    /// shared with the HP box, not a background of this window's own.
     pub fn open(
         &self,
+        bg: &mut RegularBackground,
         offered: &[Offer],
         gfx: &Graphics,
         fixture: Option<crate::fixture::Fixture>,
     ) -> Custom<'_> {
-        // BG3CNT 0x1f09 while the menu runs: priority 1, under the HUD
-        // layer and over the actors (sub_801DA24, asm00_2.s:29038).
-        let mut bg = RegularBackground::new(
-            Priority::P1,
-            RegularBackgroundSize::Background32x32,
-            TileFormat::FourBpp,
-        );
         bg.set_scroll_pos((SLIDE_FROM, 0));
         let palette = PaletteVramSingle::try_allocate_shared(&self.cursor_obj_palette)
             .expect("cursor palette should fit in vram");
@@ -495,7 +500,6 @@ impl CustomAssets {
         }
         let mut custom = Custom {
             assets: self,
-            bg,
             revealed: 0,
             phase: Phase::Opening { x: SLIDE_FROM },
             cursor,
@@ -543,24 +547,24 @@ impl CustomAssets {
             }
         }
         for slot in 0..OFFERED {
-            custom.draw_slot(slot);
+            custom.draw_slot(bg, slot);
         }
         for slot in OFFERED..SLOT_CELLS {
             if slot < SLOT_CELLS_SHOWN {
-                custom.fill(region_slot_icon(slot), &self.empty_icon, Some(ICON_BANK));
+                custom.fill(bg, region_slot_icon(slot), &self.empty_icon, Some(ICON_BANK));
                 let r = self.regions[region_slot_code(slot)];
-                custom.fill_from(r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+                custom.fill_from(bg, r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
             } else {
-                custom.fill_flat(region_slot_icon(slot));
-                custom.fill_flat(region_slot_code(slot));
+                custom.fill_flat(bg, region_slot_icon(slot));
+                custom.fill_flat(bg, region_slot_code(slot));
             }
         }
-        custom.draw_stack();
-        custom.draw_stack_frame();
-        custom.fill_card_text_background();
-        custom.fill(REGION_OK, &self.ok_box, None);
-        custom.draw_card(gfx);
-        custom.reveal(SLIDE_FROM);
+        custom.draw_stack(bg);
+        custom.draw_stack_frame(bg);
+        custom.fill_card_text_background(bg);
+        custom.fill(bg, REGION_OK, &self.ok_box, None);
+        custom.draw_card(bg, gfx);
+        custom.reveal(bg, SLIDE_FROM);
         custom
     }
 }
@@ -581,23 +585,23 @@ impl Custom<'_> {
     /// from its staging buffer (sub_8026B04); on a 32-tile-wide layer a
     /// column more than two tiles past the edge would otherwise wrap round
     /// and show at the right of the screen.
-    fn reveal(&mut self, x: i32) {
+    fn reveal(&mut self, bg: &mut RegularBackground, x: i32) {
         while self.revealed < MAP_W && (self.revealed as i32) * 8 + 16 >= x {
-            self.set_column(self.revealed, true);
+            self.set_column(bg, self.revealed, true);
             self.revealed += 1;
         }
     }
 
     /// The slide-out clears the columns the window has vacated with the
     /// blank tile (byte_8026C88; sub_8026BF4).
-    fn vacate(&mut self, x: i32) {
+    fn vacate(&mut self, bg: &mut RegularBackground, x: i32) {
         while self.revealed > 0 && ((self.revealed - 1) as i32) * 8 + 16 < x {
             self.revealed -= 1;
-            self.set_column(self.revealed, false);
+            self.set_column(bg, self.revealed, false);
         }
     }
 
-    fn set_column(&mut self, col: usize, visible: bool) {
+    fn set_column(&mut self, bg: &mut RegularBackground, col: usize, visible: bool) {
         for row in 0..MAP_H {
             let i = row * MAP_W + col;
             let e = if visible {
@@ -611,7 +615,7 @@ impl Custom<'_> {
             if visible && (self.in_region(col, row) || self.in_stack_frame(col, row)) {
                 continue;
             }
-            self.bg.set_tile(
+            bg.set_tile(
                 (col as i32, row as i32),
                 &self.assets.tiles,
                 TileSetting::new(
@@ -632,19 +636,19 @@ impl Custom<'_> {
     /// Draw a tileset over a region, tile k at its k-th cell in the
     /// record's order, in the record's bank unless one is given; `None`
     /// tiles blank it.
-    fn fill(&mut self, region: usize, tiles: &TileSet, bank: Option<u8>) {
+    fn fill(&mut self, bg: &mut RegularBackground, region: usize, tiles: &TileSet, bank: Option<u8>) {
         let r = self.assets.regions[region];
-        self.fill_from(r, tiles, 0, bank.unwrap_or(r.bank));
+        self.fill_from(bg, r, tiles, 0, bank.unwrap_or(r.bank));
     }
 
-    fn fill_from(&mut self, r: Region, tiles: &TileSet, first: u16, bank: u8) {
+    fn fill_from(&mut self, bg: &mut RegularBackground, r: Region, tiles: &TileSet, first: u16, bank: u8) {
         for k in 0..r.w * r.h {
             let (dx, dy) = if r.column_major {
                 (k / r.h, k % r.h)
             } else {
                 (k % r.w, k / r.w)
             };
-            self.bg.set_tile(
+            bg.set_tile(
                 ((r.x + dx) as i32, (r.y + dy) as i32),
                 tiles,
                 TileSetting::new(first + k as u16, TileEffect::new(false, false, bank)),
@@ -654,11 +658,11 @@ impl Custom<'_> {
 
     /// Fill a region with the panel's flat background, as the real ROM does
     /// for the slot cells it does not show.
-    fn fill_flat(&mut self, region: usize) {
+    fn fill_flat(&mut self, bg: &mut RegularBackground, region: usize) {
         let r = self.assets.regions[region];
         for dy in 0..r.h {
             for dx in 0..r.w {
-                self.bg.set_tile(
+                bg.set_tile(
                     ((r.x + dx) as i32, (r.y + dy) as i32),
                     &self.assets.tiles,
                     TileSetting::new(PANEL_FLAT_TILE, TileEffect::new(false, false, BANK)),
@@ -667,12 +671,13 @@ impl Custom<'_> {
         }
     }
 
-    fn blank(&mut self, region: usize) {
+    #[allow(dead_code)] // kept for parity with the real ROM's own patch-record path; unused by any caller yet
+    fn blank(&mut self, bg: &mut RegularBackground, region: usize) {
         let r = self.assets.regions[region];
         let tiles = &self.assets.tiles;
         for dy in 0..r.h {
             for dx in 0..r.w {
-                self.bg.set_tile(
+                bg.set_tile(
                     ((r.x + dx) as i32, (r.y + dy) as i32),
                     tiles,
                     TileSetting::new(0, TileEffect::new(false, false, r.bank)),
@@ -683,24 +688,24 @@ impl Custom<'_> {
 
     /// Repaint every offered slot. A pick changes which of the OTHERS may
     /// still be taken, so they all have to be redrawn, not just the one.
-    fn draw_offered(&mut self) {
+    fn draw_offered(&mut self, bg: &mut RegularBackground) {
         for slot in 0..OFFERED {
-            self.draw_slot(slot);
+            self.draw_slot(bg, slot);
         }
     }
 
     /// A slot's icon and code letter: the chip's while it is offered and
     /// unpicked, the empty icon and blank glyph otherwise (sub_8028310).
-    fn draw_slot(&mut self, slot: usize) {
+    fn draw_slot(&mut self, bg: &mut RegularBackground, slot: usize) {
         let assets = self.assets;
         match self.slots[slot] {
             Some(offer) if !self.picks.contains(&slot) => {
                 let icon = offer.chip.icon();
                 let bank = if self.allowed(slot) { ICON_BANK } else { DIM_BANK };
-                self.fill(region_slot_icon(slot), &icon, Some(bank));
+                self.fill(bg, region_slot_icon(slot), &icon, Some(bank));
                 let code = offer.code as usize;
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(r, &assets.code_glyphs, (code * 2) as u16, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (code * 2) as u16, r.bank);
             }
             // A PICKED slot keeps its code letter and loses only its icon.
             // Read off the real ROM: its fifth slot shows the empty-cell art
@@ -708,26 +713,26 @@ impl Custom<'_> {
             // Cannon, identified from the pick stack's icon -- is the one in
             // the stack.
             Some(offer) => {
-                self.fill(region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
+                self.fill(bg, region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(r, &assets.code_glyphs, (offer.code as u16) * 2, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (offer.code as u16) * 2, r.bank);
             }
             None => {
-                self.fill(region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
+                self.fill(bg, region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
             }
         }
     }
 
     /// Paint the card's text regions with its interior tile. A placeholder for
     /// the runtime text renderer; see CARD_INTERIOR_TILE.
-    fn fill_card_text_background(&mut self) {
+    fn fill_card_text_background(&mut self, bg: &mut RegularBackground) {
         for index in TEXT_REGIONS {
             let r = self.assets.regions[index];
             for dy in 0..r.h {
                 for dx in 0..r.w {
-                    self.bg.set_tile(
+                    bg.set_tile(
                         ((r.x + dx) as i32, (r.y + dy) as i32),
                         &self.assets.tiles,
                         TileSetting::new(
@@ -743,13 +748,13 @@ impl Custom<'_> {
     /// The chip's name along the top of the card, left-aligned in the row's
     /// eight cells and padded with the font's blank -- which is flat colour 8,
     /// the card's own interior, so the row needs no separate background.
-    fn draw_card_name(&mut self, name: &str) {
+    fn draw_card_name(&mut self, bg: &mut RegularBackground, name: &str) {
         let r = self.assets.regions[REGION_NAME];
         let bytes = name.as_bytes();
         for col in 0..r.w {
             let g = char_code(bytes.get(col).copied().unwrap_or(b' '));
             for half in 0..r.h {
-                self.bg.set_tile(
+                bg.set_tile(
                     ((r.x + col) as i32, (r.y + half) as i32),
                     &self.assets.font,
                     TileSetting::new(
@@ -767,14 +772,15 @@ impl Custom<'_> {
     /// (a Recovery, a Barrier) shows nothing there.
     /// NOT VERIFIED: what the row does for a power of four digits or more --
     /// the widest chip in this build is Muramasa at 1020, which fits.
-    fn draw_card_row(&mut self, code: u8, element: u8, power: u16, gfx: &Graphics) {
+    fn draw_card_row(&mut self, bg: &mut RegularBackground, code: u8, element: u8, power: u16, gfx: &Graphics) {
         let assets = self.assets;
         self.pending_palettes
             .push((ICON_BANK, assets.icon_palette(element)));
         let r = assets.regions[REGION_CODE];
-        self.fill_from(r, &assets.card_letters, code as u16 * GLYPH_TILES, r.bank);
+        self.fill_from(bg, r, &assets.card_letters, code as u16 * GLYPH_TILES, r.bank);
         let r = assets.regions[REGION_ELEMENT];
         self.fill_from(
+            bg,
             r,
             &assets.elements,
             element as u16 * ELEMENT_TILES,
@@ -791,7 +797,7 @@ impl Custom<'_> {
                 } else {
                     (&assets.card_digits, digit * GLYPH_TILES + half as u16)
                 };
-                self.bg.set_tile(
+                bg.set_tile(
                     ((r.x + col) as i32, (r.y + half) as i32),
                     tiles,
                     TileSetting::new(tile, TileEffect::new(false, false, r.bank)),
@@ -813,14 +819,14 @@ impl Custom<'_> {
     /// The columns either side of the pick stack, alternating the two frame
     /// tiles down each. Read off a live menu: both columns carry the same
     /// pair, in the window's own bank.
-    fn draw_stack_frame(&mut self) {
+    fn draw_stack_frame(&mut self, bg: &mut RegularBackground) {
         let stack = self.assets.regions[REGION_STACK];
         let tiles = &self.assets.stack_frame;
         for row in 0..stack.h {
             // The right column is the left one MIRRORED: the real ROM's map
             // has the same two tiles there with h-flip set.
             for (col, hflip) in [(stack.x - 1, false), (stack.x + stack.w, true)] {
-                self.bg.set_tile(
+                bg.set_tile(
                     (col as i32, (stack.y + row) as i32),
                     tiles,
                     // The top two rows have their own pair; the rest
@@ -836,7 +842,7 @@ impl Custom<'_> {
 
     /// The picks down the right-hand column, one icon per row, the empty
     /// icon below them (sub_80281D4 per row at open, asm03_0.s:3942).
-    fn draw_stack(&mut self) {
+    fn draw_stack(&mut self, bg: &mut RegularBackground) {
         let assets = self.assets;
         let stack = assets.regions[REGION_STACK];
         for row in 0..HAND_SIZE {
@@ -851,9 +857,9 @@ impl Custom<'_> {
             match self.picks.get(row).and_then(|&slot| self.slots[slot]) {
                 Some(offer) => {
                     let icon = offer.chip.icon();
-                    self.fill_from(cell, &icon, 0, ICON_BANK);
+                    self.fill_from(bg, cell, &icon, 0, ICON_BANK);
                 }
-                None => self.fill_from(cell, &assets.empty_icon, 0, stack.bank),
+                None => self.fill_from(bg, cell, &assets.empty_icon, 0, stack.bank),
             }
         }
     }
@@ -861,7 +867,7 @@ impl Custom<'_> {
     /// The card shows the chip under the cursor; on OK, or over an empty
     /// or picked slot, it is left as it was (sub_8028476 draws nothing for
     /// the empty slot types, asm03_0.s:4316).
-    fn draw_card(&mut self, gfx: &Graphics) {
+    fn draw_card(&mut self, bg: &mut RegularBackground, gfx: &Graphics) {
         let Some(offer) = self.highlighted() else {
             // No chip to preview -- the cursor is on OK, or over a slot
             // already picked -- so the real ROM puts its "sending chip data"
@@ -871,11 +877,11 @@ impl Custom<'_> {
                 self.pending_palettes
                     .push((PICTURE_BANK, self.assets.message_palette.clone()));
                 let r = self.assets.regions[REGION_PICTURE];
-                self.fill_from(r, &self.assets.message, 0, PICTURE_BANK);
+                self.fill_from(bg, r, &self.assets.message, 0, PICTURE_BANK);
                 // The name and the row under the picture go with the card:
                 // the real ROM clears both to flat colour 8 when the message
                 // is up, which is what the interior tile already is.
-                self.fill_card_text_background();
+                self.fill_card_text_background(bg);
             }
             return;
         };
@@ -888,9 +894,9 @@ impl Custom<'_> {
         let picture = offer.chip.picture();
         let r = self.assets.regions[REGION_PICTURE];
         debug_assert_eq!((r.w, r.h), PICTURE_TILES);
-        self.fill_from(r, &picture, 0, PICTURE_BANK);
-        self.draw_card_name(offer.chip.name());
-        self.draw_card_row(offer.code, offer.chip.element, offer.chip.power, gfx);
+        self.fill_from(bg, r, &picture, 0, PICTURE_BANK);
+        self.draw_card_name(bg, offer.chip.name());
+        self.draw_card_row(bg, offer.code, offer.chip.element, offer.chip.power, gfx);
     }
 
     /// The chip the card should show. A PICKED slot still previews its chip:
@@ -950,7 +956,9 @@ impl Custom<'_> {
     }
 
     /// Advance a frame. Returns true once the window has slid back out.
-    pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+    /// `bg` is the SAME shared `RegularBackground` `open()` was given
+    /// (`Battle::hud_bg`) -- AUDIT wave 3d "bg3-merge".
+    pub fn update(&mut self, bg: &mut RegularBackground, input: &ButtonController, gfx: &Graphics) -> bool {
         // Last frame's card palettes, now that its tiles have landed.
         for (bank, palette) in self.pending_palettes.drain(..) {
             gfx.set_background_palette(bank, &palette);
@@ -958,8 +966,8 @@ impl Custom<'_> {
         self.phase = match self.phase {
             Phase::Opening { x } if x > 0 => {
                 let x = (x - SLIDE_STEP).max(0);
-                self.bg.set_scroll_pos((x, 0));
-                self.reveal(x);
+                bg.set_scroll_pos((x, 0));
+                self.reveal(bg, x);
                 // The real ROM's slide-in is state 0 of the window's own state
                 // machine (sub_8026B04, asm03_0.s:910-916): it seeds the same
                 // 0x78 and subtracts the same 0xc, and on the tenth call --
@@ -976,12 +984,12 @@ impl Custom<'_> {
             Phase::Opening { .. } => Phase::Open,
             Phase::Open => {
                 self.frames += 1;
-                self.navigate(input, gfx)
+                self.navigate(bg, input, gfx)
             }
             Phase::Closing { x } if x < SLIDE_FROM => {
                 let x = (x + SLIDE_STEP).min(SLIDE_FROM);
-                self.bg.set_scroll_pos((x, 0));
-                self.vacate(x);
+                bg.set_scroll_pos((x, 0));
+                self.vacate(bg, x);
                 Phase::Closing { x }
             }
             Phase::Closing { .. } => Phase::Done,
@@ -991,7 +999,7 @@ impl Custom<'_> {
     }
 
     /// One frame of the open window's input (custMenuSomeHandler_8028B74).
-    fn navigate(&mut self, input: &ButtonController, gfx: &Graphics) -> Phase {
+    fn navigate(&mut self, bg: &mut RegularBackground, input: &ButtonController, gfx: &Graphics) -> Phase {
         // THE CURSOR MOVES TWO FRAMES AFTER THE DIRECTION. Measured against
         // the real ROM with Left held six frames: its bracket stays on OK for
         // two of them and this build's had already moved. The same two frames
@@ -1036,17 +1044,17 @@ impl Custom<'_> {
             if self.picks.len() < HAND_SIZE && !self.picks.contains(&slot) && self.allowed(slot)
             {
                 self.picks.push(slot);
-                self.draw_offered();
-                self.draw_stack();
+                self.draw_offered(bg);
+                self.draw_stack(bg);
             }
         }
         if input.is_just_pressed(Button::B) {
             if self.picks.pop().is_some() {
-                self.draw_offered();
-                self.draw_stack();
+                self.draw_offered(bg);
+                self.draw_stack(bg);
             }
         }
-        self.draw_card(gfx);
+        self.draw_card(bg, gfx);
         Phase::Open
     }
 
@@ -1055,8 +1063,11 @@ impl Custom<'_> {
         self.picks.iter().filter_map(|&slot| self.slots[slot])
     }
 
+    /// Draws this window's OBJECTS only -- the mark, the damage digits and
+    /// the cursor bracket. Its tiles live on the shared `Battle::hud_bg`
+    /// (AUDIT wave 3d "bg3-merge"), shown once, centrally, in
+    /// `Battle::draw()`.
     pub fn show(&self, frame: &mut GraphicsFrame, hud: &Hud) {
-        self.bg.show(frame);
         if !matches!(self.phase, Phase::Open) {
             return;
         }
