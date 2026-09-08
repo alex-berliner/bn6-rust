@@ -256,7 +256,14 @@ rotation of `BAR_CYCLE`.
 DO NOT just add 9 somewhere. The mechanism is the question now: find what the real ROM advances
 the BAR from, and whether it is the same thing that drives the marker. `SetCustGauge` writes the
 gauge VALUE to 0x020352A0 (asm00_2.s:29838); the routine that draws the flowing bar has still not
-been found, and that is the thing to look for.
+been found.
+
+SEARCHES THAT DO NOT FIND IT, so nobody repeats them: grepping the asm for the bar's VRAM tile ids
+(0x232-0x235) finds nothing -- they are not literals -- and grepping for the gauge art's load base
+0x222 finds only `0x2220`, which is an EVENT FLAG base in asm00_1.s:8227 and asm03_2.s:4336, not a
+tile. The ids must be built from a base plus an offset, or come out of a table. Try instead:
+follow the writers of the BG3 map region the gauge occupies, or set a watchpoint on the map cells
+in an emulator and see who writes them.
 
 The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at the alignment
 frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
