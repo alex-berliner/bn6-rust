@@ -675,6 +675,19 @@ VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster a
 the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
 poked into the hand for the poison case.
 
+### B3c. The `audio` check exists now, and it does not agree with the wiring's own measurement
+The suite hears. `check_audio` captures each side twice -- with the press and without -- takes the
+residual sample by sample before the RMS (TRANSFER 7ax's method), and compares the two envelopes
+over the sample's body. Want 23620, peak residual 4864 real against 4603 here.
+
+THAT DISAGREES WITH THE MEASUREMENT MADE WHEN THE SOUND WAS WIRED UP, which put the peak at 4074
+real against 4605 ours -- ours 13% LOUDER, where this check has ours 5% QUIETER. Same sound, two
+methods, opposite signs. One of them is wrong and it matters which, because "13% loud" is what
+went into the write-up. Differences to chase: the window (that measurement used frames +14..+29
+from the press with its own alignment, this one uses the same range but counts from a different
+press frame per side), and whether the control run is subtracted before or after the RMS.
+Resolve this before trusting either number, and before adding a second sound on top of it.
+
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
 is on FIFO channels A and B and silent on all four PSG channels, so it is a DirectSound SAMPLE

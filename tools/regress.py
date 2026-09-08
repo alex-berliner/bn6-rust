@@ -378,6 +378,72 @@ def check_warp():
     return 30 - same, "%d of 30 navi positions" % same
 
 
+#: THE SUITE HEARS NOTHING WITHOUT THIS. Two sounds are implemented -- the
+#: buster's PSG fire blip and its DirectSound hit sample -- and until now
+#: nothing measured either, so the hit's known 13% loudness error sat outside
+#: every check exactly the way `demo-open` once did.
+#: The method is TRANSFER 7ax's: the battle's own noise never stops, so each
+#: side is captured TWICE, once with the press and once without, and the
+#: residual is taken sample by sample before the RMS. Frames are counted from
+#: the press, and the score is the summed absolute difference between the two
+#: sides' residual envelopes over the sample's body.
+#: The want is 23620 and that is a DEFECT WITH A NUMBER, not a tolerance. Peak
+#: residual RMS is 4864 on the real ROM against 4603 here, so the sample is
+#: close but not equal, and the envelope differs across the body. Note this
+#: does not reproduce the "13% louder" figure from the session that wired the
+#: sound up: that was measured over a different window with peaks the other way
+#: round (4074 real against 4605 ours). Two methods disagreeing about the sign
+#: of the error is itself worth resolving before either is trusted.
+AUDIO_FRAMES = range(14, 30)
+
+
+def _envelope(rom, press, extra, *args):
+    """Per-frame residual RMS after `press`, control-subtracted.
+
+    `args` carries whatever the side needs to be IN a battle at all -- the
+    real ROM wants its save state and the cheats that keep the enemy alive.
+    Leaving them out captures a ROM that never reaches a fight, whose envelope
+    is a flat zero and looks like a missing sound rather than a broken setup.
+    """
+    import math
+    import struct
+    out = []
+    for tag, script in (("hit", "%s,B@%d,B@%d" % (extra, press, press + 1)),
+                        ("ctl", extra)):
+        d = cc.scratch("rg_aud_" + tag)
+        subprocess.run(["rm", "-rf", d], check=True)
+        subprocess.run([CAPTURE, rom, cc.scratch("rg_aud_frames"), str(press + 40),
+                        *args, "--disable-bg", "--script", script.strip(","),
+                        "--dump-audio", d],
+                       check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        out.append(d)
+    hit, ctl = out
+    env = []
+    for k in AUDIO_FRAMES:
+        f = press + k
+        a = open(os.path.join(hit, "frame.%05d.pcm" % f), "rb").read()
+        b = open(os.path.join(ctl, "frame.%05d.pcm" % f), "rb").read()
+        n = min(len(a), len(b)) // 2
+        va = struct.unpack("<%dh" % n, a[:n * 2])
+        vb = struct.unpack("<%dh" % n, b[:n * 2])
+        env.append(math.sqrt(sum((x - y) ** 2 for x, y in zip(va, vb)) / max(n, 1)))
+    for d in (hit, ctl, cc.scratch("rg_aud_frames")):
+        subprocess.run(["rm", "-rf", d], check=True)
+    return env
+
+
+def check_audio():
+    """The buster's hit, real against ours, as a residual envelope."""
+    build("demo-field", cc.scratch("rg_field.gba"))
+    real = _envelope(STERILE, 60, "Start@10", "--loadstate", PAUSED, *ALIVE,
+                     "--zero", "0x6016E00:1280")
+    ours = _envelope(cc.scratch("rg_field.gba"), 130, "")
+    total = int(sum(abs(a - b) for a, b in zip(real, ours)))
+    peak_r, peak_o = int(max(real)), int(max(ours))
+    return total, "%d frames after the hit, peak real %d vs ours %d" % (
+        len(real), peak_r, peak_o)
+
+
 def check_buster():
     build("demo-field", cc.scratch("rg_field.gba"))
     capture(STERILE, cc.scratch("rg_br"), 100, "--loadstate", PAUSED, *ALIVE,
@@ -607,6 +673,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
+    ("audio", check_audio, 23620),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),
