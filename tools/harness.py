@@ -134,6 +134,26 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     struct.pack_into("<H", buf, 26, descriptor.get("scroll_yq", 0xFFFF))
     struct.pack_into("<H", buf, 28, descriptor.get("gauge_tick", 0xFFFF))
     struct.pack_into("<H", buf, 30, descriptor.get("fire_frame", 0xFFFF))
+    # +32 enemy_hp: src/fixture.rs's ACTUAL sentinel is 0 (its own doc: "0 =>
+    # the kind's own sensible default"), not FIXTURE.md's stated 0xFFFF --
+    # see this ticket's report. Defaulting here to 0 matches the code that
+    # reads it, not the (wrong) prose.
+    struct.pack_into("<H", buf, 32, descriptor.get("enemy_hp", 0))
+    # +34..39 deck_count/deck, +40 start_state, +41 result_level, +42
+    # result_frames, +44 result_zenny, +46 banner_at: FIXTURE.md's fields
+    # added after wave 2, none read by src/fixture.rs yet (wave 3's
+    # `fixture-gaps` agent, running in parallel -- see Check.pending_src).
+    # Written anyway, per the ticket: a descriptor is legal input the moment
+    # a field lands, with no harness change needed.
+    deck = descriptor.get("deck", [])
+    buf[34] = descriptor.get("deck_count", len(deck))
+    for i in range(5):
+        buf[35 + i] = deck[i] if i < len(deck) else 0
+    buf[40] = descriptor.get("start_state", 0)
+    buf[41] = descriptor.get("result_level", 0)
+    struct.pack_into("<H", buf, 42, descriptor.get("result_frames", 0))
+    struct.pack_into("<H", buf, 44, descriptor.get("result_zenny", 0))
+    struct.pack_into("<H", buf, 46, descriptor.get("banner_at", 0xFFFF))
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -361,6 +381,16 @@ class Check:
     rust: Callable[[str], Side]
     canon: Callable[[str], Side]
     canon_variant: str = "canon"  # AUDIT pair 16: name the canon variant. "canon (sterile)" for a patched original.
+    #: AUDIT wave 3 ticket step 1: non-empty when this check's rust side
+    #: cannot be expressed by today's FIXTURE.md descriptor -- the offered
+    #: deck (window/card/cursor), start_state (result) or banner_at (banner)
+    #: fields the `fixture-gaps` agent is adding in parallel, at the offsets
+    #: FIXTURE.md documents but src/fixture.rs does not read yet. The
+    #: descriptor is still written (fixture_cheats() covers every FIXTURE.md
+    #: field), so the check "lights up" the moment that field is read --
+    #: nothing here needs to change. Purely informational: does not affect
+    #: pass/fail, only how the row is reported.
+    pending_src: str = ""
 
 
 def _cannon_canon(ui: str) -> Side:
@@ -371,6 +401,125 @@ def _cannon_canon(ui: str) -> Side:
     # step needs a throwaway capture of its own to peek the state's
     # library, which does not fit the static-Side model below).
     return Side(rom=STERILE, capture_fn=lambda out, count: cc.capture_real("01", out, count))
+
+
+# --------------------------------------------------------------------------
+# The 43-chip scoreboard (AUDIT pair 14, ticket step 2). ONE plain build,
+# chip chosen at runtime by a fixture descriptor -- "sterile arena (enemies
+# 0), hand = that chip, auto-fire on", exactly what
+# `demo-sterile,demo-<chip>,demo-auto` used to build 43 times over. The
+# fixture row is `_cannon_canon`'s own table entry (fixture.rs's
+# "demo-sterile,demo-cannon,demo-auto" row) generalised to any chip id:
+# flags 0x1F (open-window | blank-hud | blank-backdrop | auto-fire |
+# skip-intro), fire_frame 90 -- AUTO_FIRE_GAP, battle.rs confirms it seeds
+# and reseeds `auto_ticks` exactly as the old demo-auto harness did.
+#
+# Alignment is the SAME for every chip, not searched per-chip: canon_ref=43
+# is chip_compare.py's REAL_START (A pressed at 40, the attack begins at
+# 43, independent of which chip), and the rust marker origin (1, verified
+# live against the existing `cannon` check above -- SAME descriptor family,
+# flags 0x1F) plus a 26-frame band finds the SAME unique zero at offset 122
+# the `cannon` check already uses -- reusing its Align object rather than
+# re-deriving it.
+#
+# THE ISOLATED RESIDUE IS REAL, BOUNDED, AND NOT FROM THIS PORT. Full-screen
+# (pair 6) surfaces two artifacts the old x<140/y>=40 box hid, both traced
+# to the PAUSED save state itself (built by hand while the chip window was
+# closing) rather than to anything this ticket changed:
+#   1. A ~694px "portrait box" (OAM objects 0-1, tiles 948-959, palette 12,
+#      top-left) for exactly canon frames 43-48 (6 frames), then gone.
+#   2. The enemy, deleted by cheat (HP forced to 0) rather than hidden, does
+#      not vanish on frame 1 -- it dissolves over ~100 frames, same as
+#      chip_compare.py's own doc says ("Cannon scores 0 with the enemy
+#      deleted and 346 px/frame with it hidden" -- hidden is WORSE, see
+#      below).
+# NEITHER IS FIXABLE WITH --zero: verified directly (this ticket) by
+# zeroing the portrait box's own tile range (0x6017680:384) and, for
+# comparison, the ENTIRE OBJ tile VRAM (0x6010000:0x8000) -- the enemy body
+# vanishes (it is genuinely OBJ, confirmed by it also vanishing under
+# --disable-obj alone) but the portrait box does not, under EITHER --zero
+# OR --disable-bg OR --disable-obj. tools/patch_sterile.py's own comment on
+# the ENEMY DELETED banner explains why: "the harness writes before each
+# frame and the game uploads the banner during the very frame that shows
+# it" -- a --zero write that happens before runFrame() loses to game code
+# that re-uploads the tile during that same frame, which is exactly what an
+# in-progress transition (a closing window, a dissolving corpse) does and a
+# settled, idle sprite does not (confirmed: the SAME zero technique removes
+# a merely-alive, non-transitioning Mettaur outright, tools/harness.py's
+# `field`/`warp`/`buster`/`chip-use` below). Fixing it the way the banner
+# was fixed needs a ROM CODE patch (patch_sterile.py's technique, off limits
+# to this ticket) to whatever routine draws the portrait box, not a bigger
+# --zero. NOT switching to --hide-enemy (immortal + blanked tiles) as the
+# default either: chip_compare.py's own measurement is that hiding a live
+# target costs MORE (346 px/frame, sparks/damage numbers/Full Synchro) than
+# deleting one -- see its module docstring. Reported here, not boxed away.
+ALIGN_CHIP = Align(
+    canon_ref=43,
+    search=range(110, 136),
+    note="canon: chip_compare.py's REAL_START=43, chip-independent. rust: "
+         "marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, "
+         "same as the `cannon` check above) plus a 26-frame band -- unique zero "
+         "at offset 122 for every chip verified (same descriptor family as "
+         "`cannon`, which this reuses rather than re-derives).",
+)
+
+def _chip_pokes(chip_hex: str) -> Tuple[str, ...]:
+    """cc.library_pokes() returns a flat ['--poke', 'addr:val', ...] list
+    (it is built to be spliced straight into a subprocess argv); Side.pokes
+    wants just the 'addr:val' halves, which args() re-adds the flag for."""
+    raw = cc.library_pokes(int(chip_hex, 16))
+    return tuple(raw[i] for i in range(1, len(raw), 2))
+
+
+def plain_rom() -> str:
+    """ONE plain build (no demo-* feature) -- AUDIT pair 14 -- for every
+    fixture-descriptor check in this file, cached by build_feature_rom()
+    the same way a demo-feature build is, keyed on the empty string."""
+    return build_feature_rom("")
+
+
+def _chip_rust(chip_hex: str) -> Callable[[str], Side]:
+    desc = {
+        "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
+        "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
+        "flags": 0x1F, "fire_frame": 90,
+    }
+    return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
+
+
+def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
+                banner_zero: bool = True) -> Callable[[str], Side]:
+    def make(ui: str) -> Side:
+        cheats = list(ALIVE if hide_enemy else ("0x0203ab84:0", "0x0203ab86:0"))
+        cheats.append("%s:0x%s" % (cc.HAND_SLOT, chip_hex))
+        zero = []
+        if banner_zero:
+            zero.append(cc.BANNER_TILES)
+        if hide_enemy:
+            zero.append(cc.ENEMY_TILES)
+        return Side(rom=STERILE, loadstate=PAUSED, cheats=tuple(cheats),
+                    pokes=_chip_pokes(chip_hex), zero=tuple(zero),
+                    script="Start@10,A@%d" % a_frame, extra=("--disable-bg",))
+    return make
+
+
+def _chip_checks() -> List[Check]:
+    import scoreboard
+    out: List[Check] = []
+    for feature, chip_hex, frames, extra in scoreboard.CHIPS:
+        name = "chip-" + feature[len("demo-"):]
+        hide_enemy = "--hide-enemy" in extra
+        banner_zero = "--no-banner-zero" not in extra
+        out.append(Check(
+            name=name,
+            ui="isolated",
+            frames=frames,
+            align=ALIGN_CHIP,
+            rust=_chip_rust(chip_hex),
+            canon=_chip_canon(chip_hex, hide_enemy=hide_enemy, banner_zero=banner_zero),
+            canon_variant="canon (sterile)",
+        ))
+    return out
 
 
 CHECKS: List[Check] = [
@@ -433,6 +582,8 @@ CHECKS: List[Check] = [
         canon_variant="canon (sterile)",
     ),
 ]
+
+CHECKS.extend(_chip_checks())
 
 #: The pre-harness box each ported check used to score 0 inside of --
 #: reported alongside the full-screen number so "how much of the residue was
