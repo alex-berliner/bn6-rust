@@ -2,4 +2,4 @@ banner (isolated), FAILED: per-frame max 562 px, total 2248 px over 58 frames. A
 
 banner_at is now read by src/fixture.rs (BANNER_ROW's own banner_at=100 verified byte-identical there against demo-banner's own reference, over 200 frames -- this note's earlier 'pending-src' was stale, corrected this ticket, not re-investigated past that: 2248/58 is zero-src's own item, not this ticket's). canon: /tmp/bn6f_banner.gba (tools/patch_sterile.py --keep-banner, already built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from regress.py's check_banner. rust: BANNER_ROW through the descriptor (marker origin 1, blanked HUD/backdrop family) plus a band around regress.py's old rust_start=132 (132-1=131).
 
-commit 20586a1
+commit a8ef7ed

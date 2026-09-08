@@ -2,4 +2,4 @@ field (integrated), FAILED: per-frame max 26479 px, total 397357 px over 40 fram
 
 AUDIT pair 3: an empty arena, not the old ALIVE-mettaur setup (an enemy acting on an RNG the two sides do not share -- exactly what pair 3 calls out). canon_ref=130: the enemy is DELETED, not hidden (see DELETE_ENEMY's comment above for why), and 130 is comfortably past frame 110, verified live as the last frame with any dissolve OAM at all. rust: marker origin 8 plus a wide band -- the picture is static once settled, so a wide band costs nothing and does not need a sharp-minimum argument the way a moving subject does. frames=40, not 20: the idle navi's own pose settles once more around canon frame 164 (k=34) -- a genuine one-time transition, not periodic -- and pair 10's negative fixture is BLIND without it in the window (a fully frozen 40-frame stretch cannot tell a 1-frame canon shift from no shift at all).
 
-commit 20586a1
+commit a8ef7ed

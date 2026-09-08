@@ -2,4 +2,4 @@ window (isolated), FAILED: per-frame max 1481 px, total 23696 px over 16 frames.
 
 Wave 3b ticket step 2: the deck/deck_codes/window_pick_* fields now land in CUSTMATCH_ROW (src/fixture.rs reads them, verified byte-identical there except a small 371px/2-frame card-picture residual -- zero-src's own ticket). isolated = the window's own layer, not the whole screen: canon --only-bg 3 (measured live, this ticket -- BG3 is the chip-select window itself; BG1 is a flat fill, BG2 the field panels underneath), which also turns OBJ/WIN off (tools/mgba_capture.c's own --only-bg behaviour); rust gets FLAG_BLANK_HUD | FLAG_BLANK_BACKDROP added on top of CUSTMATCH_ROW's own flags so nothing but the window renders there either -- ISOLATED_CUSTMATCH_ROW, not a --only-bg on the rust side (its window may not live on the same BG index; matching by content, not by layer number). canon: REAL+CHIPSELECT unchanged otherwise. rust: marker origin 8 plus a band around regress.py's old compared rust frame (its own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is subtracted).
 
-commit 20586a1
+commit a8ef7ed

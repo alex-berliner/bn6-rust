@@ -40,7 +40,8 @@ little-endian.
 | +54 | u8  | window_pick_slot | the offered slot index pre-picked when `window_pick_count` = 1 |
 | +55 | u8  | window_cursor | cursor position when `window_pick_count` = 1: 0..9 a slot, 0x0a = OK |
 | +56 | u16 | result_elapsed | when `start_state` = 1: frames of the RESULT sequence already elapsed at boot. 0 = the slide-in starts on the first battle frame; 0xFFFF = settled (the old `demo-resultmatch` picture) |
-| +58.. | | reserved | zero |
+| +58 | u32 | rng | the game's RNG state at battle frame 0, peeked from the canon state, so an RNG-gated enemy takes the same decisions on both sides; 0 = our default seed |
+| +62.. | | reserved | zero |
 
 Fields +32 onward were added after wave 2's `src/` agent found the original contract could not
 express `demo-field`'s pinned enemy HP, `demo-custmatch`/`demo-cardname`'s offered deck,
