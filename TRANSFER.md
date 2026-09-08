@@ -2841,3 +2841,57 @@ colours do not change through a cannon shot (counted frame by frame over the who
 blues throughout), and all three cannons compare at 0.0 px, so whatever that early note saw was
 the barrel's own charge glow and not the navi. (3) the
 `demo-sterile` branch must come before `demo-cannon` or MegaMan lands on the wrong column.
+
+## 7bn. Save states are built from a manifest (2026-09-08)
+
+`tools/states.py` (AUDIT pair 5): every state tools/regress.py and tools/chip_compare.py load is
+now written down as (base ROM, base state, script, cheats, frame count) instead of kept as an
+opaque file. `list` prints the table; `build <name>|all` regenerates a non-root entry into /tmp.
+
+WHICH ARE ROOTS IS A PHYSICAL FACT, NOT A GUESS. mGBA-qt's own interactive save-state feature
+writes a "RASTATE" banner before the raw core state (tools/mgba_capture.c's --loadstate comment);
+`mCoreSaveStateNamed(..., SAVESTATE_ALL)` -- what this project's own `--savestate` flag calls --
+writes a PNG (SAVESTATE_ALL includes SAVESTATE_SCREENSHOT) with the state in a custom chunk
+instead. `pausedwithcannon.state` and `chipselect.state` both start `RASTATE`: hand-made, live, in
+the emulator, and there is no script that reproduces "reached by playing" -- ROOTS.
+`noenemy2.state` and `battlestart.state` both start `\x89PNG`: built by this project's own harness,
+not hand-played, which makes them candidates to regenerate. They came out differently:
+
+- **battlestart.state** has no runnable base: its documented recipe (7aw) starts from an overworld
+  save, walking toward a forced random encounter, and no overworld save file exists in /tmp or was
+  ever recorded. Nothing to attempt. Stays root.
+- **noenemy2.state** DOES have a runnable base (PAUSED) and a documented trigger (delete the
+  enemy's HP, section 3 / 7bf), so it was attempted: real ROM (sterile patches out
+  `battle_isBattleOver`, exactly what reaching RESULT needs to NOT happen), load PAUSED, force
+  both enemy HP fields to 0 every frame, Start@10, run 172 frames, `--savestate`. VERIFIED NOT
+  EQUIVALENT: diffing 60 full-screen frames of the rebuild against 60 of the real noenemy2.state
+  (chip_compare.py's `frame()`/`differs()`) gives 238053 px total, ~3200-4700 px/frame, and every
+  bit of it is the reward panel (y 96..158 on frame 0; the window chrome above y=96 is bit-for-bit
+  identical). The reward is rolled from RNG state an instant HP=0 kill does not reach the way real
+  play did, so it gets a different prize -- and a second, structural tell says the real capture's
+  reward flow is longer: the rebuild starts blinking a "press to continue" cursor by its own frame
+  5 (period 8, forever after), while the real noenemy2.state is static for at least 60 frames, no
+  blink at all. No choice of frame count fixes this -- it is one continuous timeline, so every
+  save point sits either inside the slide-in (before frame 167) or inside the blink (after ~172).
+  Kept `root=True` in the manifest despite being harness-made, specifically so `build` cannot
+  silently swap the live fixture's reward for a different one -- that silent swap is the exact
+  failure pair 5 names. The recipe is written down for whoever resolves the divergence.
+
+THE NEW STATE (AUDIT pair 4): `/tmp/result_arrival.state`, built and root=False. NOENEMY starts
+after the RESULT window has already arrived (static from its own frame 2), so `result` in
+regress.py can only ever compare one still picture. This state uses the SAME recipe as the
+noenemy2 attempt above but stops 37 frames earlier -- frame 135 rather than 172 -- so the window's
+whole slide-in lands inside a 40-frame capture instead of before it. VERIFIED: two independent
+builds of the recipe differ in 16 bytes of the state file's own incidental metadata (a small
+chunk, not the 240x160 core state) but render 40 identical frames -- deterministic where it
+matters. Diffing consecutive frames of a 40-frame capture over the window region (26,24,215,155):
+frames 2..20 move (the tail of the battle settling, expected -- this is BEFORE arrival), frames
+21..32 are the slide-in itself (2983..7803 px moving every frame), frame 35 has an 80px residual
+settle, the rest read 0. The arrival is inside the window and not at frame 0.
+
+THE OFF-BY-ONE THAT ISN'T ONE, worth recording once: `mgba_capture`'s frame loop runs indices
+0..count-1 and writes `--savestate` AFTER the last one, so the state is poised to compute frame
+`count` next -- loading it and capturing K frames of your own gives frame indices
+`count`..`count+K-1` in the original run's numbering, not `count-1`..`count+K-2`. Confirmed by
+building a state at count=20 mid-run and finding its own frame 0 reproduces an uninterrupted run's
+absolute frame 20 exactly, pixel for pixel, repeated for the count=135 result_arrival build too.
