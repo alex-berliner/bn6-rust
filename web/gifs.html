@@ -15,6 +15,7 @@
   .card img { width: 100%; display: block; image-rendering: pixelated; background: #000; }
   .card figcaption { padding: 8px 12px; font-size: 13px; color: #bbb; }
   .card .name { color: #eee; font-weight: 600; }
+  .card .day { float: right; color: #777; font-size: 12px; font-variant-numeric: tabular-nums; }
   .empty { color: #888; padding: 40px 0; text-align: center; }
   .stamp { color: #888; font-size: 12px; }
 </style>
@@ -23,7 +24,7 @@
 <header>
   <h1>bn — capture gallery</h1>
   <a href="index.html">&larr; play the demos</a>
-  <span class="stamp">auto-detected from web/captures/*.gif</span>
+  <span class="stamp">auto-detected from web/captures/*.gif — newest first</span>
 </header>
 <main>
   <div id="grid" class="grid"></div>
@@ -45,6 +46,14 @@
         img.alt = c.label + ' (' + c.file + ')';
         img.loading = 'lazy';
         const cap = document.createElement('figcaption');
+        // The date floats, so it has to be appended before the text it sits
+        // beside rather than after it.
+        if (c.added) {
+          const day = document.createElement('span');
+          day.className = 'day';
+          day.textContent = c.added;
+          cap.appendChild(day);
+        }
         const name = document.createElement('span');
         name.className = 'name';
         name.textContent = c.label;

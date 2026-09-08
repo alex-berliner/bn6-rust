@@ -1,212 +1,254 @@
 [
   {
-    "file": "captures/airshot-compare.gif",
-    "name": "airshot-compare",
-    "label": "AirShot, real ROM left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back."
-  },
-  {
-    "file": "captures/aquaswrd-compare.gif",
-    "name": "aquaswrd-compare",
-    "label": "AquaSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are the same arc in a different palette bank, exported with every one the sprite carries."
-  },
-  {
-    "file": "captures/areagrab-compare.gif",
-    "name": "areagrab-compare",
-    "label": "AreaGrab, real ROM left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows."
-  },
-  {
     "file": "captures/bambswrd-compare.gif",
     "name": "bambswrd-compare",
-    "label": "BambSwrd, real ROM left and this build right: 0.0 pixels a frame. The wood-element sword, the last of the nine."
-  },
-  {
-    "file": "captures/banner-compare.gif",
-    "name": "banner-compare",
-    "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up."
-  },
-  {
-    "file": "captures/barr200-compare.gif",
-    "name": "barr200-compare",
-    "label": "Barr200, real ROM left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font."
-  },
-  {
-    "file": "captures/barrier-compare.gif",
-    "name": "barrier-compare",
-    "label": "Barrier, real ROM left and this build right: 0.0 pixels a frame over its whole life. One of the five chips that put their NAME up in the middle of the screen: eight objects of the raw battle font, unrolled and rolled back up by one shared affine matrix."
-  },
-  {
-    "file": "captures/battle-open-compare.gif",
-    "name": "battle-open-compare",
-    "label": "How a battle opens, real ROM above and this build below. Found with the harness's first save state at a battle's FIRST frame, which immediately showed two things wrong here: a battle OPENS with the chip window (frame 165, unprompted) where this build made you wait 1260 frames for it, and BATTLE START! follows the chip window rather than the intro. Corrected, the banner lands at 291 against the real ROM's 292."
-  },
-  {
-    "file": "captures/battle-opening.gif",
-    "name": "battle-opening",
-    "label": "How a battle opens in the build now: white held and ramped off, the field, the virus materialising, the chip window. The lead-in was 32 frames of black where the real ROM is 71 of white plus a 16-frame ramp, and with that one constant wrong everything after it looked wrong in its own way. Fixing it aligned all of them: the virus starts materialising at frame 76 and settles at 142 on both sides, and the chip window opens at 130 against 129."
-  },
-  {
-    "file": "captures/bigbomb-compare.gif",
-    "name": "bigbomb-compare",
-    "label": "BigBomb \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/blkbomb-compare.gif",
-    "name": "blkbomb-compare",
-    "label": "BlkBomb \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/bugbomb-compare.gif",
-    "name": "bugbomb-compare",
-    "label": "BugBomb, real ROM left and this build right: 0.0 pixels a frame over seventy. Its arc used to be swept and was one rounding step out on the frame before it lands; the constants are now read out of the object while it is in the air -- vx 0x2C000, vz 0x26062, gravity 0x2800 over 42 frames."
-  },
-  {
-    "file": "captures/cannon.gif",
-    "name": "cannon",
-    "label": "Cannon"
-  },
-  {
-    "file": "captures/cursor-compare.gif",
-    "name": "cursor-compare",
-    "label": "The chip window's cursor walking five slots, real ROM left and this build right: 170 frames, 0 pixels. Two one-frame bugs, neither of them the cursor delay it had been blamed on -- the card's palette landing a frame before its tiles, and the bracket's blink flipping a frame early. Neither was findable until the fixture could run the same script on both sides."
+    "label": "BambSwrd, real ROM left and this build right: 0.0 pixels a frame. The wood-element sword, the last of the nine.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/elecswrd-compare.gif",
     "name": "elecswrd-compare",
-    "label": "ElecSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are one arc in different palettes -- this one is the sprite's own electric set."
+    "label": "ElecSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are one arc in different palettes -- this one is the sprite's own electric set.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/energbom-compare.gif",
     "name": "energbom-compare",
-    "label": "EnergBom, real ROM left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands."
-  },
-  {
-    "file": "captures/fireswrd-compare.gif",
-    "name": "fireswrd-compare",
-    "label": "FireSwrd, real ROM left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette."
-  },
-  {
-    "file": "captures/flshbom-compare.gif",
-    "name": "flshbom-compare",
-    "label": "FlshBom \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/full-battle-loop.gif",
-    "name": "full-battle-loop",
-    "label": "A whole battle end to end in the rollup ROM: the chip window a battle opens with, the BATTLE START! ribbon, the fight, the win, the RESULT window with its reward, and into the next battle's chip select. This loop did not exist before today -- the release build fielded four enemies that delete the navi in fifteen seconds and started the custom gauge empty, 1260 frames before the first chip. Every piece here is separately matched to the real ROM pixel for pixel."
-  },
-  {
-    "file": "captures/grasseed-compare.gif",
-    "name": "grasseed-compare",
-    "label": "GrasSeed \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/hicannon-compare.gif",
-    "name": "hicannon-compare",
-    "label": "HiCannon, real ROM left and this build right: 0.0 pixels a frame. The three cannons are one barrel object in three palettes -- HiCannon is the Cannon's sprite with palette 1, M-Cannon with 2 -- so they cost no extra art."
-  },
-  {
-    "file": "captures/iceseed-compare.gif",
-    "name": "iceseed-compare",
-    "label": "IceSeed \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/invisibl-compare.gif",
-    "name": "invisibl-compare",
-    "label": "Invisibl, real ROM left and this build right: 0.0 pixels a frame. Its presentation runs 128 frames before the navi goes transparent -- measured, not guessed."
-  },
-  {
-    "file": "captures/lilbolr-compare.gif",
-    "name": "lilbolr-compare",
-    "label": "LilBolr1 \u2014 exact, frame for frame (real ROM left, this build right)"
+    "label": "EnergBom, real ROM left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/longblde-compare.gif",
     "name": "longblde-compare",
-    "label": "LongBlde, real ROM left and this build right: 0.0 pixels a frame. LongSwrd's reach at a higher tier -- the sword chips differ in numbers far more than in art."
+    "label": "LongBlde, real ROM left and this build right: 0.0 pixels a frame. LongSwrd's reach at a higher tier -- the sword chips differ in numbers far more than in art.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/longswrd-compare.gif",
     "name": "longswrd-compare",
-    "label": "LongSwrd, real ROM left and this build right: 0.0 pixels a frame. Two panels of reach where Sword has one; the pose and the arc are the same objects."
-  },
-  {
-    "file": "captures/mcannon-compare.gif",
-    "name": "mcannon-compare",
-    "label": "M-Cannon, real ROM left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2."
-  },
-  {
-    "file": "captures/megenbom-compare.gif",
-    "name": "megenbom-compare",
-    "label": "MegEnBom, real ROM left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted."
-  },
-  {
-    "file": "captures/minibomb-compare.gif",
-    "name": "minibomb-compare",
-    "label": "MiniBomb, real ROM left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight."
-  },
-  {
-    "file": "captures/muramasa-compare.gif",
-    "name": "muramasa-compare",
-    "label": "Muramasa, real ROM left and this build right: 0.0 pixels a frame. Its power is the damage MegaMan has already taken."
-  },
-  {
-    "file": "captures/poisseed-compare.gif",
-    "name": "poisseed-compare",
-    "label": "PoisSeed \u2014 exact: the pod, its arc and the poison going down (real ROM left, this build right)"
+    "label": "LongSwrd, real ROM left and this build right: 0.0 pixels a frame. Two panels of reach where Sword has one; the pose and the arc are the same objects.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/recov300-compare.gif",
     "name": "recov300-compare",
-    "label": "Recov300, real ROM left and this build right: 0.0 pixels a frame. The largest heal: the counter's step is |difference|/8 + 4 a frame, so a bigger number climbs faster, exactly as the real ROM's does."
-  },
-  {
-    "file": "captures/recov80-compare.gif",
-    "name": "recov80-compare",
-    "label": "Recov80, real ROM left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits."
-  },
-  {
-    "file": "captures/stepswrd-compare.gif",
-    "name": "stepswrd-compare",
-    "label": "StepSwrd \u2014 33 of 40 frames exact (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/suprvulc-compare.gif",
-    "name": "suprvulc-compare",
-    "label": "SuprVulc \u2014 exact, all ten shots (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/sword-compare.gif",
-    "name": "sword-compare",
-    "label": "Sword \u2014 exact, frame for frame (real ROM left, this build right)"
-  },
-  {
-    "file": "captures/vdoll-compare.gif",
-    "name": "vdoll-compare",
-    "label": "VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel."
+    "label": "Recov300, real ROM left and this build right: 0.0 pixels a frame. The largest heal: the counter's step is |difference|/8 + 4 a frame, so a bigger number climbs faster, exactly as the real ROM's does.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/vulcan-compare.gif",
     "name": "vulcan-compare",
-    "label": "Vulcan1, real ROM left and this build right: 0.0 pixels a frame. Three shots released ten frames apart -- the game's own fire period -- each travelling a panel a frame and stopped by the first thing it hits. The shots themselves load no sprite; only their hit sparks show."
-  },
-  {
-    "file": "captures/vulcan3-compare.gif",
-    "name": "vulcan3-compare",
-    "label": "Vulcan3, real ROM left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess."
-  },
-  {
-    "file": "captures/wave-departure-compare.gif",
-    "name": "wave-departure-compare",
-    "label": "The Mettaur's shockwave, real ROM left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames."
-  },
-  {
-    "file": "captures/wideblde-compare.gif",
-    "name": "wideblde-compare",
-    "label": "WideBlde, real ROM left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette."
+    "label": "Vulcan1, real ROM left and this build right: 0.0 pixels a frame. Three shots released ten frames apart -- the game's own fire period -- each travelling a panel a frame and stopped by the first thing it hits. The shots themselves load no sprite; only their hit sparks show.",
+    "added": "2026-09-07"
   },
   {
     "file": "captures/wideswrd-compare.gif",
     "name": "wideswrd-compare",
-    "label": "WideSwrd, real ROM left and this build right: 0.0 pixels a frame. Three panels tall rather than one, from the same pose."
+    "label": "WideSwrd, real ROM left and this build right: 0.0 pixels a frame. Three panels tall rather than one, from the same pose.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/airshot-compare.gif",
+    "name": "airshot-compare",
+    "label": "AirShot, real ROM left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/aquaswrd-compare.gif",
+    "name": "aquaswrd-compare",
+    "label": "AquaSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are the same arc in a different palette bank, exported with every one the sprite carries.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/barr200-compare.gif",
+    "name": "barr200-compare",
+    "label": "Barr200, real ROM left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/mcannon-compare.gif",
+    "name": "mcannon-compare",
+    "label": "M-Cannon, real ROM left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/minibomb-compare.gif",
+    "name": "minibomb-compare",
+    "label": "MiniBomb, real ROM left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/recov80-compare.gif",
+    "name": "recov80-compare",
+    "label": "Recov80, real ROM left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/vulcan3-compare.gif",
+    "name": "vulcan3-compare",
+    "label": "Vulcan3, real ROM left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/wideblde-compare.gif",
+    "name": "wideblde-compare",
+    "label": "WideBlde, real ROM left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/battle-opening.gif",
+    "name": "battle-opening",
+    "label": "How a battle opens in the build now: white held and ramped off, the field, the virus materialising, the chip window. The lead-in was 32 frames of black where the real ROM is 71 of white plus a 16-frame ramp, and with that one constant wrong everything after it looked wrong in its own way. Fixing it aligned all of them: the virus starts materialising at frame 76 and settles at 142 on both sides, and the chip window opens at 130 against 129.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/areagrab-compare.gif",
+    "name": "areagrab-compare",
+    "label": "AreaGrab, real ROM left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/barrier-compare.gif",
+    "name": "barrier-compare",
+    "label": "Barrier, real ROM left and this build right: 0.0 pixels a frame over its whole life. One of the five chips that put their NAME up in the middle of the screen: eight objects of the raw battle font, unrolled and rolled back up by one shared affine matrix.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/fireswrd-compare.gif",
+    "name": "fireswrd-compare",
+    "label": "FireSwrd, real ROM left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/hicannon-compare.gif",
+    "name": "hicannon-compare",
+    "label": "HiCannon, real ROM left and this build right: 0.0 pixels a frame. The three cannons are one barrel object in three palettes -- HiCannon is the Cannon's sprite with palette 1, M-Cannon with 2 -- so they cost no extra art.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/invisibl-compare.gif",
+    "name": "invisibl-compare",
+    "label": "Invisibl, real ROM left and this build right: 0.0 pixels a frame. Its presentation runs 128 frames before the navi goes transparent -- measured, not guessed.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/megenbom-compare.gif",
+    "name": "megenbom-compare",
+    "label": "MegEnBom, real ROM left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/muramasa-compare.gif",
+    "name": "muramasa-compare",
+    "label": "Muramasa, real ROM left and this build right: 0.0 pixels a frame. Its power is the damage MegaMan has already taken.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/full-battle-loop.gif",
+    "name": "full-battle-loop",
+    "label": "A whole battle end to end in the rollup ROM: the chip window a battle opens with, the BATTLE START! ribbon, the fight, the win, the RESULT window with its reward, and into the next battle's chip select. This loop did not exist before today -- the release build fielded four enemies that delete the navi in fifteen seconds and started the custom gauge empty, 1260 frames before the first chip. Every piece here is separately matched to the real ROM pixel for pixel.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/battle-open-compare.gif",
+    "name": "battle-open-compare",
+    "label": "How a battle opens, real ROM above and this build below. Found with the harness's first save state at a battle's FIRST frame, which immediately showed two things wrong here: a battle OPENS with the chip window (frame 165, unprompted) where this build made you wait 1260 frames for it, and BATTLE START! follows the chip window rather than the intro. Corrected, the banner lands at 291 against the real ROM's 292.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/wave-departure-compare.gif",
+    "name": "wave-departure-compare",
+    "label": "The Mettaur's shockwave, real ROM left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/cursor-compare.gif",
+    "name": "cursor-compare",
+    "label": "The chip window's cursor walking five slots, real ROM left and this build right: 170 frames, 0 pixels. Two one-frame bugs, neither of them the cursor delay it had been blamed on -- the card's palette landing a frame before its tiles, and the bracket's blink flipping a frame early. Neither was findable until the fixture could run the same script on both sides.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/banner-compare.gif",
+    "name": "banner-compare",
+    "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/blkbomb-compare.gif",
+    "name": "blkbomb-compare",
+    "label": "BlkBomb \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/bugbomb-compare.gif",
+    "name": "bugbomb-compare",
+    "label": "BugBomb, real ROM left and this build right: 0.0 pixels a frame over seventy. Its arc used to be swept and was one rounding step out on the frame before it lands; the constants are now read out of the object while it is in the air -- vx 0x2C000, vz 0x26062, gravity 0x2800 over 42 frames.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/grasseed-compare.gif",
+    "name": "grasseed-compare",
+    "label": "GrasSeed \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/iceseed-compare.gif",
+    "name": "iceseed-compare",
+    "label": "IceSeed \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/lilbolr-compare.gif",
+    "name": "lilbolr-compare",
+    "label": "LilBolr1 \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/poisseed-compare.gif",
+    "name": "poisseed-compare",
+    "label": "PoisSeed \u2014 exact: the pod, its arc and the poison going down (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/vdoll-compare.gif",
+    "name": "vdoll-compare",
+    "label": "VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/bigbomb-compare.gif",
+    "name": "bigbomb-compare",
+    "label": "BigBomb \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/flshbom-compare.gif",
+    "name": "flshbom-compare",
+    "label": "FlshBom \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/stepswrd-compare.gif",
+    "name": "stepswrd-compare",
+    "label": "StepSwrd \u2014 33 of 40 frames exact (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/suprvulc-compare.gif",
+    "name": "suprvulc-compare",
+    "label": "SuprVulc \u2014 exact, all ten shots (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/sword-compare.gif",
+    "name": "sword-compare",
+    "label": "Sword \u2014 exact, frame for frame (real ROM left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/cannon.gif",
+    "name": "cannon",
+    "label": "Cannon",
+    "added": "2026-09-06"
   }
 ]
