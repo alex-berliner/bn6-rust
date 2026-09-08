@@ -190,15 +190,20 @@ fn main(mut gba: agb::Gba) -> ! {
         // moved and returns immediately instead of blocking -- see its
         // `last_waited_number < NUM_VBLANKS` check. That first commit's
         // drawn content is then silently overwritten by the next
-        // iteration's before any real vblank displays it: measured with
-        // `--dump`, the marker's counter is never externally observed at 0
-        // -- it jumps straight from "not started" to 1 -- and the
-        // independently-derived alignment in tools/regress.py's `opening`
-        // check (searched over OPENING_LAGS, a unique zero at lag 7, +-1
-        // frame off by 63-65k px) confirms the frame that is genuinely
-        // displayed first is the SECOND `battle.update()` call's, not the
-        // first's. So the first call's tick is real (backdrop and gauge do
-        // start counting there) but never visible, and is not counted here.
+        // iteration's before any real vblank displays it.
+        //
+        // If this counted the first call's tick as frame 0, the marker
+        // would report a frame whose drawing is never shown -- a `--dump`
+        // right after it never observed anything BUT the SECOND call's
+        // value (0 with this guard removed and the second call labelled 1
+        // instead: it jumped straight from "not started" to 1, the first
+        // call's write invisibly overwritten first). Measured against
+        // tools/regress.py's independently-derived `opening` alignment
+        // (OPENING_LAGS searched, a unique zero at lag 7 -- +-1 frame off
+        // by 63-65k px) the frame genuinely displayed first is the SECOND
+        // `battle.update()` call's. So the first call's tick is real
+        // (backdrop and gauge do start counting there) but never visible,
+        // and is not counted here.
         let mut clocks_visible = false;
         loop {
             input.update();
