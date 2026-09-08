@@ -1,5 +1,5 @@
-chip-recov50 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)
+chip-recov50 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)
 
 canon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).
 
-commit a8ef7ed
+commit 96d0878
