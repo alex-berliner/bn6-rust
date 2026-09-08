@@ -384,17 +384,44 @@ def run(rust: Side, canon: Side, frames: int, align: Align) -> Result:
                   align=align)
 
 
-def negative_counts(result: Result, frames: int, delta: int = 1) -> List[int]:
+def negative_counts(result: Result, frames: int, delta: int = 1,
+                    kind: str = "frame") -> List[int]:
     """AUDIT pair 10: the SAME captures and the SAME alignment this check
-    just found, with the canon side shifted by `delta` frames -- not
-    re-searched, on purpose. Re-running the search could find a different
-    offset that also reads 0 on a periodic fixture, which would prove
-    nothing; reusing the found offset and only moving the canon reference is
-    what actually tests whether the check can fail.
+    just found, deliberately broken, so a check that cannot fail is visible
+    as such.
+
+    `kind="frame"` (the default, and the right one for anything that moves)
+    shifts the canon side by `delta` frames -- not re-searched, on purpose.
+    Re-running the search could find a different offset that also reads 0 on
+    a periodic fixture, which would prove nothing; reusing the found offset
+    and only moving the canon reference is what actually tests whether the
+    check can fail.
+
+    `kind="pixel"` shifts the canon side one pixel LEFT instead, comparing
+    canon's columns 1.. against ours 0..-1 on the same frames. It exists for
+    a subject that genuinely does not move: canon's BG3 alone, with the chip
+    window sitting open and nothing pressed, is byte-identical for 260+
+    consecutive frames (measured), so no frame shift can ever break that
+    pair -- not because the check is weak but because there is no timing in
+    the picture to get wrong. A pixel shift still tests what such a check
+    CAN get wrong: that the diff is live, aligned, and looking at real
+    content rather than two blank rectangles. Say so where it is used; it is
+    a weaker negative than a frame shift and must not be reached for by
+    anything with motion in the window.
     """
-    return [cc.diff_frames(result.canon_dir, result.canon_ref + delta + k,
-                           result.rust_dir, result.rust_origin + result.rust_offset + k)
-            for k in range(frames)]
+    if kind == "frame":
+        return [cc.diff_frames(result.canon_dir, result.canon_ref + delta + k,
+                               result.rust_dir, result.rust_origin + result.rust_offset + k)
+                for k in range(frames)]
+    if kind == "pixel":
+        out = []
+        for k in range(frames):
+            canon = cc.frame_array(result.canon_dir, result.canon_ref + k)
+            rust = cc.frame_array(result.rust_dir,
+                                  result.rust_origin + result.rust_offset + k)
+            out.append(cc._count_diff(canon[:, delta:], rust[:, :-delta]))
+        return out
+    raise ValueError("unknown negative kind %r" % kind)
 
 
 # --------------------------------------------------------------------------
@@ -428,6 +455,14 @@ class Check:
     #: nothing here needs to change. Purely informational: does not affect
     #: pass/fail, only how the row is reported.
     pending_src: str = ""
+    #: AUDIT pair 10, which negative fixture proves this check can fail:
+    #: "frame" (the default -- canon shifted one frame at the found offset)
+    #: for anything with motion in its compared window, "pixel" (canon
+    #: shifted one column) for a subject that provably does not move at all,
+    #: where a frame shift is not a weaker test but a meaningless one. Only
+    #: `window` uses "pixel", and its own note carries the measurement that
+    #: justifies it.
+    negative: str = "frame"
 
 
 def _cannon_canon(ui: str) -> Side:
@@ -1071,8 +1106,18 @@ PORTED_CHECKS: List[Check] = [
                  "reason -- see its own note). canon: REAL+CHIPSELECT unchanged otherwise. rust: "
                  "marker origin 8 plus a band around regress.py's old compared rust frame (its "
                  "own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is subtracted) "
-                 "-- kept, still inside the wide zero-and-blind plateau just measured.",
+                 "-- kept, still inside the wide zero-and-blind plateau just measured.\n"
+                 "NEGATIVE FIXTURE, resolved after that ticket: `negative='pixel'`. The "
+                 "measurement above is exactly the case a frame-shift negative cannot test -- "
+                 "canon's BG3 here is byte-identical for 260+ consecutive frames, so shifting "
+                 "it a frame breaks nothing, and the resulting BLIND says the subject is "
+                 "static, not that the check is wrong. A one-column shift breaks it instead, "
+                 "and tests what this check can actually get wrong: that the diff is live, "
+                 "aligned, and looking at the window's real content. Weaker than a frame "
+                 "shift, and used here only because this subject provably has no timing in "
+                 "it; `card` next door keeps the frame shift, because its window does move.",
         ),
+        negative="pixel",
         rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, extra=("--only-bg", "3")),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, extra=("--only-bg", "3")),
         canon_variant="canon",
@@ -1082,8 +1127,8 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=16,
         align=Align(
-            canon_ref=144,
-            search=range(205, 240),
+            canon_ref=136,
+            search=range(190, 245),
             note="Same wiring as `window`: --only-bg 3 on BOTH sides, SYMMETRIC as of this "
                  "ticket (bg3-merge follow-up) -- the rust side's own HUD/backdrop blanking "
                  "workaround (ISOLATED_CARDNAME_ROW) is dropped for plain CARDNAME_ROW "
@@ -1092,17 +1137,21 @@ PORTED_CHECKS: List[Check] = [
                  "live this ticket: unlike `window`, canon's BG3 here DOES move (the 5-press-Left "
                  "script highlights a different slot each press -- diffed live: consecutive-frame "
                  "changes at capture frames 22, 52, 82, 112, 142, ~2 frames after each press), but "
-                 "canon_ref=144 sits just past the LAST of those (142) with no sixth press to "
-                 "follow it, so the compared window (144..159) is itself in a static stretch -- "
-                 "the negative fixture (+1 frame at the found offset) also reads 0. NOT FIXED this "
-                 "ticket, same reason as `window`: re-centring on one of the real transitions "
-                 "(e.g. near 22) would need re-deriving canon_ref/rust_offset together and risks "
-                 "comparing a different semantic moment (cursor mid-move vs settled showing this "
-                 "card's info) than what this check was built to verify -- flagged for a future "
-                 "session, not silently passed over. canon: REAL+CHIPSELECT, the SAME 5-press-Left "
-                 "script as `cursor` below. rust: marker origin 8 plus a band around regress.py's "
-                 "old compared rust frame (start=144 PLUS lag[74,96] = 218..240, 210..232 once "
-                 "origin is subtracted).",
+                 "canon_ref=144 sat just past the LAST of those (142) with no sixth press to "
+                 "follow it, so the compared window (144..159) was itself in a static stretch and "
+                 "the negative fixture (+1 frame at the found offset) also read 0.\n"
+                 "FIXED by re-centring, not by weakening the negative (unlike `window`, whose "
+                 "subject genuinely never moves): canon_ref=136 puts the last real transition "
+                 "(142) inside the compared 136..151, so a one-frame canon shift now has "
+                 "something to break. The search band is widened to 190..245 because moving "
+                 "canon_ref back by 8 moves the matching rust offset by about the same. This "
+                 "deliberately makes the check able to fail on the cursor's own move timing, "
+                 "which is the point -- if our press response is a frame out, this is where it "
+                 "shows, and a non-zero here is a real finding rather than a check that could "
+                 "never have caught it. canon: REAL+CHIPSELECT, the SAME 5-press-Left script as "
+                 "`cursor` below. rust: marker origin 8 plus that band (regress.py's own compared "
+                 "rust frame was start=144 PLUS lag[74,96] = 218..240, 210..232 once origin is "
+                 "subtracted -- the widened band still contains it).",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CARDNAME_ROW, script=_CURSOR_WALK_REAL,
                              extra=("--only-bg", "3")),
@@ -1416,7 +1465,7 @@ def run_check(check: Check, *, gallery: bool = True) -> Dict[str, dict]:
         rust_side = check.rust(ui)
         canon_side = check.canon(ui)
         result = run(rust_side, canon_side, check.frames, check.align)
-        neg = negative_counts(result, check.frames)
+        neg = negative_counts(result, check.frames, kind=check.negative)
         blind = all(c == 0 for c in neg)
         allowed = _allowed(check.name, ui, result.worst)
         box = _old_box_figure(check, result)
