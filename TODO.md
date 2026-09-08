@@ -187,67 +187,37 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A8. The custom gauge's whole FLOW ANIMATION is out of phase
-Found by fixing A7, and it was hidden by the old alignment. The prompt inside the CUSTOM gauge
-flashes orange on a 16-frame cycle, 8 on and 8 off, and THIS BUILD ALREADY DOES THAT -- both sides
-measure exactly 110 orange pixels when lit and 0 when not. What differs is the PHASE: at the frame
-where the whole backdrop, field and bottom of the screen match to the pixel, the real ROM's prompt
-is lit and ours is dark, and our lit windows sit 8 frames -- half a cycle -- from where they should.
+### A8. The custom gauge's BAR CELLS ARE THE WRONG SHAPE
+`gauge` 446. Rendering the two HUD strips side by side at the alignment answers it in one look,
+after four rounds of me reasoning about timing:
 
-AND IT IS NOT ONLY THE PROMPT -- I said that first and it was too narrow. Splitting the 470 px at
-that alignment: the bar left of the marker 150, the marker 200, the bar right 120, and the CUSTOM
-label 0. The BAR's flowing stripes are out of phase as well. Both are driven by the same counter,
-`HudTiles::gauge_tick` (src/hudtiles.rs) -- frames the gauge has stood FULL, reset to 0 whenever it
-is not -- through `flow = gauge_tick - BAR_PHASE`, feeding `BAR_CYCLE` for the stripes and
-`(flow / MARKER_FRAMES) % 2` for the marker. HP, gauge FILL and the CUSTOM label all match.
+    real   the bar's lit cells are SLANTED parallelograms -- diagonal stripes, "///"
+    ours   plain upright rectangles
 
-AND IT IS NOT A PHASE PROBLEM EITHER -- that was my next guess and it is disproved. The gauge
-animation's period is LCM(28, 16) = 112 frames (`BAR_FRAMES` 7 over a 4-entry `BAR_CYCLE`, and
-`MARKER_FRAMES` 8). Sweeping our capture across a full 112-frame window either side of the
-alignment and scoring ONLY the gauge box (56..232, 8..22) against the real ROM's frame 44, the
-best score is 470 -- at the alignment frame itself, offset 0. No phase in the cycle does better.
+That is why no phase ever matched. It is the tile ART, not the animation: sweeping our frames over
+more than a full 112-frame gauge period against the real frame finds nothing better than 446, and
+the alignment frame itself is the best. Everything around it is already right -- the gauge is full
+on both sides (peeked: 0x020352A0 reads 0x4000, the cap), the lit bar spans the same 64..183, and
+the four-step 7-frame cycle shifting the pattern 2 px a step is confirmed on the real ROM by the
+leading edges of its lit runs (66,74,82,90,98 at f41; 64,72,80,88,96 at f42 -- 8 px apart, 2 px
+left at a step boundary).
 
-So our flow animation differs from the real ROM's IN CONTENT, at every phase, not in timing. The
-marker is not the problem: both sides alternate orange and cyan on the same 16-frame beat and both
-measure exactly 110 orange pixels lit. It is the BAR's stripes. Note `set_gauge`'s own docstring
-already admits a guess in this area -- the empty body cell uses the label row's filler tile -- and
-that the bar was only ever verified full.
+MY OWN WRONG READINGS ALONG THE WAY, all from measuring instead of looking: "the prompt blinks out
+of phase" (it does, but that is 194 of the 446, not all of it); "it is an origin problem"; "it is
+not a phase problem, the content differs" (right, but I then guessed the wrong content); "the
+stripes shift early and stop" -- that last was the DIAGONAL pattern moving through the single row
+I was hashing, which is exactly what a slanted cell does.
 
-MEASURED, AND `BAR_CYCLE` IS RIGHT -- IT IS JUST NOT THE WHOLE ANIMATION. Hashing the real ROM's
-bar row (x 70..96, clear of the HP box) frame by frame from `pausedwithcannon.state`:
+    HP box 28    bar left 112    marker 194    bar right 112
 
-    frames  20..97   changes every 1 or 2 frames, 50-odd DISTINCT patterns, no repeat
-    frames  98..139  exactly four patterns, seven frames each, cycling -- e23960, 8f57fa,
-                     a3ce22, 0c98e1, then round again
-    frames 140+      breaks up again
-
-So `BAR_FRAMES` 7 over a four-entry `BAR_CYCLE` is exactly right for the settled state, which is
-presumably why the bar was "verified full" and left there. What this build does NOT model is the
-first eighty frames, and THE COMPARED FRAME (real 43/44) FALLS INSIDE THEM. That is the 470 px.
-
-IT IS NOT A FILL. Counting lit (green) pixels across the whole bar per frame, the count never
-grows -- it cycles through the same four values, 374 / 319 / 264 / 220, from frame 20 right
-through to 146. So the bar is at its full length the whole time and the four-state flow is running
-throughout.
-
-What differs in the early frames is that the same four counts come with DIFFERENT pixel
-arrangements every frame (50-odd distinct hashes over 20..97 against four over 98..139). Same
-amount lit, different places. So the early phase is the stripe pattern SHIFTING as well as
-cycling, and it settles into a fixed set of four positions later. That is the thing to model, and
-it is a smaller and better-defined thing than "the first eighty frames are unmodelled" -- which is
-how I wrote it up one measurement ago, from the hashes alone, before counting the pixels.
-
-Find what stops the shift at frame ~98 of that capture. That is the mechanism.
-
-WHAT IS KNOWN ON THE REAL SIDE SO FAR: the gauge's VALUE is a u16 at 0x020352A0, capped at 0x4000
-(`SetCustGauge`, asm00_2.s:29838; `ClearCustGauge` at 29827; incremented by `sub_801DFB8`). The
-routine that DRAWS the flowing bar, and whatever counter it reads, has not been found yet -- that
-is the thing to look for, and 7bc is the reason to look rather than assume: there a counter was
-declared to have no shared origin and turned out to be a plain field one `--peek` could read.
-
-DO NOT tune `BAR_PHASE`. It is the constant that would make the check pass while hiding the
-mechanism, and this ticket exists because such a constant already hid a wrong art schedule behind
-a `tiles` reading of 0 -- and in any case the sweep above shows no phase fixes it.
+TWO THINGS TO FIX, in order:
+1. The bar cell tiles. Find the real ROM's gauge tiles and re-export them; `tools/hud_tiles_export.py`
+   is where they come from, and `set_gauge`'s docstring already admits one cell in that area is a
+   guess. The 224 px across the two bar halves is this.
+2. The marker: real is ORANGE at the alignment frame and ours is CYAN. Both sides blink on the
+   same 16-frame beat with exactly 110 orange pixels lit, so this is the last half-cycle of phase
+   -- but do not chase it until the cells are right, because the cells are what makes the whole
+   strip fail to align.
 
 ### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
