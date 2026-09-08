@@ -35,6 +35,24 @@ measurement first.
   says to prefer DeepSeek for volume work; it does NOT apply to this project, where
   the user has asked for Sonnet agents only.
 
+## Rules for whoever is handing the tickets out
+
+Written after breaking all three of these in one evening.
+
+- **Do not build or measure from the tree while a worker holds `src/`.** Not just "do not edit" --
+  a build taken mid-edit compiles whatever state the worker's file is in at that instant and gives
+  a number that looks completely normal. This produced a `tiles` reading of 3295 and then one of 0
+  within the hour, the second being a build with the worker's fix reverted. Reuse an already-built
+  ROM from /tmp, or wait.
+- **When a worker's number disagrees with yours, rebuild it yourself before contradicting them.**
+  On the strength of the above I told a worker its correct measurement was contamination. It had
+  done three from-scratch builds and was right. Its EXPLANATION was wrong (it blamed target-path
+  length; three target directories, one deliberately long, give a byte-identical ROM) -- but a
+  wrong explanation is not a wrong measurement, and the two must be judged separately.
+- **`git add -u <path>` limits to that path.** A commit meant to carry the fix, the harness change
+  and two write-ups carried only the submodule bump, and the rest sat unstaged behind a clean-
+  looking `git status` line. Check `git show --stat` after committing, not just the exit code.
+
 ---
 
 ## A. Measured residues — small, self-contained, all have a number
