@@ -231,13 +231,32 @@ The two agree for two samples and then ours steps early: the real ROM changes st
 frames 42 and 45, ours between 2179 and 2182. So at rust 2184 the scroll is exact and the art is
 three frames advanced; at 2181 the art would line up and the scroll would not.
 
-WHERE TO LOOK: both clocks are driven from the same `Backdrop::update`, so the offset has to come
-from initialisation -- `prime()` runs before the first `update()` and seeds the art's timer, while
-the scroll starts from zero at the first update. Note the peeked initial condition (art `Timer` 3
-of 4 at the moment the scroll counters read 0/0) is relative to `battlestart.state`, which is not
-necessarily the battle's frame 0; that is the most likely place for three frames to hide.
-Settle it by dumping `eGFXAnimStates[0]` AND `eBGScrollCBCounters` on the SAME real frames and
-reading their relationship off directly, rather than each against its own assumed origin.
+WHERE IT IS NOT. Both structures were dumped on the SAME real frames, which settles the
+relationship instead of comparing each against its own assumed origin:
+
+    real frame   art entry/Timer   scroll counters   frames since init
+    1            0 / 2             -8 / -4           1
+    2            0 / 1             -16 / -8          2
+    3            1 / 4             -24 / -12         3
+
+So the art's entry 0 counts 4,3,2,1 across scroll-frames -1, 0, 1, 2: THE ART STARTS EXACTLY ONE
+FRAME BEFORE THE SCROLL'S ZERO, and `prime()` (entry 0, timer 3 at frame 0) already models that
+correctly. The initial condition is right and is not where the three frames are.
+
+WHERE TO LOOK NEXT, then: our own sequencing. `prime()` is called from `Battle::prime_backdrop`
+right after `Battle::new`, and `Backdrop::update` advances BOTH clocks -- so the art and the
+scroll cannot drift from each other unless `update()` is not being called on every frame the
+scroll is supposed to advance, or the backdrop is created some frames before the battle's own
+clock starts. Instrument it: have the build report its own `entry`/`timer`/`x_q` per frame (a
+poke to a known address the harness can `--dump`, or a debug tile), and compare against the table
+above. Do not adjust a constant until that trace exists -- the schedule and the initial condition
+are both confirmed exact now, so a constant that fixes the number would be hiding the real cause.
+
+ONE SMALLER THING FOUND ON THE WAY, worth its own look: the real scroll register is
+`(counter as u32) >> 4` of a counter falling by 8, which lands on -(n+1)/2 for ODD n where this
+build's `-(x_q / 4)` gives -(n-1)/2. So on odd frames our backdrop sits one pixel behind the real
+ROM's. It does not show at the frames measured so far because they happen to be even, and it may
+be the whole reason `tiles` had to be a window rather than a frame.
 
 DO NOT MERGE THE BRANCH UNTIL THAT IS ANSWERED, because merging as-is turns a `tiles` 0 into a
 282, and a 0 that came partly from luck is still worth more than a non-zero nobody has explained.
