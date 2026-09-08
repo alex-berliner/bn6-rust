@@ -233,6 +233,65 @@ STATES = [
              "read 0. The arrival is inside the window and not at frame 0, "
              "which is what pair 4 asked for.",
     ),
+    State(
+        name="chip_ready",
+        path="/tmp/chip_ready.state",
+        root=False,
+        rom=STERILE,
+        base=PAUSED,
+        script="Start@10",
+        cheats=(),
+        frames=50,
+        description="Wave 3b ticket step 1: PAUSED's own hand-made snapshot "
+                     "leaves a ~528px OAM 'portrait box' (objects 0-1, tiles "
+                     "948-959, palette 12, top-left) sitting in VRAM from "
+                     "whatever the chip window was doing when the state was "
+                     "captured by hand -- present at every chip/cannon "
+                     "capture's canon frames 43-48 (6 frames, 3168px total, "
+                     "identical on all 38 chip rows that share the 14388 "
+                     "baseline). This state is PAUSED run forward through "
+                     "real input (Start@10 only -- the enemy is left ALIVE, "
+                     "see the note below for why) past the frame the "
+                     "garbage clears on its own, then saved -- so loading "
+                     "it starts clean and the enemy is still a valid, live "
+                     "target.",
+        note="VERIFIED (this ticket), and revised once (see below). Loading "
+             "PAUSED + Start@10 and NOT pressing anything else: the "
+             "portrait region (rows 0-30, cols 0-150) reads 528 nonblack "
+             "px through frame 48 and exactly 0 from frame 49 onward, "
+             "identically whether or not the enemy-deletion cheat runs "
+             "alongside -- the garbage clears on its own schedule, not "
+             "because anything overwrites those tiles. frames=50 (one "
+             "frame of margin past the verified clear point at 49).\n"
+             "REVISED: the first build of this state ALSO deleted the "
+             "enemy during the build (matching the downstream recipe's own "
+             "timing) and that broke chip-firing entirely: verified live "
+             "that pressing A at ANY delta (1/2/.../120 frames) after "
+             "loading a state where the enemy is ALREADY dead produces "
+             "IDENTICAL output regardless of when A is pressed -- the "
+             "input is silently ignored (ordinary movement input, tested "
+             "the same way, DOES work after the same reload, so this is "
+             "not a general post-reload input bug, it is specific to the "
+             "attack command). The chip-fire path evidently needs a valid "
+             "target at the moment battle state is (re)established, which "
+             "an already-dead enemy fails; PAUSED's own enemy is alive at "
+             "load for exactly this reason, and every existing chip "
+             "capture kills it only AFTER loading, via a per-frame cheat "
+             "starting at capture frame 0 (never before). This state keeps "
+             "that property -- the enemy is untouched, still alive, when "
+             "the state is saved and when it is later loaded -- so it "
+             "fixes ONLY the portrait box; the deleted enemy's corpse "
+             "dissolve (the other ~11220 of the shared 14388) is "
+             "unchanged and still lands inside the compared window, same "
+             "as with PAUSED. See the ticket report for why: the corpse "
+             "dissolve and the enemy having-just-died grace period the "
+             "chip-fire command needs are the SAME few dozen frames, not "
+             "separable by rebuilding the base state. Chip/cannon checks "
+             "in tools/harness.py load this in place of PAUSED with a "
+             "short 'A@n,DELETE_ENEMY-per-frame' script (no Start -- the "
+             "battle is already running at the point this was saved) "
+             "instead of PAUSED's own 'Start@10,A@40'.",
+    ),
 ]
 
 BY_NAME = {s.name: s for s in STATES}

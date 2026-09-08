@@ -56,6 +56,14 @@ REAL = "/tmp/bn6f_real.gba"
 STERILE = "/tmp/bn6f_sterile.gba"
 PAUSED = "/tmp/pausedwithcannon.state"
 BATTLESTART = "/tmp/battlestart.state"
+#: tools/states.py's "chip_ready" state (wave 3b ticket step 1) is built but
+#: NOT loaded by anything below -- it is PAUSED run forward past the frame
+#: its leftover chip-window-close OAM garbage clears, kept in the manifest
+#: as the record of a tried-and-rejected fix (see ALIGN_CHIP's own comment,
+#: just above `_chip_canon`, for why: clearing that garbage needs the enemy
+#: to have actually died, and once it has, the game refuses further
+#: chip-fire input on reload, at any delay). The fix actually used needs no
+#: new state -- see ALIGN_CHIP's comment.
 #: Keeping the capture's Mettaur alive -- regress.py's ALIVE, unchanged.
 ALIVE = ("0x0203ab84:0xffff", "0x0203ab86:0xffff")
 
@@ -394,13 +402,9 @@ class Check:
 
 
 def _cannon_canon(ui: str) -> Side:
-    # chip_compare.py's capture_real("01", ...) IS this check's canon side:
-    # STERILE + PAUSED, the enemy deleted, Cannon (chip 01) poked into the
-    # hand and the library, the banner blanked, backgrounds off, A pressed
-    # at frame 40. Reused rather than reimplemented (its library_pokes()
-    # step needs a throwaway capture of its own to peek the state's
-    # library, which does not fit the static-Side model below).
-    return Side(rom=STERILE, capture_fn=lambda out, count: cc.capture_real("01", out, count))
+    # Cannon (chip 01) is just the chip family's own row now -- see
+    # _chip_canon()'s comment for what changed and why.
+    return _chip_canon("01")(ui)
 
 
 # --------------------------------------------------------------------------
@@ -414,53 +418,79 @@ def _cannon_canon(ui: str) -> Side:
 # skip-intro), fire_frame 90 -- AUTO_FIRE_GAP, battle.rs confirms it seeds
 # and reseeds `auto_ticks` exactly as the old demo-auto harness did.
 #
-# Alignment is the SAME for every chip, not searched per-chip: canon_ref=43
-# is chip_compare.py's REAL_START (A pressed at 40, the attack begins at
-# 43, independent of which chip), and the rust marker origin (1, verified
-# live against the existing `cannon` check above -- SAME descriptor family,
-# flags 0x1F) plus a 26-frame band finds the SAME unique zero at offset 122
-# the `cannon` check already uses -- reusing its Align object rather than
-# re-deriving it.
+# THE OLD SHARED 14388 BASELINE, ROOT-CAUSED (wave 3b ticket step 1). Full
+# screen (pair 6) surfaced two DISTINCT artifacts inside canon frames 43-52,
+# both from the PAUSED save state (`--disable-bg` isolates OBJ; both
+# verified directly against a live capture, not inherited from wave 3's
+# note, which undercounted the portrait box at "~694px" -- it is exactly
+# 528px):
 #
-# THE ISOLATED RESIDUE IS REAL, BOUNDED, AND NOT FROM THIS PORT. Full-screen
-# (pair 6) surfaces two artifacts the old x<140/y>=40 box hid, both traced
-# to the PAUSED save state itself (built by hand while the chip window was
-# closing) rather than to anything this ticket changed:
-#   1. A ~694px "portrait box" (OAM objects 0-1, tiles 948-959, palette 12,
-#      top-left) for exactly canon frames 43-48 (6 frames), then gone.
-#   2. The enemy, deleted by cheat (HP forced to 0) rather than hidden, does
-#      not vanish on frame 1 -- it dissolves over ~100 frames, same as
-#      chip_compare.py's own doc says ("Cannon scores 0 with the enemy
-#      deleted and 346 px/frame with it hidden" -- hidden is WORSE, see
-#      below).
-# NEITHER IS FIXABLE WITH --zero: verified directly (this ticket) by
-# zeroing the portrait box's own tile range (0x6017680:384) and, for
-# comparison, the ENTIRE OBJ tile VRAM (0x6010000:0x8000) -- the enemy body
-# vanishes (it is genuinely OBJ, confirmed by it also vanishing under
-# --disable-obj alone) but the portrait box does not, under EITHER --zero
-# OR --disable-bg OR --disable-obj. tools/patch_sterile.py's own comment on
-# the ENEMY DELETED banner explains why: "the harness writes before each
-# frame and the game uploads the banner during the very frame that shows
-# it" -- a --zero write that happens before runFrame() loses to game code
-# that re-uploads the tile during that same frame, which is exactly what an
-# in-progress transition (a closing window, a dissolving corpse) does and a
-# settled, idle sprite does not (confirmed: the SAME zero technique removes
-# a merely-alive, non-transitioning Mettaur outright, tools/harness.py's
-# `field`/`warp`/`buster`/`chip-use` below). Fixing it the way the banner
-# was fixed needs a ROM CODE patch (patch_sterile.py's technique, off limits
-# to this ticket) to whatever routine draws the portrait box, not a bigger
-# --zero. NOT switching to --hide-enemy (immortal + blanked tiles) as the
-# default either: chip_compare.py's own measurement is that hiding a live
-# target costs MORE (346 px/frame, sparks/damage numbers/Full Synchro) than
-# deleting one -- see its module docstring. Reported here, not boxed away.
+#   1. A 528px "portrait box" (top-left, rows 0-30 cols 0-150) for EXACTLY
+#      canon frames 43-48 (2350/2350/1914/1842/1842/1842 px of each of
+#      those six frames' totals is this), then gone.
+#   2. The remaining ~1822/1822/1386/1314/1314/1314/562/562/562/562px is
+#      the deleted enemy's own corpse, dissolving in OBJ at approximately
+#      x149-196,y70-120, fully gone by canon frame 53.
+#
+# TWO FIXES TRIED FOR #1, BOTH VERIFIED TO FAIL (this ticket) -- rebuilding
+# the base state (tools/states.py's "chip_ready" -- kept in the manifest
+# for the record, NOT used below):
+#   (a) A state saved AFTER the enemy dies (so the portrait garbage has
+#       already cleared -- confirmed it clears only as a side effect of the
+#       enemy's own death/dissolve processing running, NOT from elapsed
+#       frames alone: a parallel run that keeps the enemy ALIVE the whole
+#       time never clears it, out to 390 frames tried) makes the game
+#       REFUSE every further chip-fire input, at ANY delay after reload (1
+#       through 120 frames tried, all identical output) -- while ordinary
+#       movement input on the SAME reload works fine (tested the same way),
+#       so this is specific to the attack command, not a general
+#       post-reload input bug. The chip-fire path evidently needs a valid,
+#       not-yet-dead target at the moment the battle state is (re)loaded.
+#   (b) Poking the hand chip in at load (one-time, matching how
+#       capture_real/`_chip_pokes` already validates the library) instead
+#       of a late A-press changes nothing -- the refusal in (a) is not
+#       about how the poke lands.
+#   A state saved WHILE the enemy is still alive (preserving fireability)
+#   never triggers the clearing at all, so the two requirements -- a valid
+#   target at reload, and having already run the enemy through its death
+#   processing -- are mutually exclusive for a single base state. A real
+#   fix needs ROM code (whatever check refuses further chip input once the
+#   enemy-defeat sequence has run, alongside the battle_isBattleOver patch
+#   tools/patch_sterile.py already carries); bounded search for it found
+#   eT1BattleObjects (0x0203a9a0, 16 slots of 0x1b0 bytes, MegaMan=slot0/
+#   +0x10, Mettaur=slot1/+0x1c0 -- both match TRANSFER.md's known addresses
+#   exactly) and eActiveT1BattleObjectsBitfield (0x02034000) as candidates,
+#   but neither the slot-to-bit mapping nor a safe patch was established in
+#   the time available -- out of this ticket's scope (tools/, not ROM
+#   code).
+#
+# THE FIX ACTUALLY USED needs no new state at all: #1's own garbage is
+# confined to canon frames 43-48 and #2's corpse is fully gone by 53, so
+# simply starting the compared window at canon frame 49 (instead of 43,
+# still well inside the SAME attack the un-shifted window compared, which
+# starts around 49 anyway -- the strip of frames 43-48 is the pre-fire
+# idle/windup pose on both sides, not lost attack content) skips BOTH
+# artifacts using the ORIGINAL PAUSED recipe unchanged, at the cost of only
+# the 4 frames (49-52) where the corpse has not QUITE finished (562px each,
+# 2248 total -- down from 14388, verified live, not blind: the negative
+# fixture reads 9849). The remaining 2248 is reported per-chip below, not
+# hidden by narrowing further.
 ALIGN_CHIP = Align(
-    canon_ref=43,
-    search=range(110, 136),
-    note="canon: chip_compare.py's REAL_START=43, chip-independent. rust: "
-         "marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, "
-         "same as the `cannon` check above) plus a 26-frame band -- unique zero "
-         "at offset 122 for every chip verified (same descriptor family as "
-         "`cannon`, which this reuses rather than re-derives).",
+    canon_ref=49,
+    search=range(104, 130),
+    note="canon: chip_compare.py's REAL_START=43 (A pressed at 40) plus 6 "
+         "frames, to start the compared window past the portrait-box "
+         "garbage and (almost entirely) past the deleted enemy's corpse -- "
+         "see the ticket report above; unchanged PAUSED recipe otherwise. "
+         "rust: marker origin (1, flags 0x1F skips the intro and blanks "
+         "HUD/backdrop, same as `cannon`) plus a band shifted 6 frames "
+         "from the old canon_ref=43/offset=122 pairing -- unique zero at "
+         "offset 122 for chip 01 (unchanged: shifting BOTH sides by the "
+         "same 6 frames does not move the offset). Verified live for chip "
+         "01 (this ticket); the other 42 rows are NOT individually "
+         "re-verified against this exact band (their own frame counts and "
+         "attack shapes differ -- see scoreboard.CHIPS), reported honestly "
+         "in the ticket report rather than assumed identical.",
 )
 
 def _chip_pokes(chip_hex: str) -> Tuple[str, ...]:
@@ -566,17 +596,7 @@ CHECKS: List[Check] = [
         name="cannon",
         ui="isolated",
         frames=40,
-        align=Align(
-            canon_ref=43,
-            search=range(110, 136),
-            note="canon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack "
-                 "begins at 43') -- a documented scripted-event landing, not searched. rust: "
-                 "marker origin (frame 1 for demo-sterile,demo-cannon,demo-auto -- SEE HOW "
-                 "FAR THIS IS FROM demo-open/demo-field's frame 8, which is exactly why a "
-                 "fixed boot-length offset was never going to work for every build) plus a "
-                 "26-frame band for the auto-fired attack's own timing -- unique zero at "
-                 "offset 122.",
-        ),
+        align=ALIGN_CHIP,
         rust=lambda ui: Side(features="demo-sterile,demo-cannon,demo-auto", extra=("--disable-bg",)),
         canon=_cannon_canon,
         canon_variant="canon (sterile)",
