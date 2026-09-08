@@ -201,18 +201,30 @@ label 0. The BAR's flowing stripes are out of phase as well. Both are driven by 
 is not -- through `flow = gauge_tick - BAR_PHASE`, feeding `BAR_CYCLE` for the stripes and
 `(flow / MARKER_FRAMES) % 2` for the marker. HP, gauge FILL and the CUSTOM label all match.
 
-So this is not a parity bug in the animation, it is an ORIGIN problem: `demo-hudmatch` counts from
-its own battle's start, and the save state it is compared against has had a full gauge for some
-unknown number of frames already.
+AND IT IS NOT A PHASE PROBLEM EITHER -- that was my next guess and it is disproved. The gauge
+animation's period is LCM(28, 16) = 112 frames (`BAR_FRAMES` 7 over a 4-entry `BAR_CYCLE`, and
+`MARKER_FRAMES` 8). Sweeping our capture across a full 112-frame window either side of the
+alignment and scoring ONLY the gauge box (56..232, 8..22) against the real ROM's frame 44, the
+best score is 470 -- at the alignment frame itself, offset 0. No phase in the cycle does better.
 
-EXACTLY the chip window's bracket again (TRANSFER 7bc), and that is the good news: there the
-counter was declared to have no shared origin and to be uncoincidable, and it turned out to be a
-plain field at 0x02036500 that a single `--peek` read. Do the same here. Find the routine that
-draws the gauge's flow, find the counter it reads, peek it out of `/tmp/pausedwithcannon.state`,
-and give the fixture that value instead of zero. DO NOT tune `BAR_PHASE` until that number is in
-hand -- it is the constant that would make the check pass while hiding the mechanism, and this
-ticket exists because such a constant already hid a wrong art schedule and an out-of-phase gauge
-behind a `tiles` reading of 0.
+So our flow animation differs from the real ROM's IN CONTENT, at every phase, not in timing. The
+marker is not the problem: both sides alternate orange and cyan on the same 16-frame beat and both
+measure exactly 110 orange pixels lit. It is the BAR's stripes. Note `set_gauge`'s own docstring
+already admits a guess in this area -- the empty body cell uses the label row's filler tile -- and
+that the bar was only ever verified full.
+
+NEXT: dump the real ROM's gauge row tile by tile across a full 112 frames and compare against
+`BAR_CYCLE`'s four entries. Four patterns held 7 frames each may simply be the wrong shape.
+
+WHAT IS KNOWN ON THE REAL SIDE SO FAR: the gauge's VALUE is a u16 at 0x020352A0, capped at 0x4000
+(`SetCustGauge`, asm00_2.s:29838; `ClearCustGauge` at 29827; incremented by `sub_801DFB8`). The
+routine that DRAWS the flowing bar, and whatever counter it reads, has not been found yet -- that
+is the thing to look for, and 7bc is the reason to look rather than assume: there a counter was
+declared to have no shared origin and turned out to be a plain field one `--peek` could read.
+
+DO NOT tune `BAR_PHASE`. It is the constant that would make the check pass while hiding the
+mechanism, and this ticket exists because such a constant already hid a wrong art schedule behind
+a `tiles` reading of 0 -- and in any case the sweep above shows no phase fixes it.
 
 ### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
