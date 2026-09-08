@@ -643,13 +643,10 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 #: setup -- an enemy acting on an RNG the two sides do not share, sitting
 #: right there for a full-screen diff to trip over -- is replaced with a
 #: genuinely empty arena: the fixture's own `enemies: 0`, and, on the canon
-#: side, the enemy kept alive (immortal, so it never starts the dissolve
-#: transition the chip scoreboard's report above documents as
-#: --zero-proof) but with its tiles zeroed -- the SAME technique
-#: chip_compare.py's --hide-enemy uses, verified live (this ticket) to hold
-#: for a merely-idle, non-transitioning enemy where it does not for one
-#: mid-transition. Marker origin 8 (measured live, same family as
-#: demo-field/demo-open -- no HUD/backdrop blanking).
+#: side, the enemy DELETED (not merely hidden -- see DELETE_ENEMY's own
+#: comment just below for why --hide-enemy's immortal-but-alive enemy turned
+#: out not to be inert either). Marker origin 8 (measured live, same family
+#: as demo-field/demo-open -- no HUD/backdrop blanking).
 #: hand=[]: PAUSED's own queued Cannon-icon (tools/states.py: "Cannon40
 #: already queued in the hand") turns out NOT to be permanent -- verified
 #: live (this ticket): by the real capture frame these checks now compare
@@ -660,6 +657,10 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 ZERO_ENEMY = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2,
                   hand=[], hand_count=0, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
+
+#: `chip-use` alone: an A press with an empty hand uses nothing, so this
+#: variant carries Cannon (PAUSED's own queued chip) the way FIELD_ROW does.
+ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 
 #: DELETE, not --hide-enemy: verified live (this ticket, on `field`) that an
 #: immortal-but-alive Mettaur is NOT actually inert -- it keeps acting on
@@ -797,14 +798,17 @@ PORTED_CHECKS: List[Check] = [
         frames=32,
         align=Align(
             canon_ref=150,
-            search=range(15, 45),
+            search=range(90, 130),
             note="canon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, "
                  "Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE "
                  "dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at "
-                 "battle-frame 30/31 (marker origin 8 + 22/23, no dissolve to wait out) instead "
-                 "of the old cold-boot 130/131 -- AUDIT pair 3's zero-enemy fixture besides.",
+                 "battle-frame 100/101 (marker origin 8 + 100/101), not the first tried "
+                 "(origin+22) -- verified live that a press that early is BEFORE the navi is "
+                 "free to act at all (the diff at that offset was the SAME idle-pose-settling "
+                 "transition `field` has, not a shot); battle-frame 100 is well past it, in the "
+                 "same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).",
         ),
-        rust=_zero_enemy_rust(held("B", 8 + 22, 2)),
+        rust=_zero_enemy_rust(held("B", 8 + 100, 2)),
         canon=_zero_enemy_canon("Start@10," + held("B", 150, 2)),
         canon_variant="canon (sterile)",
     ),
@@ -814,11 +818,16 @@ PORTED_CHECKS: List[Check] = [
         frames=32,
         align=Align(
             canon_ref=150,
-            search=range(15, 45),
+            search=range(90, 130),
             note="Same shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the "
-                 "DELETE dissolve), rust A held at marker origin 8 + 22/23.",
+                 "DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is "
+                 "what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] "
+                 "(Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A "
+                 "press use nothing at all, which is what the first attempt at this check did.",
         ),
-        rust=_zero_enemy_rust(held("A", 8 + 22, 2)),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=ZERO_ENEMY_WITH_HAND,
+                             script=held("A", 8 + 100, 2),
+                             extra=() if ui == "integrated" else ("--disable-bg",)),
         canon=_zero_enemy_canon("Start@10," + held("A", 150, 2)),
         canon_variant="canon (sterile)",
     ),
