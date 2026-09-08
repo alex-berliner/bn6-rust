@@ -213,8 +213,22 @@ measure exactly 110 orange pixels lit. It is the BAR's stripes. Note `set_gauge`
 already admits a guess in this area -- the empty body cell uses the label row's filler tile -- and
 that the bar was only ever verified full.
 
-NEXT: dump the real ROM's gauge row tile by tile across a full 112 frames and compare against
-`BAR_CYCLE`'s four entries. Four patterns held 7 frames each may simply be the wrong shape.
+MEASURED, AND `BAR_CYCLE` IS RIGHT -- IT IS JUST NOT THE WHOLE ANIMATION. Hashing the real ROM's
+bar row (x 70..96, clear of the HP box) frame by frame from `pausedwithcannon.state`:
+
+    frames  20..97   changes every 1 or 2 frames, 50-odd DISTINCT patterns, no repeat
+    frames  98..139  exactly four patterns, seven frames each, cycling -- e23960, 8f57fa,
+                     a3ce22, 0c98e1, then round again
+    frames 140+      breaks up again
+
+So `BAR_FRAMES` 7 over a four-entry `BAR_CYCLE` is exactly right for the settled state, which is
+presumably why the bar was "verified full" and left there. What this build does NOT model is the
+first eighty frames, and THE COMPARED FRAME (real 43/44) FALLS INSIDE THEM. That is the 470 px.
+
+What that early phase IS remains open -- a fill, a start-of-turn flourish, or the tail of whatever
+the save state was doing when it was taken. Find out before modelling it: the settled cycle was
+correct all along and got blamed twice tonight (once as a phase error, once as wrong content) by
+reasoning about it instead of watching it.
 
 WHAT IS KNOWN ON THE REAL SIDE SO FAR: the gauge's VALUE is a u16 at 0x020352A0, capped at 0x4000
 (`SetCustGauge`, asm00_2.s:29838; `ClearCustGauge` at 29827; incremented by `sub_801DFB8`). The
