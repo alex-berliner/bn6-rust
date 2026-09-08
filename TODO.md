@@ -110,12 +110,38 @@ left the spawn frame at 198. The ROM hash moves only because `assert_eq!` bakes
 original report was two builds racing the shared target directory. So the first hop can be
 chased directly, with no methodology worry attached to it.
 
-### A4. Pin the backdrop's scroll phase  *(done -- see TRANSFER 7av)*
-`tiles` compares a fixed frame 392 now, not the best of sixty. The phase counts from battle init
-(`eBGScrollCBCounters`, zeroed once by `sub_8080D90`), and the save state is 7891 battle frames in,
-so the origin is genuinely unrecoverable from it -- a capture from a battle's real frame 0 would
-settle this AND BATTLE START!'s delay (C1) in one go. That save state is now the single most
-valuable thing the harness does not have.
+### A4. Pin the backdrop's scroll phase  *(REOPENED -- the missing state now exists)*
+`tiles` compares a fixed frame 392, not the best of sixty, and that is better than it was. But 392
+was SEARCHED FOR, not derived: the phase counts from battle init (`eBGScrollCBCounters`, zeroed
+once by `sub_8080D90`) and `pausedwithcannon.state` is 7891 frames in, which nothing here can
+reproduce. The entry used to end "a capture from a battle's real frame 0 is the single most
+valuable thing the harness does not have".
+
+IT HAS ONE. `/tmp/battlestart.state` peeks as
+
+    battlestart.state       0x02009690 = 0x0000       0x02009694 = 0x0000
+    pausedwithcannon.state  0x02009690 = 0xFFFF0968   0x02009694 = 0xFFFF84B4
+
+and -63128/8 = -31564/4 = 7891 exactly, which is the elapsed figure TRANSFER already records. So
+the counters fall by 8 and 4 a frame from zero at init, and battlestart.state is at battle frame 0.
+
+WHAT MEASURING IT SHOWED, and why this is not just tidying. Real from battlestart.state against
+`demo-open`, backgrounds only, whole screen: the best match against real frame 120 is 1294 px at
+rust 127/128, of which the HUD strip is 1102 and the backdrop band 116. Holding that lag and moving
+the frame gives 4375, 5352, 1294, 4378, 4005, 5707 for real 100/110/120/130/140/150. A constant
+offset plus a static HUD difference would sit near 1294 everywhere. It does not -- so either the
+best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
+which would be a parity bug that the swept 392 has been hiding.
+
+### A6. The HUD does not match at a battle's opening
+Falls out of A4's measurement and deserves its own number. Real from `/tmp/battlestart.state`
+against `demo-open`, `--disable-obj`, HUD strip box (0, 0, 240, 24): **1102 px**, and it looks
+static rather than drifting, so it is probably content and not timing -- MegaMan's HP, the chip
+counts, the enemy names. `demo-open` already fields that capture's own three Mettaurs, so whatever
+differs is something the fixture is not setting up. Cheap to chase: dump the HUD's own strip on
+both sides at one frame and read off which glyphs differ, then find where that value comes from.
+The existing `tiles` check uses `demo-hudmatch` against `pausedwithcannon` and reads 0, so the HUD
+CAN match -- it is this fixture's setup that does not.
 
 
 ### A5. The battle opening  *(done -- TRANSFER 7ba)*
