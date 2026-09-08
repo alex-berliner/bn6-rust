@@ -1106,6 +1106,17 @@ pub struct Battle<'a> {
     /// reads whatever length it is.
     enemies: Vec<Actor>,
     ais: Vec<ai::Ai>,
+    /// AUDIT wave 3d ticket (mettaur-ai): the battle's own primary generator
+    /// (`ai::Rng`, mirroring `ePrimaryRngSeed`) -- a SEPARATE stream from
+    /// `deck::Rng` above (`eSecondaryRngSeed`, the folder shuffle's own),
+    /// named `primary_rng` rather than `rng` to avoid shadowing the
+    /// `deck::Rng` parameter `Battle::new` already takes. Seeded from
+    /// FIXTURE.md's `rng` field (+58) and advanced once every battle frame
+    /// in `update()`, independent of any enemy's own decisions -- see
+    /// `ai::Rng`'s own doc for why (measured: the real ROM's own primary RNG
+    /// state advances by exactly one step every rendered frame regardless of
+    /// AI branching).
+    primary_rng: ai::Rng,
     gunner_ctl: gunner::Gunner,
     impacts: Vec<gunner::Impact>,
     /// Transient sprites: the player, its screen position, frames left, and
@@ -1761,6 +1772,12 @@ impl<'a> Battle<'a> {
             megaman,
             enemies,
             ais,
+            // AUDIT wave 3d ticket: FIXTURE.md's `rng` (+58), 0 => this
+            // project's own default seed (see `ai::DEFAULT_SEED`'s doc).
+            primary_rng: ai::Rng::new(match fixture {
+                Some(f) if f.rng != 0 => f.rng,
+                _ => ai::DEFAULT_SEED,
+            }),
             gunner_ctl,
             impacts,
             effects,
@@ -1906,6 +1923,16 @@ impl<'a> Battle<'a> {
         gfx: &Graphics,
         mixer: &mut agb::sound::mixer::Mixer,
     ) -> bool {
+        // AUDIT wave 3d ticket: the real ROM's primary RNG (`ePrimaryRngSeed`)
+        // advances by exactly one step every rendered battle frame,
+        // independent of any enemy's own decisions -- measured (see
+        // `ai::Rng`'s own doc), not yet traced to a specific caller. Ticked
+        // unconditionally here, before anything else this frame, so an
+        // RNG-gated enemy (`ai::MettaurState::Wander`/`WaitOut`, currently
+        // unreachable -- see ai.rs's own module doc) draws from the same
+        // point in the sequence the real ROM would have reached by the time
+        // its own equivalent runs.
+        self.primary_rng.next();
         if self.buster_arm_in > 0 {
             self.buster_arm_in -= 1;
             if self.buster_arm_in == 0 {
@@ -2695,7 +2722,7 @@ impl<'a> Battle<'a> {
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 self.cross_shape = ai::cross_targets(self.megaman.panel());
-                ai.update(enemy, self.megaman.panel(), blocked);
+                ai.update(enemy, self.megaman.panel(), blocked, &mut self.primary_rng);
             }
             let update = enemy.update();
             // ProtoMan's strike lands on the panel in front and Colonel's
