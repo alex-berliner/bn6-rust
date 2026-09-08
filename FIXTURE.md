@@ -39,7 +39,8 @@ little-endian.
 | +53 | u8  | window_pick_count | 0 = the chip window opens fresh; 1 = one offered chip is already picked when it opens |
 | +54 | u8  | window_pick_slot | the offered slot index pre-picked when `window_pick_count` = 1 |
 | +55 | u8  | window_cursor | cursor position when `window_pick_count` = 1: 0..9 a slot, 0x0a = OK |
-| +56.. | | reserved | zero |
+| +56 | u16 | result_elapsed | when `start_state` = 1: frames of the RESULT sequence already elapsed at boot. 0 = the slide-in starts on the first battle frame; 0xFFFF = settled (the old `demo-resultmatch` picture) |
+| +58.. | | reserved | zero |
 
 Fields +32 onward were added after wave 2's `src/` agent found the original contract could not
 express `demo-field`'s pinned enemy HP, `demo-custmatch`/`demo-cardname`'s offered deck,
