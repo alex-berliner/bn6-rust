@@ -1011,32 +1011,40 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=21,
             search=range(0, 60),
-            note="AUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists now "
-                 "(added between wave 3b and this ticket) but is NOT read by src/fixture.rs as "
-                 "of this ticket (grepped -- see pending_src). RESULT_ROW carries "
-                 "result_elapsed=0 (FIXTURE.md: 'the slide-in starts on the first battle "
-                 "frame') -- the simplest legal value, chosen because there is nothing to "
-                 "MEASURE against yet: a field the ROM does not read cannot be swept the way "
-                 "every other offset in this file was. canon_ref moves instead, from wave 3b's "
-                 "0 to 21 -- states.py's own measurement that RESULT_ARRIVAL's slide-in runs "
-                 "canon frames 21..32 -- so THIS row compares against canon's slide-in itself, "
-                 "not its 20-frame pre-arrival settle tail. Once src/fixture.rs reads "
-                 "result_elapsed, the intent (this ticket's own reading of the field) is: rust "
-                 "with result_elapsed=0 starts ITS OWN slide-in at marker origin, matching "
-                 "canon_ref=21's slide-in start with no further tuning of the field itself --  "
-                 "if that turns out wrong once measurable, canon_ref is the wrong knob to have "
-                 "moved and result_elapsed should be swept instead. search=range(0,60) is wide "
-                 "and UNVERIFIED (no rust build reads the field to check against yet); narrow "
-                 "it once it does. Wave 3b's own note is preserved above the 'zero-src' half of "
-                 "this ticket's report: start_state=1 alone (no result_elapsed) produces a "
-                 "period-~8 'press to continue' blink, not a slide-in, so the row was BLIND to "
-                 "the slide-in phase entirely until this field existed.",
+            note="AUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists and "
+                 "src/fixture.rs reads it. AN EARLIER PASS through this file swept it against a "
+                 "worktree branched BEFORE that src change merged (result_elapsed=0 and =30 on "
+                 "the SAME stale build rendered byte-identical, wrongly read as 'not consumed') "
+                 "-- `git merge main` and re-swept with the real implementation: elapsed DOES "
+                 "move the picture now (frame 10 e.g.: 10937/15661/17782 px against the "
+                 "elapsed=0 baseline for elapsed=10/21/30). pending_src DROPPED -- it is wired. "
+                 "SWEPT PROPERLY (this ticket): result_elapsed in {0,2,4,..,40} against "
+                 "canon_ref=21 with rust_offset FIXED at 0 (no search) bottoms out at "
+                 "elapsed=14 (522212 px) but never gets close to 0, and is a shallow bowl, not a "
+                 "sharp minimum (497967 at 0 rising smoothly to a ~535650 plateau by 26+). "
+                 "Re-swept the same set WITH the offset search restored (this row's own "
+                 "search=range(0,60)) so result_elapsed cannot be fighting a wrong offset: the "
+                 "true joint minimum is at result_elapsed=0 (497967, offset=15) -- every other "
+                 "sampled elapsed is WORSE (504-505k) once the offset is free to compensate. So "
+                 "result_elapsed is not the knob that gets this row toward 0; RESULT_ROW's own "
+                 "elapsed=0 already is, or is close to, optimal. LOCALISED the residue instead: "
+                 "at offset=15, frame 0 differs over the WHOLE screen (bbox x0-239,y0-159, "
+                 "31882 px) and decays frame by frame (30846, 29995, ... 17395 by k=10) to a "
+                 "FLAT ~6600-6900 px PLATEAU from k=16 onward that never reaches 0 in the "
+                 "40-frame window -- a shape (full-screen early, settling to a stubborn nonzero "
+                 "floor, not shrinking further) that matches states.py's own noenemy2 finding "
+                 "for this exact fixture family: 'the reward itself is rolled from RNG state "
+                 "this recipe does not reach the same way real play did', i.e. RESULT_ARRIVAL's "
+                 "own reward content (chip/zenny rolled by real play) has nothing in "
+                 "RESULT_ROW/FIXTURE.md to match it against, not a timing field like "
+                 "result_elapsed. NEXT STEP (src/ or FIXTURE.md, not tools/): a reward-content "
+                 "descriptor field (what RESULT_ARRIVAL's own capture actually rolled) is "
+                 "probably what closes the remaining ~6600-32000 px/frame gap, not further "
+                 "tuning of result_elapsed or the offset search.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
         canon_variant="canon",
-        pending_src="result_elapsed (+56) -- FIXTURE.md field exists, src/fixture.rs does not "
-                    "read it yet as of this ticket (AUDIT wave 3c zero-enemy)",
     ),
     Check(
         name="banner",
