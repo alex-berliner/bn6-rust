@@ -131,7 +131,7 @@ ours: the slide-in reached `Phase::Open` through a second match arm a frame afte
 ROM advances to state 4 in the call that zeroes the counter (asm03_0.s:1011-1012).
 
 
-### A3. The shockwave's panel light — 89 of 90, one frame left
+### A3. The shockwave's panel light  *(DONE at 0 -- TRANSFER 7bk)*
 Was 87 of 90. Two of the three were the wave's PARTING light: when the hitbox dwelt its
 way off the field this build dropped it immediately, discarding the three-frame linger
 `Shot::update` had just armed for the panel it was vacating. The real ROM's segment keeps

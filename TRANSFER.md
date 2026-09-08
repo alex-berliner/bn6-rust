@@ -1192,6 +1192,47 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bk. EVERY CHECK IS AT ZERO (2026-09-07)
+
+    chips 0  tiles 0  field 0  window 0  card 0  cursor 0  result 0  warp 0
+    buster 0  chip-use 0  mettaur 0  wave 0  popup 0  banner 0  rollup 0
+
+`wave` 960 -> 0, ninety of ninety frames identical, and it was the last one.
+
+THE BUG was one tick of latency at a shockwave's BIRTH, the mirror of the one fixed at its
+death in 7bj. `Battle::update` walks `self.shots` EARLIER in the frame than the enemy AI that
+spawns a shockwave, so a freshly spawned wave was not lit until the following frame. Every
+LATER hop is fine, because the shots loop reads the shot's column after `Shot::update` has
+already advanced it, so a hop lights its new panel on the frame it happens. Only the spawn
+carries the extra tick, so only the spawn needed the nudge.
+
+And the real ROM has the same asymmetry, which is what makes this a model and not a patch:
+`sub_80C6B64`, the CurState-0 handler that runs on a segment's first tick, builds the sprite
+and the collision data and never highlights (asm31.s:31421-31496);
+`object_highlightCurrentCollisionPanels` is reached only from `sub_80C6C14`, the CurState-1
+handler (asm31.s:31499-31537, call at 31524), every tick from then on. So the real segment's
+init tick is the one tick with no highlight -- which is a highlight that begins as soon as the
+object exists, not one tick into its life.
+
+THE FIXTURE HAD TO MOVE TOO, AND THIS IS THE THIRD TIME. `mettaur` and `wave` both hardcoded a
+lag, and both needed the same one-frame correction on the same build -- one boot shift, not two
+coincidences. Both capture their RUST side unscripted from power-on reset while the real side
+is anchored on a save state, so the offset is boot-relative, and boot length is not invariant
+under a source change (7bj: two builds differing only in `Shot::update` first diverge at frame
+seven). They now SEARCH a narrow band and report the lag they found, exactly as `tiles` became
+a window. It gives up nothing, because the minimum is a sharp point rather than a plateau:
+`mettaur` is 0 at lag 20 with 8485 at 19 and 8380 at 21; `wave` is 0 at lag 125 with 4800 at
+124 and 3840 at 126.
+
+THE PATTERN, THREE TIMES OVER. A check whose alignment is a constant is measuring the compiler
+along with the game. If a fixture's two sides have no shared origin, the check must FIND its
+alignment and then demand an exact match -- searching is not a weaker test when the minimum is
+one frame wide and its neighbours are thousands of pixels away.
+
+WHAT IS LEFT is not in the suite: the PAUSE menu (B1), sound beyond the buster's fire blip
+(B3b, the sample is exported and unwired), the HUD at a battle's opening (A6), and everything
+the fixtures do not cover -- other viruses, other chips, the folder, the overworld.
+
 ## 7bj. The departing segment: mettaur 345 -> 0, and a fixture that was pinned wrong (2026-09-07)
 
 FOURTEEN OF FIFTEEN CHECKS ARE AT ZERO. Only `wave` (960) is left.
