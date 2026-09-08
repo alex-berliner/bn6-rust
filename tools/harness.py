@@ -1011,32 +1011,43 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=21,
             search=range(0, 60),
-            note="AUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists now "
-                 "(added between wave 3b and this ticket) but is NOT read by src/fixture.rs as "
-                 "of this ticket (grepped -- see pending_src). RESULT_ROW carries "
+            note="AUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists and "
+                 "src/fixture.rs reads it as of the 'zero-layers' merge (landed on main after "
+                 "this row was first written) -- but CHECKED, NOT LIVE (this ticket's "
+                 "fresh-state half): the full-table number (497967/31882) is IDENTICAL before "
+                 "and after that merge, which is what sent this back for verification rather "
+                 "than trusted. CONFIRMED the descriptor write itself is correct: "
+                 "Side(fixture=dict(RESULT_ROW, result_elapsed=21)).args() ends in '--cheat "
+                 "0x02000078:0x0015' -- FIXTURE_ADDR+56, value 21, exactly right. CONFIRMED, by "
+                 "sweeping result_elapsed over {0,10,21,30} on the SAME plain_rom() build (no "
+                 "canon side, no alignment involved) and diffing all 40 frames of each pair "
+                 "pixel-for-pixel: EVERY pair reads 0 -- result_elapsed=0 and result_elapsed=30 "
+                 "render byte-identical output over the whole capture. So this is not an "
+                 "alignment/canon_ref problem (that could only ever explain which canon frame "
+                 "is compared, never make two DIFFERENT rust-side values render the same "
+                 "picture) -- the field is being read into the fixture struct but not yet "
+                 "consumed anywhere that affects a rendered frame. pending_src stays (restored "
+                 "-- an earlier pass through this file dropped it on the untested assumption "
+                 "that 'src reads it' meant 'src uses it'; it does not). RESULT_ROW carries "
                  "result_elapsed=0 (FIXTURE.md: 'the slide-in starts on the first battle "
-                 "frame') -- the simplest legal value, chosen because there is nothing to "
-                 "MEASURE against yet: a field the ROM does not read cannot be swept the way "
-                 "every other offset in this file was. canon_ref moves instead, from wave 3b's "
-                 "0 to 21 -- states.py's own measurement that RESULT_ARRIVAL's slide-in runs "
-                 "canon frames 21..32 -- so THIS row compares against canon's slide-in itself, "
-                 "not its 20-frame pre-arrival settle tail. Once src/fixture.rs reads "
-                 "result_elapsed, the intent (this ticket's own reading of the field) is: rust "
-                 "with result_elapsed=0 starts ITS OWN slide-in at marker origin, matching "
-                 "canon_ref=21's slide-in start with no further tuning of the field itself --  "
-                 "if that turns out wrong once measurable, canon_ref is the wrong knob to have "
-                 "moved and result_elapsed should be swept instead. search=range(0,60) is wide "
-                 "and UNVERIFIED (no rust build reads the field to check against yet); narrow "
-                 "it once it does. Wave 3b's own note is preserved above the 'zero-src' half of "
-                 "this ticket's report: start_state=1 alone (no result_elapsed) produces a "
-                 "period-~8 'press to continue' blink, not a slide-in, so the row was BLIND to "
-                 "the slide-in phase entirely until this field existed.",
+                 "frame'). canon_ref moved from wave 3b's 0 to 21 regardless -- states.py's own "
+                 "measurement that RESULT_ARRIVAL's slide-in runs canon frames 21..32, so THIS "
+                 "row compares against canon's slide-in itself once the rust side actually "
+                 "produces one. search=range(0,60) is still UNVERIFIED and unnarrowed. Wave 3b's "
+                 "own note: start_state=1 alone (no result_elapsed) produces a period-~8 'press "
+                 "to continue' blink, not a slide-in, so the row is BLIND to the slide-in phase "
+                 "until result_elapsed is both read AND applied. NEXT STEP (src/, not tools/): "
+                 "find where src/fixture.rs's Fixture::result_elapsed is stored and confirm "
+                 "whether the RESULT-window timer/state machine ever reads that field back.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
         canon_variant="canon",
-        pending_src="result_elapsed (+56) -- FIXTURE.md field exists, src/fixture.rs does not "
-                    "read it yet as of this ticket (AUDIT wave 3c zero-enemy)",
+        pending_src="result_elapsed (+56) -- src/fixture.rs reads the field (verified: the "
+                    "descriptor cheat pokes the right address/value) but nothing downstream "
+                    "consumes it yet -- verified by sweep, 0 px difference across a full "
+                    "40-frame capture between result_elapsed=0 and =30 on the SAME rust build "
+                    "(AUDIT wave 3c fresh-state ticket).",
     ),
     Check(
         name="banner",
