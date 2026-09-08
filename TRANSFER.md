@@ -1192,6 +1192,55 @@ real ROM, and claims about the real ROM are readable. The measurement that settl
 sides still, sweep the offset, look for the V -- took two captures and no disassembly at all, and
 should have come first.
 
+## 7bl. The backdrop is pixel-exact, and what one zero was hiding (2026-09-08)
+
+`opening` 16788 -> 0. The backdrop band, the field and the bottom strip all compare at ZERO
+against a capture from a battle's first frame. This started because the user looked at a
+screenshot I had called identical and asked about some pink lines in it.
+
+THE BACKDROP ANIMATES, and not the way this build assumed. It is the same scripted GFXAnim engine
+the overworld uses (`ProcessGFXAnims`, asm00_0.s:3510-3697) reading a list of (tile-table, delay)
+entries; for this background that list is `off_807FB98` (data/dat20.s:140-172), TEN 4-frame
+entries then NINETEEN 8-frame ones, a 192-frame loop. This build had a uniform 8-frames-forever
+56-frame loop. The transcription was checked against the ROM rather than eyeballed: instrumenting
+our own build to record `entry`/`timer`/`x_q` per frame and laying that trace beside `--dump`
+peeks of `eGFXAnimStates[0]` matches at battle frames 1, 2, 3, 5, 9 and 7935.
+
+AND THE SCROLL ROUNDS THE OTHER WAY. The register is `lsr #4` of a counter that FALLS by 8 -- a
+logical shift of a negative, so a ceiling where a plain divide floors, one pixel apart on odd
+frames.
+
+WHAT THE `tiles` ZERO WAS HIDING. That check read 0 for weeks, whole screen, against a save state
+7891 frames into a battle. It was hiding a wrong art schedule, the scroll rounding, and a gauge
+animation that still does not match -- three defects at once, because its single frame sat where
+they cancelled. Its own comment already said 392 was found by sweeping 340..400 and taking the
+only exact hit; nothing said what a hit was worth.
+
+FOUR OF MY OWN THEORIES DIED ON THE WAY, each to one measurement:
+  - "the art clock has a different origin from the scroll" -- both reset at battle init, in the
+    same routine, back to back (asm00_1.s:8434-8435).
+  - "the step-to-art mapping is wrong" -- parsing all seven tables out of dat20.s and matching
+    them against the exporter's rows gives a unique hit for every one.
+  - "one step's art is wrong" -- our frame 1798 matches real frame 44 EXACTLY and differs from
+    real 43 by 136. The fixture was comparing against 43. The alignment was one frame out.
+  - "the gauge is out of phase" -- sweeping a full 112-frame period, no offset improves it.
+
+AND ONE MEASUREMENT OF MINE DIED TOO, which is the part worth remembering. I measured the scroll
+rounding change at the fixture's FIXED LAG, got 290 -> 30304, wrote it up as a clean negative
+result and reverted it. Searching the lag shows it identical -- 290 at lags 6 and 7 where before
+it was 290 at 7 and 8. A FIXED ALIGNMENT CONSTANT WILL REPORT A CORRECT CHANGE AS A DISASTER, and
+I did that an hour after writing up the same failure for `tiles`, `mettaur` and `wave`.
+
+WHAT IS LEFT is the custom gauge (TODO A8): 470 px, all of it the flowing bar and its L-or-R
+marker. Not a fill -- the lit-pixel count cycles through the same four values throughout. Not a
+phase -- no offset in its 112-frame period helps. The four-state flow this build models is right
+for the settled state; what is missing is that early on the stripes SHIFT position as well as
+cycling, and something stops that around frame 98 of the capture.
+
+THE HABIT THAT ACTUALLY WORKED, three times in one night: render the two sides and look, or hash
+the region frame by frame, before reasoning. The pink lines, the HUD strips and the bar's cycle
+were each settled by one picture or one hash after a chain of inference had pointed elsewhere.
+
 ## 7bk. EVERY CHECK IS AT ZERO (2026-09-07)
 
     chips 0  tiles 0  field 0  window 0  card 0  cursor 0  result 0  warp 0
