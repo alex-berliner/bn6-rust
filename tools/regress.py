@@ -367,6 +367,29 @@ def check_chip_use():
                for k in range(32)), "navi half, 32 frames"
 
 
+#: WHY THESE TWO SEARCH FOR THEIR LAG INSTEAD OF HARDCODING IT.
+#: Both capture their RUST side unscripted, straight from power-on reset, while
+#: the real side is anchored by a save state and a scripted Start. That makes
+#: the offset between them boot-relative -- and boot length is not invariant
+#: under a source change, because fat LTO re-inlines globally (TRANSFER 7bj:
+#: two builds differing only in `Shot::update` first diverge at frame SEVEN).
+#: A hardcoded lag therefore fails for a reason that has nothing to do with the
+#: thing being measured, and it has done exactly that twice: `tiles` was widened
+#: into a window for the same reason, and these two both moved by one frame on
+#: the same build, which is one shift and not two coincidences.
+#: Searching a narrow band gives up nothing, because the minimum is a SHARP
+#: point, not a plateau. Measured with the wave fix in: `mettaur` is 0 at lag 20
+#: with 8485 at 19 and 8380 at 21; `wave` is 0 at lag 125 with 4800 at 124 and
+#: 3840 at 126. A real logic regression produces no zero anywhere in the band.
+METTAUR_LAGS = range(15, 27)
+WAVE_LAGS = range(120, 132)
+
+
+def by_lag(lags, score):
+    """The best (total, lag) over a band of candidate alignments."""
+    return min((sum(score(lag)), lag) for lag in lags)
+
+
 def check_mettaur():
     """The Mettaur virus's 70-frame attack cycle (TRANSFER.md 7ah).
 
@@ -384,13 +407,20 @@ def check_mettaur():
     build("demo-field", cc.scratch("rg_field.gba"))
     capture(STERILE, cc.scratch("rg_mtr"), 215, "--loadstate", PAUSED, *ALIVE,
             "--disable-bg", "--script", "Start@10")
-    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_mtu"), 235, "--disable-bg")
-    lag, start, box = 21, 140, (145, 0, 240, 160)
-    diffs = [diff(cc.scratch("rg_mtr"), start + k, cc.scratch("rg_mtu"), start + lag + k, box)
-             for k in range(70)]
+    # Enough frames for the WHOLE lag band, not just one lag:
+    # start 140 + max(METTAUR_LAGS) + 70 frames of window.
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_mtu"),
+            140 + max(METTAUR_LAGS) + 70, "--disable-bg")
+    start, box = 140, (145, 0, 240, 160)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_mtr"), start + k, cc.scratch("rg_mtu"), start + lag + k, box)
+                for k in range(70)]
+
+    total, lag = by_lag(METTAUR_LAGS, score)
+    bad = sum(1 for d in score(lag) if d)
     subprocess.run(["rm", "-rf", cc.scratch("rg_mtr"), cc.scratch("rg_mtu")], check=True)
-    bad = sum(1 for d in diffs if d)
-    return sum(diffs), "%d of 70 frames differ, lag %d" % (bad, lag)
+    return total, "%d of 70 frames differ, lag %d" % (bad, lag)
 
 
 def check_wave():
@@ -410,13 +440,19 @@ def check_wave():
     build("demo-field", cc.scratch("rg_field.gba"))
     capture(STERILE, cc.scratch("rg_wvr"), 165, "--loadstate", PAUSED, *ALIVE,
             "--disable-obj", "--script", "Start@10")
-    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_wvu"), 290, "--disable-obj")
-    lag, start, box = 126, 71, (0, 72, 240, 144)
-    diffs = [diff(cc.scratch("rg_wvr"), start + k, cc.scratch("rg_wvu"), start + lag + k, box)
-             for k in range(90)]
+    # start 71 + max(WAVE_LAGS) + 90 frames of window.
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_wvu"),
+            71 + max(WAVE_LAGS) + 90, "--disable-obj")
+    start, box = 71, (0, 72, 240, 144)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_wvr"), start + k, cc.scratch("rg_wvu"), start + lag + k, box)
+                for k in range(90)]
+
+    total, lag = by_lag(WAVE_LAGS, score)
+    bad = sum(1 for d in score(lag) if d)
     subprocess.run(["rm", "-rf", cc.scratch("rg_wvr"), cc.scratch("rg_wvu")], check=True)
-    bad = sum(1 for d in diffs if d)
-    return sum(diffs), "%d of 90 frames identical, lag %d" % (90 - bad, lag)
+    return total, "%d of 90 frames identical, lag %d" % (90 - bad, lag)
 
 
 #: name -> (function, the number it produced when last verified). A non-zero
@@ -433,7 +469,7 @@ CHECKS = [
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),
-    ("wave", check_wave, 960),          # panel light, first hop, 1 of 90 frames, 7ai
+    ("wave", check_wave, 0),
     ("popup", check_popup, 0),          # the chip-name popup, whole box, five chips
     ("banner", check_banner, 0),        # ENEMY DELETED, all 58 frames
     ("rollup", check_rollup, 0),        # the full battle must survive a long script

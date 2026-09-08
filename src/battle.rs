@@ -1513,6 +1513,21 @@ impl<'a> Battle<'a> {
         }
     }
 
+    /// Ask panel `(c, r)` to show the shockwave's highlight this frame, unless
+    /// somebody is standing on it: the capture's wave lights the panel ahead of
+    /// the navi and the one behind him and leaves his own dark on the frames it
+    /// is passing through him.
+    fn light_wave_panel(&mut self, c: i32, r: i32) {
+        let taken = self.megaman.is_present() && self.megaman.panel() == (c, r)
+            || self
+                .enemies
+                .iter()
+                .any(|e| e.is_present() && e.panel() == (c, r));
+        if (1..=field::COLS).contains(&c) && (1..=field::ROWS).contains(&r) && !taken {
+            self.panels.highlight(c, r, WAVE_HIGHLIGHT);
+        }
+    }
+
     /// The buster's BARREL, a 16x8 object riding the navi's arm for the whole
     /// pose. Its own OAM offsets put it at (+13,-30) from the navi's origin,
     /// which is the panel centre, so it is spawned there and the sprite
@@ -1929,21 +1944,7 @@ impl<'a> Battle<'a> {
                     let here = (self.shots[i].col, self.shots[i].row);
                     let lit = [Some(here), self.shots[i].left_panel];
                     for (c, r) in lit.into_iter().flatten() {
-                        // NOT on a panel somebody is standing on: the capture's
-                        // wave lights the panel ahead of the navi and the one
-                        // behind him and leaves his own dark, on the frames it
-                        // is passing through him.
-                        let taken = self.megaman.is_present() && self.megaman.panel() == (c, r)
-                            || self
-                                .enemies
-                                .iter()
-                                .any(|e| e.is_present() && e.panel() == (c, r));
-                        if (1..=field::COLS).contains(&c)
-                            && (1..=field::ROWS).contains(&r)
-                            && !taken
-                        {
-                            self.panels.highlight(c, r, WAVE_HIGHLIGHT);
-                        }
+                        self.light_wave_panel(c, r);
                     }
                 }
                 i += 1;
@@ -2159,6 +2160,9 @@ impl<'a> Battle<'a> {
             .map(|e| if e.is_present() { e.occupancy() } else { 0 })
             .collect();
         let all_held = held.iter().fold(self.megaman.occupancy(), |m, h| m | h);
+        // A freshly spawned shockwave's own panel, applied once the loop below
+        // has released its borrow of `self.enemies`. See the strike arm.
+        let mut wave_spawn: Option<(i32, i32)> = None;
         for ((i, enemy), ai) in self
             .enemies
             .iter_mut()
@@ -2232,6 +2236,30 @@ impl<'a> Battle<'a> {
                         enemy.facing_dx(),
                         WAVE_DAMAGE,
                     ));
+                    // The first hop's light, one frame earlier than the shots
+                    // loop would give it. That loop runs EARLIER in this same
+                    // frame, before the shot exists, so a freshly spawned
+                    // shockwave would not light its panel until the frame
+                    // after -- while every LATER hop lights its new panel on
+                    // the frame it happens, because the loop reads the column
+                    // after `Shot::update` has already advanced it. Only the
+                    // spawn carries that extra tick, so only the spawn needs
+                    // the nudge. Measured: the real ROM's frame 71 already has
+                    // (4,2) lit and ours did not until 72.
+                    //
+                    // It matches the real ROM's own split between init and
+                    // update, which is the reassuring part: `sub_80C6B64`, the
+                    // CurState-0 handler that runs on a segment's first tick,
+                    // builds the sprite and the collision data but never
+                    // highlights (asm31.s:31421-31496), and
+                    // `object_highlightCurrentCollisionPanels` is reached only
+                    // from `sub_80C6C14`, the CurState-1 handler
+                    // (asm31.s:31499-31537, the call at 31524), every tick
+                    // from then on. So the real segment's init tick is the one
+                    // tick with no highlight -- which is a highlight that
+                    // starts as soon as the object exists, not one tick into
+                    // its life.
+                    wave_spawn = Some((col, row));
                 }
                 Update::Strike { .. } if self.megaman.is_targetable() => {
                     if targets.contains(&self.megaman.panel()) {
@@ -2246,6 +2274,11 @@ impl<'a> Battle<'a> {
                 }
                 _ => {}
             }
+        }
+        // Now that the loop above has released its borrow of `self.enemies`,
+        // `light_wave_panel` can take `&mut self` again.
+        if let Some((c, r)) = wave_spawn {
+            self.light_wave_panel(c, r);
         }
 
         // The Gunner's shots warn on their panels, then land.
