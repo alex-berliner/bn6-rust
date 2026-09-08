@@ -844,5 +844,11 @@
     "file": "log/shots/1788835450-gg_wave.gif",
     "caption": "The shockwave's panel light, 90 frames at 0 px -- the last non-zero check in the suite. Backgrounds only, so what you see is just the yellow highlight each panel gets as the wave passes.",
     "tag": "wave"
+  },
+  {
+    "t": 1788847152,
+    "file": "log/shots/1788847152-gg_opening.gif",
+    "caption": "A battle's opening, HUD and backdrop, 44 consecutive frames at 0 px -- and all seventeen regression checks are now at zero. The backdrop animates on the overworld's scripted engine rather than a uniform loop, and its scroll register is a logical shift of a falling counter, which rounds the other way from a divide.",
+    "tag": "opening"
   }
 ]

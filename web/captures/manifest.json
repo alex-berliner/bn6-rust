@@ -1,9 +1,15 @@
 [
   {
+    "file": "captures/battle-opening-hud-compare.gif",
+    "name": "battle-opening-hud-compare",
+    "label": "The HUD and the backdrop through a battle's opening, real ROM above and this build below: 44 consecutive frames, 0 pixels, every frame compared rather than sampled. The backdrop is not just a scrolling picture -- it also ANIMATES, on the same scripted engine the overworld uses, ten four-frame steps then nineteen eight-frame ones over a 192-frame loop, and this build had been running a uniform 56-frame loop instead. The scroll matters to the pixel too: the real ROM writes a logical shift of a counter that falls, which rounds the opposite way from a plain divide and puts the whole layer one pixel out on odd frames. The check that first said this matched was sampling every fourth frame, and every fourth frame was exactly the set that already agreed.",
+    "added": null
+  },
+  {
     "file": "captures/wave-panel-light-compare.gif",
     "name": "wave-panel-light-compare",
     "label": "The shockwave's panel light, real ROM above and this build below, backgrounds only so the wave's own sprite is hidden and only the yellow highlight it leaves on each panel shows: 90 frames, 0 pixels. This was the last non-zero check in the suite. The hop itself was never the hard part -- what took three attempts was the ends of a segment's life. A hop spawns a NEW segment and abandons the old one where it is, and our build was destroying the abandoned one a frame before it could show its final animation frame, and lighting the newly spawned one a frame late. The real ROM has the same asymmetry in its own code: the handler that runs on a segment's first tick builds its sprite and collision data and never highlights, and highlighting only begins on the tick after.",
-    "added": null
+    "added": "2026-09-07"
   },
   {
     "file": "captures/mettaur-attack-compare.gif",
