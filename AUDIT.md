@@ -58,3 +58,11 @@ Waves are grouped so no two concurrent agents touch the same files. Each agent w
 - `harness` (tools/regress.py rewrite): one `run(rust_init, canon_init, frames)`, full screen every frame, aligned on the marker, no `want`, negative fixture per check, provenance count, gallery written as output, isolated + integrated runs. Pairs 6, 7, 9, 10, 11, 12.
 
 **Wave 3** — migrate every existing check and the chip scoreboard into the harness; all must read zero. The "first job after the audit."
+
+**Wave 3 — two agents in parallel (launched 2026-09-08)**
+- `migrate-checks` (tools/harness.py, tools/allowlist.py): port every `regress.py` check and the 43-chip scoreboard into the harness table as descriptors; isolated runs must read 0; integrated numbers reported honestly and allowlisted with tickets where they are not yet 0.
+- `fixture-gaps` (src/): the FIXTURE.md fields added after wave 2 — offered deck, start-at-results, banner_at — and the HUD standardised so integrated runs can reach zero.
+
+Then a final step: delete the `demo-*` flags and `tools/regress.py` once the harness reads zero through descriptors for everything they covered.
+
+Note from the wave-2 merge: the fixtures-as-data change moved boot timing by one frame, and the two checks still on a HARDCODED lag (`cursor`, `audio`) moved with it — `cursor` 0 -> 602, all of it on one frame of 170, lag still a sharp minimum. Every marker-aligned check was untouched. Pair 1 demonstrated on the day it landed; `regress.py` is left reporting the failure honestly until the port replaces it.
