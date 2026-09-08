@@ -143,8 +143,15 @@ Falls out of A4's measurement and deserves its own number. Real from `/tmp/battl
 against `demo-open`, `--disable-obj`, HUD strip box (0, 0, 240, 24): **1102 px**, and it looks
 static rather than drifting, so it is probably content and not timing -- MegaMan's HP, the chip
 counts, the enemy names. `demo-open` already fields that capture's own three Mettaurs, so whatever
-differs is something the fixture is not setting up. Cheap to chase: dump the HUD's own strip on
-both sides at one frame and read off which glyphs differ, then find where that value comes from.
+differs is something the fixture is not setting up.
+
+LOCALISED, and it is NOT a couple of wrong digits, which is what I first assumed. Broken down
+by 8x8 tile at real 120 / rust 127: **49 tiles differ**, spanning x = 16..192 and 200..216
+across all three tile rows -- very nearly the whole width of the strip. So the two sides are
+not showing the same THINGS in the HUD at that moment, rather than the same things with
+different numbers in them. Likely candidates, in order: the enemy name and HP plates (the
+capture has three viruses whose plates appear as they materialise, and their timing is a
+known difference at this point in the opening), then MegaMan's own HP block.
 The existing `tiles` check uses `demo-hudmatch` against `pausedwithcannon` and reads 0, so the HUD
 CAN match -- it is this fixture's setup that does not.
 
