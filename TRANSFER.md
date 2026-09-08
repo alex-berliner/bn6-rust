@@ -1291,12 +1291,22 @@ which is exactly the mistake the hygiene rules exist to prevent.
 -63128/-31564, and 63128/8 = 31564/4 = 7891 exactly. So a capture with a KNOWN phase origin
 exists now, which A4 had called the single most valuable thing the harness did not have.
 
-It does not produce a better fixture, and that is worth recording so nobody tries again. Real
-from `battlestart.state` against `demo-open`, backgrounds only: the best the backdrop band
-alone reaches anywhere in the usable window is 86 px, never 0. The residual is thin, scattered
-over rows 32-54 and mirrored at x+128 -- the art's own 8-frame animation step not landing on
-the same integer frame as the scroll phase. Below real frame 90 is the white intro; above 190
-the third virus's materialisation diverges. Neither end offers anything better.
+It does not produce an exact fixture, and THE PARAGRAPH THAT USED TO STAND HERE EXPLAINED THAT
+AWAY, WRONGLY. Real from `battlestart.state` against `demo-open`, backgrounds only: the best the
+backdrop band alone reaches in the usable window is 86 px, never 0. I wrote that off as "the
+art's own 8-frame animation step not landing on the same integer frame as the scroll phase" --
+inherent quantisation, nothing to fix. That was a rationalisation, and it is false.
+
+It is a BUG, and it is in this build. See 7bl and TODO A7: the backdrop animates as well as
+scrolls, and our two clocks disagree with each other. The scroll aligns against the real ROM at
+lag +7, the art animation aligns at lag 0, so relative to our own battle start the animation
+runs about seven frames early. It was found because the user looked at a screenshot I had
+called identical and asked about some pink lines on the backdrop.
+
+The lesson is worth more than the bug. "These pixels cannot match" is a claim about the real
+ROM, exactly like "these two clocks have no shared origin" was in 7bc, and it was wrong for the
+same reason: nobody had read what drove the thing. Dressing up an unexplained residual as an
+inherent limit is worse than leaving it open, because it stops anyone from looking again.
 
 WHAT IT DID SETTLE, and this is the valuable part. The lag does NOT drift: it sits at 7 or 8
 from real 90 to real 185 with no creep, alternating only because HOFS moves once every two

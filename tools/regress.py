@@ -42,6 +42,8 @@ STERILE = "/tmp/bn6f_sterile.gba"
 PAUSED = "/tmp/pausedwithcannon.state"
 CHIPSELECT = "/tmp/chipselect.state"
 NOENEMY = "/tmp/noenemy2.state"
+#: A save state at a battle's FIRST frame -- its scroll counters read 0/0.
+BATTLESTART = "/tmp/battlestart.state"
 #: Keeping the capture's Mettaur alive, which most fixtures want.
 ALIVE = ["--cheat", "0x0203ab84:0xffff", "--cheat", "0x0203ab86:0xffff"]
 
@@ -210,6 +212,38 @@ def check_cursor():
                 for k in range(170))
     subprocess.run(["rm", "-rf", cc.scratch("rg_wr2"), cc.scratch("rg_wu2")], check=True)
     return total, "170 frames of a five-step walk"
+
+
+#: THE BATTLE'S OPENING, and it exists because the suite was flattering itself.
+#: Every other check compares a fixture built for it; nothing compared the thing
+#: a player actually sees first. `demo-open` fields the same three Mettaurs as
+#: /tmp/battlestart.state and had NO check at all, so an 85-px HUD difference and
+#: a backdrop that drifts to 2700 px sat outside the suite entirely while it
+#: reported fifteen zeros.
+#: The box is the HUD strip and the backdrop band, stopping short of the field:
+#: the three viruses materialise on their own schedule and diverge above real
+#: frame 190, which is a separate question from this one.
+#: THE WANT IS NOT ZERO AND THAT IS NOT ACCEPTABLE, it is just honest. It is
+#: TODO A7: the backdrop animates as well as scrolls, and our two clocks are
+#: locked to each other while the real ROM's are not -- the scroll aligns at lag
+#: 7 and the art at lag 0. Drive this to 0; do not adjust the want to suit a
+#: build.
+OPENING_LAG = 7
+OPENING_BOX = (0, 0, 240, 60)
+
+
+def check_opening():
+    """The first 40 frames after a battle's field appears, HUD and backdrop."""
+    build("demo-open", cc.scratch("rg_open.gba"))
+    capture(REAL, cc.scratch("rg_opr"), 200, "--loadstate", BATTLESTART, "--disable-obj")
+    capture(cc.scratch("rg_open.gba"), cc.scratch("rg_opu"), 210, "--disable-obj")
+    frames = range(120, 160, 4)
+    total = sum(diff(cc.scratch("rg_opr"), f, cc.scratch("rg_opu"), f + OPENING_LAG, OPENING_BOX)
+                for f in frames)
+    worst = max(diff(cc.scratch("rg_opr"), f, cc.scratch("rg_opu"), f + OPENING_LAG, OPENING_BOX)
+                for f in frames)
+    subprocess.run(["rm", "-rf", cc.scratch("rg_opr"), cc.scratch("rg_opu")], check=True)
+    return total, "%d frames of the opening, worst %d px" % (len(frames), worst)
 
 
 def check_result():
@@ -464,6 +498,7 @@ CHECKS = [
     ("window", check_window, 0),
     ("card", check_card, 0),
     ("cursor", check_cursor, 0),
+    ("opening", check_opening, 16788),  # TODO A7 -- drive to 0, do not raise
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
