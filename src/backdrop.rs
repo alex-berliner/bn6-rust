@@ -7,15 +7,55 @@
 //! residual, so the offset is kept in quarters of a pixel and advances by two
 //! and one each frame.
 //!
-//! AND ITS ART IS ANIMATED. The map, the palette and the scroll all stand
-//! still while the TILE ART underneath cycles: seven complete sets of the
-//! layer's 37 tiles, eight frames each, a 56-frame loop -- the little purple
-//! glyphs inside the rings. Dumping BG1's char data frame by frame off a live
-//! battle shows 36 of the 37 tiles changing while the map's 1024 entries and
-//! palette bank 0 never move. A still backdrop differs from the real ROM by
-//! about 280 px a frame.
-//! NOT VERIFIED: where the loop starts. One save state cannot say what the
-//! phase is counted from, so this build counts from the battle's first frame.
+//! AND ITS ART IS ANIMATED, ON A COMPLETELY SEPARATE CLOCK FROM THE SCROLL.
+//! The map, the palette and the scroll all stand still while the TILE ART
+//! underneath cycles through seven complete sets of the layer's 37 tiles --
+//! the little purple glyphs inside the rings. Dumping BG1's char data frame
+//! by frame off a live battle shows 36 of the 37 tiles changing while the
+//! map's 1024 entries and palette bank 0 never move. A still backdrop
+//! differs from the real ROM by about 280 px a frame.
+//!
+//! THE MECHANISM (TODO A7). The scroll is `BGScrollCB_BG1Diagonal3to2Scroll`
+//! off `eBGScrollCBCounters`, zeroed once at battle init
+//! (`sub_8080D90`/`sub_8080DA0`, reference/bn6f/asm/asm00_1.s:8434-8435). The
+//! art is a SECOND system entirely -- the same "GFXAnim" engine the overworld
+//! maps use for their own animated tiles (`LoadGFXAnim`/`ProcessGFXAnims`,
+//! reference/bn6f/asm/asm00_0.s:3510-3697) -- driven by a per-slot countdown
+//! `Timer` in `eGFXAnimStates` (0x020094c0,
+//! reference/bn6f/include/structs/GFXAnimState.inc) that `ProcessGFXAnims`
+//! decrements every frame and, on hitting zero, advances to the next scripted
+//! entry and copies its 36 tiles in with `sub_8001C94`. `LoadGFXAnims` IS
+//! called at battle init, in the very same routine as the scroll's zero
+//! (reference/bn6f/asm/asm21.s:33/37, called from the same `sub_8080DA0`), so
+//! it DOES share the scroll's origin -- but the schedule it loads is not a
+//! rigid multiple of the scroll's clock, so locking the two together with one
+//! shared counter and a constant step length was still wrong.
+//!
+//! Confirmed for this fixture (three Mettaurs) by peeking
+//! `eGFXAnimStates[0]` off `/tmp/battlestart.state`: `Param0` (gfx_src) =
+//! 0x08617488 = `dword_8617488`, the same blob `backdrop_export.py` reads,
+//! and `Param3` (buffer_index) = 5 -- exactly `off_807FB98`,
+//! reference/bn6f/data/dat20.s:140-172 (battle background type 9 in the
+//! per-type table at reference/bn6f/asm/asm21.s:389-411). Its schedule is
+//! NOT a uniform "8 frames, 7 steps in order": stepped frame by frame from
+//! the save state (dumping `eGFXAnimStates[0]` after 0, 1, 2, ... real
+//! frames), it opens with nine 4-frame beats alternating two arrangements,
+//! one more 4-frame beat on a third, and only THEN settles into a steady
+//! 7-step, 8-frame-per-step cycle that repeats for the rest of a 192-frame
+//! supercycle before looping back to the opening beats. `STEP_ORDER` and
+//! `STEP_HOLD` below are that schedule, read off directly (see their own
+//! comment for the exact correspondence to the asset's 7 steps).
+//!
+//! `tiles` only ever samples deep into a battle (`pausedwithcannon.state` is
+//! 7891 frames in), safely inside the steady part, which is why the OLD
+//! constant-8-frames-forever model could still land on it exactly while
+//! missing the whole opening `demo-open` measures. And at the instant battle
+//! init completes -- before this build's first simulated frame -- the real
+//! ROM is not at the schedule's very start either: `LoadGFXAnim` performs its
+//! first tile copy SYNCHRONOUSLY (using the schedule's first entry), and by
+//! the time a save state can even be taken, `ProcessGFXAnims` has already
+//! ticked once more (`Timer` reads 3 of a fresh 4, peeked). `Backdrop::prime`
+//! reproduces both of those before the first `update()`.
 
 use agb::display::tiled::{
     RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
@@ -25,22 +65,41 @@ use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 /// Quarter-pixels of scroll per frame, across and down.
 const SCROLL_X_Q: u32 = 2;
 const SCROLL_Y_Q: u32 = 1;
-/// Frames each step of the art animation is held.
-const STEP_FRAMES: u32 = 8;
-/// Where in a step the loop starts. The scroll advances a pixel every two
-/// frames across and every four down, so choosing which frame to compare on
-/// can only move the art by four; the other offsets have to be built in.
-const ART_PHASE: u32 = 0;
+
+/// The art animation's schedule, read directly off `off_807FB98`
+/// (reference/bn6f/data/dat20.s:140-172): one entry per
+/// `gfx_anim_data_ptr`, naming which of the asset's 7 steps it shows and how
+/// many frames it holds. The asset's own step order (`backdrop_export.py`'s
+/// `FRAMES`) was built by matching each of the disassembly's 7 distinct
+/// 36-tile tables byte for byte: step 0 is `byte_807FE40`, 1 `byte_807FCD8`,
+/// 2 `byte_807FC90`, 3 `byte_807FD20`, 4 `byte_807FD68`, 5 `byte_807FDB0`, 6
+/// `byte_807FDF8`. In that numbering the script's 29 entries are steps
+/// 2,1,2,1,2,1,2,1,2,3, then 4,5,6,0,1,2,3 repeating -- nine 4-frame beats
+/// alternating steps 2 and 1, one 4-frame beat on step 3, then a steady
+/// 7-step cycle at 8 frames each -- for 192 frames total before the whole
+/// thing loops. Confirmed empirically, not just statically: dumping
+/// `eGFXAnimStates[0]` after 0, 1, 2, ... real frames from
+/// `/tmp/battlestart.state` walks these exact entries at these exact
+/// lengths.
+const STEP_ORDER: [u16; 29] = [
+    2, 1, 2, 1, 2, 1, 2, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1,
+];
+const STEP_HOLD: [u16; 29] = [
+    4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+];
 
 pub struct Backdrop {
     bg: RegularBackground,
     tiles: TileSet,
-    /// Steps in the art animation, and how many tiles each holds.
-    steps: u16,
     slots: u16,
-    /// The step whose art is in vram, and the frame counter driving it.
+    /// The step whose art is in vram.
     step: u16,
-    ticks: u32,
+    /// Which entry of `STEP_ORDER`/`STEP_HOLD` is playing, and how many more
+    /// frames it has left including this one -- named after the real ROM's
+    /// own `GFXAnimState.CommandPos`/`Timer`, which this mirrors frame for
+    /// frame rather than deriving from a formula.
+    entry: usize,
+    timer: u16,
     palette: Palette16,
     /// Scroll position in quarters of a pixel, so the half- and quarter-pixel
     /// steps stay exact rather than drifting.
@@ -90,13 +149,21 @@ impl Backdrop {
             }
         }
 
+        debug_assert!(
+            STEP_ORDER.iter().all(|&s| s < steps),
+            "STEP_ORDER names a step the asset does not have"
+        );
+
         Self {
             bg,
             tiles: tileset,
-            steps,
             slots,
+            // Whatever the tileset's raw upload leaves resident -- step 0 --
+            // until `prime` corrects it to what the real ROM actually shows
+            // at battle init.
             step: 0,
-            ticks: 0,
+            entry: 0,
+            timer: STEP_HOLD[0],
             palette,
             x_q: 0,
             y_q: 0,
@@ -109,10 +176,20 @@ impl Backdrop {
         self.palette.clone()
     }
 
-    /// Advance the scroll and the art animation by one frame.
-    pub fn update(&mut self, gfx: &Graphics) {
-        self.ticks += 1;
-        let want = (((self.ticks + ART_PHASE) / STEP_FRAMES) % u32::from(self.steps)) as u16;
+    /// Bring the art to the real ROM's state at a battle's first frame,
+    /// before this build's first `update()` call. `LoadGFXAnim` performs its
+    /// first tile copy SYNCHRONOUSLY at battle init -- the schedule's entry
+    /// 0 -- and by the time a save state can be taken, `ProcessGFXAnims` has
+    /// already ticked once more (`Timer` reads 3 of a fresh 4, peeked off
+    /// `/tmp/battlestart.state`). Without this the map opens on whichever
+    /// step the raw tileset upload happens to leave resident and one frame
+    /// later than the real ROM besides.
+    pub fn prime(&mut self, gfx: &Graphics) {
+        self.show_step(gfx, STEP_ORDER[self.entry]);
+        self.timer = STEP_HOLD[self.entry] - 1;
+    }
+
+    fn show_step(&mut self, gfx: &Graphics, want: u16) {
         if want != self.step {
             // The map still names the first step's tiles, so those stay the
             // key and only the bytes behind them change: agb keys vram by
@@ -124,6 +201,21 @@ impl Backdrop {
             }
             self.step = want;
         }
+    }
+
+    /// Advance the scroll and the art animation by one frame. The two are
+    /// driven by completely separate clocks on the real ROM (see the module
+    /// doc) and stay that way here: the scroll is unconditional every frame,
+    /// while the art only steps when its own countdown, seeded by `prime`,
+    /// reaches zero.
+    pub fn update(&mut self, gfx: &Graphics) {
+        self.timer -= 1;
+        if self.timer == 0 {
+            self.entry = (self.entry + 1) % STEP_ORDER.len();
+            self.timer = STEP_HOLD[self.entry];
+            self.show_step(gfx, STEP_ORDER[self.entry]);
+        }
+
         self.x_q = (self.x_q + SCROLL_X_Q) % (256 * 4);
         self.y_q = (self.y_q + SCROLL_Y_Q) % (256 * 4);
         // The motif travels left and up, so the scroll position runs

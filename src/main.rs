@@ -121,6 +121,7 @@ fn main(mut gba: agb::Gba) -> ! {
         // A battle ends on its fade-out, and the next one's intro fades the
         // field back in from the black, so one follows the other seamlessly.
         let mut battle = Battle::new(&field, &results, &hud, &custom_assets, &chips, &mut rng);
+        battle.prime_backdrop(&gfx);
         loop {
             input.update();
             rng.next();

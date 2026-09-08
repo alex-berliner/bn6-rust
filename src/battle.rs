@@ -1566,6 +1566,16 @@ impl<'a> Battle<'a> {
         self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
     }
 
+    /// Bring the backdrop's art to the real ROM's state at a battle's first
+    /// frame (see `backdrop::Backdrop::prime`). Called once, right after
+    /// construction: `Battle::new` has no `Graphics` to draw with, so this
+    /// cannot happen there.
+    pub fn prime_backdrop(&mut self, gfx: &Graphics) {
+        if let Some(backdrop) = self.backdrop.as_mut() {
+            backdrop.prime(gfx);
+        }
+    }
+
     /// Run one frame of battle logic. Returns true once the results window
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
