@@ -1,5 +1,15 @@
 [
   {
+    "file": "captures/airshot-compare.gif",
+    "name": "airshot-compare",
+    "label": "AirShot, real ROM left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back."
+  },
+  {
+    "file": "captures/aquaswrd-compare.gif",
+    "name": "aquaswrd-compare",
+    "label": "AquaSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are the same arc in a different palette bank, exported with every one the sprite carries."
+  },
+  {
     "file": "captures/areagrab-compare.gif",
     "name": "areagrab-compare",
     "label": "AreaGrab, real ROM left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows."
@@ -8,6 +18,11 @@
     "file": "captures/banner-compare.gif",
     "name": "banner-compare",
     "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up."
+  },
+  {
+    "file": "captures/barr200-compare.gif",
+    "name": "barr200-compare",
+    "label": "Barr200, real ROM left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font."
   },
   {
     "file": "captures/barrier-compare.gif",
@@ -90,9 +105,19 @@
     "label": "LilBolr1 \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
+    "file": "captures/mcannon-compare.gif",
+    "name": "mcannon-compare",
+    "label": "M-Cannon, real ROM left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2."
+  },
+  {
     "file": "captures/megenbom-compare.gif",
     "name": "megenbom-compare",
     "label": "MegEnBom, real ROM left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted."
+  },
+  {
+    "file": "captures/minibomb-compare.gif",
+    "name": "minibomb-compare",
+    "label": "MiniBomb, real ROM left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight."
   },
   {
     "file": "captures/muramasa-compare.gif",
@@ -103,6 +128,11 @@
     "file": "captures/poisseed-compare.gif",
     "name": "poisseed-compare",
     "label": "PoisSeed \u2014 exact: the pod, its arc and the poison going down (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/recov80-compare.gif",
+    "name": "recov80-compare",
+    "label": "Recov80, real ROM left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits."
   },
   {
     "file": "captures/stepswrd-compare.gif",
@@ -125,8 +155,18 @@
     "label": "VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel."
   },
   {
+    "file": "captures/vulcan3-compare.gif",
+    "name": "vulcan3-compare",
+    "label": "Vulcan3, real ROM left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess."
+  },
+  {
     "file": "captures/wave-departure-compare.gif",
     "name": "wave-departure-compare",
     "label": "The Mettaur's shockwave, real ROM left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames."
+  },
+  {
+    "file": "captures/wideblde-compare.gif",
+    "name": "wideblde-compare",
+    "label": "WideBlde, real ROM left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette."
   }
 ]

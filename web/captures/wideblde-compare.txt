@@ -1,0 +1,1 @@
+WideBlde, real ROM left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette.

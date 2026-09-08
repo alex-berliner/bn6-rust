@@ -1,0 +1,1 @@
+Recov80, real ROM left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits.
