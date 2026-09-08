@@ -66,3 +66,8 @@ Waves are grouped so no two concurrent agents touch the same files. Each agent w
 Then a final step: delete the `demo-*` flags and `tools/regress.py` once the harness reads zero through descriptors for everything they covered.
 
 Note from the wave-2 merge: the fixtures-as-data change moved boot timing by one frame, and the two checks still on a HARDCODED lag (`cursor`, `audio`) moved with it — `cursor` 0 -> 602, all of it on one frame of 170, lag still a sharp minimum. Every marker-aligned check was untouched. Pair 1 demonstrated on the day it landed; `regress.py` is left reporting the failure honestly until the port replaces it.
+
+**Wave 3b — driving the isolated numbers to zero (launched 2026-09-08, after both wave-3 branches merged)**
+Measured from main at 9d2e623, full screen, isolated: only `opening` and `rollup` read zero. The rest, and the work split:
+- `zero-tools` (tools/harness.py, states.py, mgba_capture.c, chip_compare.py, allowlist.py): the 38-chip shared baseline of 14388 (state artifact, unverified) -> a rebuilt state from the manifest; wire `window`/`card`/`result` to the new descriptor fields (they still read 161790/93713/779747); a one-BG-layer-plus-OBJ capture mode for `cursor` (621404), `popup` (107511), `wave` (288491); localise `tiles` 538, `field` 1048, `buster` 3172, `warp` 9198, `chip-use` 9514.
+- `zero-src` (src/): custmatch/cardname palette residue at window-open (371/862 px on two frames); `banner` 2248 over 58 frames through banner_at; the untagged files' provenance; the two fitted gauge constants (A8) traced in the disassembly.
