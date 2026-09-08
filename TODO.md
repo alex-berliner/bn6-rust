@@ -225,10 +225,19 @@ So `BAR_FRAMES` 7 over a four-entry `BAR_CYCLE` is exactly right for the settled
 presumably why the bar was "verified full" and left there. What this build does NOT model is the
 first eighty frames, and THE COMPARED FRAME (real 43/44) FALLS INSIDE THEM. That is the 470 px.
 
-What that early phase IS remains open -- a fill, a start-of-turn flourish, or the tail of whatever
-the save state was doing when it was taken. Find out before modelling it: the settled cycle was
-correct all along and got blamed twice tonight (once as a phase error, once as wrong content) by
-reasoning about it instead of watching it.
+IT IS NOT A FILL. Counting lit (green) pixels across the whole bar per frame, the count never
+grows -- it cycles through the same four values, 374 / 319 / 264 / 220, from frame 20 right
+through to 146. So the bar is at its full length the whole time and the four-state flow is running
+throughout.
+
+What differs in the early frames is that the same four counts come with DIFFERENT pixel
+arrangements every frame (50-odd distinct hashes over 20..97 against four over 98..139). Same
+amount lit, different places. So the early phase is the stripe pattern SHIFTING as well as
+cycling, and it settles into a fixed set of four positions later. That is the thing to model, and
+it is a smaller and better-defined thing than "the first eighty frames are unmodelled" -- which is
+how I wrote it up one measurement ago, from the hashes alone, before counting the pixels.
+
+Find what stops the shift at frame ~98 of that capture. That is the mechanism.
 
 WHAT IS KNOWN ON THE REAL SIDE SO FAR: the gauge's VALUE is a u16 at 0x020352A0, capped at 0x4000
 (`SetCustGauge`, asm00_2.s:29838; `ClearCustGauge` at 29827; incremented by `sub_801DFB8`). The
