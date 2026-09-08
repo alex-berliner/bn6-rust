@@ -1,0 +1,1 @@
+Vulcan1, real ROM left and this build right: 0.0 pixels a frame. Three shots released ten frames apart -- the game's own fire period -- each travelling a panel a frame and stopped by the first thing it hits. The shots themselves load no sprite; only their hit sparks show.

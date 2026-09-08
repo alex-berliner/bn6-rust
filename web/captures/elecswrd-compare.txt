@@ -1,0 +1,1 @@
+ElecSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are one arc in different palettes -- this one is the sprite's own electric set.

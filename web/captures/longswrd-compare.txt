@@ -1,0 +1,1 @@
+LongSwrd, real ROM left and this build right: 0.0 pixels a frame. Two panels of reach where Sword has one; the pose and the arc are the same objects.

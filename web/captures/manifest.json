@@ -15,6 +15,11 @@
     "label": "AreaGrab, real ROM left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows."
   },
   {
+    "file": "captures/bambswrd-compare.gif",
+    "name": "bambswrd-compare",
+    "label": "BambSwrd, real ROM left and this build right: 0.0 pixels a frame. The wood-element sword, the last of the nine."
+  },
+  {
     "file": "captures/banner-compare.gif",
     "name": "banner-compare",
     "label": "The ENEMY DELETED banner, real ROM above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up."
@@ -65,6 +70,16 @@
     "label": "The chip window's cursor walking five slots, real ROM left and this build right: 170 frames, 0 pixels. Two one-frame bugs, neither of them the cursor delay it had been blamed on -- the card's palette landing a frame before its tiles, and the bracket's blink flipping a frame early. Neither was findable until the fixture could run the same script on both sides."
   },
   {
+    "file": "captures/elecswrd-compare.gif",
+    "name": "elecswrd-compare",
+    "label": "ElecSwrd, real ROM left and this build right: 0.0 pixels a frame. The elemental swords are one arc in different palettes -- this one is the sprite's own electric set."
+  },
+  {
+    "file": "captures/energbom-compare.gif",
+    "name": "energbom-compare",
+    "label": "EnergBom, real ROM left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands."
+  },
+  {
     "file": "captures/fireswrd-compare.gif",
     "name": "fireswrd-compare",
     "label": "FireSwrd, real ROM left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette."
@@ -105,6 +120,16 @@
     "label": "LilBolr1 \u2014 exact, frame for frame (real ROM left, this build right)"
   },
   {
+    "file": "captures/longblde-compare.gif",
+    "name": "longblde-compare",
+    "label": "LongBlde, real ROM left and this build right: 0.0 pixels a frame. LongSwrd's reach at a higher tier -- the sword chips differ in numbers far more than in art."
+  },
+  {
+    "file": "captures/longswrd-compare.gif",
+    "name": "longswrd-compare",
+    "label": "LongSwrd, real ROM left and this build right: 0.0 pixels a frame. Two panels of reach where Sword has one; the pose and the arc are the same objects."
+  },
+  {
     "file": "captures/mcannon-compare.gif",
     "name": "mcannon-compare",
     "label": "M-Cannon, real ROM left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2."
@@ -128,6 +153,11 @@
     "file": "captures/poisseed-compare.gif",
     "name": "poisseed-compare",
     "label": "PoisSeed \u2014 exact: the pod, its arc and the poison going down (real ROM left, this build right)"
+  },
+  {
+    "file": "captures/recov300-compare.gif",
+    "name": "recov300-compare",
+    "label": "Recov300, real ROM left and this build right: 0.0 pixels a frame. The largest heal: the counter's step is |difference|/8 + 4 a frame, so a bigger number climbs faster, exactly as the real ROM's does."
   },
   {
     "file": "captures/recov80-compare.gif",
@@ -155,6 +185,11 @@
     "label": "VDoll, real ROM left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel."
   },
   {
+    "file": "captures/vulcan-compare.gif",
+    "name": "vulcan-compare",
+    "label": "Vulcan1, real ROM left and this build right: 0.0 pixels a frame. Three shots released ten frames apart -- the game's own fire period -- each travelling a panel a frame and stopped by the first thing it hits. The shots themselves load no sprite; only their hit sparks show."
+  },
+  {
     "file": "captures/vulcan3-compare.gif",
     "name": "vulcan3-compare",
     "label": "Vulcan3, real ROM left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess."
@@ -168,5 +203,10 @@
     "file": "captures/wideblde-compare.gif",
     "name": "wideblde-compare",
     "label": "WideBlde, real ROM left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette."
+  },
+  {
+    "file": "captures/wideswrd-compare.gif",
+    "name": "wideswrd-compare",
+    "label": "WideSwrd, real ROM left and this build right: 0.0 pixels a frame. Three panels tall rather than one, from the same pose."
   }
 ]
