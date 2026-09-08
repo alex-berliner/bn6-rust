@@ -42,3 +42,19 @@ Bring **all existing work** into the harness framework of pair 6 before anything
 ## Parked
 
 - **Audio** — not ready to work on; dropped for now (2026-09-08). The `audio` check stays in the suite at its recorded number so it cannot silently regress, but no effort goes into it until this is lifted.
+
+## Execution plan (2026-09-08)
+
+Waves are grouped so no two concurrent agents touch the same files. Each agent works in its own worktree.
+
+**Wave 1 — foundations, four agents in parallel**
+- `harness-diff` (tools/chip_compare.py, tools/mgba_capture.c): numpy-vectorised diff; `--watch addr:len` per-frame RAM readout; streaming diff mode; automatic retry of a short capture. Pairs 13 + optimisations.
+- `marker` (src/ only): the ROM writes a battle-started marker and a battle frame counter to a fixed RAM address every frame. Pair 1.
+- `states` (tools/states.py, new): a manifest of every save state as (base ROM, base state, script, cheats, frames), regenerated with `--savestate`; plus an earlier RESULT state. Pairs 4, 5.
+- `roms-and-captions` (tools/build_roms.sh, tools/captures_manifest.py, web/): timestamped ROM labels newest-first; captions name the canon variant. Pairs 8, 16.
+
+**Wave 2 — after wave 1 merges**
+- `fixtures-as-data` (src/): one ROM reads a fixture descriptor from RAM; the `demo-*` flags go; the sterile HUD stub goes. Pairs 6, 14, 17.
+- `harness` (tools/regress.py rewrite): one `run(rust_init, canon_init, frames)`, full screen every frame, aligned on the marker, no `want`, negative fixture per check, provenance count, gallery written as output, isolated + integrated runs. Pairs 6, 7, 9, 10, 11, 12.
+
+**Wave 3** — migrate every existing check and the chip scoreboard into the harness; all must read zero. The "first job after the audit."
