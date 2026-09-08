@@ -30,7 +30,7 @@ use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
-    BUSTER_ARM, BUSTER_FX,
+    BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
 /// The three navis only a demo build fields: a battle puts up one Mettaur.
@@ -138,6 +138,25 @@ const BUSTER_BLIP_FRAMES: u8 = 2;
 /// and this build's, played immediately, was on the sixth.
 const BUSTER_BLIP_DELAY: u8 = 1;
 const BUSTER_BLIP_FREQ: u16 = 2023;
+// SOUND_HIT_6B (TRANSFER.md 7bb): the enemy's own hit-flash/HP-decrement
+// reaction, not the buster's fire -- soloing the harness's channels 4 and 5
+// (both FIFOs, its numbering, not the hardware's) and control-subtracting a
+// run with no press (residual RMS of press-minus-control, not the coarser
+// difference-of-RMS 7bb used) shows nothing above a noise floor of about 130
+// through the press's 14th frame, a partial rise on the 15th (856) and the
+// sample's own measured 1881-sample/10512Hz body (178.94 ms, ~10.7 frames)
+// established by the 16th (3662, rising to a peak of 4074 on the 17th).
+// MEASURED, not guessed, and not simply derived: the plain buster's Strike
+// (where this and BUSTER_BLIP_DELAY are both set) lands on the press's 6th
+// frame, so a naive count from BUSTER_BLIP_DELAY's own confirmed one-frame
+// sound-request latency predicts the 15th. What actually lands there is one
+// frame later, the 16th -- agb's software mixer double-buffers
+// (`MixerBuffer::should_calculate`, sw_mixer.rs), so a channel started in
+// `play_sound` is not the buffer the timer/DMA is actively draining until
+// the FOLLOWING `Mixer::frame()`, an extra frame of latency this build does
+// not control and that was found by building and capturing, not assumed.
+// 9 is the delay that measures right, not the delay that computes right.
+const BUSTER_HIT_DELAY: u8 = 9;
 /// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
 /// offsets, and how long its four frames last (1,2,2,3).
 const BUSTER_ARM_FRAMES: u8 = 18;
@@ -937,6 +956,10 @@ pub struct Battle<'a> {
     blip_in: u8,
     /// Frames until it is silenced again; see BUSTER_BLIP_FRAMES.
     blip_off: u8,
+    /// Frames until the buster's hit sample plays; see BUSTER_HIT_DELAY. No
+    /// off-timer needed: unlike the PSG blip, the DirectSound sample is
+    /// fire-and-forget and stops itself when it runs out of data.
+    hit_in: u8,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
     /// animation 0 -- a one-frame dot the navi covers, then three frames of
@@ -1462,6 +1485,7 @@ impl<'a> Battle<'a> {
             banner_at: 0,
             blip_in: 0,
             blip_off: 0,
+            hit_in: 0,
             bubble: None,
             vulcan_gun: None,
             bombs: Vec::new(),
@@ -1569,7 +1593,12 @@ impl<'a> Battle<'a> {
     /// Run one frame of battle logic. Returns true once the results window
     /// has been dismissed and its fade-out has completed, so the caller can
     /// start the next battle.
-    pub fn update(&mut self, input: &ButtonController, gfx: &Graphics) -> bool {
+    pub fn update(
+        &mut self,
+        input: &ButtonController,
+        gfx: &Graphics,
+        mixer: &mut agb::sound::mixer::Mixer,
+    ) -> bool {
         if self.buster_arm_in > 0 {
             self.buster_arm_in -= 1;
             if self.buster_arm_in == 0 {
@@ -2034,6 +2063,12 @@ impl<'a> Battle<'a> {
                 agb::sound::psg::Channel1::stop();
             }
         }
+        if self.hit_in > 0 {
+            self.hit_in -= 1;
+            if self.hit_in == 0 {
+                mixer.play_sound(agb::sound::mixer::SoundChannel::new(BUSTER_HIT));
+            }
+        }
         if self.banner_at > 0 {
             self.banner_at -= 1;
             if self.banner_at == 0 {
@@ -2138,6 +2173,7 @@ impl<'a> Battle<'a> {
                     ));
                 } else {
                     self.blip_in = BUSTER_BLIP_DELAY;
+                    self.hit_in = BUSTER_HIT_DELAY;
                     // THE PLAIN BUSTER IS A HITSCAN. Its shot never crosses
                     // the field: OAM on the firing frame has a 32x16 flash
                     // still at the gun while the enemy's HP is already down.
