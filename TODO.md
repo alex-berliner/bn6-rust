@@ -317,7 +317,28 @@ not others.
 The rendering evidence supports the map over the palette: ours draws FEWER glyphs rather than
 differently-coloured ones.
 
-DO NOT MERGE until `tiles` is answered: the branch trades a `tiles` 0 for a non-zero, and a zero
+THE ACTUAL BLOCKER IS NOT `tiles` ANY MORE -- it is what a correct backdrop does to every other
+fixture. With the true schedule in, the full suite on the branch reads:
+
+    tiles 0   gauge 470   opening 0   (mettaur, wave, cursor, field, window, card, result, warp,
+    buster, chip-use and rollup all still 0)
+    chips  13 of 43 off -- every recov* chip and all five popup chips
+    popup  7366     banner 5162
+
+Reverting the scroll rounding leaves `opening` at 0 and does NOT fix those three, so it is the ART
+SCHEDULE that moves them. The reason is the one this file keeps rediscovering: the old model's
+period was 56, which DIVIDES the scroll's 896, so a wrong-but-simple animation could still
+coincide with the real ROM at a fixed frame. The true period is 192, which does not. Every fixture
+whose comparison frame was calibrated against the old backdrop now needs its alignment DERIVED the
+way `tiles`' was -- and for the chip fixtures that means frames in the thousands, a real cost in
+capture time.
+
+So merging is a fixture-realignment programme, not a one-line landing. WEIGH THIS FIRST: those
+fixtures do not need the backdrop at all. `--disable-bg` would take it out of their comparisons
+entirely and make them immune to this and to any future backdrop work -- and it would also mean
+they stop silently depending on a backdrop nobody was checking.
+
+DO NOT MERGE until that is decided: the branch trades a `tiles` 0 for a non-zero, and a zero
 that came partly from luck still beats a residue nobody has explained.
 MY ORIGINAL FRAMING WAS WRONG. The art clock does NOT have a different origin from the scroll:
 `LoadGFXAnims` is called at battle init from `sub_8080DA0`, in the same routine as the scroll's
