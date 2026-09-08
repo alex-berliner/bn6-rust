@@ -333,10 +333,24 @@ whose comparison frame was calibrated against the old backdrop now needs its ali
 way `tiles`' was -- and for the chip fixtures that means frames in the thousands, a real cost in
 capture time.
 
-So merging is a fixture-realignment programme, not a one-line landing. WEIGH THIS FIRST: those
-fixtures do not need the backdrop at all. `--disable-bg` would take it out of their comparisons
-entirely and make them immune to this and to any future backdrop work -- and it would also mean
-they stop silently depending on a backdrop nobody was checking.
+So merging is a fixture-realignment programme, not a one-line landing. Three ways out, in the
+order I would try them:
+
+1. **SEED THE FIXTURES WITH THE CAPTURE'S OWN BACKDROP PHASE.** This is the same move that fixed
+   the HP a few hours ago and that 7bc used for the chip window's bracket: a fixture compared
+   against a save state should START where that state is, not at zero. Add a `Backdrop::seed`
+   taking `(entry, timer, x_q, y_q)` and give each demo fixture the values peeked out of its own
+   save state, exactly as `HUDMATCH_HP` carries 60. Then every existing comparison FRAME stays
+   valid and nothing needs realigning. Numbers already in hand for `pausedwithcannon.state`: the
+   art is entry 13 / Timer 8 forty-four frames in, and the scroll counters read -63128 / -31564 at
+   load. Mind the sign convention between the counter, the `lsr #4` register and this build's
+   quarter-pixel `x_q` -- that is where the care goes.
+2. Realign each fixture's comparison frame the way `tiles`' was derived. Correct, but it means
+   captures thousands of frames long for 43 chips, and it re-earns the same cost every time the
+   backdrop changes again.
+3. `--disable-bg` on those fixtures. Cheapest and worst: it makes them immune to backdrop work by
+   MEASURING LESS, and this project has just spent an evening learning what stops being visible
+   when a check quietly narrows.
 
 DO NOT MERGE until that is decided: the branch trades a `tiles` 0 for a non-zero, and a zero
 that came partly from luck still beats a residue nobody has explained.
