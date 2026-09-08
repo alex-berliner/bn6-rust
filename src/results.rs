@@ -234,7 +234,24 @@ impl Results {
     pub fn show(&self, variant: usize, time: u32, level: u8, rank: u8, zenny: u16) -> Shown {
         let v = &self.variants[variant];
         let mut bg = RegularBackground::new(
-            Priority::P0,
+            // AUDIT wave 3c zero-layers (pair 2): was P0. The real ROM
+            // draws the RESULT window on the SAME background as the HUD's
+            // HP box and the chip-select window -- peeked live,
+            // --only-bg 3 on /tmp/result_arrival.state shows both the "60"
+            // HP box and the sliding-in window together, and that layer's
+            // BGxCNT (0x1f09, reference/bn6f wt/zero-layers's own comment
+            // on sub_801DA24) is priority 1, not 0. Matching the priority
+            // here (this struct still owns its OWN RegularBackground --
+            // see the ticket report on why the harder part, sharing the
+            // SAME hardware BG index/tilemap as HudTiles, is not done: the
+            // window's own scroll-driven slide-in and HudTiles' always-
+            // fixed HP box cannot share one scroll register without the HP
+            // box also being made scroll-compensated, which needs more
+            // real-ROM measurement than this ticket had room for) costs
+            // nothing when the two do not visually overlap (confirmed on
+            // the captures above -- the HP box sits above the window, not
+            // over it) and removes one more needless mismatch.
+            Priority::P1,
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
