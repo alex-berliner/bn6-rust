@@ -728,13 +728,28 @@ way to zero rather than plateauing, so it is a sound and not control drift:
 Ours is silent from about press+21, which is right for the sample we play: 1881 samples at
 10512 Hz is 10.7 frames. So the real ROM's response to a buster hit is NOT just SOUND_HIT_6B.
 
-THREE CANDIDATES, and they are distinguishable: a SECOND, quieter cue starting around press+24
-(the flat 660-700 stretch at +24..+28 looks like an onset rather than a decay -- the earlier
-sound-wiring session flagged exactly this and could not rule out an HP-tick); the engine playing
-the sample with a release envelope this build does not model (its ToneData reads attack 0xff,
-sustain 0xff, release 0x00, so probably not); or reverb (the SongHeader says reverb 0, so also
-probably not). Solo the FIFOs and dump the raw PCM of the tail -- if it is a second sample it will
-have its own onset shape, and it can then be found in dat37.s the way SOUND_HIT_6B was.
+AND IT IS NOT A SECOND CUE. That was the favoured candidate, mine and the sound-wiring session's
+both, and the raw samples rule it out. Residual RMS per QUARTER-frame:
+
+    +10 [662, 36, 16, 1578]      <- the sample's onset, mid-frame, sharp
+    +11 [2833, 3482, 4193, 3988]
+    +21 [2437, 2114, 2033, 1884]
+    +23 [1197, 973, 1151, 695]
+    +24 [636, 533, 788, 709]     <- the plateau begins, with NO rise
+    +28 [741, 655, 629, 616]
+    +31 [408, 343, 273, 273]
+
+A second sample starting at +24 would show an onset like +10's -- a quarter-frame jump of several
+thousand. There is none anywhere after +10. The tail is one sound decaying, holding around 600-800
+for five frames, then decaying again.
+
+SO WHAT IS LEFT: the real ROM's ONE sound lasts about five times longer than the 1881-byte sample
+this build exports and plays. Look at the note command in the track rather than the wave: the
+track is `0xDB 0x3C 0x7F 0x8C 0xB1 0x00` (data/dat37.s:41543-41544), where 0xDB is one of M4A's
+fixed-duration note commands and 0x3C/0x7F are key 60 and velocity 127. Work out that duration and
+what the engine does when the note outlasts its sample -- whether the WaveData loops after all
+(this build reads type/status 0 as "no loop"), or the engine holds and re-triggers. That is one
+number in the ROM and it decides the whole question.
 
 ### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
