@@ -187,7 +187,22 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A7. The backdrop's art animation  *(SOLVED for the opening: 16788 -> 0. `tiles` left -- branch wt/backdrop-art)*
+### A8. The custom gauge's L-or-R prompt blinks out of phase
+Found by fixing A7, and it was hidden by the old alignment. The prompt inside the CUSTOM gauge
+flashes orange on a 16-frame cycle, 8 on and 8 off, and THIS BUILD ALREADY DOES THAT -- both sides
+measure exactly 110 orange pixels when lit and 0 when not. What differs is the PHASE: at the frame
+where the whole backdrop, field and bottom of the screen match to the pixel, the real ROM's prompt
+is lit and ours is dark, and our lit windows sit 8 frames -- half a cycle -- from where they should.
+
+That is the entire remaining difference at that alignment: 470 px, all of it in the HUD, all of it
+this prompt. HP, gauge fill and the word CUSTOM all match.
+
+Same family as the chip window's bracket (TRANSFER 7bc): a blink counting from an origin that is
+not the real ROM's. Find what the real ROM's prompt counts from before touching a constant -- 7bc
+is the cautionary tale, where the residue was blamed on two wrong things and written off as
+unfixable before anyone read the routine.
+
+### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
 the schedule (below), the scroll's rounding, and MegaMan's HP -- the last 290 px were entirely
 the HP box, 29 a frame, because the captured battle's navi is on 60 and `demo-open` started at
@@ -209,7 +224,17 @@ sweep of `demo-hudmatch` finds its best band score at 68 px, recurring every 384
 pixel-exact and only the glyphs differing, so at those frames we are on a different art STEP, not
 looking at a broken asset.
 
-TRACED, AND NARROWED TO ONE STEP'S ART. `demo-hudmatch` was instrumented the same way. Its clocks
+SOLVED. At the derived alignment -- our frame 1798 against the real ROM's frame 44 -- the whole
+screen compares at 470 px, and the backdrop band, the field and the bottom strip are all ZERO. The
+backdrop is pixel-exact. Every one of the 470 is the HUD's L-or-R prompt blinking out of phase,
+which is now A8 above.
+
+The last step of the diagnosis is worth keeping. Our frame 1798 was compared against every real
+frame in range, and it matches real 44 EXACTLY while differing from real 43 by 136 px. The fixture
+had been comparing against 43. So the "one step's art" theory below was wrong too: nothing was
+wrong with the art, the alignment was one frame out.
+
+WHAT WAS RULED OUT ALONG THE WAY, all of it verified rather than assumed: `demo-hudmatch` was instrumented the same way. Its clocks
 reach entry 13 / timer 8 -- the real ROM's state at its own capture frame 43 -- on frames 64, 256,
 448, 640, every 192 as they should. Combining with the scroll (period 1024 frames) puts the true
 alignment at rust 1798, and measuring there gives the best result in the whole capture: full 752,
