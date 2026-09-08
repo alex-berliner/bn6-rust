@@ -411,7 +411,17 @@ def check_warp():
 #: it started five frames after the rise and reported a mid-decay value as the
 #: peak. Widened to cover the whole event on both sides: the sample's body is
 #: about 11 frames (1881 samples at 10512 Hz) and this holds 24.
-AUDIO_FRAMES = range(8, 32)
+#: THE WINDOW STOPS WHERE THE SOUND DOES, because this method has a NOISE
+#: FLOOR. Two identical runs subtract to exactly 0 -- the harness is
+#: deterministic -- but two runs whose GAME STATE differs do not: a press that
+#: makes no sound at all (Up instead of B) still leaves a residual of 100-300
+#: RMS, spiking to 516, because the background music mixes differently once the
+#: navi has moved. The sample's own body is ~11 frames (1881 samples at
+#: 10512 Hz), so past about +24 the residual is mostly that floor and not the
+#: sound. An earlier session suspected this and I argued against it on the
+#: grounds that the tail decays smoothly to zero; the silent-press control
+#: shows the tail is the same order as the floor.
+AUDIO_FRAMES = range(8, 24)
 
 
 def _envelope(rom, press, extra, *args):
@@ -696,7 +706,7 @@ CHECKS = [
     ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
-    ("audio", check_audio, 11971),  # the hit's envelope; drive to 0, do not raise
+    ("audio", check_audio, 7303),  # the hit's envelope; drive to 0, do not raise
     ("buster", check_buster, 0),
     ("chip-use", check_chip_use, 0),
     ("mettaur", check_mettaur, 0),

@@ -728,7 +728,21 @@ way to zero rather than plateauing, so it is a sound and not control drift:
 Ours is silent from about press+21, which is right for the sample we play: 1881 samples at
 10512 Hz is 10.7 frames. So the real ROM's response to a buster hit is NOT just SOUND_HIT_6B.
 
-AND IT IS NOT A SECOND CUE. That was the favoured candidate, mine and the sound-wiring session's
+AND THE TAIL IS NOT A SOUND AT ALL -- IT IS THE METHOD'S NOISE FLOOR. Controlled for directly:
+two IDENTICAL runs subtract to exactly 0, so the harness is deterministic; but a press that makes
+NO SOUND (Up instead of B) still leaves 100-300 RMS, spiking to 516, because once the navi has
+moved the background music mixes differently and the music is on the same FIFOs the check solos.
+The "five times longer" tail was the same order as that floor.
+
+The session that wired the sound up suspected exactly this and I argued against it, on the grounds
+that the tail decays smoothly to zero rather than plateauing. A smooth decay to zero is what
+divergence noise looks like too. The silent-press control is what settles it, and it should have
+been the first thing measured -- it costs one capture.
+
+`AUDIO_FRAMES` now stops at +24, where the sample's ~11-frame body has finished, and `audio` reads
+7303 rather than 11971.
+
+WHAT WAS RIGHT IN THE OLD ANALYSIS, kept because the reasoning stands on its own: That was the favoured candidate, mine and the sound-wiring session's
 both, and the raw samples rule it out. Residual RMS per QUARTER-frame:
 
     +10 [662, 36, 16, 1578]      <- the sample's onset, mid-frame, sharp
