@@ -105,6 +105,10 @@ class State:
     #: `cheats` above (re-applied every frame). For a condition that must
     #: fire on exactly one named frame -- see "emptyfield_start"'s own use.
     poke_at: Tuple[str, ...] = field(default_factory=tuple)
+    #: Each "addr:val16" argument for mgba_capture's --poke (one-time, at
+    #: load, before frame 0) -- chip_compare.py's own library-ownership
+    #: technique (library_pokes()), used by "chip_ready_empty" below.
+    pokes: Tuple[str, ...] = field(default_factory=tuple)
     #: Frames to run before --savestate fires. NOTE THE OFF-BY-ONE THAT
     #: ISN'T ONE: mgba_capture's loop runs frame indices 0..frames-1 and
     #: writes the state AFTER the last of them, so the state is poised to
@@ -428,6 +432,59 @@ STATES = [
              "dump already rules out structurally, the same proof states.py's own noenemy2 entry "
              "uses).",
     ),
+    State(
+        name="chip_ready_empty",
+        path="/tmp/chip_ready_empty.state",
+        root=False,
+        rom="/tmp/bn6f_sterile_emptynet.gba",
+        base="/tmp/emptyfield_start.state",
+        description="AUDIT wave 3c/3d ticket step 3: emptyfield_start with a chip picked "
+                     "through the chip window (which opens on its own) and in hand, ready to "
+                     "test whether a chip fires with no enemy alive at all -- see the note for "
+                     "the answer (yes) and which chip actually ended up in hand (Vulcan1, not "
+                     "Cannon).",
+        # The chip window opens ON ITS OWN partway through this battle too (TRANSFER 7aw), just
+        # not at 7aw's own battle-frame 165 -- measured THIS session by scanning --only-bg 3
+        # content frame by frame: blank through ~90, a slide-in at 100, settled (37765 px, flat)
+        # from 110 onward, still open with nothing pressed. A@130 picks whatever the window
+        # offers in its default cursor slot (measured: chip id 5, Vulcan1 -- see the note for why
+        # this is NOT Cannon despite the library poke below, and why that is not chased further),
+        # Start@140 moves the cursor to OK (TRANSFER 7aw: "Pressing A alone picks chips and
+        # leaves the window open"), A@150 confirms and closes it.
+        script="A@130,Start@140,A@150",
+        cheats=DELETE_ENEMY_3,
+        # chip_compare.capture_real's own technique (tools/chip_compare.py's library_pokes()),
+        # values computed by hand against THIS state's own library bytes (peeked live: 0xfd9d at
+        # 0x020008a0, 0x7c62 at 0x02004c20) rather than reused from chip_compare's own
+        # peek16() -- that function reads PAUSED's library, a different save's data, not this
+        # one's. Kept as plain --poke tuples rather than calling library_pokes() itself, since
+        # that function's own peek16() reads PAUSED's library, not this state's.
+        pokes=("0x020008a0:0x019d", "0x02004c20:0x8062"),
+        frames=280,  # 230 to the window's close + 50 margin -- see the note for why
+        note="VERIFIED END TO END (this ticket). BG3 content (--only-bg 3, sampled every 10 "
+             "frames): blank through 90, 704px at 90 (slide-in starting), 36913 at 100, settled "
+             "flat at 37765 from 110 through at least 590 -- the window opens ~100-110 battle-"
+             "frames in for this recipe (not 165, which was measured for a DIFFERENT, 3-Mettaur "
+             "battle/state) and stays open indefinitely with nothing pressed, exactly as 7aw "
+             "describes. THE LIBRARY POKE DID NOT FORCE CANNON: applied "
+             "(0x020008a0:0x019d, 0x02004c20:0x8062 -- chip_compare.library_pokes()'s own "
+             "formula, marking chip id 1/Cannon owned) before the window opens, then A@130 "
+             "picked whatever sits in the window's default cursor slot regardless -- watched "
+             "HAND_SLOT (0x020349c2) settle at chip id 5 (Vulcan1, already in this project's own "
+             "43-chip scoreboard as demo-vulcan) at capture frame 212, not 1. A second attempt "
+             "(4 Left-presses at 130/140/150/160 before picking, hoping to reach a different "
+             "slot) landed on the SAME chip 5 -- NOT CHASED FURTHER given the time this ticket "
+             "had: the offered set is very likely drawn from this save's own equipped folder, "
+             "not from the ownership 'library' library_pokes() edits (which only affects hand-"
+             "VALIDATION post-pick, per that function's own docstring), so forcing a SPECIFIC "
+             "offered chip likely needs either finding the folder/deck's own RAM address or "
+             "poking a per-slot offer buffer neither this session nor TRANSFER.md's existing "
+             "notes have located. Chip 5 (Vulcan1) served the premise test just as well -- see "
+             "the ticket report. MegaMan CurState/CurAction (0x0203a9b0+8/+9) settle at (4,8) -- "
+             "the ticket's own documented idle baseline -- 48 frames after the window closes; "
+             "this state is built at frames=280 (230 to close + 50 margin) so IT ALREADY shows "
+             "(4,8) at load, verified by --peek immediately after loading with no frames run.",
+    ),
 ]
 
 BY_NAME = {s.name: s for s in STATES}
@@ -439,6 +496,8 @@ def run_capture(state, out_dir, count, extra=()):
         cmd += ["--loadstate", state.base]
     for c in state.cheats:
         cmd += ["--cheat", c]
+    for p in state.pokes:
+        cmd += ["--poke", p]
     for p in state.poke_at:
         cmd += ["--poke-at", p]
     if state.script:
