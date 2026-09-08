@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 
 ENTRIES=(
   # 1. The whole game.
-  "default rollup Rollup: the whole battle at once -- chip select, the fight, the results"
+  "default rollup Full battle vs one Mettaur: white intro, BATTLE START!, chip select, the fight, ENEMY DELETED, results"
 
   # 2. The pixel-parity fixtures: each one is compared with the real ROM by
   #    tools/regress.py and each is at zero.
