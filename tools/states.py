@@ -233,6 +233,59 @@ STATES = [
              "read 0. The arrival is inside the window and not at frame 0, "
              "which is what pair 4 asked for.",
     ),
+    State(
+        name="chip_ready",
+        path="/tmp/chip_ready.state",
+        root=False,
+        rom=STERILE,
+        base=PAUSED,
+        script="Start@10",
+        cheats=(),
+        frames=50,
+        description="Wave 3b ticket step 1, KEPT AS THE RECORD OF A TRIED "
+                     "AND REJECTED FIX -- NOT LOADED BY ANYTHING IN "
+                     "tools/harness.py. PAUSED's own hand-made snapshot "
+                     "leaves a ~528px OAM 'portrait box' (objects 0-1, tiles "
+                     "948-959, palette 12, top-left) sitting in VRAM from "
+                     "whatever the chip window was doing when the state was "
+                     "captured by hand -- present at every chip/cannon "
+                     "capture's canon frames 43-48. This state is PAUSED "
+                     "run forward through real input (Start@10 only, enemy "
+                     "left alive) to frame 50, then saved -- the attempt "
+                     "was to reach a clean, reloadable base past the "
+                     "garbage. See the note for why it does not actually "
+                     "do that.",
+        note="VERIFIED, in TWO ROUNDS, that this does not work (this "
+             "ticket). ROUND 1: the portrait garbage turns out to clear "
+             "only as a side effect of the enemy's OWN death/dissolve "
+             "processing running -- a parallel run that keeps the enemy "
+             "alive the whole time never clears it (out to 390 frames "
+             "tried), so an EARLIER build of this state also deleted the "
+             "enemy (matching the downstream recipe's timing) to make the "
+             "garbage clear. That broke chip-firing entirely: pressing A "
+             "at ANY delta (1 through 120 frames) after loading a state "
+             "where the enemy is already dead produces IDENTICAL output "
+             "regardless of timing -- the input is silently ignored "
+             "(ordinary movement input, tested the same way, DOES work "
+             "after the same reload, so this is specific to the attack "
+             "command). ROUND 2 (this build, cheats=() -- the enemy is "
+             "left alive during the build, matching PAUSED's own "
+             "property): fireability is preserved, but the portrait "
+             "garbage then NEVER clears (verified live: still present, "
+             "unchanged, at frame 0 of a reload built this way) -- the "
+             "two requirements are mutually exclusive for a single base "
+             "state; there is no `frames=` value that gets both. Chasing "
+             "the actual ROM-code gate for the chip-fire refusal (traced "
+             "to `sub_800938A`/`sub_800801C` in asm00_1.s, see "
+             "tools/harness.py's own comment by ALIGN_CHIP) did not "
+             "resolve it either: patching the compare that gate uses did "
+             "not restore firing after a save/reload past the dissolve. "
+             "tools/harness.py's chip/cannon rows load PAUSED directly, "
+             "unchanged, with the ORIGINAL 'Start@10,A@40' script -- the "
+             "14388/2350 shared baseline this state was meant to fix is "
+             "reported honestly, not silently carried by a state that "
+             "looks like a fix but is not one.",
+    ),
 ]
 
 BY_NAME = {s.name: s for s in STATES}

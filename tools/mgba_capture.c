@@ -15,6 +15,14 @@
  *   --press-A <ticks>  hold the A button down for <ticks> frames, starting at
  *                      frame 60. A debug or demo hand fires on A, so this
  *                      drives the attack without any window or key timers.
+ *   --only-bg <n>      leave exactly BG layer <n> on, everything else
+ *                      (including OBJ and both windows) off.
+ *   --only-bg-with-obj <n>  the same single-BG isolation as --only-bg, but
+ *                      leaves OBJ (and WIN0/WIN1) alone instead of forcing
+ *                      them off too -- for isolating a sprite (a cursor, an
+ *                      enemy) against one BG layer at a time. Does not
+ *                      change what --only-bg or --disable-obj do.
+ *   --disable-obj      turn OBJ (sprites) off, leave every BG layer alone.
  *
  * Each frame is written to <outdir>/frame.####.rgb as raw 32-bit native GBA
  * pixels (240*160*4 bytes), which tools/mgba_frames.py decodes to PNG.
@@ -358,13 +366,27 @@ int main(int argc, char** argv) {
 
 	/* `--disable-obj` turns the sprites off and leaves the BG layers on, and
 	 * `--only-bg <n>` leaves exactly one BG layer on and turns everything else
-	 * off. Both are for tile parity: with the objects gone, a whole-frame diff
-	 * is a diff of the tilemaps alone, and one layer at a time says which
-	 * layer a difference is in. */
+	 * (OBJ included) off. Both are for tile parity: with the objects gone, a
+	 * whole-frame diff is a diff of the tilemaps alone, and one layer at a
+	 * time says which layer a difference is in.
+	 *
+	 * `--only-bg-with-obj <n>` (AUDIT wave 3b ticket step 3): the SAME single
+	 * -BG-layer isolation as `--only-bg`, but leaves OBJ (and WIN0/WIN1) alone
+	 * instead of forcing them off -- for isolating a sprite (a cursor, a
+	 * scrolling wave enemy) against exactly one BG layer at a time, which
+	 * neither existing flag can do (`--only-bg` always drops OBJ with it,
+	 * `--disable-obj` never isolates to one BG). A separate flag rather than
+	 * a new argument shape for `--only-bg`, so every existing caller of
+	 * `--only-bg` or `--disable-obj` is completely unaffected -- same flags,
+	 * same behaviour, same output for the same input. */
 	for (int i = 4; i < argc; ++i) {
 		int only = -1;
+		bool keep_obj = false;
 		if (strcmp(argv[i], "--only-bg") == 0 && i + 1 < argc) {
 			only = atoi(argv[i + 1]);
+		} else if (strcmp(argv[i], "--only-bg-with-obj") == 0 && i + 1 < argc) {
+			only = atoi(argv[i + 1]);
+			keep_obj = true;
 		} else if (strcmp(argv[i], "--disable-obj") != 0) {
 			continue;
 		}
@@ -374,13 +396,15 @@ int main(int argc, char** argv) {
 			fprintf(stderr, "could not reach GBA renderer\n");
 			continue;
 		}
-		gba->video.renderer->disableOBJ = true;
+		gba->video.renderer->disableOBJ = !keep_obj;
 		if (only >= 0) {
 			for (int b = 0; b < 4; ++b)
 				gba->video.renderer->disableBG[b] = (b != only);
-			gba->video.renderer->disableWIN[0] = true;
-			gba->video.renderer->disableWIN[1] = true;
-			fprintf(stderr, "left only BG%d on\n", only);
+			if (!keep_obj) {
+				gba->video.renderer->disableWIN[0] = true;
+				gba->video.renderer->disableWIN[1] = true;
+			}
+			fprintf(stderr, keep_obj ? "left only BG%d and OBJ on\n" : "left only BG%d on\n", only);
 			++i;
 		} else {
 			fprintf(stderr, "disabled OBJ layer\n");
