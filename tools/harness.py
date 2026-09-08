@@ -134,6 +134,26 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     struct.pack_into("<H", buf, 26, descriptor.get("scroll_yq", 0xFFFF))
     struct.pack_into("<H", buf, 28, descriptor.get("gauge_tick", 0xFFFF))
     struct.pack_into("<H", buf, 30, descriptor.get("fire_frame", 0xFFFF))
+    # +32 enemy_hp: src/fixture.rs's ACTUAL sentinel is 0 (its own doc: "0 =>
+    # the kind's own sensible default"), not FIXTURE.md's stated 0xFFFF --
+    # see this ticket's report. Defaulting here to 0 matches the code that
+    # reads it, not the (wrong) prose.
+    struct.pack_into("<H", buf, 32, descriptor.get("enemy_hp", 0))
+    # +34..39 deck_count/deck, +40 start_state, +41 result_level, +42
+    # result_frames, +44 result_zenny, +46 banner_at: FIXTURE.md's fields
+    # added after wave 2, none read by src/fixture.rs yet (wave 3's
+    # `fixture-gaps` agent, running in parallel -- see Check.pending_src).
+    # Written anyway, per the ticket: a descriptor is legal input the moment
+    # a field lands, with no harness change needed.
+    deck = descriptor.get("deck", [])
+    buf[34] = descriptor.get("deck_count", len(deck))
+    for i in range(5):
+        buf[35 + i] = deck[i] if i < len(deck) else 0
+    buf[40] = descriptor.get("start_state", 0)
+    buf[41] = descriptor.get("result_level", 0)
+    struct.pack_into("<H", buf, 42, descriptor.get("result_frames", 0))
+    struct.pack_into("<H", buf, 44, descriptor.get("result_zenny", 0))
+    struct.pack_into("<H", buf, 46, descriptor.get("banner_at", 0xFFFF))
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -361,6 +381,16 @@ class Check:
     rust: Callable[[str], Side]
     canon: Callable[[str], Side]
     canon_variant: str = "canon"  # AUDIT pair 16: name the canon variant. "canon (sterile)" for a patched original.
+    #: AUDIT wave 3 ticket step 1: non-empty when this check's rust side
+    #: cannot be expressed by today's FIXTURE.md descriptor -- the offered
+    #: deck (window/card/cursor), start_state (result) or banner_at (banner)
+    #: fields the `fixture-gaps` agent is adding in parallel, at the offsets
+    #: FIXTURE.md documents but src/fixture.rs does not read yet. The
+    #: descriptor is still written (fixture_cheats() covers every FIXTURE.md
+    #: field), so the check "lights up" the moment that field is read --
+    #: nothing here needs to change. Purely informational: does not affect
+    #: pass/fail, only how the row is reported.
+    pending_src: str = ""
 
 
 def _cannon_canon(ui: str) -> Side:
@@ -371,6 +401,125 @@ def _cannon_canon(ui: str) -> Side:
     # step needs a throwaway capture of its own to peek the state's
     # library, which does not fit the static-Side model below).
     return Side(rom=STERILE, capture_fn=lambda out, count: cc.capture_real("01", out, count))
+
+
+# --------------------------------------------------------------------------
+# The 43-chip scoreboard (AUDIT pair 14, ticket step 2). ONE plain build,
+# chip chosen at runtime by a fixture descriptor -- "sterile arena (enemies
+# 0), hand = that chip, auto-fire on", exactly what
+# `demo-sterile,demo-<chip>,demo-auto` used to build 43 times over. The
+# fixture row is `_cannon_canon`'s own table entry (fixture.rs's
+# "demo-sterile,demo-cannon,demo-auto" row) generalised to any chip id:
+# flags 0x1F (open-window | blank-hud | blank-backdrop | auto-fire |
+# skip-intro), fire_frame 90 -- AUTO_FIRE_GAP, battle.rs confirms it seeds
+# and reseeds `auto_ticks` exactly as the old demo-auto harness did.
+#
+# Alignment is the SAME for every chip, not searched per-chip: canon_ref=43
+# is chip_compare.py's REAL_START (A pressed at 40, the attack begins at
+# 43, independent of which chip), and the rust marker origin (1, verified
+# live against the existing `cannon` check above -- SAME descriptor family,
+# flags 0x1F) plus a 26-frame band finds the SAME unique zero at offset 122
+# the `cannon` check already uses -- reusing its Align object rather than
+# re-deriving it.
+#
+# THE ISOLATED RESIDUE IS REAL, BOUNDED, AND NOT FROM THIS PORT. Full-screen
+# (pair 6) surfaces two artifacts the old x<140/y>=40 box hid, both traced
+# to the PAUSED save state itself (built by hand while the chip window was
+# closing) rather than to anything this ticket changed:
+#   1. A ~694px "portrait box" (OAM objects 0-1, tiles 948-959, palette 12,
+#      top-left) for exactly canon frames 43-48 (6 frames), then gone.
+#   2. The enemy, deleted by cheat (HP forced to 0) rather than hidden, does
+#      not vanish on frame 1 -- it dissolves over ~100 frames, same as
+#      chip_compare.py's own doc says ("Cannon scores 0 with the enemy
+#      deleted and 346 px/frame with it hidden" -- hidden is WORSE, see
+#      below).
+# NEITHER IS FIXABLE WITH --zero: verified directly (this ticket) by
+# zeroing the portrait box's own tile range (0x6017680:384) and, for
+# comparison, the ENTIRE OBJ tile VRAM (0x6010000:0x8000) -- the enemy body
+# vanishes (it is genuinely OBJ, confirmed by it also vanishing under
+# --disable-obj alone) but the portrait box does not, under EITHER --zero
+# OR --disable-bg OR --disable-obj. tools/patch_sterile.py's own comment on
+# the ENEMY DELETED banner explains why: "the harness writes before each
+# frame and the game uploads the banner during the very frame that shows
+# it" -- a --zero write that happens before runFrame() loses to game code
+# that re-uploads the tile during that same frame, which is exactly what an
+# in-progress transition (a closing window, a dissolving corpse) does and a
+# settled, idle sprite does not (confirmed: the SAME zero technique removes
+# a merely-alive, non-transitioning Mettaur outright, tools/harness.py's
+# `field`/`warp`/`buster`/`chip-use` below). Fixing it the way the banner
+# was fixed needs a ROM CODE patch (patch_sterile.py's technique, off limits
+# to this ticket) to whatever routine draws the portrait box, not a bigger
+# --zero. NOT switching to --hide-enemy (immortal + blanked tiles) as the
+# default either: chip_compare.py's own measurement is that hiding a live
+# target costs MORE (346 px/frame, sparks/damage numbers/Full Synchro) than
+# deleting one -- see its module docstring. Reported here, not boxed away.
+ALIGN_CHIP = Align(
+    canon_ref=43,
+    search=range(110, 136),
+    note="canon: chip_compare.py's REAL_START=43, chip-independent. rust: "
+         "marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, "
+         "same as the `cannon` check above) plus a 26-frame band -- unique zero "
+         "at offset 122 for every chip verified (same descriptor family as "
+         "`cannon`, which this reuses rather than re-derives).",
+)
+
+def _chip_pokes(chip_hex: str) -> Tuple[str, ...]:
+    """cc.library_pokes() returns a flat ['--poke', 'addr:val', ...] list
+    (it is built to be spliced straight into a subprocess argv); Side.pokes
+    wants just the 'addr:val' halves, which args() re-adds the flag for."""
+    raw = cc.library_pokes(int(chip_hex, 16))
+    return tuple(raw[i] for i in range(1, len(raw), 2))
+
+
+def plain_rom() -> str:
+    """ONE plain build (no demo-* feature) -- AUDIT pair 14 -- for every
+    fixture-descriptor check in this file, cached by build_feature_rom()
+    the same way a demo-feature build is, keyed on the empty string."""
+    return build_feature_rom("")
+
+
+def _chip_rust(chip_hex: str) -> Callable[[str], Side]:
+    desc = {
+        "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
+        "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
+        "flags": 0x1F, "fire_frame": 90,
+    }
+    return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
+
+
+def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
+                banner_zero: bool = True) -> Callable[[str], Side]:
+    def make(ui: str) -> Side:
+        cheats = list(ALIVE if hide_enemy else ("0x0203ab84:0", "0x0203ab86:0"))
+        cheats.append("%s:0x%s" % (cc.HAND_SLOT, chip_hex))
+        zero = []
+        if banner_zero:
+            zero.append(cc.BANNER_TILES)
+        if hide_enemy:
+            zero.append(cc.ENEMY_TILES)
+        return Side(rom=STERILE, loadstate=PAUSED, cheats=tuple(cheats),
+                    pokes=_chip_pokes(chip_hex), zero=tuple(zero),
+                    script="Start@10,A@%d" % a_frame, extra=("--disable-bg",))
+    return make
+
+
+def _chip_checks() -> List[Check]:
+    import scoreboard
+    out: List[Check] = []
+    for feature, chip_hex, frames, extra in scoreboard.CHIPS:
+        name = "chip-" + feature[len("demo-"):]
+        hide_enemy = "--hide-enemy" in extra
+        banner_zero = "--no-banner-zero" not in extra
+        out.append(Check(
+            name=name,
+            ui="isolated",
+            frames=frames,
+            align=ALIGN_CHIP,
+            rust=_chip_rust(chip_hex),
+            canon=_chip_canon(chip_hex, hide_enemy=hide_enemy, banner_zero=banner_zero),
+            canon_variant="canon (sterile)",
+        ))
+    return out
 
 
 CHECKS: List[Check] = [
@@ -433,6 +582,448 @@ CHECKS: List[Check] = [
         canon_variant="canon (sterile)",
     ),
 ]
+
+CHECKS.extend(_chip_checks())
+
+# --------------------------------------------------------------------------
+# The remaining regress.py checks (AUDIT.md "First job after the audit" /
+# wave 3 ticket step 1). Same recipe throughout: a plain build plus a
+# fixture descriptor taken from src/fixture.rs's verified table wherever it
+# is expressible, full-screen diff (pair 6), marker-aligned (pair 1) with a
+# small search band replacing regress.py's raw-frame lag (which was
+# boot-length-relative and is now origin-relative), `pending_src` set where
+# the descriptor cannot say what the check needs yet.
+
+#: demo-hudmatch's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
+#: Marker origin measured live (this ticket): 8, same family as
+#: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
+HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=60,
+                megaman_col=3, megaman_row=2, hand=[1], hand_count=1, gauge=1,
+                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724)
+HUDMATCH_ORIGIN = 8
+
+
+def _tiles_gauge(name: str, subject_note: str) -> Check:
+    # regress.py's TILES_REAL_FRAME=44, TILES_RUST_FRAMES=range(433,438)
+    # (center 435) -- both checks used the SAME capture, just different
+    # boxes. Full screen (pair 6) makes them the SAME comparison; kept as
+    # two named rows for continuity with regress.py, not because the
+    # numbers will differ. offset center = 435 - HUDMATCH_ORIGIN(8) = 427;
+    # an 8-frame window (not 1) so the alignment is a rate, not a still
+    # picture (pair 10's own lesson from `window`/`card`).
+    return Check(
+        name=name,
+        ui="both",
+        frames=8,
+        align=Align(
+            canon_ref=44,
+            search=range(415, 440),
+            note="canon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a "
+                 "documented scripted landing, not searched). rust: marker origin 8 "
+                 "(demo-hudmatch's own family) plus a 25-frame band around regress.py's old "
+                 "center (435-8=427) -- %s. NOT boxed: regress.py split this same capture "
+                 "into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely "
+                 "because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the "
+                 "gauge's stripe animation) that would otherwise contaminate a background-only "
+                 "reading -- full screen (pair 6) can no longer keep them apart by cropping, so "
+                 "both rows now read the SAME whole-screen number and the HUD defect is "
+                 "reported (and allowlisted, not hidden) on both." % subject_note,
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=HUDMATCH,
+                             extra=() if ui == "integrated" else ("--disable-obj",)),
+        canon=lambda ui: Side(rom=REAL, loadstate=PAUSED, script="Start@10",
+                              extra=() if ui == "integrated" else ("--disable-obj",)),
+        canon_variant="canon",
+    )
+
+
+#: AUDIT pair 3's standard: "arena checks run with zero enemies." field,
+#: warp, buster and chip-use are not about the enemy (mettaur/wave keep a
+#: real one, below, because they ARE about it), so their old ALIVE-mettaur
+#: setup -- an enemy acting on an RNG the two sides do not share, sitting
+#: right there for a full-screen diff to trip over -- is replaced with a
+#: genuinely empty arena: the fixture's own `enemies: 0`, and, on the canon
+#: side, the enemy DELETED (not merely hidden -- see DELETE_ENEMY's own
+#: comment just below for why --hide-enemy's immortal-but-alive enemy turned
+#: out not to be inert either). Marker origin 8 (measured live, same family
+#: as demo-field/demo-open -- no HUD/backdrop blanking).
+#: hand=[]: PAUSED's own queued Cannon-icon (tools/states.py: "Cannon40
+#: already queued in the hand") turns out NOT to be permanent -- verified
+#: live (this ticket): by the real capture frame these checks now compare
+#: from (130+, past the DELETE dissolve), the icon is already gone on the
+#: canon side, so an empty rust hand is the match, not hand=[1] (tried
+#: first, against the pre-dissolve-wait frame 90 -- wrong once the compare
+#: window moved).
+ZERO_ENEMY = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2,
+                  hand=[], hand_count=0, gauge=0, flags=0x11)
+ZERO_ENEMY_ORIGIN = 8
+
+#: `chip-use` alone: an A press with an empty hand uses nothing, so this
+#: variant carries Cannon (PAUSED's own queued chip) the way FIELD_ROW does.
+ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
+
+#: DELETE, not --hide-enemy: verified live (this ticket, on `field`) that an
+#: immortal-but-alive Mettaur is NOT actually inert -- it keeps acting on
+#: its own AI (digging, sparking), and those effects live outside
+#: ENEMY_TILES/BANNER_TILES, so --hide-enemy leaves a large, moving,
+#: unexplained residue behind. Deleting it (HP forced to 0, chip_compare.py's
+#: default for chips that do not need a target) DOES eventually go fully
+#: quiet -- verified live: `--dump 0x7000000:1024` after
+#: STERILE+PAUSED+delete+Start@10 has zero non-empty OAM objects on the
+#: enemy's side of the screen by capture frame 110 (empty at 110/120/130/
+#:140/150, not just fading). So every zero-enemy check below starts its
+#: comparison at real frame >=130 -- comfortably past the dissolve, not
+#: mid-transition -- rather than trying to --zero a moving target.
+DELETE_ENEMY = ("0x0203ab84:0", "0x0203ab86:0")
+
+
+def _zero_enemy_canon(script: str) -> Callable[[str], Side]:
+    def make(ui: str) -> Side:
+        return Side(rom=STERILE, loadstate=PAUSED, cheats=DELETE_ENEMY,
+                    script=script,
+                    extra=() if ui == "integrated" else ("--disable-bg",))
+    return make
+
+
+def _zero_enemy_rust(script: Optional[str] = None) -> Callable[[str], Side]:
+    def make(ui: str) -> Side:
+        return Side(rom=plain_rom(), fixture=ZERO_ENEMY, script=script,
+                    extra=() if ui == "integrated" else ("--disable-bg",))
+    return make
+
+
+def held(key: str, first: int, n: int) -> str:
+    """A key script that holds `key` for `n` frames from `first` --
+    regress.py's own helper (unchanged; regress.py itself is not edited)."""
+    return ",".join("%s@%d" % (key, first + j) for j in range(n))
+
+
+#: demo-field's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
+#: enemy_hp: 0xFFFF here is not "use the default" (see fixture_cheats()'s
+#: comment on that sentinel mismatch) -- it is the LITERAL value
+#: demo-field's own Rust source bakes in (FIELDMATCH_HP) and what the real
+#: capture's `--cheat 0x0203ab84/86:0xffff` (ALIVE, below) pins the real
+#: Mettaur's HP to: a huge number that is never going to reach 0, not a
+#: sentinel. Marker origin 8 (measured live), same family as demo-open.
+FIELD_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=100,
+                 megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=0,
+                 flags=0x11, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                 enemy_hp=0xFFFF)
+FIELD_ORIGIN = 8
+
+#: demo-custmatch's row (demo-cardname is a feature alias, not a different
+#: descriptor -- fixture.rs's table). The offered deck is NOT expressible
+#: yet (FIXTURE.md +34..39, not read by src/fixture.rs -- pending_src).
+#: Marker origin 8 (measured live).
+CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=100,
+                     megaman_col=3, megaman_row=2, hand=[], hand_count=0, gauge=1,
+                     flags=0x11)
+CUSTMATCH_ORIGIN = 8
+
+#: demo-resultmatch's row. start_state is NOT expressible yet (FIXTURE.md
+#: +40, not read -- pending_src). Marker origin 8 (measured live).
+RESULTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=60,
+                       megaman_col=3, megaman_row=2, hand=[], hand_count=0, gauge=0,
+                       flags=0x11)
+RESULTMATCH_ORIGIN = 8
+
+#: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
+#: read -- pending_src). Marker origin 1 (measured live -- blanks HUD and
+#: backdrop, same family as the chip scoreboard).
+BANNER_ROW = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2, hand=[],
+                  hand_count=0, gauge=0, flags=0x17, banner_at=100)
+BANNER_ORIGIN = 1
+
+CHIPSELECT = "/tmp/chipselect.state"
+NOENEMY = "/tmp/noenemy2.state"
+RESULT_ARRIVAL = "/tmp/result_arrival.state"
+#: regress.py's cursor walk script, reused verbatim (real side unchanged by
+#: this ticket).
+_CURSOR_WALK_REAL = ",".join(held("Left", 20 + 30 * k, 6) for k in range(5))
+_CURSOR_WALK_RUST = ",".join(held("Left", 250 + 30 * k, 6) for k in range(5))
+
+PORTED_CHECKS: List[Check] = [
+    _tiles_gauge("tiles", "regress.py's `tiles`: backgrounds below the HUD"),
+    _tiles_gauge("gauge", "regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect"),
+    Check(
+        name="field",
+        ui="both",
+        frames=40,
+        align=Align(
+            canon_ref=130,
+            search=range(60, 110),
+            note="AUDIT pair 3: an empty arena, not the old ALIVE-mettaur setup (an enemy "
+                 "acting on an RNG the two sides do not share -- exactly what pair 3 calls "
+                 "out). canon_ref=130: the enemy is DELETED, not hidden (see DELETE_ENEMY's "
+                 "comment above for why), and 130 is comfortably past frame 110, verified live "
+                 "as the last frame with any dissolve OAM at all. rust: marker origin 8 plus a "
+                 "wide band -- the picture is static once settled, so a wide band costs "
+                 "nothing and does not need a sharp-minimum argument the way a moving subject "
+                 "does. frames=40, not 20: the idle navi's own pose settles once more around "
+                 "canon frame 164 (k=34) -- a genuine one-time transition, not periodic -- and "
+                 "pair 10's negative fixture is BLIND without it in the window (a fully frozen "
+                 "40-frame stretch cannot tell a 1-frame canon shift from no shift at all).",
+        ),
+        rust=_zero_enemy_rust("Start@10"),
+        canon=_zero_enemy_canon("Start@10"),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="warp",
+        ui="both",
+        frames=30,
+        align=Align(
+            canon_ref=130,
+            search=range(30, 70),
+            note="canon: Right/Down/Left/Up held 3 frames each starting real 130 (past the "
+                 "DELETE dissolve, see `field`'s note; regress.py's old real 60/80/100/120 "
+                 "shifted by the same +70 the dissolve wait needs), canon_ref=130 = the first "
+                 "press. rust: the SAME held-key SHAPE at battle-relative frames 50/70/90/110 "
+                 "(marker origin 8 + those, no dissolve to wait out on this side -- it never "
+                 "had an enemy) instead of regress.py's old cold-boot guesses (130/150/170/190, "
+                 "tuned to a boot length that moves); a 40-wide search band around the first "
+                 "press covers plausible input-lag between a resumed real battle and a fresh "
+                 "fixture one. Full-screen pixel diff (pair 6) replaces regress.py's own coarse "
+                 "blue-pixel position tracking -- strictly more rigorous, not a relaxation.",
+        ),
+        rust=_zero_enemy_rust(",".join([held("Right", 8 + 50, 3), held("Down", 8 + 70, 3),
+                                        held("Left", 8 + 90, 3), held("Up", 8 + 110, 3)])),
+        canon=_zero_enemy_canon(",".join(["Start@10", held("Right", 130, 3), held("Down", 150, 3),
+                                          held("Left", 170, 3), held("Up", 190, 3)])),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="buster",
+        ui="both",
+        frames=32,
+        align=Align(
+            canon_ref=150,
+            search=range(90, 130),
+            note="canon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, "
+                 "Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE "
+                 "dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at "
+                 "battle-frame 100/101 (marker origin 8 + 100/101), not the first tried "
+                 "(origin+22) -- verified live that a press that early is BEFORE the navi is "
+                 "free to act at all (the diff at that offset was the SAME idle-pose-settling "
+                 "transition `field` has, not a shot); battle-frame 100 is well past it, in the "
+                 "same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).",
+        ),
+        rust=_zero_enemy_rust(held("B", 8 + 100, 2)),
+        canon=_zero_enemy_canon("Start@10," + held("B", 150, 2)),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="chip-use",
+        ui="both",
+        frames=32,
+        align=Align(
+            canon_ref=150,
+            search=range(90, 130),
+            note="Same shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the "
+                 "DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is "
+                 "what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] "
+                 "(Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A "
+                 "press use nothing at all, which is what the first attempt at this check did.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=ZERO_ENEMY_WITH_HAND,
+                             script=held("A", 8 + 100, 2),
+                             extra=() if ui == "integrated" else ("--disable-bg",)),
+        canon=_zero_enemy_canon("Start@10," + held("A", 150, 2)),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="wave",
+        ui="isolated",
+        frames=90,
+        align=Align(
+            canon_ref=71,
+            search=range(178, 202),
+            note="Enemy IS the subject (AUDIT pair 3: mettaur and wave get their own checks "
+                 "rather than a zero-enemy arena). canon: STERILE+PAUSED+ALIVE, Start@10, "
+                 "--disable-obj (panel lighting is BG, not sprites) -- canon_ref=71 unchanged "
+                 "from regress.py's check_wave (the shockwave's first visible hop). rust: "
+                 "FIELD_ROW through the descriptor (not the demo-field FEATURE `mettaur` above "
+                 "still uses -- this is the wave 3 cutover) -- marker origin 8 plus a band "
+                 "around regress.py's old compared rust frame (start=71 PLUS lag[120,132] = "
+                 "191..203, 183..195 once origin is subtracted).",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-obj",)),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
+                              extra=("--disable-obj",)),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="window",
+        ui="isolated",
+        frames=16,
+        align=Align(
+            canon_ref=55,
+            search=range(215, 245),
+            note="pending-src (FIXTURE.md's offered-deck field, +34..39, not read by "
+                 "src/fixture.rs yet). canon: REAL+CHIPSELECT unchanged. rust: CUSTMATCH_ROW "
+                 "through the descriptor -- marker origin 8 plus a band around regress.py's "
+                 "old compared rust frame (its own start=55 PLUS lag[174,190] = 229..245, not "
+                 "lag alone -- 221..237 once origin is subtracted). Will not read 0 until the "
+                 "deck field lands: with no offered-deck field the window opens on a random "
+                 "folder-derived deck, not the real capture's Vulcan1/AirShot/Sword/MiniBomb/"
+                 "Cannon stack.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT),
+        canon_variant="canon",
+        pending_src="offered deck (FIXTURE.md +34..39)",
+    ),
+    Check(
+        name="card",
+        ui="isolated",
+        frames=16,
+        align=Align(
+            canon_ref=144,
+            search=range(205, 240),
+            note="pending-src, same field as `window`. canon: REAL+CHIPSELECT, the SAME "
+                 "5-press-Left script as `cursor` below. rust: CUSTMATCH_ROW (demo-cardname is "
+                 "a feature alias for demo-custmatch with no cfg site of its own -- same "
+                 "descriptor) with the same script -- marker origin 8 plus a band around "
+                 "regress.py's old compared rust frame (start=144 PLUS lag[74,96] = 218..240, "
+                 "210..232 once origin is subtracted).",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_REAL),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
+        canon_variant="canon",
+        pending_src="offered deck (FIXTURE.md +34..39)",
+    ),
+    Check(
+        name="cursor",
+        ui="isolated",
+        frames=170,
+        align=Align(
+            canon_ref=15,
+            search=range(225, 250),
+            note="AUDIT ticket step 5: 'cursor... just broke on a hardcoded lag... marker "
+                 "alignment is the fix.' The offered deck is STILL pending-src (same field as "
+                 "`window`/`card`), so this keeps building the rust side from the "
+                 "demo-custmatch FEATURE (not yet a descriptor) -- but the old fixed "
+                 "CURSOR_LAG=230 constant is GONE, replaced with marker origin (8, measured "
+                 "live for this exact feature build) plus a search band around regress.py's old "
+                 "compared rust frame (start=15 PLUS CURSOR_LAG=230 = 245, 237 once origin is "
+                 "subtracted), so a future boot-length shift (the ONE THING that broke this, 0 "
+                 "-> 602 pixels, all of it one frame of 170) self-corrects instead of silently "
+                 "drifting. Script unchanged from regress.py (5 Left-presses, 30 frames apart); "
+                 "box removed, full screen, all 170 frames.",
+        ),
+        rust=lambda ui: Side(features="demo-custmatch", script=_CURSOR_WALK_RUST),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
+        canon_variant="canon",
+    ),
+    Check(
+        name="result",
+        ui="isolated",
+        frames=40,
+        align=Align(
+            canon_ref=0,
+            search=range(1, 60),
+            note="pending-src (FIXTURE.md's start_state, +40, not read by src/fixture.rs "
+                 "yet). canon: RESULT_ARRIVAL (AUDIT pair 4/tools/states.py, wave 1's `states` "
+                 "agent) -- captured 32 frames earlier than regress.py's old NOENEMY, so the "
+                 "window's WHOLE slide-in (frames 21..32 of a 40-frame capture, per "
+                 "states.py's own measurement) is inside the window instead of already over: "
+                 "strictly more than regress.py's check_result ever compared. rust: "
+                 "RESULTMATCH_ROW through the descriptor -- will not read 0 until start_state "
+                 "lands, since a plain battle at frame ~1 looks nothing like a battle already "
+                 "resolved into RESULT.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=RESULTMATCH_ROW),
+        canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
+        canon_variant="canon",
+        pending_src="start_state (FIXTURE.md +40)",
+    ),
+    Check(
+        name="banner",
+        ui="isolated",
+        frames=58,
+        align=Align(
+            canon_ref=49,
+            search=range(115, 145),
+            note="pending-src (FIXTURE.md's banner_at, +46, not read by src/fixture.rs yet). "
+                 "canon: /tmp/bn6f_banner.gba (tools/patch_sterile.py --keep-banner, already "
+                 "built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from "
+                 "regress.py's check_banner. rust: BANNER_ROW through the descriptor (marker "
+                 "origin 1, blanked HUD/backdrop family) plus a band around regress.py's old "
+                 "rust_start=132 (132-1=131). Will not read 0 until banner_at lands: nothing "
+                 "in a plain fixture battle raises ENEMY DELETED on any particular frame.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=BANNER_ROW, extra=("--disable-bg",)),
+        canon=lambda ui: Side(rom="/tmp/bn6f_banner.gba", loadstate=PAUSED,
+                              cheats=("0x0203ab84:0", "0x0203ab86:0"), script="Start@10",
+                              extra=("--disable-bg",)),
+        canon_variant="canon (banner-patched, sterile otherwise)",
+        pending_src="banner_at (FIXTURE.md +46)",
+    ),
+    Check(
+        name="popup",
+        ui="isolated",
+        frames=80,
+        align=ALIGN_CHIP,
+        rust=_chip_rust("b1"),
+        canon=_chip_canon("b1", hide_enemy=True, banner_zero=False),
+        canon_variant="canon (sterile)",
+        # No pending_src -- this is fully expressible today. Kept as its own
+        # named row (regress.py's check_popup, Invisibl b1 as the
+        # representative) rather than five: the OTHER four family-0x15
+        # chips (AreaGrab a3, Barrier b2, Barr100 b3, Barr200 b4) are
+        # already the 43-chip scoreboard's own chip-areagrab/chip-barrier/
+        # chip-barr100/chip-barr200 rows above, same recipe, not
+        # duplicated here.
+    ),
+]
+
+CHECKS.extend(PORTED_CHECKS)
+
+
+#: rollup (AUDIT ticket step 1): not a comparison -- a no-crash check, run
+#: through the SAME capture path (cc.capture / mgba_capture) every other
+#: check here uses, per the ticket ("keep it as one, but run it through the
+#: harness's capture path"). regress.py's own method, reimplemented here
+#: rather than imported (regress.py is not edited by this ticket): three
+#: long input scripts on the plain build, watching for a frame that is more
+#: than half pure white AND still is 150 frames later (agb's crash screen
+#: never clears; a battle-opening white hold, ~71 frames on this build,
+#: always does).
+ROLLUP_WALKS = [
+    ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left", "Right", "Up"],
+    ["Up", "Left", "Down", "Left", "Up", "Right", "Down", "Left"],
+    ["Right", "Right", "Up", "Down", "Left", "Up", "Right", "Down", "Down"],
+]
+ROLLUP_FRAMES = 2600
+ROLLUP_LINGER = 150
+
+
+def run_rollup() -> Tuple[int, str]:
+    rom = plain_rom()
+    last = ROLLUP_FRAMES - 50
+    total, notes = 0, []
+    for w, keys in enumerate(ROLLUP_WALKS):
+        script = [held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, last, 19))]
+        script += [held("B", at, 2) for at in range(70, last, 11)]
+        script += [held("A", at, 2) for at in range(100, last, 37)]
+        out = cc.scratch("h_rollcap%d" % w)
+        cc.capture(rom, out, ROLLUP_FRAMES, "--script", ",".join(script))
+
+        def crashed(i):
+            px = cc.frame_array(out, i)
+            sampled = px[0:160:2, 0:240:2]
+            white = int(np.count_nonzero(np.all(sampled == 255, axis=-1)))
+            return white > sampled.shape[0] * sampled.shape[1] // 2
+
+        bad = [i for i in range(60, ROLLUP_FRAMES - ROLLUP_LINGER, 5)
+               if crashed(i) and crashed(i + ROLLUP_LINGER)]
+        subprocess.run(["rm", "-rf", out], check=True)
+        total += len(bad)
+        if bad:
+            notes.append("walk %d white by frame %d" % (w, bad[0]))
+    return total, "; ".join(notes) or "no crash, %d walks of %d frames" % (
+        len(ROLLUP_WALKS), ROLLUP_FRAMES)
+
 
 #: The pre-harness box each ported check used to score 0 inside of --
 #: reported alongside the full-screen number so "how much of the residue was
@@ -609,7 +1200,10 @@ def main():
 
     if args.list:
         for c in CHECKS:
-            print("%-10s ui=%-11s frames=%d" % (c.name, c.ui, c.frames))
+            pending = "  [pending-src: %s]" % c.pending_src if c.pending_src else ""
+            print("%-10s ui=%-11s frames=%d%s" % (c.name, c.ui, c.frames, pending))
+        print("%-10s ui=%-11s frames=%d  (no-crash check, not a comparison)" %
+              ("rollup", "n/a", ROLLUP_FRAMES))
         return 0
 
     wanted = set(args.only.split(",")) if args.only else None
@@ -624,8 +1218,11 @@ def main():
             print("%-10s ERROR %s" % (check.name, exc))
             failed += 1
             continue
+        pending = "  [pending-src: %s]" % check.pending_src if check.pending_src else ""
         for ui, o in outcome.items():
             _fmt_row(check.name, ui, o["result"], o["negative"], o["blind"], o["allowed"], o["box"])
+            if pending:
+                print(pending)
             if not o["ok"] and o["allowed"] is None:
                 failed += 1
             elif not o["ok"] and o["allowed"] is not None and not o["allowed"][0]:
@@ -633,6 +1230,13 @@ def main():
             if o["blind"]:
                 failed += 1
                 blind_any = True
+
+    if wanted is None or "rollup" in wanted:
+        got, note = run_rollup()
+        state = "PASS" if got == 0 else "FAILED"
+        print("%-10s %-11s %-32s %s" % ("rollup", "n/a", state, note))
+        if got:
+            failed += 1
 
     if not args.no_gallery:
         subprocess.run(["python3", os.path.join(ROOT, "tools", "captures_manifest.py")],
