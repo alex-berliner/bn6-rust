@@ -1049,10 +1049,20 @@ pub struct Battle<'a> {
     sword_in: Option<u8>,
     bombs: Vec<Bomb>,
     panels: Panels,
-    /// EXPERIMENT (AUDIT wave 3d "bg3-merge", not yet kept): an always-empty
-    /// background shown first, purely so `backdrop`/`bg`/`hud_bg` land on
-    /// hardware BG1/2/3 the way canon's own (BG0 unused) does, instead of
-    /// BG0/1/2.
+    /// AUDIT wave 3d "bg3-merge": an always-empty background shown first
+    /// (except while the RESULT window is up -- see `draw`'s own comment),
+    /// purely so `backdrop`/`bg`/`hud_bg` land on hardware BG1/2/3 the way
+    /// canon's own (BG0 unused) do, instead of BG0/1/2. A similar filler was
+    /// tried and reverted in the wave-3c "zero-layers" ticket, there
+    /// measuring a real one-frame boot-length shift from the extra
+    /// `RegularBackground::new()` call. This ticket's own version of that
+    /// same experiment measured clean instead -- tools/harness.py --only
+    /// opening: isolated stayed at 0 with the SAME search offset, both
+    /// before and after adding this field -- but boot length moving with
+    /// unrelated code (AUDIT pair 1) means that clean result is a property
+    /// of THIS commit's own instruction count, not a guarantee; if a future
+    /// change ever needs to shave a frame back, this field is the first
+    /// thing to revert.
     filler_bg: RegularBackground,
     bg: RegularBackground,
     /// Absent in the sterile arena, which shows neither: building them there
@@ -1466,7 +1476,7 @@ impl<'a> Battle<'a> {
         } else {
             field.background(&panels)
         };
-        // EXPERIMENT (AUDIT wave 3d "bg3-merge"): see `filler_bg`'s own doc.
+        // AUDIT wave 3d "bg3-merge": see `filler_bg`'s own doc.
         let filler_bg = RegularBackground::new(
             Priority::P0,
             RegularBackgroundSize::Background32x32,
@@ -3545,18 +3555,14 @@ impl<'a> Battle<'a> {
         //
         // AUDIT wave 3d "bg3-merge": call order here is hardware BG index
         // (agb assigns 0, 1, 2... in `.show()` call order each frame) --
-        // backdrop, then field, then the shared HUD/window background, so
-        // the three land in the same RELATIVE order canon's own BG1
-        // (backdrop)/BG2 (field)/BG3 (HUD+window+RESULT) do -- see this
-        // ticket's own report for whether a leading, permanently empty
-        // filler background (to also match canon's unused BG0 as hardware
-        // index 0) was worth its cost.
-        // EXPERIMENT (AUDIT wave 3d "bg3-merge"): shown first so it lands on
-        // hardware BG0, matching canon's own unused BG0 -- except while the
-        // RESULT window is up, where backdrop + field + hud_bg + results is
-        // already 4 backgrounds on its own (agb's hardware cap); adding a
-        // 5th here panics. See `filler_bg`'s own doc and this ticket's
-        // report for whether it measured safe to keep even gated like this.
+        // `filler_bg`, then backdrop, then field, then the shared
+        // HUD/window background, landing on hardware BG0 (unused, matching
+        // canon's own)/BG1 (backdrop)/BG2 (field)/BG3 (HUD+window+RESULT)
+        // exactly where canon's own BGxCNT peeks put them. `filler_bg` is
+        // skipped while the RESULT window is up: backdrop + field + hud_bg
+        // + `self.shown`'s own background is already 4, agb's hardware cap,
+        // and a 5th here panics -- see `filler_bg`'s own doc for why this
+        // measured safe to keep everywhere else.
         if self.shown.is_none() {
             self.filler_bg.show(frame);
         }
