@@ -113,16 +113,16 @@ impl Fixture {
 
 /// The descriptor's actual base address: `crate::fixture_ptr()`, not the
 /// literal `ADDR`. Reading through that function's own reference to
-/// `FIXTURE_REGION` is what keeps the reservation from being linked away
-/// (see its doc comment) -- an earlier cut of this read a hardcoded literal
-/// address instead, which compiled fine but let the linker drop the
-/// reservation entirely since nothing referenced it. `debug_assert_eq!`
-/// below still checks the two agree, so a future change that moves
-/// `FIXTURE_REGION` and breaks FIXTURE.md's contract fails loudly in a
-/// debug build rather than silently reading someone else's memory.
+/// `BATTLE_MARKER` is what keeps the reservation from being linked away
+/// (see that static's doc comment in main.rs) -- an earlier cut of this
+/// read a hardcoded literal address instead, which compiled fine but let
+/// the linker drop the reservation entirely since nothing referenced it.
+/// `debug_assert_eq!` below still checks the two agree, so a future change
+/// that moves `BATTLE_MARKER` and breaks FIXTURE.md's contract fails loudly
+/// in a debug build rather than silently reading someone else's memory.
 fn base() -> usize {
     let p = crate::fixture_ptr() as usize;
-    debug_assert_eq!(p, ADDR, "FIXTURE_REGION did not land at FIXTURE.md's 0x02000040");
+    debug_assert_eq!(p, ADDR, "BATTLE_MARKER's fixture half did not land at FIXTURE.md's 0x02000040");
     p
 }
 
