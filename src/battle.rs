@@ -1324,7 +1324,15 @@ impl<'a> Battle<'a> {
             // Both parity fixtures come from save states where the navi has
             // taken damage, and both capture the HP box, so they carry the
             // capture's own 60 rather than a fresh navi's.
-            hp: if cfg!(any(feature = "demo-hudmatch", feature = "demo-resultmatch")) {
+            hp: if cfg!(any(
+                feature = "demo-hudmatch",
+                feature = "demo-resultmatch",
+                // demo-open compares against /tmp/battlestart.state, whose navi
+                // is on 60 like the others'. Without this the HP box differs by
+                // a constant 29 px a frame and nothing else does, which is a
+                // fixture reading a real number wrong.
+                feature = "demo-open",
+            )) {
                 HUDMATCH_HP
             } else {
                 PLAYER_HP

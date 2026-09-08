@@ -222,8 +222,15 @@ impl Backdrop {
         // negative: measured on the real ROM, a frame's image is the previous
         // one shifted, and matching the sign the other way scrolls it the
         // wrong way by the right amount.
-        self.bg
-            .set_scroll_pos((-((self.x_q / 4) as i32), -((self.y_q / 4) as i32)));
+        // The real ROM writes `lsr #4` of a counter that FALLS by 8 (and 4) a
+        // frame -- a LOGICAL shift of a negative, which is a ceiling on the
+        // negated value, not the floor a plain divide gives. Peeked: at frame
+        // 1 the counters read -8/-4 and the register lands on -1/-1, where
+        // `-(x_q / 4)` gives 0/0. One pixel apart on odd frames.
+        self.bg.set_scroll_pos((
+            -(((self.x_q + 3) / 4) as i32),
+            -(((self.y_q + 3) / 4) as i32),
+        ));
     }
 
     /// Returns its background id, so a blend can include this layer -- the
