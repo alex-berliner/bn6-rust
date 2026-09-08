@@ -222,7 +222,7 @@ VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster a
 the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
 poked into the hand for the poison case.
 
-### B3b. The next sound needs a DirectSound sample exporter
+### B3b. The next sound needs a DirectSound sample exporter  *(exporter DONE; wiring left)*
 The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
 is on FIFO channels A and B and silent on all four PSG channels, so it is a DirectSound SAMPLE
 (TRANSFER 7bb). An attempt to fake it on the noise channel measured 27x too loud and was
@@ -237,6 +237,22 @@ AND SOLO FIRST, ALWAYS. `--audio-channel`'s table is 0-3 PSG, 4-5 DirectSound; t
 the harness's, not the hardware's, and reading "channel 4" as "the noise generator" is what
 produced the reverted attempt.
 
+DONE: `tools/sample_export.py` and `assets/buster_hit.wav`. The header was verified from the
+bytes three ways rather than trusted -- 10512.0 Hz exactly, size 1881 agreeing with the
+spacing to the next label in dat37.s, and no loop bit under any convention. NOTE that the
+disassembly has NO `WaveData.inc`: it is asm-only and never grew C structs for the sound
+engine, so the 16-byte layout comes from the stock M4A struct every GBA game shares, cross
+checked against this blob. The signed/unsigned step is the one that bites: GBA WaveData is
+SIGNED 8-bit and WAV stores 8-bit UNSIGNED, so the exporter adds 128; skipping that makes
+hound subtract 128 a second time and turns silence into full negative -- the DC buzz.
+
+WHAT IS LEFT is src/ work and it is structural: `Battle::update` takes `(&input, &gfx)` and
+no mixer, so playing a sample means threading a `&mut Mixer` through it, adding
+`mixer.frame()` to the per-frame loop, and measuring the hit's own delay the way
+`BUSTER_BLIP_DELAY` was measured (7bb puts the FIFO activity at +11..+23, peaking at +16,
+which is NOT the fire blip's delay). `include_wav!`'s path is relative to the crate root, so
+it is `"assets/buster_hit.wav"` with no `../`.
+
 ### B3a. Sound: the harness can hear now  *(the research is done)*
 `tools/mgba_capture.c` has `--dump-audio` and `--audio-channel`; see TRANSFER 7au for the two
 gotchas (the advertised 65536 Hz is really 96000, and `struct mCore` has a `USE_DEBUGGERS` ABI
@@ -244,7 +260,8 @@ trap). The engine is stock Nintendo M4A, agb's mixer sets up the same DMA/FIFO/t
 and nothing in this project competes for them.
 
 The smallest first step is NOT "export a sample": the buster's fire sound is a PSG square/sweep
-blip on channel 0, confirmed empirically. agb has no PSG API at all, so a first sound means either
+blip on channel 0, confirmed empirically. agb had no PSG API when this was written -- there is one
+now, `vendor/agb/agb/src/sound/psg.rs`, added for that blip -- so a first sound meant either
 a small hand-written PSG driver (register pokes on 0x4000060-0x4000075, in the style
 `vendor/agb/agb/src/sound/mixer/hw.rs` already uses for DirectSound) or picking a confirmed
 DirectSound effect instead -- `SOUND_HIT_6B`'s sample is already decoded end to end: WaveData at
