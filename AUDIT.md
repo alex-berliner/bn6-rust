@@ -84,3 +84,36 @@ Every residue is now localised to frame and region; what remains splits cleanly 
 
 **Chip-baseline route, state at the fresh-state merge (2026-09-08 ~10:10)**
 Landed: overworld_net (a real overworld state, built from the manifest); --empty-net-encounter (data patch, the game's own solo path). Not landed: the empty-field battle itself -- the forced encounter roll stopped reproducing under the identical recipe. Next step for the next tools agent, in this order: (1) roll ONCE per attempt with a one-shot --poke of the step accumulator at frame N instead of a per-frame --cheat (a per-frame forced roll walks one RNG orbit, the 7aw trap in another form), sweeping N across attempts -- unverified; (2) --trace-pc on the roll's own GetRNG call / cmp to read the value it actually consumes; (3) then emptyfield_start, chip_ready_empty, and the chip-fire premise measurement, which decides whether the zero-enemy standard can hold for chip rows at all.
+
+## Closing state (2026-09-08, all agents halted)
+
+Every check and all 43 chips run through one harness: full screen, every frame, marker-aligned,
+each with a negative fixture that must fail. **No check is BLIND.** Passing at 0: `opening`
+(isolated), `wave` (90 frames, both sides on canon's BG2), `window` (16 frames, both sides on
+canon's BG3), `rollup`. Constants: 19 fitted, 145 derived, 112 peeked.
+
+What the honest numbers are, and what each is waiting on:
+
+| check | isolated | what it is |
+|---|---|---|
+| tiles / gauge | 538 | the gauge marker's blink phase (the two fitted offsets, A8) + one vblank-race frame |
+| field / buster | 1048 / 3172 | an orb object canon draws from ~frame 167 because an enemy once existed; goes with a never-spawned fixture |
+| banner | 2248 | the deleted enemy's dissolve in the canon state -- same cause |
+| chip scoreboard | 14388 (38 rows) | the portrait box + that dissolve -- same cause; 5 chips carry their own residue above it |
+| card | 18486 | NEW, real: our cursor-move timing across canon's own transition, found the moment the check stopped being blind |
+| mettaur | 30864 | MegaMan's side only; the enemy's own region is 0/70. The deferred `shot.rs` per-hop dwell gap |
+| warp / chip-use | 9198 / 9514 | localised to frame and region, not root-caused |
+| popup | 107511 | 100% OBJ: the enemy's HP digits, exposed because the popup needs that tile range unzeroed |
+| cursor | 620802 | BG3 119680 + OBJ 671892 (the bracket and portrait icons) |
+| result | 497967 | the pre-arrival battle tail, then a ~6700 px plateau; the reward-content theory is disproven |
+
+Two root causes account for most of it: **the canon states all contain an enemy that was deleted
+rather than never spawned**, and **MegaMan's own hit/dwell timing** (`shot.rs`, deferred).
+
+The next step on the first, ready to run: `emptyfield_start` and `chip_ready_empty` exist and are
+built from the manifest, a chip provably fires with no enemy, and the chip rows' alignment against
+them did not converge (plateaus ~43700). That convergence is the one piece missing before the chip
+scoreboard, `banner` and `popup` can be re-pointed at a fixture with no corpse in it.
+
+Still open, unchanged: `demo-*` flags and `tools/regress.py` come out once the harness reads zero
+through descriptors for everything they covered. Audio stays parked.
