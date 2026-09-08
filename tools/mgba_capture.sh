@@ -58,7 +58,11 @@ fi
 if [ -n "$BUILD" ]; then
   echo "==> building features: $BUILD"
   ( cd "$ROOT" && cargo build --release --features "$BUILD" )
-  ROM_SRC="$ROOT/target/thumbv4t-none-eabi/release/bn"
+  # Where cargo actually built, not where we assume: a CARGO_TARGET_DIR set in
+  # the environment would otherwise leave this packing a stale ELF from $ROOT.
+  TARGET_DIR="$( cd "$ROOT" && cargo metadata --format-version 1 --no-deps \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])' )"
+  ROM_SRC="$TARGET_DIR/thumbv4t-none-eabi/release/bn"
   ROM_TMP="$(mktemp --suffix=.gba)"
   python3 "$ROOT/tools/gbafix.py" "$ROM_SRC" "$ROM_TMP"
   ROM="$ROM_TMP"

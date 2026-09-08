@@ -45,6 +45,7 @@ are never committed (TRANSFER.md).
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -162,6 +163,28 @@ def capture_real(chip, out, count):
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+_TARGET_DIR = None
+
+
+def target_dir():
+    """Where cargo ACTUALLY puts the build, asked of cargo rather than assumed.
+
+    This was a hardcoded `ROOT/target` and that made the project's own advice
+    dangerous: every agent is told to set `CARGO_TARGET_DIR` so two builds
+    cannot race, `cargo build` honours it, and the ROM was then packed from
+    `ROOT/target` anyway -- so a private target directory meant measuring
+    whatever stale ELF happened to be sitting in the repo, with no error and a
+    plausible-looking number. `cargo metadata` knows the answer however it was
+    set, environment or config.toml alike. `regress.py` uses this too.
+    """
+    global _TARGET_DIR
+    if _TARGET_DIR is None:
+        out = subprocess.run(["cargo", "metadata", "--format-version", "1", "--no-deps"],
+                             cwd=ROOT, check=True, capture_output=True, text=True).stdout
+        _TARGET_DIR = json.loads(out)["target_directory"]
+    return _TARGET_DIR
+
+
 def build_and_capture_rust(feature, out, count):
     # With backgrounds the Rust side needs its field and HUD, so the sterile
     # arena is left out; the demo feature places the navi itself.
@@ -171,9 +194,11 @@ def build_and_capture_rust(feature, out, count):
         cwd=ROOT, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     rom = "/tmp/rust_%s.gba" % feature
+    elf = os.path.join(target_dir(), "thumbv4t-none-eabi", "release", "bn")
+    if not os.path.exists(elf):
+        raise SystemExit("cargo built no %s -- is CARGO_TARGET_DIR pointing somewhere odd?" % elf)
     subprocess.run(
-        ["python3", os.path.join(ROOT, "tools", "gbafix.py"),
-         os.path.join(ROOT, "target", "thumbv4t-none-eabi", "release", "bn"), rom],
+        ["python3", os.path.join(ROOT, "tools", "gbafix.py"), elf, rom],
         check=True, stdout=subprocess.DEVNULL,
     )
     subprocess.run(["rm", "-rf", out])
