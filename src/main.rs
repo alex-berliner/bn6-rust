@@ -110,9 +110,37 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 /// around under an unrelated edit or a compiler change. Find it any time
 /// with `nm <elf> | grep BATTLE_MARKER`; read it live with
 /// `mgba_capture <rom> <out> <N> --dump 0x02000000:8:<file>`.
+///
+/// AUDIT pairs 6/14/17, FIXTURE.md: 32 `u32`s, not 2 -- the extra 120 bytes
+/// (indices 2..32) are the fixture descriptor's own reservation: 14 words
+/// of padding so the descriptor proper starts at byte 64 (FIXTURE.md's own
+/// 0x02000000 + 0x40), then 16 words (64 bytes) for the descriptor itself.
+/// `write_battle_marker` below only ever touches indices 0 and 1, so this
+/// is not a behaviour change to the marker -- same address, same first 8
+/// bytes, same meaning.
+///
+/// ONE static, not a second one in its own `.ewram.fixture` section: TWO
+/// separate `#[link_section]`'d statics do not reliably keep their relative
+/// order across builds of this same crate. Built with
+/// `--features demo-hudmatch`, an earlier cut of this (a standalone
+/// `FIXTURE_REGION: [u8; 120]` in its own `.ewram.fixture` section,
+/// declared textually AFTER this one) landed BEFORE `BATTLE_MARKER` in the
+/// linked binary -- `nm` showed `FIXTURE_REGION` at 0x02000000 and
+/// `BATTLE_MARKER` pushed to 0x02000078, breaking the marker's own contract
+/// for that build alone (the plain build ordered them correctly by
+/// coincidence). A single array has no cross-symbol order to get wrong: the
+/// fixture's byte 0 is `BATTLE_MARKER`'s own byte 64, always, by Rust's own
+/// array-layout guarantee, not by hoping the linker keeps two same-named
+/// input sections in source order.
+///
+/// VERIFIED (2026-09-08), after that fix, on both the plain build and
+/// `--features demo-hudmatch`: `nm` shows this static at 0x02000000 in
+/// both, and poking the magic with
+/// `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` for 5 frames then
+/// dumping `0x02000040:8` reads it back unchanged on both.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".ewram.marker")]
-pub static mut BATTLE_MARKER: [u32; 2] = [0, 0];
+pub static mut BATTLE_MARKER: [u32; 32] = [0; 32];
 
 const BATTLE_MAGIC: u32 = 0x4241_5454;
 
@@ -127,42 +155,14 @@ fn write_battle_marker(magic: u32, frame: u32) {
     }
 }
 
-/// AUDIT pairs 6/14/17, FIXTURE.md: 120 bytes reserved right after
-/// `BATTLE_MARKER` -- 56 bytes of padding, so the descriptor starting at
-/// byte 56 lands at FIXTURE.md's own contract address (`BATTLE_MARKER`'s 8
-/// bytes + this 56 = 64, i.e. 0x02000040), then the 64-byte descriptor
-/// itself. Reserved the same way `BATTLE_MARKER` reserves its own 8 bytes
-/// (see its doc comment above): a dedicated `.ewram.fixture` input section
-/// that `gba.ld`'s `*(.ewram .ewram.*)` rule places in EWRAM ahead of
-/// `.data`/`.bss`, so it is never zeroed as `.bss` or overwritten by `.data`
-/// init. Declared here, immediately after `BATTLE_MARKER`, so the two
-/// `.ewram.*` sections land in that order in the final binary.
-///
-/// ONE static, not a separate pad-then-descriptor pair: a static with
-/// nothing anywhere taking its address is dead as far as the linker's
-/// dead-code elimination is concerned, `#[no_mangle]` or not. An earlier cut
-/// of this used two such statics and read the descriptor through a
-/// hardcoded literal address rather than either symbol -- `nm` on the built
-/// ELF showed NEITHER symbol at all, and something else (agb's own
-/// `SPRITE_LOADER`) had moved into 0x02000040 instead. `fixture_ptr()`
-/// below takes this static's own address, which is a real reference and
-/// keeps it alive.
-///
-/// VERIFIED (2026-09-08), after that fix, by building, poking the magic
-/// with `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` for 5 frames
-/// and dumping `0x02000040:8` back out afterwards: it reads the magic
-/// unchanged, and `nm` on the built ELF shows this static at 0x02000000 +
-/// 8 = 0x02000008, so its descriptor half starts at 0x02000008 + 56 =
-/// 0x02000040 exactly.
-#[unsafe(no_mangle)]
-#[unsafe(link_section = ".ewram.fixture")]
-static mut FIXTURE_REGION: [u8; 120] = [0; 120];
-
-/// The fixture descriptor's own start address, for `fixture::read()`. See
-/// `FIXTURE_REGION` above for why this is a real reference (keeps the
-/// reservation from being linked away) and why it lands at 0x02000040.
+/// The fixture descriptor's own start address, for `fixture::read()`: byte
+/// 64 of `BATTLE_MARKER`'s own reservation (see its doc comment for why
+/// this lives there instead of in a separate static), i.e. 0x02000040.
+/// Taking `BATTLE_MARKER`'s address here is a real reference, which is what
+/// keeps the whole reservation from being linked away as dead -- see
+/// `write_battle_marker` above for the other one.
 pub fn fixture_ptr() -> *const u8 {
-    unsafe { core::ptr::addr_of!(FIXTURE_REGION).cast::<u8>().add(56) }
+    unsafe { core::ptr::addr_of!(BATTLE_MARKER).cast::<u8>().add(64) }
 }
 
 #[agb::entry]

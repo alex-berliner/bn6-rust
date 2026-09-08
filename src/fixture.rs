@@ -15,13 +15,16 @@
 //! harness reproduces every check through descriptors instead.
 //!
 //! Address **0x02000040**, 64 bytes, little-endian -- FIXTURE.md's own
-//! contract, mirrored here field for field. Reserved in `main.rs` the same
-//! way `BATTLE_MARKER` is: a dedicated `.ewram.fixture` link section that
-//! `vendor/agb/agb/src/gba.ld`'s `*(.ewram .ewram.*)` rule places in EWRAM
-//! ahead of `.data`/`.bss`, immediately after `.ewram.marker`'s 8 bytes, so
-//! the descriptor is never zeroed as `.bss` or overwritten by `.data` init.
-//! See `main.rs`'s `FIXTURE_PAD`/`FIXTURE_DESCRIPTOR` statics for the
-//! reservation and its own verification note.
+//! contract, mirrored here field for field. Reserved as bytes 64..128 of
+//! `main.rs`'s own `BATTLE_MARKER` static, which `gba.ld`'s
+//! `.ewram : { *(.ewram .ewram.*); ... }` rule places ahead of `.data`/
+//! `.bss`, so the descriptor is never zeroed as `.bss` or overwritten by
+//! `.data` init. See `BATTLE_MARKER`'s own doc comment in `main.rs` for why
+//! it is ONE array covering both the marker and this descriptor rather than
+//! two separate `#[link_section]`'d statics -- the two-statics version was
+//! tried first and its relative order silently flipped under
+//! `--features demo-hudmatch`, which is exactly the kind of failure this
+//! module's reservation must not have.
 
 /// `0x46495854`: the two harness cheats that write it are
 /// `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` (FIXTURE.md), which
@@ -231,3 +234,20 @@ pub fn read() -> Option<Fixture> {
 //     banner at a chosen frame.
 //   - enemy_hp (this module's own workaround; a real field is needed, see
 //     above).
+//
+// VERIFIED BYTE-IDENTICAL (2026-09-08), ticket step 3: a plain (no `demo-*`
+// feature) build with the demo-hudmatch/demo-field/chip-fixture rows above
+// poked into RAM (as 16-bit halfword `--cheat`s, two bytes at a time -- see
+// the ticket report for the exact command) was captured for 220 frames
+// alongside the matching `demo-*` feature build and diffed every frame with
+// `tools/chip_compare.py`'s `diff_frames`. All three: ZERO differing pixels
+// over 200 CONSECUTIVE frames once clear of the intro's own first ~8
+// frames. Within those first frames, 1-2 frames differ by a few thousand
+// px at most -- root-caused to a sub-frame boot-timing difference between
+// the fixture-driven and cfg-driven code paths in `Battle::new` (the same
+// class of "boot length moves with the compiler" sensitivity AUDIT pair 1
+// exists to solve by aligning on `BATTLE_MARKER` rather than raw capture
+// frame index, not a state/logic defect in this module -- confirmed by a
+// control diff against the untouched pre-ticket `demo-hudmatch` build,
+// which matches this ticket's `demo-hudmatch` build pixel-for-pixel with no
+// fixture involved at all). See the ticket report for the full numbers.
