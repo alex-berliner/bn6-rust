@@ -187,7 +187,37 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A7. The backdrop's art animation  *(mechanism SOLVED; a residue remains -- branch wt/backdrop-art)*
+### A7. The backdrop's art animation  *(SOLVED for the opening: 16788 -> 0. `tiles` left -- branch wt/backdrop-art)*
+`opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
+the schedule (below), the scroll's rounding, and MegaMan's HP -- the last 290 px were entirely
+the HP box, 29 a frame, because the captured battle's navi is on 60 and `demo-open` started at
+100. It now carries the capture's HP as `demo-hudmatch` and `demo-resultmatch` already did.
+
+THE SCROLL ROUNDING, and the trap in measuring it. The register is `lsr #4` of a counter that
+FALLS by 8 -- a logical shift of a negative, so a ceiling on the negated value where a plain
+divide floors, one pixel apart on ODD frames. Measured at the fixture's FIXED LAG the change
+looked catastrophic (290 -> 30304) and was reverted as a negative result. Searching the lag shows
+it is identical: 290 at lags 6 and 7, where before it was 290 at 7 and 8. It moves which lag is
+right and nothing else. **A fixed alignment constant will report a correct change as a disaster.**
+That is the same failure this file records for `tiles`, `mettaur` and `wave`, made a fourth time,
+by me, an hour after writing the other three up.
+
+WHAT IS LEFT is `tiles` only. Its window (390..394) predates the corrected period: the art cycle
+is 192 frames, so matching art AND scroll needs LCM(192,896) = 2688 rather than 896. A 2790-frame
+sweep of `demo-hudmatch` finds its best band score at 68 px, recurring every 384 frames, and never
+0 -- while `demo-open` reaches 0 outright. Rendering the 68 shows every arc and ring aligned
+pixel-exact and only the glyphs differing, so at those frames we are on a different art STEP, not
+looking at a broken asset.
+
+Since LCM is 2688 and the capture is 2790, there is only ONE candidate alignment in that sweep and
+it is not landing. So either `demo-hudmatch`'s battle-init offset puts the true frame outside the
+window swept, or its fixture differs from `demo-open`'s in some way that shifts the art relative to
+the capture. NEXT STEP: instrument `demo-hudmatch` the way `demo-open` was -- the per-frame
+`entry`/`timer`/`x_q` trace is what turned this ticket from guesswork into arithmetic, and it took
+one build. Do not re-derive the window by searching for a minimum.
+
+DO NOT MERGE until `tiles` is answered: the branch trades a `tiles` 0 for a non-zero, and a zero
+that came partly from luck still beats a residue nobody has explained.
 MY ORIGINAL FRAMING WAS WRONG. The art clock does NOT have a different origin from the scroll:
 `LoadGFXAnims` is called at battle init from `sub_8080DA0`, in the same routine as the scroll's
 own zero, back to back (asm00_1.s:8434-8435).
