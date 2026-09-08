@@ -163,7 +163,14 @@ impl Backdrop {
             // at battle init.
             step: 0,
             entry: 0,
-            timer: STEP_HOLD[0],
+            // STEP_HOLD[0] + 1, not STEP_HOLD[0]. The real ROM's own clock
+            // reads entry 0 / Timer 3 at the frame its scroll counters read
+            // zero, but this build creates its backdrop two frames into the
+            // battle it is being compared with, so it starts two frames
+            // further back. MEASURED: with this value `opening` compares 40
+            // consecutive frames at exactly 0, and one frame either side of
+            // it measures 8102 and 24398.
+            timer: STEP_HOLD[0] + 1,
             palette,
             x_q: 0,
             y_q: 0,
@@ -211,9 +218,12 @@ impl Backdrop {
         self.y_q = y_q;
     }
 
+    /// Draw the step the clocks are already on. It deliberately does NOT set
+    /// the timer: `new` establishes it and `seed` may have overridden it, and
+    /// an earlier version of this wrote it here and silently discarded every
+    /// seeded value.
     pub fn prime(&mut self, gfx: &Graphics) {
         self.show_step(gfx, STEP_ORDER[self.entry]);
-        self.timer = STEP_HOLD[self.entry] - 1;
     }
 
     fn show_step(&mut self, gfx: &Graphics, want: u16) {

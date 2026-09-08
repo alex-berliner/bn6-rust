@@ -604,7 +604,7 @@ CHECKS = [
     ("window", check_window, 0),
     ("card", check_card, 0),
     ("cursor", check_cursor, 0),
-    ("opening", check_opening, 16250),  # TODO A7 -- art vs scroll, one frame apart
+    ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),

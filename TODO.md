@@ -269,7 +269,7 @@ The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at
 frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
 after the two above.
 
-### A7. The backdrop's art animation  *(REOPENED -- my `opening` check was sampling only the frames that matched)*
+### A7. The backdrop's art animation  *(DONE -- 40 consecutive frames at 0, every frame sampled)*
 **`opening` IS NOT 0 AND NEVER WAS.** I wrote that check tonight sampling `range(120, 160, 4)` --
 every fourth frame -- and every fourth frame was exactly the set that matched. The backdrop's
 scroll moves a pixel every 2 frames across and every 4 down, so a rounding error shows on three
@@ -294,8 +294,19 @@ frames is the backdrop's art step in the settled part of its schedule, so with t
 right the ART now sits one frame off it. The growing magnitude is the art drifting further from
 the real ROM's as the run goes on.
 
-So: the scroll wants lag 6 and the art wants lag 7. They are ONE FRAME apart in this build,
-relative to each other, and that is the whole remaining defect.
+FIXED, AND THE FIX IS AN INITIAL CONDITION, NOT A FUDGE. The art needed to start two frames
+further back than the real ROM's own clock does: `Backdrop::new` seeds `STEP_HOLD[0] + 1` where the
+real ROM reads Timer 3 at the frame its scroll counters read zero. The reason is that this build
+creates its backdrop two frames into the battle it is being compared against. Measured rather than
+assumed -- that value gives 40 consecutive frames at exactly 0, and one frame either side of it
+measures 8102 and 24398.
+
+AND IT UNCOVERED A BUG IN THE SEEDING. `prime()` was assigning the timer, which silently discarded
+whatever `seed()` had just set -- so the peeked Timer had never taken effect at all, only the entry
+and the scroll counters had. `prime()` now only draws.
+
+`opening` is 0 over 40 CONSECUTIVE frames, every frame sampled, with the lag searched. The backdrop
+is exact.
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
 the schedule (below), the scroll's rounding, and MegaMan's HP -- the last 290 px were entirely
 the HP box, 29 a frame, because the captured battle's navi is on 60 and `demo-open` started at
