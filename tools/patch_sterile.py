@@ -1,18 +1,38 @@
 #!/usr/bin/env python3
 """Patch the canon bn6f ROM for the capture harness.
 
-Two patches: battle_isBattleOver always returns "not over", and the ENEMY
-DELETED banner is never uploaded.
+Three patches: battle_isBattleOver always returns "not over", the ENEMY
+DELETED banner is never uploaded, and (AUDIT wave 3c "zero-enemy" ticket) the
+encounter's enemy is never spawned at all.
 
-This is the first half of a sterile real-battle arena: it stops the win/lose
-check from concluding the fight, so a battle with the enemy deleted stays live.
-The results window is still reached through a separate flow (the enemy-death
--> result animation), so a full arena also needs that path handled.
+The first two are the sterile real-battle arena: they stop the win/lose check
+from concluding the fight, so a battle with the enemy deleted stays live. The
+results window is still reached through a separate flow (the enemy-death ->
+result animation), so a full arena also needs that path handled.
+
+The third removes the root cause AUDIT.md pair 3 names directly ("make a game
+patch that allows 0 enemies to be on the field, then you don't get any side
+effects") instead of deleting a spawned enemy and living with what its death
+leaves behind (a dissolving OAM corpse, a portrait-box artifact that only
+clears as a side effect of that same death processing -- see
+tools/harness.py's ALIGN_CHIP comment and tools/states.py's "chip_ready"
+entry for the two rejected workarounds this replaces).
 
 usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner]
 
 --keep-banner leaves the ENEMY DELETED banner in, for the one fixture that
 wants to compare the banner itself rather than get it out of the way.
+
+CAVEAT, measured (AUDIT wave 3c "zero-enemy" ticket): this patch only stops
+FUTURE spawns -- it cannot retroactively remove an enemy already baked into
+an existing save state's RAM. Every save state this project has (PAUSED,
+CHIPSELECT, BATTLESTART, and everything built from them) was captured AFTER
+a real battle's own spawn already ran, so loading any of them on a
+third-patched ROM is byte-identical to loading them on the unpatched sterile
+ROM (verified: 0 diff pixels over 20 frames from battlestart.state, patched
+vs unpatched). A "field starts empty" state needs a save captured from a
+real battle-start reached AFTER this patch is applied -- see the ticket
+report for how far that got.
 """
 import sys
 
@@ -54,9 +74,43 @@ def main():
     # comparison that wants to see it has to stop blanking them, which in turn
     # means keeping the enemy alive so no ENEMY DELETED banner is ever asked
     # for. chip_compare.py's --no-banner-zero with --hide-enemy does that.
+
+    # Third patch (AUDIT wave 3c "zero-enemy" ticket): never spawn the
+    # encounter's enemy at all. SpawnBattleObjectUsingBattleEntityConfig_8007368
+    # (asm00_1.s:8552, called once per battle from sub_8007358, itself called
+    # from 4 near-identical battle-FSM init states -- asm00_1.s:12807/13421/
+    # 13908/14317) walks the battle's EnemySetup array and dispatches each
+    # entry's type nibble through a table at 0x80073A0 (asm00_1.s:8592):
+    # 0x00 spawns MegaMan (spawnMegaMan_80073CC), 0x04 spawns the enemy
+    # (spawnEnemy_80073E2, asm00_1.s:8634) via sub_800768C -- the ONLY caller
+    # of spawnEnemy_80073E2 in the whole disassembly (grepped), so patching
+    # its own entry point rather than the dispatch table (a data patch) is
+    # both simpler and exactly as targeted: no EnemySetup entry of type 0x04,
+    # for any encounter, ever creates a BattleObject again. The patch is the
+    # same shape as the banner patch above -- turn the function into an
+    # immediate return: spawnEnemy_80073E2 opens with `push {r5,lr}` (bytes
+    # 20 B5); replaced with `bx lr` (70 47). r0's return value (normally the
+    # new * BattleObject) is never read by the dispatch loop after the call,
+    # so leaving it unset (whatever the type-nibble index computation left in
+    # r0) is safe.
+    #
+    # CAVEAT, measured (see this file's own docstring and the ticket
+    # report): this only stops FUTURE spawns. Every save state this project
+    # has was captured from a battle whose spawn already ran on the
+    # unpatched ROM, so loading any of them here is byte-identical to
+    # loading them on the sterile ROM without this patch -- verified, 0 diff
+    # pixels over 20 frames from battlestart.state. A state that actually
+    # shows an empty field needs a save captured from a real battle-start
+    # reached AFTER this patch, which needs real input from a cold boot
+    # (title/intro/overworld -- see the ticket report for how far that got).
+    spawn = 0x080073E2 - base
+    if d[spawn:spawn + 2] != b'\x20\xb5':
+        print(f"warning: expected push at 0x{spawn:08x}, got {d[spawn:spawn+2].hex()}")
+    d[spawn:spawn + 2] = b'\x70\x47'  # bx lr (never spawn the enemy)
+
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print("patched battle_isBattleOver%s: %s"
+    print("patched battle_isBattleOver%s, and enemy spawn: %s"
           % ("" if keep_banner else " and the ENEMY DELETED banner", sys.argv[2]))
 
 if __name__ == '__main__':

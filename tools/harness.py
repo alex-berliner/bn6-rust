@@ -173,6 +173,13 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     buf[53] = descriptor.get("window_pick_count", 0)
     buf[54] = descriptor.get("window_pick_slot", 0)
     buf[55] = descriptor.get("window_cursor", 0)
+    # +56 result_elapsed (FIXTURE.md, added by the src agent in parallel with
+    # this ticket): frames of the RESULT sequence already elapsed at boot
+    # when start_state=1. NOT read by src/fixture.rs as of this ticket
+    # (grepped -- see the `result` Check's pending_src below); written
+    # anyway per FIXTURE.md's own contract ("a descriptor is legal input the
+    # moment a field lands, with no harness change needed").
+    struct.pack_into("<H", buf, 56, descriptor.get("result_elapsed", 0))
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -794,6 +801,15 @@ RESULTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megama
                        start_state=1, result_level=2, result_frames=1760, result_zenny=100)
 RESULTMATCH_ORIGIN = 8
 
+#: `result`'s own row (AUDIT wave 3c "zero-enemy" ticket, FIXTURE.md +56):
+#: RESULTMATCH_ROW plus result_elapsed, aimed at RESULT_ARRIVAL's own
+#: measured slide-in start rather than at demo-resultmatch's "long settled"
+#: endpoint. result_elapsed=0 ("the slide-in starts on the first battle
+#: frame" -- FIXTURE.md) is kept: it is the simplest legal value and the one
+#: this ticket can actually reason about without live measurement (see
+#: below), so the alignment moves canon_ref instead of tuning this field.
+RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0)
+
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
 #: read -- pending_src). Marker origin 1 (measured live -- blanks HUD and
 #: backdrop, same family as the chip scoreboard).
@@ -993,39 +1009,34 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=40,
         align=Align(
-            canon_ref=0,
-            search=range(120, 145),
-            note="Wave 3b ticket step 2: start_state/result_level/result_frames/result_zenny "
-                 "now land in RESULTMATCH_ROW (src/fixture.rs reads them, verified "
-                 "byte-identical there against demo-resultmatch's OWN reference, over 200 "
-                 "frames). canon: RESULT_ARRIVAL (AUDIT pair 4/tools/states.py) -- captured 32 "
-                 "frames earlier than regress.py's old NOENEMY, so the window's WHOLE slide-in "
-                 "(frames 21..32 of a 40-frame capture, states.py's own measurement) is inside "
-                 "the window. MEASURED (this ticket): swept rust offsets 10..380 against both "
-                 "the full 40-frame canon window and just its settled tail (canon frames "
-                 "33..39, after states.py's own note that the slide-in is over by 35) -- NO "
-                 "offset gets close to 0 either way (best full-window ~896k/40f, best "
-                 "settled-tail ~22k/7f = ~3145 px/frame). start_state=1 does not reproduce an "
-                 "ARRIVING result window: rust's own output is in steady motion (6500-10000px "
-                 "swings, alternating roughly every other frame) from marker origin+11 through "
-                 "at least +58 -- a period-~8 blink, matching noenemy2's own documented 'press "
-                 "to continue' cursor blink (tools/states.py's note on NOENEMY), not a one-time "
-                 "slide-in-then-settle curve. FIXTURE.md's start_state is a binary switch ('at "
-                 "the RESULT window already'/not); it has no field for HOW LONG the window has "
-                 "been sitting there, so a fixture can land on 'settled, blinking' but not on "
-                 "'mid slide-in', and even the settled comparison does not match closely -- "
-                 "result_level=2/result_frames=1760/result_zenny=100 are demo-resultmatch's OWN "
-                 "hardcoded values (battle.rs:1993), not verified to be what RESULT_ARRIVAL's "
-                 "particular capture shows. MISSING FIELD: something like 'frames since the "
-                 "RESULT window's own arrival', so the fixture can be aimed at an arbitrary "
-                 "point in its slide-in/settle timeline instead of only its two endpoints "
-                 "(mid-battle, or long-settled). Reported per the ticket rather than worked "
-                 "around; rust_offset below is the best settled-tail candidate, not a real "
-                 "alignment.",
+            canon_ref=21,
+            search=range(0, 60),
+            note="AUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists now "
+                 "(added between wave 3b and this ticket) but is NOT read by src/fixture.rs as "
+                 "of this ticket (grepped -- see pending_src). RESULT_ROW carries "
+                 "result_elapsed=0 (FIXTURE.md: 'the slide-in starts on the first battle "
+                 "frame') -- the simplest legal value, chosen because there is nothing to "
+                 "MEASURE against yet: a field the ROM does not read cannot be swept the way "
+                 "every other offset in this file was. canon_ref moves instead, from wave 3b's "
+                 "0 to 21 -- states.py's own measurement that RESULT_ARRIVAL's slide-in runs "
+                 "canon frames 21..32 -- so THIS row compares against canon's slide-in itself, "
+                 "not its 20-frame pre-arrival settle tail. Once src/fixture.rs reads "
+                 "result_elapsed, the intent (this ticket's own reading of the field) is: rust "
+                 "with result_elapsed=0 starts ITS OWN slide-in at marker origin, matching "
+                 "canon_ref=21's slide-in start with no further tuning of the field itself --  "
+                 "if that turns out wrong once measurable, canon_ref is the wrong knob to have "
+                 "moved and result_elapsed should be swept instead. search=range(0,60) is wide "
+                 "and UNVERIFIED (no rust build reads the field to check against yet); narrow "
+                 "it once it does. Wave 3b's own note is preserved above the 'zero-src' half of "
+                 "this ticket's report: start_state=1 alone (no result_elapsed) produces a "
+                 "period-~8 'press to continue' blink, not a slide-in, so the row was BLIND to "
+                 "the slide-in phase entirely until this field existed.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=RESULTMATCH_ROW),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
         canon_variant="canon",
+        pending_src="result_elapsed (+56) -- FIXTURE.md field exists, src/fixture.rs does not "
+                    "read it yet as of this ticket (AUDIT wave 3c zero-enemy)",
     ),
     Check(
         name="banner",
