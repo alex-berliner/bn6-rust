@@ -227,11 +227,23 @@ exporter's rows gives a unique hit for every one (FRAMES[0]=E40, [1]=CD8, [2]=C9
 [4]=D68, [5]=DB0, [6]=DF8), and re-deriving STEP_ORDER from the script under that mapping
 reproduces the table in the branch exactly.
 
-NEXT STEP: diff step 0's 37 tiles against the real ROM's VRAM at a frame where it is displayed,
-tile by tile, and find which of them differ. `tools/backdrop_export.py`'s FRAMES rows are blob
-indices and match the ROM's tables exactly, so if the tiles differ the fault is in how the blob
-itself is sliced, not in the index list -- which is a different file to look at than everything
-examined so far.
+NEXT STEP, AND ONE WAY THAT DOES NOT WORK. Diffing raw VRAM at the script's own `gfx_dest`
+(0x06000040) between the two builds is USELESS: agb allocates VRAM its own way, so that address
+holds unrelated data in this build, and all 1152 bytes differ for a reason that has nothing to do
+with the art. (The real side reads `ffffffff` for its first tile at dump time as well, so the
+address is not simply "the backdrop's tiles" on that side either.) Do not repeat that.
+
+What is worth doing instead is a pure DATA comparison, no emulator: parse `byte_807FE40`'s 36
+indices out of dat20.s, slice those tiles out of the blob at `dword_8617488` (dat38_60.s), and
+compare them against step 0's tiles in `assets/backdrop.bin`. If they agree -- and they should,
+because `backdrop_export.py` builds the asset from that blob using exactly those indices -- then
+THE ART IS NOT THE PROBLEM AND THE MAP IS. Note the script copies 36 tiles while the exporter's
+rows carry 37 slots, the extra one at the front; a map that assigns those 37 slots differently
+from the real ROM would show up exactly like this: right tiles, wrong places, on some steps and
+not others.
+
+The rendering evidence supports the map over the palette: ours draws FEWER glyphs rather than
+differently-coloured ones.
 
 DO NOT MERGE until `tiles` is answered: the branch trades a `tiles` 0 for a non-zero, and a zero
 that came partly from luck still beats a residue nobody has explained.
