@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Patch the canon bn6f ROM for the capture harness.
 
-Four patches: battle_isBattleOver always returns "not over", the ENEMY
-DELETED banner is never uploaded, (AUDIT wave 3c "zero-enemy" ticket) the
-encounter's enemy is never spawned at all, and (AUDIT wave 3c "inert-enemy"
-ticket, --inert-enemy, opt-in) an ALREADY-spawned enemy's own per-frame
-handler is stubbed so it never acts, updates its state machine, or (as far
-as this session could measure) draws -- see --inert-enemy's own comment
-below for why this is a separate opt-in flag rather than always on.
+Five patches: battle_isBattleOver always returns "not over", the ENEMY
+DELETED banner is never uploaded, (AUDIT wave 3c "zero-enemy" ticket,
+--never-spawn, OPT-IN as of the "fresh-state" ticket -- see its own comment
+for why) the encounter's enemy is never spawned at all, (AUDIT wave 3c
+"inert-enemy" ticket, --inert-enemy, opt-in) an ALREADY-spawned enemy's own
+per-frame handler is stubbed so it never acts, updates its state machine, or
+(as far as this session could measure) draws, and (AUDIT wave 3c
+"fresh-state" ticket, --empty-net-encounter, opt-in) one specific ROM
+encounter-table entry's EnemySetup list is data-patched to terminate right
+after MegaMan, so THAT ONE encounter natively spawns no enemies at all --
+see its own comment below for why this succeeds where --never-spawn's code
+patch crashes.
 
 The first two are the sterile real-battle arena: they stop the win/lose check
 from concluding the fight, so a battle with the enemy deleted stays live. The
@@ -22,30 +27,37 @@ clears as a side effect of that same death processing -- see
 tools/harness.py's ALIGN_CHIP comment and tools/states.py's "chip_ready"
 entry for the two rejected workarounds this replaces).
 
-usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner]
+usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] [--never-spawn]
+                                            [--inert-enemy] [--empty-net-encounter]
 
 --keep-banner leaves the ENEMY DELETED banner in, for the one fixture that
 wants to compare the banner itself rather than get it out of the way.
 
-CAVEAT, measured (AUDIT wave 3c "zero-enemy" ticket): this patch only stops
-FUTURE spawns -- it cannot retroactively remove an enemy already baked into
-an existing save state's RAM. Every save state this project has (PAUSED,
-CHIPSELECT, BATTLESTART, and everything built from them) was captured AFTER
-a real battle's own spawn already ran, so loading any of them on a
-third-patched ROM is byte-identical to loading them on the unpatched sterile
-ROM (verified: 0 diff pixels over 20 frames from battlestart.state, patched
-vs unpatched). A "field starts empty" state needs a save captured from a
-real battle-start reached AFTER this patch is applied -- see the ticket
-report for how far that got.
+CAVEAT, measured (AUDIT wave 3c "zero-enemy" ticket, and confirmed FATAL by
+the "fresh-state" ticket): --never-spawn only stops FUTURE spawns -- it
+cannot retroactively remove an enemy already baked into an existing save
+state's RAM, so every fixture that loads a pre-existing state (PAUSED,
+CHIPSELECT, BATTLESTART, and everything built from them) is byte-identical
+with or without it (verified: 0 diff pixels over 20 frames from
+battlestart.state). For that reason it defaults OFF now (previously always
+on): the "fresh-state" ticket walked a real encounter into an ACTUAL fresh
+spawn on a --never-spawn ROM and got a hard crash -- see the flag's own
+comment. Since no existing fixture depends on it (proven a no-op for all of
+them above), turning it off by default changes nothing anyone was relying
+on. A "field starts empty" state now goes through --empty-net-encounter
+instead (a data patch, not a code stub) -- see its own comment.
 """
 import sys
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] [--inert-enemy]")
+        print("usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] "
+              "[--never-spawn] [--inert-enemy] [--empty-net-encounter]")
         return 2
     keep_banner = "--keep-banner" in sys.argv[3:]
+    never_spawn = "--never-spawn" in sys.argv[3:]
     inert_enemy = "--inert-enemy" in sys.argv[3:]
+    empty_net_encounter = "--empty-net-encounter" in sys.argv[3:]
     with open(sys.argv[1], 'rb') as f:
         d = bytearray(f.read())
     base = 0x08000000
@@ -80,8 +92,10 @@ def main():
     # means keeping the enemy alive so no ENEMY DELETED banner is ever asked
     # for. chip_compare.py's --no-banner-zero with --hide-enemy does that.
 
-    # Third patch (AUDIT wave 3c "zero-enemy" ticket): never spawn the
-    # encounter's enemy at all. SpawnBattleObjectUsingBattleEntityConfig_8007368
+    # Third patch (AUDIT wave 3c "zero-enemy" ticket), --never-spawn, OPT-IN
+    # (flipped from always-on by the "fresh-state" ticket -- see below and
+    # the docstring): never spawn the encounter's enemy at all.
+    # SpawnBattleObjectUsingBattleEntityConfig_8007368
     # (asm00_1.s:8552, called once per battle from sub_8007358, itself called
     # from 4 near-identical battle-FSM init states -- asm00_1.s:12807/13421/
     # 13908/14317) walks the battle's EnemySetup array and dispatches each
@@ -99,19 +113,39 @@ def main():
     # so leaving it unset (whatever the type-nibble index computation left in
     # r0) is safe.
     #
-    # CAVEAT, measured (see this file's own docstring and the ticket
-    # report): this only stops FUTURE spawns. Every save state this project
-    # has was captured from a battle whose spawn already ran on the
-    # unpatched ROM, so loading any of them here is byte-identical to
-    # loading them on the sterile ROM without this patch -- verified, 0 diff
-    # pixels over 20 frames from battlestart.state. A state that actually
-    # shows an empty field needs a save captured from a real battle-start
-    # reached AFTER this patch, which needs real input from a cold boot
-    # (title/intro/overworld -- see the ticket report for how far that got).
-    spawn = 0x080073E2 - base
-    if d[spawn:spawn + 2] != b'\x20\xb5':
-        print(f"warning: expected push at 0x{spawn:08x}, got {d[spawn:spawn+2].hex()}")
-    d[spawn:spawn + 2] = b'\x70\x47'  # bx lr (never spawn the enemy)
+    # CAVEAT, measured (see this file's own docstring): this only stops
+    # FUTURE spawns. Every save state this project has was captured from a
+    # battle whose spawn already ran on the unpatched ROM, so loading any of
+    # them here is byte-identical to loading them on the sterile ROM without
+    # this patch -- verified, 0 diff pixels over 20 frames from
+    # battlestart.state.
+    #
+    # FATAL, measured (AUDIT wave 3c "fresh-state" ticket): a save is not
+    # the only way to reach a fresh spawn. Walking a real forced encounter
+    # (TRANSFER 7aw's step-accumulator cheat) into a battle that actually
+    # STARTS on a --never-spawn ROM crashes the console to its own cold-boot
+    # logo 9-13 frames in, isolated by A/B test to this patch specifically
+    # (a control ROM with only the first two patches runs the identical,
+    # same-seed encounter cleanly) and to the one-time init path rather than
+    # steady-state per-frame logic (a --trace-pc on RunBattleObjectLogic's
+    # per-object dispatch call never fires in the crash window). This
+    # function's own comment about r0 being unread is still true of the
+    # DISPATCH LOOP right after the call -- but sub_800768C, entirely
+    # skipped when this patch fires, is what actually calls
+    # object_spawnType1 to allocate the BattleObject and (via loc_80076DA)
+    # presumably register it; something downstream that assumes as many
+    # live actors as EnemySetup specified, not told any fewer were created,
+    # is the live hypothesis, not confirmed further (see tools/states.py's
+    # "emptyfield_start" entry and reference/bn6f's own comment on this
+    # function, wt/fresh-state branch). NOT DEFAULT ANY MORE because of
+    # this: --empty-net-encounter (below) gets the same "empty field, battle
+    # stays running" result for its one target encounter by patching DATA
+    # instead of code, and does not crash.
+    if never_spawn:
+        spawn = 0x080073E2 - base
+        if d[spawn:spawn + 2] != b'\x20\xb5':
+            print(f"warning: expected push at 0x{spawn:08x}, got {d[spawn:spawn+2].hex()}")
+        d[spawn:spawn + 2] = b'\x70\x47'  # bx lr (never spawn the enemy)
 
     # Fourth patch (AUDIT wave 3c "inert-enemy" ticket), --inert-enemy, OPT-IN:
     # make an ALREADY-spawned enemy inert instead of chasing a never-spawned
@@ -158,11 +192,65 @@ def main():
                   f"got {d[virus_dispatch:virus_dispatch+2].hex()}")
         d[virus_dispatch:virus_dispatch + 2] = b'\x70\x47'  # bx lr (never update/act)
 
+    # Fifth patch (AUDIT wave 3c "fresh-state" ticket), --empty-net-encounter,
+    # OPT-IN: a DATA patch, not a code patch -- "cheat a value, patch a
+    # behaviour" applied to the game's own encounter table instead of to
+    # SpawnBattleObjectUsingBattleEntityConfig_8007368's caller loop, so the
+    # loop itself does exactly what it always does and nothing downstream is
+    # left surprised (unlike --never-spawn above, this does not crash).
+    #
+    # This targets ONE SPECIFIC encounter: the one tools/states.py's
+    # "overworld_net" state's own walk (a forced encounter roll, TRANSFER
+    # 7aw, held direction cycled Right/Down/Left/Up one per frame from that
+    # state) deterministically reaches at frame 93 of the walk, every time
+    # (confirmed with a second, differently-phased direction cycle -- same
+    # frame, same result). Found by walking the live pointer chain
+    # (tools/mgba_capture.c's --dump, not --trace-pc -- no code trace
+    # needed): eToolkit (0x020093b0) -> BattleStatePtr (+0x18) ->
+    # oBattleState_BattleSettings (BattleState.inc +0x3c) ->
+    # oBattleSettings_EnemySetupArrPtr (rom_structs/BattleSettings.inc
+    # +0xc) reads 0x080b5306 for this one encounter (confirmed ROM, not a
+    # RAM copy -- verified byte-for-byte identical between a live dump at
+    # that address and /tmp/bn6f_real.gba's own file bytes at the matching
+    # offset, so a data patch here is legitimate and needs no per-frame
+    # cheat). Its own EnemySetup array (SpawnBattleObjectUsingBattleEntity-
+    # Config_8007368's own format: 4-byte entries, byte0's upper nibble is
+    # the dispatch-table index used elsewhere in this file, terminated by
+    # any byte0 in 0xF0..0xFF) is, at that address:
+    #   +0x00: 00 22 00 00   -- MegaMan, panel byte 0x22
+    #   +0x04: 11 35 01 00   -- enemy (Mettaur, enemy_idx 1), panel byte 0x35
+    #   +0x08: 11 16 01 00   -- enemy (Mettaur, enemy_idx 1), panel byte 0x16
+    #   +0x0c: f0 00 22 00   -- terminator, then the NEXT table entry begins
+    # (cross-checked live: this is the SAME 2-Mettaur composition the
+    # unpatched control ROM actually shows in its chip-select header,
+    # "Mettaur Mettaur", after the identical walk). Patching the byte at
+    # +0x04 (ROM 0x080b530a) from 0x11 to 0xf0 makes the dispatch loop hit
+    # its own terminator check immediately after spawning MegaMan -- the
+    # SAME code path a genuinely-authored "1 navi vs 0 enemies" encounter
+    # would take, not a new one. The entry at +0x08 is simply never reached
+    # (the loop already stopped), left as-is.
+    #
+    # OPT-IN: this ROM byte is specific to one table entry among many
+    # (asm01.s's own off_8020180/off_8020190/off_80201E4/pt_802029C nested
+    # encounter-group tables suggest a great many more exist) -- scoped to
+    # exactly the encounter tools/states.py's route needs, not a general
+    # "no wild encounters" patch, so it stays off unless asked for.
+    if empty_net_encounter:
+        enemy_entry = 0x080b530a - base
+        if d[enemy_entry:enemy_entry + 1] != b'\x11':
+            print(f"warning: expected enemy entry byte 0x11 at 0x{enemy_entry:08x}, "
+                  f"got {d[enemy_entry:enemy_entry+1].hex()}")
+        d[enemy_entry] = 0xf0  # terminate the EnemySetup list right after MegaMan
+
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print("patched battle_isBattleOver%s, enemy spawn%s: %s"
+    print("patched battle_isBattleOver%s, enemy spawn%s%s: %s"
           % ("" if keep_banner else " and the ENEMY DELETED banner",
-             " and enemy inertness" if inert_enemy else "", sys.argv[2]))
+             " (never-spawn)" if never_spawn else "",
+             " and enemy inertness" if inert_enemy else "",
+             sys.argv[2]))
+    if empty_net_encounter:
+        print("  and the overworld_net encounter's EnemySetup list (data patch)")
 
 if __name__ == '__main__':
     main()
