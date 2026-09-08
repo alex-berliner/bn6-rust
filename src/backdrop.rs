@@ -256,8 +256,10 @@ impl Backdrop {
         // lags 6 and 7 rather than 7 and 8), so it is a real difference with
         // no observed cost. Left alone only because nothing yet MEASURES an
         // odd frame -- when something does, this is the first thing to try.
-        self.bg
-            .set_scroll_pos((-((self.x_q / 4) as i32), -((self.y_q / 4) as i32)));
+        self.bg.set_scroll_pos((
+            -(((self.x_q + 3) / 4) as i32),
+            -(((self.y_q + 3) / 4) as i32),
+        ));
     }
 
     /// Returns its background id, so a blend can include this layer -- the

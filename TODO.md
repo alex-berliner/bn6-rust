@@ -269,7 +269,33 @@ The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at
 frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
 after the two above.
 
-### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
+### A7. The backdrop's art animation  *(REOPENED -- my `opening` check was sampling only the frames that matched)*
+**`opening` IS NOT 0 AND NEVER WAS.** I wrote that check tonight sampling `range(120, 160, 4)` --
+every fourth frame -- and every fourth frame was exactly the set that matched. The backdrop's
+scroll moves a pixel every 2 frames across and every 4 down, so a rounding error shows on three
+frames in four and hides on the fourth. Sampling a periodic signal on its own period measures
+nothing. Measured at the time, at the lag the check used:
+
+    real 120 -> 0    121 -> 2433    122 -> 2433    123 -> 0    124 -> 0
+
+I reported "opening 16788 -> 0" as the evening's headline. It was an artifact of my own sampling.
+
+WHAT THAT UNCOVERED, and it is the good half. The scroll's rounding fix -- ceiling rather than
+floor, because the register is `lsr #4` of a FALLING counter -- is CORRECT after all. I had
+reverted it twice: once measured at a fixture's stale fixed lag, once "confirmed" by this check.
+With it in, and sampling EVERY frame at a searched lag, 34 of 40 frames are exactly 0 where
+before three in four were a whole pixel out. The full suite is otherwise untouched: every other
+check stays at 0, so the fixture damage I attributed to it earlier really was the `BD_TRACE`
+diagnostic.
+
+WHAT IS LEFT, and it is now precise: at lag 6 the failures come in PAIRS EVERY EIGHT FRAMES --
+frames 126/127 (156 px), 134/135 (496), 142/143 (2359), 150/151 (2671), 158/159 (2466). Eight
+frames is the backdrop's art step in the settled part of its schedule, so with the scroll finally
+right the ART now sits one frame off it. The growing magnitude is the art drifting further from
+the real ROM's as the run goes on.
+
+So: the scroll wants lag 6 and the art wants lag 7. They are ONE FRAME apart in this build,
+relative to each other, and that is the whole remaining defect.
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
 the schedule (below), the scroll's rounding, and MegaMan's HP -- the last 290 px were entirely
 the HP box, 29 a frame, because the captured battle's navi is on 60 and `demo-open` started at

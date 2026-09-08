@@ -301,7 +301,14 @@ def check_cursor():
 #: locked to each other while the real ROM's are not -- the scroll aligns at lag
 #: 7 and the art at lag 0. Drive this to 0; do not adjust the want to suit a
 #: build.
-OPENING_LAG = 7
+#: EVERY FRAME, AND A SEARCHED LAG. This check first sampled `range(120, 160, 4)`
+#: and read 0 -- and every 4th frame was exactly the set that matched, because
+#: the backdrop's scroll moves a pixel every 2 frames across and every 4 down,
+#: so a rounding error shows on 3 frames in 4 and hides on the fourth. Measured
+#: at the time: 120 -> 0, 121 -> 2433, 122 -> 2433, 123 -> 0, 124 -> 0. A check
+#: I wrote myself, reporting zero while the picture was a pixel out most of the
+#: time. Sampling a periodic signal on its own period measures nothing.
+OPENING_LAGS = range(3, 12)
 OPENING_BOX = (0, 0, 240, 60)
 
 
@@ -310,13 +317,16 @@ def check_opening():
     build("demo-open", cc.scratch("rg_open.gba"))
     capture(REAL, cc.scratch("rg_opr"), 200, "--loadstate", BATTLESTART, "--disable-obj")
     capture(cc.scratch("rg_open.gba"), cc.scratch("rg_opu"), 210, "--disable-obj")
-    frames = range(120, 160, 4)
-    total = sum(diff(cc.scratch("rg_opr"), f, cc.scratch("rg_opu"), f + OPENING_LAG, OPENING_BOX)
-                for f in frames)
-    worst = max(diff(cc.scratch("rg_opr"), f, cc.scratch("rg_opu"), f + OPENING_LAG, OPENING_BOX)
-                for f in frames)
+    frames = range(120, 160)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_opr"), f, cc.scratch("rg_opu"), f + lag, OPENING_BOX)
+                for f in frames]
+
+    total, lag = by_lag(OPENING_LAGS, score)
+    worst = max(score(lag))
     subprocess.run(["rm", "-rf", cc.scratch("rg_opr"), cc.scratch("rg_opu")], check=True)
-    return total, "%d frames of the opening, worst %d px" % (len(frames), worst)
+    return total, "%d frames of the opening, lag %d, worst %d px" % (len(frames), lag, worst)
 
 
 #: Sixteen frames rather than one, and a searched lag (TODO D4) -- BUT THIS ONE
@@ -594,7 +604,7 @@ CHECKS = [
     ("window", check_window, 0),
     ("card", check_card, 0),
     ("cursor", check_cursor, 0),
-    ("opening", check_opening, 0),
+    ("opening", check_opening, 16250),  # TODO A7 -- art vs scroll, one frame apart
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),
