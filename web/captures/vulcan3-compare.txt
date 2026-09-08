@@ -1,1 +1,1 @@
-Vulcan3, real ROM left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess.
+Vulcan3, canon (sterile) left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess.

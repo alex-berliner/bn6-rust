@@ -1,1 +1,1 @@
-EnergBom, real ROM left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands.
+EnergBom, canon (sterile) left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands.

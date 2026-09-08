@@ -61,13 +61,26 @@
     2: {},
     3: {},
   };
-  fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : '').then(t => {
-    document.getElementById('build').textContent = t ? 'build ' + t.trim() : '';
-  }).catch(() => {});
-  // The demo dropdown: the full game first, then each demo ROM from
-  // web/roms/manifest.json. Picking one reloads with ?rom=... so the
-  // emulator restarts on the selected build.
-  fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []).then(roms => {
+  // Every ROM's label starts with the moment it was packed
+  // ("2026-09-08 03:14 — <label>"), written by the build script itself
+  // (tools/build_roms.sh for web/roms/manifest.json, tools/web_rom.sh for
+  // web/build.txt) rather than derived from a file's mtime here -- see
+  // AUDIT.md pair 8. A label with no parseable timestamp is left OUT of the
+  // dropdown entirely, because there is no way to tell a fresh build from a
+  // stale one without it.
+  const TS_RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+—\s+(.*)$/;
+  // The demo dropdown: the canon reference first (it is never rebuilt, so it
+  // carries no pack timestamp and sits outside the sort below), then the
+  // full game and every demo ROM from web/roms/manifest.json, newest first.
+  // Picking one reloads with ?rom=... so the emulator restarts on the
+  // selected build.
+  Promise.all([
+    fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : ''),
+    fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []),
+  ]).then(([buildTxt, roms]) => {
+    buildTxt = buildTxt.trim();
+    document.getElementById('build').textContent = buildTxt ? 'build ' + buildTxt : '';
+
     const sel = document.getElementById('rom');
     const add = (file, label) => {
       const o = document.createElement('option');
@@ -76,9 +89,19 @@
       if (file === romParam) o.selected = true;
       sel.appendChild(o);
     };
-    add('bn6-rust.gba', 'Full game (Rust port)');
     add('real-bn6f.gba', 'MMBN6F Falzar (canon ROM)');
-    for (const r of roms) add(r.file, r.label);
+
+    const timestamped = [];
+    const game = TS_RE.exec(buildTxt);
+    if (game) timestamped.push({ file: 'bn6-rust.gba', ts: game[1],
+                                  label: game[1] + ' — Full game (Rust port)' });
+    for (const r of roms) {
+      const m = TS_RE.exec(r.label || '');
+      if (m) timestamped.push({ file: r.file, ts: m[1], label: r.label });
+    }
+    timestamped.sort((a, b) => b.ts.localeCompare(a.ts));
+    for (const e of timestamped) add(e.file, e.label);
+
     sel.addEventListener('change', () => {
       location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);
     });
