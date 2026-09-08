@@ -1,0 +1,1 @@
+The chip-select cursor walking OK to the fifth slot, real ROM left and this build right: 0.0 pixels a frame over 170 frames. Both sides get the same five Left presses. The bracket's blink was the last thing here that didn't match -- it counts from a frame counter in the window's own struct, and this build was starting it one frame late.

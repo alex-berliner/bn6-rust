@@ -820,5 +820,11 @@
     "file": "log/game/1788821484-opening.gif",
     "caption": "How a battle opens in the build now: white, held and then ramped off, the field, the virus materialising, the chip window. Every number in that sequence was wrong this morning and only one of them was a bug. The lead-in was 32 frames of black where the real ROM is 71 of white followed by a 16-frame ramp -- and with that one constant wrong, everything after it looked wrong in its own way. The virus appeared 22 frames early. The chip window opened 39 frames early. Each looked like a separate thing to investigate. Fixing the lead-in fixed all of them at once: the virus now starts materialising on frame 76 after battle init and settles on 142 on BOTH sides, and the chip window opens at 130 against the real 129. Getting the lead-in itself right meant being wrong about how to measure it twice. A brightness sum reads white as full brightness, so a white screen looks like a fade that has already finished. Counting only pure white pixels reads a 90%-white screen as not white at all, so the ramp is invisible and the fade looks like an instant cut -- that one survived into a commit before a closer look caught it. Measure a continuous quantity, not a predicate. And the white has to cover every layer: the first attempt whitened the field and the objects and measured 70 out of 100, because the backdrop and the HUD are their own backgrounds and stayed coloured underneath.",
     "tag": "rust"
+  },
+  {
+    "t": 1788829797,
+    "file": "log/shots/1788829797-gg_cursor.gif",
+    "caption": "The chip window's cursor walk reaches 0.0 px/frame. Real ROM left, this build right, same five Left presses on both sides. What was left was the highlight bracket's blink: it is (counter >> 3) & 1 off a frame counter in the window's own struct at 0x02036500, and our slide-in was reaching its open state one frame after the real ROM's does -- invisible everywhere except in that blink.",
+    "tag": "cursor"
   }
 ]
