@@ -83,6 +83,7 @@ REAL = "/tmp/bn6f_real.gba"
 STERILE = "/tmp/bn6f_sterile.gba"
 
 PAUSED = "/tmp/pausedwithcannon.state"
+BATTLESTART = "/tmp/battlestart.state"
 
 
 @dataclass
@@ -116,6 +117,24 @@ class State:
 #: check_banner in regress.py pokes). The addresses are BattleObject+0x24/26
 #: for the Mettaur at 0x0203ab60 (TRANSFER.md section 2).
 DELETE_ENEMY = ("0x0203ab84:0", "0x0203ab86:0")
+
+#: BATTLESTART's own battle (fresh-state ticket) fields THREE Mettaurs, not
+#: PAUSED's one, in three more BattleObject slots -- found live, not by
+#: extrapolating the 0xd8 stride from section 2's two known addresses:
+#: `--dump 0x0203a9b0:0x500` at battlestart.state+200 frames (all three
+#: materialised, TRANSFER 7ba's frames 113/141/173) shows MegaMan at
+#: 0x0203a9b0 (panel 2,2, unchanged from section 2) and three enemy
+#: BattleObjects, each NameID 0x0001 (Mettaur), HP 40/40, at 0x0203aa88
+#: (panel 4,1), 0x0203ab60 (panel 5,2 -- the same address PAUSED's own
+#: single Mettaur happens to live at, coincidentally the same allocator
+#: slot, not the same battle), and 0x0203ac38 (panel 6,3) -- the third
+#: enemy, exactly the 0xd8 stride section 2 already documented, confirmed
+#: rather than assumed. HP/MaxHP at each base+0x24/+0x26 as section 2 gives.
+DELETE_ENEMY_3 = (
+    "0x0203aaac:0", "0x0203aaae:0",  # first Mettaur  (panel 4,1)
+    "0x0203ab84:0", "0x0203ab86:0",  # second Mettaur (panel 5,2)
+    "0x0203ac5c:0", "0x0203ac5e:0",  # third Mettaur  (panel 6,3)
+)
 
 STATES = [
     State(
@@ -160,6 +179,56 @@ STATES = [
                      "title screen, a name entry and an intro from a cold "
                      "ROM -- which is real work this ticket did not do -- so "
                      "this stays root until that exists.",
+    ),
+    State(
+        name="overworld_net",
+        path="/tmp/overworld_net.state",
+        root=False,
+        rom=REAL,
+        base=BATTLESTART,
+        script="Start@200,A@210,A@400,A@430,A@460,A@490,A@520,A@550,A@580,"
+               "A@610,A@640,A@670,A@700,A@730,A@760",
+        cheats=DELETE_ENEMY_3,
+        frames=800,
+        description="The overworld net area a battle's own encounter came "
+                     "from, reached by letting BATTLESTART's battle actually "
+                     "resolve on the REAL (unpatched) ROM -- AUDIT wave 3c "
+                     "'fresh-state' ticket step 1, the base the sterile "
+                     "empty-field walk (emptyfield_start) loads. All three "
+                     "Mettaurs are held at HP 0 the whole run (DELETE_ENEMY_3 "
+                     "-- see its own comment for how the three addresses "
+                     "were found), which is enough for battle_isBattleOver "
+                     "(unpatched here) to conclude the fight on its own.",
+        note="VERIFIED (this ticket). Script, frame by frame against "
+             "battlestart.state's own timeline: the chip window is open by "
+             "frame ~150 (matches TRANSFER 7aw); Start@200 moves the cursor "
+             "to OK, A@210 confirms an empty hand and closes it; BATTLE "
+             "START! around frame 300; ENEMY DELETED/GET around 400 (all "
+             "three HP-zeroed enemies resolve as one kill, not three "
+             "separate deletions -- not investigated further, not needed "
+             "for this recipe); the RESULT window's two pages (DeleteTime/"
+             "Busting LV, then GET DATA showing a chip, then a zenny page) "
+             "come up around 500-730 and the trailing A@430..A@730 (30-frame "
+             "spacing -- tighter spacing just re-picks the chip window's "
+             "cursor before Start closes it, per TRANSFER 7aw) page through "
+             "them; a black transition runs ~735-775; the net area "
+             "('CentralArea1') is up, lit and static by frame ~778, and "
+             "frame 800 (this state) matches it with no further script "
+             "needed. MOVEMENT VERIFIED, not by the handover's own named "
+             "bytes (0x02009f5c/0x02009f60 from OverworldPlayerObject.inc, "
+             "which do not move here either -- consistent with the "
+             "handover's own finding that those .inc offsets are not to be "
+             "trusted unverified): `--watch 0x02009f40:0x50:file` over 80 "
+             "held frames of Right, and separately of Down, from this state "
+             "finds a live pair at 0x02009f62/0x02009f63 (a little-endian "
+             "u16, wrapping, incrementing by exactly 1/frame under EITHER "
+             "held direction -- consistent with this map's isometric "
+             "projection, where screen-Right and screen-Down both move the "
+             "underlying grid position) and a second axis-specific pair at "
+             "0x02009f5e (paired with 0x02009f6a) that only moves under "
+             "Down, not Right. Whatever their exact X/Y semantics, both "
+             "pairs respond to held input exactly as a position counter "
+             "should, which is the acceptance test this step asked for.",
     ),
     State(
         name="noenemy2",
@@ -285,6 +354,90 @@ STATES = [
              "14388/2350 shared baseline this state was meant to fix is "
              "reported honestly, not silently carried by a state that "
              "looks like a fix but is not one.",
+    ),
+    State(
+        name="emptyfield_start",
+        path="/tmp/emptyfield_start.state",
+        # KEPT AS THE RECORD OF A STALLED ROUTE, per the same doctrine as
+        # chip_ready above -- NOT LOADED BY ANYTHING IN tools/harness.py.
+        # `frames` below is the LAST KNOWN-GOOD frame, not a working
+        # recipe's endpoint: see the note for why running further crashes.
+        root=True,
+        rom=STERILE,
+        base="/tmp/overworld_net.state",
+        script="alternating Right/Down/Left/Up, one direction per frame, "
+               "for the frame count below (TRANSFER 7aw's RNG-correlation "
+               "trap: a held direction repeated every frame can roll zero "
+               "encounters for hundreds of frames)",
+        cheats=("0x02001c16:2000", "0x02001c18:0"),  # force the encounter roll every frame
+        frames=95,
+        description="AUDIT wave 3c 'fresh-state' ticket step 2 (route step "
+                     "1, overworld_net, succeeded -- see that entry). The "
+                     "intended empty-field battle: walk overworld_net.state "
+                     "on the THIRD-patched sterile ROM (patch_sterile.py, "
+                     "spawnEnemy_80073E2 neutered) into a real random "
+                     "encounter, so the save state never had a spawned "
+                     "enemy baked in at all -- the caveat patch_sterile.py's "
+                     "own docstring names as unverified. IT DOES NOT WORK: "
+                     "the ROM crashes partway through the battle's own "
+                     "intro. Route step 2 STALLS HERE, per the coordinator's "
+                     "instruction to report precisely where and stop rather "
+                     "than pursue the fix (that is RunBattleObjectLogic/"
+                     "spawn-caller territory, owned by the parallel "
+                     "'inert-enemy' agent, not tools/).",
+        note="VERIFIED, reproducibly (this ticket). eBGScrollCBCounters "
+             "(0x02009690/0x02009694, TRANSFER 7aw's own battle-frame-0 "
+             "detector) go 0/0 at frame 93 of the walk -- a real encounter "
+             "triggered, matching TRANSFER 7aw's 'a battle should come "
+             "within ~20 frames' once the roll is forced and the held "
+             "direction varies (confirmed independently with a second, "
+             "differently-phased direction cycle: same frame 93, same "
+             "result -- not a coincidence of one particular script). The "
+             "screen goes white exactly as TRANSFER 7ba documents for a "
+             "REAL battle's own opening (frames 0..70 of BATTLESTART's own "
+             "timeline are pure white, held) -- so the intro starts "
+             "normally. Between frame 102 and frame 106 of the SAME walk "
+             "(9-13 frames into the new battle, well inside that normal "
+             "70-frame white hold, roughly when a virus would first start "
+             "materialising on an unpatched ROM per 7ba's frame-76 mark) "
+             "the screen fades from white into the CAPCOM/'LICENSED BY "
+             "NINTENDO' splash -- the console's own cold-boot logo "
+             "sequence, not any frame of a real battle or its result. "
+             "ISOLATED TO THE THIRD PATCH: the identical walk, identical "
+             "cheats, identical script, run against a throwaway ROM built "
+             "by hand with ONLY the first two patches (battle_isBattleOver "
+             "and the banner, spawnEnemy_80073E2 left untouched -- not "
+             "patch_sterile.py, not committed, an A/B control only) hits "
+             "the SAME frame-93 encounter and proceeds NORMALLY: two live "
+             "Mettaurs visible and the chip-select window up by frame 300, "
+             "no crash anywhere in a 500-frame capture. RULED OUT: the "
+             "encounter-roll cheat itself is not the cause -- a capture "
+             "that stops forcing it the instant the battle starts (loads a "
+             "state saved at frame 95, keeps running with NO --cheat at "
+             "all) crashes at the same frame 105-ish anyway. NOT PURSUED "
+             "FURTHER (out of tools/'s scope this ticket -- src/ and "
+             "patch_sterile.py are owned elsewhere): a `--trace-pc "
+             "0x080031FE` (RunBattleObjectLogic's own per-object dispatch "
+             "call, address given in /tmp/bn-coldboot-handover.md, "
+             "independently confirmed live there) over the crash window "
+             "gets ZERO hits before the crash, meaning the per-object "
+             "dispatch loop never runs during the white hold -- so "
+             "whatever crashes runs EARLIER, in the one-time battle-init/ "
+             "FSM sequence (`sub_8007358` and its 4 near-identical callers, "
+             "or `SpawnBattleObjectUsingBattleEntityConfig_8007368` itself, "
+             "asm00_1.s:8552/8592, right after the neutered "
+             "`spawnEnemy_80073E2` returns) rather than in steady-state "
+             "per-frame logic. patch_sterile.py's own comment on the third "
+             "patch asserts the caller never reads spawnEnemy's return "
+             "value -- true of the DISPATCH LOOP immediately after the "
+             "call, per that same comment, but this finding says something "
+             "downstream of that call (in the init path, not dispatch) "
+             "does depend on the spawn having actually happened. A live "
+             "debugger stepping `SpawnBattleObjectUsingBattleEntityConfig_"
+             "8007368` itself and its caller across this exact crash "
+             "window, from /tmp/scratch_pre_crash_95.state (scratch, not "
+             "kept) or a freshly rebuilt equivalent, is the concrete next "
+             "step -- not attempted here.",
     ),
 ]
 
