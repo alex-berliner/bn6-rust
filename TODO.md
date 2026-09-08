@@ -187,20 +187,32 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A8. The custom gauge's L-or-R prompt blinks out of phase
+### A8. The custom gauge's whole FLOW ANIMATION is out of phase
 Found by fixing A7, and it was hidden by the old alignment. The prompt inside the CUSTOM gauge
 flashes orange on a 16-frame cycle, 8 on and 8 off, and THIS BUILD ALREADY DOES THAT -- both sides
 measure exactly 110 orange pixels when lit and 0 when not. What differs is the PHASE: at the frame
 where the whole backdrop, field and bottom of the screen match to the pixel, the real ROM's prompt
 is lit and ours is dark, and our lit windows sit 8 frames -- half a cycle -- from where they should.
 
-That is the entire remaining difference at that alignment: 470 px, all of it in the HUD, all of it
-this prompt. HP, gauge fill and the word CUSTOM all match.
+AND IT IS NOT ONLY THE PROMPT -- I said that first and it was too narrow. Splitting the 470 px at
+that alignment: the bar left of the marker 150, the marker 200, the bar right 120, and the CUSTOM
+label 0. The BAR's flowing stripes are out of phase as well. Both are driven by the same counter,
+`HudTiles::gauge_tick` (src/hudtiles.rs) -- frames the gauge has stood FULL, reset to 0 whenever it
+is not -- through `flow = gauge_tick - BAR_PHASE`, feeding `BAR_CYCLE` for the stripes and
+`(flow / MARKER_FRAMES) % 2` for the marker. HP, gauge FILL and the CUSTOM label all match.
 
-Same family as the chip window's bracket (TRANSFER 7bc): a blink counting from an origin that is
-not the real ROM's. Find what the real ROM's prompt counts from before touching a constant -- 7bc
-is the cautionary tale, where the residue was blamed on two wrong things and written off as
-unfixable before anyone read the routine.
+So this is not a parity bug in the animation, it is an ORIGIN problem: `demo-hudmatch` counts from
+its own battle's start, and the save state it is compared against has had a full gauge for some
+unknown number of frames already.
+
+EXACTLY the chip window's bracket again (TRANSFER 7bc), and that is the good news: there the
+counter was declared to have no shared origin and to be uncoincidable, and it turned out to be a
+plain field at 0x02036500 that a single `--peek` read. Do the same here. Find the routine that
+draws the gauge's flow, find the counter it reads, peek it out of `/tmp/pausedwithcannon.state`,
+and give the fixture that value instead of zero. DO NOT tune `BAR_PHASE` until that number is in
+hand -- it is the constant that would make the check pass while hiding the mechanism, and this
+ticket exists because such a constant already hid a wrong art schedule and an out-of-phase gauge
+behind a `tiles` reading of 0.
 
 ### A7. The backdrop's art animation  *(SOLVED -- backdrop, field and bottom are 0. Branch wt/backdrop-art)*
 `opening` IS ZERO. The backdrop band is 0 on every sampled frame and so is the HUD. Three parts:
