@@ -45,6 +45,7 @@ are never committed (TRANSFER.md).
 """
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -114,7 +115,7 @@ LIBRARY_COPY = 0x02004C20
 
 def peek16(addr):
     out = subprocess.run(
-        [CAPTURE, STERILE, "/tmp/chip_compare_peek", "0", "--loadstate", STATE,
+        [CAPTURE, STERILE, scratch("chip_compare_peek"), "0", "--loadstate", STATE,
          "--peek", "0x%08x" % addr],
         capture_output=True, text=True,
     )
@@ -163,6 +164,22 @@ def capture_real(chip, out, count):
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def scratch(name=""):
+    """A /tmp working directory unique to THIS checkout of the project.
+
+    Every capture and packed ROM used to go to a fixed path -- /tmp/rg_field.gba,
+    /tmp/rust_demo-cannon.gba, /tmp/chip_compare -- which is fine for one person
+    and wrong the moment two agents run a check at once: the second overwrites
+    the first's ROM between its build and its capture, and the number that comes
+    out looks perfectly normal. Keying the directory on the checkout's real path
+    means a git worktree gets its own, automatically, with nothing to remember.
+    """
+    key = hashlib.sha1(os.path.realpath(ROOT).encode()).hexdigest()[:8]
+    d = "/tmp/bn-%s" % key
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, name) if name else d
+
+
 _TARGET_DIR = None
 
 
@@ -193,7 +210,7 @@ def build_and_capture_rust(feature, out, count):
         ["cargo", "build", "--release", "--features", features],
         cwd=ROOT, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    rom = "/tmp/rust_%s.gba" % feature
+    rom = scratch("rust_%s.gba" % feature)
     elf = os.path.join(target_dir(), "thumbv4t-none-eabi", "release", "bn")
     if not os.path.exists(elf):
         raise SystemExit("cargo built no %s -- is CARGO_TARGET_DIR pointing somewhere odd?" % elf)
@@ -236,7 +253,7 @@ def main():
     ap.add_argument("feature")
     ap.add_argument("--frames", type=int, default=60, help="frames to diff from the start")
     ap.add_argument("--rust-frames", type=int, default=260)
-    ap.add_argument("--out", default="/tmp/chip_compare")
+    ap.add_argument("--out", default=scratch("chip_compare"))
     ap.add_argument("--no-build", action="store_true")
     ap.add_argument("--clean", action="store_true",
                     help="delete both captures when done. A run of 43 chips leaves about"

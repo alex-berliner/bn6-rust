@@ -139,10 +139,10 @@ TILES_RUST_FRAMES = range(390, 395)
 
 
 def check_tiles():
-    build("demo-hudmatch", "/tmp/rg_hud.gba")
-    capture(REAL, "/tmp/rg_tr", 60, "--loadstate", PAUSED, "--script", "Start@10", "--disable-obj")
-    capture("/tmp/rg_hud.gba", "/tmp/rg_tu", max(TILES_RUST_FRAMES) + 1, "--disable-obj")
-    scores = [(diff("/tmp/rg_tr", 43, "/tmp/rg_tu", f, (0, 0, 240, 160)), f)
+    build("demo-hudmatch", cc.scratch("rg_hud.gba"))
+    capture(REAL, cc.scratch("rg_tr"), 60, "--loadstate", PAUSED, "--script", "Start@10", "--disable-obj")
+    capture(cc.scratch("rg_hud.gba"), cc.scratch("rg_tu"), max(TILES_RUST_FRAMES) + 1, "--disable-obj")
+    scores = [(diff(cc.scratch("rg_tr"), 43, cc.scratch("rg_tu"), f, (0, 0, 240, 160)), f)
               for f in TILES_RUST_FRAMES]
     got, at = min(scores)
     return got, "whole screen, best of %d..%d (at %d)" % (
@@ -150,26 +150,26 @@ def check_tiles():
 
 
 def check_field():
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_fr", 100, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_fr"), 100, "--loadstate", PAUSED, *ALIVE,
             "--disable-bg", "--script", "Start@10")
-    capture("/tmp/rg_field.gba", "/tmp/rg_fu", 400, "--disable-bg")
-    return best("/tmp/rg_fr", 90, "/tmp/rg_fu", range(190, 240), (0, 0, 240, 160)), "whole screen"
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_fu"), 400, "--disable-bg")
+    return best(cc.scratch("rg_fr"), 90, cc.scratch("rg_fu"), range(190, 240), (0, 0, 240, 160)), "whole screen"
 
 
 def check_window():
-    build("demo-custmatch", "/tmp/rg_cm.gba")
-    capture(REAL, "/tmp/rg_wr", 60, "--loadstate", CHIPSELECT)
-    capture("/tmp/rg_cm.gba", "/tmp/rg_wu", 260)
-    return best("/tmp/rg_wr", 59, "/tmp/rg_wu", range(236, 252), (0, 0, 112, 160)), "window only"
+    build("demo-custmatch", cc.scratch("rg_cm.gba"))
+    capture(REAL, cc.scratch("rg_wr"), 60, "--loadstate", CHIPSELECT)
+    capture(cc.scratch("rg_cm.gba"), cc.scratch("rg_wu"), 260)
+    return best(cc.scratch("rg_wr"), 59, cc.scratch("rg_wu"), range(236, 252), (0, 0, 112, 160)), "window only"
 
 
 def check_card():
-    build("demo-cardname", "/tmp/rg_cn.gba")
-    capture(REAL, "/tmp/rg_kr", 160, "--loadstate", CHIPSELECT,
+    build("demo-cardname", cc.scratch("rg_cn.gba"))
+    capture(REAL, cc.scratch("rg_kr"), 160, "--loadstate", CHIPSELECT,
             "--script", ",".join(held("Left", 20 + 30 * k, 6) for k in range(5)))
-    capture("/tmp/rg_cn.gba", "/tmp/rg_ku", 260)
-    return best("/tmp/rg_kr", 159, "/tmp/rg_ku", range(238, 250), (0, 0, 112, 160)), "card + window"
+    capture(cc.scratch("rg_cn.gba"), cc.scratch("rg_ku"), 260)
+    return best(cc.scratch("rg_kr"), 159, cc.scratch("rg_ku"), range(238, 250), (0, 0, 112, 160)), "card + window"
 
 
 #: The cursor walk: five Left presses, six frames each, thirty apart. The real
@@ -201,31 +201,31 @@ CURSOR_LAG = 230
 
 def check_cursor():
     """Every frame of a five-step cursor walk, both sides on one script."""
-    build("demo-custmatch", "/tmp/rg_cw.gba")
-    capture(REAL, "/tmp/rg_wr2", 200, "--loadstate", CHIPSELECT,
+    build("demo-custmatch", cc.scratch("rg_cw.gba"))
+    capture(REAL, cc.scratch("rg_wr2"), 200, "--loadstate", CHIPSELECT,
             "--script", ",".join(held("Left", 20 + 30 * k, 6) for k in range(5)))
-    capture("/tmp/rg_cw.gba", "/tmp/rg_wu2", 420, "--script",
+    capture(cc.scratch("rg_cw.gba"), cc.scratch("rg_wu2"), 420, "--script",
             ",".join(held("Left", CURSOR_PRESS + 30 * k, 6) for k in range(5)))
-    total = sum(diff("/tmp/rg_wr2", 15 + k, "/tmp/rg_wu2", 15 + CURSOR_LAG + k, (0, 0, 112, 160))
+    total = sum(diff(cc.scratch("rg_wr2"), 15 + k, cc.scratch("rg_wu2"), 15 + CURSOR_LAG + k, (0, 0, 112, 160))
                 for k in range(170))
-    subprocess.run(["rm", "-rf", "/tmp/rg_wr2", "/tmp/rg_wu2"], check=True)
+    subprocess.run(["rm", "-rf", cc.scratch("rg_wr2"), cc.scratch("rg_wu2")], check=True)
     return total, "170 frames of a five-step walk"
 
 
 def check_result():
-    build("demo-resultmatch", "/tmp/rg_res.gba")
-    capture(REAL, "/tmp/rg_rr", 40, "--loadstate", NOENEMY)
-    capture("/tmp/rg_res.gba", "/tmp/rg_ru", 200)
-    return best("/tmp/rg_rr", 39, "/tmp/rg_ru", range(150, 175), (26, 24, 215, 155)), "window + badge"
+    build("demo-resultmatch", cc.scratch("rg_res.gba"))
+    capture(REAL, cc.scratch("rg_rr"), 40, "--loadstate", NOENEMY)
+    capture(cc.scratch("rg_res.gba"), cc.scratch("rg_ru"), 200)
+    return best(cc.scratch("rg_rr"), 39, cc.scratch("rg_ru"), range(150, 175), (26, 24, 215, 155)), "window + badge"
 
 
 def check_warp():
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_mr", 120, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_mr"), 120, "--loadstate", PAUSED, *ALIVE,
             "--zero", "0x6016E00:1280", "--disable-bg",
             "--script", "Start@10," + ",".join(
                 held(k, at, 3) for k, at in (("Right", 60), ("Down", 80), ("Left", 100), ("Up", 120))))
-    capture("/tmp/rg_field.gba", "/tmp/rg_mu", 300, "--disable-bg",
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_mu"), 300, "--disable-bg",
             "--script", ",".join(
                 held(k, at, 3) for k, at in (("Right", 130), ("Down", 150), ("Left", 170), ("Up", 190))))
     blue = (0, 132, 222)
@@ -235,16 +235,16 @@ def check_warp():
         pts = [(x, y) for y in range(50, 150) for x in range(240) if px[x, y] == blue]
         return (min(p[0] for p in pts), min(p[1] for p in pts)) if pts else None
 
-    same = sum(1 for k in range(30) if navi("/tmp/rg_mr", 60 + k) == navi("/tmp/rg_mu", 130 + k))
+    same = sum(1 for k in range(30) if navi(cc.scratch("rg_mr"), 60 + k) == navi(cc.scratch("rg_mu"), 130 + k))
     return 30 - same, "%d of 30 navi positions" % same
 
 
 def check_buster():
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_br", 100, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_br"), 100, "--loadstate", PAUSED, *ALIVE,
             "--zero", "0x6016E00:1280", "--disable-bg", "--script", "Start@10,B@60,B@61")
-    capture("/tmp/rg_field.gba", "/tmp/rg_bu", 200, "--disable-bg", "--script", "B@130,B@131")
-    return sum(diff("/tmp/rg_br", 60 + k, "/tmp/rg_bu", 130 + k, (0, 50, 120, 150))
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_bu"), 200, "--disable-bg", "--script", "B@130,B@131")
+    return sum(diff(cc.scratch("rg_br"), 60 + k, cc.scratch("rg_bu"), 130 + k, (0, 50, 120, 150))
                for k in range(32)), "navi half, 32 frames"
 
 
@@ -300,18 +300,18 @@ def check_banner():
     frame, which is capture frame 132. The box stops at x=145 because the
     deleted enemy's remnant dissolves to the right of it for a hundred frames.
     """
-    build("demo-sterile,demo-banner", "/tmp/rg_ban.gba")
+    build("demo-sterile,demo-banner", cc.scratch("rg_ban.gba"))
     # The sterile ROM has the banner patched OUT, which is what every chip
     # comparison needs and exactly what this one cannot have.
     subprocess.run(["python3", os.path.join(ROOT, "tools", "patch_sterile.py"),
                     REAL, "/tmp/bn6f_banner.gba", "--keep-banner"],
                    check=True, stdout=subprocess.DEVNULL)
-    capture("/tmp/bn6f_banner.gba", "/tmp/rg_banr", 120, "--loadstate", PAUSED,
+    capture("/tmp/bn6f_banner.gba", cc.scratch("rg_banr"), 120, "--loadstate", PAUSED,
             "--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0",
             "--disable-bg", "--script", "Start@10")
-    capture("/tmp/rg_ban.gba", "/tmp/rg_banu", 220)
+    capture(cc.scratch("rg_ban.gba"), cc.scratch("rg_banu"), 220)
     box = (40, 56, 145, 88)
-    return (sum(diff("/tmp/rg_banr", 49 + k, "/tmp/rg_banu", 132 + k, box) for k in range(58)),
+    return (sum(diff(cc.scratch("rg_banr"), 49 + k, cc.scratch("rg_banu"), 132 + k, box) for k in range(58)),
             "58 frames of the banner")
 
 
@@ -324,15 +324,15 @@ def check_rollup():
     battle frame never is, so counting frames that are more than half pure
     white finds it without knowing what the panic said.
     """
-    build("default", "/tmp/rg_roll.gba")
+    build("default", cc.scratch("rg_roll.gba"))
     last = ROLLUP_FRAMES - 50
     total, notes = 0, []
     for w, keys in enumerate(ROLLUP_WALKS):
         script = [held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, last, 19))]
         script += [held("B", at, 2) for at in range(70, last, 11)]
         script += [held("A", at, 2) for at in range(100, last, 37)]
-        out = "/tmp/rg_rollcap%d" % w
-        capture("/tmp/rg_roll.gba", out, ROLLUP_FRAMES, "--script", ",".join(script))
+        out = cc.scratch("rg_rollcap%d" % w)
+        capture(cc.scratch("rg_roll.gba"), out, ROLLUP_FRAMES, "--script", ",".join(script))
 
         def crashed(i):
             px = cc.frame(out, i).load()
@@ -359,11 +359,11 @@ def check_rollup():
 
 
 def check_chip_use():
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_ar", 100, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_ar"), 100, "--loadstate", PAUSED, *ALIVE,
             "--zero", "0x6016E00:1280", "--disable-bg", "--script", "Start@10,A@60,A@61")
-    capture("/tmp/rg_field.gba", "/tmp/rg_au", 200, "--disable-bg", "--script", "A@130,A@131")
-    return sum(diff("/tmp/rg_ar", 60 + k, "/tmp/rg_au", 130 + k, (0, 50, 120, 150))
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_au"), 200, "--disable-bg", "--script", "A@130,A@131")
+    return sum(diff(cc.scratch("rg_ar"), 60 + k, cc.scratch("rg_au"), 130 + k, (0, 50, 120, 150))
                for k in range(32)), "navi half, 32 frames"
 
 
@@ -381,14 +381,14 @@ def check_mettaur():
     Once aligned, 70 consecutive frames of the cycle are diffed over the
     Mettaur's half of the screen.
     """
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_mtr", 215, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_mtr"), 215, "--loadstate", PAUSED, *ALIVE,
             "--disable-bg", "--script", "Start@10")
-    capture("/tmp/rg_field.gba", "/tmp/rg_mtu", 235, "--disable-bg")
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_mtu"), 235, "--disable-bg")
     lag, start, box = 21, 140, (145, 0, 240, 160)
-    diffs = [diff("/tmp/rg_mtr", start + k, "/tmp/rg_mtu", start + lag + k, box)
+    diffs = [diff(cc.scratch("rg_mtr"), start + k, cc.scratch("rg_mtu"), start + lag + k, box)
              for k in range(70)]
-    subprocess.run(["rm", "-rf", "/tmp/rg_mtr", "/tmp/rg_mtu"], check=True)
+    subprocess.run(["rm", "-rf", cc.scratch("rg_mtr"), cc.scratch("rg_mtu")], check=True)
     bad = sum(1 for d in diffs if d)
     return sum(diffs), "%d of 70 frames differ, lag %d" % (bad, lag)
 
@@ -407,14 +407,14 @@ def check_wave():
     check moved by the same one frame.) A 90-frame window anchored there
     catches the hop and its linger.
     """
-    build("demo-field", "/tmp/rg_field.gba")
-    capture(STERILE, "/tmp/rg_wvr", 165, "--loadstate", PAUSED, *ALIVE,
+    build("demo-field", cc.scratch("rg_field.gba"))
+    capture(STERILE, cc.scratch("rg_wvr"), 165, "--loadstate", PAUSED, *ALIVE,
             "--disable-obj", "--script", "Start@10")
-    capture("/tmp/rg_field.gba", "/tmp/rg_wvu", 290, "--disable-obj")
+    capture(cc.scratch("rg_field.gba"), cc.scratch("rg_wvu"), 290, "--disable-obj")
     lag, start, box = 126, 71, (0, 72, 240, 144)
-    diffs = [diff("/tmp/rg_wvr", start + k, "/tmp/rg_wvu", start + lag + k, box)
+    diffs = [diff(cc.scratch("rg_wvr"), start + k, cc.scratch("rg_wvu"), start + lag + k, box)
              for k in range(90)]
-    subprocess.run(["rm", "-rf", "/tmp/rg_wvr", "/tmp/rg_wvu"], check=True)
+    subprocess.run(["rm", "-rf", cc.scratch("rg_wvr"), cc.scratch("rg_wvu")], check=True)
     bad = sum(1 for d in diffs if d)
     return sum(diffs), "%d of 90 frames identical, lag %d" % (90 - bad, lag)
 

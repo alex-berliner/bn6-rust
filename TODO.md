@@ -4,9 +4,37 @@ Each entry is meant to be pasted into a ticket more or less as it stands. Anythi
 without a way to *measure* whether it worked is not ready to hand out — write the
 measurement first.
 
+## Every ticket runs in its own git worktree
+
+    tools/worktree.sh <name>
+
+prints a directory, a branch, and the `CARGO_TARGET_DIR` to export. The agent works THERE and
+commits to ITS OWN BRANCH; the coordinator merges back with `git merge --no-ff`. Nothing else
+gets an agent's half-finished edits, and nobody has to remember not to build at the wrong moment.
+
+Why this exists: on 2026-09-07 four separate incidents came from agents and coordinator sharing
+one checkout. A build taken while a worker held `src/` compiled its half-finished file and
+returned a normal-looking number; the same collision later made a build fail outright; and I told
+a worker its correct measurement was contamination on the strength of one of those numbers.
+
+What the script handles that a bare `git worktree add` does not:
+- `reference/bn6f` is a submodule and a fresh worktree checks it out EMPTY. It is symlinked to
+  the main checkout, because it is only ever READ -- disassembly comments are made by the
+  coordinator in the main tree, so an agent must not commit inside it.
+- Each worktree needs its own `CARGO_TARGET_DIR` or the builds serialise on one lock. A build in
+  a fresh worktree takes about 30 seconds and produces a BYTE-IDENTICAL ROM to the main tree's --
+  verified, three ways, so a number measured in a worktree is directly comparable to one measured
+  anywhere else.
+- Capture scratch paths are keyed on the checkout path by `chip_compare.scratch()`, so two agents
+  cannot overwrite each other's packed ROM between its build and its capture. That needed no
+  argument and no convention; it just works out.
+
+An agent that commits on its own branch is also free to commit MIDWAY, which the old "never
+commit" rule forbade -- and that rule existed only because everyone shared one tree.
+
 ## Rules for every ticket
 
-- **Give each agent its own `CARGO_TARGET_DIR`** under `/tmp`. `cargo` locks the shared
+- **Give each agent its own `CARGO_TARGET_DIR`** under `/tmp` (`tools/worktree.sh` prints one). `cargo` locks the shared
   target directory and every build overwrites the same `target/.../bn` that
   `tools/gbafix.py` reads, so two agents building at once will silently pack each
   other's ROM. This has already caused two wrong captures.
