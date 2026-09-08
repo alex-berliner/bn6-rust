@@ -1166,10 +1166,28 @@ PORTED_CHECKS: List[Check] = [
                  "this recipe does not reach the same way real play did', i.e. RESULT_ARRIVAL's "
                  "own reward content (chip/zenny rolled by real play) has nothing in "
                  "RESULT_ROW/FIXTURE.md to match it against, not a timing field like "
-                 "result_elapsed. NEXT STEP (src/ or FIXTURE.md, not tools/): a reward-content "
-                 "descriptor field (what RESULT_ARRIVAL's own capture actually rolled) is "
-                 "probably what closes the remaining ~6600-32000 px/frame gap, not further "
-                 "tuning of result_elapsed or the offset search.",
+                 "result_elapsed. THE REWARD-CONTENT HYPOTHESIS ABOVE IS NOW DISPROVEN (AUDIT "
+                 "wave 3c/3d 'encounter-roll' ticket): decoded RESULT_ARRIVAL's own captured "
+                 "frames to PNG and read the window by eye after paging through it (A@70/100/"
+                 "130/160/190) -- DeleteTime 0:29:33 (MM:SS:CC, = 29.333s = exactly 1760 frames "
+                 "at 60fps), Busting LV. 2, reward 100z, no chip -- EVERY ONE of RESULT_ROW's "
+                 "existing result_frames=1760/result_level=2/result_zenny=100 (inherited from "
+                 "RESULTMATCH_ROW) already matches this state's own reward EXACTLY, and "
+                 "megaman_hp=60 matches too (peeked live: HP 0x3c/MaxHP 0x64 at RESULT_ARRIVAL's "
+                 "own frame 0). So the reward-content descriptor field the previous note called "
+                 "for is not what's missing -- these three fields were already right. Also ruled "
+                 "out: gauge=1 instead of RESULT_ROW's 0 (peeked live: word_20352a0, "
+                 "eStruct2035280+0x20, reads 0x4000 -- the same 'full' value 7aw's own gauge-"
+                 "fill note gives) changes NOTHING (identical 497967/31882) -- either the gauge "
+                 "field is not read for start_state=1 at all, or it is not the source. NOT "
+                 "SETTLED, and worth the next session's own measurement rather than a guess: "
+                 "RESULT_ARRIVAL's own eBGScrollCBCounters (0x02009690/0x02009694, the backdrop-"
+                 "phase clock 7av documents) read 0x0530/0x8298 (1328/-32104 signed) at its own "
+                 "frame 0 -- a real elapsed-battle value FIXTURE.md's result_elapsed (already "
+                 "swept 0..40, no field wide enough for a number this size even if it were) "
+                 "cannot represent, and item 5's own 'pre-arrival battle tail' framing (backdrop "
+                 "phase / HP / gauge) named exactly this before HP and gauge were ruled out -- "
+                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
