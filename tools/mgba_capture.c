@@ -74,6 +74,34 @@
  *                       run's own are written when this flag is given. A
  *                       frame whose N-lag reference does not exist on disk
  *                       records the sentinel 0xFFFFFFFF.
+ *   --trace-pc <addr>  (repeatable, max 4) AUDIT wave 3c "zero-enemy" ticket:
+ *                       a coarse execution trace for finding a gate the
+ *                       existing tools (a memory --watch, a --dump) cannot
+ *                       see because it lives in a register or a branch, not
+ *                       a value that sits in RAM long enough to read. When
+ *                       given, EVERY frame of the capture is run by single-
+ *                       stepping the ARM core (core->step) instead of one
+ *                       core->runFrame() call, checking the CPU's PC
+ *                       (cpu->gprs[15]) after each instruction against every
+ *                       traced address (both raw and -4, to allow for
+ *                       Thumb's 2-instruction prefetch offset some mgba
+ *                       builds expose on gprs[15]) and printing to stderr
+ *                       "TRACE frame=N step=S PC=0x%08x r0..r3=... r6=...
+ *                       lr=..." on a hit -- one line per hit, not deduped,
+ *                       so a loop that revisits the address shows every
+ *                       pass. A frame ends when the accumulated per-step
+ *                       cycle deltas (cpu->cycles) reach core->frameCycles()
+ *                       or, as a safety valve against a miscounted frame
+ *                       hanging the capture, after 2,000,000 steps -- the
+ *                       cap is generous (a GBA frame is ~280,896 cycles and
+ *                       even single-cycle Thumb ops cannot exceed that many
+ *                       steps) and its own stderr line says so if ever hit.
+ *                       Video frames ARE still written in this mode (each
+ *                       step-loop "frame" ends with the same write_frame()
+ *                       call the normal loop uses), but single-stepping is
+ *                       orders of magnitude slower than runFrame(), so this
+ *                       is for a short diagnostic capture, never the full
+ *                       harness.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -612,6 +640,42 @@ int main(int argc, char** argv) {
 		        diffagainst_dir, diffagainst_lag, diffagainst_file);
 	}
 
+	/* `--trace-pc <addr>` (repeatable, max 4): see the header comment.
+	 * `--trace-steps N` (default 200000) bounds how many instructions are
+	 * single-stepped at the START of every traced frame before falling back
+	 * to a normal core->runFrame() to finish it out. FOUND THE HARD WAY
+	 * (this ticket): single-stepping a WHOLE frame's worth of cycles (the
+	 * first version of this flag tried exactly that, gating on
+	 * cpu->cycles vs core->frameCycles()) does not work -- cpu->cycles is
+	 * not the simple monotonic counter it looks like from the struct
+	 * definition (the observed delta went NEGATIVE), so the loop never sees
+	 * its target and free-runs past the point where mgba's BIOS HLE
+	 * dispatch stays coherent under raw core->step() -- "Bad BIOS Load32" /
+	 * "Bad memory Load8" on stderr past ~1.9M consecutive steps in one
+	 * frame, i.e. actual emulator-state corruption, not just slowness. A
+	 * bounded step count well under that (200000 default, override with
+	 * --trace-steps if a gate lives later in the frame than it can reach),
+	 * followed by a normal runFrame() to reach the next vblank the safe
+	 * way, stayed clean in testing and is what ships. */
+	uint32_t trace_pcs[4];
+	int ntrace = 0;
+	long trace_steps = 200000;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--trace-pc") == 0 && i + 1 < argc) {
+			if (ntrace < 4) trace_pcs[ntrace++] = (uint32_t) strtoul(argv[i + 1], NULL, 0);
+			++i;
+		} else if (strcmp(argv[i], "--trace-steps") == 0 && i + 1 < argc) {
+			trace_steps = strtol(argv[i + 1], NULL, 0);
+			++i;
+		}
+	}
+	if (ntrace > 0) {
+		fprintf(stderr, "trace-pc: watching %d address(es), single-stepping the first %ld "
+		        "instructions of every frame then finishing it with a normal runFrame() "
+		        "(slow -- diagnostic use only)\n", ntrace, trace_steps);
+		for (int t = 0; t < ntrace; ++t) fprintf(stderr, "  trace addr 0x%08x\n", trace_pcs[t]);
+	}
+
 	for (int i = 0; i < count; ++i) {
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
@@ -631,7 +695,36 @@ int main(int argc, char** argv) {
 				core->busWrite16(core, zeros[z].addr + b, 0);
 			}
 		}
-		core->runFrame(core);
+		if (ntrace > 0) {
+			/* Single-step the first `trace_steps` instructions of this frame,
+			 * checking PC against every traced address after each one, then
+			 * hand off to a normal runFrame() to finish the frame out the
+			 * proven-safe way. See the header comment by --trace-pc and the
+			 * comment on trace_steps above for why it is bounded and why the
+			 * frame is NOT single-stepped in full. */
+			struct ARMCore* tcpu = (struct ARMCore*) core->cpu;
+			for (long steps = 0; steps < trace_steps; ++steps) {
+				core->step(core);
+				uint32_t pc = (uint32_t) tcpu->gprs[15];
+				for (int t = 0; t < ntrace; ++t) {
+					/* Raw PC and PC-4: mgba's ARM_PC slot can read either the
+					 * address of the instruction just executed or the
+					 * prefetched next-but-one address depending on mode; a
+					 * hit on either is reported so a Thumb branch target is
+					 * not silently missed. */
+					if (pc == trace_pcs[t] || pc - 4 == trace_pcs[t]) {
+						fprintf(stderr,
+						        "TRACE frame=%d step=%ld PC=0x%08x r0=0x%08x r1=0x%08x "
+						        "r2=0x%08x r3=0x%08x r6=0x%08x lr=0x%08x\n",
+						        i, steps, pc, tcpu->gprs[0], tcpu->gprs[1], tcpu->gprs[2],
+						        tcpu->gprs[3], tcpu->gprs[6], tcpu->gprs[14]);
+					}
+				}
+			}
+			core->runFrame(core);
+		} else {
+			core->runFrame(core);
+		}
 		if (dumpaudio_dir) {
 			int avail = blip_samples_avail(audio_left);
 			int availR = blip_samples_avail(audio_right);
