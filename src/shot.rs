@@ -18,12 +18,12 @@ use crate::spr;
 /// Frames per hop for the buster: the timer is seeded from `Timer2 = 1` on
 /// spawn (asm31.s:27728) and one decrement takes it to zero, the next past
 /// it, so one panel every two frames.
-const BUSTER_HOP: u8 = 2;
+const BUSTER_HOP: u8 = 2; // provenance: derived -- t3_0x0_80C4E58, asm31.s:27728
 /// The shockwave's dwell per panel in its first version (byte_80C6B00).
-const WAVE_HOP: u8 = 0x16;
+const WAVE_HOP: u8 = 0x16; // provenance: derived -- byte_80C6B00, asm31.s:31306
 /// Frames the panel a wave has left stays lit behind it. Measured against the
 /// capture: two panels are lit for exactly three frames at every hop.
-const LIGHT_LINGER: u8 = 3;
+const LIGHT_LINGER: u8 = 3; // provenance: peeked -- measured against the capture
 
 /// The buster shot's graphics live in the effect sprite list: byte_80B8BD4's
 /// record selects `SpritePointersList` offset 0xc (`off_8031E00`) slot 2,
@@ -32,7 +32,7 @@ const LIGHT_LINGER: u8 = 3;
 /// [0xC, 0x2, 0x1, 0x0, 0x0], so the shot plays anim 1, not the large orb of
 /// anim 0). The shockwave's are `off_8031FA4` slot 3, `sprite_83536BC`,
 /// animation 0 in its first version.
-const ANIM: usize = 1;
+const ANIM: usize = 1; // provenance: derived -- byte_80B8BD4's own effect record, data/SpritePointersList.s:88
 
 pub struct Shot {
     pub col: i32,
