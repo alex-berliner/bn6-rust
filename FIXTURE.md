@@ -27,7 +27,7 @@ little-endian.
 | +26 | u16 | scroll_yq | |
 | +28 | u16 | gauge_tick | gauge animation seed, 0xFFFF = default |
 | +30 | u16 | fire_frame | battle frame on which auto-fire presses A (with bit3) |
-| +32 | u16 | enemy_hp | first enemy's HP; 0xFFFF = the kind's default. (`demo-field` pins its Mettaur at 0xffff.) |
+| +32 | u16 | enemy_hp | first enemy's HP; 0 = the kind's default (what `fixture::read()` implements; the harness pokes 0 by default). `demo-field` pins its Mettaur at the literal 0xffff. |
 | +34 | u8  | deck_count | 0..5: chips the chip WINDOW offers (distinct from `hand`, the already-picked ones) |
 | +35 | u8[5] | deck | chip ids offered, in order; codes are the game's own per-id defaults |
 | +40 | u8  | start_state | 0 = battle; 1 = at the RESULT window already |
