@@ -117,15 +117,21 @@ pub const THRUST: AttackSpec = AttackSpec {
 };
 /// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
 /// the shockwave spawned at the front panel when it reads 0x1b
-/// (sub_8109DD2, asm31.s:170721; sub_80C6CE4, 31563).
-// provenance: derived -- sub_8109DD2, asm31.s:170721; sub_80C6CE4, asm31.s:31563.
+/// (sub_8109DEC, asm31.s:170792-170840; sub_80C6CE4, asm31.s:31563), then a
+/// SEPARATE 0x28 (40) frame recovery (sub_8109E4A, asm31.s:170843-170867)
+/// before the decision machine (sub_8109FD6) is allowed to run again -- the
+/// previous cut of this attack had `recover: 0`, which let bn's Mettaur
+/// re-attack as soon as the 0x40-frame pose ended, roughly DOUBLE the real
+/// cadence (64 frames observed vs. the real 64+40=104) and the dominant
+/// driver of the `mettaur`/`wave` residues (AUDIT wave 3d ticket).
+// provenance: derived -- sub_8109DEC/sub_8109E4A, asm31.s:170792-170867; sub_80C6CE4, asm31.s:31563.
 pub const SWING: AttackSpec = AttackSpec {
     windup: None,
     anim: 1,
     frames: 0x40,
     strike_at: 0x40 - 0x1b + 1,
-    recover: 0,
-    recover_anim: None,
+    recover: 0x28,
+    recover_anim: Some(anim::IDLE),
 };
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery
