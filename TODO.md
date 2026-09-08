@@ -10,6 +10,13 @@ measurement first.
   target directory and every build overwrites the same `target/.../bn` that
   `tools/gbafix.py` reads, so two agents building at once will silently pack each
   other's ROM. This has already caused two wrong captures.
+  This rule was itself a trap until 2026-09-07: `regress.py`'s `build()` hardcoded
+  `ROOT/target/...`, so setting `CARGO_TARGET_DIR` made cargo build in one place and the
+  ROM get packed from a stale ELF in another -- no error, just numbers for a different
+  build (`mettaur` 95436 instead of 345). It now asks `cargo metadata` where the target
+  directory actually is, so the rule and the harness finally agree. Any OTHER script that
+  packs a ROM should be checked for the same assumption before being trusted under a
+  private target dir.
 - **Baseline first.** The agent must record the number with its own script *before*
   changing anything, and re-run the identical script afterwards, and report both. A
   change nobody can show improves a number is not a fix — see 7ah in `TRANSFER.md`,

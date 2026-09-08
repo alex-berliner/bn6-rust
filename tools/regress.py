@@ -28,6 +28,7 @@ committed. tools/patch_sterile.py must have been run:
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -52,11 +53,35 @@ def capture(rom, out, count, *args):
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+_TARGET_DIR = None
+
+
+def target_dir():
+    """Where cargo ACTUALLY puts the build, asked of cargo rather than assumed.
+
+    This used to be a hardcoded `ROOT/target`, and that made the project's own
+    advice dangerous: every agent is told to set `CARGO_TARGET_DIR` so two
+    builds cannot race, `cargo build` honours it, and then the ROM was packed
+    from `ROOT/target` anyway -- so a private target directory meant measuring
+    whatever stale ELF happened to be sitting in the repo. It does not fail; it
+    quietly reports numbers for a different build. `cargo metadata` knows the
+    answer for any way of setting it, environment or config.toml alike.
+    """
+    global _TARGET_DIR
+    if _TARGET_DIR is None:
+        out = subprocess.run(["cargo", "metadata", "--format-version", "1", "--no-deps"],
+                             cwd=ROOT, check=True, capture_output=True, text=True).stdout
+        _TARGET_DIR = json.loads(out)["target_directory"]
+    return _TARGET_DIR
+
+
 def build(features, rom):
     subprocess.run(["cargo", "build", "--release", "--features", features], cwd=ROOT,
                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(["python3", os.path.join(ROOT, "tools", "gbafix.py"),
-                    os.path.join(ROOT, "target/thumbv4t-none-eabi/release/bn"), rom],
+    elf = os.path.join(target_dir(), "thumbv4t-none-eabi/release/bn")
+    if not os.path.exists(elf):
+        raise SystemExit("cargo built no %s -- is CARGO_TARGET_DIR pointing somewhere odd?" % elf)
+    subprocess.run(["python3", os.path.join(ROOT, "tools", "gbafix.py"), elf, rom],
                    check=True, stdout=subprocess.DEVNULL)
 
 
