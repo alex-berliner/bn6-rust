@@ -232,12 +232,31 @@ at 66,67,68,69. Different PATTERNS, not a shifted one. The extents differ becaus
 are on different cycle steps -- which is the thing already known. An extent computed over a whole
 box across differing patterns says nothing about position.
 
-WHAT TO DO NEXT, and please do it systematically rather than as more one-off measurements: for a
-full 28-frame cycle on BOTH sides, identify which of the four tiles each side is showing on each
-frame, and tabulate the two sequences against each other. That gives the phase relationship
-outright -- including whether the step BOUNDARIES land on the same frames, which is what a single
-one-step shift scoring worse (371 against 224) suggests they do not. Six single measurements have
-each produced a plausible wrong answer here; one table would settle it.
+THE TABLE, WHICH SETTLED IT. Hashing one body cell per frame across a full cycle on both sides:
+
+    real  f44..f71 : AAAAA BBBBBBB CCCCCCC DDDDDDD AA
+    ours u435..u462: AAAAAAA BBBBBBB CCCCCCC DDDDDDD
+
+Four tiles, seven frames each, on both sides -- and the four HASHES ARE THE SAME on both, so the
+art is byte-identical and only the phase differs. (Careful with that table: the letters are
+assigned per side, so real's "A" and ours' "A" are NOT the same picture. Matching by hash instead:
+the real shows its frame-44 tile on frames 42..48, and we show that same tile on our 442..448.)
+
+TWO NUMBERS, and they are the whole ticket:
+  - THE BAR is 9 frames LATE. The alignment maps our frame u to real u-391, so the real's run at
+    42..48 should be ours at 433..439 and is ours at 442..448.
+  - THE MARKER IS ALREADY ALIGNED, offset 0. Real runs 38..44, ours 429..431, and 429-391 = 38.
+
+That is the surprise, because in this build both come off the SAME counter -- `flow = gauge_tick -
+BAR_PHASE`, feeding `(flow / BAR_FRAMES) % 4` for the bar and `(flow / MARKER_FRAMES) % 2` for the
+marker. So the two are in the wrong phase RELATIVE TO EACH OTHER, and no single seed or
+`BAR_PHASE` can fix both: 9 is not a multiple of the bar's 7-frame step either, so it is not a
+rotation of `BAR_CYCLE`.
+
+DO NOT just add 9 somewhere. The mechanism is the question now: find what the real ROM advances
+the BAR from, and whether it is the same thing that drives the marker. `SetCustGauge` writes the
+gauge VALUE to 0x020352A0 (asm00_2.s:29838); the routine that draws the flowing bar has still not
+been found, and that is the thing to look for.
 
 The marker (194 of the 446) is a separate half-cycle of phase: real is ORANGE at the alignment
 frame, ours CYAN, both blinking on the same 16-frame beat with exactly 110 orange pixels lit. Last,
