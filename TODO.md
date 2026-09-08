@@ -743,7 +743,7 @@ WHAT IS STILL TRUE AND MATTERS: the suite is not trustworthy while the box is bu
 now loud instead of silent, but it is still the case, and the two spurious runs cost more
 attention tonight than the bug they pretended to find.
 
-### D4. FIVE CHECKS COMPARE A SINGLE FRAME
+### D4. FIVE CHECKS COMPARED A SINGLE FRAME  *(three widened; two cannot be, for different reasons)*
 `tiles`, `field`, `window`, `card` and `result` each match ONE frame and report 0. A single
 frame can be right while its neighbours are wrong, and at least one of them demonstrably is.
 
@@ -757,11 +757,27 @@ exactly why `mettaur` and `wave` search for a lag around a specific attack inste
 a fixed one. But "one frame in fifty matched exactly" is a weaker claim than `field 0` sounds,
 and nobody looking at the suite would know the difference.
 
-WHAT TO DECIDE (planning, not a ticket to fire off): for each of the five, either widen it to a
-window of frames where the two sides are genuinely comparable, or state in its docstring what
-it does and does not establish. `tiles` and `card` are probably widenable as they stand --
-their fixtures are deterministic. `field` needs its window chosen before the enemy's first
-independent decision, or an alignment like `mettaur`'s.
+DONE, WITH TWO EXCEPTIONS THAT ARE THE INTERESTING PART.
+
+`window` and `card` are now sixteen frames each with a searched lag, and `window` CAUGHT
+SOMETHING: a single frame could not tell lag 181 from lag 182, both being exact at frame 59, so
+the check had been sitting on the wrong alignment. Over sixteen frames 181 measures 184 px -- the
+bracket's blink toggling one frame out, 92 px a toggle, twice -- and 182 measures 0. Nothing could
+have seen that from one frame.
+
+`tiles` is a window now too (390..394 originally, 433..437 today) but for a different reason -- to
+absorb boot drift -- and it still compares ONE frame's worth of picture.
+
+`result` CANNOT be strengthened this way, and the check now says so in its own comment. Measured:
+over real frames 24..39 the compared region does not change at all, every consecutive difference
+is 0. Sixteen frames of a still picture is one frame. Strengthening it needs a window covering the
+RESULT screen ARRIVING -- the slide-in, the badge appearing -- and that needs a real capture from
+before the window opens, which this fixture's save state does not provide.
+
+`field` cannot either, for the opposite reason: it is too dynamic. Holding its best lag, the next
+twenty frames run 765, 1243, 1371, 1596, ... because the Mettaur acts on an RNG the two sides do
+not share. It needs an alignment like `mettaur`'s, or a window that ends before the enemy's first
+independent decision.
 
 ### D3. `--dump`'s byte count silently reads 0 from hex  *(fixed)*
 `tools/mgba_capture.c`'s `--dump addr:bytes:file` parses the middle field with `atoi`,

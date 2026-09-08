@@ -200,19 +200,51 @@ def check_field():
     return best(cc.scratch("rg_fr"), 90, cc.scratch("rg_fu"), range(190, 240), (0, 0, 240, 160)), "whole screen"
 
 
+#: SIXTEEN FRAMES, NOT ONE (TODO D4). This compared a single frame and read 0,
+#: and a single frame could not tell lag 181 from lag 182 -- both are exact at
+#: frame 59. Over sixteen consecutive frames 181 is 184 px (the bracket's blink
+#: toggling one frame out, 92 px a toggle, twice) and 182 is 0. The check was
+#: quietly on the wrong alignment and nothing could see it.
+#: The lag is searched rather than fixed, for the reason recorded on `mettaur`
+#: and `wave`: this fixture's rust side boots from reset while its real side
+#: loads a save state, so the offset moves with any source change.
+WINDOW_FRAMES = 16
+WINDOW_LAGS = range(174, 190)
+
+
 def check_window():
     build("demo-custmatch", cc.scratch("rg_cm.gba"))
-    capture(REAL, cc.scratch("rg_wr"), 60, "--loadstate", CHIPSELECT)
-    capture(cc.scratch("rg_cm.gba"), cc.scratch("rg_wu"), 260)
-    return best(cc.scratch("rg_wr"), 59, cc.scratch("rg_wu"), range(236, 252), (0, 0, 112, 160)), "window only"
+    capture(REAL, cc.scratch("rg_wr"), 60 + WINDOW_FRAMES, "--loadstate", CHIPSELECT)
+    capture(cc.scratch("rg_cm.gba"), cc.scratch("rg_wu"), 60 + max(WINDOW_LAGS) + WINDOW_FRAMES)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_wr"), 55 + k, cc.scratch("rg_wu"), 55 + lag + k,
+                     (0, 0, 112, 160)) for k in range(WINDOW_FRAMES)]
+
+    total, lag = by_lag(WINDOW_LAGS, score)
+    return total, "%d frames of the window, lag %d" % (WINDOW_FRAMES, lag)
+
+
+#: Sixteen frames rather than one, and a searched lag -- same reasons as
+#: `check_window` above (TODO D4). The window is the sixteen frames ending at
+#: real 159, which is where the fifth card has settled.
+CARD_FRAMES = 16
+CARD_LAGS = range(74, 96)
 
 
 def check_card():
     build("demo-cardname", cc.scratch("rg_cn.gba"))
     capture(REAL, cc.scratch("rg_kr"), 160, "--loadstate", CHIPSELECT,
             "--script", ",".join(held("Left", 20 + 30 * k, 6) for k in range(5)))
-    capture(cc.scratch("rg_cn.gba"), cc.scratch("rg_ku"), 260)
-    return best(cc.scratch("rg_kr"), 159, cc.scratch("rg_ku"), range(238, 250), (0, 0, 112, 160)), "card + window"
+    capture(cc.scratch("rg_cn.gba"), cc.scratch("rg_ku"), 160 + max(CARD_LAGS) + 1)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_kr"), 159 - CARD_FRAMES + 1 + k, cc.scratch("rg_ku"),
+                     159 - CARD_FRAMES + 1 + lag + k, (0, 0, 112, 160))
+                for k in range(CARD_FRAMES)]
+
+    total, lag = by_lag(CARD_LAGS, score)
+    return total, "%d frames of the card, lag %d" % (CARD_FRAMES, lag)
 
 
 #: The cursor walk: five Left presses, six frames each, thirty apart. The real
@@ -287,11 +319,33 @@ def check_opening():
     return total, "%d frames of the opening, worst %d px" % (len(frames), worst)
 
 
+#: Sixteen frames rather than one, and a searched lag (TODO D4) -- BUT THIS ONE
+#: IS STILL EFFECTIVELY A SINGLE FRAME AND SHOULD NOT BE READ AS MORE.
+#: Measured: over real frames 24..39 the compared region does not change at all,
+#: every consecutive difference is 0. So the sixteen frames are the same picture
+#: sixteen times and the lag search has nothing to bite on -- it reports the
+#: bottom of whatever range it is given, which is why widening the range moved
+#: the reported lag from 105 to 95 without changing the result.
+#: What would actually strengthen this: a window covering the RESULT screen
+#: ARRIVING -- its slide-in and the badge appearing -- rather than sixteen
+#: frames after everything has settled. That needs the real side captured from
+#: before the window opens, which this fixture's save state does not give.
+RESULT_FRAMES = 16
+RESULT_LAGS = range(95, 140)
+
+
 def check_result():
     build("demo-resultmatch", cc.scratch("rg_res.gba"))
     capture(REAL, cc.scratch("rg_rr"), 40, "--loadstate", NOENEMY)
-    capture(cc.scratch("rg_res.gba"), cc.scratch("rg_ru"), 200)
-    return best(cc.scratch("rg_rr"), 39, cc.scratch("rg_ru"), range(150, 175), (26, 24, 215, 155)), "window + badge"
+    capture(cc.scratch("rg_res.gba"), cc.scratch("rg_ru"), 40 + max(RESULT_LAGS) + 1)
+
+    def score(lag):
+        return [diff(cc.scratch("rg_rr"), 39 - RESULT_FRAMES + 1 + k, cc.scratch("rg_ru"),
+                     39 - RESULT_FRAMES + 1 + lag + k, (26, 24, 215, 155))
+                for k in range(RESULT_FRAMES)]
+
+    total, lag = by_lag(RESULT_LAGS, score)
+    return total, "%d frames of the window and badge, lag %d" % (RESULT_FRAMES, lag)
 
 
 def check_warp():
