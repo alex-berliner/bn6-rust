@@ -49,6 +49,23 @@
  *                       channels, 4-5 are DirectSound FIFOs A/B) is printed
  *                       to stderr whenever this or --dump-audio is used, so
  *                       the ids are legible without reading this comment.
+ *   --watch <addr>:<len>:<file>  (repeatable) after EVERY rendered frame,
+ *                       read <len> bytes at <addr> and append them to
+ *                       <file>, so it ends up frames*<len> bytes long -- one
+ *                       snapshot per frame, unlike --dump which reads once
+ *                       at the very end. For following a value that changes
+ *                       every frame (a battle-started marker, a frame
+ *                       counter) well enough to align two captures on it
+ *                       instead of on a hardcoded frame number.
+ *   --diff-against <dir>:<lag>:<file>  "stream, don't store": instead of
+ *                       writing this run's own frame.####.rgb files, diff
+ *                       every rendered frame N against <dir>/frame.%05d.rgb
+ *                       for frame N-lag as it is rendered, and append the
+ *                       differing-pixel count (RGB only, one u32 per frame,
+ *                       little-endian) to <file>. No frame files of this
+ *                       run's own are written when this flag is given. A
+ *                       frame whose N-lag reference does not exist on disk
+ *                       records the sentinel 0xFFFFFFFF.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -473,6 +490,104 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* `--watch addr:len:file` (repeatable): after EVERY rendered frame, read
+	 * `len` bytes at `addr` and append them to `file`, so the file ends up
+	 * frames * len bytes long -- one snapshot per frame, growing as the
+	 * capture runs, unlike --dump which reads once at the very end. This is
+	 * the alignment primitive AUDIT pair 1 wants: the ROM writes a "battle
+	 * started" marker (and a battle frame counter) to a fixed RAM address
+	 * every frame, and the harness aligns both captures on the frame where
+	 * the watched bytes cross that marker instead of on a hardcoded frame
+	 * number. Base-0 strtoul throughout, same reasoning as --dump above:
+	 * atoi() reads "0x..." as 0 without complaining, silently disagreeing
+	 * with a hex address parsed by strtoul(...,0) elsewhere in the same
+	 * flag -- a length of 0 is refused rather than watching nothing. */
+	struct { uint32_t addr; int len; FILE* f; } watches[16];
+	int nwatch = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--watch") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* c1 = strchr(p, ':');
+			char* c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+			if (!c1 || !c2) {
+				fprintf(stderr, "--watch: expected addr:len:file, got '%s'\n", argv[i + 1]);
+				return 1;
+			}
+			*c1 = 0; *c2 = 0;
+			uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
+			int len = (int) strtoul(c1 + 1, NULL, 0);
+			const char* path = c2 + 1;
+			if (len <= 0) {
+				fprintf(stderr, "--watch: byte count '%s' is not a positive "
+				        "number (hex needs an 0x prefix)\n", c1 + 1);
+				return 1;
+			}
+			if (nwatch >= 16) {
+				fprintf(stderr, "--watch: too many watches (max 16)\n");
+				return 1;
+			}
+			FILE* f = fopen(path, "wb");
+			if (!f) {
+				fprintf(stderr, "fopen %s: %s\n", path, strerror(errno));
+				return 1;
+			}
+			watches[nwatch].addr = addr;
+			watches[nwatch].len = len;
+			watches[nwatch].f = f;
+			++nwatch;
+			fprintf(stderr, "watching %d bytes @ 0x%08x -> %s\n", len, addr, path);
+			free(p);
+			++i;
+		}
+	}
+
+	/* `--diff-against <dir>:<lag>:<file>`: "stream, don't store" (AUDIT pair
+	 * 13 / Optimisations). Instead of writing this run's own frame.#####.rgb
+	 * files, compare each rendered frame N directly against
+	 * <dir>/frame.%05d.rgb for frame N-lag (a previously captured reference)
+	 * and append the differing-pixel count for that frame, as a little-
+	 * endian u32, to <file>. One record per rendered frame, in order, so
+	 * <file> ends up exactly `count` u32s long -- a short file means a short
+	 * capture, the same signal a normal run gives by writing fewer .rgb
+	 * files (see tools/chip_compare.py's capture()). Comparison is RGB only
+	 * (the 4th byte of each native pixel is unused, per mgba_frames.py's
+	 * decode() comment), matching every other diff in the project. If frame
+	 * N-lag does not exist on disk (e.g. N < lag), the record is the
+	 * sentinel 0xFFFFFFFF rather than a bogus 0 or a crash. */
+	const char* diffagainst_dir = NULL;
+	long diffagainst_lag = 0;
+	const char* diffagainst_file = NULL;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--diff-against") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* c1 = strchr(p, ':');
+			char* c2 = c1 ? strchr(c1 + 1, ':') : NULL;
+			if (!c1 || !c2) {
+				fprintf(stderr, "--diff-against: expected dir:lag:file, got '%s'\n", argv[i + 1]);
+				return 1;
+			}
+			*c1 = 0; *c2 = 0;
+			diffagainst_dir = strdup(p);
+			diffagainst_lag = strtol(c1 + 1, NULL, 0);
+			diffagainst_file = strdup(c2 + 1);
+			free(p);
+			++i;
+		}
+	}
+	FILE* diffagainst_out = NULL;
+	uint8_t* diffagainst_ref = NULL;
+	const size_t diffagainst_framebytes = (size_t) GW * GH * sizeof(color_t);
+	if (diffagainst_file) {
+		diffagainst_out = fopen(diffagainst_file, "wb");
+		if (!diffagainst_out) {
+			fprintf(stderr, "fopen %s: %s\n", diffagainst_file, strerror(errno));
+			return 1;
+		}
+		diffagainst_ref = malloc(diffagainst_framebytes);
+		fprintf(stderr, "streaming diff against %s (lag %ld) -> %s; not writing frame files\n",
+		        diffagainst_dir, diffagainst_lag, diffagainst_file);
+	}
+
 	for (int i = 0; i < count; ++i) {
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
@@ -514,9 +629,55 @@ int main(int argc, char** argv) {
 			fclose(pf);
 			audio_samples_written += avail;
 		}
-		if (write_frame(buf, stride)) {
+		/* --watch: append this frame's snapshot of every watched range, after
+		 * the frame has actually run. */
+		for (int w = 0; w < nwatch; ++w) {
+			for (int b = 0; b < watches[w].len; ++b) {
+				uint8_t v = (uint8_t) core->busRead8(core, watches[w].addr + b);
+				fwrite(&v, 1, 1, watches[w].f);
+			}
+		}
+		if (diffagainst_file) {
+			/* Streaming diff: no frame file of our own, just the count. */
+			char rname[512];
+			snprintf(rname, sizeof(rname), "%s/frame.%05ld.rgb", diffagainst_dir,
+			         (long) i - diffagainst_lag);
+			uint32_t ndiff = 0xFFFFFFFFu; /* sentinel: no reference frame */
+			FILE* rf = fopen(rname, "rb");
+			if (rf) {
+				size_t got = fread(diffagainst_ref, 1, diffagainst_framebytes, rf);
+				fclose(rf);
+				if (got == diffagainst_framebytes) {
+					ndiff = 0;
+					const uint8_t* a = (const uint8_t*) buf;
+					const uint8_t* b = diffagainst_ref;
+					size_t npixels = (size_t) GW * GH;
+					for (size_t px = 0; px < npixels; ++px) {
+						size_t o = px * sizeof(color_t);
+						/* RGB only -- the 4th byte is unused, same as every
+						 * other diff in the project. */
+						if (a[o] != b[o] || a[o + 1] != b[o + 1] || a[o + 2] != b[o + 2]) {
+							++ndiff;
+						}
+					}
+				}
+			}
+			fwrite(&ndiff, sizeof(ndiff), 1, diffagainst_out);
+			++g_frame;
+		} else if (write_frame(buf, stride)) {
 			return 1;
 		}
+	}
+	if (diffagainst_file) {
+		fclose(diffagainst_out);
+		free(diffagainst_ref);
+		fprintf(stderr, "diff-against %s (lag %ld): wrote %d per-frame count(s) to %s\n",
+		        diffagainst_dir, diffagainst_lag, g_frame, diffagainst_file);
+	}
+	for (int w = 0; w < nwatch; ++w) {
+		fclose(watches[w].f);
+		fprintf(stderr, "watch: wrote %d frame(s) x %d byte(s) @ 0x%08x\n",
+		        g_frame, watches[w].len, watches[w].addr);
 	}
 
 	/* Dump a memory range to a file: `--dump addr:bytes:file`, taken AFTER the
