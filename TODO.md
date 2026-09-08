@@ -187,7 +187,23 @@ offset plus a static HUD difference would sit near 1294 everywhere. It does not 
 best lag drifts with the frame, or our backdrop advances at a different RATE from the real one,
 which would be a parity bug that the swept 392 has been hiding.
 
-### A8. The custom gauge's BAR CELLS ARE THE WRONG SHAPE
+### A8. The custom gauge  *(0 -- but by MEASURED constants, not a mechanism)*
+`gauge` 446 -> 0. Two offsets, `BAR_EXTRA = 9` and `MARKER_EXTRA = 8` in src/hudtiles.rs.
+
+READ THIS BEFORE TRUSTING THE ZERO. Both numbers were measured, neither was derived, and the
+thing they imply is not understood: this build drives the bar and the marker off ONE counter
+(`gauge_tick`), and the real ROM evidently does not, because no single phase can satisfy both --
+9 mod 28 together with 0 mod 16 has no solution. The offsets make the picture match; they do not
+explain why the two clocks are related the way they are. That is still open, and the routine that
+draws the flowing bar has still not been found in the disassembly.
+
+Same footing as `BUSTER_HIT_DELAY` in battle.rs, and labelled the same way in the source: the
+value that measures right rather than the value that computes right. A zero standing on two
+unexplained constants is worth less than a zero standing on a mechanism, and the next person to
+touch this should be trying to replace them, not defend them.
+
+### A8 (the diagnosis, kept -- five wrong readings and what settled them)
+### A8-old. The custom gauge's BAR CELLS ARE THE WRONG SHAPE
 `gauge` 446. Rendering the two HUD strips side by side at the alignment answers it in one look,
 after four rounds of me reasoning about timing:
 

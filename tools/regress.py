@@ -599,7 +599,7 @@ def check_wave():
 CHECKS = [
     ("chips", check_chips, 0),        # all 43
     ("tiles", check_tiles, 0),
-    ("gauge", check_gauge, 446),  # TODO A8 -- drive to 0, do not raise
+    ("gauge", check_gauge, 0),
     ("field", check_field, 0),
     ("window", check_window, 0),
     ("card", check_card, 0),

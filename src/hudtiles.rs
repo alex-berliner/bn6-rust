@@ -55,6 +55,20 @@ const MARKER_FRAMES: u32 = 8;
 /// save state can show; -1 is what makes this capture match, and its being so
 /// small is the only reason to think the two counters are related at all.
 const BAR_PHASE: u32 = 1;
+/// The bar runs on its own offset from the marker, and this is a MEASURED
+/// number, not a derived one. Matching tiles by hash across a full cycle: the
+/// real ROM shows its frame-44 tile on frames 42..48 and this build showed the
+/// same tile 9 frames later in aligned time, while the MARKER measured offset
+/// 0 -- so the two cannot come off one counter as this code assumed, and no
+/// single phase fixes both (9 mod 28 with 0 mod 16 has no solution).
+/// What advances the real ROM's bar is still unknown; see TODO A8. Same
+/// footing as BUSTER_HIT_DELAY in battle.rs: the value that measures right
+/// rather than the value that computes right, and labelled as such.
+const BAR_EXTRA: u32 = 9;
+/// And the marker sits half a blink from where this build put it -- measured
+/// the same way, and the residue it removes is exactly the 110 orange pixels
+/// the lit marker draws.
+const MARKER_EXTRA: u32 = 8;
 /// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
@@ -232,8 +246,8 @@ impl HudTiles {
         let flow = self.gauge_tick.wrapping_sub(BAR_PHASE);
         let (bar, marker) = if ready {
             (
-                BAR_CYCLE[((flow / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
-                if (flow / MARKER_FRAMES) % 2 == 0 {
+                BAR_CYCLE[(((flow + BAR_EXTRA) / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
+                if ((flow + MARKER_EXTRA) / MARKER_FRAMES) % 2 == 0 {
                     MARKER_READY
                 } else {
                     MARKER_WAITING
