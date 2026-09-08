@@ -252,11 +252,20 @@ poke to a known address the harness can `--dump`, or a debug tile), and compare 
 above. Do not adjust a constant until that trace exists -- the schedule and the initial condition
 are both confirmed exact now, so a constant that fixes the number would be hiding the real cause.
 
-ONE SMALLER THING FOUND ON THE WAY, worth its own look: the real scroll register is
-`(counter as u32) >> 4` of a counter falling by 8, which lands on -(n+1)/2 for ODD n where this
-build's `-(x_q / 4)` gives -(n-1)/2. So on odd frames our backdrop sits one pixel behind the real
-ROM's. It does not show at the frames measured so far because they happen to be even, and it may
-be the whole reason `tiles` had to be a window rather than a frame.
+ONE SMALLER THING FOUND ON THE WAY, AND TRIED, AND WRONG. The real scroll register is
+`(counter as u32) >> 4` of a counter falling by 8 -- a LOGICAL shift of a negative, so it lands
+on -ceil(n/2) where this build's `-(x_q / 4)` gives -floor(n/2), one pixel apart on odd frames.
+Checked against the peeks: at frame 1 the counters read -8/-4 and the register is -1/-1, where
+this build gives 0/0. The derivation looks airtight.
+
+CHANGING IT TO CEILING MEASURES MUCH WORSE: `opening` 290 -> 30304, `tiles` 1160 with its best
+at 390 rather than 391. Reverted. So something in the derivation is wrong -- the register may not
+be written straight from that shift, the BG offset may carry another term, or our `x_q` may not
+correspond to n the way I assumed. Worth another look with a per-frame trace of BOTH sides'
+actual scroll registers, not a third guess.
+
+A plausible change backed by a disassembly line that moves the number the wrong way is exactly
+the shape 7ah warns about. Recorded here rather than retried.
 
 DO NOT MERGE THE BRANCH UNTIL THAT IS ANSWERED, because merging as-is turns a `tiles` 0 into a
 282, and a 0 that came partly from luck is still worth more than a non-zero nobody has explained.
