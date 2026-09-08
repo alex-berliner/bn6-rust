@@ -95,16 +95,18 @@ def check_chips():
 
 #: The backdrop (BG1) scrolls under a per-frame counter pair, eBGScrollCBCounters
 #: (0x02009690/0x02009694 in EWRAM, decremented 8 and 4 a frame -- see
-#: BGScrollCB_BG1Diagonal3to2Scroll, reference/bn6f/asm/asm00_0.s:2165) that is zeroed
-#: only once, at battle init (sub_8080D90, asm21.s:2, called from
+#: BGScrollCB_BG1Diagonal3to2Scroll, reference/bn6f/asm/asm00_0.s:3272-3288) that is
+#: zeroed only once, at battle init (sub_8080D90, asm21.s:2, called from
 #: initBattleStructsAndVram_80071D4, asm00_1.s ~5147). So the phase is "frames since
 #: this battle started" -- exactly what this build already counts from (backdrop.rs's
 #: `ticks`) -- but PAUSED is a save state grabbed mid-battle, and pausing does not
 #: reset or expose the counter: peeking it at load (`--peek 0x02009690/0x02009694`)
 #: reads -63128/-31564, i.e. 7891 real frames already elapsed before the save, a
-#: number nothing else in the state or in this build can reproduce. That is genuinely
-#: unrecoverable from this one state -- a fresh capture from a battle's real frame 0
-#: would pin it outright.
+#: number nothing else in the state or in this build can reproduce.
+#: /tmp/battlestart.state DOES read 0/0, so a known origin now exists -- but anchoring
+#: this check on it does not produce an exact match anywhere in its usable window
+#: (TRANSFER 7bi); the best the backdrop band alone reaches there is 86 px. This
+#: fixture stays.
 #: What IS available: both sides are deterministic replays (fixed scripts, no live
 #: input), so a rust frame that reproduces the real ROM's phase does so every run.
 #: Measured once by sweeping the old 340..400 window: 392 is the only exact hit --
@@ -113,6 +115,12 @@ def check_chips():
 #: some frame in a 60-frame window match" into "does frame 392 match", which a real
 #: phase or rate regression will fail, and a coincidental one in the old range would
 #: not have.
+#: AND 392 IS NO LONGER A LONE COINCIDENCE. The backdrop's visual period is 896
+#: frames -- not the 1024 the register modulus suggests, because the motif repeats
+#: within the map at x+128 -- and `diff(real 43, rust 392 + k*896)` is 0 for k = 0..8,
+#: out to rust frame 7560. Zero drift over 7168 elapsed frames also says our scroll
+#: RATE matches the real ROM's exactly, which is the thing a single matching frame
+#: could never have shown on its own.
 TILES_RUST_FRAME = 392
 
 
