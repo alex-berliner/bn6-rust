@@ -135,32 +135,61 @@ def check_chips():
 #: out to rust frame 7560. Zero drift over 7168 elapsed frames also says our scroll
 #: RATE matches the real ROM's exactly, which is the thing a single matching frame
 #: could never have shown on its own.
-#: WHY THIS IS A SMALL WINDOW AGAIN, AND NOT A SINGLE FRAME. Pinning one frame
-#: turned out to pin the wrong thing. `tiles` is the only check anchored to an
-#: absolute BOOT-relative frame -- no script, no event, just "the 392nd frame
-#: after reset" -- and boot length is not invariant under a source change. Fat
-#: LTO reorders and re-inlines globally, so a change in `Shot::update` moved the
-#: intro: the pre-fix and post-fix builds first differ at frame SEVEN, nowhere
-#: near a shockwave, and the whole timeline lands a frame later. Every other
-#: check survived it, because they align on a script, an event or a `best()`
-#: window; only this one broke, and it broke by exactly the one frame.
-#: A window of five restores that tolerance without giving up the strictness the
-#: single frame was for. The neighbours are not near-misses -- 390 differs by
-#: 110 px and 393 by 3295 -- and the backdrop's period is 896 frames, so there is
-#: no second phase to land on by accident inside a five-frame window. A real
-#: phase or rate error still finds no zero anywhere in it.
-TILES_RUST_FRAMES = range(390, 395)
+#: THE ALIGNMENT IS DERIVED NOW, NOT SWEPT, and the check no longer covers the
+#: HUD. Both changes come from 7bl.
+#: The frame: the fixture now SEEDS its backdrop with the save state's own
+#: phase (Backdrop::seed, src/backdrop.rs), so the two sides share an origin
+#: and the match comes back close to boot instead of 1798 frames in -- rust
+#: 435 against real 44, exact. Before the seed the only alignment was where the
+#: art's 192-frame cycle and the scroll's 1024-frame one came back together,
+#: every LCM = 3072 frames, which made this check capture 1800 frames to find
+#: one. A five-frame window absorbs the boot-length drift fat LTO gives any
+#: source change.
+#: Real frame 44, not 43: our frame matches 44 to the pixel and differs from 43
+#: by 136. The old comparison against 43 was a frame out and nobody could see
+#: it while a wrong art model was cancelling the error.
+#: The BOX excludes the HUD strip, and that is not a softening. The old check
+#: compared the whole screen at one frame and read 0 for weeks while hiding a
+#: wrong art schedule, a scroll rounding error AND an unmodelled gauge
+#: animation -- three defects that happened to cancel there. The gauge is a
+#: separate, named, still-open defect (TODO A8) and has its own check below, so
+#: nothing is hidden by the split: this one says the BACKGROUNDS are exact and
+#: `gauge` says the HUD is not.
+TILES_REAL_FRAME = 44
+TILES_RUST_FRAMES = range(433, 438)
+TILES_BOX = (0, 24, 240, 160)
 
 
 def check_tiles():
+    """Backgrounds, whole screen below the HUD, at a derived alignment."""
     build("demo-hudmatch", cc.scratch("rg_hud.gba"))
-    capture(REAL, cc.scratch("rg_tr"), 60, "--loadstate", PAUSED, "--script", "Start@10", "--disable-obj")
-    capture(cc.scratch("rg_hud.gba"), cc.scratch("rg_tu"), max(TILES_RUST_FRAMES) + 1, "--disable-obj")
-    scores = [(diff(cc.scratch("rg_tr"), 43, cc.scratch("rg_tu"), f, (0, 0, 240, 160)), f)
+    capture(REAL, cc.scratch("rg_tr"), 60, "--loadstate", PAUSED, "--script", "Start@10",
+            "--disable-obj")
+    capture(cc.scratch("rg_hud.gba"), cc.scratch("rg_tu"), max(TILES_RUST_FRAMES) + 1,
+            "--disable-obj")
+    scores = [(diff(cc.scratch("rg_tr"), TILES_REAL_FRAME, cc.scratch("rg_tu"), f, TILES_BOX), f)
               for f in TILES_RUST_FRAMES]
     got, at = min(scores)
-    return got, "whole screen, best of %d..%d (at %d)" % (
+    return got, "backgrounds below the HUD, best of %d..%d (at %d)" % (
         min(TILES_RUST_FRAMES), max(TILES_RUST_FRAMES), at)
+
+
+#: The HUD at the same alignment, which is where the gauge's unmodelled flow
+#: lives. TODO A8: the bar is full throughout and its four-state cycle is right,
+#: but early on its stripes SHIFT position as well as cycling and this build
+#: does not do that. 470 is a defect with a number, not a tolerance.
+def check_gauge():
+    """The HUD strip at `tiles`' alignment -- the gauge's flow (TODO A8)."""
+    build("demo-hudmatch", cc.scratch("rg_hud.gba"))
+    capture(REAL, cc.scratch("rg_gr"), 60, "--loadstate", PAUSED, "--script", "Start@10",
+            "--disable-obj")
+    capture(cc.scratch("rg_hud.gba"), cc.scratch("rg_gu"), max(TILES_RUST_FRAMES) + 1,
+            "--disable-obj")
+    scores = [(diff(cc.scratch("rg_gr"), TILES_REAL_FRAME, cc.scratch("rg_gu"), f,
+                    (0, 0, 240, 24)), f) for f in TILES_RUST_FRAMES]
+    got, at = min(scores)
+    subprocess.run(["rm", "-rf", cc.scratch("rg_gr"), cc.scratch("rg_gu")], check=True)
+    return got, "HUD strip at frame %d" % at
 
 
 def check_field():
@@ -506,11 +535,12 @@ def check_wave():
 CHECKS = [
     ("chips", check_chips, 0),        # all 43
     ("tiles", check_tiles, 0),
+    ("gauge", check_gauge, 446),  # TODO A8 -- drive to 0, do not raise
     ("field", check_field, 0),
     ("window", check_window, 0),
     ("card", check_card, 0),
     ("cursor", check_cursor, 0),
-    ("opening", check_opening, 16788),  # TODO A7 -- drive to 0, do not raise
+    ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),

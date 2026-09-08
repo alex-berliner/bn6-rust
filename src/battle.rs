@@ -1324,7 +1324,15 @@ impl<'a> Battle<'a> {
             // Both parity fixtures come from save states where the navi has
             // taken damage, and both capture the HP box, so they carry the
             // capture's own 60 rather than a fresh navi's.
-            hp: if cfg!(any(feature = "demo-hudmatch", feature = "demo-resultmatch")) {
+            hp: if cfg!(any(
+                feature = "demo-hudmatch",
+                feature = "demo-resultmatch",
+                // demo-open compares against /tmp/battlestart.state, whose navi
+                // is on 60 like the others'. Without this the HP box differs by
+                // a constant 29 px a frame and nothing else does, which is a
+                // fixture reading a real number wrong.
+                feature = "demo-open",
+            )) {
                 HUDMATCH_HP
             } else {
                 PLAYER_HP
@@ -1588,6 +1596,31 @@ impl<'a> Battle<'a> {
         }
         self.results_mark = Some(self.custom_assets.mark_sprite());
         self.shown = Some(self.results.show(kind, time, level, 0, RESULTMATCH_ZENNY));
+    }
+
+    /// Bring the backdrop's art to the real ROM's state at a battle's first
+    /// frame (see `backdrop::Backdrop::prime`). Called once, right after
+    /// construction: `Battle::new` has no `Graphics` to draw with, so this
+    /// cannot happen there.
+    pub fn prime_backdrop(&mut self, gfx: &Graphics) {
+        if let Some(backdrop) = self.backdrop.as_mut() {
+            // A fixture compared against /tmp/pausedwithcannon.state starts
+            // where that state is, not at zero -- see Backdrop::seed. The
+            // fixtures that compare against a DIFFERENT state are excluded:
+            // demo-open runs against a battle's first frame, where zero is
+            // right, and the window fixtures cover the backdrop entirely.
+            #[cfg(all(
+                feature = "demo",
+                not(any(
+                    feature = "demo-open",
+                    feature = "demo-custmatch",
+                    feature = "demo-cardname",
+                    feature = "demo-resultmatch",
+                ))
+            ))]
+            backdrop.seed(5, 4, 424, 724);
+            backdrop.prime(gfx);
+        }
     }
 
     /// Run one frame of battle logic. Returns true once the results window
