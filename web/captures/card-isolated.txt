@@ -2,4 +2,4 @@ card (isolated), FAILED: per-frame max 5912 px, total 93713 px over 16 frames. A
 
 pending-src, same field as `window`. canon: REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: CUSTMATCH_ROW (demo-cardname is a feature alias for demo-custmatch with no cfg site of its own -- same descriptor) with the same script -- marker origin 8 plus a band around regress.py's old compared rust frame (start=144 PLUS lag[74,96] = 218..240, 210..232 once origin is subtracted).
 
-commit 842c2b8
+commit 08856fa

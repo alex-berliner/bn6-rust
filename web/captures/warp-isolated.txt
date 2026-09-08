@@ -2,4 +2,4 @@ warp (isolated), FAILED: per-frame max 1577 px, total 9198 px over 30 frames. Al
 
 canon: Right/Down/Left/Up held 3 frames each starting real 130 (past the DELETE dissolve, see `field`'s note; regress.py's old real 60/80/100/120 shifted by the same +70 the dissolve wait needs), canon_ref=130 = the first press. rust: the SAME held-key SHAPE at battle-relative frames 50/70/90/110 (marker origin 8 + those, no dissolve to wait out on this side -- it never had an enemy) instead of regress.py's old cold-boot guesses (130/150/170/190, tuned to a boot length that moves); a 40-wide search band around the first press covers plausible input-lag between a resumed real battle and a fresh fixture one. Full-screen pixel diff (pair 6) replaces regress.py's own coarse blue-pixel position tracking -- strictly more rigorous, not a relaxation.
 
-commit 842c2b8
+commit 08856fa
