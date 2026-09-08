@@ -327,12 +327,14 @@ chip and a number in the popup.
 measured rather than copied. A `cursor` check was added too. Fifteen checks now.
 
 
-### D3. `--dump`'s byte count silently reads 0 from hex
+### D3. `--dump`'s byte count silently reads 0 from hex  *(fixed)*
 `tools/mgba_capture.c`'s `--dump addr:bytes:file` parses the middle field with `atoi`,
 which returns 0 for `0x1c0` and dumps an empty file with no error. The address beside it
 uses `strtoul(..., 0)` and does accept hex, so the two halves of the same argument disagree
-about their base -- which is exactly the sort of thing that costs an hour. Use `strtoul`
-with base 0 for the count too, and refuse a count of 0 loudly. Found during B2.
+about their base -- which is exactly the sort of thing that costs an hour. Found during B2.
+FIXED: the count uses `strtoul` base 0 as well, and a non-positive count now prints what it
+rejected and exits 1 rather than writing an empty file and reporting success. Verified both
+ways round -- `0x10` and `16` both dump 16 bytes, and `zero` is refused.
 
 ### D2. Make the harness clean up after itself, everywhere  *(done)*
 `regress.py`'s rollup check, `chip_compare.py --clean` (which `scoreboard.py` now always

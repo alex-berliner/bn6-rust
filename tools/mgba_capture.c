@@ -530,8 +530,18 @@ int main(int argc, char** argv) {
 			char* c1 = strchr(p, ':'); *c1 = 0; char* c2 = strchr(c1 + 1, ':');
 			*c2 = 0;
 			uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
-			int bytes = atoi(c1 + 1);
+			/* Base 0 for the count as well as the address. It used to be
+			 * atoi(), which returns 0 for "0x1c0" without complaining, so
+			 * the two halves of one argument disagreed about their base
+			 * and a hex count wrote an empty file and reported success.
+			 * A count of 0 is now refused rather than dumping nothing. */
+			int bytes = (int) strtoul(c1 + 1, NULL, 0);
 			const char* path = c2 + 1;
+			if (bytes <= 0) {
+				fprintf(stderr, "--dump: byte count '%s' is not a positive "
+				        "number (hex needs an 0x prefix)\n", c1 + 1);
+				return 1;
+			}
 			FILE* f = fopen(path, "wb");
 			for (int b = 0; b < bytes; ++b) {
 				uint8_t v = (uint8_t) core->busRead8(core, addr + b);
