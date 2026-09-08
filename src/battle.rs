@@ -1604,6 +1604,21 @@ impl<'a> Battle<'a> {
     /// cannot happen there.
     pub fn prime_backdrop(&mut self, gfx: &Graphics) {
         if let Some(backdrop) = self.backdrop.as_mut() {
+            // A fixture compared against /tmp/pausedwithcannon.state starts
+            // where that state is, not at zero -- see Backdrop::seed. The
+            // fixtures that compare against a DIFFERENT state are excluded:
+            // demo-open runs against a battle's first frame, where zero is
+            // right, and the window fixtures cover the backdrop entirely.
+            #[cfg(all(
+                feature = "demo",
+                not(any(
+                    feature = "demo-open",
+                    feature = "demo-custmatch",
+                    feature = "demo-cardname",
+                    feature = "demo-resultmatch",
+                ))
+            ))]
+            backdrop.seed(5, 4, 424, 724);
             backdrop.prime(gfx);
         }
     }

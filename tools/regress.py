@@ -137,12 +137,17 @@ def check_chips():
 #: could never have shown on its own.
 #: THE ALIGNMENT IS DERIVED NOW, NOT SWEPT, and the check no longer covers the
 #: HUD. Both changes come from 7bl.
-#: The frame: the backdrop's art cycle is 192 frames and its scroll's is 1024,
-#: so a frame matching BOTH recurs every LCM = 3072. Rust 1798 against real 44
-#: is the first such pair after boot, and it is exact -- our 1798 matches real
-#: 44 to the pixel and differs from real 43 by 136, which is how the old
-#: comparison against 43 was found to be a frame out. A five-frame window
-#: absorbs the boot-length drift that fat LTO gives any source change.
+#: The frame: the fixture now SEEDS its backdrop with the save state's own
+#: phase (Backdrop::seed, src/backdrop.rs), so the two sides share an origin
+#: and the match comes back close to boot instead of 1798 frames in -- rust
+#: 435 against real 44, exact. Before the seed the only alignment was where the
+#: art's 192-frame cycle and the scroll's 1024-frame one came back together,
+#: every LCM = 3072 frames, which made this check capture 1800 frames to find
+#: one. A five-frame window absorbs the boot-length drift fat LTO gives any
+#: source change.
+#: Real frame 44, not 43: our frame matches 44 to the pixel and differs from 43
+#: by 136. The old comparison against 43 was a frame out and nobody could see
+#: it while a wrong art model was cancelling the error.
 #: The BOX excludes the HUD strip, and that is not a softening. The old check
 #: compared the whole screen at one frame and read 0 for weeks while hiding a
 #: wrong art schedule, a scroll rounding error AND an unmodelled gauge
@@ -151,7 +156,7 @@ def check_chips():
 #: nothing is hidden by the split: this one says the BACKGROUNDS are exact and
 #: `gauge` says the HUD is not.
 TILES_REAL_FRAME = 44
-TILES_RUST_FRAMES = range(1796, 1801)
+TILES_RUST_FRAMES = range(433, 438)
 TILES_BOX = (0, 24, 240, 160)
 
 
@@ -530,12 +535,12 @@ def check_wave():
 CHECKS = [
     ("chips", check_chips, 0),        # all 43
     ("tiles", check_tiles, 0),
-    ("gauge", check_gauge, 470),  # TODO A8 -- drive to 0, do not raise
+    ("gauge", check_gauge, 446),  # TODO A8 -- drive to 0, do not raise
     ("field", check_field, 0),
     ("window", check_window, 0),
     ("card", check_card, 0),
     ("cursor", check_cursor, 0),
-    ("opening", check_opening, 16788),  # TODO A7 -- drive to 0, do not raise
+    ("opening", check_opening, 0),
     ("result", check_result, 0),
     ("warp", check_warp, 0),
     ("buster", check_buster, 0),

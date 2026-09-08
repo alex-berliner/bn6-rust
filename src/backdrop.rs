@@ -88,9 +88,6 @@ const STEP_HOLD: [u16; 29] = [
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
 ];
 
-#[unsafe(no_mangle)]
-pub static mut BD_TRACE: [u16; 2801] = [0; 2801];
-
 pub struct Backdrop {
     bg: RegularBackground,
     tiles: TileSet,
@@ -187,6 +184,33 @@ impl Backdrop {
     /// `/tmp/battlestart.state`). Without this the map opens on whichever
     /// step the raw tileset upload happens to leave resident and one frame
     /// later than the real ROM besides.
+    /// Start where the CAPTURE is, not at zero.
+    ///
+    /// A demo fixture is compared against a save state taken thousands of
+    /// frames into someone else's battle, and the backdrop's two clocks are
+    /// battle-relative -- so a fixture that starts them at zero is comparing
+    /// two different moments and can only ever agree by coincidence. That is
+    /// exactly what happened: the old, wrong art model had a 56-frame period
+    /// which divides the scroll's 896, so it coincided at a fixed frame and
+    /// every fixture was quietly calibrated on that coincidence. With the real
+    /// 192-frame schedule the coincidence is gone and the fixtures need the
+    /// state's own phase instead.
+    ///
+    /// Peeked out of /tmp/pausedwithcannon.state at load: `eGFXAnimStates[0]`
+    /// is on entry 5 with Timer 4 (CommandPos 0x0807FBCC against LoopAddress
+    /// 0x0807FBA4, eight bytes an entry), and `eBGScrollCBCounters` reads
+    /// -63128 / -31564, which `lsr #4` turns into scroll registers 150 and 75.
+    /// The quarter-pixel counters that reproduce those are 424 and 724.
+    ///
+    /// Same move as `HUDMATCH_HP` carrying the capture's 60 rather than a
+    /// fresh navi's 100, and as 7bc's chip-window bracket.
+    pub fn seed(&mut self, entry: usize, timer: u16, x_q: u32, y_q: u32) {
+        self.entry = entry;
+        self.timer = timer;
+        self.x_q = x_q;
+        self.y_q = y_q;
+    }
+
     pub fn prime(&mut self, gfx: &Graphics) {
         self.show_step(gfx, STEP_ORDER[self.entry]);
         self.timer = STEP_HOLD[self.entry] - 1;
@@ -212,18 +236,6 @@ impl Backdrop {
     /// while the art only steps when its own countdown, seeded by `prime`,
     /// reaches zero.
     pub fn update(&mut self, gfx: &Graphics) {
-        unsafe {
-            let t = core::ptr::addr_of_mut!(BD_TRACE) as *mut u16;
-            let n = core::ptr::read_volatile(t) as usize;
-            if n + 1 < 700 {
-                core::ptr::write_volatile(t, (n + 1) as u16);
-                let base = t.add(1 + n * 4);
-                core::ptr::write_volatile(base, self.entry as u16);
-                core::ptr::write_volatile(base.add(1), self.timer);
-                core::ptr::write_volatile(base.add(2), self.x_q as u16);
-                core::ptr::write_volatile(base.add(3), self.y_q as u16);
-            }
-        }
         self.timer -= 1;
         if self.timer == 0 {
             self.entry = (self.entry + 1) % STEP_ORDER.len();
@@ -240,10 +252,10 @@ impl Backdrop {
         // NOTE (A7/7bl): the real register is `lsr #4` of a counter that FALLS
         // by 8 -- a logical shift of a negative, i.e. a ceiling where this
         // divide floors, one pixel apart on odd frames. Changing it to match
-        // is CORRECT IN ISOLATION and measures the same on `opening` (290 at
-        // lags 6 and 7 rather than 7 and 8), but it moves every fixture's
-        // alignment by a frame and took `chips`, `popup` and `banner` with it.
-        // Left as-is until those alignments are derived rather than fixed.
+        // is correct in isolation and measures the same on `opening` (290 at
+        // lags 6 and 7 rather than 7 and 8), so it is a real difference with
+        // no observed cost. Left alone only because nothing yet MEASURES an
+        // odd frame -- when something does, this is the first thing to try.
         self.bg
             .set_scroll_pos((-((self.x_q / 4) as i32), -((self.y_q / 4) as i32)));
     }
