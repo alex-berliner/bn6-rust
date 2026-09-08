@@ -209,12 +209,29 @@ sweep of `demo-hudmatch` finds its best band score at 68 px, recurring every 384
 pixel-exact and only the glyphs differing, so at those frames we are on a different art STEP, not
 looking at a broken asset.
 
-Since LCM is 2688 and the capture is 2790, there is only ONE candidate alignment in that sweep and
-it is not landing. So either `demo-hudmatch`'s battle-init offset puts the true frame outside the
-window swept, or its fixture differs from `demo-open`'s in some way that shifts the art relative to
-the capture. NEXT STEP: instrument `demo-hudmatch` the way `demo-open` was -- the per-frame
-`entry`/`timer`/`x_q` trace is what turned this ticket from guesswork into arithmetic, and it took
-one build. Do not re-derive the window by searching for a minimum.
+TRACED, AND NARROWED TO ONE STEP'S ART. `demo-hudmatch` was instrumented the same way. Its clocks
+reach entry 13 / timer 8 -- the real ROM's state at its own capture frame 43 -- on frames 64, 256,
+448, 640, every 192 as they should. Combining with the scroll (period 1024 frames) puts the true
+alignment at rust 1798, and measuring there gives the best result in the whole capture: full 752,
+band 136. Not a search, and not 0.
+
+At rust 1798 our entry is 13, so we are drawing STEP 0, which is `byte_807FE40`. The real ROM at
+its frame 43 is on entry 13 as well, so it is drawing the same step. Both sides draw E40 and the
+band differs by 136 px. Meanwhile `demo-open`'s compared frames sit early in the schedule, on the
+alternating C90/CD8 beats, and reach 0.
+
+So the schedule, the initial condition, the scroll rounding and the step->art mapping are all
+verified correct, and what is left is the ART OF ONE STEP. The mapping was checked exhaustively
+rather than by eye: parsing the seven tables out of dat20.s and matching them against the
+exporter's rows gives a unique hit for every one (FRAMES[0]=E40, [1]=CD8, [2]=C90, [3]=D20,
+[4]=D68, [5]=DB0, [6]=DF8), and re-deriving STEP_ORDER from the script under that mapping
+reproduces the table in the branch exactly.
+
+NEXT STEP: diff step 0's 37 tiles against the real ROM's VRAM at a frame where it is displayed,
+tile by tile, and find which of them differ. `tools/backdrop_export.py`'s FRAMES rows are blob
+indices and match the ROM's tables exactly, so if the tiles differ the fault is in how the blob
+itself is sliced, not in the index list -- which is a different file to look at than everything
+examined so far.
 
 DO NOT MERGE until `tiles` is answered: the branch trades a `tiles` 0 for a non-zero, and a zero
 that came partly from luck still beats a residue nobody has explained.
