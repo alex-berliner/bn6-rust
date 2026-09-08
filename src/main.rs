@@ -142,7 +142,7 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 #[unsafe(link_section = ".ewram.marker")]
 pub static mut BATTLE_MARKER: [u32; 32] = [0; 32];
 
-const BATTLE_MAGIC: u32 = 0x4241_5454;
+const BATTLE_MAGIC: u32 = 0x4241_5454; // provenance: derived -- this project's own protocol choice (AUDIT pair 1), not a ROM fact; "BATT" read big-endian, chosen freely
 
 /// Volatile so the write can't be optimised away as dead (nothing in this
 /// crate ever reads `BATTLE_MARKER` back) or reordered past a frame's
@@ -177,6 +177,10 @@ fn main(mut gba: agb::Gba) -> ! {
     let chips = chips::Chips::new(CHIPS);
     // The folder shuffle's generator; stepped every frame, as the game's
     // secondary RNG is, so each battle deals differently.
+    // provenance: fitted -- an arbitrary seed, chosen freely: the real ROM
+    // seeds this from hardware entropy each playthrough, so there is no
+    // "right" value to derive or peek, and every fixture-driven check
+    // overrides the shuffled deck outright rather than comparing it.
     let mut rng = deck::Rng::new(0x2f6b_75a1);
     // AUDIT pairs 6/14/17: read once at startup, not per-battle -- the
     // harness pokes the descriptor before this ROM boots and keeps poking it
@@ -215,7 +219,8 @@ fn main(mut gba: agb::Gba) -> ! {
 
     // 10512 Hz: the mixer's own output rate, chosen to match SOUND_HIT_6B's
     // sample exactly (assets/buster_hit.wav) so agb's include_wav! does no
-    // resampling.
+    // resampling. provenance: derived -- SOUND_HIT_6B's own sample rate,
+    // byte_81597A0 dat37.s (see BUSTER_HIT's own doc comment above).
     let mut mixer = gba.mixer.mixer(Frequency::Hz10512);
 
     loop {

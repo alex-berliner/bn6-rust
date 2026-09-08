@@ -159,7 +159,7 @@ pub struct Part {
 /// (247,255,255), which is 0x7ffe.
 /// NOT VERIFIED directly: the one flash available to compare is the navi
 /// being hit, and the Mettaur's wave covers him whenever that happens.
-const WHITE: u16 = 0x7ffe;
+const WHITE: u16 = 0x7ffe; // provenance: peeked -- measured across three captures/476 frames (see the doc comment above); the exact flash use-case itself is flagged NOT VERIFIED there
 
 pub struct Player {
     assets: Assets,

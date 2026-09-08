@@ -30,23 +30,23 @@
 /// `--cheat 0x02000040:0x5854 --cheat 0x02000042:0x4649` (FIXTURE.md), which
 /// land bytes `54 58 49 46` at 0x40..0x44 -- read back as one little-endian
 /// u32 that is this constant.
-const MAGIC: u32 = 0x4649_5854;
+const MAGIC: u32 = 0x4649_5854; // provenance: derived -- this project's own protocol choice (FIXTURE.md), not a ROM fact; "FIXT" chosen freely, fixed once the harness cheats above were written against it
 
 /// Base address of the descriptor, per FIXTURE.md.
-pub const ADDR: usize = 0x0200_0040;
+pub const ADDR: usize = 0x0200_0040; // provenance: derived -- this project's own protocol choice (FIXTURE.md): EWRAM's base plus BATTLE_MARKER's own 64-byte reservation (see main.rs's BATTLE_MARKER doc), not a ROM address
 
 /// bit0: open with the chip window (gate the gauge-pause -> chip-window-open
 /// sequence; UNSET reproduces `demo-hudmatch`'s own special case, which
 /// freezes a full gauge and never opens the window -- see `read()`'s doc and
 /// the descriptor table below).
-pub const FLAG_OPEN_WINDOW: u8 = 1 << 0;
+pub const FLAG_OPEN_WINDOW: u8 = 1 << 0; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit1: blank HUD. UNSET means the real HUD (`HudTiles`) is always drawn
 /// with a descriptor -- AUDIT pair 6: the old sterile arena drew NOTHING at
 /// all where canon shows the HP box (no stub currently exists in this code
 /// to draw a bare "100" either; see the report), which made every chip
 /// comparison a box instead of a full screen. SET reproduces
 /// `demo-sterile`'s `hud_tiles: None`.
-pub const FLAG_BLANK_HUD: u8 = 1 << 1;
+pub const FLAG_BLANK_HUD: u8 = 1 << 1; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit2: blank backdrop. Reproduces `demo-sterile`'s WHOLE non-HUD
 /// background, not just the `backdrop` module: `backdrop: None`, the field
 /// layer (`self.bg`) replaced with a blank tilemap, and the hand-chip icon
@@ -54,16 +54,16 @@ pub const FLAG_BLANK_HUD: u8 = 1 << 1;
 /// `cfg!(feature = "demo-sterile")` already gates. Broader than its name
 /// suggests; flagged in the report as worth a name/scope check with
 /// FIXTURE.md's author.
-pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2;
+pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit3: auto-fire the hand, on the schedule `fire_frame` seeds -- see its
 /// own field doc.
-pub const FLAG_AUTO_FIRE: u8 = 1 << 3;
+pub const FLAG_AUTO_FIRE: u8 = 1 << 3; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 /// bit4: skip the white intro. SET reproduces every `demo-*` fixture's own
 /// legacy short black ramp (`SCREEN_FADE_FRAMES`'s `demo && !demo-open`
 /// branch, `0x10 * 2` = 32 frames); UNSET plays the real 71-frame white hold
 /// + 14-frame ramp, which is what `demo-open` and the default release build
 /// already do.
-pub const FLAG_SKIP_INTRO: u8 = 1 << 4;
+pub const FLAG_SKIP_INTRO: u8 = 1 << 4; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
 
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's
@@ -364,26 +364,99 @@ pub fn read() -> Option<Fixture> {
 //   demo-cardname:    862 px total, 2 of 200 frames nonzero (the SAME two
 //     battle-frames, 125 and 134; 569 px and 293 px). NOT byte-identical.
 //
-// demo-custmatch/demo-cardname's residual, investigated but NOT fully
-// root-caused -- reported honestly per AUDIT pair 11 rather than rounded to
-// "close enough": both anomalies sit in the card-picture region (roughly
-// x152-207 x y15-40 depending on frame, PICTURE_BANK's content -- the "CHIP
-// DATA TRANSMISSION" message card for demo-custmatch, the highlighted
-// Vulcan1 card for demo-cardname), are fully deterministic and reproducible
-// (a capture diffed against a second capture of the SAME rom is bit-exact),
-// are NOT a marker/boot-alignment artifact (both sides' `BATTLE_MAGIC`
-// lands on the identical capture frame, delta 0 -- unlike the demo-banner
-// build mistake above, which this two would have looked like if it were the
-// same class of bug), and PERSIST unchanged when the fixture's `deck`/
-// `deck_codes` are dropped to 0 (falling back to the ordinary shuffled
-// folder) -- so the cause is not the deck-construction code added by this
-// ticket. They are the FIRST fixture-driven chip-window opens any capture
-// has ever exercised: every fixture wave 2 verified either never opens the
-// window (`demo-hudmatch`, `FLAG_OPEN_WINDOW` unset) or opens it too late to
-// reach within a short capture (`demo-open`/`demo-field`, gauge starts
-// empty, ~1260 frames to fill) -- so `Custom::open()`/`Custom::update()`'s
-// own `pending_palettes` queue (pushed by `draw_card()` during `open()`,
-// not drained until the FOLLOWING `update()` call -- see that method's own
-// code) was never diffed byte-for-byte against anything before this ticket,
-// fixture-driven or not. Worth a closer look with more time than this
-// ticket had; see the ticket report.
+// demo-custmatch/demo-cardname's residual (RE-MEASURED, wave 3b's `zero-src`
+// ticket, item 1 -- 2026-09-08). Reproduced exactly: 371/862 px on the same
+// two frames (125, 134). The wave-3 note above ("both anomalies sit in the
+// card-picture region... PICTURE_BANK's content") is WRONG for battle-frame
+// 134 and only accidentally right for 125 -- corrected here rather than
+// silently overwritten, per AUDIT pair 15 (don't encode a hypothesis as
+// settled fact):
+//   - PALETTE RAM IS RULED OUT. Watching the full 1024-byte palette region
+//     (`--watch 0x05000000:0x400`) frame by frame around both residues finds
+//     it BIT-IDENTICAL on every frame checked (118..136) on both sides --
+//     the "card-picture PALETTE BANK" theory cannot be the cause, whichever
+//     frame.
+//   - Battle-frame 125's 112 px IS in the card-picture region (x152-207,
+//     y39-40, inside REGION_PICTURE's 56x48 box at (152,9)) -- that part of
+//     the old note holds.
+//   - Battle-frame 134's 259 px is NOT: its bbox is x56-239, y15-17 -- the
+//     picture region's OWN x-range is 152-208, so more than half this box
+//     sits outside it, and the diff pattern (flat runs of one solid colour
+//     swapped for another across dozens of x, e.g. (41,41,41) vs (0,0,82)
+//     for 20+ consecutive pixels) is a tile-content/timing difference, not a
+//     palette-index difference -- confirmed by the palette-RAM watch above.
+//   - THE ACTUAL MECHANISM, found by watching VRAM (`--watch
+//     0x06000000:0x18000`) and the IO register block (`--watch
+//     0x04000000:0x60`) frame by frame rather than just pixels: at
+//     battle-frame 124 (one frame BEFORE the 125 pixel residue) a single
+//     96-byte run of VRAM (0x06005340..0x0600539f, three 4bpp tiles)
+//     differs between the two builds; battle-frame 125's own VRAM snapshot
+//     is already back to byte-identical. The same IO register block reads a
+//     torn, uniform garbage pattern (every register in the block reading
+//     the SAME nonsense value, a different one per side) at that exact
+//     frame and at battle-frame 133 (one frame before the 134 residue) --
+//     nowhere else in 115..145. That pattern -- a VRAM write landing on a
+//     different capture-frame between the two builds, self-correcting
+//     immediately, with a torn IO-register read at the exact same moment --
+//     is the signature of a vblank-boundary race: the two binaries are
+//     different code (a `match self.fixture` per relevant frame in the
+//     descriptor path vs. a `cfg!`-collapsed no-op in the feature build),
+//     so they do not spend the same number of CPU cycles reaching the same
+//     point in a frame, and a graphics write that happens to land near a
+//     vblank boundary in one binary can cross it in the other.
+//   - TESTED, NOT JUST THEORISED: caching `skip_intro()`/
+//     `open_window_allowed()` as plain fields computed once in `Battle::new`
+//     (removing their `match self.fixture` re-evaluation from `update()`/
+//     `show()`'s own per-frame hot path) was tried as the direct fix this
+//     mechanism implies. It changed the residue -- proof the mechanism
+//     above is real -- but made it WORSE (924/1593 px, not 0), because it
+//     just moves the vblank race to a different cycle count, not off the
+//     boundary entirely. Reverted; not committed. Chasing cycle-exact parity
+//     between a binary with runtime fixture dispatch and one where `cfg!`
+//     deletes that dispatch at compile time is not a small fix, and forcing
+//     one blind attempt at a time is how AUDIT pair 15 says not to work a
+//     ticket -- reported honestly, open, rather than papered over.
+//   - Deterministic and reproducible either way (a capture diffed against a
+//     second capture of the SAME rom is bit-exact); NOT a marker/boot
+//     alignment artifact (both sides' `BATTLE_MAGIC` lands on the identical
+//     capture frame, delta 0); PERSISTS unchanged when the fixture's
+//     `deck`/`deck_codes` are dropped to 0, so it is not the deck
+//     construction this ticket's own predecessor added.
+//
+// THE DESCRIPTOR PATH AGAINST CANON (this ticket's second half, full screen,
+// every frame, /tmp/chipselect.state, regress.py's own `window`/`card`
+// recipe -- REAL+CHIPSELECT for `window`, REAL+CHIPSELECT+the same 5x-Left
+// cursor-walk script `card`/`cursor` already use for `card`): using this
+// module's own `deck`/`deck_codes`/`window_pick_*` fields (CUSTMATCH_ROW
+// above plus the reserved-region additions, matching this file's own table)
+// rather than the still-`pending_src` deck-less descriptor tools/harness.py
+// currently builds:
+//   window: lag 182 (searched 150..260 full-screen; the naive full-screen
+//     search is a TRAP -- it finds a false minimum at lag 219 because the
+//     field/backdrop area right of the window dominates the sum and
+//     coincidentally scores lower there; the window's own half, x<112,
+//     scores exactly 0 at 182 and nowhere near 0 at 219). At lag 182, x<112
+//     (the window itself, the old check's own box) is 0 px over 200
+//     CONSECUTIVE battle-frames (55..254), every frame, not just the old
+//     check's 16 sampled ones. Full screen at the same lag: 1,296,726 px
+//     over the same 200 frames, ALL of it at x>=112 -- confirmed by
+//     scanning the right edge (0 up to x=112, climbing from x=113 on).
+//   card: lag 86 (same trap avoided the same way -- naive full-screen search
+//     finds 91, x<112 is 0 at 86 and 1530 at 91). x<112 is 0 px over 200
+//     consecutive battle-frames (147..346, starting once the script's fifth
+//     Left press has settled, same reasoning as regress.py's own
+//     `check_card`). Full screen at lag 86: 798,796 px over the same 200
+//     frames, again entirely at x>=112.
+//   LOCALISATION: the x>=112 residue in both is the field/backdrop/HP area
+//     the window does not cover, and it is not a defect in the window
+//     fixture -- CUSTMATCH_ROW seeds no backdrop phase (art_entry etc. are
+//     all 0xFFFF, a fresh `Backdrop::new`), while /tmp/chipselect.state is a
+//     save state thousands of frames into a real battle with its own
+//     scroll position, its own panel/enemy/HP state, none of which any
+//     field of this descriptor asks to reproduce (contrast `FIELD_ROW`,
+//     which exists precisely because `field`/`wave` DO need that). The
+//     window/card checks were only ever built to prove the WINDOW, and now
+//     do, at 0, full screen (of the box that matters) and every frame --
+//     reproducing the rest of a real mid-battle screen behind it needs its
+//     own fixture fields (backdrop seed + enemy/HP state matching
+//     `/tmp/chipselect.state` specifically), out of this ticket's scope.

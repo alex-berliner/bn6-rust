@@ -47,18 +47,18 @@ use crate::chips::{Chip, PICTURE_TILES, WILDCARD};
 use crate::hud::Hud;
 
 const MAGIC: &[u8; 4] = b"BNCW";
-const MAP_W: usize = 15;
-const MAP_H: usize = 20;
+const MAP_W: usize = 15; // provenance: derived -- byte_86E625C's own 15x20 map (see the module doc above)
+const MAP_H: usize = 20; // provenance: derived -- byte_86E625C's own 15x20 map (see the module doc above)
 const SLIDE_FROM: i32 = 0x78; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
 const SLIDE_STEP: i32 = 0xc; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
 /// The window's palette bank; the results windows use 9-11 too, so the
 /// banks are set on open and the results' restored on close.
-pub const BANK: u8 = 9;
+pub const BANK: u8 = 9; // provenance: derived -- byte_86E625C's own map, palette bank 9 (see the module doc above)
 /// The card picture's bank, holding the highlighted chip's palette.
-const PICTURE_BANK: u8 = 10;
+const PICTURE_BANK: u8 = 10; // provenance: derived -- sub_80284E2, asm03_0.s:4373 (see the module doc above)
 /// The panel behind the window's frame, bank 13 on the real ROM. The HUD's
 /// own layer stands down while the menu is up, so they can share it.
-const PANEL_BANK: u8 = 13;
+const PANEL_BANK: u8 = 13; // provenance: peeked -- read off the real ROM with the menu open (see `open()`'s own comment)
 /// Banks the slot icons draw in, one per slot. NOTE: the real ROM puts EVERY
 /// icon in bank 11 -- read off a live menu, every icon cell in the window's
 /// map carries bank 11 -- which means its icons share one 16-colour palette
@@ -70,23 +70,23 @@ const PANEL_BANK: u8 = 13;
 /// The palette every icon and the vertical meter share, variant 3 of the
 /// asset's palette section. The real ROM's icons are GREYSCALE, all drawn from
 /// this one bank rather than each chip's own colours.
-const SHARED_ICON_VARIANT: usize = 3;
+const SHARED_ICON_VARIANT: usize = 3; // provenance: peeked -- read off a live menu by the exporter, like DIM_ICON_VARIANT below
 /// A dimmed copy of it, variant 4, which the real ROM keeps in bank 12 and
 /// gives to every slot whose chip cannot join the picks made so far
 /// (sub_80283C8 maps the slot record's selectable byte through byte_8028470
 /// to bank 11 or 12; asm03_0.s:4235-4313). It is not a computed dim of bank
 /// 11 -- the per-channel ratios differ entry to entry -- so like bank 11 it
 /// is read off a live menu by the exporter.
-const DIM_ICON_VARIANT: usize = 4;
-const ICON_BANK: u8 = 11;
-const DIM_BANK: u8 = 12;
+const DIM_ICON_VARIANT: usize = 4; // provenance: peeked -- read off a live menu by the exporter (see the doc comment above)
+const ICON_BANK: u8 = 11; // provenance: peeked -- read off a live menu (every icon cell in the window's map carries bank 11, see BANK's own doc block above)
+const DIM_BANK: u8 = 12; // provenance: derived -- sub_80283C8, asm03_0.s:4235-4313
 /// Chips offered per window: the base count before Custom parts
 /// (sub_802A40C, asm03_0.s:8650).
-pub const OFFERED: usize = 5;
+pub const OFFERED: usize = 5; // provenance: derived -- sub_802A40C, asm03_0.s:8650
 /// The window has ten slot cells, two rows of five, and the real ROM draws
 /// its empty icon in every one it is not offering -- left alone they stay
 /// transparent and the field shows through the window.
-const SLOT_CELLS: usize = 10;
+const SLOT_CELLS: usize = 10; // provenance: derived -- sub_8027E90/dword_802A7CC, asm03_0.s:3447,9062 (see SLOT_CELLS_SHOWN's own doc below)
 /// But only the first EIGHT are ever seen. sub_8027E90 copies the template
 /// dword_802A7CC into the twelve per-slot records, and its low bytes give
 /// cells 1-8 state 0x0a and cells 9-10 state 0x0b (asm03_0.s:3447, 9062);
@@ -95,13 +95,13 @@ const SLOT_CELLS: usize = 10;
 /// background. The last two only appear in the rare full-custom case where
 /// both the draw pile and the capacity reach ten. So the count is fixed, not
 /// a function of how many chips are offered.
-const SLOT_CELLS_SHOWN: usize = 8;
+const SLOT_CELLS_SHOWN: usize = 8; // provenance: derived -- sub_8027E90/dword_802A7CC, asm03_0.s:3447,9062 (see the doc comment above)
 /// Picks per window (sub_8028D6C, asm03_0.s:5457).
-pub const HAND_SIZE: usize = 5;
+pub const HAND_SIZE: usize = 5; // provenance: derived -- sub_8028D6C, asm03_0.s:5457
 
 /// The cursor's index for the OK box; 0-4 are the offered slots
 /// (S20364C0.inc:14, eS20364C0+7).
-const OK: u8 = 0xa;
+const OK: u8 = 0xa; // provenance: derived -- S20364C0.inc:14, eS20364C0+7
 /// The bracket swaps tile and shrinks a pixel every 8 frames: `sub_8028820`
 /// loads the counter with `ldr r5,[r5,#0x40]` (asm03_0.s:4801) and reduces it
 /// with `lsr r5,r5,#3 / and r5,r4` (asm03_0.s:4803-4804), then adds the bit to
@@ -121,9 +121,9 @@ const BLINK_SHIFT: u32 = 3; // provenance: derived -- asm03_0.s:1163-1165/1151-1
 const CURSOR_DELAY: u8 = 2; // provenance: fitted -- two vs. three both leave one frame wrong; not fully resolved
 
 /// Indices into the asset's patch records, in byte_8027B2C's order.
-const REGION_PICTURE: usize = 1;
+const REGION_PICTURE: usize = 1; // provenance: derived -- byte_8027B2C's own record order (see the doc comment above)
 /// The attack power's cells, (6,9) 3x2: digits right-aligned in the row.
-const REGION_DAMAGE: usize = 4;
+const REGION_DAMAGE: usize = 4; // provenance: derived -- byte_8027B2C's own record order
 const fn region_slot_icon(slot: usize) -> usize {
     5 + 2 * slot
 }
@@ -136,24 +136,24 @@ const fn region_slot_code(slot: usize) -> usize {
 /// composed at runtime from a proportional font this build does not have, so
 /// those regions are filled with this rather than left transparent -- without
 /// it the backdrop shows straight through the card.
-const CARD_INTERIOR_TILE: u16 = 0x011;
+const CARD_INTERIOR_TILE: u16 = 0x011; // provenance: peeked -- read off the real ROM's own map (see the doc comment above)
 /// A tile of flat colour 1, which in the window frame's bank is the panel's
 /// own background. The real ROM fills the two hidden slot cells with it --
 /// their VRAM tiles are uniform 0x11 bytes, not the empty-cell art in another
 /// bank -- so they read as bare panel.
-const PANEL_FLAT_TILE: u16 = 0x03e;
+const PANEL_FLAT_TILE: u16 = 0x03e; // provenance: peeked -- read off the real ROM's own VRAM (see the doc comment above)
 /// Where the regular-chip mark's ring lands on screen.
-const MARK_AT: (i32, i32) = (95, 4);
+const MARK_AT: (i32, i32) = (95, 4); // provenance: peeked -- read off a live menu's own OAM
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
-const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4];
+const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4]; // provenance: derived -- byte_8027B2C's own record order
 /// The name row: eight glyph columns two tiles tall, written left to right
 /// and padded with blanks, which the font draws as flat colour 8 -- the same
 /// thing CARD_INTERIOR_TILE is.
-const REGION_NAME: usize = 0;
+const REGION_NAME: usize = 0; // provenance: derived -- byte_8027B2C's own record order
 /// How many glyphs of the font one glyph of a name takes: 8x16, top over
 /// bottom.
-const GLYPH_TILES: u16 = 2;
+const GLYPH_TILES: u16 = 2; // provenance: derived -- an 8x16 glyph is two stacked 8x8 tiles
 
 /// The game's own character code for an ASCII byte, which is the glyph's index
 /// in the battle text font (constants/bn6-charmap.tbl). Shared with the
@@ -169,24 +169,25 @@ pub fn char_code(c: u8) -> u16 {
 }
 /// The element/code/damage row: the code letter, the element icon and the
 /// attack power.
-const REGION_CODE: usize = 2;
-const REGION_ELEMENT: usize = 3;
+const REGION_CODE: usize = 2; // provenance: derived -- byte_8027B2C's own record order
+const REGION_ELEMENT: usize = 3; // provenance: derived -- byte_8027B2C's own record order
 /// Tiles in one element icon, 16x16 row-major.
-const ELEMENT_TILES: u16 = 4;
+const ELEMENT_TILES: u16 = 4; // provenance: derived -- a 16x16 icon is four 8x8 tiles
 /// Elements the card has an icon for; 0x0a is null, the last.
-const ELEMENTS: usize = 11;
+const ELEMENTS: usize = 11; // provenance: peeked -- the exporter's own asset, one icon per element plus the null entry
 /// Bytes of shared-icon-bank tail each element carries: entries 10 to 15.
-const ELEMENT_PALETTE: usize = 12;
+const ELEMENT_PALETTE: usize = 12; // provenance: derived -- six BGR555 colours, 2 bytes each (see `element_palettes`'s own doc below)
 /// Where the card's three fonts begin inside the asset's slot-art section:
 /// after the empty icon, the 28 slot code glyphs, the OK box, the stack
 /// frame, the regular-chip mark, and the message card with its palette.
+/// provenance: derived -- tools/custom_export.py's own fixed asset layout.
 const fn card_fonts_at(slot_art: usize) -> usize {
     slot_art + 0x80 + 28 * 0x40 + 0x200 + 42 * 32 + 32
 }
-const REGION_OK: usize = 25;
-const REGION_STACK: usize = 26;
+const REGION_OK: usize = 25; // provenance: derived -- byte_8027B2C's own record order
+const REGION_STACK: usize = 26; // provenance: derived -- byte_8027B2C's own record order
 /// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
-const CODE_NONE: usize = 0x1b;
+const CODE_NONE: usize = 0x1b; // provenance: derived -- dword_86E591C[0x1b], sub_8028204
 
 /// One bracket corner: offset from the cursor origin and its flips, per
 /// blink phase. The game's tables (byte_80288B0 for a slot, byte_80288E4
@@ -208,6 +209,7 @@ const fn corner(dx: i32, dy: i32, flags: u8) -> Corner {
     }
 }
 
+// provenance: derived -- byte_80288B0, asm03_0.s:4860 (see the doc comment above)
 const SLOT_BRACKET: [[Corner; 4]; 2] = [
     [
         corner(0, 0, 0),
@@ -222,6 +224,7 @@ const SLOT_BRACKET: [[Corner; 4]; 2] = [
         corner(1, 0xc, 0x20),
     ],
 ];
+// provenance: derived -- byte_80288E4, asm03_0.s:4878 (see the doc comment above)
 const OK_BRACKET: [[Corner; 4]; 2] = [
     [
         corner(1, 2, 0),

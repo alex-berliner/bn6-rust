@@ -14,8 +14,8 @@
 //! The reg chip, tags and the giga re-insertion that the shuffle also does
 //! (asm00_1.s:15398-15698) are not reproduced: the folder here has none.
 
-pub const FOLDER_SIZE: usize = 30;
-pub const EMPTY: u16 = 0xffff;
+pub const FOLDER_SIZE: usize = 30; // provenance: derived -- the PET navi's own folder size, sub_800A3E4 asm00_1.s:15355
+pub const EMPTY: u16 = 0xffff; // provenance: derived -- the game's own blanked-slot sentinel, sub_80293F8 asm03_0.s:6413
 
 /// The secondary RNG (GetRNGSecondary, asm00_0.s:2643): rotate left one,
 /// add one, xor the constant.
@@ -27,6 +27,7 @@ impl Rng {
     }
 
     pub fn next(&mut self) -> u32 {
+        // provenance: derived -- GetRNGSecondary's own xor constant, asm00_0.s:2643
         self.0 = (self.0.rotate_left(1).wrapping_add(1)) ^ 0x873c_a9e5;
         self.0
     }

@@ -63,8 +63,8 @@ use agb::display::tiled::{
 use agb::display::{Graphics, GraphicsFrame, Palette16, Priority, Rgb15};
 
 /// Quarter-pixels of scroll per frame, across and down.
-const SCROLL_X_Q: u32 = 2;
-const SCROLL_Y_Q: u32 = 1;
+const SCROLL_X_Q: u32 = 2; // provenance: peeked -- measured against the real ROM as a rigid shift, zero residual (see the module doc above)
+const SCROLL_Y_Q: u32 = 1; // provenance: peeked -- measured against the real ROM as a rigid shift, zero residual (see the module doc above)
 
 /// The art animation's schedule, read directly off `off_807FB98`
 /// (reference/bn6f/data/dat20.s:140-172): one entry per
@@ -81,12 +81,15 @@ const SCROLL_Y_Q: u32 = 1;
 /// `eGFXAnimStates[0]` after 0, 1, 2, ... real frames from
 /// `/tmp/battlestart.state` walks these exact entries at these exact
 /// lengths.
+// provenance: derived -- off_807FB98 (reference/bn6f/data/dat20.s:140-172),
+// cross-checked empirically by dumping eGFXAnimStates[0] frame by frame off
+// /tmp/battlestart.state (see the doc comment above).
 const STEP_ORDER: [u16; 29] = [
     2, 1, 2, 1, 2, 1, 2, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 0, 1,
 ];
 const STEP_HOLD: [u16; 29] = [
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-];
+]; // provenance: derived -- same source as STEP_ORDER above
 
 pub struct Backdrop {
     bg: RegularBackground,
@@ -169,7 +172,10 @@ impl Backdrop {
             // battle it is being compared with, so it starts two frames
             // further back. MEASURED: with this value `opening` compares 40
             // consecutive frames at exactly 0, and one frame either side of
-            // it measures 8102 and 24398.
+            // it measures 8102 and 24398. provenance: derived -- the "+1" has
+            // a stated mechanism (this build's own two-frame-later backdrop
+            // construction), confirmed rather than merely fitted by the
+            // 40-frame/8102/24398 sweep above.
             timer: STEP_HOLD[0] + 1,
             palette,
             x_q: 0,

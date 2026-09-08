@@ -60,16 +60,64 @@ const BAR_PHASE: u32 = 1; // provenance: fitted -- matches at -1 and nowhere els
 /// number, not a derived one. Matching tiles by hash across a full cycle: the
 /// real ROM shows its frame-44 tile on frames 42..48 and this build showed the
 /// same tile 9 frames later in aligned time, while the MARKER measured offset
-/// 0 -- so the two cannot come off one counter as this code assumed, and no
-/// single phase fixes both (9 mod 28 with 0 mod 16 has no solution).
-/// What advances the real ROM's bar is still unknown; see TODO A8. Same
-/// footing as BUSTER_HIT_DELAY in battle.rs: the value that measures right
-/// rather than the value that computes right, and labelled as such.
-const BAR_EXTRA: u32 = 9; // provenance: fitted -- measures right, not derived; TODO.md A8: "no single phase fixes both [BAR_EXTRA and MARKER_EXTRA] -- 9 mod 28 with 0 mod 16 has no solution", confirmed again by this ticket's own sterile-HUD test finding the same inconsistency under a different alignment
+/// 0 -- so the two cannot come off one counter as THIS CODE'S OWN MODEL
+/// assumed (a `gauge_tick` that resets to 0 every time the bar is not full;
+/// see `set_gauge`'s own comment, "starts over each time it fills"), and no
+/// single phase fixes both under THAT model (9 mod 28 with 0 mod 16 has no
+/// solution).
+///
+/// ITEM 4 OF THE zero-src TICKET (2026-09-08) FOUND THE REAL MECHANISM, and
+/// it is one counter after all -- just not a resetting one. Loaded
+/// /tmp/bar122.state (real ROM, gauge already full, peeked 0x020352a0 ==
+/// 0x4000) and watched a wide RAM window (`--watch 0x02035200:0x300`)
+/// alongside the marker's own pixel colour and an MD5 hash of one bar cell's
+/// pixels, frame by frame, for 79 frames (until the state's own gauge-full
+/// timer pauses the battle and the counter freezes). The byte at
+/// **0x02035280** -- offset 0 of `eStruct2035280`, the same struct
+/// `SetCustGauge`/`ClearCustGauge` hold the gauge VALUE in at offset 0x20
+/// (asm00_2.s:29826-29851) -- increments by exactly 1 every frame and wraps
+/// at 112, not 256: observed going ...0x6d, 0x6e, 0x6f, 0x00... map this
+/// counter `t`, and BOTH animations are an exact function of it over the
+/// whole capture, phase included:
+///   bar step  (0..3, indexing BAR_CYCLE) = ((t + 6) % 28) / 7
+///   marker READY (vs WAITING)            = ((t + 7) % 16) < 8
+/// Confirmed by construction, not by search: the bar cell's hash takes
+/// exactly 4 distinct values, each a 7-long run of `t % 28`, unchanged
+/// across the 0x6f -> 0x00 wraparound; the marker is orange for 8 frames
+/// then cyan for 8, same treatment. 112 = lcm(28, 16), which is exactly why
+/// a single counter can drive both cycles and still look "inconsistent" to
+/// a search that assumes a SHARED PHASE rather than a shared COUNTER: 28
+/// and 16 are not multiples of each other, so which bar step coincides with
+/// which marker state keeps changing across the 112-frame wrap, and no pair
+/// of fixed additive offsets on one always-reset-on-refill tick can
+/// reproduce that. TODO.md A8's "9 mod 28 with 0 mod 16 has no solution" is
+/// true of that model and beside the point: the real ROM is not solving
+/// that system, it is reading one free-running counter twice with two
+/// different moduli.
+///
+/// NOT YET FINISHED, so `BAR_EXTRA`/`MARKER_EXTRA` are UNCHANGED rather than
+/// swapped for a guess: `t`'s own ZEROING RULE is still open. Everything
+/// above was measured inside one save state where the gauge was ALREADY
+/// full and `t` was already running -- consistent with `t` free-running
+/// from battle start regardless of fill state (which would make this
+/// module's whole `gauge_tick`-resets-on-empty model the actual bug), but
+/// also consistent with `t` being seeded to some nonzero value the instant
+/// the gauge fills, which a single save state cannot distinguish. Settling
+/// that needs one more measurement this ticket did not have time for: peek
+/// 0x02035280 at the exact real-ROM frame the gauge FIRST reaches 0x4000 in
+/// a battle-start-aligned capture (`/tmp/battlestart.state` plus enough
+/// frames to fill it, or `demo-hudmatch`'s own capture). If `t` reads 0
+/// there, `HudTiles` should carry a real `t: u32`, incremented unconditionally
+/// every frame from construction (never reset), with `set_gauge` computing
+/// the bar/marker straight from the two formulas above and BAR_EXTRA/
+/// BAR_PHASE/MARKER_EXTRA deleted outright. If `t` reads something else
+/// there, that value seeds it instead. Either way this is now a five-minute
+/// change once measured, not a research problem.
+const BAR_EXTRA: u32 = 9; // provenance: fitted -- measures right, not derived; see the doc above for the mechanism this ticket found (one free-running counter at 0x02035280, period 112) and the one measurement still needed before it can be replaced with a derived counter
 /// And the marker sits half a blink from where this build put it -- measured
 /// the same way, and the residue it removes is exactly the 110 orange pixels
 /// the lit marker draws.
-const MARKER_EXTRA: u32 = 8; // provenance: fitted -- measures right, not derived; see BAR_EXTRA's own note
+const MARKER_EXTRA: u32 = 8; // provenance: fitted -- measures right, not derived; see BAR_EXTRA's own doc for the mechanism this ticket found and what is still needed to derive it
 /// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
