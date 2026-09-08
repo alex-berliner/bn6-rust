@@ -6,11 +6,32 @@
 //! positions, and a right cap, all in one palette bank. Read off a live
 //! battle's BG3 map, whose top row is cap, blank, blank, six, zero, cap for an
 //! HP of 60.
+//!
+//! AUDIT wave 3d "bg3-merge" ticket: canon assigns hardware backgrounds
+//! BG0 unused, BG1 backdrop (P3), BG2 field panels (P2), BG3 HUD + chip
+//! window + RESULT, ONE tilemap (P1) -- peeked, identical across
+//! pausedwithcannon/chipselect/result_arrival. Before this ticket agb's
+//! `.show()` call order gave `backdrop` 0, `HudTiles` 1, `field` 2,
+//! `Custom`/`Results` 3 -- three separate `RegularBackground`s where canon
+//! has one, and none at canon's own index. BEFORE measurement
+//! (`tools/harness.py`'s `opening`/`CUSTMATCH_ROW`, `--only-bg N` on BOTH
+//! sides, full 240x160, no isolation flags):
+//!
+//! | state (frames) | --only-bg 1 | --only-bg 2 | --only-bg 3 |
+//! |---|---|---|---|
+//! | opening (40) | 1536000 (38400 px/frame, EVERY frame full-screen: canon's backdrop vs our HudTiles) | 0 (both sides happen to be `field`) | 28160 (704 px/frame: canon's HP box, ours shows nothing -- `custom` is `None`) |
+//! | window (16) | 614400 (38400 px/frame, same full mismatch) | 0 (`field` again) | 11264 (704 px/frame: canon's HP box beside its window, ours shows the window alone) |
+//!
+//! `--only-bg 2` reads 0 only because our `field` already happened to land
+//! on hardware index 2 by coincidence of call order, not because the index
+//! was chosen to match. `--only-bg 1`/`--only-bg 3` are meaningless as a
+//! same-content comparison before this ticket: our index 1 is the HUD, not
+//! the backdrop, and our index 3 is the chip window alone (or nothing),
+//! never the HUD+window pair canon draws together. See battle.rs's `draw()`
+//! and this ticket's own report for the after numbers and the merge itself.
 
-use agb::display::tiled::{
-    RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
-};
-use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
+use agb::display::tiled::{RegularBackground, TileEffect, TileFormat, TileSet, TileSetting};
+use agb::display::{Palette16, Rgb15};
 
 /// Two-tile pairs within the asset: ten digits, then the blank slot and the
 /// cap.
@@ -231,8 +252,13 @@ const NAME_COLS: u32 = 12; // provenance: peeked -- measured against the real RO
 /// pair per digit, the same as the HP box's set.
 const DAMAGE_ZERO_PAIR: u16 = 12; // provenance: derived -- the exporter's own known asset layout
 
+/// AUDIT wave 3d "bg3-merge": no longer owns its own `RegularBackground`.
+/// Canon draws the HP box, the chip window and the RESULT window on ONE
+/// hardware BG3 (peeked, identical across pausedwithcannon/chipselect/
+/// result_arrival) -- see battle.rs's `hud_bg` field, which every method
+/// below that used to write `self.bg` now takes as a `&mut RegularBackground`
+/// parameter instead.
 pub struct HudTiles {
-    bg: RegularBackground,
     font: TileSet,
     tiles: TileSet,
     palette: Palette16,
@@ -277,11 +303,6 @@ impl HudTiles {
         Self {
             // SAFETY: alignment asserted above; the exporter emits whole tiles.
             font: unsafe { TileSet::new(glyphs, TileFormat::FourBpp) },
-            bg: RegularBackground::new(
-                Priority::P1,
-                RegularBackgroundSize::Background32x32,
-                TileFormat::FourBpp,
-            ),
             // SAFETY: alignment asserted above, and the length is a whole
             // number of 4bpp tiles by construction of the exporter.
             tiles: unsafe { TileSet::new(tiles, TileFormat::FourBpp) },
@@ -342,7 +363,7 @@ impl HudTiles {
     /// gauge -- label, bar and end caps -- the moment the RESULT window comes
     /// up, and keeps only the HP box. Read off /tmp/noenemy2.state, where the
     /// strip beside the HP box is bare backdrop.
-    pub fn set_gauge(&mut self, filled: u16, full: u16, show: bool) {
+    pub fn set_gauge(&mut self, bg: &mut RegularBackground, filled: u16, full: u16, show: bool) {
         if self.menu {
             return;
         }
@@ -353,7 +374,7 @@ impl HudTiles {
             self.gauge_shown = None;
             for i in 0..GAUGE_CELLS {
                 for row in 0..2 {
-                    self.bg.set_tile(
+                    bg.set_tile(
                         ((GAUGE_COL + i) as i32, row),
                         &self.tiles,
                         TileSetting::new(BLANK_TILE, TileEffect::new(false, false, BANK)),
@@ -401,13 +422,13 @@ impl HudTiles {
                 body += 1;
                 (FILLER, cell)
             };
-            self.gauge_cell(col, 0, top, last);
-            self.gauge_cell(col, 1, bottom, last);
+            self.gauge_cell(bg, col, 0, top, last);
+            self.gauge_cell(bg, col, 1, bottom, last);
         }
     }
 
-    fn gauge_cell(&mut self, col: u32, row: i32, tile: u16, hflip: bool) {
-        self.bg.set_tile(
+    fn gauge_cell(&mut self, bg: &mut RegularBackground, col: u32, row: i32, tile: u16, hflip: bool) {
+        bg.set_tile(
             (col as i32, row),
             &self.tiles,
             TileSetting::new(tile, TileEffect::new(hflip, false, GAUGE_BANK)),
@@ -417,7 +438,7 @@ impl HudTiles {
     /// Write a chip's name along the bottom, as the real ROM does while a chip
     /// is in use, or clear it. Each glyph is two tiles stacked and its index is
     /// the game's character code.
-    pub fn set_name(&mut self, name: Option<(&str, u16)>) {
+    pub fn set_name(&mut self, bg: &mut RegularBackground, name: Option<(&str, u16)>) {
         // The damage runs straight on from the name, so lay it out first.
         let mut digits = [0u16; 4];
         let mut count = 0;
@@ -452,7 +473,7 @@ impl HudTiles {
                     (_, Some(d)) => ((DAMAGE_ZERO_PAIR + d) * 2 + half, &self.tiles),
                     _ => (BLANK_TILE, &self.tiles),
                 };
-                self.bg.set_tile(
+                bg.set_tile(
                     (col as i32, NAME_ROW + half as i32),
                     tiles,
                     TileSetting::new(tile, TileEffect::new(false, false, BANK)),
@@ -462,16 +483,31 @@ impl HudTiles {
     }
 
     /// Move the box aside for the chip menu, or bring it back.
-    pub fn set_menu(&mut self, menu: bool) {
+    pub fn set_menu(&mut self, bg: &mut RegularBackground, menu: bool) {
         if self.menu == menu {
             return;
         }
         self.menu = menu;
         self.shown = None;
         self.gauge_shown = None;
-        for col in 0..32 {
+        // AUDIT wave 3d "bg3-merge": columns 0..15 are the chip window's own
+        // territory (custom.rs's MAP_W) on the now-shared background, and by
+        // the frame this runs (one frame after `self.custom` actually
+        // becomes `Some`, since this reads last frame's state -- see the
+        // call site's own comment) the window has ALREADY drawn its title
+        // and card there. A blanket 0..32 sweep -- correct pre-merge, when
+        // this wrote a background of its own that the window never shared
+        // -- erases that content instead of the gauge's leftover cells,
+        // which is the only thing past column 15 (the aside HP box's own
+        // column, see `hp_col`) still needs clearing: cols 15..24 the gauge
+        // reached that the window's 15-wide map does not cover. Measured
+        // (this ticket): sweeping the full 0..32 here read 32768px over
+        // tools/regress.py's window+card (a diagonal backdrop bleed through
+        // the card's own picture region, its tiles wiped a frame after
+        // `open()` drew them); 15..32 reads 0.
+        for col in 15..32 {
             for row in 0..2 {
-                self.bg.set_tile(
+                bg.set_tile(
                     (col, row),
                     &self.tiles,
                     TileSetting::new(BLANK_TILE, TileEffect::new(false, false, BANK)),
@@ -491,7 +527,7 @@ impl HudTiles {
 
     /// Repaint the box when the number changes. The digits are laid out
     /// right-aligned, with the leading slots blank rather than zeroed.
-    pub fn set_hp(&mut self, hp: u16) {
+    pub fn set_hp(&mut self, bg: &mut RegularBackground, hp: u16) {
         if self.shown == Some(hp) {
             return;
         }
@@ -499,8 +535,8 @@ impl HudTiles {
         let base = self.hp_col();
         // The right cap is the left one MIRRORED, as the real ROM's map has
         // it: same tile pair with h-flip set.
-        self.cell_flipped(base, CAP_PAIR, false);
-        self.cell_flipped(base + 1 + SLOTS, CAP_PAIR, true);
+        self.cell_flipped(bg, base, CAP_PAIR, false);
+        self.cell_flipped(bg, base + 1 + SLOTS, CAP_PAIR, true);
         let mut left = hp;
         for slot in (0..SLOTS).rev() {
             let pair = if left == 0 && slot + 1 != SLOTS {
@@ -509,18 +545,18 @@ impl HudTiles {
                 (left % 10) as u16
             };
             left /= 10;
-            self.cell(base + 1 + slot, pair);
+            self.cell(bg, base + 1 + slot, pair);
         }
     }
 
     /// Paint one two-tile column of the box.
-    fn cell(&mut self, col: u32, pair: u16) {
-        self.cell_flipped(col, pair, false);
+    fn cell(&mut self, bg: &mut RegularBackground, col: u32, pair: u16) {
+        self.cell_flipped(bg, col, pair, false);
     }
 
-    fn cell_flipped(&mut self, col: u32, pair: u16, hflip: bool) {
+    fn cell_flipped(&mut self, bg: &mut RegularBackground, col: u32, pair: u16, hflip: bool) {
         for half in 0..2u16 {
-            self.bg.set_tile(
+            bg.set_tile(
                 (col as i32, half as i32),
                 &self.tiles,
                 TileSetting::new(pair * 2 + half, TileEffect::new(hflip, false, BANK)),
@@ -528,9 +564,4 @@ impl HudTiles {
         }
     }
 
-    /// Returns its background id, so a blend can include this layer -- the
-    /// battle's opening whitens EVERY layer, not just the field's.
-    pub fn show(&self, frame: &mut GraphicsFrame) -> agb::display::tiled::RegularBackgroundId {
-        self.bg.show(frame)
-    }
 }

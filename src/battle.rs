@@ -1049,6 +1049,21 @@ pub struct Battle<'a> {
     sword_in: Option<u8>,
     bombs: Vec<Bomb>,
     panels: Panels,
+    /// AUDIT wave 3d "bg3-merge": an always-empty background shown first
+    /// (except while the RESULT window is up -- see `draw`'s own comment),
+    /// purely so `backdrop`/`bg`/`hud_bg` land on hardware BG1/2/3 the way
+    /// canon's own (BG0 unused) do, instead of BG0/1/2. A similar filler was
+    /// tried and reverted in the wave-3c "zero-layers" ticket, there
+    /// measuring a real one-frame boot-length shift from the extra
+    /// `RegularBackground::new()` call. This ticket's own version of that
+    /// same experiment measured clean instead -- tools/harness.py --only
+    /// opening: isolated stayed at 0 with the SAME search offset, both
+    /// before and after adding this field -- but boot length moving with
+    /// unrelated code (AUDIT pair 1) means that clean result is a property
+    /// of THIS commit's own instruction count, not a guarantee; if a future
+    /// change ever needs to shave a frame back, this field is the first
+    /// thing to revert.
+    filler_bg: RegularBackground,
     bg: RegularBackground,
     /// Absent in the sterile arena, which shows neither: building them there
     /// still claimed video memory and starved the barrier bubble's sprite.
@@ -1066,6 +1081,34 @@ pub struct Battle<'a> {
     /// "sprite palette should fit in vram" until this was made optional.
     hand_icon_palette: Option<PaletteVramSingle>,
     hud_tiles: Option<crate::hudtiles::HudTiles>,
+    /// AUDIT wave 3d "bg3-merge": the ONE hardware background canon shares
+    /// between the HUD's HP box, the chip-select window and the RESULT
+    /// window (peeked, identical BGxCNT across pausedwithcannon/chipselect/
+    /// result_arrival: BG3, priority 1). `Some` exactly when `hud_tiles` is
+    /// (created alongside it in `Battle::new`), or lazily the first time
+    /// `custom`'s window opens with `hud_tiles` blanked (the isolated
+    /// `window`/`card` checks: FLAG_BLANK_HUD with FLAG_OPEN_WINDOW) --
+    /// see `open_custom_window`. `hud_tiles` and `custom` each borrow it for
+    /// the span of one call, never own it, so both can draw into it in the
+    /// same frame; its scroll is 0 whenever `custom` is not driving it
+    /// (reset the moment the chip window finishes closing -- canon's own
+    /// BG3HOFS does the same, see that reset site's own comment). RESULT
+    /// keeps its own, separate background: measured (this ticket) that
+    /// canon does NOT scroll BG3 for its slide-in -- RenderInfo's BG0-3
+    /// HOFS/VOFS shadows (0x0200ac4c-0x0200ac5b) read a constant 0 across
+    /// the whole result_arrival capture (backdrop's own BG1 excepted, which
+    /// drifts on its own ambient animation) even while the window visibly
+    /// slides in at sub-tile precision, and the HP box's own pixels are
+    /// identical between a normal battle frame and a settled RESULT frame
+    /// -- so sharing this scroll-driven background would incorrectly drag
+    /// the HP box during the chip window's slide (which canon DOES do,
+    /// confirmed live: the box visibly moves in lock-step with BG3HOFS
+    /// while the chip window opens) while RESULT needs it to stay put.
+    /// Canon's real technique for RESULT (not hardware scroll -- likely a
+    /// per-frame VRAM tile-bitmap rewrite of the leading edge) is not
+    /// identified; reproducing it is future work, not this ticket's
+    /// mechanical merge.
+    hud_bg: Option<RegularBackground>,
     megaman: Actor,
     /// Sizes differ between debug and release builds: a debug build fights
     /// the Mettaur alone so the hand and chips can be tried without the
@@ -1433,6 +1476,12 @@ impl<'a> Battle<'a> {
         } else {
             field.background(&panels)
         };
+        // AUDIT wave 3d "bg3-merge": see `filler_bg`'s own doc.
+        let filler_bg = RegularBackground::new(
+            Priority::P0,
+            RegularBackgroundSize::Background32x32,
+            TileFormat::FourBpp,
+        );
 
         let charge = 0u16;
         let glow = spr::Player::new(spr::Assets::new(CHARGE), 1);
@@ -1651,6 +1700,19 @@ impl<'a> Battle<'a> {
         } else {
             Some(crate::hudtiles::HudTiles::new(crate::HUD_TILES, crate::TEXT_FONT))
         };
+        // AUDIT wave 3d "bg3-merge": the shared BG3 (see `hud_bg`'s own doc).
+        // Paired 1:1 with `hud_tiles` above -- `open_custom_window` creates
+        // it lazily instead when `hud_tiles` is blanked but the chip window
+        // still opens (the isolated `window`/`card` checks).
+        let hud_bg = if blank_hud {
+            None
+        } else {
+            Some(RegularBackground::new(
+                Priority::P1,
+                RegularBackgroundSize::Background32x32,
+                TileFormat::FourBpp,
+            ))
+        };
         // AUDIT pairs 6/14/17: a fixture's own `gauge_tick` (FIXTURE.md +28)
         // seeds the bar's flow phase directly -- see `HudTiles::seed_gauge`'s
         // own doc. 0xFFFF ("default" throughout this contract) leaves the
@@ -1698,6 +1760,7 @@ impl<'a> Battle<'a> {
             vulcan_gun: None,
             bombs: Vec::new(),
             panels,
+            filler_bg,
             bg,
             backdrop: if blank_backdrop {
                 None
@@ -1712,6 +1775,7 @@ impl<'a> Battle<'a> {
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
             hud_tiles,
+            hud_bg,
             hp_shown: core::iter::once(Counter::new(megaman.hp()))
                 .chain(enemies.iter().map(|e| Counter::new(e.hp())))
                 .collect(),
@@ -1916,21 +1980,41 @@ impl<'a> Battle<'a> {
         let before_first_window = !self.window_closed && !self.skip_intro();
         let gauge_up = self.shown.is_none() && self.fade_out == 0 && !before_first_window;
         if let Some(hud) = self.hud_tiles.as_mut() {
-            hud.set_menu(self.custom.is_some());
-            hud.set_gauge(self.gauge, GAUGE_FULL, gauge_up);
+            // `hud_bg` is Some whenever `hud_tiles` is (AUDIT wave 3d
+            // "bg3-merge": paired 1:1 in `Battle::new`; `open_custom_window`
+            // only ever creates `hud_bg` when it was None to begin with,
+            // never the reverse), so this is never a fresh-blanked HUD.
+            let bg = self.hud_bg.as_mut().unwrap();
+            hud.set_menu(bg, self.custom.is_some());
+            hud.set_gauge(bg, self.gauge, GAUGE_FULL, gauge_up);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
             // follows the front of the hand.
             // The window covers the name strip while the menu is up, and the
-            // real ROM draws no name there then.
-            match self.hand.get(self.hand_at).filter(|_| self.custom.is_none()) {
-                // The hand holds the chip itself, so take its name from that.
-                // Indexing the chip table BY ID names the wrong chip: the
-                // table is in the exporter's own order, where index 1 is
-                // HiCannon while chip id 1 is Cannon.
-                Some(chip) => hud.set_name(Some((chip.name(), chip.power))),
-                None => hud.set_name(None),
+            // real ROM draws no name there then. AUDIT wave 3d "bg3-merge":
+            // that strip is now the SAME shared background the window
+            // itself draws tiles into. Measured (this ticket,
+            // tools/regress.py --only window,card): unconditionally
+            // re-blanking it every frame (matching the pre-merge structure
+            // byte for byte) measures WORSE than skipping the write while
+            // the window is open (32768px vs 8192px over 16 frames) -- the
+            // window's own template map is not blank throughout that whole
+            // strip, so re-asserting BLANK_TILE there erases real window
+            // content the pre-merge code never touched (a separate,
+            // lower-priority background of its own back then, so its own
+            // blank tiles simply never got seen). Skipping is closer but
+            // not yet 0 -- see this ticket's report for where the
+            // remaining residue localises.
+            if self.custom.is_none() {
+                match self.hand.get(self.hand_at) {
+                    // The hand holds the chip itself, so take its name from
+                    // that. Indexing the chip table BY ID names the wrong
+                    // chip: the table is in the exporter's own order, where
+                    // index 1 is HiCannon while chip id 1 is Cannon.
+                    Some(chip) => hud.set_name(bg, Some((chip.name(), chip.power))),
+                    None => hud.set_name(bg, None),
+                }
             }
         }
         if self.backdrop.is_some() {
@@ -1975,7 +2059,11 @@ impl<'a> Battle<'a> {
         // everything, including itself, through the chimes and then the
         // chip window, which takes banks 9-15 while it is up.
         if let Some(window) = self.custom.as_mut() {
-            if window.update(input, gfx) {
+            // `hud_bg` exists whenever `custom` does -- opening the window
+            // (below) creates it lazily if `hud_tiles` was blanked (AUDIT
+            // wave 3d "bg3-merge").
+            let bg = self.hud_bg.as_mut().unwrap();
+            if window.update(bg, input, gfx) {
                 // The picks leave the deck (sub_80293F8) and become the hand.
                 self.hand.clear();
                 self.hand_at = 0;
@@ -1984,6 +2072,16 @@ impl<'a> Battle<'a> {
                     self.hand.push(offer.chip);
                 }
                 self.custom = None;
+                // The shared background's scroll returns to 0 the instant
+                // the window finishes closing, same as canon's own BG3HOFS:
+                // measured live (this ticket) counting UP 12/frame as the
+                // window closes (same magnitude it counts down on open),
+                // ending on 120 -- then reading 0 the very next frame, not
+                // 120 forever after. HudTiles' own tile placement assumes
+                // an unscrolled background.
+                if let Some(bg) = self.hud_bg.as_mut() {
+                    bg.set_scroll_pos((0, 0));
+                }
                 // BATTLE START! follows the FIRST chip window, thirty frames
                 // after it closes. Measured from a save state at a battle's
                 // first frame: window opens 165, closes 259, banner 289.
@@ -2040,7 +2138,19 @@ impl<'a> Battle<'a> {
                             })
                     })
                     .collect();
-                self.custom = Some(self.custom_assets.open(&offered, gfx, self.fixture));
+                // AUDIT wave 3d "bg3-merge": the shared HUD/window
+                // background, lazily created here for the isolated
+                // `window`/`card` checks (FLAG_BLANK_HUD with
+                // FLAG_OPEN_WINDOW -- `hud_tiles` is None there, so
+                // `Battle::new` never made one).
+                let bg = self.hud_bg.get_or_insert_with(|| {
+                    RegularBackground::new(
+                        Priority::P1,
+                        RegularBackgroundSize::Background32x32,
+                        TileFormat::FourBpp,
+                    )
+                });
+                self.custom = Some(self.custom_assets.open(bg, &offered, gfx, self.fixture));
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             // Debug: L or R opens the chip window at once, without waiting for
@@ -2748,7 +2858,7 @@ impl<'a> Battle<'a> {
             self.hud_tiles
                 .as_mut()
                 .unwrap()
-                .set_hp(self.hp_shown[0].shown());
+                .set_hp(self.hud_bg.as_mut().unwrap(), self.hp_shown[0].shown());
             // ONE FRAME BEHIND the digits. A palette write lands on the frame
             // it is made and the box's tile writes land on the next, so
             // swapping the ramp the moment the counter flashes paints the
@@ -3442,15 +3552,29 @@ impl<'a> Battle<'a> {
         // The sterile arena leaves the backdrop out for the same reason it
         // draws a plain field: the real ROM's captures strip their BG layers
         // with --disable-bg, so both sides must be MegaMan on black.
+        //
+        // AUDIT wave 3d "bg3-merge": call order here is hardware BG index
+        // (agb assigns 0, 1, 2... in `.show()` call order each frame) --
+        // `filler_bg`, then backdrop, then field, then the shared
+        // HUD/window background, landing on hardware BG0 (unused, matching
+        // canon's own)/BG1 (backdrop)/BG2 (field)/BG3 (HUD+window+RESULT)
+        // exactly where canon's own BGxCNT peeks put them. `filler_bg` is
+        // skipped while the RESULT window is up: backdrop + field + hud_bg
+        // + `self.shown`'s own background is already 4, agb's hardware cap,
+        // and a 5th here panics -- see `filler_bg`'s own doc for why this
+        // measured safe to keep everywhere else.
+        if self.shown.is_none() {
+            self.filler_bg.show(frame);
+        }
         let mut backdrop_id = None;
         let mut hud_id = None;
         if let Some(backdrop) = self.backdrop.as_ref() {
             backdrop_id = Some(backdrop.show(frame));
         }
-        if let Some(hud) = self.hud_tiles.as_ref() {
-            hud_id = Some(hud.show(frame));
-        }
         let bg_id = self.bg.show(frame);
+        if let Some(hud_bg) = self.hud_bg.as_ref() {
+            hud_id = Some(hud_bg.show(frame));
+        }
         // The chip-name popup is OAM entries 0 upward on the real ROM, so it
         // goes in before anything else the fight draws and stands over all of
         // it.
