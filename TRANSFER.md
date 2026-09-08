@@ -1124,6 +1124,36 @@ a fidelity regression dressed as a feature. The rule this keeps proving is worth
 A CHAIN OF CORRECT CITATIONS IS NOT A MEASUREMENT. Every link can be right and the conclusion
 still false, because the chain has to start from a value somebody actually read.
 
+## 7bb. The buster's HIT is a SAMPLE, not a blip (2026-09-07)
+
+An attempt at the second sound went in as PSG noise, measured 27 times too loud against the real
+ROM, and was reverted. What it found on the way is worth more than the sound would have been.
+
+THE HARNESS'S CHANNEL NUMBERS ARE NOT THE HARDWARE'S, and that is what misled it.
+`--audio-channel` prints its own table and it reads:
+
+    0: PSG Channel 1 (Square/Sweep)     3: PSG Channel 4 (Noise)
+    1: PSG Channel 2 (Square)           4: FIFO Channel A
+    2: PSG Channel 3 (PCM)              5: FIFO Channel B
+
+So harness channel 4 is DIRECTSOUND A, not the PSG's noise channel -- and an implementation that
+reads "the sound is on channel 4" as "the sound is the noise generator" produces something loud
+and wrong. Read the table the tool prints; it prints it for this reason.
+
+WHERE THE HIT ACTUALLY IS. Soloing all six and subtracting a control run with no shot:
+
+    channel 0 (PSG square 1)   +7: 1376  +8: 794      <- the FIRE blip, already implemented
+    channels 1, 2, 3           nothing above 120      <- no PSG involvement at all
+    channels 4 and 5 (FIFO)    +11 through +23, peaking 2102 at +16
+
+Both FIFOs together, and nothing on the PSG, means the hit is a DIRECTSOUND SAMPLE. That is a
+stopping point rather than a failure: agb's mixer handles DirectSound and could play it, but
+exporting the sample is a bigger job than adding a blip, and faking a sample on the noise channel
+is exactly the kind of plausible-sounding wrong answer this file keeps warning about.
+
+The useful shape of the finding: THE FIRE IS PSG AND THE HIT IS A SAMPLE. Any further sound should
+be soloed first to find out which of the two it is, before a single line is written.
+
 ## 7ay. THE LOOP CLOSES (2026-09-07)
 
 A whole battle now runs end to end in the rollup build, which it could not do this morning: the

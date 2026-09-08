@@ -204,6 +204,21 @@ VERIFY LIKE THIS: from `/tmp/pausedwithcannon.state`, fire an uncharged buster a
 the hit frame, no cracked stage), dumping the panel-type bytes before and after. VDoll can be
 poked into the hand for the poison case.
 
+### B3b. The next sound needs a DirectSound sample exporter
+The buster's FIRE is done (PSG channel 1, matched at +7/+8). The buster's HIT is NOT a blip: it
+is on FIFO channels A and B and silent on all four PSG channels, so it is a DirectSound SAMPLE
+(TRANSFER 7bb). An attempt to fake it on the noise channel measured 27x too loud and was
+reverted.
+
+So the next step is an exporter: read a `WaveData` header and its PCM out of `data/dat37.s`
+(`SOUND_HIT_6B`'s is already decoded end to end -- `byte_81597A0`, 1881 bytes, 10512 Hz, no
+loop), wrap it as a WAV, and play it through agb's existing mixer with `include_wav!`. agb's
+mixer takes 8-bit PCM at 10512/18157/32768 Hz, and 10512 is exactly what the game uses.
+
+AND SOLO FIRST, ALWAYS. `--audio-channel`'s table is 0-3 PSG, 4-5 DirectSound; the numbering is
+the harness's, not the hardware's, and reading "channel 4" as "the noise generator" is what
+produced the reverted attempt.
+
 ### B3a. Sound: the harness can hear now  *(the research is done)*
 `tools/mgba_capture.c` has `--dump-audio` and `--audio-channel`; see TRANSFER 7au for the two
 gotchas (the advertised 65536 Hz is really 96000, and `struct mCore` has a `USE_DEBUGGERS` ABI
