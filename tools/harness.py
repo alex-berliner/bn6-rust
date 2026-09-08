@@ -1034,20 +1034,21 @@ PORTED_CHECKS: List[Check] = [
         align=Align(
             canon_ref=49,
             search=range(115, 145),
-            note="pending-src (FIXTURE.md's banner_at, +46, not read by src/fixture.rs yet). "
-                 "canon: /tmp/bn6f_banner.gba (tools/patch_sterile.py --keep-banner, already "
-                 "built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from "
+            note="banner_at is now read by src/fixture.rs (BANNER_ROW's own banner_at=100 "
+                 "verified byte-identical there against demo-banner's own reference, over 200 "
+                 "frames -- this note's earlier 'pending-src' was stale, corrected this ticket, "
+                 "not re-investigated past that: 2248/58 is zero-src's own item, not this "
+                 "ticket's). canon: /tmp/bn6f_banner.gba (tools/patch_sterile.py --keep-banner, "
+                 "already built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from "
                  "regress.py's check_banner. rust: BANNER_ROW through the descriptor (marker "
                  "origin 1, blanked HUD/backdrop family) plus a band around regress.py's old "
-                 "rust_start=132 (132-1=131). Will not read 0 until banner_at lands: nothing "
-                 "in a plain fixture battle raises ENEMY DELETED on any particular frame.",
+                 "rust_start=132 (132-1=131).",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=BANNER_ROW, extra=("--disable-bg",)),
         canon=lambda ui: Side(rom="/tmp/bn6f_banner.gba", loadstate=PAUSED,
                               cheats=("0x0203ab84:0", "0x0203ab86:0"), script="Start@10",
                               extra=("--disable-bg",)),
         canon_variant="canon (banner-patched, sterile otherwise)",
-        pending_src="banner_at (FIXTURE.md +46)",
     ),
     Check(
         name="popup",
