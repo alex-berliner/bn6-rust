@@ -216,13 +216,28 @@ That is not a regression in the model, it is a phase move: the art period is now
 match is at rust 2184, and a sweep confirms a sharp minimum there -- 282 px against ~3200 and
 ~4000 on either side.
 
-WHAT IS LEFT, and it is the honest part: 282 is not 0. At 2184 it splits HUD 55, backdrop 136,
-field 58, bottom 33. The backdrop band never reaches 0 anywhere in a 2760-frame sweep (best 68,
-recurring every 384). Since the OLD model DID reach 0 at frame 391, the tile art itself must be
-exact, so a correct schedule plus exact art should give an exact frame somewhere and does not.
-Something small is still wrong -- most likely our scroll's phase relative to the art differs from
-the real ROM's by a frame or two. THAT is the remaining question, and it is a much smaller one
-than the ticket started with.
+WHAT IS LEFT, NARROWED TO A NUMBER: our ART and our SCROLL are THREE FRAMES out of step with
+each other. Not the art's schedule, which is exact, and not the scroll, which is pixel-exact --
+their relative offset.
+
+Rendering the two sides at rust 2184 shows every arc and ring of the backdrop aligning perfectly
+and ONLY the little purple glyphs inside the rings differing, which rules the scroll out by
+inspection. Counting glyph-coloured pixels gives the step boundary directly:
+
+    real  (36, 39, 42, 45, 48, 51, 54, 57)  1162 1172 1174 1047 1035 1040  870  884
+    ours  (2176, 2179, 2182, ...)           1162 1172 1025 1024 1035  848  843 1208
+
+The two agree for two samples and then ours steps early: the real ROM changes step between its
+frames 42 and 45, ours between 2179 and 2182. So at rust 2184 the scroll is exact and the art is
+three frames advanced; at 2181 the art would line up and the scroll would not.
+
+WHERE TO LOOK: both clocks are driven from the same `Backdrop::update`, so the offset has to come
+from initialisation -- `prime()` runs before the first `update()` and seeds the art's timer, while
+the scroll starts from zero at the first update. Note the peeked initial condition (art `Timer` 3
+of 4 at the moment the scroll counters read 0/0) is relative to `battlestart.state`, which is not
+necessarily the battle's frame 0; that is the most likely place for three frames to hide.
+Settle it by dumping `eGFXAnimStates[0]` AND `eBGScrollCBCounters` on the SAME real frames and
+reading their relationship off directly, rather than each against its own assumed origin.
 
 DO NOT MERGE THE BRANCH UNTIL THAT IS ANSWERED, because merging as-is turns a `tiles` 0 into a
 282, and a 0 that came partly from luck is still worth more than a non-zero nobody has explained.
