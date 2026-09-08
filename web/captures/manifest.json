@@ -1,5 +1,11 @@
 [
   {
+    "file": "captures/mettaur-attack-compare.gif",
+    "name": "mettaur-attack-compare",
+    "label": "The Mettaur's whole 70-frame attack cycle, real ROM left and this build right: 0.0 pixels a frame. It hides, swings, and sends a shockwave down the row. The virus acts on an RNG neither side shares, so there is no fixed offset to compare on -- the two are aligned by finding the lag that lines up the frames on which its own bounding box changes, and 16 of the real side's 17 boundaries land exactly. This was the last animated residue: it fell from 460 pixels to 345 when a hop turned out to spawn a new segment rather than move one, and from 345 to 0 when the segment left behind turned out to be destroyed a frame too early.",
+    "added": null
+  },
+  {
     "file": "captures/bambswrd-compare.gif",
     "name": "bambswrd-compare",
     "label": "BambSwrd, real ROM left and this build right: 0.0 pixels a frame. The wood-element sword, the last of the nine.",
@@ -158,7 +164,7 @@
   {
     "file": "captures/wave-departure-compare.gif",
     "name": "wave-departure-compare",
-    "label": "The Mettaur's shockwave, real ROM left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames.",
+    "label": "The Mettaur's shockwave, real ROM left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames. Now at 0: the last three frames were the departing segment being destroyed the instant its animation reached its final frame, rather than after that frame had been held for the duration it asks for -- the real ROM's own \"last frame\" flag is masked off until the frame's duration counter runs out, so it never means \"reached\", only \"finished\".",
     "added": "2026-09-07"
   },
   {

@@ -826,5 +826,11 @@
     "file": "log/shots/1788829797-gg_cursor.gif",
     "caption": "The chip window's cursor walk reaches 0.0 px/frame. Real ROM left, this build right, same five Left presses on both sides. What was left was the highlight bracket's blink: it is (counter >> 3) & 1 off a frame counter in the window's own struct at 0x02036500, and our slide-in was reaching its open state one frame after the real ROM's does -- invisible everywhere except in that blink.",
     "tag": "cursor"
+  },
+  {
+    "t": 1788833730,
+    "file": "log/shots/1788833730-gg_mettaur.gif",
+    "caption": "The Mettaur's 70-frame attack cycle reaches 0.0 px/frame -- the last animated residue in the suite. Fourteen of the fifteen regression checks are now at zero. The last three frames were the departing shockwave segment being destroyed the instant its animation reached its final frame, instead of after that frame had been held for its own duration.",
+    "tag": "mettaur"
   }
 ]
