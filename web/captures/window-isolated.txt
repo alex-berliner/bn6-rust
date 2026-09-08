@@ -1,0 +1,5 @@
+window (isolated), FAILED: per-frame max 10181 px, total 161790 px over 16 frames. Alignment: canon frame 55+k, rust frame 8(marker)+244+k. canon
+
+pending-src (FIXTURE.md's offered-deck field, +34..39, not read by src/fixture.rs yet). canon: REAL+CHIPSELECT unchanged. rust: CUSTMATCH_ROW through the descriptor -- marker origin 8 plus a band around regress.py's old compared rust frame (its own start=55 PLUS lag[174,190] = 229..245, not lag alone -- 221..237 once origin is subtracted). Will not read 0 until the deck field lands: with no offered-deck field the window opens on a random folder-derived deck, not the real capture's Vulcan1/AirShot/Sword/MiniBomb/Cannon stack.
+
+commit 842c2b8

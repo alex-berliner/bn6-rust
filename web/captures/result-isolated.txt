@@ -1,0 +1,5 @@
+result (isolated), FAILED: per-frame max 31076 px, total 779747 px over 40 frames. Alignment: canon frame 0+k, rust frame 8(marker)+59+k. canon
+
+pending-src (FIXTURE.md's start_state, +40, not read by src/fixture.rs yet). canon: RESULT_ARRIVAL (AUDIT pair 4/tools/states.py, wave 1's `states` agent) -- captured 32 frames earlier than regress.py's old NOENEMY, so the window's WHOLE slide-in (frames 21..32 of a 40-frame capture, per states.py's own measurement) is inside the window instead of already over: strictly more than regress.py's check_result ever compared. rust: RESULTMATCH_ROW through the descriptor -- will not read 0 until start_state lands, since a plain battle at frame ~1 looks nothing like a battle already resolved into RESULT.
+
+commit 842c2b8

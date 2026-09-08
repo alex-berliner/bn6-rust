@@ -1,0 +1,5 @@
+cursor (isolated), FAILED: per-frame max 6884 px, total 621404 px over 170 frames. Alignment: canon frame 15+k, rust frame 8(marker)+226+k. canon
+
+AUDIT ticket step 5: 'cursor... just broke on a hardcoded lag... marker alignment is the fix.' The offered deck is STILL pending-src (same field as `window`/`card`), so this keeps building the rust side from the demo-custmatch FEATURE (not yet a descriptor) -- but the old fixed CURSOR_LAG=230 constant is GONE, replaced with marker origin (8, measured live for this exact feature build) plus a search band around regress.py's old compared rust frame (start=15 PLUS CURSOR_LAG=230 = 245, 237 once origin is subtracted), so a future boot-length shift (the ONE THING that broke this, 0 -> 602 pixels, all of it one frame of 170) self-corrects instead of silently drifting. Script unchanged from regress.py (5 Left-presses, 30 frames apart); box removed, full screen, all 170 frames.
+
+commit 842c2b8

@@ -1,0 +1,5 @@
+chip-mcannon (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)
+
+canon: chip_compare.py's REAL_START=43, chip-independent. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as the `cannon` check above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (same descriptor family as `cannon`, which this reuses rather than re-derives).
+
+commit 842c2b8
