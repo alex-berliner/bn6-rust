@@ -203,13 +203,20 @@ plates. Rendering the two strips one above the other answered it in one glance:
 
 Two separate things, one of them real:
 
-1. **THE CUSTOM GAUGE SHOULD NOT BE DRAWN DURING THE OPENING.** The real ROM shows no gauge at
-   frame 120; ours draws it, full, from the start. That is a parity gap, not a fixture problem,
-   and it is worth fixing on its own -- the gauge's arrival is part of how a battle opens. Find
-   when the real ROM first draws it (it must be up by the first chip window at 173) and gate it.
-   NOTE the gauge and its "L or R" prompt are the real game's own art out of the HUD tiles, not
-   a debug affordance -- the only `cfg!(debug_assertions)` in battle.rs is the L/R shortcut at
-   battle.rs:1694, which is a different thing.
+1. **THE CUSTOM GAUGE SHOULD NOT BE DRAWN DURING THE OPENING.** Measured by rendering the real
+   ROM's HUD strip at frames 75, 100, 125, 150, 165, 175 and 185 from `/tmp/battlestart.state`:
+   **there is no gauge on ANY of them.** Just the HP box, and backdrop everywhere else. By 200
+   the chip window is up and the strip is the chip-select screen. Ours draws the gauge, full,
+   from the start. A parity gap, not a fixture problem.
+   NOTE the gauge and its "L or R" prompt are the real game's own HUD art, not a debug
+   affordance -- the only `cfg!(debug_assertions)` in battle.rs is the L/R shortcut at
+   battle.rs:1694, which is a different thing. I checked, because "a debug aid leaked into
+   release" would have been the tidier answer.
+   STILL OPEN: when the gauge DOES first appear. It should be after the first chip window
+   closes -- a battle opens with that window (7aw), so there is nothing for a gauge to do before
+   it. Confirming that needs a capture where the window actually closes, and a naive `A` press
+   does not do it: the cursor starts on a chip, not on OK, so scripted A presses at 230 and 260
+   left the window still open at frame 410. Drive the cursor to OK first.
 2. MegaMan's HP: the captured battle's navi has 60, `demo-open` starts at 100. Fixture setup.
 
 Lesson worth keeping: a pixel count tells you how much differs and a picture tells you WHAT.
