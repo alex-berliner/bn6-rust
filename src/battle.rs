@@ -2112,11 +2112,24 @@ impl<'a> Battle<'a> {
             // A hitbox hits whoever is on the panel it arrives on: the
             // player's shots hit enemies and are spent, an enemy's wave hits
             // the player and rolls on. Off the field, both are spent. Arrival
-            // is checked before the shot advances, so the panel it spawns on
-            // counts too -- a point-blank target is hit on the first frame.
-            let arrived = self.shots[i].just_arrived();
+            // is checked twice, matching canon's own split (F1): BEFORE the
+            // shot advances, so the panel it spawns on counts and a
+            // point-blank target is hit on the first frame -- and, via
+            // `just_hopped()`, on the HOP frame itself, because canon applies
+            // the damage in the same frame the wave advances onto the
+            // target's panel (watch-write on MegaMan's object: the HP store
+            // from applyDamageToPlayer_801ba12, asm00_2.s:24832 ->
+            // object_subtractHP at object.s:4685, and the flinch entry
+            // object_setAttack0 at asm00_2.s:23606 are all inside canon frame
+            // 114, the same frame the wave's light schedule puts the hop
+            // in). Checking only before the advance registered the hit a
+            // frame late: our wave's hop schedule is pixel-identical to
+            // canon's (BG2 pairs at 0), yet the flinch started at k=44
+            // against canon's k=43.
+            let spawn_arrival = self.shots[i].just_arrived();
             let off_field = !self.shots[i].update();
             let mut spent = off_field;
+            let arrived = spawn_arrival || self.shots[i].just_hopped();
             if !spent && arrived {
                 let at = (self.shots[i].col, self.shots[i].row);
                 let mut hit = false;

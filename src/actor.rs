@@ -563,7 +563,12 @@ impl Actor {
             0
         } else {
             match &self.action {
-                Action::Flinching { ticks } => (*ticks as u16).saturating_sub(1),
+                // canon's own flinch handler writes Timer=0x17 on entry and
+                // decrements it in the SAME frame (asm00_2.s:18310-18316),
+                // so +0x20 reads 0x16=22 on the hit frame -- which is exactly
+                // our post-decrement `ticks` (FLINCH_FRAMES=0x17, ticked by
+                // this frame's update, F1). No offset either way.
+                Action::Flinching { ticks } => (*ticks as u16),
                 _
                     if self.post_flinch > 0
                         && matches!(self.action, Action::Idle) =>
@@ -902,7 +907,7 @@ impl Actor {
                     Action::Idle
                 }
             }
-            Action::Flinching { ticks } if ticks > 1 => Action::Flinching { ticks: ticks - 1 },
+            Action::Flinching { ticks } if ticks > 0 => Action::Flinching { ticks: ticks - 1 },
             Action::Flinching { .. } => {
                 self.player.play(anim::IDLE);
                 // Export-only shadow (TODO R6): canon's MegaMan object
