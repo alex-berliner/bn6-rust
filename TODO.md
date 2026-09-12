@@ -560,7 +560,7 @@ oracle tables, in AGENTS.md shape. **Coordinator:** verify_rows plus the Sol ver
 claim; this is a judgment about alignment (AUDIT's "no boxes in time"), so the verifier must confirm
 the pairing is by event and not by score before any merge. No model escalation on a PARTIAL.
 
-### F4. The opening row reads 1160 px since R1 rebuilt its canon state  *(OPEN -- 2026-09-12)*
+### F4. The opening row reads 1160 px since R1 rebuilt its canon state  *(DONE -- fixture fix landed, isolated 0; the integrated residue filed as A9, 2026-09-12)*
 
 **Why.** `opening isolated` read PASS 0 over 40 frames against the lost `battlestart.state` (HANDOFF
 §10). The 2026-09-12 gallery run reads **1160 / 29 / 40** (integrated 73659 / 2720) against R1's
@@ -569,6 +569,22 @@ the canon fixture changed. **Do:** localize the 1160 px (frame, region, which el
 and the oracle; decide from measurement whether the row's descriptor, its Align, or our opening
 differs from what the rebuilt canon state shows; fix the fixture side if the state is the difference,
 or file the src/ defect with its frame and region. No allowlist change.
+
+**Result.** The 1160 was the FIXTURE, not the opening. Localized frame by frame over the row's own
+captures: every one of the 40 frames differs by exactly the same static 29 px at x 19..30, y 3..12 --
+the HP box's digits. Canon's rebuilt state holds **0x0064 at 0x0203a9d4** (MegaMan object +0x24;
+note `--peek` at load reads 0 there because the intro has not populated the object -- read it from a
+200-frame capture's `--dump` instead) and draws "100"; the descriptor's `megaman_hp=60` was peeked
+from the LOST state (TODO A6) and drew "60". `OPEN_ROW` now carries 100 (peeked), and also carries
+the state's own RNG -- ePrimaryRngSeed (0x020013f0) reads **0x14ca0f46** at the rebuilt state's frame
+0 (`--peek` at load) -- which `fixture_cheats()` now delivers at descriptor +58 (src/fixture.rs has
+read the field since the wave 3d ticket; the harness never wrote it; descriptors without `rng` are
+byte-identical, 0 stays "our default seed"). After: `opening isolated` **PASS 0/0/40**, negative not
+blind (86591). Integrated moved 73659/2720 -> 72499/2691 and the REST IS NOT FIXTURE -- the rebuilt
+state's spawn cells and the enemy HP readout's timing, both filed as **A9** with frames and regions.
+The oracle (tools/oracle.py) supports wave/mettaur only and fails loudly on `opening`, so the
+localization was done with the row's own captures (harness.run, kept dirs) plus `--dump`/`--peek`
+peeks of the canon state instead.
 
 ### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(OPEN -- 2026-09-12)*
 
@@ -638,6 +654,32 @@ time. **Coordinator:** verify_rows plus the verifier on the canon routine claim;
 guess about the cause gets a follow-up ticket, not an escalation.
 
 ## A. Measured residues — small, self-contained, all have a number
+
+### A9. The opening's integrated residue: the rebuilt state's spawn cells and the enemy HP readout  *(filed from F4, 2026-09-12)*
+
+`opening integrated` reads **72499 / 2691 / 40** (window canon 120..159 vs rust origin 8 + offset
+119) against R1's rebuilt `battlestart.state` after F4's fixture fix (hp + rng delivered). The
+whole residue is the three Mettaurs, two mechanisms, both with numbers:
+
+1. **SPAWN CELLS ARE THE OLD STATE'S.** Canon materializes its viruses at **(5,1) from canon frame
+   ~118, (5,3) from ~153, (6,2) from ~183** -- measured twice, independently: gold-pixel cells at the
+   materialization frames, and the objects' own PanelX/Y at frame 250 (0x0203aa88/0x0203ab60/
+   0x0203ac38, +0x12/+0x13 = (5,1),(5,3),(6,2)). The descriptor's diagonal (4,1),(5,2),(6,3) is the
+   LOST state's layout; src lays a fixture's enemies out on a fixed +1/+1 diagonal from ONE
+   (enemy_col,enemy_row) (src/battle.rs ~1348-1358) and cannot express the new cells. The real
+   mechanism is probably spawn cells chosen from primary_rng at battle init -- same encounter, and
+   the cells changed between the old and rebuilt states -- but canon's cell-selection routine has
+   NOT been found, so that is unverified. Two ways to fix: derive the cells from the (now delivered)
+   rng the way canon does, which needs canon's routine in reference/bn6f first; or extend the
+   descriptor with per-enemy cells (FIXTURE.md + src/fixture.rs + battle.rs).
+2. **THE ENEMY HP READOUT IS ~70 FRAMES EARLY.** Ours draws "40" under each virus the moment it is
+   targetable -- already visible on the row's first compared frame (rust 127, mid-materialization;
+   the draw loop at src/battle.rs ~3550, "Each enemy's HP sits just under its panel"). Canon shows NO
+   readout during the whole opening: scanning 150..400 from the state, its first "40" is at canon
+   frame **~196**, with the opening chip window (C1: a battle OPENS with the chip window). Region:
+   the digit readouts under the virus panels, x 150..200, y 86..140. src/ territory: gate the
+   readout on whatever canon gates it on (probably the same event that opens the window), not on
+   targetability.
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
 460 px to 345 to ZERO. The mechanism was modelled -- a hop spawns a NEW segment and the old
