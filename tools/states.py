@@ -175,21 +175,26 @@ STATES = [
     State(
         name="battlestart",
         path="/tmp/battlestart.state",
-        root=True,
+        root=False,
+        rom=REAL,
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),
+        frames=79,
         description="A battle's real frame 0 -- eBGScrollCBCounters read "
-                     "0/0, TRANSFER.md 7aw. Used by regress.py's "
-                     "check_opening. PNG-chunked format (mCoreSaveStateNamed "
-                     "with SAVESTATE_ALL) -- built by this project's own "
-                     "harness at some point, NOT hand-made, but its "
-                     "documented recipe (7aw: an overworld save, walked "
-                     "toward a random encounter with the roll forced every "
-                     "frame and the held direction varied so the RNG does "
-                     "not walk one correlated orbit) needs an overworld save "
-                     "file that is not in /tmp and was never written down. "
-                     "Nothing here is runnable without first scripting a "
-                     "title screen, a name entry and an intro from a cold "
-                     "ROM -- which is real work this ticket did not do -- so "
-                     "this stays root until that exists.",
+                     "0/0, TRANSFER.md 7aw. Used by harness.py's "
+                     "check_opening. Rebuilt by recipe from overworld_net.",
+        note="VERIFIED (ticket R1). From overworld_net.state, cycle 4 directions "
+             "one per frame; one-shot poke the encounter roll open at frame 60 "
+             "only. Battle init triggers at frame 60 (SubsystemIndex 8); battle "
+             "main loop begins at frame 76 (SubsystemIndex 12). eBGScrollCBCounters "
+             "(0x02009690/0x02009694) read 0x0000/0x0000 at frame 79 (verified by "
+             "--peek immediately at reload). Rolled EnemySetupArr entry at "
+             "0x080b5354 (3 Mettaurs at panels (5,1), (5,3), (6,2)). Live RAM "
+             "BattleObjects confirmed at 0x0203aa88, 0x0203ab60, 0x0203ac38, each "
+             "NameID 0x0001 (Mettaur), HP 40/40. Build time: ~0.13s. Determinism: "
+             "40 frames from two builds diff to 0 pixels.",
     ),
     State(
         name="overworld_net",
