@@ -195,7 +195,20 @@ widen tools/allowlist.py; every changed row keeps a non-blind negative; captures
 **Measure and report.** The alignment evidence (the RAM watch frames on both sides), the residue
 breakdown with frames and regions, every row's before/after line, and the AGENTS.md report shape.
 
-### R3. A battle that never spawns an enemy  *(OPEN -- 2026-09-12)*
+### R3. A battle that never spawns an enemy  *(PARTIAL -- 2026-09-12, branch wt/r3-empty kept, not merged)*
+
+**Result.** The roll's choice lands in `GameState->CurBattleDataPtr` at `0x02001b9c` (stored at
+asm29.s:10286, read by `sub_800531C` asm00_1.s:4455). One-shot pokes `70:0x02001b9c:0x4b88` and
+`70:0x02001b9e:0x080b` (the roll writes at frame 60, battle_init reads at 76) retarget the battle to
+BattleSettings `0x080b4b88`, whose EnemySetupArrPtr is the emptied entry: no enemy BattleObject ever
+populates, SubsystemIndex 12, deterministic over 40 frames. BLOCKED: about 20 battle frames in
+(capture frame 99) SubsystemIndex goes 12 -> 16, the battle and game state pointers clear, a cutscene
+is populated and input goes inert; a no-op poke of the roll's own entry survives 130+ frames, so the
+empty enemy list is the cause. Excluded: BattleTerminate01 (0x02038161, stays 0), dispatch_803C620,
+the six warp functions, checkCoordinateTrigger_8031a7a, EVENT_16F1, hand contents. Not merged: the
+branch replaces R1's working emptyfield_start/chip_ready_empty recipes with ones that cannot finish.
+GLM-5.3-Flash, 193 turns, $0.369. Follow-up recon (DeepSeek V4.1 Flash, $0.068):
+`docs_recon_teardown.md`. The ticket as first written follows.
 
 **Why.** R2 showed every "empty" canon state so far spawns an encounter and forces its HP to 0, and
 the real ROM then plays the enemies' death presentation across the chip rows' frames. The chip rows
@@ -229,6 +242,32 @@ annotates); never widen the allowlist; captures one at a time.
 
 **Measure and report.** The RAM location and the disassembly lines that prove it, the chosen method
 and its window, the emptiness evidence, determinism results, and R2's measurement redone.
+
+### R4. Keep the enemy-less battle alive, then finish R3  *(OPEN -- 2026-09-12)*
+
+**Start from R3's branch:** `bash tools/worktree.sh r4-alive`, then in that worktree
+`git merge --ff-only wt/r3-empty`. R3's result above and `docs_recon_teardown.md` are your context.
+
+1. **Confirm the teardown path, do not guess it.** The recon's candidate chain (unverified): battle
+   ends through `sub_8007850`'s BC30-jump-offset branch (asm00_1.s:9466) -> EnterMap -> a map cutscene
+   whose `cs_warp_cmd_8038040_2 byte1=0x0` calls `warp_setSubsystemIndexTo0x10AndOthers_8005f00`,
+   whose `strb` at asm00_1.s:5939 writes 16. Use `mgba_capture --trace-pc <addr> --trace-steps N`
+   (HANDOFF §5; bounded steps only) on each link, on R3's retargeted battle, and report which
+   addresses are hit on which frame. Find the EARLIEST decision point that differs from a battle with
+   enemies (R3's no-op-poke control is the comparison).
+2. **Intervene at that earliest point, minimally and visibly.** A held RAM value or a one-shot poke if
+   one works; otherwise a new `patch_sterile.py` option applied to the emptynet ROM variant only,
+   documented like the existing patches (address, original bytes, new bytes, why). Canon and canon
+   (sterile) do not change. Show the battle then stays in SubsystemIndex 12 for 600+ frames with the
+   chip window opening on its own and a picked chip FIRING.
+3. **Finish R3's steps 4-5:** add the never-spawn chain as NEW state names (keep R1's
+   `emptyfield_start`/`chip_ready_empty` working and unchanged -- `states.py build all` must still
+   build everything it builds today), determinism twice each, then R2's event-pinned measurement of
+   `chip-cannon` on it vs the PAUSED baseline 14388; move the chip template only on a real
+   improvement with a non-blind negative, every chip row before/after.
+
+**Rules.** tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time.
+Report addresses hit, the intervention with its evidence, and the measurements, in AGENTS.md shape.
 
 ## A. Measured residues — small, self-contained, all have a number
 
