@@ -569,6 +569,7 @@ impl Actor {
                         && matches!(self.action, Action::Idle) =>
                 {
                     if self.post_flinch == 11 {
+                        // provenance: fitted -- canon's own +0x20 sentinel on the first idle frame after a flinch, read off the PAUSED+Start@10 watch capture
                         0xffff
                     } else {
                         (self.post_flinch - 1) as u16
@@ -907,6 +908,7 @@ impl Actor {
                 // Export-only shadow (TODO R6): canon's MegaMan object
                 // reads +0x20 = 0xffff on this first idle frame and 9..0
                 // over the ten after (PAUSED+Start@10 watch capture).
+                // provenance: fitted -- 1 sentinel frame + 10 counted off that capture, not derived from a cited instruction
                 self.post_flinch = 11;
                 Action::Idle
             }
