@@ -145,7 +145,19 @@ property you verified with the address and value, the determinism result, and th
 Then the report shape in AGENTS.md. A step that fails is reported with exactly what was observed,
 not worked around.
 
-### R2. Move the chip rows onto the never-had-an-enemy fixture  *(OPEN -- 2026-09-12)*
+### R2. Move the chip rows onto the never-had-an-enemy fixture  *(NEGATIVE -- 2026-09-12, rows not moved)*
+
+**Result.** At the event-pinned alignment (canon CurState leaves 0x0804 at frame 3; shot flight canon
+19-28 <-> rust 137-146, identical per-frame cadence) the empty route reads 134535 / 5317 / 40 against
+the PAUSED baseline 14388 / 2350 / 40. The residue (diffmask worst frame, canon frame 17) is two of the
+three Mettaurs mid-dissolve on the right of the field plus the chip-window strip at top left: the
+"empty" state is spawn-and-delete (DELETE_ENEMY_3 from load), the death presentation is deferred while
+the chip window is open, and it plays across exactly the frames the chip action occupies. The old
+43700-44631 plateau was a false-alignment family with a 49-frame period. Measured and rejected:
+per-frame zeroing of BattleObject identity (the ROM freezes), `zero=ENEMY_TILES` (120498), seven
+script variants (nothing moves the transient; a chip after the dissolve is refused, HANDOFF §9).
+Also found: the rust side's shot fires ~33 frames after marker + fire_frame, not at it. GLM-5.3-Flash
+worker, 69 turns, $0.098. The ticket as first written follows.
 
 **Why.** Every chip row compares against canon (sterile) loaded from PAUSED, whose leftover
 portrait box and Mettaur corpse cost each row the shared 14388/2350 baseline (see ALIGN_CHIP's
@@ -182,6 +194,41 @@ widen tools/allowlist.py; every changed row keeps a non-blind negative; captures
 
 **Measure and report.** The alignment evidence (the RAM watch frames on both sides), the residue
 breakdown with frames and regions, every row's before/after line, and the AGENTS.md report shape.
+
+### R3. A battle that never spawns an enemy  *(OPEN -- 2026-09-12)*
+
+**Why.** R2 showed every "empty" canon state so far spawns an encounter and forces its HP to 0, and
+the real ROM then plays the enemies' death presentation across the chip rows' frames. The chip rows
+need a canon battle whose encounter has no enemy objects at all. `patch_sterile.py
+--empty-net-encounter` already empties one table entry (EnemySetupArr `0x080b5306`) in
+`/tmp/bn6f_sterile_emptynet.gba`, but no roll has ever landed on it: HANDOFF §9 records that patching
+an entry changes which entry a roll selects, and a sweep of one-shot roll frames never reached it.
+
+**Do, in order.**
+1. **Find where the selection lands.** In reference/bn6f, follow the encounter roll
+   (`sub_80AA4C0`, its `bl GetRNG` at 0x080AA51E, TRANSFER 7aw) to the RAM location that holds the
+   chosen EnemySetupArr pointer (or index) that battle_init reads. Cite file:line.
+2. **Make the battle use an empty entry, by the smallest change that is honest about itself.**
+   Either (a) a one-shot `--poke-at` of that RAM value, applied after the roll writes it and before
+   battle_init reads it, or (b) a code patch added to the emptynet ROM variant only (a new
+   patch_sterile.py option, documented like the existing two) that makes the selection return the
+   emptied entry. Prefer (a) if a poke window exists; do not change what canon or canon (sterile) are.
+3. **Prove it is empty.** At the new battle's frame 0 and 100 frames later: no BattleObject slot for
+   an enemy is populated (read the slots; show a frame), SubsystemIndex 12 is held, and a chip picked
+   through the window FIRES (the premise that makes the chip rows work -- HANDOFF §9 says a chip fires
+   in a battle that never had an enemy).
+4. **Rebuild the chain on it:** `emptyfield_start` and `chip_ready_empty` (recipes in tools/states.py,
+   no DELETE_ENEMY cheats needed any more), each built twice and 40 frames compared for determinism.
+5. **Re-run R2's measurement** on the new `chip_ready_empty`: event-pinned alignment exactly as R2
+   did it (its method and numbers are in R2's result above), `chip-cannon` on the empty route vs the
+   PAUSED baseline 14388. If it is lower with a non-blind negative, move the chip template and report
+   every chip row before/after one at a time; rows that get worse stay on PAUSED.
+
+**Rules.** tools/ only; no src/; reference/bn6f is read-only (report addresses, the coordinator
+annotates); never widen the allowlist; captures one at a time.
+
+**Measure and report.** The RAM location and the disassembly lines that prove it, the chosen method
+and its window, the emptiness evidence, determinism results, and R2's measurement redone.
 
 ## A. Measured residues — small, self-contained, all have a number
 
