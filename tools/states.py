@@ -251,7 +251,9 @@ STATES = [
         script="Start@10",
         cheats=DELETE_ENEMY,
         frames=172,
-        description="A battle already resolved into the RESULT window "
+        description="ROOT AND LOST (2026-09-08) -- the recipe below is kept as the "
+                     "record of a rebuild that is NOT equivalent (different reward "
+                     "roll; see note). A battle already resolved into the RESULT window "
                      "(regress.py's check_result; the real side of "
                      "tools/chip_compare's method extended past a chip). "
                      "PNG-chunked -- harness-made, not hand-made.",
