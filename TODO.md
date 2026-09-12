@@ -243,7 +243,18 @@ annotates); never widen the allowlist; captures one at a time.
 **Measure and report.** The RAM location and the disassembly lines that prove it, the chosen method
 and its window, the emptiness evidence, determinism results, and R2's measurement redone.
 
-### R4. Keep the enemy-less battle alive, then finish R3  *(OPEN -- 2026-09-12)*
+### R4. Keep the enemy-less battle alive, then finish R3  *(BLOCKED -- 2026-09-12, branch wt/r4-alive kept)*
+
+**Result.** Step 1 done, and it overturns the recon: none of the five literal `SubsystemIndex=0x10`
+stores, the warp entry, `cs_warp_cmd` or the script byte-writer is hit at the teardown frames, and
+R3's "12 -> 16" was freed-heap fill (0x11/0x22 patterns), not a mode switch. The never-spawn battle
+is healthy through the chip window (opens at battle age ~91, BattleState.Index_01 = 8); at age ~102
+the game RELEASES the battle -- CurBattleDataPtr (0x02001b9c) clears one frame before
+BattleStatePtr/GameStatePtr -- and dispatch stops. BattleTerminate01 stays 0, BC30 stays 0,
+`HandlesBattleMain`'s write-0 never fires. Holding GameState[0..3], the alive counts
+(BattleState+0x12/13) or the three pointers does not keep it alive. The deciding store runs through
+indirect dispatch and `--trace-pc` perturbs this game's timing, so it is unidentified. Details
+appended to docs_recon_teardown.md. GLM-5.3-Flash, 129 turns, $0.228. The ticket as written follows.
 
 **Start from R3's branch:** `bash tools/worktree.sh r4-alive`, then in that worktree
 `git merge --ff-only wt/r3-empty`. R3's result above and `docs_recon_teardown.md` are your context.
@@ -268,6 +279,38 @@ and its window, the emptiness evidence, determinism results, and R2's measuremen
 
 **Rules.** tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time.
 Report addresses hit, the intervention with its evidence, and the measurements, in AGENTS.md shape.
+
+### R5. A write watchpoint in the capture tool, then find what releases the empty battle  *(OPEN -- 2026-09-12)*
+
+**Why.** R4 narrowed the enemy-less battle's teardown to one event -- `CurBattleDataPtr` (0x02001b9c)
+cleared at battle age ~102 -- but could not see which instruction does it: the store is reached by
+indirect dispatch, and `--trace-pc` single-steps, which perturbs this game's timing. A watchpoint
+fires at full speed and names the writer directly. It is also the base of the state oracle
+(HANDOFF §13 step 3): "which instruction wrote this field, on which frame" is attribution for free.
+
+1. **Tool.** Add `--watch-write addr[:len]` (repeatable) to tools/mgba_capture.c using libmgba
+   0.10's debugger (`/usr/include/mgba/debugger/debugger.h`: `mDebuggerCreate`/`mDebuggerAttach`,
+   `platform->setWatchpoint` with `WATCHPOINT_WRITE`, an `entered` callback that logs and returns to
+   RUNNING, frames driven by `mDebuggerRunFrame` or equivalent). Each hit prints one line: frame,
+   address, old -> new, and the writing instruction's address (account for the ARM/Thumb pipeline
+   offset in r15; print LR too). Must not change emulation: a capture with a watchpoint set must be
+   frame-identical to one without. **Verify on a known write:** the roll's store of the chosen
+   BattleSettings to 0x02001b9c (asm29.s:10286 per R3) must report that instruction's ROM address.
+   Document the flag in HANDOFF §5's table.
+2. **Use it** on R3/R4's never-spawn battle (branch wt/r4-alive has the recipe): watch 0x02001b9c and
+   the BattleStatePtr/GameStatePtr words around battle age 90-110; name the clearing instruction,
+   then walk the LR chain up to the decision that differs from R3's control battle. Cite
+   reference/bn6f file:line for each frame of the chain.
+3. **Intervene at that decision,** minimally (held RAM value, one-shot poke, or an emptynet-only
+   patch_sterile.py option documented like the others), and show 600+ frames of a live battle with
+   the chip window opening on its own and a picked chip firing.
+4. **Then R4 step 3** (new state names, R1's chain untouched, determinism twice, R2's event-pinned
+   measurement of chip-cannon vs 14388; move the chip template only on a real improvement).
+
+**Start from** `bash tools/worktree.sh r5-watch`, then `git merge wt/r4-alive` in it. **Rules:**
+tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time; the capture tool
+must still build with `gcc tools/mgba_capture.c -o /tmp/mgba_capture -I/usr/include -lmgba -lm`
+and every existing flag must behave as before (run `harness.py --only wave` with the new binary).
 
 ## A. Measured residues — small, self-contained, all have a number
 

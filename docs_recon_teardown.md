@@ -77,3 +77,67 @@ asm01.s:487-511 sub_8020140 ; called first thing by battle_main_8007800 (asm00_1
 With an empty EnemySetup the dispatch loop hits `done_8007384` immediately (asm00_1.s:8591) and seeds `Unk_12_13`/`AliveBattleActors` from a zero enemy count; because `battle_isBattleOver` is patched to 0, the early end instead runs through `sub_8020140` → `eStruct2038160.BattleTerminate01` (asm01.s:487-511) and/or the BC30=0xc branch of `sub_8007850` (asm00_1.s:9466). The battle then exits to `EnterMap`, which starts the map cutscene (`cutscene_8036EFE`, asm00_1.s:4239); a `cs_warp_cmd_8038040_2 byte1=0x0` command in that script calls `warp_setSubsystemIndexTo0x10AndOthers_8005f00` (asm00_1.s:5931) whose `strb` at asm00_1.s:5939 writes 16. I did **not** observe the specific cutscene or prove the empty list causes the early terminate, and I found no "enemy count == 0" test that writes SubsystemIndex; the `~20` figure matches no terminate constant (the nearby 0x14 counters are asm00_1.s:9764-9772 and 11125), so treat the link as unconfirmed.
 
 Smallest intervention (unverified): patch the `strb r0,[r4,#oGameState_SubsystemIndex]` at asm00_1.s:5939 to a no-op (`strb`→`nop`) so that cutscene warp cannot land 16, or hold `GameState[0]` = 0x0C (byte at 0x02001b80) every frame; to keep the battle alive upstream, hold `eStruct2038160.BattleTerminate01` (0x02038161) at 0 / patch `sub_8020140` (asm01.s:487) to return immediately. Which one is honest depends on whether the 12→16 write is the warp script or a direct 0x10 store; that is the unverified part.
+
+## R4 step-1 findings (GLM-5, 2026-09-12): the candidate chain is NOT what fires; the teardown is a memory release
+
+All addresses below verified against ROM bytes, not just decomp labels. Frames are relative to
+loading `/tmp/emptyfield_start.state` (never-spawn battle, battle age = frame+3); watches are
+per-frame snapshots unless noted.
+
+### What does NOT fire (each excluded by watch and/or trace)
+
+- `eStruct2038160.BattleTerminate01` (0x02038161): stays 0x00 through the teardown.
+- BC30 jump-offset byte (0x0200BC30): 0x00 the whole battle in BOTH the never-spawn battle and
+  the no-op-poke control. `eStruct203F7D8+1` (0x0203F7D9) = 0x02 in BOTH battles from the first
+  battle frame, so `sub_8007850`'s `r4==2` gate (loc_80078C6) is common battle-start flow, not
+  the differentiator. `eS200BC50` (0x0200bc50) stays all-zero the whole battle.
+- `HandlesBattleMainUntilEndOfBattleThenTriggersEnterMap` write-0: `BattleState.Unk_0a`
+  (+0x0a) = 1 every frame, battle_main always returns nonzero, the SubsystemIndex=0 store never
+  runs. The frequent `--trace-pc` hits at 0x08005368 (lr=0x08007829, r0=1) are the benign
+  every-frame path: battle_main (0x08007800) tail-calls into 0x08005360, whose `bl` (encoded
+  target 0x08009800 — the decomp's "bl battle_main_8007800" label there is wrong) just re-writes
+  SubsystemIndex=0x0c and clears GameState byte1. Note the hit PC is addr+4 because the check
+  runs while the second BL halfword executes.
+- All five literal `SubsystemIndex=0x10` stores (0x08005f0c, 0x0800598C, 0x080059B0,
+  0x08005A4C, 0x08005A74), `warp_setSubsystemIndexTo0x10AndOthers_8005f00` entry (0x08005f00),
+  `CutsceneCmd_warp_cmd` (0x08038040) and the generic script byte-writer strb (0x08035F06):
+  ZERO trace hits in the teardown frames. Caveat: `--trace-pc` perturbs timing on this title
+  (single-stepping past SWI HLE accelerates the game loop inside traced frames; the teardown
+  appears ~1 frame early under trace), so these traces are qualitative.
+
+### What actually happens (watch data, never-spawn battle)
+
+- f88-89 (age 91-92): the custom screen opens on schedule (`BattleState.Index_01=8`, +3=1) —
+  the chip window itself is healthy.
+- f99 (age 102): `CurBattleDataPtr` (GameState+0x1c, 0x02001b9c) is cleared to 0 — the FIRST
+  teardown event. The bytes at 0x02001b80 change to `10 11 11` the same frame, but this is
+  freed-heap fill, NOT `SubsystemIndex=0x10`: at f100 `BattleStatePtr` (0x020093c8) reads
+  `00 11 22 00` and `GameStatePtr` (0x020093ec) reads 0 (0x11/0x22 free-fill patterns), and the
+  cutscene state (0x02011c50) is still 0xff (inactive) at f99, populating only at f100.
+- f100+: battle dispatch stops (`BattleState` frozen at `04 08 00 01 01 ...`), joypad input is
+  inert, rendering continues. R3's "SubsystemIndex goes 12 -> 16" was this fill artifact.
+- Control battle (roll's own entry 0x080b4bb8 via the same poke mechanism): no release through
+  260+ frames. Its custom screen opens later than age 91 (Index_01 still 0 at age 92), so
+  same-age memory diffs mix phase differences.
+- BattleSettings entries 0x080b4b88 vs 0x080b4bb8 differ ONLY in the three EnemySetup pointers
+  (0x080b5306 emptied vs 0x080b532d real); byte[0]=0 in both; no timer/flag field.
+
+### Interventions tried (all failed to keep the battle alive)
+
+1. Hold GameState[0..3]=(0c,00,00,00) every frame (--cheat 0x02001b80:0x000c + 0x02001b82:0x0000):
+   the release still runs; battle frozen after f100; script presses (A@130,Start@140,A@150)
+   produce no state change — input inert. 620 frames captured without crash.
+2. Hold BattleState+0x12/+0x13 at the control's values (0x02034892:0x0203): release unchanged.
+3. Hold CurBattleDataPtr + BattleStatePtr + GameStatePtr (6 halfword cheats): release
+   unchanged; dispatch stops anyway.
+
+### Conclusion
+
+The exit decision is upstream of every tested held-RAM point: something inside the battle
+(silently, with the custom screen open, ~11 frames after it opens) commits to battle exit and
+the release machinery frees CurBattleDataPtr one frame before the toolkit pointers. The release
+writes reach GameState+0x1c through indirect dispatch (the only labeled `str` sites are
+initNewGameData_8004DF0 and StartBattle, both setters), so the deciding store is still
+unidentified. Until it is found, no held RAM value or one-shot poke can deliver R4 step 2
+(battle alive 600+ frames with a firing chip), and steps 3a/3b (new states + determinism +
+R2 measurement on the never-spawn route) are blocked.
