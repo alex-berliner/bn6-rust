@@ -59,12 +59,10 @@ commit" rule forbade -- and that rule existed only because everyone shared one t
   `assets/` or `Cargo.toml` without a reason in the report.
 - A precise negative result is a good outcome and gets written into `TRANSFER.md`. A
   plausible-sounding change that does not move the number is not.
-- **DO THE WORK YOURSELF.** Do not delegate a ticket onward -- not to `ds-worker`,
-  `ds-ask` or any other DeepSeek path, and not to a further agent. You are the worker.
-  A ticket that turns out to be bigger than it looked comes back as a report saying
-  so, not as a subcontract. There is a delegation policy in a global CLAUDE.md that
-  says to prefer DeepSeek for volume work; it does NOT apply to this project, where
-  the user has asked for Sonnet agents only.
+- **DO THE WORK YOURSELF.** Do not delegate a ticket onward to a further agent. You
+  are the worker. A ticket that turns out to be bigger than it looked comes back as a
+  report saying so, not as a subcontract. (Which model runs which role is decided in
+  `.pi/agents/` and HANDOFF §13, not by the worker.)
 
 ## Rules for whoever is handing the tickets out
 

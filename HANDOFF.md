@@ -200,8 +200,9 @@ stale file. A state saved mid-battle has the enemy baked into RAM — no ROM pat
 
 ## 8. Operating procedure — agents, worktrees, merging
 
-- Delegate with the Agent tool, `model: "sonnet"`, high effort. Not DeepSeek. Keep the main thread for
-  coordination and judgment; push disassembly reads, sweeps and long runs out.
+- Delegate through pi's `subagent` tool to the roles in `.pi/agents/` (worker always; verifier and recon
+  only when §13 says so). Keep the coordinator for judgment; push disassembly reads, sweeps and long
+  runs out. Model per role is in `.pi/agents/*.md` and `MODEL_RESEARCH.md`.
 - **One agent, one worktree, non-overlapping files.** `bash tools/worktree.sh <name>` prints
   `/tmp/bnwt/<name>`, branch `wt/<name>`, and `CARGO_TARGET_DIR=/tmp/ct_<name>` to export. It symlinks
   `reference/bn6f` and marks it `--skip-worktree`. Agents stage by path, never `git add -A`, commit per
@@ -218,8 +219,8 @@ stale file. A state saved mid-battle has the enemy baked into RAM — no ROM pat
   `bn-notes` (not on the upstream remote — back it up). An agent commits on `wt/<name>` there (branched
   from `bn-notes`), checks `bn-notes` back out afterwards because the checkout is shared; the coordinator
   merges into `bn-notes`, then `git add reference/bn6f && git commit` in the superproject.
-- A check-in loop every 5 minutes (`/loop 5m` or a cron) works: list agents, verify/merge finished
-  branches, prod anything silent >15 min with no commits, report in a few lines.
+- Wake on task notifications (`bg_wait`), with a 20–30 minute fallback check-in, not a 5-minute poll:
+  every coordinator turn re-sends its whole context (§13, `WORKFLOW_AUDIT.md` finding 2).
 - When an agent's number disagrees with yours, rebuild and check the tree before contradicting it.
 
 ## 9. Gotchas, each with the incident behind it
@@ -262,9 +263,9 @@ not never-spawned** (chip baseline 14388 ×38, `banner` 2248, `popup` ~107k, `fi
 **MegaMan's own hit/dwell timing** (`shot.rs`'s deferred per-hop dwell; `mettaur`'s 30864 is entirely his
 side — the enemy region is 0/70).
 
-Next, in order: (1) converge the chip rows against `chip_ready_empty` (plateaued ~43700 — see
-`harness.py`'s `CHIP_READY_EMPTY` block) and re-point chips/`banner`/`popup` at it; (2) the `shot.rs`
-dwell gap; (3) `card`'s cursor-move timing; (4) delete `demo-*` and `regress.py` once everything they
+Next, in the order §13 fixes: (1) the battlestart recipe, then the fixture chain, then re-point
+chips/`banner`/`popup` at `chip_ready_empty`; (2) the state oracle; (3) the `shot.rs` dwell gap and
+`card`'s cursor-move timing, oracle-first; (4) delete `demo-*` and `regress.py` once everything they
 covered reads zero through descriptors. `tools/regress.py` (the old boxed suite) still runs
 (`--only a,b`); its enemy checks read non-zero since the real Mettaur cadence landed — expected.
 
@@ -276,9 +277,11 @@ covered reads zero through descriptors. `tools/regress.py` (the old boxed suite)
   7av (backdrop scroll phase), 7bf (the RESULT countdown), 7bn (states manifest), 7bi/7bl (backdrop
   period), 7bg (panel damage — closed). §11's "quick reference" is superseded by this file.
 - `tools/CAPTURE_NATIVE.md` — why the capture is headless libmgba.
-- `~/.claude/projects/-home-box-Code-bn/memory/` — the user's standing instructions (Sonnet workers,
-  worker hygiene, no inherent residues, annotate bn6f, vendor deps). `project_bn_reimplementation.md`'s
-  "looks right in-game" fidelity target is superseded by per-pixel parity.
+- `MODEL_RESEARCH.md` — the OpenRouter model survey behind the per-role picks. `WORKFLOW_AUDIT.md` —
+  the workflow measured against the scoped goal in tokens per completed row. `AGENTS.md` — the rules
+  every pi child loads; `.pi/agents/` — the roles; `.pi/settings.json` — coordinator model and packages.
+- `~/.claude/projects/-home-box-Code-bn/memory/` — the user's standing instructions (subagent
+  delegation, worker hygiene, no inherent residues, annotate bn6f, vendor deps).
 - `reference/bn6f` — the disassembly, with our comments at every address this project has touched.
 
 ## 12. Glossary
@@ -325,8 +328,9 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   humans.
 - **pi.** Project resources load only after `/trust` is run once in this folder (or
   `defaultProjectTrust: "always"` in `~/.pi/agent/settings.json`). The subagent extension, when built,
-  needs `agentScope: "both"`. `.pi/goals/` is session state and gitignored; `PI_WORKFLOW.md` and
-  `SUBAGENT_FLOWS.md` are superseded by this section and `WORKFLOW_AUDIT.md`.
+  needs `agentScope: "both"`. `.pi/goals/` is session state and gitignored (its paused goal still carries the old
+  tooling objective; close or rewrite it with `/goal` in pi). `PI_WORKFLOW.md` and
+  `SUBAGENT_FLOWS.md` were removed in the cleanup; they are in history at `5ad59b6`.
 - **Inputs.** `/tmp` was wiped again (2026-09-12). `bash tools/restore_inputs.sh` restores everything
   regenerable from `/home/box/bn-backup` (copy on `/media/box/Scyther/bn-backup`). Still lost:
   `battlestart.state`, `noenemy2.state` — the recipe work in step (1) replaces battlestart; noenemy2's
