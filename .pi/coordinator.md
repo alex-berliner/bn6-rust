@@ -18,12 +18,20 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
    a prune summary when exact text or numbers matter. Commit per landed step on your branch; do not
    merge. Stop when done or blocked on something only the user can provide, and give the report
    the ticket asks for."}`
-4. Dispatch the `verifier` on the worker's branch (same shape, `timeoutMs: 3600000`), naming the
-   report's numbers and the two or three claims the next step would build on. Always, whatever the
-   worker's outcome.
+4. **Verify, in two tiers.**
+   - **Always, free:** `python3 tools/verify_rows.py wt/<name> <every row the report names>
+     --expect ROW=TOTAL/WORST/FRAMES/NEG ...` (values copied from the report; include the canary rows
+     the ticket lists). It rebuilds a clean detached checkout and reproduces each harness line; a
+     mismatch, a BLIND negative or a row that fails to run is a FAIL.
+   - **Sol `verifier`, only when the ticket makes claims beyond harness lines:** new tools or
+     infrastructure, RAM/memory findings, "X causes Y" or "Z was excluded", or ANY partial, blocked or
+     negative outcome that the next ticket would build on. Dispatch it (same shape as the worker,
+     `timeoutMs: 3600000`) with verify_rows' output pasted in and the two or three claims to check;
+     tell it the rows are already reproduced so it must not re-run them. A ticket whose only claim is
+     harness lines (for example a row taken to zero with its negative not blind) needs no verifier.
 5. Decide:
-   - **Merge** only if the ticket's acceptance is met, the verifier PASSes the numbers and CONFIRMS
-     every claim you build on, and merging does not break anything that builds today (for example
+   - **Merge** only if the ticket's acceptance is met, verify_rows PASSes, the verifier (when
+     dispatched) CONFIRMS every claim you build on, and merging does not break anything that builds today (for example
      `python3 tools/states.py build all`). Merge from the main checkout: `git merge --no-ff
      wt/<name>` with a message that states what was measured and who verified it, then `git worktree
      remove --force /tmp/bnwt/<name>`, `git branch -d wt/<name>`, `rm -rf /tmp/ct_<name>`.
@@ -47,8 +55,8 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
 
 ## Never
 
-Push; force-anything; `git add -A`; edit reference/bn6f; run two children at once; implement a
-ticket yourself; merge without a verifier PASS.
+Push; force-anything; `git add -A`; edit reference/bn6f; run two children at once (or a child and
+verify_rows at once); implement a ticket yourself; merge without verify_rows PASS.
 
 ## Status and final report
 

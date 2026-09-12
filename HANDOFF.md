@@ -418,6 +418,11 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   anything needing a human. Watch `<run dir>/status.log` (one line per step) and `<run dir>/exit`; the
   run dir is `/tmp/bn-pi/<timestamp>`. Smoke-tested: coordinator 8 turns $0.10 (pi's catalog price;
   OpenAI's endpoint bills about half), recon child $0.0026.
+- **Verification is two-tier (2026-09-12, after R6's $1.07 Sol verifier spent half its cost re-running
+  captures).** Always: `python3 tools/verify_rows.py <branch> <rows> --expect ROW=T/W/F/NEG ...`
+  reproduces every claimed harness line from a clean detached checkout, free (tested: two true claims
+  MATCH, a false negative-total FAILs). The Sol verifier only for tickets that claim more than harness
+  lines, and it no longer re-runs rows.
 - **Verification rule (after R3's misreading).** The verifier checks the two or three CLAIMS the next
   ticket would build on, not only the numbers, and it runs on every ticket, including ones that end
   partial, blocked or negative -- R3 read freed-heap fill (0x11/0x22) as a mode switch and R4 spent
