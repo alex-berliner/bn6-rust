@@ -36,22 +36,22 @@ use crate::{
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
 };
-/// The three navis only a demo build fields: a battle puts up one Mettaur.
-#[cfg(feature = "demo")]
-use crate::{COLONEL, GUNNER, PROTOMAN};
+
+
+
 use crate::{ai, gunner, spr};
 use crate::fixture::{self, Fixture};
 use agb::display::Graphics;
 
-// Boss HP comes from each navi's enemy-definition rows, six bytes per
-// version: an hword whose low twelve bits are HP and top four the
-// element, which the spawner writes to HP and MaxHP (sub_80076A0,
-// asm00_1.s:9155). First version: ProtoMan byte_80FB8BC 0x708
-// (asm31.s:141547), Colonel byte_8101244 0x4b0 (asm31.s:152949).
-#[cfg(feature = "demo")]
-const PROTOMAN_HP: u16 = 1800; // provenance: derived -- byte_80FB8BC, asm31.s:141547
-#[cfg(feature = "demo")]
-const COLONEL_HP: u16 = 1200; // provenance: derived -- byte_8101244, asm31.s:152949
+
+
+
+
+
+
+
+
+
 // The Mettaur's first-version record: HP 0x28, and its shockwave deals
 // 10 (MettaurEnemyStruct2_8109BD8, byte_8109F28; asm31.s:170519).
 const METTAUR_HP: u16 = 40; // provenance: derived -- MettaurEnemyStruct2_8109BD8, asm31.s:170519
@@ -232,7 +232,7 @@ const GLOW_ANIM: [usize; 3] = [0, 0, 2]; // provenance: derived -- chargeShotCha
 // `0x10 * 2` branch is fitted -- every other demo's own frame offsets were
 // calibrated against this legacy black-ramp length and moving it shifted
 // eight checks at once (see the comment above).
-const SCREEN_FADE_FRAMES: u16 = if cfg!(feature = "demo") && !cfg!(feature = "demo-open") {
+const SCREEN_FADE_FRAMES: u16 = if false {
     0x10 * 2
 } else {
     71 + INTRO_RAMP
@@ -448,7 +448,7 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 const CANNON_FRAMES: u8 = 0x1d + 1; // provenance: derived -- sub_80EBC28, asm31.s:109532/109554
 /// Frames between auto-fire chip uses in the demo-auto harness: long enough
 /// for an attack's pose and shot to run out before the next one begins.
-#[cfg(feature = "demo-auto")]
+#[cfg(any())]
 const AUTO_FIRE_GAP: u16 = 90; // provenance: fitted -- a chosen test-harness gap, not from ROM data
 /// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
 /// animation 8 and the projectile is spawned off the front panel when the
@@ -1169,203 +1169,203 @@ pub struct Battle<'a> {
     fixture: Option<Fixture>,
 }
 
-/// What a demo build fields: the chip ids to preload straight into the hand
-/// (A fires the first at once), and the lone enemy to place so that chip
-/// connects on the first press. Enemy-only demos leave the hand empty and
-/// just field their navi. None when no demo feature is on.
-#[cfg(feature = "demo")]
-fn demo() -> (alloc::vec::Vec<u16>, i32, Option<(spr::Assets, i32, i32, ai::Style, u16)>) {
-    let mut hand = alloc::vec::Vec::new();
-    // A sterile arena fields MegaMan alone at the same panel the real save
-    // state uses (panel (2,2)) so a chip animation can be captured and
-    // compared frame-for-frame against the real ROM. The hand holds the chip
-    // of whichever chip demo feature is also on, the cannon family when none.
-    // This branch must win over the chip demos below, so it is checked first.
-    if cfg!(feature = "demo-sterile") {
-        if cfg!(feature = "demo-sword") {
-            hand.push(CHIP_SWORD);
-        } else if cfg!(feature = "demo-wideswrd") {
-            hand.push(CHIP_WIDESWRD);
-        } else if cfg!(feature = "demo-longswrd") {
-            hand.push(CHIP_LONGSWRD);
-        } else if cfg!(feature = "demo-hicannon") {
-            hand.push(CHIP_HICANNON);
-        } else if cfg!(feature = "demo-mcannon") {
-            hand.push(CHIP_MCANNON);
-        } else if cfg!(feature = "demo-areagrab") {
-            hand.push(CHIP_AREAGRAB);
-        } else if cfg!(feature = "demo-vulcan2") {
-            hand.push(CHIP_VULCAN2);
-        } else if cfg!(feature = "demo-vulcan3") {
-            hand.push(CHIP_VULCAN3);
-        } else if cfg!(feature = "demo-recov50") {
-            hand.push(CHIP_RECOV50);
-        } else if cfg!(feature = "demo-fireswrd") {
-            hand.push(CHIP_FIRESWRD);
-        } else if cfg!(feature = "demo-aquaswrd") {
-            hand.push(CHIP_AQUASWRD);
-        } else if cfg!(feature = "demo-elecswrd") {
-            hand.push(CHIP_ELECSWRD);
-        } else if cfg!(feature = "demo-bambswrd") {
-            hand.push(CHIP_BAMBSWRD);
-        } else if cfg!(feature = "demo-blkbomb") {
-            hand.push(CHIP_BLKBOMB);
-        } else if cfg!(feature = "demo-bigbomb") {
-            hand.push(CHIP_BIGBOMB);
-        } else if cfg!(feature = "demo-energbom") {
-            hand.push(CHIP_ENERGBOM);
-        } else if cfg!(feature = "demo-megenbom") {
-            hand.push(CHIP_MEGENBOM);
-        } else if cfg!(feature = "demo-lilbolr") {
-            hand.push(CHIP_LILBOLR1);
-        } else if cfg!(feature = "demo-flshbom") {
-            hand.push(CHIP_FLSHBOM1);
-        } else if cfg!(feature = "demo-poisseed") {
-            hand.push(CHIP_POISSEED);
-        } else if cfg!(feature = "demo-iceseed") {
-            hand.push(CHIP_ICESEED);
-        } else if cfg!(feature = "demo-grasseed") {
-            hand.push(CHIP_GRASSEED);
-        } else if cfg!(feature = "demo-bugbomb") {
-            hand.push(CHIP_BUGBOMB);
-        } else if cfg!(feature = "demo-vdoll") {
-            hand.push(CHIP_VDOLL);
 
-        } else if cfg!(feature = "demo-barr100") {
-            hand.push(CHIP_BARR100);
-        } else if cfg!(feature = "demo-barr200") {
-            hand.push(CHIP_BARR200);
-        } else if cfg!(feature = "demo-wideblde") {
-            hand.push(CHIP_WIDEBLDE);
-        } else if cfg!(feature = "demo-longblde") {
-            hand.push(CHIP_LONGBLDE);
-        } else if cfg!(feature = "demo-recov300") {
-            hand.push(CHIP_RECOV300);
-        } else if cfg!(feature = "demo-recov80") {
-            hand.push(CHIP_RECOV80);
-        } else if cfg!(feature = "demo-recov120") {
-            hand.push(CHIP_RECOV120);
-        } else if cfg!(feature = "demo-recov150") {
-            hand.push(CHIP_RECOV150);
-        } else if cfg!(feature = "demo-recov200") {
-            hand.push(CHIP_RECOV200);
-        } else if cfg!(feature = "demo-suprvulc") {
-            hand.push(CHIP_SUPRVULC);
-        } else if cfg!(feature = "demo-muramasa") {
-            hand.push(CHIP_MURAMASA);
-        } else if cfg!(feature = "demo-stepswrd") {
-            hand.push(CHIP_STEPSWRD);
-        } else if cfg!(feature = "demo-recov30") {
-            hand.push(CHIP_RECOV30);
-        } else if cfg!(feature = "demo-invisibl") {
-            hand.push(CHIP_INVISIBL);
-        } else if cfg!(feature = "demo-barrier") {
-            hand.push(CHIP_BARRIER);
-        } else if cfg!(feature = "demo-minibomb") {
-            hand.push(CHIP_MINIBOMB);
-        } else if cfg!(feature = "demo-vulcan") {
-            hand.push(CHIP_VULCAN);
-        } else if cfg!(feature = "demo-airshot") {
-            hand.push(CHIP_AIRSHOT);
-        } else if cfg!(feature = "demo-recovery") {
-            hand.push(CHIP_RECOV10);
-        } else {
-            hand.push(CHIP_CANNON);
-            hand.push(CHIP_HICANNON);
-        }
-        return (hand, 2, None);
-    }
-    // MegaMan is placed at (3,2) facing right so his front panel is (4,2), the
-    // first column of the enemy half: a sword lands there, a cannon/vulcan/
-    // airshot shot spawns there and travels on, and LongSwrd reaches it and
-    // the panel behind it. WideSwrd sweeps that whole column. MiniBomb lands
-    // three ahead of (3,2), so its target sits at (6,2). The target carries a
-    // big HP so a chip demo can land several hits without the fight ending;
-    // demo-results uses the real 40 so one hit brings the window up.
-    // The real ROM's pausedwithcannon save state, for whole-screen
-    // comparisons: MegaMan at (2,2), a Mettaur at (5,2) kept alive.
-    if cfg!(feature = "demo-field") {
-        // The capture keeps its Mettaur alive by writing 0xffff into its HP
-        // every frame, and the readout under it shows what that leaves: the
-        // low four digits, 5535. The fixture carries the same number so the
-        // readout can be compared too, and a Cannon in hand so the icon the
-        // window leaves over the navi is there as well.
-        hand.push(CHIP_CANNON);
-        return (
-            hand,
-            2,
-            Some((spr::Assets::new(METTAUR), 5, 2, ai::Style::Mettaur, FIELDMATCH_HP)),
-        );
-    }
-    // The battle-start capture has the navi on column 2, not 3.
-    let megaman_col = if cfg!(feature = "demo-open") { 2 } else { 3 };
-    // Chip demos use a padded-HP target so several hits land without ending
-    // the fight; enemy and results demos use the real HP below.
-    let hp = DEMO_TARGET_HP;
-    // The HUD parity fixture: a Cannon in hand, so the name strip reads what
-    // the captured save state's does, with no enemy to disturb the field.
-    if cfg!(feature = "demo-hudmatch") {
-        hand.clear();
-        hand.push(CHIP_CANNON);
-        return (hand, megaman_col, None);
-    }
-    if cfg!(feature = "demo-buster") {
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-sword") {
-        hand.push(CHIP_SWORD);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-minibomb") {
-        hand.push(CHIP_MINIBOMB);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-cannon") {
-        hand.push(CHIP_CANNON);
-        hand.push(CHIP_HICANNON);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
-    }
-    // Two grabs, so the boundary moves twice.
-    if cfg!(feature = "demo-areagrab") {
-        hand.push(CHIP_AREAGRAB);
-        hand.push(CHIP_AREAGRAB);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-vulcan") {
-        hand.push(CHIP_VULCAN);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-airshot") {
-        hand.push(CHIP_AIRSHOT);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-recovery") {
-        hand.push(CHIP_RECOV10);
-        hand.push(CHIP_RECOV30);
-        hand.push(CHIP_INVISIBL);
-        hand.push(CHIP_BARRIER);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 6, 2, ai::Style::Mettaur, hp)));
-    }
-    if cfg!(feature = "demo-mettaur") {
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
-    }
-    if cfg!(feature = "demo-gunner") {
-        return (hand, megaman_col, Some((spr::Assets::new(GUNNER), 6, 2, ai::Style::Gunner, gunner::HP)));
-    }
-    if cfg!(feature = "demo-protoman") {
-        return (hand, megaman_col, Some((spr::Assets::new(PROTOMAN), 6, 2, ai::Style::Thrust, PROTOMAN_HP)));
-    }
-    if cfg!(feature = "demo-colonel") {
-        return (hand, megaman_col, Some((spr::Assets::new(COLONEL), 6, 2, ai::Style::Divide, COLONEL_HP)));
-    }
-    if cfg!(feature = "demo-results") {
-        // A lone Mettaur with a sword in hand: one press deletes it and the
-        // RESULT window slides in.
-        hand.push(CHIP_SWORD);
-        return (hand, megaman_col, Some((spr::Assets::new(METTAUR), 4, 2, ai::Style::Mettaur, METTAUR_HP)));
-    }
-    (hand, megaman_col, None)
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
@@ -1373,24 +1373,24 @@ impl<'a> Battle<'a> {
     /// 32-frame black ramp (`true`) -- `SCREEN_FADE_FRAMES`'s own condition,
     /// mirrored here so a fixture's FLAG_SKIP_INTRO can drive the same
     /// choice at runtime instead of at compile time. Every existing
-    /// `cfg!(feature = "demo") && !cfg!(feature = "demo-open")` site in this
-    /// file reduces to this when there is no fixture.
+    /// Every old `demo-*` feature site in this file that used to compute
+    /// this reduces to `false` now that none of those features exist.
     fn skip_intro(&self) -> bool {
         match self.fixture {
             Some(f) => f.flag(fixture::FLAG_SKIP_INTRO),
-            None => cfg!(feature = "demo") && !cfg!(feature = "demo-open"),
+            None => false,
         }
     }
 
     /// Whether the gauge-pause -> chip-window-open sequence is allowed to
     /// run at all. UNSET (via FLAG_OPEN_WINDOW) reproduces `demo-hudmatch`'s
-    /// own `!cfg!(feature = "demo-hudmatch")` guard, which freezes a full
+    /// own guard, which used to freeze a full
     /// gauge and never opens the window so a long HUD capture never loses
     /// the battle screen to it.
     fn open_window_allowed(&self) -> bool {
         match self.fixture {
             Some(f) => f.flag(fixture::FLAG_OPEN_WINDOW),
-            None => !cfg!(feature = "demo-hudmatch"),
+            None => true,
         }
     }
 
@@ -1437,7 +1437,7 @@ impl<'a> Battle<'a> {
             }
             Some(_) => {}
             None => {
-                if cfg!(feature = "demo-custmatch") {
+                if false {
                     deck = Deck::stacked([
                         Deck::entry(CHIP_VULCAN, 3),
                         Deck::entry(CHIP_AIRSHOT, crate::chips::WILDCARD),
@@ -1451,7 +1451,7 @@ impl<'a> Battle<'a> {
         let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
         // AUDIT pairs 6/14/17: FLAG_BLANK_HUD and FLAG_BLANK_BACKDROP,
-        // reduced to their old cfg!(feature = "demo-sterile") meaning when
+        // reduced to what the old demo-sterile feature used to mean when
         // there is no fixture, so every site below that used to check that
         // cfg directly keeps reading exactly what it read before.
         // FLAG_BLANK_BACKDROP is broader than its name: it reproduces
@@ -1460,10 +1460,10 @@ impl<'a> Battle<'a> {
         // see fixture.rs's own doc on the flag.
         let blank_hud = fixture
             .map(|f| f.flag(fixture::FLAG_BLANK_HUD))
-            .unwrap_or(cfg!(feature = "demo-sterile"));
+            .unwrap_or(false);
         let blank_backdrop = fixture
             .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
-            .unwrap_or(cfg!(feature = "demo-sterile"));
+            .unwrap_or(false);
         // The sterile arena draws a plain background so the real ROM's field can
         // be stripped via the harness's --disable-bg (BG layers) and the two
         // captures diff cleanly whole-frame: MegaMan + attack on black on both.
@@ -1493,15 +1493,15 @@ impl<'a> Battle<'a> {
             hp: match fixture {
                 Some(f) => f.megaman_hp,
                 None => {
-                    if cfg!(any(
-                        feature = "demo-hudmatch",
-                        feature = "demo-resultmatch",
-                        // demo-open compares against /tmp/battlestart.state, whose
-                        // navi is on 60 like the others'. Without this the HP box
-                        // differs by a constant 29 px a frame and nothing else
-                        // does, which is a fixture reading a real number wrong.
-                        feature = "demo-open",
-                    )) {
+                    if false {
+
+
+
+
+
+
+
+
                         HUDMATCH_HP
                     } else {
                         PLAYER_HP
@@ -1537,11 +1537,11 @@ impl<'a> Battle<'a> {
                 None,
             ),
             None => {
-                #[cfg(feature = "demo")]
+                #[cfg(any())]
                 {
                     demo()
                 }
-                #[cfg(not(feature = "demo"))]
+                #[cfg(not(any()))]
                 {
                     (alloc::vec::Vec::new(), 2, None)
                 }
@@ -1573,14 +1573,14 @@ impl<'a> Battle<'a> {
                 ai_list.push(ai::Ai::new(ai::Style::Mettaur));
             }
             (es, ai_list)
-        } else if cfg!(feature = "demo-sterile") {
+        } else if false {
             (alloc::vec::Vec::new(), alloc::vec::Vec::new())
         } else if let Some((assets, col, row, style, hp)) = demo_enemy {
             (
                 alloc::vec![Actor::new(assets, col, row, true, enemy(hp))],
                 alloc::vec![ai::Ai::new(style)],
             )
-        } else if cfg!(feature = "demo-open") {
+        } else if false {
             // THE BATTLE-START CAPTURE'S OWN LINE-UP. /tmp/battlestart.state is
             // a battle's first frame with THREE Mettaurs in a diagonal --
             // (4,1), (5,2), (6,3), forty HP each -- and the navi on (2,1).
@@ -1630,7 +1630,7 @@ impl<'a> Battle<'a> {
         // where `skip_intro`'s None-branch is exactly the const's condition.
         let intro_fade: u16 = if fixture
             .map(|f| f.flag(fixture::FLAG_SKIP_INTRO))
-            .unwrap_or(cfg!(feature = "demo") && !cfg!(feature = "demo-open"))
+            .unwrap_or(false)
         {
             0x10 * 2
         } else {
@@ -1654,10 +1654,10 @@ impl<'a> Battle<'a> {
         // middle of every chip comparison.
         let gauge = match fixture {
             Some(f) => if f.gauge != 0 { GAUGE_FULL } else { 0 },
-            None => if cfg!(feature = "demo") && !cfg!(any(
-                feature = "demo-hudmatch",
-                feature = "demo-custmatch"
-            )) {
+            None => if false {
+
+
+
                 0
             } else {
                 GAUGE_FULL
@@ -1680,11 +1680,11 @@ impl<'a> Battle<'a> {
         let auto_ticks: u16 = if let Some(f) = fixture {
             if f.flag(fixture::FLAG_AUTO_FIRE) { f.fire_frame } else { 0 }
         } else {
-            #[cfg(feature = "demo-auto")]
+            #[cfg(any())]
             {
                 AUTO_FIRE_GAP
             }
-            #[cfg(not(feature = "demo-auto"))]
+            #[cfg(not(any()))]
             {
                 0u16
             }
@@ -1906,15 +1906,15 @@ impl<'a> Battle<'a> {
                 }
                 Some(_) => {}
                 None => {
-                    #[cfg(all(
-                        feature = "demo",
-                        not(any(
-                            feature = "demo-open",
-                            feature = "demo-custmatch",
-                            feature = "demo-cardname",
-                            feature = "demo-resultmatch",
-                        ))
-                    ))]
+                    #[cfg(any())]
+
+
+
+
+
+
+
+
                     // provenance: peeked -- entry/timer/scroll read off the
                     // live save state's own backdrop animation state.
                     backdrop.seed(5, 4, 424, 724);
@@ -2049,7 +2049,7 @@ impl<'a> Battle<'a> {
         let over = if self.fixture.is_some() {
             !self.enemies.is_empty()
                 && (self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated()))
-        } else if cfg!(any(feature = "demo-sterile", feature = "demo-custmatch")) {
+        } else if false {
             false
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
@@ -2093,7 +2093,7 @@ impl<'a> Battle<'a> {
                 // the game from a fresh boot, so it never arms this banner
                 // regardless of which flags it carries.
                 self.window_closed = true;
-                if !self.opened && self.fixture.is_none() && !cfg!(feature = "demo") {
+                if !self.opened && self.fixture.is_none() && true {
                     self.opened = true;
                     self.banner_at = BATTLE_START_AFTER_WINDOW;
                 }
@@ -2219,7 +2219,7 @@ impl<'a> Battle<'a> {
         // `result_zenny` (+41/+42/+44) in place of the hardcoded
         // RESULTMATCH_TIME/2/RESULTMATCH_ZENNY.
         let fixture_results = self.fixture.filter(|f| f.start_state == 1);
-        if (cfg!(feature = "demo-resultmatch") || fixture_results.is_some())
+        if (false || fixture_results.is_some())
             && self.shown.is_none()
             && self.fade_out == 0
         {
@@ -2358,7 +2358,7 @@ impl<'a> Battle<'a> {
         // hand is cycled forever (hand_at wraps) and the custom window is never
         // allowed to open, so a capture run keeps shooting the featured chip
         // instead of dropping into a chip select that empties the demo hand.
-        #[cfg(feature = "demo-auto")]
+        #[cfg(any())]
         if !paused && self.intro_next >= self.enemies.len() {
             self.gauge = 0;
             if self.auto_ticks > 0 {
@@ -2571,7 +2571,7 @@ impl<'a> Battle<'a> {
         let fixture_banner_frame = self.fixture.map(|f| f.banner_at).filter(|&v| v != 0xffff);
         let banner_target = if fixture_banner_frame.is_some() {
             fixture_banner_frame.map(|v| v as u32)
-        } else if cfg!(feature = "demo-banner") {
+        } else if false {
             Some(BANNER_DEMO_AT)
         } else {
             None

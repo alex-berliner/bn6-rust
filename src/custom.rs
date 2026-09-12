@@ -540,9 +540,9 @@ impl CustomAssets {
             }
             Some(_) => {}
             None => {
-                if cfg!(feature = "demo-custmatch") {
+                if false {
                     custom.picks.push(4);
-                    custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
+                    custom.cursor_at = if false { 0 } else { OK };
                 }
             }
         }

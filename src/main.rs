@@ -191,7 +191,7 @@ fn main(mut gba: agb::Gba) -> ! {
     let fixture = fixture::read();
     let blank_backdrop = fixture
         .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
-        .unwrap_or(cfg!(feature = "demo-sterile"));
+        .unwrap_or(false);
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
     // The backdrop draws in bank 0, as it does on the real ROM.
