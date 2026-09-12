@@ -442,7 +442,7 @@ small coordinator chore, not a ticket.
 
 ## F. Replica features and fixes, driven by the oracle (HANDOFF §13 step 5 onward)
 
-### F1. MegaMan takes a hit one frame late  *(OPEN -- 2026-09-12)*
+### F1. MegaMan takes a hit one frame late  *(PARTIAL -- 2026-09-12)*
 
 **Why.** The state oracle (R7, `tools/oracle.py`) localizes the `mettaur` row's 30864 px -- HANDOFF
 §10 already says that residue is entirely MegaMan's side -- and shows the same defect hidden on the
@@ -475,6 +475,23 @@ change; no alignment or region change; captures one at a time. **Report** the wa
 canon's in-frame order, the src/ change with asm citations, both oracle tables before and after, every
 row's before/after line, in AGENTS.md shape. **Coordinator:** this ticket changes Rust; if the first
 attempt ends PARTIAL, dispatch the second attempt with `model: "openrouter/openai/gpt-5.6-sol"`.
+
+**Result.** PARTIAL; branch `wt/f1-hitlate` is retained unmerged at `fc0065f`. Clean detached
+`verify_rows.py` PASS reproduced wave 0/0/90 (negative 3840), window 0/0/16 (81056), mettaur
+30864/1566/70 (45233), card 18486/3081/16 (15405), field 1048/177/40 (1225), and cannon
+14388/2350/40 (21543). The hop-frame change took wave's MegaMan state/action, animation, panel and
+timer oracle mismatches to zero, but mettaur stayed 30864/1566 with `mm_timer` different on 7/70,
+so acceptance was not met. The Sol verifier REFUTED the report's commit attribution and claimed canon
+operation order (`9276015` is the HP fixture, `fc0065f` the timing fix, and canon writes HP before
+flinch state/timer), while supporting the substantive hop-frame fix and unchanged lethal structure;
+it REFUTED describing the HP fixture as publication-only/input-neutral because 100 -> 60 changes the
+initial emulation state, although the reproduced wave/mettaur pixels were neutral. It CONFIRMED the
+blocker: both attack cycles are 106 frames, the permitted 295..324 pairing compares incompatible
+120-frame mercy histories, and the equivalent object-phase minimum is offset 203 outside the band.
+The generic travelling-shot/lethal paths remain a regression risk; the workers' all-67-rows and
+integrated-field assertions were outside the independent row reproduction. Worker 1 used
+GLM-5.3-Flash high, 137 turns, $0.240187875; required worker 2 used GPT-5.6-Sol high, 20 turns,
+$0.836421800; verifier used GPT-5.6-Sol high, 26 turns, $1.383901000; children total $2.460510675.
 
 ## A. Measured residues — small, self-contained, all have a number
 
