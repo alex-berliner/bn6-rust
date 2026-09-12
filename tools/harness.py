@@ -906,7 +906,7 @@ OPEN_ORIGIN = 8
 #: capture's `--cheat 0x0203ab84/86:0xffff` (ALIVE, below) pins the real
 #: Mettaur's HP to: a huge number that is never going to reach 0, not a
 #: sentinel. Marker origin 8 (measured live), same family as demo-open.
-FIELD_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,  # provenance: peeked -- canon live HP 0x003c at 0x0203a9d4 (+0x24 of the object at eT1BattleObject0, peeked from PAUSED via --peek, F1 step 2; the oracle's info-only mm_hp agrees). 100 put MegaMan's HP at a value canon never holds in this battle; nothing else reads it in these BG2-only/obj-only comparisons.
+FIELD_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,  # provenance: peeked -- canon live HP 0x003c at 0x0203a9d4 (+0x24 of the object at eT1BattleObject0, peeked from PAUSED via --peek, F1 step 2; the oracle's info-only mm_hp agrees). 100 put MegaMan's HP at a value canon never holds in this battle. HP is game input (damage, death, healing, the HUD counter and the oracle all read it); it is pixel-neutral in these BG2-only/OBJ-only rows, measured -- wave and mettaur unchanged.
                  megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=0,
                  flags=0x11, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
                  enemy_hp=0xFFFF)

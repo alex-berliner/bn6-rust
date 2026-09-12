@@ -442,7 +442,7 @@ small coordinator chore, not a ticket.
 
 ## F. Replica features and fixes, driven by the oracle (HANDOFF §13 step 5 onward)
 
-### F1. MegaMan takes a hit one frame late  *(PARTIAL -- 2026-09-12)*
+### F1. MegaMan takes a hit one frame late  *(DONE -- merged d3f25e1, 2026-09-12; mettaur residue moved to F2)*
 
 **Why.** The state oracle (R7, `tools/oracle.py`) localizes the `mettaur` row's 30864 px -- HANDOFF
 §10 already says that residue is entirely MegaMan's side -- and shows the same defect hidden on the
@@ -492,6 +492,37 @@ The generic travelling-shot/lethal paths remain a regression risk; the workers' 
 integrated-field assertions were outside the independent row reproduction. Worker 1 used
 GLM-5.3-Flash high, 137 turns, $0.240187875; required worker 2 used GPT-5.6-Sol high, 20 turns,
 $0.836421800; verifier used GPT-5.6-Sol high, 26 turns, $1.383901000; children total $2.460510675.
+
+### F2. The mettaur row compares the wrong Mettaur attack  *(OPEN -- 2026-09-12)*
+
+**Why.** F1's verified finding: both sides run the same 106-frame Mettaur attack cycle (canon attack
+animations start at canon frames 32, 138; ours at battle frames 95, 201, 307, 413). The row's Align
+(canon_ref 140, search band 295..325, chosen offset 309) pairs canon's SECOND attack with our THIRD.
+Canon's MegaMan is still in the 120-frame mercy from the hit at canon frame 114 (the first attack);
+ours took its first hit at battle frame 176 and its third-attack wave falls outside that mercy, so the
+two sides are in different situations for the whole window. An equivalent object-phase minimum exists
+at offset 203 (second attack <-> second attack), outside the band.
+
+**Do, in order.**
+1. **Baseline** `harness.py --only mettaur` and `oracle.py mettaur` (30864 / 1566 / 70; first
+   divergence mm_timer k=0).
+2. **Pair by event, not by score.** Define the pairing from measured state on both sides with
+   `--watch`/the oracle block: the same attack index since battle start, AND MegaMan in the same
+   mercy/HP situation (canon: hit at frame 114 from attack 1, HP 60 -> 50; ours: hit at 176 from
+   attack 1). Derive the rust offset from that pairing; the search band may only be re-centred on it
+   to CONFIRM a unique minimum, with the note saying why it is where it is (HANDOFF §3 "Adding a row").
+   Report the score at the old offset and at the event-derived one; do not choose by the lower
+   number.
+3. **Acceptance.** The Align note cites the event evidence; `oracle.py mettaur` at the new pairing
+   reports MegaMan's fields, with the first divergent field (if any) and frame; the row's negative is
+   not blind and the oracle's shifted control changes the result. Report whatever total results --
+   lower, equal or higher -- with the region of what remains.
+
+**Rules.** tools/harness.py (this row's Align only) and docs; no src/; no allowlist change; do not
+change any other row. **Report** the event evidence on both sides, old vs new Align and scores, both
+oracle tables, in AGENTS.md shape. **Coordinator:** verify_rows plus the Sol verifier on the pairing
+claim; this is a judgment about alignment (AUDIT's "no boxes in time"), so the verifier must confirm
+the pairing is by event and not by score before any merge. No model escalation on a PARTIAL.
 
 ## A. Measured residues — small, self-contained, all have a number
 

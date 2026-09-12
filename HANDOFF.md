@@ -418,6 +418,10 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   anything needing a human. Watch `<run dir>/status.log` (one line per step) and `<run dir>/exit`; the
   run dir is `/tmp/bn-pi/<timestamp>`. Smoke-tested: coordinator 8 turns $0.10 (pi's catalog price;
   OpenAI's endpoint bills about half), recon child $0.0026.
+- **Escalation rule (after F1).** Retry a PARTIAL ticket on a stronger model only when the shortfall
+  is the implementation. When the partial comes from a disproven prediction or an out-of-scope cause,
+  write the follow-up ticket instead (F1's Sol retry cost ~$0.84 to confirm what the first report said).
+  Tickets state this in their coordinator note.
 - **Verification is two-tier (2026-09-12, after R6's $1.07 Sol verifier spent half its cost re-running
   captures).** Always: `python3 tools/verify_rows.py <branch> <rows> --expect ROW=T/W/F/NEG ...`
   reproduces every claimed harness line from a clean detached checkout, free (tested: two true claims
