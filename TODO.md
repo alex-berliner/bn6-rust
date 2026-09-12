@@ -552,6 +552,43 @@ oracle tables, in AGENTS.md shape. **Coordinator:** verify_rows plus the Sol ver
 claim; this is a judgment about alignment (AUDIT's "no boxes in time"), so the verifier must confirm
 the pairing is by event and not by score before any merge. No model escalation on a PARTIAL.
 
+### F3. After the chip window closes, a faded copy of it stays on the field  *(OPEN -- 2026-09-12)*
+
+**Why.** Playing the release ROM from power-on (tools/battle_gif.py's tour: pick FireSwrd, Start to
+OK, A), the window slides out after "Sending chip data" and then a faded copy of it -- the window's
+panel, chip grid and OK button, in other palettes -- appears on the left of the field at about frame
+320 and stays for the whole battle. No harness row covers the window CLOSING: `window`/`card`/`cursor`
+stop while it is open, and the integrated rows use flags that skip the opening window entirely.
+Unverified: that canon shows nothing there (it should not, but that is the measurement).
+
+**Do, in order.**
+1. **Measure it.** Build a row that compares the close: canon from `chipselect.state` (the window open
+   mid-battle) pressing through to OK exactly as a player does; our ROM with the descriptor's "open with
+   the chip window" flag and the matching presses; align on the close event (a RAM value that marks the
+   window leaving, found by --watch/--watch-write on both sides), and compare full screen for the
+   frames after it. Negative not blind. Record the number and the region.
+2. **Find why our layer keeps the tiles.** Which BG layer and tile/map range hold the ghost after the
+   slide-out (dump VRAM/BG control registers at that frame), what canon does to that layer when the
+   window leaves (the routine that clears or hides it -- cite reference/bn6f), and what our custom
+   window code does instead (src/custom.rs and wherever the window's BG layer is set up).
+3. **Fix it in src/,** citing the canon routine, and re-run: the new row, `window`, `card`, `cursor`,
+   `wave` (still 0), and the full table (every row the same or better; a row that gets worse is
+   reported, not hidden).
+
+**Rules.** src/ for the fix; tools/harness.py for the new row; no allowlist change; captures one at a
+time. **Coordinator:** verify_rows plus the verifier on the canon routine claim; a PARTIAL from a wrong
+guess about the cause gets a follow-up ticket, not an escalation.
+
+### F4. The opening row reads 1160 px since R1 rebuilt its canon state  *(OPEN -- 2026-09-12)*
+
+**Why.** `opening isolated` read PASS 0 over 40 frames against the lost `battlestart.state` (HANDOFF
+§10). The 2026-09-12 gallery run reads **1160 / 29 / 40** (integrated 73659 / 2720) against R1's
+rebuilt state -- same three Mettaurs, different history and RNG. No code change touched the opening;
+the canon fixture changed. **Do:** localize the 1160 px (frame, region, which element) with diffmask
+and the oracle; decide from measurement whether the row's descriptor, its Align, or our opening
+differs from what the rebuilt canon state shows; fix the fixture side if the state is the difference,
+or file the src/ defect with its frame and region. No allowlist change.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
