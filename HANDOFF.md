@@ -337,6 +337,22 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
     AA ~47). Cross-family from the worker by design. Opus 5 is the last resort ($0.50/M cache).
   - Not used by default: Sonnet 5 (cache $0.20/M and turn-hungry), Gemini 3.8 Flash (partial caching),
     Grok 4.6 (cache $0.50/M), Kimi (tool-call reliability). Escalate by `--fork`, never by restarting.
+- **Routine coordination runs in pi, not in a Claude Code chat (2026-09-12).** `bash
+  tools/pi_coordinator.sh ["instruction"]` starts a detached GPT-5.6 Sol session with
+  `.pi/coordinator.md` appended: it takes the first OPEN ticket in TODO.md, dispatches the `worker`,
+  then ALWAYS the `verifier`, merges only on a verifier PASS with every building-block claim
+  CONFIRMED, writes the Result paragraph into TODO.md, writes the next ticket only if it follows from
+  the verified report inside this section's scope, and loops. It stops on: the spend guard
+  (`python3 tools/or_spend.py --min 3`, real OpenRouter balance), $3 of child spend, two failed
+  tickets in a row on one objective, any scope/canon/allowlist/src-rule change, a refuted claim, or
+  anything needing a human. Watch `<run dir>/status.log` (one line per step) and `<run dir>/exit`; the
+  run dir is `/tmp/bn-pi/<timestamp>`. Smoke-tested: coordinator 8 turns $0.10 (pi's catalog price;
+  OpenAI's endpoint bills about half), recon child $0.0026.
+- **Verification rule (after R3's misreading).** The verifier checks the two or three CLAIMS the next
+  ticket would build on, not only the numbers, and it runs on every ticket, including ones that end
+  partial, blocked or negative -- R3 read freed-heap fill (0x11/0x22) as a mode switch and R4 spent
+  turns on it. **Recon rule:** recon output is a map (every candidate site with file:line), never a
+  finding; each causal link is labelled unverified with the cheapest runtime check that would kill it.
 - **Context pruning is on** (`~/.pi/agent/context-prune/settings.json`: enabled, `pruneOn: agentic-auto`,
   summarizer = the session model at low thinking). It installs DISABLED, and its default mode only prunes
   when the agent sends a text-only reply, which a headless worker never does mid-ticket -- that is why R1's
