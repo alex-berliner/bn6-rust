@@ -141,3 +141,28 @@ initNewGameData_8004DF0 and StartBattle, both setters), so the deciding store is
 unidentified. Until it is found, no held RAM value or one-shot poke can deliver R4 step 2
 (battle alive 600+ frames with a firing chip), and steps 3a/3b (new states + determinism +
 R2 measurement on the never-spawn route) are blocked.
+
+## R5 addendum (2026-09-12, wt/r5-watch) -- watchpoint results
+
+Instrument: `mgba_capture --watch-write addr[:len]` (commit 17dc00f): real libmgba
+WATCHPOINT_WRITE shims, byte-granule, verified frame-identical with the flag off and
+on the known roll store (asm29.s:10286 -> `at=0x080AA59E lr=0x080AA6F9`).
+
+Release event, live recipe (overworld_net -> script -> pokes 60/70; battle age = capture frame - 79):
+
+- Age 99 (capture frame 178): 0x02001b9c..0x02001bac (CurBattleDataPtr, +ba0/ba4/ba8/bac) all clear
+  in ONE frame; 0x02001b80..b98 become freed-heap nibble fill (0x11/0x22 patterns). The battle
+  GameState heap block is released at age 99. Screen is frozen (static frame hash) from age ~11 to
+  ~68 and resumes changing after the release.
+- The writes emit ZERO watchpoint hits while the same watches are live in the same frame (DISPCNT
+  store at 0x08001760 fires at 178). Excluded: CPU stores (all widths + STM), DMA (forced DMA3 fill
+  fires), SWI RegisterRamReset, CpuSet/CpuFastSet (frame-178 SWI delta has no dest in the block).
+  The release write bypasses every path libmgba 0.10.2's shims instrument -- it is an
+  emulator-internals question, not a game-code question. R4's "indirect dispatch" is real.
+- Caveat for tool users: `--poke-at`/`--cheat` writes are also caught and report the CPU's stale
+  r15 as `at` (they run outside the emulator loop between frames).
+
+State-reload hazard: loading /tmp/emptyfield_start.state or /tmp/r4_pre*.state directly and running
+past battle age ~68 derails deterministically (PC walks into 0xDE31xxxx, illegal 0x0000b710), on the
+old and new binary alike, while live runs stay healthy -- savestate reload is not faithful for this
+scenario at depth. State-based probing past age ~68 is unsafe; use live runs.
