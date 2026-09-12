@@ -440,7 +440,15 @@ before any worker ran; the pi coordinator had already stopped itself on its $3 c
 accounting comes from pi's session files and `subagent-artifacts/*_meta.json`; a ledger script is a
 small coordinator chore, not a ticket.
 
-## F. Replica features and fixes, driven by the oracle (HANDOFF §13 step 5 onward)
+## F. Convergence: every existing row to 0 differing frames before anything new (user, 2026-09-12)
+
+Tickets run in this order; the coordinator takes the first OPEN one. Queue by leverage, from the
+2026-09-12 full table (isolated unless noted): F4 opening 1160 (was 0) -> F5 the chip-row fixture
+(28 rows at exactly 14388, 11 more above it) -> F6 tiles/gauge 538 (one capture, two rows) -> field
+1048 -> banner 2248 -> buster 3172 -> warp 9198 -> card 18486 -> mettaur 31075 -> F3 (the chip window's
+ghost; adds its row) -> popup 107511 -> result 497967 -> cursor 620802 -> the integrated variants.
+No new content (viruses, bosses, chips) until the table is at zero. A reported 0 always says what it
+compares: canon vs ours, or before vs after.
 
 ### F1. MegaMan takes a hit one frame late  *(DONE -- merged d3f25e1, 2026-09-12; mettaur residue moved to F2)*
 
@@ -552,6 +560,56 @@ oracle tables, in AGENTS.md shape. **Coordinator:** verify_rows plus the Sol ver
 claim; this is a judgment about alignment (AUDIT's "no boxes in time"), so the verifier must confirm
 the pairing is by event and not by score before any merge. No model escalation on a PARTIAL.
 
+### F4. The opening row reads 1160 px since R1 rebuilt its canon state  *(OPEN -- 2026-09-12)*
+
+**Why.** `opening isolated` read PASS 0 over 40 frames against the lost `battlestart.state` (HANDOFF
+§10). The 2026-09-12 gallery run reads **1160 / 29 / 40** (integrated 73659 / 2720) against R1's
+rebuilt state -- same three Mettaurs, different history and RNG. No code change touched the opening;
+the canon fixture changed. **Do:** localize the 1160 px (frame, region, which element) with diffmask
+and the oracle; decide from measurement whether the row's descriptor, its Align, or our opening
+differs from what the rebuilt canon state shows; fix the fixture side if the state is the difference,
+or file the src/ defect with its frame and region. No allowlist change.
+
+### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(OPEN -- 2026-09-12)*
+
+**Why.** 28 chip rows read exactly 14388 and 11 more read 14388 plus their own residue. The 14388 is
+canon's fixture, not our code: from PAUSED, a 528 px portrait box (canon frames 43-48) and the deleted
+Mettaur's dissolving corpse (frames 43-52) sit inside every chip row's window (read ALIGN_CHIP's long
+comment in tools/harness.py in full first). A state saved after the dissolve clears both, but then the
+game refuses every chip press. The previous ticket found the refusal path -- `sub_800938A`
+(asm00_1.s:13037) forces CurState back to idle when the banner sequencer `sub_800801C` returns 6 -- yet
+patching that compare did not restore firing, and it stopped for lack of a tracer. R5 added one
+(`--watch-write`, HANDOFF §5), and `--trace-pc` exists. The empty-battle route (R3-R5) is closed.
+
+**Do, in order.**
+1. **Baseline:** `harness.py --only chip-cannon` (14388 / 2350 / 40) and two more chip rows.
+2. **Find the real gate.** Build (with tools/states.py, a recipe, no hand-play) a sterile state past
+   the full dissolve (portrait and corpse both 0 at load, as the comment's frame-110 state). Press A
+   and use `--watch-write` on MegaMan's CurState/CurAction (0x0203a9b0+8/+9) and on the banner
+   sequencer's state (`dword_203CA70`) plus `--trace-pc` on `sub_800938A`'s branches, to name the
+   instruction and condition that refuses the fire. Compare with a press that fires (from PAUSED before
+   the dissolve). Cite reference/bn6f file:line for each step.
+3. **Intervene minimally, on the sterile variant only.** This ticket is authorized to add ONE option to
+   tools/patch_sterile.py (address, original bytes, new bytes, and why, like the two existing patches)
+   that lets a chip fire in this situation, or a one-shot poke if one works. Canon itself never changes.
+   Report the intervention prominently: it changes what "canon (sterile)" is for the rows that use it.
+4. **Re-point and measure.** Point the chip template at the new state and ROM variant; pin the canon
+   alignment by the fire event (MegaMan's CurState leaving idle, as R2 did); run every chip row, one at
+   a time, before and after. A row may only move if its negative stays non-blind. Report each row.
+
+**Rules.** tools/ only; no src/; no allowlist change; captures one at a time. **Coordinator:**
+verify_rows on every chip row plus the verifier on the gate claim and on the patch being the minimal
+one; a PARTIAL from a wrong guess about the gate gets a follow-up ticket, not an escalation.
+
+### F6. tiles/gauge isolated: 538 px over 8 frames  *(OPEN -- 2026-09-12)*
+
+**Why.** `tiles` and `gauge` are the same full-screen capture (see `_tiles_gauge()`'s note) and both
+read 538 / 208 / 8 isolated. Small, self-contained, two rows at once. **Do:** localize the 538 px with
+tools/diffmask.py and the oracle (which frames, which element -- the custom gauge's stripe-flow is the
+known TODO A8 candidate); find canon's routine for that element in reference/bn6f; fix src/ with the
+citation; re-run tiles, gauge, wave, window and the full table (nothing worse). No allowlist change;
+the integrated variants' allowlist entries stay until their own tickets.
+
 ### F3. After the chip window closes, a faded copy of it stays on the field  *(OPEN -- 2026-09-12)*
 
 **Why.** Playing the release ROM from power-on (tools/battle_gif.py's tour: pick FireSwrd, Start to
@@ -578,16 +636,6 @@ Unverified: that canon shows nothing there (it should not, but that is the measu
 **Rules.** src/ for the fix; tools/harness.py for the new row; no allowlist change; captures one at a
 time. **Coordinator:** verify_rows plus the verifier on the canon routine claim; a PARTIAL from a wrong
 guess about the cause gets a follow-up ticket, not an escalation.
-
-### F4. The opening row reads 1160 px since R1 rebuilt its canon state  *(OPEN -- 2026-09-12)*
-
-**Why.** `opening isolated` read PASS 0 over 40 frames against the lost `battlestart.state` (HANDOFF
-§10). The 2026-09-12 gallery run reads **1160 / 29 / 40** (integrated 73659 / 2720) against R1's
-rebuilt state -- same three Mettaurs, different history and RNG. No code change touched the opening;
-the canon fixture changed. **Do:** localize the 1160 px (frame, region, which element) with diffmask
-and the oracle; decide from measurement whether the row's descriptor, its Align, or our opening
-differs from what the rebuilt canon state shows; fix the fixture side if the state is the difference,
-or file the src/ defect with its frame and region. No allowlist change.
 
 ## A. Measured residues — small, self-contained, all have a number
 

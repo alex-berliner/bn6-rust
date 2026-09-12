@@ -388,6 +388,10 @@ a check reports, always with a frame and region.
 
 Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WORKFLOW_AUDIT.md`).
 
+- **Order, 2026-09-12 (the user): convergence before anything new.** Every existing harness row reaches 0
+  differing frames, full screen, before any new content. Queue and tickets: TODO.md "## F.". A reported 0
+  always names what it compares -- canon vs ours, or before vs after (a prune or merge that changed
+  nothing is not parity).
 - **Scope.** The 43 chips already in the harness, 5 viruses, 2 bosses, player fidelity, the custom
   screen for that deck, and battle flow. Out: other chips, Navis, Navi Customizer, Program Advances,
   netbattle, audio.

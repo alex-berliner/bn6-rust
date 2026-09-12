@@ -48,8 +48,8 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
 - the spend guard fails, or this session's children have cost more than $3 in total;
 - two tickets in a row on the same objective end PARTIAL, BLOCKED or NEGATIVE (say what the options
   are instead of writing a third);
-- the next step would change what canon or canon (sterile) are, widen the allowlist, touch src/
-  outside a ticket that says so, delete a state or a row, or change HANDOFF §13's scope or order;
+- the next step would change what canon or canon (sterile) are (unless the ticket explicitly authorizes
+  that one change), widen the allowlist, touch src/ outside a ticket that says so, delete a state or a row, or change HANDOFF §13's scope or order;
 - a verifier REFUTES a claim the next step needs;
 - anything needs a hand-played input, a purchase, or a push.
 
