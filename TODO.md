@@ -389,6 +389,47 @@ closed without a fix; the chip rows stay on the PAUSED baseline for now, documen
 widen the allowlist; captures one at a time. **Report** the field map with sources, the before/after
 lines of every row run, both oracle outputs with their negative controls, in AGENTS.md shape.
 
+### R7. Land the state oracle on the facts R6 found  *(OPEN -- 2026-09-12)*
+
+**Why.** R6's measurements and localization were independently reproduced, but its acceptance asked a
+pixel-clean row to have state parity and required canon fields that do not exist. Its implementation
+also missed several mechanical requirements. HANDOFF §13 still requires a usable state oracle before
+usage logging or behavior tickets. This is the second and last attempt on that objective.
+
+**Do, in order.**
+1. Start with `bash tools/worktree.sh r7-oracle`, then cherry-pick R6's implementation commits
+   `325581f`, `185f352`, and `c504eee`. Treat R6's measured divergences as tests, not as behavior to
+   fix. Audit the diff against this ticket before changing it.
+2. Make the field contract honest and complete. For every requested R6 field, cite the canon address
+   and Rust source/encoding, or print `unsupported` with the evidence R6 established. A canon battle
+   frame and the enemy's timing countdown are unsupported; do not invent equivalents. Distinguish
+   parity fields from information-only fields, and print every field in the per-field table even when
+   it matches. Keep the verified populated enemy slot `0x0203ab60`; document why `0x0203aa88` is empty
+   for these PAUSED fixtures.
+3. Keep the behavior-neutral export in a demonstrably free fixed EWRAM block next to the marker. R6
+   found that `0x02000080` collides with agb's `SPRITE_LOADER`; use the verified-safe
+   `0x02000008` marker padding unless a linker-map proof finds a safer adjacent address. Correct every
+   stale address in code and docs. Canon-derived constants need exact ROM/disassembly provenance;
+   freely chosen project protocol/layout constants must be labelled as chosen, not falsely
+   `provenance: derived`.
+4. Make `tools/oracle.py <row>` print the full field table and a first-divergence summary. Its negative
+   control must prove sensitivity by changing the nominal result when shifted one frame; merely seeing
+   any divergence on an already-divergent nominal row is BLIND. Support `wave` and `mettaur`; fail
+   loudly on unsupported rows. Document the command, block layout, comparison contract and unsupported
+   fields in HANDOFF §3a.
+5. **Acceptance.** Baseline first, then final: `wave` remains 0/0/90 with negative 3840, `window`
+   0/0/16 with 81056, `mettaur` 30864/1566/70 with 45233, and `card` 18486/3081/16 with 15405.
+   `oracle.py mettaur` reports `mm_timer` k=0 and the same frame's 959-pixel first diff.
+   `oracle.py wave` reports pixel total 0 while showing enemy animation k=24, MegaMan hit
+   state/timer k=43, and enemy state/action k=64. One-frame shifted controls must measurably alter
+   those outputs. If any verified value changes, report it precisely rather than fitting alignment or
+   changing behavior.
+
+**Rules.** src/ only for the export block and conversions; no battle/animation/timing behavior change;
+tools/ and HANDOFF.md; no canon, state, recipe, allowlist, alignment, region, asset, or Cargo changes;
+captures one at a time. **Report** changed paths, the full sourced field map, before/after harness
+lines, both complete oracle tables and shifted controls, in AGENTS.md shape.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
