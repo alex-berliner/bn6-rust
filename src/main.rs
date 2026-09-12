@@ -119,6 +119,18 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 /// is not a behaviour change to the marker -- same address, same first 8
 /// bytes, same meaning.
 ///
+/// The state oracle's export block (TODO R6) lives in the PADDING, bytes
+/// 8..48 (0x02000008..0x02000030) -- see `ORACLE_OFFSET`. NOT after byte
+/// 128: this static must stay exactly 128 bytes because agb's own EWRAM
+/// data (`SPRITE_LOADER`, checked with `nm`) begins at 0x02000080 the
+/// moment it ends -- a first cut that grew the array to 168 bytes to put
+/// the block at 0x02000080 overlapped the loader and the two clobbered
+/// each other every frame (caught because the exported RNG word's low
+/// byte moved while its high three followed GetRNG exactly; the four
+/// rerun rows happened to stay identical anyway). Inside this array the
+/// block is safe by Rust's own array-layout guarantee, like the
+/// descriptor.
+///
 /// ONE static, not a second one in its own `.ewram.fixture` section: TWO
 /// separate `#[link_section]`'d statics do not reliably keep their relative
 /// order across builds of this same crate. Built with
@@ -152,6 +164,31 @@ fn write_battle_marker(magic: u32, frame: u32) {
         let p = core::ptr::addr_of_mut!(BATTLE_MARKER) as *mut u32;
         core::ptr::write_volatile(p, magic);
         core::ptr::write_volatile(p.add(1), frame);
+    }
+}
+
+/// Byte offset of the state oracle's export block inside `BATTLE_MARKER`
+/// (TODO R6): 0x02000000 + 8 = 0x02000008, i.e. the marker array's own
+/// padding between the 8-byte marker and the fixture descriptor at byte
+/// 64. 0x02000008..0x02000030, 40 bytes -- see `battle.oracle_snapshot`'s
+/// field map. NOT at 0x02000080 or beyond: see the array doc's SPRITE_LOADER
+/// note. Nothing else writes bytes 8..64: the marker write touches only
+/// indices 0 and 1, and the harness's descriptor cheats start at
+/// 0x02000040.
+const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layout constant (where in the marker's padding to put the block); the padding is demonstrably free (nm: BATTLE_MARKER owns 0x02000000..0x02000080, SPRITE_LOADER starts at 0x02000080), see the array doc
+
+const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
+
+/// Export-only: nothing in this crate reads the block back, so the volatile
+/// byte stores are what keep it from being optimised away.
+fn write_oracle_block(bytes: &[u8; 40]) {
+    unsafe {
+        let p = core::ptr::addr_of_mut!(BATTLE_MARKER)
+            .cast::<u8>()
+            .add(ORACLE_OFFSET);
+        for (i, b) in bytes.iter().enumerate() {
+            core::ptr::write_volatile(p.add(i), *b);
+        }
     }
 }
 
@@ -265,6 +302,11 @@ fn main(mut gba: agb::Gba) -> ! {
             input.update();
             rng.next();
             let over = battle.update(&input, &gfx, &mut mixer);
+            // TODO R6 state oracle: the model's own state variables, in
+            // canon's units, next to the marker -- written from the first
+            // battle update on (before the visibility gate below), so the
+            // block always exists whenever a `--watch` reads it.
+            write_oracle_block(&battle.oracle_snapshot(battle_frame));
             if clocks_visible {
                 write_battle_marker(BATTLE_MAGIC, battle_frame);
                 battle_frame += 1;

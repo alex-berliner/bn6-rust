@@ -293,6 +293,38 @@ pub struct Actor {
     hits_taken: u8,
     /// Length of the attack pose in progress, for numbering its frames.
     pose_len: u8,
+    /// State-oracle shadow counters (TODO R6). Written only so the export
+    /// block (`oracle_fields`) can name what canon's own +0x20 word reads;
+    /// no branch below ever reads them, so they cannot change behaviour.
+    /// `post_flinch`: 11 counting down once a flinch has exited -- canon's
+    /// MegaMan object reads +0x20 = 0xffff on the first idle frame after a
+    /// flinch and then 9..0 over the next ten (PAUSED+Start@10 watch
+    /// capture, TODO R6 probe), which no behaviour field tracks.
+    post_flinch: u8,
+    /// True while a Recovering entered from a Hopping runs: canon keeps the
+    /// enemy in CurAction 0x0a (the hop executor, whose own cooldown
+    /// `byte_8109F46` the recovery models) through it, while a recovery
+    /// entered from an attack stays in 0x0b. Not distinguishable from the
+    /// Action alone because both are `Action::Recovering`.
+    hop_recovery: bool,
+}
+
+/// One actor's state-oracle export, already converted to canon's units and
+/// encodings (see `oracle_fields` for every conversion and its source).
+pub struct OracleFields {
+    /// canon's u16 at BattleObject+0x8: CurState | CurAction << 8
+    /// (include/structs/BattleObject.inc:40-52; idle reads 0x0804).
+    pub cur_state_action: u16,
+    /// canon's CurAnim byte at BattleObject+0x10 (BattleObject.inc:62-66).
+    pub anim: u8,
+    /// canon's PanelX/PanelY bytes at BattleObject+0x12/0x13
+    /// (BattleObject.inc:68-72).
+    pub panel_x: u8,
+    pub panel_y: u8,
+    /// canon's Timer u16 at BattleObject+0x20 (BattleObject.inc:95-99).
+    pub timer: u16,
+    /// canon's HP u16 at BattleObject+0x24 (BattleObject.inc:101).
+    pub hp: u16,
 }
 
 impl Actor {
@@ -320,6 +352,8 @@ impl Actor {
             barrier: 0,
             hits_taken: 0,
             pose_len: 0,
+            post_flinch: 0,
+            hop_recovery: false,
         }
     }
 
@@ -458,6 +492,104 @@ impl Actor {
         self.hits_taken
     }
 
+    /// The state-oracle export (TODO R6): this actor's fields converted to
+    /// canon's own BattleObject units and encodings, so tools/oracle.py can
+    /// compare them byte for byte with a `--watch` of canon's object.
+    /// `is_player` picks the player- vs virus-side CurAction map: canon
+    /// dispatches them through different jumptables (player
+    /// PlayerObjectAIAttackJumptables, asm31.s:107190-107200; virus
+    /// ForMettaur_8109EF4, asm31.s:170979-170999), so the same Action
+    /// encodes differently. Every conversion's source:
+    ///
+    /// - CurState byte: canon reads 0x04 (CUR_STATE_UPDATE) on every alive
+    ///   object through the PAUSED+Start@10 watch window (TODO R6 probe:
+    ///   MegaMan 0x0203a9b0+8 and the Mettaur 0x0203ab60+8, 180 frames).
+    /// - CurAction, player: idle 0x08 (measured; traced live asm00_1.s:13117
+    ///   and asm31.s:169283), flinch 0x03 (sub_80174FE,
+    ///   PlayerObjectAIAttackJumptables[3], asm31.s:107195; measured
+    ///   0x0203a9b9 = 0x03 through a shockwave hit), delete 0x02
+    ///   (sub_80173F4, [2]). Everything else our model does while the
+    ///   player object is under its own AI reads 0x08 in canon (movement
+    ///   and aiming live inside playerAI_update_80EA734 [8], not new
+    ///   actions) -- so that is what the remaining arms export.
+    /// - CurAction, enemy (Mettaur): 0x0a hop executor, 0x0b attack
+    ///   executor (swing AND its 0x28 recovery -- canon stays 0x0b across
+    ///   both, measured), 0x09 the plain "wait N frames" state
+    ///   (`ai::Ai::oracle_is_wait`), 0x00 spawn animation
+    ///   (RunSpawnAnimationMaybe_8016380), 0x03 flinch, 0x02 delete, 0x08
+    ///   decision loop -- all ForMettaur_8109EF4 entries, asm31.s:170979.
+    /// - Timer (+0x20), player: the flinch countdown 0x16..0x00, measured
+    ///   (canon 0x0203a9d0 reads 0x16..0 through a 23-frame flinch); our
+    ///   `ticks` runs 23..1, so -1. The exit frame's 0xffff and the 9..0
+    ///   tail after it are the `post_flinch` shadow (measured 137..147 of
+    ///   the same capture; no behaviour field tracks them). fitted -- the
+    ///   tail's length 10 and the 0xffff sentinel are read off the capture,
+    ///   not derived from a cited instruction.
+    /// - Timer, enemy: canon reads a CONSTANT 0x0002 here for the whole
+    ///   window (measured); the swing countdown lives outside +0x00..0x2f
+    ///   (only +0x9/+0x10/+0x11 change in that range), so there is nothing
+    ///   dynamic to model and the export returns 0 -- oracle.py keeps this
+    ///   field out of the compared set.
+    /// - CurAnim (+0x10): identity -- our `anim` indices ARE the sprites'
+    ///   own animation-table indices (actor.rs `pub mod anim`'s doc), which
+    ///   is what canon's CurAnim byte indexes (measured 0/1 on both objects
+    ///   in the same capture).
+    pub fn oracle_fields(&self, is_player: bool, ai_wait: bool) -> OracleFields {
+        let cur_action: u8 = match &self.action {
+            Action::Flinching { .. } => 0x03,
+            Action::Dying { .. } | Action::Gone => 0x02,
+            Action::Attacking { .. } => 0x0b,
+            // canon keeps the hop executor's own 0x0a through the hop's
+            // cooldown recovery (measured: 0x0a for HOP_FRAMES +
+            // HOP_COOLDOWN frames, asm31.s:170689) -- but only for the
+            // enemy side, whose hops it is.
+            Action::Recovering { .. } if !is_player => {
+                if self.hop_recovery {
+                    0x0a
+                } else {
+                    0x0b
+                }
+            }
+            Action::Hopping { .. } if !is_player => 0x0a,
+            Action::Hidden | Action::Appearing { .. } => 0x00,
+            _ if !is_player && ai_wait => 0x09,
+            _ => 0x08,
+        };
+        // The enemy's +0x20 reads a constant 0x0002 through the whole
+        // measured window (see the doc above): nothing dynamic to model, so
+        // the enemy export always returns 0 and oracle.py keeps this field
+        // out of the compared set.
+        let timer: u16 = if !is_player {
+            0
+        } else {
+            match &self.action {
+                Action::Flinching { ticks } => (*ticks as u16).saturating_sub(1),
+                _
+                    if self.post_flinch > 0
+                        && matches!(self.action, Action::Idle) =>
+                {
+                    if self.post_flinch == 11 {
+                        // provenance: fitted -- canon's own +0x20 sentinel on the first idle frame after a flinch, read off the PAUSED+Start@10 watch capture
+                        0xffff
+                    } else {
+                        (self.post_flinch - 1) as u16
+                    }
+                }
+                _ => 0,
+            }
+        };
+        OracleFields {
+            // canon's u16 at +0x8 is CurState | CurAction << 8 -- idle
+            // reads 0x0804, i.e. state in the LOW byte.
+            cur_state_action: 0x04u16 | ((cur_action as u16) << 8),
+            anim: self.player.anim() as u8,
+            panel_x: self.col as u8,
+            panel_y: self.row as u8,
+            timer,
+            hp: self.hp,
+        }
+    }
+
     /// The panel the actor currently stands on, 1-based. During a warp this is
     /// the panel being left until the move commits at the midpoint.
     pub fn panel(&self) -> (i32, i32) {
@@ -549,6 +681,10 @@ impl Actor {
         if !matches!(self.action, Action::Idle) {
             return false;
         }
+        // Export-only shadow (TODO R6): any new action after a hop's
+        // cooldown means the recovery now belongs to the attack, not the
+        // hop -- see `hop_recovery`'s doc.
+        self.hop_recovery = false;
         self.begin(spec, false);
         true
     }
@@ -592,6 +728,7 @@ impl Actor {
     /// released with the Leaving state.
     pub fn flinch(&mut self) {
         self.player.play(anim::FLINCH);
+        self.hop_recovery = false;
         self.action = Action::Flinching {
             ticks: FLINCH_FRAMES,
         };
@@ -600,6 +737,8 @@ impl Actor {
     pub fn update(&mut self) -> Update {
         self.invisible = self.invisible.saturating_sub(1);
         self.invulnerable = self.invulnerable.saturating_sub(1);
+        // Export-only shadow decrement (TODO R6): see `post_flinch`'s doc.
+        self.post_flinch = self.post_flinch.saturating_sub(1);
         if self.pale > 0 {
             self.pale -= 1;
             if self.pale == 0 {
@@ -650,6 +789,9 @@ impl Actor {
             }
             Action::Hopping { .. } => {
                 self.player.play(anim::IDLE);
+                // Export-only shadow (TODO R6): canon keeps the hop
+                // executor's CurAction 0x0a through this cooldown.
+                self.hop_recovery = true;
                 Action::Recovering {
                     ticks: HOP_COOLDOWN,
                 }
@@ -664,6 +806,7 @@ impl Actor {
             Action::Recovering { ticks } if ticks > 1 => Action::Recovering { ticks: ticks - 1 },
             Action::Recovering { .. } => {
                 self.player.play(anim::IDLE);
+                self.hop_recovery = false;
                 Action::Idle
             }
             Action::Aiming { ticks } if ticks > 1 => Action::Aiming { ticks: ticks - 1 },
@@ -762,6 +905,11 @@ impl Actor {
             Action::Flinching { ticks } if ticks > 1 => Action::Flinching { ticks: ticks - 1 },
             Action::Flinching { .. } => {
                 self.player.play(anim::IDLE);
+                // Export-only shadow (TODO R6): canon's MegaMan object
+                // reads +0x20 = 0xffff on this first idle frame and 9..0
+                // over the ten after (PAUSED+Start@10 watch capture).
+                // provenance: fitted -- 1 sentinel frame + 10 counted off that capture, not derived from a cited instruction
+                self.post_flinch = 11;
                 Action::Idle
             }
             Action::Dying { ticks } if ticks == self.death_frames => {

@@ -121,6 +121,74 @@ The library underneath is `tools/chip_compare.py`: `capture()` (retries a short 
 `diff_frames()` (numpy, full frame or box), `frame_array()`, `scratch()` (a `/tmp/bn-<hash>` dir keyed
 on the checkout path, so worktrees never collide), `peek16()`, `library_pokes()`, `capture_real()`.
 
+### 3a. The state oracle — `tools/oracle.py` (TODO R6 measured, TODO R7 contract, 2026-09-12)
+
+A harness row says how many pixels differ, not which variable went wrong on which frame. The oracle
+answers that: it reuses the row's own `Side`/`Align` machinery (`harness.run` — same captures, same
+searched alignment) but watches RAM on both sides:
+
+- **canon**: `0x020013f0` (`ePrimaryRngSeed`, ewram.s:262), MegaMan's BattleObject
+  `0x0203a9b8`+0x08..0x26 (`eT1BattleObject0+8`; CurState/CurAction +0x8/+0x9, CurAnim +0x10,
+  PanelX/Y +0x12/13, Timer +0x20, HP +0x24 — `include/structs/BattleObject.inc:40-101`), the
+  POPULATED enemy slot at +8..0x26, and the custom gauge `0x020352a0` (`eStruct2035280+0x20`,
+  `sub_801DFB8`, asm00_2.s:29892-29907). The enemy slot for the PAUSED-based rows is **`0x0203ab60`
+  (watched at +8 = `0x0203ab68`), NOT `0x0203aa88`** — the ALIVE cheat's own address `0x0203ab84` =
+  `0x0203ab60` + oBattleObject_HP proves the base, and the R6 probe capture shows `0x0203aa88` reads
+  HP 0x0000 there. Per-row slot: `oracle.py`'s `ROWS`.
+- **rust**: its own export block "ORCL" (magic `0x4f52434c`), 40 bytes at **`0x02000008`** — inside
+  `BATTLE_MARKER`'s padding (bytes 8..48), written every frame by `battle.oracle_snapshot` (field map
+  with every canon source cited there). The block's freedom is proven from the linker map, not
+  assumed: `nm` on the built ELF shows `BATTLE_MARKER` (`[u32; 32]`, 128 bytes) is the sole owner of
+  0x02000000..0x02000080 and agb's `SPRITE_LOADER` begins exactly at 0x02000080 — a first cut that
+  put the block at 0x02000080 made the two clobber each other every frame.
+
+**The field contract (TODO R7).** Every field R6 requested is classified; `oracle.py`'s module
+docstring is the authoritative list with addresses and sources, and the tool prints all three
+classes every run:
+
+- **PARITY** (compared frame by frame, printed in the full table whether they match or not):
+  `rng_cadence` (exactly one GetRNG step per frame per side — absolute orbit positions differ by
+  fixture age and print under `rng_abs`), `mm_state_action`, `mm_anim`, `mm_panel_x`, `mm_panel_y`,
+  `mm_timer` (flinch countdown + the post-flinch 0xffff/9..0 tail — the player's action timer),
+  `enemy_state_action`, `enemy_anim`, `enemy_panel_x`, `enemy_panel_y`.
+- **INFO-ONLY** (watched and printed, never compared — the two FIXTURES disagree by design, not the
+  model): `mm_hp` (canon's capture-damaged navi vs the descriptor), `enemy_hp` (the ALIVE cheat's
+  0xffff), `gauge` (canon's full-from-the-old-battle vs ours from the descriptor), `rng_abs`.
+- **UNSUPPORTED** (no honest equivalent on one side; printed with the evidence, never compared,
+  never invented): `battle_frame` (export +4 only — canon has no known battle-frame RAM word; the
+  row's Align is the frame pairing) and `enemy_timer` (canon reads a CONSTANT 0x0002 at slot+0x20 —
+  R6 probe; the Mettaur's timing countdown lives outside the probed +0x00..+0x2f range, so the
+  export returns 0 and no equivalent is modelled).
+
+`python3 tools/oracle.py <row>` (`wave`, `mettaur` — other rows fail loudly with what a new row
+needs) prints: the alignment; the **full parity table** (every compared field, match or first
+divergence, with canon/rust values and per-field counts); a **FIRST DIVERGENCE** summary line; the
+info-only and unsupported values at the first compared frame; the pixel diff on the same alignment
+(with the first non-zero frame's own count); and the negative control.
+
+**Negative control (TODO R7's contract).** The same captures re-compared with canon shifted +1
+frame must CHANGE the nominal result — the per-field first-divergence table must move (a first
+frame or count changes) — or the oracle is BLIND on that row. "Still diverges somewhere" on an
+already-divergent row proves nothing and is reported as BLIND. `--shift N` displays the table at
+canon_ref+N for reproducing a control by hand.
+
+Measured (2026-09-12, both rows' negatives NOT BLIND):
+
+- `oracle.py mettaur`: first divergent field **mm_timer at k=0** — the same frame the row's pixel
+  diff first reads non-zero (959 px). Canon's MegaMan object is mid-post-flinch-mercy there (+0x20
+  reads 0xffff then 9..0 after every flinch; ours is phase-shifted). This localises the bulk of
+  mettaur's 30864: the shockwave's hit registers ~1 frame late in our shot resolution, which shifts
+  the mercy countdown and with it MegaMan's blink phase (766-px chunks, 120 frames of mercy).
+- `oracle.py wave` (BG2-only, where none of this is visible): rng cadence CLEAN both sides (exactly
+  one GetRNG step per frame — the model claim; absolute values differ by fixture age, info-only);
+  but three real state divergences the pixels cannot see: mm_state_action/mm_anim/mm_timer at k=43
+  (canon's flinch starts at canon 114, ours one frame later — the same late hit), enemy_anim at k=24
+  (canon swaps to anim 0 for 3 frames in the attack's recovery; ours holds the swing anim), and
+  enemy_state_action at k=64 (canon's attack executor ends 4 frames before ours). The ticket's
+  "wave reports no divergence" expectation is therefore FALSE as written: the oracle works, and it
+  found model state defects on a row that passes at 0. They are src/ tickets, not oracle bugs —
+  the same late hit that mettaur's pixels show.
+
 ## 4. The descriptor and the marker (`FIXTURE.md`)
 
 One plain ROM, told what to be. The harness writes 64 bytes at **`0x02000040`** every frame

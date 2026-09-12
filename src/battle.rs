@@ -1161,6 +1161,70 @@ impl<'a> Battle<'a> {
         }
     }
 
+    /// The state oracle's export block (TODO R6): 40 bytes the main loop
+    /// writes to EWRAM 0x02000008 every frame (inside the marker array's own
+    /// padding -- see main.rs's ORACLE_OFFSET note for why not 0x02000080),
+    /// byte-for-byte comparable with canon's own RAM through a `--watch`.
+    /// Field map (offsets in the block; canon addresses are the compared
+    /// side, watched directly):
+    ///
+    /// | off | width | field | canon address | source |
+    /// |-----|-------|-------|---------------|--------|
+    /// |  0  | 4 | "ORCL" magic 0x4f52434c | -- | our own protocol constant (free choice, like BATTLE_MAGIC) |
+    /// |  4  | 4 | battle frame counter | -- (canon has no known battle-frame RAM word; alignment is the row's own Align) | `clock`-equivalent count passed in |
+    /// |  8  | 4 | primary RNG state | 0x020013f0 `ePrimaryRngSeed` (ewram.s:262) | `ai::Rng::state()` |
+    /// | 12  | 2 | MegaMan CurState\|CurAction<<8 | 0x0203a9b8 = eT1BattleObject0+8 (constants/headers/EWRAM.h:54, BattleObject.inc:40-52) | `Actor::oracle_fields` |
+    /// | 14  | 1 | MegaMan CurAnim | 0x0203a9c0 (+0x10) | identity, see `oracle_fields` |
+    /// | 15  | 1 | MegaMan PanelX | 0x0203a9c2 (+0x12) | `Actor::panel()`, same units as the descriptor's col |
+    /// | 16  | 1 | MegaMan PanelY | 0x0203a9c3 (+0x13) | as above |
+    /// | 18  | 2 | MegaMan Timer | 0x0203a9d0 (+0x20) | flinch countdown + `post_flinch` shadow |
+    /// | 20  | 2 | MegaMan HP | 0x0203a9d4 (+0x24) | `Actor::hp()` |
+    /// | 22  | 2 | enemy CurState\|CurAction<<8 | the POPULATED enemy slot -- 0x0203ab60 for the PAUSED-based rows (the ALIVE cheat's own address 0x0203ab84 = +0x24 proves the base), NOT 0x0203aa88, which is an empty slot (HP 0) | `Actor::oracle_fields` + `Ai::oracle_is_wait` |
+    /// | 24  | 1 | enemy CurAnim | slot+0x10 | identity |
+    /// | 25  | 1 | enemy PanelX | slot+0x12 | `Actor::panel()` |
+    /// | 26  | 1 | enemy PanelY | slot+0x13 | as above |
+    /// | 28  | 2 | enemy Timer | slot+0x20 | exported 0: canon reads a constant 0x0002 there (measured), nothing dynamic to model -- oracle.py keeps it out of the compared set |
+    /// | 30  | 2 | enemy HP | slot+0x24 | `Actor::hp()` (info-only: the PAUSED rows' canon side is poked 0xffff by ALIVE) |
+    /// | 32  | 2 | custom gauge | 0x020352a0 = eStruct2035280+0x20 (sub_801DFB8, asm00_2.s:29892-29907) | `self.gauge` (info-only: canon's is full from the old battle, ours ticks from the descriptor) |
+    /// | 34  | 6 | zero padding | -- | -- |
+    ///
+    /// Export-only: nothing in the battle logic reads it back, so it cannot
+    /// change behaviour -- the rerun rows prove that. Also nothing may write
+    /// over it: 0x02000008..0x02000030 is inside `BATTLE_MARKER`'s own
+    /// reservation (bytes 8..48), which nothing else touches -- the first
+    /// cut placed it at 0x02000080, which is agb's `SPRITE_LOADER` (nm),
+    /// and the two fought every frame.
+    pub fn oracle_snapshot(&self, battle_frame: u32) -> [u8; 40] {
+        let mut b = [0u8; 40];
+        b[0..4].copy_from_slice(&crate::ORACLE_MAGIC.to_le_bytes()); // "ORCL", see main.rs's ORACLE_MAGIC (provenance: chosen -- this project's own protocol constant)
+        b[4..8].copy_from_slice(&battle_frame.to_le_bytes());
+        b[8..12].copy_from_slice(&self.primary_rng.state().to_le_bytes());
+        let mm = self.megaman.oracle_fields(true, false);
+        b[12..14].copy_from_slice(&mm.cur_state_action.to_le_bytes());
+        b[14] = mm.anim;
+        b[15] = mm.panel_x;
+        b[16] = mm.panel_y;
+        b[18..20].copy_from_slice(&mm.timer.to_le_bytes());
+        b[20..22].copy_from_slice(&mm.hp.to_le_bytes());
+        // First enemy. Every oracle row so far has exactly one; the empty
+        // slots around it export 0xffff sentinels.
+        if let Some(enemy) = self.enemies.first() {
+            let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
+            let e = enemy.oracle_fields(false, ai_wait);
+            b[22..24].copy_from_slice(&e.cur_state_action.to_le_bytes());
+            b[24] = e.anim;
+            b[25] = e.panel_x;
+            b[26] = e.panel_y;
+            b[28..30].copy_from_slice(&e.timer.to_le_bytes());
+            b[30..32].copy_from_slice(&e.hp.to_le_bytes());
+        } else {
+            b[22..24].copy_from_slice(&0xffffu16.to_le_bytes());
+            b[30..32].copy_from_slice(&0xffffu16.to_le_bytes());
+        }
+        b[32..34].copy_from_slice(&self.gauge.to_le_bytes());
+        b
+    }
+
     pub fn new(
         field: &'a Field,
         results: &'a Results,

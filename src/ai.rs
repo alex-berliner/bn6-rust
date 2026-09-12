@@ -124,6 +124,13 @@ impl Rng {
         Self(seed)
     }
 
+    /// The current state, for the state oracle's export block (TODO R6):
+    /// canon's `ePrimaryRngSeed` (EWRAM 0x020013f0) is read directly by a
+    /// `--watch`, so the export carries ours raw.
+    pub fn state(&self) -> u32 {
+        self.0
+    }
+
     /// GetRNG: `seed = rotl(seed, 1).wrapping_add(1) ^ 0x873ca9e5`.
     pub fn next(&mut self) -> u32 {
         // provenance: derived -- GetRNG, asm00_0.s:2610-2622 (xor constant rng_80015A0 = 0x873ca9e5)
@@ -262,6 +269,19 @@ impl Ai {
 
     pub fn style(&self) -> &Style {
         &self.style
+    }
+
+    /// True while the Mettaur is in one of canon's plain "wait N frames"
+    /// states -- the spawn's one-time 0x1e pause (`CurAction` 0x09,
+    /// `sub_8109CBC`, asm31.s:170990; armed by `sub_810A004`'s Param4
+    /// branch) or a losing wander roll's 0x32 wait (same executor). The
+    /// state oracle (TODO R6) needs this because `MettaurState` lives here
+    /// while the exported CurAction byte is built in `oracle_fields`.
+    pub fn oracle_is_wait(&self) -> bool {
+        matches!(
+            self.mettaur,
+            MettaurState::Spawn(_) | MettaurState::WaitOut(_)
+        )
     }
 
     /// `blocked` is the occupancy of every other object, which no move may
