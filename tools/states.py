@@ -81,6 +81,7 @@ from typing import Optional, Tuple
 CAPTURE = "/tmp/mgba_capture"
 REAL = "/tmp/bn6f_real.gba"
 STERILE = "/tmp/bn6f_sterile.gba"
+SRM = "/tmp/bn6f_real.srm"
 
 PAUSED = "/tmp/pausedwithcannon.state"
 BATTLESTART = "/tmp/battlestart.state"
@@ -98,6 +99,7 @@ class State:
     #: BATTLESTART).
     rom: Optional[str] = None
     base: Optional[str] = None          # another state's --loadstate, or None for a cold boot
+    save: Optional[str] = None          # battery save (.srm) for --loadsave from cold boot
     script: Optional[str] = None        # tools/mgba_capture.c's "--script" syntax
     cheats: Tuple[str, ...] = field(default_factory=tuple)  # each "--cheat" argument
     #: Each "frame:addr:val" argument for tools/mgba_capture.c's --poke-at
@@ -194,50 +196,26 @@ STATES = [
         path="/tmp/overworld_net.state",
         root=False,
         rom=REAL,
-        base=BATTLESTART,
-        script="Start@200,A@210,A@400,A@430,A@460,A@490,A@520,A@550,A@580,"
-               "A@610,A@640,A@670,A@700,A@730,A@760",
-        cheats=DELETE_ENEMY_3,
-        frames=800,
-        description="The overworld net area a battle's own encounter came "
-                     "from, reached by letting BATTLESTART's battle actually "
-                     "resolve on the REAL (unpatched) ROM -- AUDIT wave 3c "
-                     "'fresh-state' ticket step 1, the base the sterile "
-                     "empty-field walk (emptyfield_start) loads. All three "
-                     "Mettaurs are held at HP 0 the whole run (DELETE_ENEMY_3 "
-                     "-- see its own comment for how the three addresses "
-                     "were found), which is enough for battle_isBattleOver "
-                     "(unpatched here) to conclude the fight on its own.",
-        note="VERIFIED (this ticket). Script, frame by frame against "
-             "battlestart.state's own timeline: the chip window is open by "
-             "frame ~150 (matches TRANSFER 7aw); Start@200 moves the cursor "
-             "to OK, A@210 confirms an empty hand and closes it; BATTLE "
-             "START! around frame 300; ENEMY DELETED/GET around 400 (all "
-             "three HP-zeroed enemies resolve as one kill, not three "
-             "separate deletions -- not investigated further, not needed "
-             "for this recipe); the RESULT window's two pages (DeleteTime/"
-             "Busting LV, then GET DATA showing a chip, then a zenny page) "
-             "come up around 500-730 and the trailing A@430..A@730 (30-frame "
-             "spacing -- tighter spacing just re-picks the chip window's "
-             "cursor before Start closes it, per TRANSFER 7aw) page through "
-             "them; a black transition runs ~735-775; the net area "
-             "('CentralArea1') is up, lit and static by frame ~778, and "
-             "frame 800 (this state) matches it with no further script "
-             "needed. MOVEMENT VERIFIED, not by the handover's own named "
-             "bytes (0x02009f5c/0x02009f60 from OverworldPlayerObject.inc, "
-             "which do not move here either -- consistent with the "
-             "handover's own finding that those .inc offsets are not to be "
-             "trusted unverified): `--watch 0x02009f40:0x50:file` over 80 "
-             "held frames of Right, and separately of Down, from this state "
-             "finds a live pair at 0x02009f62/0x02009f63 (a little-endian "
-             "u16, wrapping, incrementing by exactly 1/frame under EITHER "
-             "held direction -- consistent with this map's isometric "
-             "projection, where screen-Right and screen-Down both move the "
-             "underlying grid position) and a second axis-specific pair at "
-             "0x02009f5e (paired with 0x02009f6a) that only moves under "
-             "Down, not Right. Whatever their exact X/Y semantics, both "
-             "pairs respond to held input exactly as a position counter "
-             "should, which is the acceptance test this step asked for.",
+        base=None,
+        save=SRM,
+        script="Start@700,A@800",
+        frames=900,
+        description="The overworld net area reached from cold boot with the "
+                     "battery save (/tmp/bn6f_real.srm) through the title "
+                     "screen and Continue into CentralArea1.",
+        note="VERIFIED (ticket R1). Cold boot with /tmp/bn6f_real.srm loads "
+             "through Capcom logo (frames 0-210) and title screen (press "
+             "Start appears ~650); Start@700 opens Continue menu (defaulting "
+             "to Continue when save is present); A@800 confirms Continue. "
+             "Black transition completes by frame 835 and CentralArea1 net "
+             "map is loaded and controllable. SubsystemIndex (at 0x02001b80) "
+             "settles at 4 on the map from frame 835 through 900+ (verified: "
+             "peek 0x02001b80 reads 0x0004). Controllable overworld play "
+             "verified by position counters responding to held directional "
+             "input: u16 at 0x02009f62/0x02009f63 increments 1/frame under "
+             "held Right or Down; u16 at 0x02009f5e increments under Down. "
+             "Build time: ~0.78s. Determinism: 40 frames from two independent "
+             "builds diff to 0 pixels.",
     ),
     State(
         name="noenemy2",
@@ -496,6 +474,8 @@ def run_capture(state, out_dir, count, extra=()):
     cmd = [CAPTURE, state.rom, out_dir, str(count)]
     if state.base:
         cmd += ["--loadstate", state.base]
+    if state.save:
+        cmd += ["--loadsave", state.save]
     for c in state.cheats:
         cmd += ["--cheat", c]
     for p in state.pokes:
@@ -520,6 +500,8 @@ def build(name):
         raise SystemExit("%s has no runnable recipe" % state.name)
     if not os.path.exists(CAPTURE):
         raise SystemExit("%s not found -- build it first (see TRANSFER.md section 1)" % CAPTURE)
+    if state.save and not os.path.exists(state.save):
+        raise SystemExit("%s not found -- restore it first (see tools/restore_inputs.sh)" % state.save)
     scratch = "/tmp/states_py_scratch_%s" % state.name
     run_capture(state, scratch, state.frames, extra=["--savestate", state.path])
     subprocess.run(["rm", "-rf", scratch], check=True)
