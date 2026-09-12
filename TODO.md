@@ -280,7 +280,47 @@ appended to docs_recon_teardown.md. GLM-5.3-Flash, 129 turns, $0.228. The ticket
 **Rules.** tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time.
 Report addresses hit, the intervention with its evidence, and the measurements, in AGENTS.md shape.
 
-### R5. A write watchpoint in the capture tool, then find what releases the empty battle  *(OPEN -- 2026-09-12)*
+### R5. A write watchpoint in the capture tool, then find what releases the empty battle  *(PARTIAL -- 2026-09-12, branch wt/r5-watch kept, not merged)*
+
+**Result.** Step 1 done, verified, committed (17dc00f, plus HANDOFF §5 row). `--watch-write addr[:len]`
+arms real libmgba byte-granule WATCHPOINT_WRITEs via `mDebuggerAttach` + `platform->setWatchpoint`
+(DEBUGGER_CUSTOM is unbuildable through `mDebuggerCreate` -- returns NULL -- so the tool builds the
+`struct mDebugger` and attaches it directly); the entered hook logs frame/addr/old->new and the
+writing instruction (`_ARMPCAddress`, r15 minus the ARM/Thumb prefetch offset) plus raw r15 and LR,
+then returns -- the emulator never pauses. Verified: known-write anchor hit (roll's
+`str r0,[r7,#oGameState_CurBattleDataPtr]`, asm29.s:10286, reports `at=0x080AA59E lr=0x080AA6F9`
+frame=60, old=0x00000000 new=0x080B4BB8); new binary vs old binary 0 differing frames (90/90,
+emptynet roll recipe); with vs without the flag 0 differing frames (90/90; also 179/179 on a second
+recipe); harness `--only wave` with the new binary at /tmp/mgba_capture: PASS total 0 worst 0
+frames 90, negative not blind (3840) -- identical to the pre-change baseline line. Tool-side
+`--poke-at` writes are caught too but report the CPU's stale r15 as `at` (they run between frames).
+
+Step 2 measured, with a negative at its core. Reconciled frame bases first: R4's "age ~102" and R3's
+"capture 99" are the same event -- in the live emptynet recipe (overworld_net base, script, pokes at
+60/70; emptyfield_start.state is recipe frame 79 = battle age 0) the release is at **battle age 99 =
+capture frame 178**, measured three ways (per-frame value dumps, watchpoint hits, frame hashes).
+At 178 the five watched words (0x02001b9c CurBattleDataPtr, ba0, ba4, ba8, bac) clear **in one
+frame**, and 0x02001b80..b98 become the freed-heap nibble fill (0x11/0x22 patterns) R4 saw -- the
+GameState heap block is released at age 99. But the writes produce **zero watchpoint hits** although
+the same watches are live in the same frame (a DISPCNT store at 0x08001760 fires at 178; CPU stores
+fire at frames 60/70/76/147; a forced DMA3 fill fires; `--poke-at` fires). Excluded as the writer:
+CPU str/strb/strh/stm (all shimmed per mgba 0.10.2 memory-debugger.c), DMA (goes through
+`cpu->memory.store32`, proven by experiment), SWI RegisterRamReset (no SWI in the frame-178 delta;
+IWRAM body not memset; DISPCNT not forced to 0x0080), CpuSet/CpuFastSet (no dest 0x02001bxx in the
+logged frame-178 SWI set; HLE runs real BIOS-stub code through shimmed stores). The CPU stays
+healthy (normal per-frame SWI cadence, screen updating). So the release write does not go through
+any path libmgba's shims can see -- R4's "indirect dispatch" is real: **no game instruction can be
+named for the release with this instrument; the writer is somewhere inside libmgba 0.10.2's
+non-store paths** (next step: a libmgba built with a guard on `gba->memory.wram` writes, or bisect
+mgba internals). Two further findings recorded in docs_recon_teardown.md: (a) the /tmp pre-states
+(emptyfield_start, r4_pre*) DERAIL -- PC walks into 0xDE31xxxx garbage -- when loaded directly and
+run past battle age ~68, identically on the old and new binary, while live runs continue healthy:
+savestate reload is not faithful for this scenario, so state-based probing past age ~68 is unsafe;
+(b) R3/R4's reported teardown ages (20-23) did not reproduce in these live runs (pointer block
+intact through age 41 with and without the ALIVE cheats); treat the age-99 event as the only
+reproducible release in the merged branch's recipe. Steps 3-4 are therefore blocked on naming the
+writer from the emulator side. GLM, one session; /tmp/mgba_capture now runs the r5 binary
+(backup: /tmp/mgba_capture.bak_r5). The ticket as written follows.
 
 **Why.** R4 narrowed the enemy-less battle's teardown to one event -- `CurBattleDataPtr` (0x02001b9c)
 cleared at battle age ~102 -- but could not see which instruction does it: the store is reached by
