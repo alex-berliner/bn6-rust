@@ -1196,7 +1196,7 @@ impl<'a> Battle<'a> {
     /// and the two fought every frame.
     pub fn oracle_snapshot(&self, battle_frame: u32) -> [u8; 40] {
         let mut b = [0u8; 40];
-        b[0..4].copy_from_slice(&crate::ORACLE_MAGIC.to_le_bytes()); // "ORCL", provenance: derived -- see main.rs's ORACLE_MAGIC (this project's own protocol constant)
+        b[0..4].copy_from_slice(&crate::ORACLE_MAGIC.to_le_bytes()); // "ORCL", see main.rs's ORACLE_MAGIC (provenance: chosen -- this project's own protocol constant)
         b[4..8].copy_from_slice(&battle_frame.to_le_bytes());
         b[8..12].copy_from_slice(&self.primary_rng.state().to_le_bytes());
         let mm = self.megaman.oracle_fields(true, false);

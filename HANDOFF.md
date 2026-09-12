@@ -121,7 +121,7 @@ The library underneath is `tools/chip_compare.py`: `capture()` (retries a short 
 `diff_frames()` (numpy, full frame or box), `frame_array()`, `scratch()` (a `/tmp/bn-<hash>` dir keyed
 on the checkout path, so worktrees never collide), `peek16()`, `library_pokes()`, `capture_real()`.
 
-### 3a. The state oracle — `tools/oracle.py` (TODO R6, 2026-09-12)
+### 3a. The state oracle — `tools/oracle.py` (TODO R6 measured, TODO R7 contract, 2026-09-12)
 
 A harness row says how many pixels differ, not which variable went wrong on which frame. The oracle
 answers that: it reuses the row's own `Side`/`Align` machinery (`harness.run` — same captures, same
@@ -137,16 +137,40 @@ searched alignment) but watches RAM on both sides:
   HP 0x0000 there. Per-row slot: `oracle.py`'s `ROWS`.
 - **rust**: its own export block "ORCL" (magic `0x4f52434c`), 40 bytes at **`0x02000008`** — inside
   `BATTLE_MARKER`'s padding (bytes 8..48), written every frame by `battle.oracle_snapshot` (field map
-  with every canon source cited there). NOT at 0x02000080 or beyond: agb's `SPRITE_LOADER` owns
-  0x02000080 (checked with `nm`); a first cut there made the two clobber each other every frame.
+  with every canon source cited there). The block's freedom is proven from the linker map, not
+  assumed: `nm` on the built ELF shows `BATTLE_MARKER` (`[u32; 32]`, 128 bytes) is the sole owner of
+  0x02000000..0x02000080 and agb's `SPRITE_LOADER` begins exactly at 0x02000080 — a first cut that
+  put the block at 0x02000080 made the two clobber each other every frame.
 
-`python3 tools/oracle.py wave` / `mettaur` prints: the alignment; the first divergent COMPARED field
-and frame with canon/rust values and a per-field count; info-only fields (where the two FIXTURES
-disagree by design — mm_hp 60 vs the descriptor's 100, enemy_hp ALIVE's 0xffff, gauge full-vs-ticking,
-and the absolute RNG orbit position, since the two battles are different ages); the pixel diff on the
-same alignment; and the negative control — the same comparison with canon shifted +1 must diverge on
-some compared field, or the oracle is BLIND on that row. The compared-field set and each conversion's
-provenance live in `actor.rs oracle_fields` and `oracle.py`'s module doc.
+**The field contract (TODO R7).** Every field R6 requested is classified; `oracle.py`'s module
+docstring is the authoritative list with addresses and sources, and the tool prints all three
+classes every run:
+
+- **PARITY** (compared frame by frame, printed in the full table whether they match or not):
+  `rng_cadence` (exactly one GetRNG step per frame per side — absolute orbit positions differ by
+  fixture age and print under `rng_abs`), `mm_state_action`, `mm_anim`, `mm_panel_x`, `mm_panel_y`,
+  `mm_timer` (flinch countdown + the post-flinch 0xffff/9..0 tail — the player's action timer),
+  `enemy_state_action`, `enemy_anim`, `enemy_panel_x`, `enemy_panel_y`.
+- **INFO-ONLY** (watched and printed, never compared — the two FIXTURES disagree by design, not the
+  model): `mm_hp` (canon's capture-damaged navi vs the descriptor), `enemy_hp` (the ALIVE cheat's
+  0xffff), `gauge` (canon's full-from-the-old-battle vs ours from the descriptor), `rng_abs`.
+- **UNSUPPORTED** (no honest equivalent on one side; printed with the evidence, never compared,
+  never invented): `battle_frame` (export +4 only — canon has no known battle-frame RAM word; the
+  row's Align is the frame pairing) and `enemy_timer` (canon reads a CONSTANT 0x0002 at slot+0x20 —
+  R6 probe; the Mettaur's timing countdown lives outside the probed +0x00..+0x2f range, so the
+  export returns 0 and no equivalent is modelled).
+
+`python3 tools/oracle.py <row>` (`wave`, `mettaur` — other rows fail loudly with what a new row
+needs) prints: the alignment; the **full parity table** (every compared field, match or first
+divergence, with canon/rust values and per-field counts); a **FIRST DIVERGENCE** summary line; the
+info-only and unsupported values at the first compared frame; the pixel diff on the same alignment
+(with the first non-zero frame's own count); and the negative control.
+
+**Negative control (TODO R7's contract).** The same captures re-compared with canon shifted +1
+frame must CHANGE the nominal result — the per-field first-divergence table must move (a first
+frame or count changes) — or the oracle is BLIND on that row. "Still diverges somewhere" on an
+already-divergent row proves nothing and is reported as BLIND. `--shift N` displays the table at
+canon_ref+N for reproducing a control by hand.
 
 Measured (2026-09-12, both rows' negatives NOT BLIND):
 

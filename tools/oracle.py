@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The state oracle (TODO R6): the first divergent FIELD and frame, not
+"""The state oracle (TODO R6/R7): the first divergent FIELD and frame, not
 just a pixel count.
 
 One harness row, both sides captured with `--watch`:
@@ -7,7 +7,7 @@ One harness row, both sides captured with `--watch`:
   rust  -- the plain fixture ROM. Two watch streams: the battle marker
            (0x02000000:8, for marker-origin alignment -- added by
            `harness.Side.do_capture` exactly as `harness.run` does) and the
-           ROM's own state-export block (0x02000080:40, `ORCL`, written by
+           ROM's own state-export block (0x02000008:40, `ORCL`, written by
            src/main.rs every frame from `battle.oracle_snapshot`'s field
            map). Every exported field is already in canon's units and
            encodings; the map with sources lives on `oracle_snapshot`.
@@ -33,40 +33,84 @@ row's search band by the full-screen pixel diff -- the same pairing the
 row's published number was measured at. Field comparison happens on those
 same frames.
 
-Compared fields (both sides genuinely model them):
+THE FIELD CONTRACT (TODO R7): every field R6 requested, classified. PARITY
+fields are compared frame by frame and printed in the full table whether
+they match or not; INFO-ONLY fields are watched and printed but never
+compared, because the two FIXTURES disagree by design (fixture age, the
+ALIVE cheat, the descriptor), not because the model is wrong; UNSUPPORTED
+fields have no honest equivalent on one side and are printed as such with
+the evidence -- none is invented.
 
-  rng_cadence   both streams must advance EXACTLY one GetRNG step per frame
-                (seed = rotl+1 ^ 0x873ca9e5, asm00_0.s:2610-2622; canon
-                measured 1 step/frame over 219 transitions -- ai.rs's module
-                doc; ours by construction in `Battle::update`). Deliberately
-                NOT absolute-value equality: the two fixtures' battles are
-                different AGES (canon's is a mid-battle save state, ours
-                starts at the descriptor), so the two streams sit at
-                different points of the orbit by construction. The absolute
-                values are printed as info instead; the seeds differ by the
-                same design choice (src/ai.rs DEFAULT_SEED's doc).
-  mm_state_action, mm_anim, mm_panel_x, mm_panel_y, mm_timer
-  enemy_state_action, enemy_anim, enemy_panel_x, enemy_panel_y
+  PARITY (compared):
+    rng_cadence         canon 0x020013f0 ePrimaryRngSeed (ewram.s:262) vs
+                        export +8 (ai::Rng::state()). Compared as EXACTLY
+                        one GetRNG step per frame per side (seed = rotl+1 ^
+                        0x873ca9e5, asm00_0.s:2610-2622; canon measured 1
+                        step/frame over 219 transitions -- ai.rs's module
+                        doc; ours by construction in `Battle::update`).
+                        Deliberately NOT absolute-value equality: the two
+                        fixtures' battles are different AGES, so the
+                        streams sit at different orbit points by
+                        construction (the absolute values print under
+                        rng_abs below; src/ai.rs DEFAULT_SEED's doc).
+    mm_state_action     canon 0x0203a9b8 +0x08/+0x09 (eT1BattleObject0+8,
+                        include/structs/BattleObject.inc:40-52) vs export
+                        +12/13 (Actor::oracle_fields, player action map).
+    mm_anim             canon +0x10 (0x0203a9c0) vs export +14 -- identity:
+                        our anim indices ARE the sprites' animation-table
+                        indices canon's CurAnim byte indexes (R6 probe).
+    mm_panel_x/y        canon +0x12/+0x13 (0x0203a9c2/3) vs export +15/16
+                        (Actor::panel(), canon's 1-based units).
+    mm_timer            canon +0x20 (0x0203a9d0) vs export +18 -- the flinch
+                        countdown 0x16..0x00 plus the post-flinch 0xffff,
+                        9..0 tail (actor.rs `post_flinch`; fitted, counted
+                        off the R6 watch capture). This IS the
+                        animation/action timer that drives hit timing on
+                        the player side.
+    enemy_state_action  canon <slot>+0x08/+0x09 (0x0203ab68) vs export
+                        +22/23 (Actor::oracle_fields enemy action map +
+                        Ai::oracle_is_wait).
+    enemy_anim          canon <slot>+0x10 vs export +24 -- identity.
+    enemy_panel_x/y     canon <slot>+0x12/+0x13 vs export +25/26.
 
-Info-only fields (exported/watched but NOT compared, each with the reason):
-  battle_frame  rust-only: canon has no known battle-frame RAM word, and
-                the row's Align already IS the frame pairing.
-  mm_hp         the PAUSED rows' canon side reads 0x003c (the capture's own
-                damaged navi) while the descriptor says megaman_hp=100 --
-                a fixture disagreement, not a model defect.
-  enemy_hp      canon's is poked 0xffff by the ALIVE cheat by design.
-  enemy_timer   canon reads a CONSTANT 0x0002 there for the whole probe
-                window (the swing countdown lives outside +0x00..+0x2f);
-                nothing dynamic to model, the export returns 0.
-  gauge         canon's is full (0x4000) from the old battle; ours ticks
-                from the descriptor's gauge field -- fixture age again.
+  INFO-ONLY (watched, printed, NOT compared -- fixtures disagree by design):
+    mm_hp               canon +0x24 (0x0203a9d4) vs export +20: the PAUSED
+                        rows' canon side reads the capture's own damaged
+                        navi (50/60) while the descriptor says megaman_hp
+                        90/100 -- a fixture disagreement, not a model
+                        defect.
+    enemy_hp            canon <slot>+0x24 (0x0203ab84) vs export +30: the
+                        canon side is poked 0xffff by the ALIVE cheat by
+                        design.
+    gauge               canon 0x020352a0 (eStruct2035280+0x20, sub_801DFB8,
+                        asm00_2.s:29892-29907) vs export +32: canon's is
+                        full (0x4000) from the old battle; ours ticks from
+                        the descriptor's gauge field -- fixture age again.
+    rng_abs             the two streams' absolute orbit positions (see
+                        rng_cadence; the model claim is the cadence).
 
-Negative control (AUDIT pair 10, oracle edition): the SAME field
-comparison with the canon side shifted one frame later must report a
-divergence on some compared field, or the oracle is BLIND on that row.
+  UNSUPPORTED (no honest equivalent; printed as such, never compared,
+  never invented -- TODO R7 names both explicitly):
+    battle_frame        export +4 only. Canon has NO known battle-frame RAM
+                        word (R6 searched for one; the row's Align already
+                        IS the frame pairing), so there is nothing to
+                        compare against.
+    enemy_timer         canon <slot>+0x20 (0x0203ab80) vs export +28. R6's
+                        probe measured canon reading a CONSTANT 0x0002 here
+                        for the whole window -- the Mettaur's swing/timing
+                        countdown lives OUTSIDE the probed +0x00..+0x2f
+                        range -- so there is nothing dynamic to model and
+                        the export returns 0. The enemy's timing countdown
+                        stays unsupported; do not invent an equivalent.
+
+Negative control (AUDIT pair 10, oracle edition, TODO R7's contract): the
+SAME field comparison with the canon side shifted one frame later must
+CHANGE the nominal result -- the per-field first-divergence table has to
+move -- or the oracle is BLIND on that row. "Still diverges somewhere" on
+an already-divergent row proves nothing and is reported as BLIND.
 
 Usage:
-  python3 tools/oracle.py <row>            # wave, mettaur
+  python3 tools/oracle.py <row>            # wave, mettaur only
   python3 tools/oracle.py <row> --shift N  # canon shifted N frames (default 0)
 """
 
@@ -96,16 +140,25 @@ RNG_ADDR = 0x020013F0  # ePrimaryRngSeed
 MM_ORACLE_ADDR = 0x02000008  # the rust export block ("ORCL", 40 bytes)
 
 #: Per-row configuration: the canon address of the POPULATED enemy slot.
-#: Everything else is the row's own Check definition.
+#: Everything else is the row's own Check definition. Only the rows R7
+#: accepts are here: adding a row needs its enemy slot verified populated
+#: (the ALIVE-cheat-address proof) and every parity field's conversion
+#: verified against a canon watch capture -- see HANDOFF §3a.
 ROWS = {
     "wave": dict(enemy_slot=0x0203AB60),
     "mettaur": dict(enemy_slot=0x0203AB60),
 }
 
-#: fields where the two FIXTURES disagree by design, watched and printed but
-#: never compared -- each with its one-line reason (see module doc).
-INFO_FIELDS = ["battle_frame", "mm_hp", "enemy_hp", "enemy_timer", "gauge",
-               "rng_abs"]
+#: fields watched and printed but NEVER compared: the two FIXTURES disagree
+#: by design (fixture age, the ALIVE cheat, the descriptor) -- the full
+#: contract with addresses and reasons is the module docstring and is
+#: printed under FIELD CONTRACT.
+INFO_FIELDS = ["mm_hp", "enemy_hp", "gauge", "rng_abs"]
+
+#: fields with NO honest equivalent on one side (TODO R7 names both):
+#: printed as unsupported with their evidence, never compared, never
+#: invented.
+UNSUPPORTED_FIELDS = ["battle_frame", "enemy_timer"]
 
 # --- canon watch-file parsing ------------------------------------------------
 # One row per captured frame, appended after every rendered frame.
@@ -227,8 +280,12 @@ def main() -> None:
     args = ap.parse_args()
 
     if args.row not in ROWS:
-        raise SystemExit("no oracle configuration for row %r (have: %s)"
-                         % (args.row, ", ".join(sorted(ROWS))))
+        raise SystemExit(
+            "UNSUPPORTED row %r: the oracle only runs wave and mettaur "
+            "(TODO R7). A new row needs its canon enemy slot verified "
+            "populated and every parity field's conversion verified against "
+            "a canon watch capture -- see HANDOFF §3a. Configured rows: %s"
+            % (args.row, ", ".join(sorted(ROWS))))
     cfg = ROWS[args.row]
     check = [c for c in H.CHECKS if c.name == args.row][0]
     if check.ui not in ("isolated", "integrated"):
@@ -269,20 +326,16 @@ def main() -> None:
 
     rust, canon = sides()
     result = H.run(rust, canon, check.frames, check.align)
-    print("row %s: aligned canon frame %d+k <-> rust marker origin %d + "
-          "offset %d + k (search %s); pixel total %d worst %d over %d frames"
-          % (args.row, check.align.canon_ref, result.rust_origin,
-             result.rust_offset,
-             ("%d..%d" % (check.align.search.start, check.align.search.stop))
-             if check.align.search is not None else "fixed",
-             result.total, result.worst, check.frames))
 
     rust_rows = watch_rows(rust_block_file, 40)
     canon_mm = watch_rows(canon_mm_file, 30)
     canon_enemy = watch_rows(canon_enemy_file, 30)
     canon_rng = watch_rows(canon_rng_file, 4)
     canon_gauge = watch_rows(canon_gauge_file, 2)
-    need = check.frames + max(args.shift, 0)
+    # The displayed table sits at +shift; the negative control needs the
+    # nominal table AND the +1 table off the same captures, so keep one
+    # frame of slack even at shift 0.
+    need = check.frames + max(args.shift, 1)
     for name, rows, width in (("rust block", rust_rows, 40),
                               ("canon mm", canon_mm, 30),
                               ("canon enemy", canon_enemy, 30),
@@ -294,14 +347,30 @@ def main() -> None:
 
     shift = args.shift
     base = check.align.canon_ref + shift
-    if base + check.frames > len(canon_mm):
+    if base + 1 + check.frames > len(canon_mm):
         raise SystemExit("canon shift %d runs past the capture (%d rows)"
                          % (shift, len(canon_mm)))
-    res = compare(rust_rows[result.rust_origin + result.rust_offset:],
-                  canon_mm[base:], canon_enemy[base:], canon_rng[base:],
-                  0, check.frames)
+
+    def at(off):
+        return compare(rust_rows[result.rust_origin + result.rust_offset:],
+                       canon_mm[base + off:], canon_enemy[base + off:],
+                       canon_rng[base + off:], 0, check.frames)
+
+    # The displayed (and nominal) table sits at `base` = canon_ref + shift;
+    # the control is the same captures at base+1.
+    res = at(0)
+    nominal = res
+    control = at(1)
 
     first0 = rust_fields(rust_rows[result.rust_origin + result.rust_offset])
+    print("row %s%s: aligned canon frame %d+k <-> rust marker origin %d + "
+          "offset %d + k (search %s); pixel total %d worst %d over %d frames"
+          % (args.row, " [canon shifted %+d]" % shift if shift else "",
+             check.align.canon_ref, result.rust_origin,
+             result.rust_offset,
+             ("%d..%d" % (check.align.search.start, check.align.search.stop))
+             if check.align.search is not None else "fixed",
+             result.total, result.worst, check.frames))
     print("compared rust battle frames %d..%d (from the export block's own "
           "counter) vs canon frames %d..%d"
           % (first0["battle_frame"],
@@ -309,26 +378,39 @@ def main() -> None:
              base, base + check.frames - 1))
 
     diverged = {n: f for n, f in res.items() if f["first"] is not None}
+    parity_names = [p[0] for p in FIELD_PAIRS] + ["rng_cadence"]
     print("")
-    print("COMPARED FIELDS (%s):" % ("FIRST DIVERGENCE" if diverged else "all match"))
-    if not diverged:
-        print("  every compared field matches canon on every one of the "
-              "%d compared frames" % check.frames)
-    for name, f in sorted(diverged.items(), key=lambda kv: kv[1]["first"]):
-        print("  %-20s first frame k=%d (canon %d, rust battle frame %d) "
-              "canon=%s rust=%s; diverged on %d/%d frames"
-              % (name, f["first"], base + f["first"],
-                 first0["battle_frame"] + f["first"], f["canon"], f["rust"],
-                 f["count"], check.frames))
+    print("PARITY FIELDS -- full table, every compared field "
+          "(%d compared frames):" % check.frames)
+    for name in parity_names:
+        f = res[name]
+        if f["first"] is None:
+            print("  %-20s match           %d/%d frames"
+                  % (name, check.frames, check.frames))
+        else:
+            print("  %-20s DIVERGES         first k=%d (canon %d, rust "
+                  "battle frame %d) canon=%s rust=%s; %d/%d frames"
+                  % (name, f["first"], base + f["first"],
+                     first0["battle_frame"] + f["first"], f["canon"],
+                     f["rust"], f["count"], check.frames))
+    if diverged:
+        fname, ff = sorted(diverged.items(), key=lambda kv: kv[1]["first"])[0]
+        print("FIRST DIVERGENCE: %s at k=%d (canon frame %d) canon=%s "
+              "rust=%s"
+              % (fname, ff["first"], base + ff["first"], ff["canon"],
+                 ff["rust"]))
+    else:
+        print("FIRST DIVERGENCE: none -- every parity field matches on "
+              "every one of the %d compared frames" % check.frames)
 
-    # info-only fields, first compared frame
+    # info-only and unsupported fields, first compared frame. The field
+    # contract (module docstring) classifies every requested field; here we
+    # print each one's actual values so a silent change cannot hide.
     r0 = rust_fields(rust_rows[result.rust_origin + result.rust_offset])
     c0 = canon_fields_mm(canon_mm[base])
     e0 = canon_fields_enemy(canon_enemy[base])
     print("")
-    print("INFO-ONLY (fixtures disagree by design -- not compared):")
-    print("  battle_frame rust=%d (canon side has no such RAM word)"
-          % r0["battle_frame"])
+    print("INFO-ONLY (fixtures disagree by design -- watched, not compared):")
     print("  rng_abs      canon=%08x rust=%08x (different fixture ages; "
           "the model claim is the 1-step cadence above)"
           % (struct.unpack("<I", canon_rng[base])[0], r0["rng"]))
@@ -336,11 +418,18 @@ def main() -> None:
           "the descriptor's megaman_hp)" % (c0["hp"], r0["hp"]))
     print("  enemy_hp     canon=%d rust=%d (ALIVE poke vs the kind's default)"
           % (e0["hp"], r0["enemy_hp"]))
-    print("  enemy_timer  canon=%d rust=%d (canon constant, nothing dynamic "
-          "to model)" % (e0["timer"], r0["enemy_timer"]))
     print("  gauge        canon=%d rust=%d (old battle's full gauge vs ours "
           "ticking from the descriptor)"
           % (struct.unpack("<H", canon_gauge[base])[0], r0["gauge"]))
+    print("UNSUPPORTED (no honest equivalent on one side -- never compared, "
+          "never invented; TODO R7):")
+    print("  battle_frame rust=%d (canon has NO known battle-frame RAM word "
+          "-- R6 searched; the row's Align is the frame pairing)"
+          % r0["battle_frame"])
+    print("  enemy_timer  canon=%d rust=%d (canon reads a CONSTANT 0x0002 at "
+          "slot+0x20 -- R6 probe; the timing countdown lives outside the "
+          "probed +0x00..+0x2f, so nothing dynamic to model)"
+          % (e0["timer"], r0["enemy_timer"]))
 
     # the pixel side of the same alignment, for the consistency report
     counts = [cc.diff_frames(result.canon_dir, base + k,
@@ -351,19 +440,35 @@ def main() -> None:
     print("")
     print("PIXEL DIFF on this alignment: first non-zero frame %s, total %d, "
           "worst %d"
-          % (("k=%d" % nz[0]) if nz else "none", sum(counts), max(counts)))
+          % (("k=%d (%d px)" % (nz[0], counts[nz[0]])) if nz else "none",
+             sum(counts), max(counts)))
 
-    # negative control: same captures, canon shifted +1 -- must diverge.
-    if shift == 0 and base + 1 + check.frames <= len(canon_mm):
-        neg = compare(rust_rows[result.rust_origin + result.rust_offset:],
-                      canon_mm[base + 1:], canon_enemy[base + 1:],
-                      canon_rng[base + 1:], 0, check.frames)
-        fields_moved = sorted(n for n, f in neg.items() if f["first"] is not None)
-        print("")
-        print("NEGATIVE CONTROL (canon shifted +1 frame, same captures): %s"
-              % ("diverges on %d field(s): %s -- NOT BLIND"
-                 % (len(fields_moved), ", ".join(fields_moved))
-                 if fields_moved else "BLIND -- no compared field moved"))
+    # negative control (AUDIT pair 10, TODO R7's contract): the SAME
+    # captures, canon shifted +1. The verdict is whether the NOMINAL RESULT
+    # changed -- the per-field first-divergence table must move -- not
+    # merely whether anything diverges: on an already-divergent row, "still
+    # diverges somewhere" under a shift proves nothing.
+    def table_key(table):
+        return tuple((table[n]["first"], table[n]["count"],
+                      table[n]["canon"], table[n]["rust"])
+                     for n in sorted(table))
+
+    changed = [n for n in sorted(nominal)
+               if table_key({n: nominal[n]}) != table_key({n: control[n]})]
+    print("")
+    if changed:
+        print("NEGATIVE CONTROL (canon shifted +1 frame, same captures): "
+              "the nominal result CHANGED on %d/%d compared field(s) -- "
+              "NOT BLIND" % (len(changed), len(nominal)))
+        for n in changed:
+            print("  %-20s nominal first=%s count=%d -> shifted first=%s "
+                  "count=%d"
+                  % (n, nominal[n]["first"], nominal[n]["count"],
+                     control[n]["first"], control[n]["count"]))
+    else:
+        print("NEGATIVE CONTROL (canon shifted +1 frame, same captures): "
+              "the nominal result is UNCHANGED on every compared field -- "
+              "BLIND: a one-frame misalignment would go unreported")
 
 
 if __name__ == "__main__":

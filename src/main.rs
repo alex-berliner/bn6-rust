@@ -175,9 +175,9 @@ fn write_battle_marker(magic: u32, frame: u32) {
 /// note. Nothing else writes bytes 8..64: the marker write touches only
 /// indices 0 and 1, and the harness's descriptor cheats start at
 /// 0x02000040.
-const ORACLE_OFFSET: usize = 8; // provenance: derived -- the marker array's own padding, bytes 8..48; constrained by SPRITE_LOADER at 0x02000080 (nm), see the array doc
+const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layout constant (where in the marker's padding to put the block); the padding is demonstrably free (nm: BATTLE_MARKER owns 0x02000000..0x02000080, SPRITE_LOADER starts at 0x02000080), see the array doc
 
-const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: derived -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
+const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
 
 /// Export-only: nothing in this crate reads the block back, so the volatile
 /// byte stores are what keep it from being optimised away.
