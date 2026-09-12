@@ -503,6 +503,26 @@ ours took its first hit at battle frame 176 and its third-attack wave falls outs
 two sides are in different situations for the whole window. An equivalent object-phase minimum exists
 at offset 203 (second attack <-> second attack), outside the band.
 
+**Result.** PAIRED BY EVENT, branch `wt/f2-mettaur-pair` at `c335e49` (unmerged). Events
+measured from `--watch` captures of the row's own sides: canon attack anims start at
+canon frames 32 and 138, MegaMan hit at canon frame 114 (HP 60->50, 120-frame mercy,
+next hit 234); rust attack anims at battle frames 95, 201, 307, 413 (capture = battle +
+8, marker origin 8), hit at battle 176 (HP 60->50, next 388). Both attack-2s fire
+inside the attack-1 mercy, so attack 2 <-> attack 2 is the event pairing; with
+canon_ref=140 unchanged, rust attack-2 start (capture 209) gives offset 203. The band
+was re-centred to range(193,214) and CONFIRMS a unique V-minimum exactly at 203 (202:
+47063, 203: 31075, 204: 37873 over 70 frames). The old offset 309 scored 30864 --
+LOWER, and not chosen: it pairs incompatible attack indices (canon attack 2 vs rust
+attack 3, different mercy situations). After: 31075 / 1566 / 70, negative not blind
+(46554); oracle at the new pairing: mm_timer first divergence k=0 canon=7 rust=6
+(the known 1-frame-late hit -- rust's hit capture 184 pairs with canon 113 vs canon's
+own 114), 7/70 frames; enemy_anim k=61 1/70; everything else matches 70/70; the
+shifted control changes the result (mm_timer 7 -> 0 frames). The residue is MegaMan's
+mercy blink phase, 766-px chunks, worst frame k=11 (1566 px), region x 1..77 y 70..113
+-- src/ territory, unchanged by this ticket. The row's total moved 30864 -> 31075
+(+211): the ticket predicted this may not go down, and the score is not the criterion
+-- the pairing is.
+
 **Do, in order.**
 1. **Baseline** `harness.py --only mettaur` and `oracle.py mettaur` (30864 / 1566 / 70; first
    divergence mm_timer k=0).
