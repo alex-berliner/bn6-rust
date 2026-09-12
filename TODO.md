@@ -280,7 +280,7 @@ appended to docs_recon_teardown.md. GLM-5.3-Flash, 129 turns, $0.228. The ticket
 **Rules.** tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time.
 Report addresses hit, the intervention with its evidence, and the measurements, in AGENTS.md shape.
 
-### R5. A write watchpoint in the capture tool, then find what releases the empty battle  *(PARTIAL -- 2026-09-12, branch wt/r5-watch kept, not merged)*
+### R5. A write watchpoint in the capture tool, then find what releases the empty battle  *(PARTIAL -- 2026-09-12, tool merged, release unattributed)*
 
 **Result.** Step 1 done, verified, committed (17dc00f, plus HANDOFF §5 row). `--watch-write addr[:len]`
 arms real libmgba byte-granule WATCHPOINT_WRITEs via `mDebuggerAttach` + `platform->setWatchpoint`
@@ -321,6 +321,8 @@ intact through age 41 with and without the ALIVE cheats); treat the age-99 event
 reproducible release in the merged branch's recipe. Steps 3-4 are therefore blocked on naming the
 writer from the emulator side. GLM, one session; /tmp/mgba_capture now runs the r5 binary
 (backup: /tmp/mgba_capture.bak_r5). The ticket as written follows.
+
+The empty-battle objective R3-R5 is closed per the 2026-09-12 decision; chip rows stay on the PAUSED baseline.
 
 **Why.** R4 narrowed the enemy-less battle's teardown to one event -- `CurBattleDataPtr` (0x02001b9c)
 cleared at battle age ~102 -- but could not see which instruction does it: the store is reached by
