@@ -45,7 +45,8 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
 
 ## Stop and hand back to the user when
 
-- the spend guard fails, or this session's children have cost more than $3 in total;
+- the spend guard fails, or this session's children have cost more than $3 in total (or the cap your
+  instruction names; a separate watcher also enforces that cap on total spend and will stop you);
 - two tickets in a row on the same objective end PARTIAL, BLOCKED or NEGATIVE (say what the options
   are instead of writing a third);
 - the next step would change what canon or canon (sterile) are (unless the ticket explicitly authorizes
