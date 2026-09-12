@@ -586,6 +586,14 @@ The oracle (tools/oracle.py) supports wave/mettaur only and fails loudly on `ope
 localization was done with the row's own captures (harness.run, kept dirs) plus `--dump`/`--peek`
 peeks of the canon state instead.
 
+**Coordinator verify (2026-09-12).** `verify_rows.py wt/f4-opening` from a clean detached rebuild:
+PASS -- opening 0/0/40/86591 MATCH, wave 0/0/90/3840 MATCH, chip-cannon 14388/2350/40/21543
+MATCH, no BLIND negative. No Sol verifier: the merged claim is harness lines plus peeked fixture
+provenance, and A9's spawn-cell/RNG hypotheses are explicitly unverified and F5 does not build on
+them. Merged as `61e1fdd`; the branch also carried stale reversions of `.pi/coordinator.md` and
+`tools/pi_coordinator.sh` (it predated main's spend-cap commit -- out of ticket scope), and the
+merge kept main's cap-enforcing versions. Worker GLM-5.3-Flash high, 67 turns, $0.077.
+
 ### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(OPEN -- 2026-09-12)*
 
 **Why.** 28 chip rows read exactly 14388 and 11 more read 14388 plus their own residue. The 14388 is
