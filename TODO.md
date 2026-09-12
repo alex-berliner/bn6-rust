@@ -354,7 +354,9 @@ tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time;
 must still build with `gcc tools/mgba_capture.c -o /tmp/mgba_capture -I/usr/include -lmgba -lm`
 and every existing flag must behave as before (run `harness.py --only wave` with the new binary).
 
-### R6. The state oracle: first divergent field, not just a pixel count  *(OPEN -- 2026-09-12)*
+### R6. The state oracle: first divergent field, not just a pixel count  *(NEGATIVE -- 2026-09-12, measurements valid; acceptance false, branch not merged)*
+
+**Result.** On `wt/r6-oracle` at `c504eee`, the export was pixel-neutral: `wave` 0/0/90 (negative 3840), `window` 0/0/16 (81056), `mettaur` 30864/1566/70 (45233), and `card` 18486/3081/16 (15405), unchanged from `b600251`. The verifier reproduced every number and CONFIRMED the oracle findings: `mettaur` first diverges at `mm_timer` k=0 on the same frame as its first 959-pixel diff; pixel-clean `wave` nevertheless has real state divergences at enemy animation k=24, MegaMan hit state/timer k=43, and enemy state/action k=64. It therefore FAILed the ticket: wave's required no-divergence claim is false, the requested canon battle-frame/action-timer field set is incomplete, several fields are info-only, the block is before rather than after the descriptor, the complete per-field table is missing, and project-local constants have invalid `provenance: derived` tags. Nothing was merged; `/tmp/bnwt/r6-oracle` was removed and branch `wt/r6-oracle` kept. Worker `openrouter/z-ai/glm-5.3-flash:high`: 146 turns, $0.3061; verifier `openrouter/openai/gpt-5.6-sol:high`: 35 turns, $1.0725. The verifier CONFIRMED that a second state-oracle pass may build on the measured divergences, but not that shot/dwell behavior is ready to change.
 
 **Why.** A harness row says how many pixels differ, not which variable went wrong on which frame, so
 every timing residue (MegaMan's hit/dwell timing in `mettaur`, the shot dwell gap, `card`'s cursor)
