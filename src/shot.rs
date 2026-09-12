@@ -41,6 +41,14 @@ pub struct Shot {
     pub dx: i32,
     ticks: u8,
     interval: u8,
+    /// True on the update that just hopped the hitbox onto a new panel. The
+    /// caller (Battle::update's shots loop) reads it to apply the hit on the
+    /// HOP frame itself: canon's damage lands in the same frame the wave
+    /// advances onto the target's panel (F1 watch-write: the HP store from
+    /// applyDamageToPlayer_801ba12 and the flinch entry are both in canon
+    /// frame 114, the same frame the segment's light schedule puts the hop
+    /// in), not the frame after.
+    hopped: bool,
     /// Whether the hitbox keeps going after landing a hit.
     pub piercing: bool,
     /// Fired by the player, so it hits enemies; otherwise it hits the player.
@@ -176,7 +184,19 @@ impl Shot {
             player: spr::Player::new(assets, anim),
             assets,
             departure: None,
+            hopped: false,
         }
+    }
+
+    /// True on the update that just hopped the hitbox onto a new panel --
+    /// read AFTER `update()`, by the shots loop, to land the hit on the hop
+    /// frame itself (canon does the same-frame damage: F1's watch-write shows
+    /// the HP store and the flinch entry inside canon frame 114, the frame
+    /// the wave's light schedule puts the hop in). A shot waiting out its
+    /// release delay never reports a hop, so a delayed shot's first hit
+    /// frame is unchanged.
+    pub fn just_hopped(&self) -> bool {
+        self.hopped
     }
 
     /// True on the frame the hitbox arrived on its panel, including the one
@@ -247,6 +267,7 @@ impl Shot {
                 self.departure = None;
             }
         }
+        self.hopped = false;
         if self.delay > 0 {
             self.delay -= 1;
             return true;
@@ -259,6 +280,7 @@ impl Shot {
         }
         self.ticks -= 1;
         if self.ticks == 0 {
+            self.hopped = true;
             if self.lights_panel {
                 self.left_panel = Some((self.col, self.row));
                 self.left_ticks = LIGHT_LINGER;
