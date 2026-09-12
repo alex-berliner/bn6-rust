@@ -383,7 +383,8 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   model only at branch points) → (2) the fixture chain `battlestart → overworld_net → emptyfield_start
   → chip_ready_empty`, then re-point the chip/banner/popup rows → (3) the state oracle (canon RAM watch
   of the RNG word, MegaMan position/timers, enemy state vs. a state block the Rust ROM exports next to
-  the marker; the harness reports the first divergent frame and field) → (4) usage logging → tickets.
+  the marker; the harness reports the first divergent frame and field) → (4) usage logging (token spend per
+  ticket and role, from pi's session files -- NOT game instrumentation) → tickets.
 - **Tickets are families or systems**, not rows: the 43 chips are ~8 families with their rows as the
   acceptance set. Nothing on a chip before step (2) lands.
 - **Roles.** `worker` (always), `verifier` (only for judgment tickets: allowlist edits, fitted constants,
