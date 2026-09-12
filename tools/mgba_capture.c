@@ -69,6 +69,19 @@
  *                       right up to it), so a swept N samples whatever game
  *                       state has actually evolved to by frame N rather than
  *                       repeating frame 0's forced condition on every frame.
+ *   --watch-write <addr>[:<len>]  (repeatable, max 8 ranges, 64 bytes total)
+ *                       libmgba debugger WRITE watchpoints. Every store to a
+ *                       watched byte prints one line to stderr BEFORE the
+ *                       store lands: frame, address, old->new value, the
+ *                       writing instruction's address (r15 minus the ARM/Thumb
+ *                       pipeline offset), raw r15 and LR. The emulator is
+ *                       never paused and no emulated timing changes (the shims
+ *                       delegate to the original memory functions; the frame
+ *                       keeps running inside the same runFrame call), so a
+ *                       capture with watchpoints armed is frame-identical to
+ *                       one without. Ranges are expanded to byte-granule
+ *                       watchpoints for maximum sensitivity (one line per
+ *                       store, any store width).
  *   --watch <addr>:<len>:<file>  (repeatable) after EVERY rendered frame,
  *                       read <len> bytes at <addr> and append them to
  *                       <file>, so it ends up frames*<len> bytes long -- one
@@ -147,6 +160,16 @@
 #include <mgba/internal/gba/input.h>
 #include <mgba/internal/gba/gba.h>
 #include <mgba/internal/gba/video.h>
+/* --watch-write: the real debugger platform (mDebuggerAttach +
+ * platform->setWatchpoint WATCHPOINT_WRITE) and its ARM internals, for the
+ * struct ARMDebugger layout (to reach the CPU at hit time) and
+ * _ARMPCAddress/_ARMInstructionLength (the ARM/Thumb r15 pipeline-offset
+ * helpers the hit line reports). USE_DEBUGGERS is already defined above --
+ * struct mCore only has debuggerPlatform/attachDebugger behind it, and the
+ * installed libmgba.so was built with debuggers on, so both sides agree. */
+#include <mgba/debugger/debugger.h>
+#include <mgba/internal/arm/debugger/debugger.h>
+#include <mgba/internal/arm/isa-inlines.h>
 #include <mgba-util/common.h>
 #include <mgba-util/vfs.h>
 
@@ -156,6 +179,12 @@
 
 static int g_frame = 0;
 static const char* g_outdir;
+
+/* --watch-write: frame index the watchpoint hit hook reports (set every
+ * iteration of the main loop before runFrame, so a hit inside frame N's
+ * runFrame reports N). */
+static int g_wp_frame = 0;
+static struct mDebugger* g_wp_debugger = NULL;
 
 /* Hold-A control. */
 static int g_a_ticks = 0;
@@ -189,6 +218,35 @@ static int write_frame(color_t* buf, size_t stride) {
 	fclose(f);
 	++g_frame;
 	return 0;
+}
+
+/* --watch-write hit hook. The ARM memory shim calls mDebuggerEnter BEFORE
+ * the watched store lands: info->oldValue is the pre-write memory at the
+ * access address, info->newValue is what the store will write, info->address
+ * is the accessed address. We only log and return; the emulator is never
+ * paused, because nothing in this tool consults debugger->state -- the main
+ * loop drives core->runFrame() directly (never mDebuggerRun*), so after the
+ * shim returns, the store completes and the frame runs on untouched. The
+ * only debugger-side side effect is ARMDebuggerEnter's
+ * `cpu->nextEvent = cpu->cycles`, which forces one early event check: no
+ * event can be due there (nextEvent was the earliest scheduled cycle), so
+ * the check is a no-op and the schedule is unchanged -- the frame-identity
+ * and --only wave checks in this ticket verify that empirically. */
+static void wp_entered(struct mDebugger* debugger, enum mDebuggerEntryReason reason,
+                       struct mDebuggerEntryInfo* info) {
+	if (reason != DEBUGGER_ENTER_WATCHPOINT || !info) return;
+	struct ARMDebugger* ad = (struct ARMDebugger*) debugger->platform;
+	struct ARMCore* cpu = ad->cpu;
+	uint32_t r15 = cpu->gprs[ARM_PC];
+	/* The store has not landed yet, so r15 still holds the prefetch address
+	 * (executing instruction + 2x its length). _ARMPCAddress() strips that
+	 * ARM/Thumb pipeline offset to the writing instruction's own address. */
+	fprintf(stderr,
+	        "WP frame=%d addr=0x%08X write old=0x%08X new=0x%08X at=0x%08X (%s) "
+	        "r15=0x%08X lr=0x%08X\n",
+	        g_wp_frame, info->address, info->type.wp.oldValue, info->type.wp.newValue,
+	        _ARMPCAddress(cpu), cpu->cpsr.t ? "thumb" : "arm", r15,
+	        cpu->gprs[ARM_LR]);
 }
 
 int main(int argc, char** argv) {
@@ -652,6 +710,99 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	/* `--watch-write addr[:len]` (repeatable, max 8 ranges, 64 bytes total):
+	 * libmgba debugger WRITE watchpoints, not polling. Every store to a
+	 * watched byte prints one line (see wp_entered above) with the frame,
+	 * address, old->new value and the writing instruction's ROM address
+	 * (r15 minus the ARM/Thumb pipeline offset), plus raw r15 and LR, so a
+	 * clearing instruction can be attributed and then walked up the call
+	 * chain via its LR. Design notes that make this safe to leave on for a
+	 * whole capture:
+	 *  - The watchpoints are the real debugger platform's shims
+	 *    (memory-debugger.c): every shim delegates to the ORIGINAL memory
+	 *    function with the same arguments and cycle counter, so no emulated
+	 *    timing changes; only wall time grows.
+	 *  - The emulator is never paused: the shim calls mDebuggerEnter, which
+	 *    calls ARMDebuggerEnter (one no-op early event check) and then our
+	 *    wp_entered hook, and returns. Nothing here reads debugger->state or
+	 *    calls mDebuggerRun*, so execution continues inside the same
+	 *    core->runFrame() call. Frame-identity with the flag off is checked
+	 *    in this ticket's report.
+	 *  - Each requested range is expanded to BYTE-granule watchpoints.
+	 *    _checkWatchpoints matches `(watchpoint->address ^ address) &
+	 *    ~(accessWidth-1)`, so a byte watch fires for ANY store width whose
+	 *    access address lies in that byte's width-alignment window (a str at
+	 *    0x02001b9c matches a byte watch at 0x02001b9d), and the shim stops
+	 *    at the first matching watchpoint -- one line per store, at the
+	 *    highest possible sensitivity (a word watch would miss byte stores
+	 *    inside the word, and vice versa).
+	 *  - Known-write anchor (R3): the encounter roll's
+	 *    `str r0,[r7,#oGameState_CurBattleDataPtr]` (asm29.s:10286,
+	 *    locGotBattleSettings_80AA59E, Thumb) must report
+	 *    `at=0x080AA59E` when it writes 0x02001b9c. */
+	struct { uint32_t addr; uint32_t len; } wp_ranges[8];
+	int nwp_range = 0;
+	int wp_total = 0;
+	for (int i = 4; i < argc; ++i) {
+		if (strcmp(argv[i], "--watch-write") == 0 && i + 1 < argc) {
+			char* p = strdup(argv[i + 1]);
+			char* colon = strchr(p, ':');
+			if (colon) *colon = 0;
+			uint32_t addr = (uint32_t) strtoul(p, NULL, 0);
+			uint32_t len = colon ? (uint32_t) strtoul(colon + 1, NULL, 0) : 4;
+			free(p);
+			if (!len) {
+				fprintf(stderr, "--watch-write: length must be positive (hex needs an 0x prefix)\n");
+				return 1;
+			}
+			if (nwp_range >= 8) {
+				fprintf(stderr, "--watch-write: too many ranges (max 8)\n");
+				return 1;
+			}
+			wp_total += len;
+			if (wp_total > 64) {
+				fprintf(stderr, "--watch-write: too many watched bytes (max 64 total)\n");
+				return 1;
+			}
+			wp_ranges[nwp_range].addr = addr;
+			wp_ranges[nwp_range].len = len;
+			++nwp_range;
+			++i;
+		}
+	}
+	if (nwp_range > 0) {
+		/* mDebuggerCreate returns NULL for DEBUGGER_CUSTOM (it only builds CLI
+		 * and GDB debuggers), so build the struct mDebugger ourselves: set the
+		 * entered hook, then mDebuggerAttach wires up the core's debugger
+		 * platform (ARMDebuggerPlatformCreate), assigns us to
+		 * CPU_COMPONENT_DEBUGGER and hotplug-inits it -- which snapshots the
+		 * real memory function table the shims delegate to. Byte-granule
+		 * WATCHPOINT_WRITEs go in after that. */
+		g_wp_debugger = calloc(1, sizeof(struct mDebugger));
+		if (!g_wp_debugger) {
+			fprintf(stderr, "--watch-write: calloc failed\n");
+			return 1;
+		}
+		g_wp_debugger->type = DEBUGGER_CUSTOM;
+		g_wp_debugger->entered = wp_entered;
+		mDebuggerAttach(g_wp_debugger, core);
+		for (int r = 0; r < nwp_range; ++r) {
+			for (uint32_t b = 0; b < wp_ranges[r].len; ++b) {
+				struct mWatchpoint wp;
+				memset(&wp, 0, sizeof(wp));
+				wp.address = wp_ranges[r].addr + b;
+				wp.segment = -1;
+				wp.type = WATCHPOINT_WRITE;
+				ssize_t id = g_wp_debugger->platform->setWatchpoint(g_wp_debugger->platform, &wp);
+				if (id < 0) {
+					fprintf(stderr, "--watch-write: setWatchpoint 0x%08X failed\n", wp_ranges[r].addr + b);
+					return 1;
+				}
+			}
+		}
+		fprintf(stderr, "watch-write: %d range(s), %d byte watchpoint(s) armed\n", nwp_range, wp_total);
+	}
+
 	/* `--diff-against <dir>:<lag>:<file>`: "stream, don't store" (AUDIT pair
 	 * 13 / Optimisations). Instead of writing this run's own frame.#####.rgb
 	 * files, compare each rendered frame N directly against
@@ -736,6 +887,8 @@ int main(int argc, char** argv) {
 	}
 
 	for (int i = 0; i < count; ++i) {
+		/* --watch-write: the frame index the hit hook reports. */
+		g_wp_frame = i;
 		uint32_t keys = 0;
 		if (g_a_ticks > 0 && i >= g_a_start && i < g_a_start + g_a_ticks) {
 			keys |= 1 << GBA_KEY_A;
