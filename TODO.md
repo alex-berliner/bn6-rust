@@ -432,6 +432,43 @@ tools/ and HANDOFF.md; no canon, state, recipe, allowlist, alignment, region, as
 captures one at a time. **Report** changed paths, the full sourced field map, before/after harness
 lines, both complete oracle tables and shifted controls, in AGENTS.md shape.
 
+### R8. Usage logging: primitive profiles for the 43-chip corpus  *(OPEN -- 2026-09-12)*
+
+**Why.** R7 landed the independently verified state oracle. HANDOFF §13 puts usage logging next so
+family/system tickets come from runtime evidence rather than chip names or pixel shapes. The logger
+must be behavior-neutral and must not turn the oracle's correlations into causal claims.
+
+**Do, in order.**
+1. Start with `bash tools/worktree.sh r8-usage`. Record the 43 in-scope chip rows from
+   `python3 tools/harness.py --list`, then map the Rust entry points for the reusable battle primitives
+   those rows actually call: projectile/object spawn, movement, attack/hitbox, status, panel effect,
+   and visual/sprite effect. Every counter needs a file:line mechanism; do not create a counter merely
+   because a chip name suggests one.
+2. Add the smallest export-only monotonic usage counters or event bits that distinguish those primitive
+   calls. Reserve and linker-prove a chosen EWRAM range; do not overlap the marker, descriptor, R7
+   oracle block `0x02000008..0x0200002f`, agb's `SPRITE_LOADER`, or live game data. Counters must not
+   feed gameplay, RNG, timing, allocation, rendering, or the oracle. Label project protocol/layout
+   constants `chosen`; canon-derived values need exact provenance.
+3. Add `tools/usage.py <row>` using the same recipe/alignment contract as the harness. It must print a
+   deterministic final operation profile and first frame for each used primitive, fail loudly for a
+   row it cannot profile, and retain raw evidence sufficient for an independent parser. A shifted or
+   event-deleted parser fixture must change the nominal profile; an always-empty or unchanged negative
+   is BLIND.
+4. Baseline first, then final, for every in-scope chip row. Each harness line must be byte-for-byte the
+   same in frames/total/worst/region and every negative must remain non-blind. Also run `wave`,
+   `window`, `mettaur`, and `card` as canaries; their expected lines at `5e2f256` are respectively
+   0/0/90 (negative 3840), 0/0/16 (81056), 30864/1566/70 (45233), and 18486/3081/16 (15405).
+5. Run every supported usage profile twice from restored inputs and require identical results. Add to
+   HANDOFF §3a a complete row-to-profile table, the sourced primitive map, the export layout, commands,
+   and limitations. Group rows only when their measured primitive profiles support it; report the
+   candidate family/system acceptance sets, but do not change behavior or open those tickets here.
+
+**Rules.** src/ only for isolated usage instrumentation/export; tools/ and HANDOFF.md; no canon, state,
+recipe, fixture, allowlist, alignment, frame-window, region, asset, Cargo, behavior, timing, RNG, or row
+changes; captures one at a time. **Report** changed paths, linker map, sourced primitive/counter table,
+before/after harness lines for all 43 chip rows and four canaries, two-run profiles, negative controls,
+and candidate family/system groupings in AGENTS.md shape.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
