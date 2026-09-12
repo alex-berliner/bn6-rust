@@ -84,6 +84,67 @@ Written after breaking all three of these in one evening.
 
 ---
 
+## R. Root states as recipes (HANDOFF §13 step 1)
+
+### R1. Rebuild the fixture chain from power-on  *(OPEN -- 2026-09-12)*
+
+**Why.** `battlestart.state` was lost with /tmp on 2026-09-08. `overworld_net`, `emptyfield_start`
+and `chip_ready_empty` are built from it, and the chip/banner/popup rows cannot move off PAUSED's
+deleted-enemy artifacts (the shared 14388 baseline) until `chip_ready_empty` exists again. Every
+root state should be a recipe: ROM + battery save + inputs from power-on, rebuildable by
+`states.py build`.
+
+**Inputs.** `/tmp/bn6f_real.gba` (real ROM) and `/tmp/bn6f_real.srm` (the battery save, 32 KiB,
+sha1 e52de245714a...; backed up in /home/box/bn-backup). `mgba_capture --loadsave <srm>` loads the
+save read-only and resets the core, so the capture starts at power-on with that save present
+(chat history: it reaches the Capcom logo, then the title). Nothing else from the lost states.
+
+**Known anchors (verified by earlier tickets; read their notes in tools/states.py):**
+- SubsystemIndex reads 4 on the map, 8 at battle_init, 12 in the battle main loop
+  (`emptyfield_start`'s note gives the address it watched).
+- Battle frame 0 = `eBGScrollCBCounters` at 0x02009690 / 0x02009694 both 0 (TRANSFER 7aw).
+- The encounter roll's gate: one-shot `--poke-at N:0x02001c16:0x2000` and `N:0x02001c18:0` opens
+  exactly one roll at frame N. Forcing it EVERY frame freezes GetRNG's draw (the orbit trap,
+  HANDOFF §9) -- use one-shot pokes and vary held directions.
+- Overworld position: a live u16 pair at 0x02009f62/0x02009f63 moves 1/frame under held Right
+  or Down on the net map ('CentralArea1'); 0x02009f5e moves only under Down.
+- `tools/mgba_frames.py <outdir> --at <i>` turns a raw frame into a PNG you can look at.
+
+**Do, in order.**
+1. **Power-on to the overworld.** Add a `save=` field to `State` in tools/states.py (passed as
+   `--loadsave`), then write a recipe from cold boot with `/tmp/bn6f_real.srm` through the title
+   and Continue to controllable overworld play. Decide menu presses from RAM where you can
+   (SubsystemIndex, a menu/cursor byte you find in the disassembly) and look at a frame only at
+   the branch points. Record which area Continue lands in.
+2. **To an encounter-capable net area.** If Continue does not land on the net, walk/jack in by
+   script. Stop at a state equivalent in purpose to `overworld_net`: SubsystemIndex 4, on a net
+   map that can roll random encounters, position counters responding to held input.
+3. **A battle's frame 0.** From (2), open one encounter roll with a one-shot poke (sweep the frame
+   if the first choice fails) and build to the frame where the scroll counters read 0/0. This is
+   the new `battlestart`. It is a DIFFERENT fixture from the lost one unless it rolls the same
+   encounter (three Mettaurs); record which EnemySetupArr entry it rolled, and do not claim
+   equivalence you have not measured.
+4. **Re-root the chain.** Point `overworld_net`, `emptyfield_start` and `chip_ready_empty` at the
+   new states (rebase `emptyfield_start` directly on (2) if that is simpler than going through a
+   resolved battle). The downstream recipes' frame numbers WILL change -- re-sweep them and
+   re-verify every property their notes document: SubsystemIndex 12 held through the capture, all
+   enemy HP 0, scroll counters 0/0 at battle frame 0, the chip window opening on its own, a chip
+   in hand, MegaMan idle (CurState/CurAction 4,8) at load of `chip_ready_empty`.
+5. **Determinism.** For each new or changed state: build it twice from scratch and capture 40
+   frames from each build; the frames must be identical (this is how `result_arrival` was
+   verified).
+6. `python3 tools/states.py build all` builds every state except `noenemy2` with nothing but the
+   ROM and the save. `battlestart` stops being a root.
+
+**Out of scope.** Re-pointing any harness row (next ticket), `src/`, `noenemy2` (its reward roll is
+unrecoverable by recipe), patching encounter-table entries (HANDOFF §9: it changes which entry a
+roll selects).
+
+**Measure and report.** For each state: its recipe (base, save, script, pokes, frames), every RAM
+property you verified with the address and value, the determinism result, and the build time.
+Then the report shape in AGENTS.md. A step that fails is reported with exactly what was observed,
+not worked around.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*

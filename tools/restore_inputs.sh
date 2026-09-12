@@ -5,7 +5,7 @@
 set -euo pipefail
 BACKUP="${BACKUP:-/home/box/bn-backup}"
 cd "$(dirname "$0")/.."
-for f in bn6f_real.gba bn6f_sterile.gba pausedwithcannon.state chipselect.state; do
+for f in bn6f_real.gba bn6f_real.srm bn6f_sterile.gba pausedwithcannon.state chipselect.state; do
   [ -f "/tmp/$f" ] || cp "$BACKUP/$f" /tmp/
 done
 want=$(cut -c1-40 reference/bn6f/bn6f.sha1); got=$(sha1sum /tmp/bn6f_real.gba | cut -c1-40)
