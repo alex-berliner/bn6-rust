@@ -292,3 +292,65 @@ from its recipe · **derived / peeked / fitted** a constant read from ROM data /
 game / matched to the picture with the mechanism unknown · **negative fixture** the deliberately broken
 pair each check must fail on · **BLIND** a check whose negative also reads 0 · **residue** the non-zero
 a check reports, always with a frame and region.
+
+## 13. Decisions of 2026-09-12 (supersede §8/§10 where they differ)
+
+Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WORKFLOW_AUDIT.md`).
+
+- **Scope.** The 43 chips already in the harness, 5 viruses, 2 bosses, player fidelity, the custom
+  screen for that deck, and battle flow. Out: other chips, Navis, Navi Customizer, Program Advances,
+  netbattle, audio.
+- **Order.** (1) root-state recipes (ROM + `.srm` + input log from power-on, RAM-driven walk, a vision
+  model only at branch points) → (2) the fixture chain `battlestart → overworld_net → emptyfield_start
+  → chip_ready_empty`, then re-point the chip/banner/popup rows → (3) the state oracle (canon RAM watch
+  of the RNG word, MegaMan position/timers, enemy state vs. a state block the Rust ROM exports next to
+  the marker; the harness reports the first divergent frame and field) → (4) usage logging → tickets.
+- **Tickets are families or systems**, not rows: the 43 chips are ~8 families with their rows as the
+  acceptance set. Nothing on a chip before step (2) lands.
+- **Roles.** `worker` (always), `verifier` (only for judgment tickets: allowlist edits, fitted constants,
+  fixture recipes, canon-side patches), `recon` (only when the oracle does not localise). No measurer
+  (the harness prints the line), no archivist (facts go in the row note and AUDIT's table), no
+  benchmark, no scoreboard. Role files: `.pi/agents/`. Rules every child loads: `AGENTS.md`.
+- **Models** (OpenRouter ids; `.pi/settings.json`): coordinator `anthropic/claude-opus-5` high (chosen by
+  cache-read price and the verified caching path in pi); planning/merge judgment `openai/gpt-5.6-sol`;
+  worker `anthropic/claude-sonnet-5` xhigh, with `google/gemini-3.8-flash` A/B'd on the shot-dwell and
+  card-cursor tickets; verifier `openai/gpt-5.6-terra`; recon and the frame walker
+  `google/gemini-3.8-flash`. Fallback recon `deepseek/deepseek-v4-pro` — any open-weight model is used
+  through OpenRouter's `:exacto` variant (provider pinned for tool-call quality); closed models unpinned.
+  Escalate a failed timing ticket once, to Sol or Opus 5. No caveman mode. The "no DeepSeek" rule is
+  gone (memory updated).
+- **Coordinator hygiene.** Fresh session per ticket batch, rebuilt from `harness.py --list`, the
+  allowlist and `git log`, not from a chat. Context under ~100k. Event-driven wakeups with a 20–30 min
+  fallback, not a 5-minute poll. Agents read HANDOFF §0–§4 and the row note only; `TRANSFER.md` is for
+  humans.
+- **pi.** Project resources load only after `/trust` is run once in this folder (or
+  `defaultProjectTrust: "always"` in `~/.pi/agent/settings.json`). The subagent extension, when built,
+  needs `agentScope: "both"`. `.pi/goals/` is session state and gitignored; `PI_WORKFLOW.md` and
+  `SUBAGENT_FLOWS.md` are superseded by this section and `WORKFLOW_AUDIT.md`.
+- **Inputs.** `/tmp` was wiped again (2026-09-12). `bash tools/restore_inputs.sh` restores everything
+  regenerable from `/home/box/bn-backup` (copy on `/media/box/Scyther/bn-backup`). Still lost:
+  `battlestart.state`, `noenemy2.state` — the recipe work in step (1) replaces battlestart; noenemy2's
+  reward roll is unrecoverable by recipe, so the `result` row moves to `result_arrival` and a rebuilt
+  RESULT fixture is declared a different fixture, not a restoration. `states.py build all` now skips a
+  chain whose base is missing instead of aborting.
+- **pi is built from source.** Clone at `/home/box/Code/pi`, branch `local/build-fixes` (one local commit:
+  the missing `FinishReason.TOO_MANY_TOOL_CALLS` case that broke `packages/ai` at upstream
+  `71dca87`). `npm link` from `packages/coding-agent` points the global `pi` at
+  `/home/box/Code/pi/packages/coding-agent/dist/bundle/cli.js`; `pi --version` reads 0.85.1 and a `-p`
+  smoke test through OpenRouter passed. To update: `git -C /home/box/Code/pi pull --rebase origin
+  main && npm -C /home/box/Code/pi run build` — no relink needed. `npm run build` is what the repo's
+  own AGENTS.md says not to run unasked; here the user asked.
+- **Extensions (project-local, `.pi/settings.json` `packages`; installed under `.pi/npm/`, gitignored).**
+  Survey verdicts are in the session that made them; the adopted set: **`pi-context-prune`** (strips
+  finished tool results from what is re-sent, recoverable through `context_tree_query` — the direct fix
+  for the coordinator's re-sent-context cost) and **`pi-subagents`** (nicobailon; maintained, 3.5k
+  stars; child runs return truncated artifacts, `bg_wait` instead of polling; reads `.pi/agents/**/*.md`,
+  project definitions override its builtin `worker`/`reviewer`/`scout`). This **replaces the custom
+  subagent extension** SUBAGENT_FLOWS.md gated on approval; nothing custom gets built. Both load: a
+  `-p --approve` run lists `context_tree_query`, `subagent`, `bg_wait`, `subagent_supervisor`. `pi-goal-x`
+  stays for now; measure its per-turn overlay cost and drop it if it is not terse. Rejected:
+  `pi-worktrees` (auto `git add -u` and `git reset --hard` on its own schedule — conflicts with the
+  worker-hygiene rule), per-turn LLM routers and free-tier racers (spend tokens every turn to maybe
+  save some, and add nondeterminism). To try later: `pi-background-tasks` for serial captures,
+  `pi-review` (official) for the verifier's diff step, `@xamfoo/pi-openrouter-pin` if provider hopping
+  ever shows up — verify each README first; the store is unmoderated and churning.
