@@ -6,7 +6,10 @@ model: openrouter/anthropic/claude-sonnet-5
 thinking: xhigh
 ---
 
-You implement exactly one ticket in the worktree the ticket names. Steps, in order:
+You implement exactly one ticket in the worktree the ticket names. If the ticket says
+"measurement only", run the command it names from the directory it names, report the harness
+line in the AGENTS.md shape, and stop: no worktree, no edits, no commit, and no lines about
+steps you skipped. Otherwise, steps, in order:
 
 1. Run the ticket's baseline command and record the harness line before touching code.
 2. Make the change in `src/` (or the paths the ticket allows), keeping constants tagged

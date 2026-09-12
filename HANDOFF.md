@@ -364,3 +364,16 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   save some, and add nondeterminism). To try later: `pi-background-tasks` for serial captures,
   `pi-review` (official) for the verifier's diff step, `@xamfoo/pi-openrouter-pin` if provider hopping
   ever shows up — verify each README first; the store is unmoderated and churning.
+- **pi quirks found in the first run (2026-09-12).** (a) `~/.pi/agent/models.json` overrides OpenRouter's
+  Opus 5 `compat.supportsMidConvoEffort` to false — pi's catalog says true, OpenRouter rejects the beta
+  with a 400 — and caps Opus 5 / Sonnet 5 `maxTokens` at 32000, because OpenRouter pre-authorizes the
+  full output allowance against the key's spending limit. (b) Pass `--model` explicitly: a `-p` run that
+  takes its model from `.pi/settings.json` with extensions loaded hung at startup. Not root-caused.
+  (c) `--mode json` piped to a file is block-buffered; a run killed by `timeout` loses all output, so
+  use `--session-dir` and read the session file for progress. (d) The `subagent` tool's result carries
+  no usage; per-child tokens and cost are in `<session-dir>/subagent-artifacts/*_meta.json`.
+- **First pi run (measurement only, 4 rows).** Opus 5 coordinator, one Sonnet 5 worker per row, run
+  serially: wave 0/90, window 0/16, card 18486/3081/16, chip-cannon 14388/2350/40, every negative not
+  blind — all as recorded. Cost: coordinator $0.347 (14 turns, 265k cache-read), children $0.046 total
+  (~$0.011 and 13–15 s each). The coordinator was 88% of the spend, six of its turns hunting for
+  usage data (quirk d) — the audit's finding 2 in miniature.
