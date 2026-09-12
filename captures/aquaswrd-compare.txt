@@ -1,0 +1,1 @@
+AquaSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. The elemental swords are the same arc in a different palette bank, exported with every one the sprite carries.

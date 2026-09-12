@@ -1,0 +1,1 @@
+Recov300, canon (sterile) left and this build right: 0.0 pixels a frame. The largest heal: the counter's step is |difference|/8 + 4 a frame, so a bigger number climbs faster, exactly as the real ROM's does.

@@ -1,0 +1,1 @@
+Barr200, canon (sterile) left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font.

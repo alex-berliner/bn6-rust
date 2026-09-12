@@ -1,0 +1,668 @@
+[
+  {
+    "file": "captures/banner-isolated.gif",
+    "name": "banner-isolated",
+    "label": "banner (isolated), FAILED: per-frame max 562 px, total 2248 px over 58 frames. Alignment: canon frame 49+k, rust frame 1(marker)+131+k. canon (banner-patched, sterile otherwise)\n\nbanner_at is now read by src/fixture.rs (BANNER_ROW's own banner_at=100 verified byte-identical there against demo-banner's own reference, over 200 frames -- this note's earlier 'pending-src' was stale, corrected this ticket, not re-investigated past that: 2248/58 is zero-src's own item, not this ticket's). canon: /tmp/bn6f_banner.gba (tools/patch_sterile.py --keep-banner, already built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from regress.py's check_banner. rust: BANNER_ROW through the descriptor (marker origin 1, blanked HUD/backdrop family) plus a band around regress.py's old rust_start=132 (132-1=131).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/buster-integrated.gif",
+    "name": "buster-integrated",
+    "label": "buster (integrated), FAILED: per-frame max 26660 px, total 626040 px over 32 frames. Alignment: canon frame 150+k, rust frame 8(marker)+105+k. canon (sterile)\n\ncanon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at battle-frame 100/101 (marker origin 8 + 100/101), not the first tried (origin+22) -- verified live that a press that early is BEFORE the navi is free to act at all (the diff at that offset was the SAME idle-pose-settling transition `field` has, not a shot); battle-frame 100 is well past it, in the same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/buster-isolated.gif",
+    "name": "buster-isolated",
+    "label": "buster (isolated), FAILED: per-frame max 177 px, total 3172 px over 32 frames. Alignment: canon frame 150+k, rust frame 8(marker)+122+k. canon (sterile)\n\ncanon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at battle-frame 100/101 (marker origin 8 + 100/101), not the first tried (origin+22) -- verified live that a press that early is BEFORE the navi is free to act at all (the diff at that offset was the SAME idle-pose-settling transition `field` has, not a shot); battle-frame 100 is well past it, in the same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/card-isolated.gif",
+    "name": "card-isolated",
+    "label": "card (isolated), FAILED: per-frame max 3081 px, total 18486 px over 16 frames. Alignment: canon frame 136+k, rust frame 8(marker)+190+k. canon\n\nSame wiring as `window`: --only-bg 3 on BOTH sides, SYMMETRIC as of this ticket (bg3-merge follow-up) -- the rust side's own HUD/backdrop blanking workaround (ISOLATED_CARDNAME_ROW) is dropped for plain CARDNAME_ROW (window_cursor=0, the one byte that distinguishes demo-cardname from demo-custmatch), HUD not blanked. Reads 0 (PASS) but is ALSO BLIND, measured live this ticket: unlike `window`, canon's BG3 here DOES move (the 5-press-Left script highlights a different slot each press -- diffed live: consecutive-frame changes at capture frames 22, 52, 82, 112, 142, ~2 frames after each press), but canon_ref=144 sat just past the LAST of those (142) with no sixth press to follow it, so the compared window (144..159) was itself in a static stretch and the negative fixture (+1 frame at the found offset) also read 0.\nFIXED by re-centring, not by weakening the negative (unlike `window`, whose subject genuinely never moves): canon_ref=136 puts the last real transition (142) inside the compared 136..151, so a one-frame canon shift now has something to break. The search band is widened to 190..245 because moving canon_ref back by 8 moves the matching rust offset by about the same. This deliberately makes the check able to fail on the cursor's own move timing, which is the point -- if our press response is a frame out, this is where it shows, and a non-zero here is a real finding rather than a check that could never have caught it. canon: REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: marker origin 8 plus that band (regress.py's own compared rust frame was start=144 PLUS lag[74,96] = 218..240, 210..232 once origin is subtracted -- the widened band still contains it).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-airshot-isolated.gif",
+    "name": "chip-airshot-isolated",
+    "label": "chip-airshot (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-aquaswrd-isolated.gif",
+    "name": "chip-aquaswrd-isolated",
+    "label": "chip-aquaswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-areagrab-isolated.gif",
+    "name": "chip-areagrab-isolated",
+    "label": "chip-areagrab (isolated), FAILED: per-frame max 1348 px, total 103467 px over 77 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-bambswrd-isolated.gif",
+    "name": "chip-bambswrd-isolated",
+    "label": "chip-bambswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-barr100-isolated.gif",
+    "name": "chip-barr100-isolated",
+    "label": "chip-barr100 (isolated), FAILED: per-frame max 1348 px, total 107511 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-barr200-isolated.gif",
+    "name": "chip-barr200-isolated",
+    "label": "chip-barr200 (isolated), FAILED: per-frame max 1348 px, total 107511 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-barrier-isolated.gif",
+    "name": "chip-barrier-isolated",
+    "label": "chip-barrier (isolated), FAILED: per-frame max 1348 px, total 107511 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-bigbomb-isolated.gif",
+    "name": "chip-bigbomb-isolated",
+    "label": "chip-bigbomb (isolated), FAILED: per-frame max 2350 px, total 14398 px over 75 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-blkbomb-isolated.gif",
+    "name": "chip-blkbomb-isolated",
+    "label": "chip-blkbomb (isolated), FAILED: per-frame max 2350 px, total 14428 px over 50 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-bugbomb-isolated.gif",
+    "name": "chip-bugbomb-isolated",
+    "label": "chip-bugbomb (isolated), FAILED: per-frame max 2350 px, total 22726 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-cannon-isolated.gif",
+    "name": "chip-cannon-isolated",
+    "label": "chip-cannon (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-elecswrd-isolated.gif",
+    "name": "chip-elecswrd-isolated",
+    "label": "chip-elecswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-energbom-isolated.gif",
+    "name": "chip-energbom-isolated",
+    "label": "chip-energbom (isolated), FAILED: per-frame max 2350 px, total 34346 px over 60 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-fireswrd-isolated.gif",
+    "name": "chip-fireswrd-isolated",
+    "label": "chip-fireswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-flshbom-isolated.gif",
+    "name": "chip-flshbom-isolated",
+    "label": "chip-flshbom (isolated), FAILED: per-frame max 2350 px, total 14388 px over 48 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-grasseed-isolated.gif",
+    "name": "chip-grasseed-isolated",
+    "label": "chip-grasseed (isolated), FAILED: per-frame max 2350 px, total 16533 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-hicannon-isolated.gif",
+    "name": "chip-hicannon-isolated",
+    "label": "chip-hicannon (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-iceseed-isolated.gif",
+    "name": "chip-iceseed-isolated",
+    "label": "chip-iceseed (isolated), FAILED: per-frame max 2350 px, total 16533 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-invisibl-isolated.gif",
+    "name": "chip-invisibl-isolated",
+    "label": "chip-invisibl (isolated), FAILED: per-frame max 1348 px, total 107511 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-lilbolr-isolated.gif",
+    "name": "chip-lilbolr-isolated",
+    "label": "chip-lilbolr (isolated), FAILED: per-frame max 2350 px, total 14388 px over 48 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-longblde-isolated.gif",
+    "name": "chip-longblde-isolated",
+    "label": "chip-longblde (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-longswrd-isolated.gif",
+    "name": "chip-longswrd-isolated",
+    "label": "chip-longswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-mcannon-isolated.gif",
+    "name": "chip-mcannon-isolated",
+    "label": "chip-mcannon (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-megenbom-isolated.gif",
+    "name": "chip-megenbom-isolated",
+    "label": "chip-megenbom (isolated), FAILED: per-frame max 2350 px, total 34346 px over 60 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-minibomb-isolated.gif",
+    "name": "chip-minibomb-isolated",
+    "label": "chip-minibomb (isolated), FAILED: per-frame max 2350 px, total 14398 px over 60 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-muramasa-isolated.gif",
+    "name": "chip-muramasa-isolated",
+    "label": "chip-muramasa (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-poisseed-isolated.gif",
+    "name": "chip-poisseed-isolated",
+    "label": "chip-poisseed (isolated), FAILED: per-frame max 2350 px, total 16533 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov120-isolated.gif",
+    "name": "chip-recov120-isolated",
+    "label": "chip-recov120 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov150-isolated.gif",
+    "name": "chip-recov150-isolated",
+    "label": "chip-recov150 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov200-isolated.gif",
+    "name": "chip-recov200-isolated",
+    "label": "chip-recov200 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov30-isolated.gif",
+    "name": "chip-recov30-isolated",
+    "label": "chip-recov30 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov300-isolated.gif",
+    "name": "chip-recov300-isolated",
+    "label": "chip-recov300 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov50-isolated.gif",
+    "name": "chip-recov50-isolated",
+    "label": "chip-recov50 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recov80-isolated.gif",
+    "name": "chip-recov80-isolated",
+    "label": "chip-recov80 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-recovery-isolated.gif",
+    "name": "chip-recovery-isolated",
+    "label": "chip-recovery (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-suprvulc-isolated.gif",
+    "name": "chip-suprvulc-isolated",
+    "label": "chip-suprvulc (isolated), FAILED: per-frame max 2350 px, total 14388 px over 113 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-sword-isolated.gif",
+    "name": "chip-sword-isolated",
+    "label": "chip-sword (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-use-integrated.gif",
+    "name": "chip-use-integrated",
+    "label": "chip-use (integrated), FAILED: per-frame max 26660 px, total 626461 px over 32 frames. Alignment: canon frame 150+k, rust frame 8(marker)+105+k. canon (sterile)\n\nSame shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] (Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A press use nothing at all, which is what the first attempt at this check did.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-use-isolated.gif",
+    "name": "chip-use-isolated",
+    "label": "chip-use (isolated), FAILED: per-frame max 1185 px, total 9514 px over 32 frames. Alignment: canon frame 150+k, rust frame 8(marker)+129+k. canon (sterile)\n\nSame shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] (Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A press use nothing at all, which is what the first attempt at this check did.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-vdoll-isolated.gif",
+    "name": "chip-vdoll-isolated",
+    "label": "chip-vdoll (isolated), FAILED: per-frame max 2350 px, total 15016 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-vulcan-isolated.gif",
+    "name": "chip-vulcan-isolated",
+    "label": "chip-vulcan (isolated), FAILED: per-frame max 2350 px, total 14388 px over 60 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-vulcan2-isolated.gif",
+    "name": "chip-vulcan2-isolated",
+    "label": "chip-vulcan2 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 70 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-vulcan3-isolated.gif",
+    "name": "chip-vulcan3-isolated",
+    "label": "chip-vulcan3 (isolated), FAILED: per-frame max 2350 px, total 14388 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-wideblde-isolated.gif",
+    "name": "chip-wideblde-isolated",
+    "label": "chip-wideblde (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/chip-wideswrd-isolated.gif",
+    "name": "chip-wideswrd-isolated",
+    "label": "chip-wideswrd (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/cursor-isolated.gif",
+    "name": "cursor-isolated",
+    "label": "cursor (isolated), FAILED: per-frame max 6884 px, total 620802 px over 170 frames. Alignment: canon frame 15+k, rust frame 8(marker)+226+k. canon\n\nAUDIT ticket step 5: 'cursor... just broke on a hardcoded lag... marker alignment is the fix.' The offered deck is STILL pending-src (same field as `window`/`card`), so this keeps building the rust side from the demo-custmatch FEATURE (not yet a descriptor) -- but the old fixed CURSOR_LAG=230 constant is GONE, replaced with marker origin (8, measured live for this exact feature build) plus a search band around regress.py's old compared rust frame (start=15 PLUS CURSOR_LAG=230 = 245, 237 once origin is subtracted), so a future boot-length shift (the ONE THING that broke this, 0 -> 602 pixels, all of it one frame of 170) self-corrects instead of silently drifting. Script unchanged from regress.py (5 Left-presses, 30 frames apart); box removed, full screen, all 170 frames.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/field-integrated.gif",
+    "name": "field-integrated",
+    "label": "field (integrated), FAILED: per-frame max 26479 px, total 397357 px over 40 frames. Alignment: canon frame 130+k, rust frame 8(marker)+85+k. canon (sterile)\n\nAUDIT pair 3: an empty arena, not the old ALIVE-mettaur setup (an enemy acting on an RNG the two sides do not share -- exactly what pair 3 calls out). canon_ref=130: the enemy is DELETED, not hidden (see DELETE_ENEMY's comment above for why), and 130 is comfortably past frame 110, verified live as the last frame with any dissolve OAM at all. rust: marker origin 8 plus a wide band -- the picture is static once settled, so a wide band costs nothing and does not need a sharp-minimum argument the way a moving subject does. frames=40, not 20: the idle navi's own pose settles once more around canon frame 164 (k=34) -- a genuine one-time transition, not periodic -- and pair 10's negative fixture is BLIND without it in the window (a fully frozen 40-frame stretch cannot tell a 1-frame canon shift from no shift at all).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/field-isolated.gif",
+    "name": "field-isolated",
+    "label": "field (isolated), FAILED: per-frame max 177 px, total 1048 px over 40 frames. Alignment: canon frame 130+k, rust frame 8(marker)+60+k. canon (sterile)\n\nAUDIT pair 3: an empty arena, not the old ALIVE-mettaur setup (an enemy acting on an RNG the two sides do not share -- exactly what pair 3 calls out). canon_ref=130: the enemy is DELETED, not hidden (see DELETE_ENEMY's comment above for why), and 130 is comfortably past frame 110, verified live as the last frame with any dissolve OAM at all. rust: marker origin 8 plus a wide band -- the picture is static once settled, so a wide band costs nothing and does not need a sharp-minimum argument the way a moving subject does. frames=40, not 20: the idle navi's own pose settles once more around canon frame 164 (k=34) -- a genuine one-time transition, not periodic -- and pair 10's negative fixture is BLIND without it in the window (a fully frozen 40-frame stretch cannot tell a 1-frame canon shift from no shift at all).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/gauge-integrated.gif",
+    "name": "gauge-integrated",
+    "label": "gauge (integrated), FAILED: per-frame max 3468 px, total 26495 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/gauge-isolated.gif",
+    "name": "gauge-isolated",
+    "label": "gauge (isolated), FAILED: per-frame max 208 px, total 538 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/popup-isolated.gif",
+    "name": "popup-isolated",
+    "label": "popup (isolated), FAILED: per-frame max 1348 px, total 107511 px over 80 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/result-isolated.gif",
+    "name": "result-isolated",
+    "label": "result (isolated), FAILED: per-frame max 31882 px, total 497967 px over 40 frames. Alignment: canon frame 21+k, rust frame 10(marker)+15+k. canon\n\nAUDIT wave 3c 'zero-enemy' ticket: FIXTURE.md +56 result_elapsed exists and src/fixture.rs reads it. AN EARLIER PASS through this file swept it against a worktree branched BEFORE that src change merged (result_elapsed=0 and =30 on the SAME stale build rendered byte-identical, wrongly read as 'not consumed') -- `git merge main` and re-swept with the real implementation: elapsed DOES move the picture now (frame 10 e.g.: 10937/15661/17782 px against the elapsed=0 baseline for elapsed=10/21/30). pending_src DROPPED -- it is wired. SWEPT PROPERLY (this ticket): result_elapsed in {0,2,4,..,40} against canon_ref=21 with rust_offset FIXED at 0 (no search) bottoms out at elapsed=14 (522212 px) but never gets close to 0, and is a shallow bowl, not a sharp minimum (497967 at 0 rising smoothly to a ~535650 plateau by 26+). Re-swept the same set WITH the offset search restored (this row's own search=range(0,60)) so result_elapsed cannot be fighting a wrong offset: the true joint minimum is at result_elapsed=0 (497967, offset=15) -- every other sampled elapsed is WORSE (504-505k) once the offset is free to compensate. So result_elapsed is not the knob that gets this row toward 0; RESULT_ROW's own elapsed=0 already is, or is close to, optimal. LOCALISED the residue instead: at offset=15, frame 0 differs over the WHOLE screen (bbox x0-239,y0-159, 31882 px) and decays frame by frame (30846, 29995, ... 17395 by k=10) to a FLAT ~6600-6900 px PLATEAU from k=16 onward that never reaches 0 in the 40-frame window -- a shape (full-screen early, settling to a stubborn nonzero floor, not shrinking further) that matches states.py's own noenemy2 finding for this exact fixture family: 'the reward itself is rolled from RNG state this recipe does not reach the same way real play did', i.e. RESULT_ARRIVAL's own reward content (chip/zenny rolled by real play) has nothing in RESULT_ROW/FIXTURE.md to match it against, not a timing field like result_elapsed. THE REWARD-CONTENT HYPOTHESIS ABOVE IS NOW DISPROVEN (AUDIT wave 3c/3d 'encounter-roll' ticket): decoded RESULT_ARRIVAL's own captured frames to PNG and read the window by eye after paging through it (A@70/100/130/160/190) -- DeleteTime 0:29:33 (MM:SS:CC, = 29.333s = exactly 1760 frames at 60fps), Busting LV. 2, reward 100z, no chip -- EVERY ONE of RESULT_ROW's existing result_frames=1760/result_level=2/result_zenny=100 (inherited from RESULTMATCH_ROW) already matches this state's own reward EXACTLY, and megaman_hp=60 matches too (peeked live: HP 0x3c/MaxHP 0x64 at RESULT_ARRIVAL's own frame 0). So the reward-content descriptor field the previous note called for is not what's missing -- these three fields were already right. Also ruled out: gauge=1 instead of RESULT_ROW's 0 (peeked live: word_20352a0, eStruct2035280+0x20, reads 0x4000 -- the same 'full' value 7aw's own gauge-fill note gives) changes NOTHING (identical 497967/31882) -- either the gauge field is not read for start_state=1 at all, or it is not the source. NOT SETTLED, and worth the next session's own measurement rather than a guess: RESULT_ARRIVAL's own eBGScrollCBCounters (0x02009690/0x02009694, the backdrop-phase clock 7av documents) read 0x0530/0x8298 (1328/-32104 signed) at its own frame 0 -- a real elapsed-battle value FIXTURE.md's result_elapsed (already swept 0..40, no field wide enough for a number this size even if it were) cannot represent, and item 5's own 'pre-arrival battle tail' framing (backdrop phase / HP / gauge) named exactly this before HP and gauge were ruled out -- backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/tiles-integrated.gif",
+    "name": "tiles-integrated",
+    "label": "tiles (integrated), FAILED: per-frame max 3468 px, total 26495 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/tiles-isolated.gif",
+    "name": "tiles-isolated",
+    "label": "tiles (isolated), FAILED: per-frame max 208 px, total 538 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/warp-integrated.gif",
+    "name": "warp-integrated",
+    "label": "warp (integrated), FAILED: per-frame max 18287 px, total 328071 px over 30 frames. Alignment: canon frame 130+k, rust frame 8(marker)+69+k. canon (sterile)\n\ncanon: Right/Down/Left/Up held 3 frames each starting real 130 (past the DELETE dissolve, see `field`'s note; regress.py's old real 60/80/100/120 shifted by the same +70 the dissolve wait needs), canon_ref=130 = the first press. rust: the SAME held-key SHAPE at battle-relative frames 50/70/90/110 (marker origin 8 + those, no dissolve to wait out on this side -- it never had an enemy) instead of regress.py's old cold-boot guesses (130/150/170/190, tuned to a boot length that moves); a 40-wide search band around the first press covers plausible input-lag between a resumed real battle and a fresh fixture one. Full-screen pixel diff (pair 6) replaces regress.py's own coarse blue-pixel position tracking -- strictly more rigorous, not a relaxation.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/warp-isolated.gif",
+    "name": "warp-isolated",
+    "label": "warp (isolated), FAILED: per-frame max 1577 px, total 9198 px over 30 frames. Alignment: canon frame 130+k, rust frame 8(marker)+30+k. canon (sterile)\n\ncanon: Right/Down/Left/Up held 3 frames each starting real 130 (past the DELETE dissolve, see `field`'s note; regress.py's old real 60/80/100/120 shifted by the same +70 the dissolve wait needs), canon_ref=130 = the first press. rust: the SAME held-key SHAPE at battle-relative frames 50/70/90/110 (marker origin 8 + those, no dissolve to wait out on this side -- it never had an enemy) instead of regress.py's old cold-boot guesses (130/150/170/190, tuned to a boot length that moves); a 40-wide search band around the first press covers plausible input-lag between a resumed real battle and a fresh fixture one. Full-screen pixel diff (pair 6) replaces regress.py's own coarse blue-pixel position tracking -- strictly more rigorous, not a relaxation.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/wave-isolated.gif",
+    "name": "wave-isolated",
+    "label": "wave (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 90 frames. Alignment: canon frame 71+k, rust frame 8(marker)+345+k. canon (sterile)\n\nEnemy IS the subject (AUDIT pair 3: mettaur and wave get their own checks rather than a zero-enemy arena). canon: STERILE+PAUSED+ALIVE, Start@10 -- canon_ref=71 unchanged from regress.py's check_wave (the shockwave's first visible hop). rust: FIELD_ROW through the descriptor. RE-CENTRED AND RE-ISOLATED this ticket (AUDIT wave 3d follow-up), two changes together: (1) after the src agent replaced the Mettaur's flat timer with the real 5-state machine (106-frame cycle, not the old ~64), the OLD band (178..202, centred on offset ~190) no longer reaches the true alignment -- re-swept wide (range(300,400)) on the OLD --disable-obj isolation found only a shallow, non-zero minimum (offset 326, 353137 px), because that isolation leaves BG1 and BG3 in the comparison too and 'panel lighting is BG, not sprites' names BG2 specifically as the subject -- and (2) the bg3-merge agent's own landing (AUDIT wave 3d) made `--only-bg N` finally symmetric between the two sides (pair 2), which this check could not exploit before. Switching BOTH sides from --disable-obj to --only-bg 2 and re-sweeping the SAME wide band finds a sharp, unique zero at offset 345 (337..353 climbs steeply either side, e.g. 344 -> 4800, 346 -> 3840) -- BG2 alone, unshifted, is EXACT, unlike the multi-layer capture. This band (337..353) brackets it with margin.\n\ncommit a456d8b",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/window-isolated.gif",
+    "name": "window-isolated",
+    "label": "window (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 16 frames. Alignment: canon frame 55+k, rust frame 8(marker)+215+k. canon\n\nWave 3b ticket step 2: the deck/deck_codes/window_pick_* fields now land in CUSTMATCH_ROW (src/fixture.rs reads them, verified byte-identical there except a small 371px/2-frame card-picture residual -- zero-src's own ticket). isolated = the window's own layer, not the whole screen: --only-bg 3 on BOTH sides (BG3 is the chip-select window itself; BG1 is a flat fill, BG2 the field panels underneath). SYMMETRIC AS OF THIS TICKET (AUDIT wave 3d bg3-merge follow-up): the rust side used to blank its own HUD/backdrop (ISOLATED_CUSTMATCH_ROW, flags 0x17) as a workaround for a BG-index mismatch bg3-merge has since fixed -- our HudTiles/Custom/Results now sit on canon's own BG3, so --only-bg 3 reaches the SAME layer on both sides without the workaround (dropped: plain CUSTMATCH_ROW, flags 0x11, HUD not blanked). Reads 0 (PASS) -- but measured, not assumed, and NOT hidden: canon's own BG3 does not change AT ALL for at least 260 consecutive frames from CHIPSELECT with no script (diffed live, this ticket) -- the window sits open and unchanging with nothing pressed, so a 1-BG capture of it is unchanging too, on BOTH sides, at every offset in a swept 150..295 range (all exactly 0). AUDIT pair 10 in its own terms: this check is BLIND (the negative fixture -- canon shifted +1 frame at the SAME found offset, not re-searched -- also reads 0, confirmed live), which run_check() reports honestly rather than silently passing. NOT FIXED this ticket (out of the scope the coordinator asked for -- 'drop the workaround, compare symmetrically, report what they read'): a non-blind version needs the compared window to straddle a real BG3 transition, and this Check has no script at all to cause one (unlike `card` below, which does and is blind for a different, related reason -- see its own note). canon: REAL+CHIPSELECT unchanged otherwise. rust: marker origin 8 plus a band around regress.py's old compared rust frame (its own start=55 PLUS lag[174,190] = 229..245, 221..237 once origin is subtracted) -- kept, still inside the wide zero-and-blind plateau just measured.\nNEGATIVE FIXTURE, resolved after that ticket: `negative='pixel'`. The measurement above is exactly the case a frame-shift negative cannot test -- canon's BG3 here is byte-identical for 260+ consecutive frames, so shifting it a frame breaks nothing, and the resulting BLIND says the subject is static, not that the check is wrong. A one-column shift breaks it instead, and tests what this check can actually get wrong: that the diff is live, aligned, and looking at the window's real content. Weaker than a frame shift, and used here only because this subject provably has no timing in it; `card` next door keeps the frame shift, because its window does move.\n\ncommit dca9b08",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/cannon-isolated.gif",
+    "name": "cannon-isolated",
+    "label": "cannon (isolated), FAILED: per-frame max 2350 px, total 14388 px over 40 frames. Alignment: canon frame 43+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: chip_compare.py's REAL_START=43 (A pressed at 40, 'the attack begins at 43') -- a documented scripted-event landing, not searched. rust: marker origin (1, flags 0x1F skips the intro and blanks HUD/backdrop, same as `cannon` above) plus a 26-frame band -- unique zero at offset 122 for every chip verified (unchanged from before this ticket -- see the comment above for what was tried against the residue and why it is still here).\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/mettaur-isolated.gif",
+    "name": "mettaur-isolated",
+    "label": "mettaur (isolated), FAILED: per-frame max 1566 px, total 30864 px over 70 frames. Alignment: canon frame 140+k, rust frame 8(marker)+309+k. canon (sterile)\n\ncanon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock shared with rust's cold boot, so canon_ref=140 is the same documented fixed point regress.py's check_mettaur used (its own frame-140 window start), not searched. rust: marker origin (frame 8 for demo-field) plus a band re-centred this ticket (AUDIT wave 3d follow-up) after the src agent replaced the Mettaur's flat timer with the real 5-state machine (attack 0x40 + recovery 0x28 + decision, a 106-frame cycle, not the old ~64) -- the OLD band (145..161, centred on offset 153) no longer reaches the true alignment. RE-SWEPT WIDE (this ticket, range(250,400)) and confirmed a single sharp V-shaped minimum, not a plateau: offset 308 scores 46297, 309 scores 30864 (the joint minimum -- matches worst=1566), 310 scores 37873, climbing steeply either side. This band (295..325) brackets it with margin. NOT YET ZERO (30864 px over 70 frames, worst 1566/frame) -- unresolved by this ticket, which only re-centred the search; the residue itself is src/ territory.\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/opening-integrated.gif",
+    "name": "opening-integrated",
+    "label": "opening (integrated), FAILED: per-frame max 1334 px, total 40996 px over 40 frames. Alignment: canon frame 120+k, rust frame 8(marker)+119+k. canon\n\ncanon: BATTLESTART is documented as the battle's real frame 0 (eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just 120 battle-frames past that known origin, nothing searched on this side. rust: find_marker_origin() gives frame 8 for demo-open; a 21-wide band around it finds a UNIQUE zero at offset 119 (partial band shown in the report), the residual sub-frame timing the marker alone does not pin.\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/opening-isolated.gif",
+    "name": "opening-isolated",
+    "label": "opening (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 40 frames. Alignment: canon frame 120+k, rust frame 8(marker)+119+k. canon\n\ncanon: BATTLESTART is documented as the battle's real frame 0 (eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just 120 battle-frames past that known origin, nothing searched on this side. rust: find_marker_origin() gives frame 8 for demo-open; a 21-wide band around it finds a UNIQUE zero at offset 119 (partial band shown in the report), the residual sub-frame timing the marker alone does not pin.\n\ncommit c1004e7",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/battle-opening-hud-compare.gif",
+    "name": "battle-opening-hud-compare",
+    "label": "The HUD and the backdrop through a battle's opening, canon above and this build below: 44 consecutive frames, 0 pixels, every frame compared rather than sampled. The backdrop is not just a scrolling picture -- it also ANIMATES, on the same scripted engine the overworld uses, ten four-frame steps then nineteen eight-frame ones over a 192-frame loop, and this build had been running a uniform 56-frame loop instead. The scroll matters to the pixel too: canon writes a logical shift of a counter that falls, which rounds the opposite way from a plain divide and puts the whole layer one pixel out on odd frames. The check that first said this matched was sampling every fourth frame, and every fourth frame was exactly the set that already agreed.",
+    "added": "2026-09-08"
+  },
+  {
+    "file": "captures/wave-panel-light-compare.gif",
+    "name": "wave-panel-light-compare",
+    "label": "The shockwave's panel light, canon (sterile) above and this build below, backgrounds only so the wave's own sprite is hidden and only the yellow highlight it leaves on each panel shows: 90 frames, 0 pixels. This was the last non-zero check in the suite. The hop itself was never the hard part -- what took three attempts was the ends of a segment's life. A hop spawns a NEW segment and abandons the old one where it is, and our build was destroying the abandoned one a frame before it could show its final animation frame, and lighting the newly spawned one a frame late. The real ROM has the same asymmetry in its own code: the handler that runs on a segment's first tick builds its sprite and collision data and never highlights, and highlighting only begins on the tick after.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/mettaur-attack-compare.gif",
+    "name": "mettaur-attack-compare",
+    "label": "The Mettaur's whole 70-frame attack cycle, canon (sterile) left and this build right: 0.0 pixels a frame. It hides, swings, and sends a shockwave down the row. The virus acts on an RNG neither side shares, so there is no fixed offset to compare on -- the two are aligned by finding the lag that lines up the frames on which its own bounding box changes, and 16 of the canon side's 17 boundaries land exactly. This was the last animated residue: it fell from 460 pixels to 345 when a hop turned out to spawn a new segment rather than move one, and from 345 to 0 when the segment left behind turned out to be destroyed a frame too early.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/bambswrd-compare.gif",
+    "name": "bambswrd-compare",
+    "label": "BambSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. The wood-element sword, the last of the nine.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/elecswrd-compare.gif",
+    "name": "elecswrd-compare",
+    "label": "ElecSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. The elemental swords are one arc in different palettes -- this one is the sprite's own electric set.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/energbom-compare.gif",
+    "name": "energbom-compare",
+    "label": "EnergBom, canon (sterile) left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/longblde-compare.gif",
+    "name": "longblde-compare",
+    "label": "LongBlde, canon (sterile) left and this build right: 0.0 pixels a frame. LongSwrd's reach at a higher tier -- the sword chips differ in numbers far more than in art.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/longswrd-compare.gif",
+    "name": "longswrd-compare",
+    "label": "LongSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. Two panels of reach where Sword has one; the pose and the arc are the same objects.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/recov300-compare.gif",
+    "name": "recov300-compare",
+    "label": "Recov300, canon (sterile) left and this build right: 0.0 pixels a frame. The largest heal: the counter's step is |difference|/8 + 4 a frame, so a bigger number climbs faster, exactly as the real ROM's does.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/vulcan-compare.gif",
+    "name": "vulcan-compare",
+    "label": "Vulcan1, canon (sterile) left and this build right: 0.0 pixels a frame. Three shots released ten frames apart -- the game's own fire period -- each travelling a panel a frame and stopped by the first thing it hits. The shots themselves load no sprite; only their hit sparks show.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/wideswrd-compare.gif",
+    "name": "wideswrd-compare",
+    "label": "WideSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. Three panels tall rather than one, from the same pose.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/airshot-compare.gif",
+    "name": "airshot-compare",
+    "label": "AirShot, canon (sterile) left and this build right: 0.0 pixels a frame. Its hitbox lands on the panel ahead at once and shoves whatever it hits one panel back.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/aquaswrd-compare.gif",
+    "name": "aquaswrd-compare",
+    "label": "AquaSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. The elemental swords are the same arc in a different palette bank, exported with every one the sprite carries.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/barr200-compare.gif",
+    "name": "barr200-compare",
+    "label": "Barr200, canon (sterile) left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/mcannon-compare.gif",
+    "name": "mcannon-compare",
+    "label": "M-Cannon, canon (sterile) left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/minibomb-compare.gif",
+    "name": "minibomb-compare",
+    "label": "MiniBomb, canon (sterile) left and this build right: 0.0 pixels a frame. The launcher every bomb and seed shares: vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames, read out of the object in flight.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/recov80-compare.gif",
+    "name": "recov80-compare",
+    "label": "Recov80, canon (sterile) left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/vulcan3-compare.gif",
+    "name": "vulcan3-compare",
+    "label": "Vulcan3, canon (sterile) left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/wideblde-compare.gif",
+    "name": "wideblde-compare",
+    "label": "WideBlde, canon (sterile) left and this build right: 0.0 pixels a frame. Three panels wide, one of the nine swords that share a pose and differ in reach and palette.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/battle-opening.gif",
+    "name": "battle-opening",
+    "label": "How a battle opens in the build now: white held and ramped off, the field, the virus materialising, the chip window. The lead-in was 32 frames of black where the real ROM is 71 of white plus a 16-frame ramp, and with that one constant wrong everything after it looked wrong in its own way. Fixing it aligned all of them: the virus starts materialising at frame 76 and settles at 142 on both sides, and the chip window opens at 130 against 129.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/areagrab-compare.gif",
+    "name": "areagrab-compare",
+    "label": "AreaGrab, canon (sterile) left and this build right: 0.0 pixels a frame. The name popup, the presentation hold, and the column steal that follows.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/barrier-compare.gif",
+    "name": "barrier-compare",
+    "label": "Barrier, canon (sterile) left and this build right: 0.0 pixels a frame over its whole life. One of the five chips that put their NAME up in the middle of the screen: eight objects of the raw battle font, unrolled and rolled back up by one shared affine matrix.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/fireswrd-compare.gif",
+    "name": "fireswrd-compare",
+    "label": "FireSwrd, canon (sterile) left and this build right: 0.0 pixels a frame. One of nine sword chips that share a pose and differ in reach, element and the arc's own palette.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/hicannon-compare.gif",
+    "name": "hicannon-compare",
+    "label": "HiCannon, canon (sterile) left and this build right: 0.0 pixels a frame. The three cannons are one barrel object in three palettes -- HiCannon is the Cannon's sprite with palette 1, M-Cannon with 2 -- so they cost no extra art.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/invisibl-compare.gif",
+    "name": "invisibl-compare",
+    "label": "Invisibl, canon (sterile) left and this build right: 0.0 pixels a frame. Its presentation runs 128 frames before the navi goes transparent -- measured, not guessed.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/megenbom-compare.gif",
+    "name": "megenbom-compare",
+    "label": "MegEnBom, canon (sterile) left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/muramasa-compare.gif",
+    "name": "muramasa-compare",
+    "label": "Muramasa, canon (sterile) left and this build right: 0.0 pixels a frame. Its power is the damage MegaMan has already taken.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/full-battle-loop.gif",
+    "name": "full-battle-loop",
+    "label": "A whole battle end to end in the rollup ROM: the chip window a battle opens with, the BATTLE START! ribbon, the fight, the win, the RESULT window with its reward, and into the next battle's chip select. This loop did not exist before today -- the release build fielded four enemies that delete the navi in fifteen seconds and started the custom gauge empty, 1260 frames before the first chip. Every piece here is separately matched to the real ROM pixel for pixel.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/battle-open-compare.gif",
+    "name": "battle-open-compare",
+    "label": "How a battle opens, canon above and this build below. Found with the harness's first save state at a battle's FIRST frame, which immediately showed two things wrong here: a battle OPENS with the chip window (frame 165, unprompted) where this build made you wait 1260 frames for it, and BATTLE START! follows the chip window rather than the intro. Corrected, the banner lands at 291 against canon's 292.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/wave-departure-compare.gif",
+    "name": "wave-departure-compare",
+    "label": "The Mettaur's shockwave, canon (sterile) left and this build right. A hop is not one sprite moving: the real ROM spawns a whole new segment on the next panel and the old one stops where it is, playing out its own animation until it comes back round to its last frame. The residue had been recorded as the virus holding its pickaxe too long -- its body is 0 pixels across all 70 frames. Now at 0: the last three frames were the departing segment being destroyed the instant its animation reached its final frame, rather than after that frame had been held for the duration it asks for -- the real ROM's own \"last frame\" flag is masked off until the frame's duration counter runs out, so it never means \"reached\", only \"finished\".",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/cursor-compare.gif",
+    "name": "cursor-compare",
+    "label": "The chip-select cursor walking OK to the fifth slot, canon left and this build right: 170 frames, 0 pixels. Everything the script drives -- the cursor, the card, the name -- was exact for a long time while the highlight bracket's blink stayed one frame out, and that was written off as unfixable: the blink counts from the window's opening, the canon side is a save state already open, so the two clocks were said to have no shared origin. Reading the routine instead of guessing at it settled it. The phase is (counter >> 3) & 1 off a frame counter in the window's own struct, window-relative on both sides -- the save state's value simply is not zero. The missing frame turned out to be ours: our slide-in reached its open state one frame after canon's does, invisible everywhere except in that blink.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/banner-compare.gif",
+    "name": "banner-compare",
+    "label": "The ENEMY DELETED banner, canon (sterile) above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/blkbomb-compare.gif",
+    "name": "blkbomb-compare",
+    "label": "BlkBomb \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/bugbomb-compare.gif",
+    "name": "bugbomb-compare",
+    "label": "BugBomb, canon (sterile) left and this build right: 0.0 pixels a frame over seventy. Its arc used to be swept and was one rounding step out on the frame before it lands; the constants are now read out of the object while it is in the air -- vx 0x2C000, vz 0x26062, gravity 0x2800 over 42 frames.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/grasseed-compare.gif",
+    "name": "grasseed-compare",
+    "label": "GrasSeed \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/iceseed-compare.gif",
+    "name": "iceseed-compare",
+    "label": "IceSeed \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/lilbolr-compare.gif",
+    "name": "lilbolr-compare",
+    "label": "LilBolr1 \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/poisseed-compare.gif",
+    "name": "poisseed-compare",
+    "label": "PoisSeed \u2014 exact: the pod, its arc and the poison going down (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/vdoll-compare.gif",
+    "name": "vdoll-compare",
+    "label": "VDoll, canon (sterile) left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel.",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/bigbomb-compare.gif",
+    "name": "bigbomb-compare",
+    "label": "BigBomb \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/flshbom-compare.gif",
+    "name": "flshbom-compare",
+    "label": "FlshBom \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/stepswrd-compare.gif",
+    "name": "stepswrd-compare",
+    "label": "StepSwrd \u2014 33 of 40 frames exact (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/suprvulc-compare.gif",
+    "name": "suprvulc-compare",
+    "label": "SuprVulc \u2014 exact, all ten shots (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/sword-compare.gif",
+    "name": "sword-compare",
+    "label": "Sword \u2014 exact, frame for frame (canon (sterile) left, this build right)",
+    "added": "2026-09-07"
+  },
+  {
+    "file": "captures/cannon.gif",
+    "name": "cannon",
+    "label": "Cannon",
+    "added": "2026-09-06"
+  }
+]

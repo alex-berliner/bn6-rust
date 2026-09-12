@@ -1,0 +1,1 @@
+M-Cannon, canon (sterile) left and this build right: 0.0 pixels a frame. The third of the three cannons, which are one barrel object in three palettes -- M-Cannon is the Cannon's sprite with palette 2.

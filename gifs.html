@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bn — capture gallery</title>
+<style>
+  body { margin: 0; background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
+  header { padding: 10px 16px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header a { color: #8cf; }
+  main { padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+  .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; }
+  .card img { width: 100%; display: block; image-rendering: pixelated; background: #000; }
+  .card figcaption { padding: 8px 12px; font-size: 13px; color: #bbb; }
+  .card .name { color: #eee; font-weight: 600; }
+  .card .day { float: right; color: #777; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .empty { color: #888; padding: 40px 0; text-align: center; }
+  .stamp { color: #888; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>bn — capture gallery</h1>
+  <a href="index.html">&larr; play the demos</a>
+  <span class="stamp">auto-detected from web/captures/*.gif — newest first</span>
+  <span class="stamp">"canon" is the untouched original ROM; "canon (sterile)" is a patched copy with the battle-over check disabled, the ENEMY DELETED banner removed, and the enemy deleted, used so most chip and animation captures can run to completion without a live opponent.</span>
+</header>
+<main>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" hidden>No captures yet — drop a .gif into web/captures/ and run tools/captures_manifest.py.</div>
+</main>
+<script>
+  const stamp = Date.now();
+  fetch('captures/manifest.json?' + stamp)
+    .then(r => r.ok ? r.json() : [])
+    .then(caps => {
+      const grid = document.getElementById('grid');
+      const empty = document.getElementById('empty');
+      if (!caps.length) { empty.hidden = false; return; }
+      for (const c of caps) {
+        const fig = document.createElement('figure');
+        fig.className = 'card';
+        const img = document.createElement('img');
+        img.src = c.file + '?' + stamp;
+        img.alt = c.label + ' (' + c.file + ')';
+        img.loading = 'lazy';
+        const cap = document.createElement('figcaption');
+        // The date floats, so it has to be appended before the text it sits
+        // beside rather than after it.
+        if (c.added) {
+          const day = document.createElement('span');
+          day.className = 'day';
+          day.textContent = c.added;
+          cap.appendChild(day);
+        }
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = c.label;
+        cap.appendChild(name);
+        cap.appendChild(document.createTextNode('  —  ' + c.file));
+        fig.appendChild(img);
+        fig.appendChild(cap);
+        grid.appendChild(fig);
+      }
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

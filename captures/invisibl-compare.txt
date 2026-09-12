@@ -1,0 +1,1 @@
+Invisibl, canon (sterile) left and this build right: 0.0 pixels a frame. Its presentation runs 128 frames before the navi goes transparent -- measured, not guessed.
