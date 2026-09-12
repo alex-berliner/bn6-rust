@@ -143,9 +143,9 @@ frame (`src/main.rs`, section `.ewram.marker`). The harness finds the first fram
 with code size, and the first `commit()` can be invisible (agb skips a vblank wait if one already
 passed). A check on a hardcoded lag broke the day an unrelated edit moved boot by one frame.
 
-`demo-*` cargo features still exist and still build (`tools/regress.py` and `tools/build_roms.sh` use
-them). They are legacy: they get deleted, with `regress.py`, once the harness reads zero through
-descriptors for everything they covered. Do not add new ones.
+`demo-*` cargo features are gone (2026-09-12, AUDIT pair 17 prune ticket): every check the harness
+runs reads through a descriptor now, and `tools/regress.py`/`tools/scoreboard.py`'s CLI (the tools that
+built one) are deleted with them. Do not add a new one; extend `FIXTURE.md`'s descriptor instead.
 
 ## 5. `mgba_capture` reference
 
@@ -192,9 +192,10 @@ stale file. A state saved mid-battle has the enemy baked into RAM — no ROM pat
 
 ## 7. The site — `web/`
 
-- `bash tools/build_roms.sh` — every demo ROM into `web/roms/` in parallel, plus `web/roms/manifest.json`.
-  Each label starts with its build timestamp and the list sorts newest first (pair 8); an unstamped ROM is
-  dropped. Run after any merge that changes what a listed ROM shows.
+- `bash tools/build_roms.sh` — the default release ROM into `web/roms/rollup.gba`, plus
+  `web/roms/manifest.json` (one entry: the full battle, labelled with its build timestamp — pair 8).
+  Demo-per-feature ROMs are gone with the `demo-*` features that built them (2026-09-12). Run after any
+  merge that changes what the full battle shows.
 - `python3 tools/captures_manifest.py` — `web/captures/manifest.json` from `web/captures/*.gif` (+ `.txt`
   caption), newest first by git add-date. The harness writes the GIFs; commit them (pair 7: a commit that
   changes the screen updates the gallery before the next commit — failures included).
@@ -269,9 +270,10 @@ side — the enemy region is 0/70).
 
 Next, in the order §13 fixes: (1) the battlestart recipe, then the fixture chain, then re-point
 chips/`banner`/`popup` at `chip_ready_empty`; (2) the state oracle; (3) the `shot.rs` dwell gap and
-`card`'s cursor-move timing, oracle-first; (4) delete `demo-*` and `regress.py` once everything they
-covered reads zero through descriptors. `tools/regress.py` (the old boxed suite) still runs
-(`--only a,b`); its enemy checks read non-zero since the real Mettaur cadence landed — expected.
+`card`'s cursor-move timing, oracle-first. (4) DONE (2026-09-12, AUDIT pair 17 prune ticket): `demo-*`
+and `tools/regress.py` are deleted — everything they covered reads through a descriptor now
+(`opening`/`mettaur`/`cannon`/`cursor`, the last four rows still building a `demo-*` feature, ported to
+`fixture=`/`fixture_cheats()` first, same numbers before and after).
 
 ## 11. Map of the other documents
 
