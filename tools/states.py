@@ -356,66 +356,22 @@ STATES = [
         rom="/tmp/bn6f_sterile_emptynet.gba",  # STERILE_BASE + --empty-net-encounter (patch_sterile.py)
         base="/tmp/overworld_net.state",
         script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
-                         for i in range(160)),  # cycled one per frame, TRANSFER 7aw's own shape
-        poke_at=("100:0x02001c16:0x2000", "100:0x02001c18:0"),  # ONE roll attempt, at frame 100
+                         for i in range(79)),  # cycled one per frame, TRANSFER 7aw's own shape
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),  # ONE roll attempt, at frame 60
         cheats=DELETE_ENEMY_3,  # kill whichever slot(s) spawn, every frame from load
-        frames=119,
-        description="AUDIT wave 3c/3d 'fresh-state'/'encounter-roll' ticket, ROUTE CHANGED THIS "
-                     "SESSION from patching the encounter table to the technique every other "
-                     "zero-enemy check in this harness already uses (AUDIT pair 3): let a real "
-                     "encounter spawn, then DELETE it (force HP=0 every frame). See the note for "
-                     "why the encounter-table patch route (this entry's previous recipe) turned "
-                     "out to be unreliable even once the RNG-freeze root cause (below) was fixed.",
-        note="THE ROLL'S OWN FREEZE, ROOT-CAUSED (this session): --trace-pc on sub_80AA4C0's own "
-             "`bl GetRNG` (ROM 0x080AA51E) and its masked-value/threshold compare (completing by "
-             "0x080AA52A) shows that the OLD recipe -- 0x02001c16/0x02001c18 forced EVERY frame "
-             "from load -- leaves GetRNG's masked draw effectively frozen: nothing on this code "
-             "path perturbs it between one frame's draw and the next when the accumulator itself "
-             "is pinned open every frame, so the roll's outcome is fixed at load (TRANSFER 7aw's "
-             "held-direction orbit trap, walked through the accumulator instead of input). "
-             "mgba_capture.c gained --poke-at frame:addr:value (a ONE-SHOT write, applied "
-             "immediately before the named frame instead of every frame) as the fix: real "
-             "per-frame play runs untouched up to the poke, so sweeping the frame samples "
-             "GetRNG's actual state each time instead of repeating frame 0's fixed draw. "
-             "VERIFIED: sweeping N in 1-frame steps flips between roll success and failure and "
-             "lands on many distinct nearby EnemySetupArr addresses (0x080b52f9, 5313, 5320, "
-             "532d, 5347, 5354, 5365, 5376, 5387, 5398 all seen, N=80..230) -- genuine variation, "
-             "not a frozen repeat. "
-             ""
-             "WHY THE ENCOUNTER-TABLE PATCH ROUTE WAS ABANDONED, not merely left unfinished: a "
-             "controlled A/B test (this session) proved that PATCHING a naturally-reached entry "
-             "makes THE SAME recipe that found it reach a DIFFERENT entry instead. N=100 with "
-             "block=1 deterministically selects EnemySetupArr=0x080b52f9 (re-run twice, "
-             "byte-identical) on the ROM with only 0x080b5306 patched; after ALSO patching "
-             "0x080b52f9's own entry (byte at +4, ROM 0x080b52fd, 0x11->0xf0, the exact same "
-             "patch shape as 0x080b530a), the IDENTICAL N=100 recipe selects 0x080b5398 instead "
-             "-- proof that whatever selects an entry for a given roll is sensitive to an "
-             "entry's own encoded content/length, not just to table position, so 'find it on an "
-             "unpatched ROM, then patch it, then walk the same recipe again' is not a sound "
-             "method for ANY entry this way (not just 0x080b5306) -- once an entry is emptied it "
-             "stops being reachable by the walk that found it. A wide re-search for 0x080b5306 "
-             "itself (one-shot poke N=0..700 in 1-frame steps, block=1) never landed on it "
-             "either. patch_sterile.py's --empty-net-encounter patch (0x080b530a) is UNCHANGED "
-             "and still correct as a description of that one table entry; it is simply not "
-             "used by this recipe any more. "
-             ""
-             "THIS RECIPE, VERIFIED END TO END (this session): from overworld_net.state, cycle "
-             "Right/Down/Left/Up one per frame (TRANSFER 7aw's own shape), one-shot-poke the "
-             "roll's gate open at frame 100 only -- reliably (re-run twice) reaches "
-             "EnemySetupArr=0x080b52f9 (MegaMan + 2 Mettaur, HP 40/40 each at BattleObject slots "
-             "0x0203aa88/0x0203ab60), held at HP 0 the whole run by DELETE_ENEMY_3 (harmless on "
-             "the never-populated third slot). SubsystemIndex: 4 (map) through frame 99, 8 "
-             "(battle_init trigger) at 100, 12 (battle main) from 116 onward, UNCHANGED through "
-             "the rest of a 320-frame capture -- no crash, no reversion. eBGScrollCBCounters "
-             "(0x02009690/0x02009694) read 0/0 at capture frame 118 (battle's own frame 0, "
-             "TRANSFER 7aw) -- confirmed by reloading a state built at frames=119: --peek both "
-             "addresses immediately after load, before running anything, reads 0x0000/0x0000. "
-             "MegaMan HP/MaxHP 60/100, all three enemy slots 0/0 at capture frame 199 (81 real "
-             "frames into the battle) -- OAM at that frame decodes to 12 non-hidden entries (the "
-             "y=240/x=0/tile=0 rest are the standard GBA 'unused slot' sentinel), all consistent "
-             "with MegaMan's own multi-tile sprite, none matching a live enemy (which the HP "
-             "dump already rules out structurally, the same proof states.py's own noenemy2 entry "
-             "uses).",
+        frames=79,
+        description="A battle that spawned a real encounter and deleted it before frame 0 "
+                     "(all 3 Mettaurs held at HP 0). Base for chip_ready_empty.",
+        note="VERIFIED (ticket R1). Re-swept for the new power-on overworld_net base: "
+             "from overworld_net.state, cycle Right/Down/Left/Up one per frame; one-shot "
+             "poke at frame 60 opens encounter roll. Battle init triggers at frame 60 "
+             "(SubsystemIndex 8); battle main loop at frame 76 (SubsystemIndex 12); "
+             "SubsystemIndex 12 held throughout. eBGScrollCBCounters (0x02009690/0x02009694) "
+             "read 0x0000/0x0000 at frame 79 (battle frame 0, TRANSFER 7aw) -- verified "
+             "by --peek immediately at reload. All three enemy HP fields held at 0 "
+             "throughout by DELETE_ENEMY_3 (peeks at 0x0203aaac, 0x0203ab84, 0x0203ac5c "
+             "all read 0x0000). Build time: ~0.12s. Determinism: 40 frames from two builds "
+             "diff to 0 pixels.",
     ),
     State(
         name="chip_ready_empty",
@@ -423,52 +379,23 @@ STATES = [
         root=False,
         rom="/tmp/bn6f_sterile_emptynet.gba",
         base="/tmp/emptyfield_start.state",
-        description="AUDIT wave 3c/3d ticket step 3: emptyfield_start with a chip picked "
-                     "through the chip window (which opens on its own) and in hand, ready to "
-                     "test whether a chip fires with no enemy alive at all -- see the note for "
-                     "the answer (yes) and which chip actually ended up in hand (Vulcan1, not "
-                     "Cannon).",
-        # The chip window opens ON ITS OWN partway through this battle too (TRANSFER 7aw), just
-        # not at 7aw's own battle-frame 165 -- measured THIS session by scanning --only-bg 3
-        # content frame by frame: blank through ~90, a slide-in at 100, settled (37765 px, flat)
-        # from 110 onward, still open with nothing pressed. A@130 picks whatever the window
-        # offers in its default cursor slot (measured: chip id 5, Vulcan1 -- see the note for why
-        # this is NOT Cannon despite the library poke below, and why that is not chased further),
-        # Start@140 moves the cursor to OK (TRANSFER 7aw: "Pressing A alone picks chips and
-        # leaves the window open"), A@150 confirms and closes it.
         script="A@130,Start@140,A@150",
         cheats=DELETE_ENEMY_3,
-        # chip_compare.capture_real's own technique (tools/chip_compare.py's library_pokes()),
-        # values computed by hand against THIS state's own library bytes (peeked live: 0xfd9d at
-        # 0x020008a0, 0x7c62 at 0x02004c20) rather than reused from chip_compare's own
-        # peek16() -- that function reads PAUSED's library, a different save's data, not this
-        # one's. Kept as plain --poke tuples rather than calling library_pokes() itself, since
-        # that function's own peek16() reads PAUSED's library, not this state's.
         pokes=("0x020008a0:0x019d", "0x02004c20:0x8062"),
-        frames=280,  # 230 to the window's close + 50 margin -- see the note for why
-        note="VERIFIED END TO END (this ticket). BG3 content (--only-bg 3, sampled every 10 "
-             "frames): blank through 90, 704px at 90 (slide-in starting), 36913 at 100, settled "
-             "flat at 37765 from 110 through at least 590 -- the window opens ~100-110 battle-"
-             "frames in for this recipe (not 165, which was measured for a DIFFERENT, 3-Mettaur "
-             "battle/state) and stays open indefinitely with nothing pressed, exactly as 7aw "
-             "describes. THE LIBRARY POKE DID NOT FORCE CANNON: applied "
-             "(0x020008a0:0x019d, 0x02004c20:0x8062 -- chip_compare.library_pokes()'s own "
-             "formula, marking chip id 1/Cannon owned) before the window opens, then A@130 "
-             "picked whatever sits in the window's default cursor slot regardless -- watched "
-             "HAND_SLOT (0x020349c2) settle at chip id 5 (Vulcan1, already in this project's own "
-             "43-chip scoreboard as demo-vulcan) at capture frame 212, not 1. A second attempt "
-             "(4 Left-presses at 130/140/150/160 before picking, hoping to reach a different "
-             "slot) landed on the SAME chip 5 -- NOT CHASED FURTHER given the time this ticket "
-             "had: the offered set is very likely drawn from this save's own equipped folder, "
-             "not from the ownership 'library' library_pokes() edits (which only affects hand-"
-             "VALIDATION post-pick, per that function's own docstring), so forcing a SPECIFIC "
-             "offered chip likely needs either finding the folder/deck's own RAM address or "
-             "poking a per-slot offer buffer neither this session nor TRANSFER.md's existing "
-             "notes have located. Chip 5 (Vulcan1) served the premise test just as well -- see "
-             "the ticket report. MegaMan CurState/CurAction (0x0203a9b0+8/+9) settle at (4,8) -- "
-             "the ticket's own documented idle baseline -- 48 frames after the window closes; "
-             "this state is built at frames=280 (230 to close + 50 margin) so IT ALREADY shows "
-             "(4,8) at load, verified by --peek immediately after loading with no frames run.",
+        frames=280,
+        description="AUDIT wave 3c/3d ticket step 3: emptyfield_start with a chip picked "
+                     "through the chip window (which opens on its own) and in hand, ready to "
+                     "test whether a chip fires with no enemy alive at all.",
+        note="VERIFIED (ticket R1). From emptyfield_start.state, chip window opens on its "
+             "own: BG3 content (--only-bg 3) starts slide-in at frame 91, reaches full 21230 px "
+             "at frame 110, settles flat with nothing pressed. A@130 picks default cursor slot "
+             "(chip id 5, Vulcan1); Start@140 moves cursor to OK; A@150 confirms and closes "
+             "window (closed by frame 165, BG3 settles at 2300 px HUD background). Hand slot 1 "
+             "(0x020349c2) carries chip id 5 (peek reads 0x0005). MegaMan CurState/CurAction "
+             "(at 0x0203a9b8) transitions to (4, 8) idle at frame 278. State built at frames=280 "
+             "shows (4, 8) at reload (verified by peek 0x0203a9b8 reading 0x0804). SubsystemIndex "
+             "12 held throughout all 280+ frames. All three enemy HP held at 0. Build time: "
+             "~0.32s. Determinism: 40 frames from two builds diff to 0 pixels.",
     ),
 ]
 
