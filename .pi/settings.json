@@ -1,0 +1,16 @@
+{
+  "defaultProvider": "openrouter",
+  "defaultModel": "anthropic/claude-opus-5",
+  "defaultThinkingLevel": "high",
+  "modelThinkingLevels": {
+    "openrouter/anthropic/claude-opus-5": "high",
+    "openrouter/anthropic/claude-sonnet-5": "xhigh",
+    "openrouter/openai/gpt-5.6-sol": "xhigh",
+    "openrouter/openai/gpt-5.6-terra": "high",
+    "openrouter/google/gemini-3.8-flash": "medium"
+  },
+  "packages": [
+    "npm:pi-context-prune",
+    "npm:pi-subagents"
+  ]
+}
