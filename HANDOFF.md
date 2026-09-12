@@ -29,7 +29,8 @@ working copies the tools read live in `/tmp`. Local copies elsewhere are fine an
 | `/tmp/bn6f_real.gba` | the original ROM (BN6 Falzar, "canon") | **NO — the one irreplaceable input** |
 | `/tmp/pausedwithcannon.state` | root state: live battle, Cannon queued, paused | **NO** (hand-played) |
 | `/tmp/chipselect.state` | root state: chip window open mid-battle | **NO** (hand-played) |
-| `/tmp/battlestart.state` | root state: a battle's frame 0, three Mettaurs | **NO** (its recipe's base is lost) |
+| `/tmp/bn6f_real.srm` | the battery save every recipe from power-on starts from | **NO** (backed up) |
+| `/tmp/battlestart.state` | a battle's frame 0, three Mettaurs | yes: `states.py build` from power-on (R1, 2026-09-12) |
 | `/tmp/noenemy2.state` | root state: RESULT window, the real reward roll | **NO** (recipe gives a different reward) |
 | `/tmp/bn6f_sterile.gba` | canon with 2 code patches ("canon (sterile)") | yes: `patch_sterile.py` |
 | `/tmp/bn6f_sterile_emptynet.gba` | sterile + the empty-encounter data patch | yes: `states.py build` makes it |
@@ -320,6 +321,17 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   fixture recipes, canon-side patches), `recon` (only when the oracle does not localise). No measurer
   (the harness prints the line), no archivist (facts go in the row note and AUDIT's table), no
   benchmark, no scoreboard. Role files: `.pi/agents/`. Rules every child loads: `AGENTS.md`.
+- **Worker model is chosen per ticket (revised after R1).** Default worker `google/gemini-3.8-flash` (high):
+  tooling, recipes, investigation. `anthropic/claude-sonnet-5` only for tickets that change Rust, until a
+  head-to-head says otherwise. On R1, Sonnet 5 spent $1.91 in 11 minutes (91 turns, ~67k context re-read
+  each, almost all cost in cache reads); Gemini finished it for $1.44 over 57 turns. Launch a worker as
+  `pi -p --approve --session-dir <dir> --mode json --model <id> --thinking <lvl> --append-system-prompt
+  <role body> "<task>"`; a stuck or too-expensive run can be continued on another model with `--fork
+  <session file>` without losing what it learned.
+- **Context pruning is on** (`~/.pi/agent/context-prune/settings.json`: enabled, `pruneOn: agentic-auto`,
+  summarizer = the session model at low thinking). It installs DISABLED, and its default mode only prunes
+  when the agent sends a text-only reply, which a headless worker never does mid-ticket -- that is why R1's
+  context grew unpruned. Naming an explicit summarizer model made pi hang at startup; keep `default`.
 - **Models** (OpenRouter ids; `.pi/settings.json`): coordinator `anthropic/claude-opus-5` high (chosen by
   cache-read price and the verified caching path in pi); planning/merge judgment `openai/gpt-5.6-sol`;
   worker `anthropic/claude-sonnet-5` xhigh, with `google/gemini-3.8-flash` A/B'd on the shot-dwell and
@@ -338,9 +350,9 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   tooling objective; close or rewrite it with `/goal` in pi). `PI_WORKFLOW.md` and
   `SUBAGENT_FLOWS.md` were removed in the cleanup; they are in history at `5ad59b6`.
 - **Inputs.** `/tmp` was wiped again (2026-09-12). `bash tools/restore_inputs.sh` restores everything
-  regenerable from `/home/box/bn-backup` (copy on `/media/box/Scyther/bn-backup`). Still lost:
-  `battlestart.state`, `noenemy2.state` — the recipe work in step (1) replaces battlestart; noenemy2's
-  reward roll is unrecoverable by recipe, so the `result` row moves to `result_arrival` and a rebuilt
+  regenerable from `/home/box/bn-backup` (copy on `/media/box/Scyther/bn-backup`). Step (1) is
+  done (R1, merged `fd282eb`): `states.py build all` rebuilds every state from the ROM and the battery
+  save except `noenemy2`, whose reward roll is unrecoverable by recipe, so the `result` row moves to `result_arrival` and a rebuilt
   RESULT fixture is declared a different fixture, not a restoration. `states.py build all` now skips a
   chain whose base is missing instead of aborting.
 - **pi is built from source.** Clone at `/home/box/Code/pi`, branch `local/build-fixes` (one local commit:

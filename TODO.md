@@ -86,7 +86,7 @@ Written after breaking all three of these in one evening.
 
 ## R. Root states as recipes (HANDOFF §13 step 1)
 
-### R1. Rebuild the fixture chain from power-on  *(OPEN -- 2026-09-12)*
+### R1. Rebuild the fixture chain from power-on  *(DONE -- merged fd282eb, 2026-09-12)*
 
 **Why.** `battlestart.state` was lost with /tmp on 2026-09-08. `overworld_net`, `emptyfield_start`
 and `chip_ready_empty` are built from it, and the chip/banner/popup rows cannot move off PAUSED's

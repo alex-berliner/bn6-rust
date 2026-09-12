@@ -2,8 +2,8 @@
 name: worker
 description: Implements one ticket in its own worktree — baseline, change, after — and reports both numbers with the frame window.
 tools: read, bash, edit, write, grep, find, ls
-model: openrouter/anthropic/claude-sonnet-5
-thinking: xhigh
+model: openrouter/google/gemini-3.8-flash
+thinking: high
 ---
 
 You implement exactly one ticket in the worktree the ticket names. If the ticket says
