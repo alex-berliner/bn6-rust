@@ -493,7 +493,7 @@ integrated-field assertions were outside the independent row reproduction. Worke
 GLM-5.3-Flash high, 137 turns, $0.240187875; required worker 2 used GPT-5.6-Sol high, 20 turns,
 $0.836421800; verifier used GPT-5.6-Sol high, 26 turns, $1.383901000; children total $2.460510675.
 
-### F2. The mettaur row compares the wrong Mettaur attack  *(OPEN -- 2026-09-12)*
+### F2. The mettaur row compares the wrong Mettaur attack  *(DONE -- merged 332e658, 2026-09-12)*
 
 **Why.** F1's verified finding: both sides run the same 106-frame Mettaur attack cycle (canon attack
 animations start at canon frames 32, 138; ours at battle frames 95, 201, 307, 413). The row's Align
@@ -503,7 +503,7 @@ ours took its first hit at battle frame 176 and its third-attack wave falls outs
 two sides are in different situations for the whole window. An equivalent object-phase minimum exists
 at offset 203 (second attack <-> second attack), outside the band.
 
-**Result.** PAIRED BY EVENT, branch `wt/f2-mettaur-pair` at `c335e49` (unmerged). Events
+**Result.** DONE and merged as `332e658`; implementation commit `c335e49`. Events
 measured from `--watch` captures of the row's own sides: canon attack anims start at
 canon frames 32 and 138, MegaMan hit at canon frame 114 (HP 60->50, 120-frame mercy,
 next hit 234); rust attack anims at battle frames 95, 201, 307, 413 (capture = battle +
@@ -521,7 +521,15 @@ shifted control changes the result (mm_timer 7 -> 0 frames). The residue is Mega
 mercy blink phase, 766-px chunks, worst frame k=11 (1566 px), region x 1..77 y 70..113
 -- src/ territory, unchanged by this ticket. The row's total moved 30864 -> 31075
 (+211): the ticket predicted this may not go down, and the score is not the criterion
--- the pairing is.
+-- the pairing is. Clean detached `verify_rows.py` PASS reproduced mettaur
+31075/1566/70 with non-blind negative 46554, and `states.py build all` passed. The Sol verifier
+CONFIRMED all three claims: offset 203 is attack 2 <-> attack 2 with equivalent 120-frame mercy
+history and is derived from events rather than score; old 309 is attack 2 <-> attack 3 with
+incompatible histories while 203 is the unique minimum in 193..213; and timer 7/6 is exactly a
+one-frame phase residue. It judged acceptance met and safe to merge, but warned that the residue's
+source-level cause and direction are unverified, so "late" is not a sound premise for a next fix.
+Worker: GLM-5.3-Flash high, 30 turns, $0.019362545; verifier: GPT-5.6-Sol high, 23 turns,
+$1.019545900; children total $1.038908445.
 
 **Do, in order.**
 1. **Baseline** `harness.py --only mettaur` and `oracle.py mettaur` (30864 / 1566 / 70; first
