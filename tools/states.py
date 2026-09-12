@@ -45,19 +45,17 @@ turns out to be a question with a physical answer, not a guess:
         this manifest exists to prevent -- flip it once the reward-content
         divergence is understood well enough to either fix the recipe or
         accept the new content on purpose.
-      - BATTLESTART's own documented recipe (TRANSFER.md 7aw) starts from an
-        overworld save, walking toward a random encounter with the roll
-        forced every frame. There is no overworld save file in /tmp, none
-        was ever recorded, and reaching one from a cold boot means scripting
-        a title screen, a name entry and an intro this project has never
-        driven. Nothing here is runnable, so despite being harness-made in
-        the same sense as NOENEMY, it stays a ROOT until that input exists.
+      - BATTLESTART's recipe was rebuilt from power-on (ticket R1): cold boot
+        with the battery save (/tmp/bn6f_real.srm) scripts the title screen
+        and Continue into CentralArea1 (overworld_net), then a one-shot poke
+        at frame 60 triggers an encounter roll (3 Mettaurs) reaching battle
+        frame 0 (eBGScrollCBCounters 0/0) at frame 79. battlestart is no
+        longer a root.
 
     PAUSED and CHIPSELECT are true roots: `build` refuses them outright.
-    NOENEMY and BATTLESTART are marked `root=True` too, for the reasons
-    above, but each carries a `recipe` a future session can flip on once its
-    own caveat is resolved -- the manifest writes the coupling down instead
-    of it living only in whoever's memory ran the original capture.
+    NOENEMY is marked `root=True` too, for the reasons above, but carries
+    a `recipe` a future session can flip on once its caveat is resolved.
+    BATTLESTART is now a built state (`root=False`).
 
 RESULT_ARRIVAL is the one new state this ticket adds (AUDIT pair 4): the
 existing NOENEMY fixture starts after the RESULT window has already slid
@@ -173,30 +171,6 @@ STATES = [
                      "PAUSED.",
     ),
     State(
-        name="battlestart",
-        path="/tmp/battlestart.state",
-        root=False,
-        rom=REAL,
-        base="/tmp/overworld_net.state",
-        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
-                         for i in range(79)),
-        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),
-        frames=79,
-        description="A battle's real frame 0 -- eBGScrollCBCounters read "
-                     "0/0, TRANSFER.md 7aw. Used by harness.py's "
-                     "check_opening. Rebuilt by recipe from overworld_net.",
-        note="VERIFIED (ticket R1). From overworld_net.state, cycle 4 directions "
-             "one per frame; one-shot poke the encounter roll open at frame 60 "
-             "only. Battle init triggers at frame 60 (SubsystemIndex 8); battle "
-             "main loop begins at frame 76 (SubsystemIndex 12). eBGScrollCBCounters "
-             "(0x02009690/0x02009694) read 0x0000/0x0000 at frame 79 (verified by "
-             "--peek immediately at reload). Rolled EnemySetupArr entry at "
-             "0x080b5354 (3 Mettaurs at panels (5,1), (5,3), (6,2)). Live RAM "
-             "BattleObjects confirmed at 0x0203aa88, 0x0203ab60, 0x0203ac38, each "
-             "NameID 0x0001 (Mettaur), HP 40/40. Build time: ~0.13s. Determinism: "
-             "40 frames from two builds diff to 0 pixels.",
-    ),
-    State(
         name="overworld_net",
         path="/tmp/overworld_net.state",
         root=False,
@@ -221,6 +195,78 @@ STATES = [
              "held Right or Down; u16 at 0x02009f5e increments under Down. "
              "Build time: ~0.78s. Determinism: 40 frames from two independent "
              "builds diff to 0 pixels.",
+    ),
+    State(
+        name="battlestart",
+        path="/tmp/battlestart.state",
+        root=False,
+        rom=REAL,
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),
+        frames=79,
+        description="A battle's real frame 0 -- eBGScrollCBCounters read "
+                     "0/0, TRANSFER.md 7aw. Used by harness.py's "
+                     "check_opening. Rebuilt by recipe from overworld_net.",
+        note="VERIFIED (ticket R1). From overworld_net.state, cycle 4 directions "
+             "one per frame; one-shot poke the encounter roll open at frame 60 "
+             "only. Battle init triggers at frame 60 (SubsystemIndex 8); battle "
+             "main loop begins at frame 76 (SubsystemIndex 12). eBGScrollCBCounters "
+             "(0x02009690/0x02009694) read 0x0000/0x0000 at frame 79 (verified by "
+             "--peek immediately at reload). Rolled EnemySetupArr entry at "
+             "0x080b5354 (3 Mettaurs at panels (5,1), (5,3), (6,2)). Live RAM "
+             "BattleObjects confirmed at 0x0203aa88, 0x0203ab60, 0x0203ac38, each "
+             "NameID 0x0001 (Mettaur), HP 40/40. Build time: ~0.13s. Determinism: "
+             "40 frames from two builds diff to 0 pixels.",
+    ),
+    State(
+        name="emptyfield_start",
+        path="/tmp/emptyfield_start.state",
+        root=False,
+        rom="/tmp/bn6f_sterile_emptynet.gba",  # STERILE_BASE + --empty-net-encounter (patch_sterile.py)
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),  # cycled one per frame, TRANSFER 7aw's own shape
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),  # ONE roll attempt, at frame 60
+        cheats=DELETE_ENEMY_3,  # kill whichever slot(s) spawn, every frame from load
+        frames=79,
+        description="A battle that spawned a real encounter and deleted it before frame 0 "
+                     "(all 3 Mettaurs held at HP 0). Base for chip_ready_empty.",
+        note="VERIFIED (ticket R1). Re-swept for the new power-on overworld_net base: "
+             "from overworld_net.state, cycle Right/Down/Left/Up one per frame; one-shot "
+             "poke at frame 60 opens encounter roll. Battle init triggers at frame 60 "
+             "(SubsystemIndex 8); battle main loop at frame 76 (SubsystemIndex 12); "
+             "SubsystemIndex 12 held throughout. eBGScrollCBCounters (0x02009690/0x02009694) "
+             "read 0x0000/0x0000 at frame 79 (battle frame 0, TRANSFER 7aw) -- verified "
+             "by --peek immediately at reload. All three enemy HP fields held at 0 "
+             "throughout by DELETE_ENEMY_3 (peeks at 0x0203aaac, 0x0203ab84, 0x0203ac5c "
+             "all read 0x0000). Build time: ~0.12s. Determinism: 40 frames from two builds "
+             "diff to 0 pixels.",
+    ),
+    State(
+        name="chip_ready_empty",
+        path="/tmp/chip_ready_empty.state",
+        root=False,
+        rom="/tmp/bn6f_sterile_emptynet.gba",
+        base="/tmp/emptyfield_start.state",
+        script="A@130,Start@140,A@150",
+        cheats=DELETE_ENEMY_3,
+        pokes=("0x020008a0:0x019d", "0x02004c20:0x8062"),
+        frames=280,
+        description="AUDIT wave 3c/3d ticket step 3: emptyfield_start with a chip picked "
+                     "through the chip window (which opens on its own) and in hand, ready to "
+                     "test whether a chip fires with no enemy alive at all.",
+        note="VERIFIED (ticket R1). From emptyfield_start.state, chip window opens on its "
+             "own: BG3 content (--only-bg 3) starts slide-in at frame 91, reaches full 21230 px "
+             "at frame 110, settles flat with nothing pressed. A@130 picks default cursor slot "
+             "(chip id 5, Vulcan1); Start@140 moves cursor to OK; A@150 confirms and closes "
+             "window (closed by frame 165, BG3 settles at 2300 px HUD background). Hand slot 1 "
+             "(0x020349c2) carries chip id 5 (peek reads 0x0005). MegaMan CurState/CurAction "
+             "(at 0x0203a9b8) transitions to (4, 8) idle at frame 278. State built at frames=280 "
+             "shows (4, 8) at reload (verified by peek 0x0203a9b8 reading 0x0804). SubsystemIndex "
+             "12 held throughout all 280+ frames. All three enemy HP held at 0. Build time: "
+             "~0.32s. Determinism: 40 frames from two builds diff to 0 pixels.",
     ),
     State(
         name="noenemy2",
@@ -349,54 +395,6 @@ STATES = [
              "reported honestly, not silently carried by a state that "
              "looks like a fix but is not one.",
     ),
-    State(
-        name="emptyfield_start",
-        path="/tmp/emptyfield_start.state",
-        root=False,
-        rom="/tmp/bn6f_sterile_emptynet.gba",  # STERILE_BASE + --empty-net-encounter (patch_sterile.py)
-        base="/tmp/overworld_net.state",
-        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
-                         for i in range(79)),  # cycled one per frame, TRANSFER 7aw's own shape
-        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),  # ONE roll attempt, at frame 60
-        cheats=DELETE_ENEMY_3,  # kill whichever slot(s) spawn, every frame from load
-        frames=79,
-        description="A battle that spawned a real encounter and deleted it before frame 0 "
-                     "(all 3 Mettaurs held at HP 0). Base for chip_ready_empty.",
-        note="VERIFIED (ticket R1). Re-swept for the new power-on overworld_net base: "
-             "from overworld_net.state, cycle Right/Down/Left/Up one per frame; one-shot "
-             "poke at frame 60 opens encounter roll. Battle init triggers at frame 60 "
-             "(SubsystemIndex 8); battle main loop at frame 76 (SubsystemIndex 12); "
-             "SubsystemIndex 12 held throughout. eBGScrollCBCounters (0x02009690/0x02009694) "
-             "read 0x0000/0x0000 at frame 79 (battle frame 0, TRANSFER 7aw) -- verified "
-             "by --peek immediately at reload. All three enemy HP fields held at 0 "
-             "throughout by DELETE_ENEMY_3 (peeks at 0x0203aaac, 0x0203ab84, 0x0203ac5c "
-             "all read 0x0000). Build time: ~0.12s. Determinism: 40 frames from two builds "
-             "diff to 0 pixels.",
-    ),
-    State(
-        name="chip_ready_empty",
-        path="/tmp/chip_ready_empty.state",
-        root=False,
-        rom="/tmp/bn6f_sterile_emptynet.gba",
-        base="/tmp/emptyfield_start.state",
-        script="A@130,Start@140,A@150",
-        cheats=DELETE_ENEMY_3,
-        pokes=("0x020008a0:0x019d", "0x02004c20:0x8062"),
-        frames=280,
-        description="AUDIT wave 3c/3d ticket step 3: emptyfield_start with a chip picked "
-                     "through the chip window (which opens on its own) and in hand, ready to "
-                     "test whether a chip fires with no enemy alive at all.",
-        note="VERIFIED (ticket R1). From emptyfield_start.state, chip window opens on its "
-             "own: BG3 content (--only-bg 3) starts slide-in at frame 91, reaches full 21230 px "
-             "at frame 110, settles flat with nothing pressed. A@130 picks default cursor slot "
-             "(chip id 5, Vulcan1); Start@140 moves cursor to OK; A@150 confirms and closes "
-             "window (closed by frame 165, BG3 settles at 2300 px HUD background). Hand slot 1 "
-             "(0x020349c2) carries chip id 5 (peek reads 0x0005). MegaMan CurState/CurAction "
-             "(at 0x0203a9b8) transitions to (4, 8) idle at frame 278. State built at frames=280 "
-             "shows (4, 8) at reload (verified by peek 0x0203a9b8 reading 0x0804). SubsystemIndex "
-             "12 held throughout all 280+ frames. All three enemy HP held at 0. Build time: "
-             "~0.32s. Determinism: 40 frames from two builds diff to 0 pixels.",
-    ),
 ]
 
 BY_NAME = {s.name: s for s in STATES}
@@ -443,7 +441,7 @@ def build(name):
 def list_states():
     print("%-14s %-6s %-32s %-14s %-7s %s" % ("name", "root", "path", "base", "frames", "description"))
     for s in STATES:
-        base = os.path.basename(s.base) if s.base else "(cold boot)" if s.rom else "-"
+        base = os.path.basename(s.base) if s.base else "(save)" if s.save else "(cold boot)" if s.rom else "-"
         frames = str(s.frames) if s.frames is not None else "-"
         print("%-14s %-6s %-32s %-14s %-7s %s" % (
             s.name, "yes" if s.root else "no", s.path, base, frames, s.description.split(".")[0] + "."))
