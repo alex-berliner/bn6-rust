@@ -27,6 +27,10 @@ not the $5/$30 launch price. One identical 3-tool task, all four answers correct
 $0.0011 (20 s), DeepSeek V4.1 Flash $0.0017 (7 s), Luna $0.0023 (6 s), Gemini 3.8 Flash $0.0162 (24 s,
 ~3.7k uncached tokens re-sent per turn). The routing that follows is in HANDOFF §13.
 
+Later the same day: Muse Spark 1.3 (Meta, released 2026-09-02) passed the same 3-tool test ($0.019, 7 s) and
+matched Sol's verdict on F2's claims check at about a third of the cost; it became the verifier. DeepSeek V4
+Pro was dropped (AA ~36).
+
 ---
 
 ## Report 1 — closed-weight frontier models

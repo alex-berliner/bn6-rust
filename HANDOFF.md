@@ -405,6 +405,14 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   - verifier, pi-side coordinator, and the escalation target for a failed or Rust-heavy ticket:
     `openai/gpt-5.6-sol` high, pinned to OpenAI ($1/$5, cache $0.10/M on its cheapest OpenAI endpoint;
     AA ~47). Cross-family from the worker by design. Opus 5 is the last resort ($0.50/M cache).
+  - **Verifier changed after F2 (2026-09-12): `meta/muse-spark-1.3` high** (Meta, a third family; AA
+    ~48 on the user's chart, level with Sol; $1.25/$4.25, cache $0.15/M, one first-party endpoint). Same
+    F2 claims task: Sol 23 turns $1.02, all three CONFIRMED (it measured claim 3); Muse 63 turns $0.37,
+    CONFIRMED 1-2 by arithmetic plus the ROM source of the 120-frame mercy, left 3 UNCHECKED rather than
+    measure, and flagged that the pairing's raw event logs are not committed. The role now tells it to
+    measure. Sol stays coordinator and escalation. The cheap `-contributor` tier ($0.10/$0.20) is NOT
+    used: its name implies Meta may train on prompts; the user decides that. DeepSeek V4 Pro is dropped
+    as a candidate (AA ~36 on the user's chart, below the cheaper GLM-5.3-Flash).
   - Not used by default: Sonnet 5 (cache $0.20/M and turn-hungry), Gemini 3.8 Flash (partial caching),
     Grok 4.6 (cache $0.50/M), Kimi (tool-call reliability). Escalate by `--fork`, never by restarting.
 - **Routine coordination runs in pi, not in a Claude Code chat (2026-09-12).** `bash

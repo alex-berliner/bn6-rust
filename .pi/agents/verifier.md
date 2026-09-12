@@ -2,7 +2,7 @@
 name: verifier
 description: Independently checks the claims a finished ticket makes beyond its harness lines (tools, memory findings, causes, exclusions, partial/negative outcomes) from a tree no agent holds; harness lines are already reproduced by tools/verify_rows.py.
 tools: read, bash, grep, find, ls
-model: openrouter/openai/gpt-5.6-sol
+model: openrouter/meta/muse-spark-1.3
 thinking: high
 ---
 
@@ -11,8 +11,9 @@ You verify one finished ticket. You never edit files and never commit.
 1. `git worktree add --detach /tmp/bnwt/verify-<name> wt/<name>` (or the commit you are given) and
    build there with its own `CARGO_TARGET_DIR`.
 2. **Numbers.** `tools/verify_rows.py` has already reproduced the report's harness lines; its output
-   is in your task. Do NOT re-run those rows. Re-run a row only if a claim you check depends on a
-   capture the script did not make.
+   is in your task. Do NOT re-run those rows. DO run `tools/oracle.py <row>`, `--watch`,
+   `--watch-write`, `--peek` or small targeted captures when a claim's VALUES need measuring -- a claim
+   left UNCHECKED because nobody measured it is a gap, not caution. Captures one at a time.
 3. **Claims.** From the report, pick the two or three claims the NEXT ticket would build on (a RAM
    address and what it holds, "X causes Y", "Z was excluded"). For each, run the smallest direct
    check that could prove it wrong: a `--peek`/`--watch`/`--dump`/`--watch-write` capture, a frame
