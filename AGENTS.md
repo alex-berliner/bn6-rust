@@ -14,7 +14,7 @@ Keep this file short and stable: it is loaded into every child's context.
 - Report in this shape, nothing more: row · frames · total · worst · region · commit · one line
   of mechanism · one line of what is unverified.
 - Work only in your own worktree from `tools/worktree.sh <name>`; edit only the files the
-  ticket names; stage by path (`git add -u <path>`); never `git add -A`; never push.
+  ticket names; stage by path (`git add -u <path>`); never `git add -A`; never push (the coordinator pushes).
 - `reference/bn6f` is read-only for agents. Copyrighted inputs (ROMs, save states, saves) are never
   tracked; never `git add -f` anything gitignored.
 - Captures serialize: never run two harness rows at once on this machine.

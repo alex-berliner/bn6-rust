@@ -262,6 +262,16 @@ stale file. A state saved mid-battle has the enemy baked into RAM — no ROM pat
 
 ## 7. The site — `web/`
 
+- **Published** at https://alex-berliner.github.io/bn6-rust/ from the generated `gh-pages` branch by
+  `bash tools/publish_site.sh` (builds the ROMs, copies `web/` into a `/tmp/bn-site` worktree of
+  `gh-pages`, pushes). It refuses to publish any `.gba` that is not a `BN6 RUST` build (header title and
+  the real ROM's sha1 are both checked) and any save state, battery save or `real-*` file. The real ROM
+  kept in `web/` stays local. Note: the ROM, `assets/` and the gallery contain Capcom's graphics; the
+  user chose to publish them.
+- **The disassembly** is the user's fork, https://github.com/alex-berliner/bn6f, branch `bn-notes`
+  (`.gitmodules` points there with `branch = bn-notes`). Push new annotations with
+  `git -C reference/bn6f push fork bn-notes` and refresh the backup bundle (§1).
+
 - `bash tools/build_roms.sh` — the default release ROM into `web/roms/rollup.gba`, plus
   `web/roms/manifest.json` (one entry: the full battle, labelled with its build timestamp — pair 8).
   Demo-per-feature ROMs are gone with the `demo-*` features that built them (2026-09-12). Run after any
@@ -286,7 +296,9 @@ stale file. A state saved mid-battle has the enemy baked into RAM — no ROM pat
   detached `git worktree add --detach` of the branch): build + the relevant rows.
   Then from the main checkout: `git merge --no-ff wt/<name>` · `git worktree remove --force
   /tmp/bnwt/<name>` · `git branch -d wt/<name>` · `rm -rf /tmp/ct_<name>`.
-- Commit every verified step. **Never push.** Commit messages say what was measured.
+- Commit every verified step. Commit messages say what was measured. **Agents never push.** The repo is
+  on GitHub (alex-berliner/bn6-rust, public, since 2026-09-12); the Claude Code coordinator pushes `main`
+  after merges, and only `tools/publish_site.sh` pushes the generated `gh-pages` branch.
 - If a commit changes what the screen shows: run the harness (or the affected rows) and commit the
   gallery; rebuild the site ROMs if a listed ROM changed.
 - **`reference/bn6f` annotations:** comments and labels only, never instructions or data — the
