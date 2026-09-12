@@ -15,6 +15,20 @@ percentage as indicative and re-check the primary source before it becomes load-
 
 ---
 
+## Addendum, 2026-09-12 evening: what measurement changed
+
+The picks in the session that commissioned these reports ranked models by benchmark and list price.
+Two tickets later, the measured driver of cost is cache-read price x turns x context, plus whether
+tool calls work through OpenRouter on a pinned first-party endpoint. Live endpoint prices (OpenRouter
+API, 2026-09-12): cache read per million -- DeepSeek V4.1 Flash on DeepSeek $0.003, GPT-5.6 Luna on
+OpenAI $0.01-0.02, GLM-5.3-Flash on Z.AI $0.03, Gemini 3.8 Flash $0.0375-0.075, GPT-5.6 Sol on OpenAI
+$0.10, Sonnet 5 $0.20, Opus 5 $0.50, Grok 4.6 $0.50. Sol lists at $1/$5 on OpenAI's cheapest endpoint,
+not the $5/$30 launch price. One identical 3-tool task, all four answers correct: GLM-5.3-Flash
+$0.0011 (20 s), DeepSeek V4.1 Flash $0.0017 (7 s), Luna $0.0023 (6 s), Gemini 3.8 Flash $0.0162 (24 s,
+~3.7k uncached tokens re-sent per turn). The routing that follows is in HANDOFF §13.
+
+---
+
 ## Report 1 — closed-weight frontier models
 
 # Frontier Closed-Weight Model Assessment for Agent-System Roles (OpenRouter, Sept 2026)

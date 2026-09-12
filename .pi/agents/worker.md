@@ -2,7 +2,7 @@
 name: worker
 description: Implements one ticket in its own worktree — baseline, change, after — and reports both numbers with the frame window.
 tools: read, bash, edit, write, grep, find, ls
-model: openrouter/google/gemini-3.8-flash
+model: openrouter/z-ai/glm-5.3-flash
 thinking: high
 ---
 

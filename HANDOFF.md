@@ -321,18 +321,28 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
   fixture recipes, canon-side patches), `recon` (only when the oracle does not localise). No measurer
   (the harness prints the line), no archivist (facts go in the row note and AUDIT's table), no
   benchmark, no scoreboard. Role files: `.pi/agents/`. Rules every child loads: `AGENTS.md`.
-- **Worker model is chosen per ticket (revised after R1).** Default worker `google/gemini-3.8-flash` (high):
-  tooling, recipes, investigation. `anthropic/claude-sonnet-5` only for tickets that change Rust, until a
-  head-to-head says otherwise. On R1, Sonnet 5 spent $1.91 in 11 minutes (91 turns, ~67k context re-read
-  each, almost all cost in cache reads); Gemini finished it for $1.44 over 57 turns. Launch a worker as
-  `pi -p --approve --session-dir <dir> --mode json --model <id> --thinking <lvl> --append-system-prompt
-  <role body> "<task>"`; a stuck or too-expensive run can be continued on another model with `--fork
-  <session file>` without losing what it learned.
+- **Models, re-evaluated 2026-09-12 after R1** (supersedes the matrix below; `.pi/agents/*.md`,
+  `.pi/settings.json`, pins in `~/.pi/agent/models.json`). The metric is cost per completed ticket, which
+  is dominated by turns x context x the CACHE-READ price, then by whether tool calls work through
+  OpenRouter. Per-token list prices and benchmark rank alone picked wrong (Sonnet 5 on R1: $1.91 in 11
+  minutes). Measured on one identical 3-tool task, all correct: GLM-5.3-Flash $0.0011, DeepSeek V4.1 Flash
+  $0.0017, GPT-5.6 Luna $0.0023, Gemini 3.8 Flash $0.0162 -- Gemini re-sent ~3.7k tokens uncached every
+  turn, so its caching only half works through this path.
+  - worker: `z-ai/glm-5.3-flash` high, pinned to Z.AI's own fp8 endpoint (27 providers serve it, the
+    cheapest in fp4). Top of the cheap frontier on the AA index (~42), cache read $0.03/M.
+  - recon: `deepseek/deepseek-v4.1-flash` medium, pinned to DeepSeek (cache read $0.003/M; released
+    2026-09-10, vendor benchmarks unverified).
+  - verifier, pi-side coordinator, and the escalation target for a failed or Rust-heavy ticket:
+    `openai/gpt-5.6-sol` high, pinned to OpenAI ($1/$5, cache $0.10/M on its cheapest OpenAI endpoint;
+    AA ~47). Cross-family from the worker by design. Opus 5 is the last resort ($0.50/M cache).
+  - Not used by default: Sonnet 5 (cache $0.20/M and turn-hungry), Gemini 3.8 Flash (partial caching),
+    Grok 4.6 (cache $0.50/M), Kimi (tool-call reliability). Escalate by `--fork`, never by restarting.
 - **Context pruning is on** (`~/.pi/agent/context-prune/settings.json`: enabled, `pruneOn: agentic-auto`,
   summarizer = the session model at low thinking). It installs DISABLED, and its default mode only prunes
   when the agent sends a text-only reply, which a headless worker never does mid-ticket -- that is why R1's
-  context grew unpruned. Naming an explicit summarizer model made pi hang at startup; keep `default`.
-- **Models** (OpenRouter ids; `.pi/settings.json`): coordinator `anthropic/claude-opus-5` high (chosen by
+  context grew unpruned. (An earlier note blamed an explicit summarizer model for a startup hang; that was the stdin issue in
+  the quirks below. `default` is still the choice: it summarizes with the session's own cheap model.)
+- **Models, original matrix (superseded by the re-evaluation above):** coordinator `anthropic/claude-opus-5` high (chosen by
   cache-read price and the verified caching path in pi); planning/merge judgment `openai/gpt-5.6-sol`;
   worker `anthropic/claude-sonnet-5` xhigh, with `google/gemini-3.8-flash` A/B'd on the shot-dwell and
   card-cursor tickets; verifier `openai/gpt-5.6-terra`; recon and the frame walker
@@ -379,9 +389,10 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
 - **pi quirks found in the first run (2026-09-12).** (a) `~/.pi/agent/models.json` overrides OpenRouter's
   Opus 5 `compat.supportsMidConvoEffort` to false — pi's catalog says true, OpenRouter rejects the beta
   with a 400 — and caps Opus 5 / Sonnet 5 `maxTokens` at 32000, because OpenRouter pre-authorizes the
-  full output allowance against the key's spending limit. (b) Pass `--model` explicitly: a `-p` run that
-  takes its model from `.pi/settings.json` with extensions loaded hung at startup. Not root-caused.
-  (c) `--mode json` piped to a file is block-buffered; a run killed by `timeout` loses all output, so
+  full output allowance against the key's spending limit. (b) ALWAYS run headless pi with `< /dev/null`: in `-p` mode pi reads piped stdin until EOF, and this
+  shell can leave stdin open, so a run waits forever with no output and no session file. Every
+  "hang" on 2026-09-12 (default model, explicit summarizer, GLM/DeepSeek/Luna multi-turn tests) was
+  this -- not the models, the pruner, or the endpoints. (c) `--mode json` piped to a file is block-buffered; a run killed by `timeout` loses all output, so
   use `--session-dir` and read the session file for progress. (d) The `subagent` tool's result carries
   no usage; per-child tokens and cost are in `<session-dir>/subagent-artifacts/*_meta.json`.
 - **First pi run (measurement only, 4 rows).** Opus 5 coordinator, one Sonnet 5 worker per row, run

@@ -2,7 +2,7 @@
 name: verifier
 description: Reproduces a worker's number from a tree no agent holds and audits the diff against the rules; used only for judgment tickets.
 tools: read, bash, grep, find, ls
-model: openrouter/openai/gpt-5.6-terra
+model: openrouter/openai/gpt-5.6-sol
 thinking: high
 ---
 
