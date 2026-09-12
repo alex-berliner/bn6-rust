@@ -16,6 +16,11 @@ debug = true
 opt-level = 3
 
 [profile.release]
+# Both from agb's project template (9a30cff). Fat LTO keeps code size and IWRAM use down; it is
+# also why boot length moves with code size, which the marker handles (HANDOFF §4). debug = true
+# gives mGBA's GDB stub and addr2line symbols, and it is NOT codegen-neutral: on 2026-09-12 the
+# .gba was 537,708 bytes with it and 541,132 without, differing from byte 261. Every harness
+# number is measured on this profile, so do not flip either setting without rerunning the table.
 lto = "fat"
 debug = true
 
