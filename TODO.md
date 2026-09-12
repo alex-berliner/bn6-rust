@@ -145,6 +145,44 @@ property you verified with the address and value, the determinism result, and th
 Then the report shape in AGENTS.md. A step that fails is reported with exactly what was observed,
 not worked around.
 
+### R2. Move the chip rows onto the never-had-an-enemy fixture  *(OPEN -- 2026-09-12)*
+
+**Why.** Every chip row compares against canon (sterile) loaded from PAUSED, whose leftover
+portrait box and Mettaur corpse cost each row the shared 14388/2350 baseline (see ALIGN_CHIP's
+comment in tools/harness.py). R1 rebuilt `/tmp/chip_ready_empty.state` (a battle that never had a
+live enemy; MegaMan idle, Vulcan1 in hand; `states.py build all` makes it). tools/harness.py already
+has the canon side for it, `_chip_canon_empty()` and `library_pokes_empty()`, NOT wired into any
+row: the last attempt (read the "NOT WIRED" comment block) searched alignments and plateaued at
+~43700-44631 px from two offsets 49 frames apart -- a false alignment or a real residue, never
+settled -- which is worse than 14388, so it was left unwired.
+
+**Do, in order.**
+1. **Baseline.** `python3 tools/harness.py --only chip-cannon --no-gallery` (expect 14388 / 2350 / 40,
+   negative not blind). Then score `_chip_canon_empty("01")` against `_chip_rust("01")` at the old
+   plateau alignment on the NEW state, and record that number too.
+2. **Pin the alignment by event, not by search.** On the canon side, watch MegaMan's
+   CurState/CurAction (0x0203a9b8; idle reads 0x0804) with `--watch` from load under the row's own
+   script, and find the frame it leaves idle for the chip action -- that frame (plus whatever fixed
+   lead the chip's first visible frame has) is `canon_ref`, measured and written into the Align
+   note. On the rust side, the marker origin plus the descriptor's `fire_frame` gives the matching
+   frame; use the existing search band only to CONFIRM a unique minimum there, not to find it.
+3. **Localize what is left** at that alignment: per-frame totals, and the region of the differing
+   pixels (tools/diffmask.py) -- which sprite, which frames. If the residue comes from the two
+   fixtures disagreeing (MegaMan's position, HP, palette, a HUD element, the chip in hand), fix the
+   rust DESCRIPTOR or the canon Side's pokes so both sides show the same situation, citing the RAM
+   value you matched. If it comes from how src/ draws or times something, stop fixing and report it
+   with frame and region -- that is a src/ ticket.
+4. **Move the rows.** Only if `chip-cannon` on the empty route reads BELOW 14388 with its negative
+   not blind: point the shared chip template at the empty route, run every chip row one at a time,
+   and report each row's before and after. A row that gets worse stays on PAUSED, with its numbers
+   in the report. Then banner and popup, if they can use the same state.
+
+**Rules.** tools/ only (harness.py, and states.py only if a recipe needs a tweak); no src/; never
+widen tools/allowlist.py; every changed row keeps a non-blind negative; captures one at a time.
+
+**Measure and report.** The alignment evidence (the RAM watch frames on both sides), the residue
+breakdown with frames and regions, every row's before/after line, and the AGENTS.md report shape.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
