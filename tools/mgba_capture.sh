@@ -9,8 +9,10 @@
 # usage: mgba_capture.sh [<rom.gba>] <outdir> <count> [--press-A <ticks>] [--build <features...>]
 #
 #   --build  build the ROM from cargo features before capturing (comma/space
-#            list). When set, no <rom.gba> positional is needed.
-#            e.g. --build demo-cannon,demo-auto
+#            list). When set, no <rom.gba> positional is needed. The project
+#            has no non-default features any more (AUDIT pair 17 prune
+#            ticket retired the last of the demo-* ones) -- pass "" for the
+#            plain release build, or a feature a future agent adds.
 #   --press-A <ticks>  hold A for <ticks> frames starting ~frame 60
 #   --no-decode  leave raw .rgb frames instead of decoding to .png
 #

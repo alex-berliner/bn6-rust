@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Run every chip comparison and print the scoreboard.
+"""The 43-chip table tools/harness.py's `_chip_checks()` builds its rows
+from: each entry names the chip (still by its old demo-* feature name, which
+`_chip_checks()` strips down to the bare chip name for the row), the chip id
+in hex, the frames to compare, and any extra flags a couple of chips need.
 
-Each comparison is run with --clean: 43 chips leave about 4 GB of raw capture
-frames behind otherwise, and this box has run out of swap over exactly that.
+This used to also be a standalone script that ran each comparison through
+tools/chip_compare.py's old `--features <feature>` build path and printed a
+scoreboard (`python3 scoreboard.py [--only NAME,...] [--out FILE]`); that
+CLI is gone with the demo-* features it built (AUDIT pair 17 prune ticket).
+`tools/harness.py --only chip-<name>` is the check now -- see its own
+`_chip_rust`/`_chip_canon`, which build straight off a plain ROM's fixture
+descriptor instead of a per-chip cargo feature.
 
-usage: python3 scoreboard.py [--only NAME,...] [--out FILE]
-
-Each row is one chip: its demo feature, the frames compared and the mean
-pixels per frame chip_compare.py reports. EXACT MEANS ZERO. It used to mean
-"equals a floor", because the ENEMY DELETED banner contributed 369 px on one
-frame of every comparison and could not be zeroed from the harness -- the
+Each row is one chip: its old demo feature name, the frames compared and the
+mean pixels per frame chip_compare.py reports. EXACT MEANS ZERO. It used to
+mean "equals a floor", because the ENEMY DELETED banner contributed 369 px on
+one frame of every comparison and could not be zeroed from the harness -- the
 harness writes before each frame and the game uploads the banner during the
 frame that shows it. tools/patch_sterile.py now patches the routine that
 uploads it (sub_801E838) out of the capture ROM, so there is no floor left to
@@ -25,14 +31,6 @@ The frame counts are the length of each attack: too few misses its end, too
 many compares a second volley against an idle navi, because the sterile demo
 re-fires as soon as the navi is free.
 """
-
-import argparse
-import os
-import re
-import subprocess
-import sys
-
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 #: The flags a chip that shows its name popup needs; see the note by the five
 #: of them at the bottom of the list.
@@ -99,44 +97,3 @@ CHIPS = [
     ("demo-barr200", "b4", 80, POPUP),
 ]
 
-MEAN = re.compile(r"^mean ([0-9.]+) px/frame")
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--only", help="comma-separated feature names")
-    ap.add_argument("--out")
-    args = ap.parse_args()
-    wanted = set(args.only.split(",")) if args.only else None
-
-    rows = []
-    for feature, chip, frames, extra in CHIPS:
-        if wanted and feature not in wanted:
-            continue
-        out = subprocess.run(
-            ["python3", os.path.join(ROOT, "tools", "chip_compare.py"),
-             chip, feature, "--frames", str(frames), "--clean", *extra],
-            cwd=ROOT, capture_output=True, text=True,
-        )
-        mean = None
-        for line in out.stdout.splitlines():
-            m = MEAN.match(line)
-            if m:
-                mean = float(m.group(1))
-        floor = 0.0
-        rows.append((feature, frames, mean, floor))
-        state = "?" if mean is None else ("EXACT" if mean <= 0.05 else "%.1f" % mean)
-        print("%-16s %3d frames  mean %-8s %s" % (
-            feature, frames, "n/a" if mean is None else "%.1f" % mean, state))
-        sys.stdout.flush()
-
-    exact = sum(1 for _, _, m, f in rows if m is not None and m <= f + 0.05)
-    print("\n%d of %d exact" % (exact, len(rows)))
-    if args.out:
-        with open(args.out, "w") as f:
-            for feature, frames, mean, floor in rows:
-                f.write("%s\t%d\t%s\t%.2f\n" % (feature, frames, mean, floor))
-
-
-if __name__ == "__main__":
-    main()
