@@ -16,3 +16,8 @@ web/*.srm
 
 # Claude Code session scratch
 .claude/
+
+# pi session state (goal ledger, snapshots); .pi/agents, prompts, settings are tracked
+.pi/goals/
+.pi/.goals-pool-snapshot.json
+.pi/npm/

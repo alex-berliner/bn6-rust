@@ -551,6 +551,11 @@ def main():
             if s.root:
                 print("skip %-14s ROOT (%s)" % (s.name, s.path))
                 continue
+            if s.base and not os.path.exists(s.base):
+                # a chain rooted at a lost root state (battlestart died with /tmp on 2026-09-08);
+                # skip it and keep building the rest instead of aborting the whole run
+                print("skip %-14s base missing (%s)" % (s.name, s.base))
+                continue
             build(s.name)
         return
     build(args.name)
