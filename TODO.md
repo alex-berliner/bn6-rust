@@ -312,6 +312,39 @@ tools/ and docs only; no src/; reference/bn6f read-only; captures one at a time;
 must still build with `gcc tools/mgba_capture.c -o /tmp/mgba_capture -I/usr/include -lmgba -lm`
 and every existing flag must behave as before (run `harness.py --only wave` with the new binary).
 
+### R6. The state oracle: first divergent field, not just a pixel count  *(OPEN -- 2026-09-12)*
+
+**Why.** A harness row says how many pixels differ, not which variable went wrong on which frame, so
+every timing residue (MegaMan's hit/dwell timing in `mettaur`, the shot dwell gap, `card`'s cursor)
+has cost several attempts of guessing. HANDOFF §13 step 3. The empty-battle objective (R3-R5) is
+closed without a fix; the chip rows stay on the PAUSED baseline for now, documented, not hidden.
+
+**Do, in order.**
+1. **Pick the field set** (start small; every field needs a canon address AND a rust equivalent):
+   the RNG word (0x020013f0, HANDOFF §9); MegaMan's BattleObject -- CurState/CurAction (0x0203a9b8),
+   panel X/Y, HP, and the animation/action timer that drives hit and shot timing; the first enemy
+   slot's state/action and HP (slot at 0x0203aa88); the custom gauge value; the battle frame counter.
+   Take offsets from reference/bn6f/include/structs/BattleObject.inc and cite each.
+2. **Rust export.** In src/, write those fields every frame into a fixed EWRAM block right after the
+   descriptor (the marker is at 0x02000000, the descriptor at 0x02000040 for 64 bytes; see
+   src/main.rs's comments on how BATTLE_MARKER is pinned, and pin the new block the same way),
+   converted to CANON's units and encodings (a field map, documented next to the block). This must
+   not change pixels: `wave` still PASS 0/90, `window` still PASS 0/16, and every other row you run
+   reads the same number as before. Constants get `// provenance:` tags.
+3. **tools/oracle.py `<row>`**: capture both sides of a harness row with `--watch` on the canon
+   addresses and on the rust block, align with the row's own Align (reuse harness.py's machinery),
+   and print the first frame where each field diverges, plus a per-field table. **Negative control**
+   (AUDIT pair 10): the same comparison shifted by one frame must report a divergence, or the
+   oracle is BLIND on that row.
+4. **Acceptance.** `oracle.py wave` reports no divergence on every field both sides model over the
+   compared frames. `oracle.py mettaur` reports a first divergent field and frame, and that frame is
+   consistent with the first non-zero frame of the row's pixel diff (report both). Document the
+   command and the field map in HANDOFF §3.
+
+**Rules.** src/ changes only for the export block (no behaviour change); tools/ and docs; never
+widen the allowlist; captures one at a time. **Report** the field map with sources, the before/after
+lines of every row run, both oracle outputs with their negative controls, in AGENTS.md shape.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
