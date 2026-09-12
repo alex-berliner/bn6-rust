@@ -389,7 +389,9 @@ closed without a fix; the chip rows stay on the PAUSED baseline for now, documen
 widen the allowlist; captures one at a time. **Report** the field map with sources, the before/after
 lines of every row run, both oracle outputs with their negative controls, in AGENTS.md shape.
 
-### R7. Land the state oracle on the facts R6 found  *(OPEN -- 2026-09-12)*
+### R7. Land the state oracle on the facts R6 found  *(DONE -- 2026-09-12)*
+
+**Result.** Merged `a9d08b7` as `2b35d4b`. The verifier PASSed all numbered acceptance and CONFIRMED behavior neutrality: `wave` 0/0/90 (negative 3840), `window` 0/0/16 (81056), `mettaur` 30864/1566/70 (45233), and `card` 18486/3081/16 (15405), all unchanged. Independent raw-watch parsing CONFIRMED `mettaur` first diverges at `mm_timer` k=0 with 959 first-frame pixels, while pixel-clean `wave` first diverges at enemy animation k=24, MegaMan state/animation/timer k=43, and enemy state/action k=64. It also CONFIRMED the complete field classifications, populated enemy slot `0x0203ab60`, linker-safe chosen export range `0x02000008..0x0200002f`, honest provenance labels, unsupported-row failures, and shifted-control sensitivity. The worker's two field-specific shifted-control descriptions were REFUTED (the controls changed divergence frames/counts, not RNG or enemy X); those claims are not carried forward. `cargo build --release`, Python compile checks, capture-tool compilation, and `python3 tools/states.py build all` passed. Worker `openrouter/z-ai/glm-5.3-flash:high`: 49 turns, $0.0639; verifier `openrouter/openai/gpt-5.6-sol:high`: 39 turns, $1.2914. Per HANDOFF §13 the next permitted objective is usage logging, not behavior changes.
 
 **Why.** R6's measurements and localization were independently reproduced, but its acceptance asked a
 pixel-clean row to have state parity and required canon fields that do not exist. Its implementation
