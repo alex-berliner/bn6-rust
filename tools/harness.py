@@ -191,6 +191,12 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # anyway per FIXTURE.md's own contract ("a descriptor is legal input the
     # moment a field lands, with no harness change needed").
     struct.pack_into("<H", buf, 56, descriptor.get("result_elapsed", 0))
+    # +58 rng (FIXTURE.md, read by src/fixture.rs since the wave 3d ticket):
+    # delivered now (TODO F4) -- an RNG-gated fixture needs canon's own seed,
+    # not this project's default. 0 leaves src/fixture.rs's own "0 = our
+    # default seed" convention in force, so every descriptor that does not
+    # name an rng is unchanged.
+    struct.pack_into("<I", buf, 58, descriptor.get("rng", 0))
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -898,13 +904,29 @@ def held(key: str, first: int, n: int) -> str:
     return ",".join("%s@%d" % (key, first + j) for j in range(n))
 
 
-#: demo-open's row, fixture.rs's table -- battlestart.state is lost (§1), so
-#: this cannot be re-verified byte-identical against the feature build any
-#: more; kept exactly as fixture.rs's own table records it. Marker origin 8
-#: (measured live for demo-open), same family as demo-field.
-OPEN_ROW = dict(enemies=3, enemy_kind=0, enemy_col=4, enemy_row=1, megaman_hp=60,
+#: demo-open's row, fixture.rs's table -- battlestart.state was lost, so this
+#: could not be re-verified byte-identical against the feature build; kept
+#: otherwise exactly as fixture.rs's own table records it. RE-POINTED AT R1's
+#: REBUILT battlestart.state (TODO F4, 2026-09-12): the rebuilt state has the
+#: same three Mettaurs but a different history, and two peeked initial
+#: conditions changed with it --
+#:   megaman_hp: canon's navi holds 0x0064 at 0x0203a9d4 (object +0x24) in the
+#:     rebuilt state (--peek at load reads 0 while the intro has not populated
+#:     the object; a 200-frame capture's --dump reads 0x0064, matching the
+#:     "100" drawn in the HP box). The old 60 was peeked from the LOST state
+#:     (TODO A6) and was the whole of the isolated row's 1160 px: 29 px of HP
+#:     digits (x 19..30, y 3..12) on every one of the 40 frames.
+#:   rng: ePrimaryRngSeed (0x020013f0) reads 0x14ca0f46 at the rebuilt state's
+#:     frame 0 (--peek at load; the old state's value is unrecoverable).
+#:     fixture_cheats() now delivers +58 (src/fixture.rs has read it since the
+#:     wave 3d ticket); without it the integrated variant's viruses materialize
+#:     on our default seed instead of canon's history.
+#: Marker origin 8 (measured live for demo-open), same family as demo-field.
+OPEN_ROW = dict(enemies=3, enemy_kind=0, enemy_col=4, enemy_row=1,
+                megaman_hp=100,  # provenance: peeked -- canon 0x0064 at 0x0203a9d4, R1's rebuilt battlestart.state (TODO F4); 60 was peeked from the lost state
                 megaman_col=2, megaman_row=2, hand=[], hand_count=0, gauge=0,
-                flags=0x01)
+                flags=0x01,
+                rng=0x14CA0F46)  # provenance: peeked -- ePrimaryRngSeed 0x020013f0 at frame 0, --peek at load from R1's rebuilt battlestart.state (TODO F4)
 OPEN_ORIGIN = 8
 
 #: demo-field's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
