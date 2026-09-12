@@ -1,1 +1,3 @@
+HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-barr200-isolated.
+
 Barr200, canon (sterile) left and this build right: 0.0 pixels a frame. Barrier, Barr100 and Barr200 are one handler with one parameter -- the bubble is the same object in teal, gold and pink, and the name popup above is the same eight objects of the raw battle font.

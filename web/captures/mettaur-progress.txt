@@ -1,0 +1,1 @@
+mettaur (isolated), before and after: canon on top; ours at 41b5d47 (30864 px over 70 frames, canon 140+k, rust offset 309); ours at cc61979 (31075 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
