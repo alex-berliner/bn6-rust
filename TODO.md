@@ -440,6 +440,42 @@ before any worker ran; the pi coordinator had already stopped itself on its $3 c
 accounting comes from pi's session files and `subagent-artifacts/*_meta.json`; a ledger script is a
 small coordinator chore, not a ticket.
 
+## F. Replica features and fixes, driven by the oracle (HANDOFF §13 step 5 onward)
+
+### F1. MegaMan takes a hit one frame late  *(OPEN -- 2026-09-12)*
+
+**Why.** The state oracle (R7, `tools/oracle.py`) localizes the `mettaur` row's 30864 px -- HANDOFF
+§10 already says that residue is entirely MegaMan's side -- and shows the same defect hidden on the
+pixel-clean `wave` row: canon enters MegaMan's hit state at wave k=43 (state/action (4,3), timer 22,
+HP 60 -> 50), our ROM one frame later at k=44 (HP 90 -> 80). On `mettaur` the first divergent field is
+`mm_timer` at k=0 (canon 7, rust 0, 7/70 frames), the same frame as the row's first 959 px.
+
+**Do, in order.**
+1. **Baseline:** `python3 tools/oracle.py wave` and `python3 tools/oracle.py mettaur` (record both
+   tables and negative controls) and the rows wave, window, mettaur, card, field, cannon (record every
+   line). This is the before.
+2. **The fixture half.** FIELD_ROW in tools/harness.py (the descriptor `wave` and `field` use) gives
+   MegaMan 100 HP; canon's state holds 60 before the hit. Peek canon's value, set the descriptor to it
+   with a `peeked` provenance note, and show that no pixel row changes (HP is not drawn in `wave`'s
+   BG2-only comparison -- prove it rather than assume it).
+3. **The timing half.** Find where canon decides a hit lands and enters the flinch on the SAME frame
+   (the hit/collision resolution and `object_subtractHP` asm00_2.s:23756, flinch asm00_2.s:18294 --
+   src/actor.rs's `take_damage` cites both; use `--watch-write` on MegaMan's CurState/CurAction
+   0x0203a9b8 and HP to name the writing instructions and their order within the frame). Compare the
+   order of operations in our battle update (src/battle.rs / src/actor.rs): which step runs a frame
+   later. Fix the order in src/, citing the asm lines.
+4. **Acceptance.** `oracle.py wave`: MegaMan's state/action, anim and timer no longer diverge at k=43
+   (report any remaining divergence exactly). `oracle.py mettaur`: `mm_timer`'s divergence count and
+   the row's pixel total both fall; report the new first divergent field. wave and window still PASS 0
+   with non-blind negatives; card unchanged; every other row reads the same or lower -- a row that gets
+   worse is reported with its numbers, not hidden. Negative controls still change the result.
+
+**Rules.** src/ for the timing fix, tools/harness.py for the descriptor value only; no allowlist
+change; no alignment or region change; captures one at a time. **Report** the watch-write evidence of
+canon's in-frame order, the src/ change with asm citations, both oracle tables before and after, every
+row's before/after line, in AGENTS.md shape. **Coordinator:** this ticket changes Rust; if the first
+attempt ends PARTIAL, dispatch the second attempt with `model: "openrouter/openai/gpt-5.6-sol"`.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A1. The shockwave's departure  *(DONE at 0 -- TRANSFER 7bj)*
