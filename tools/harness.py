@@ -732,24 +732,32 @@ CHECKS: List[Check] = [
         frames=70,
         align=Align(
             canon_ref=140,
-            search=range(295, 325),
+            search=range(193, 214),
             note="canon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock "
                  "shared with rust's cold boot, so canon_ref=140 is the same documented fixed "
                  "point regress.py's check_mettaur used (its own frame-140 window start), not "
-                 "searched. rust: marker origin (frame 8 for demo-field) plus a band re-centred "
-                 "this ticket (AUDIT wave 3d follow-up) after the src agent replaced the "
-                 "Mettaur's flat timer with the real 5-state machine (attack 0x40 + recovery "
-                 "0x28 + decision, a 106-frame cycle, not the old ~64) -- the OLD band "
-                 "(145..161, centred on offset 153) no longer reaches the true alignment. "
-                 "RE-SWEPT WIDE (this ticket, range(250,400)) and confirmed a single sharp "
-                 "V-shaped minimum, not a plateau: offset 308 scores 46297, 309 scores 30864 "
-                 "(the joint minimum -- matches worst=1566), 310 scores 37873, climbing steeply "
-                 "either side. This band (295..325) brackets it with margin. NOT YET ZERO "
-                 "(30864 px over 70 frames, worst 1566/frame) -- unresolved by this ticket, "
-                 "which only re-centred the search; the residue itself is src/ territory. "
-                 "Ported from the demo-field feature to FIELD_ROW (fixture.rs's own table "
-                 "entry, already used by `wave` below; AUDIT pair 17 prune ticket) -- same "
-                 "descriptor bytes, same numbers, residue unchanged.",
+                 "searched. rust: marker origin (frame 8 for FIELD_ROW, re-measured this "
+                 "ticket). PAIRED BY EVENT, NOT SCORE (TODO F2, 2026-09-12): both sides run "
+                 "the same 106-frame Mettaur attack cycle, measured from --watch captures of "
+                 "this row's own sides -- canon attack anims start at canon frames 32 and 138, "
+                 "ours at battle frames 95, 201, 307, 413 (capture = battle + 8); MegaMan is "
+                 "hit mid-attack-1 on BOTH sides -- canon HP 60->50 at canon frame 114, ours "
+                 "battle frame 176 -- so both attack-2s fire while MegaMan is inside the "
+                 "120-frame mercy from the attack-1 hit (canon mercy 114..233 covers 138; "
+                 "ours 176..295 covers 201). The old band (295..325, offset 309) paired "
+                 "canon's SECOND attack with our THIRD -- ours took its first hit at 176 and "
+                 "its third-attack wave falls outside that mercy, so the two sides sat in "
+                 "different situations for the whole window. Event-derived offset: rust "
+                 "attack-2 start capture 209 = origin 8 + offset + k with canon_ref+k=138 "
+                 "(k=-2) gives offset 203; the band re-centred on it CONFIRMS a single sharp "
+                 "V-minimum exactly there (202: 47063, 203: 31075, 204: 37873 over 70 "
+                 "frames), not chosen by score -- the old offset 309 scored 30864, LOWER, "
+                 "but pairs incompatible attack indices. NOT YET ZERO (31075 px over 70 "
+                 "frames, worst ~1566/frame) -- the remainder is src/ territory (the known "
+                 "1-frame-late hit: rust's hit at capture 184 pairs with canon 113 vs canon's "
+                 "own 114). Ported from the demo-field feature to FIELD_ROW (fixture.rs's "
+                 "own table entry, already used by `wave` below; AUDIT pair 17 prune "
+                 "ticket) -- same descriptor bytes.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-bg",)),
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
