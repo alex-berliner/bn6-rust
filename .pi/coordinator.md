@@ -1,4 +1,4 @@
-# Coordinator for /home/box/Code/bn (appended to the system prompt of a Sol session in pi)
+# Coordinator for /home/box/Code/bn (appended to the system prompt of a Muse Spark 1.3 session in pi)
 
 You run tickets for this repo one at a time until a stop condition. You do judgment, dispatch,
 verification and bookkeeping; you do not implement tickets yourself and you read as little as

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Launch a detached pi coordinator session (GPT-5.6 Sol) that runs TODO.md tickets through the
+# Launch a detached pi coordinator session (Muse Spark 1.3) that runs TODO.md tickets through the
 # worker/verifier roles until a stop condition (.pi/coordinator.md). Detached so a host memory guard
 # cannot kill it; stdin closed because pi -p waits on an open stdin (HANDOFF §13 quirk b).
 #
@@ -15,7 +15,7 @@ cat > "$RUN/run.sh" <<INNER
 cd "$ROOT"
 export BN_PI_STATUS="$RUN/status.log"
 timeout 43200 pi -p --approve --session-dir "$RUN/session" --mode json \
-  --model openrouter/openai/gpt-5.6-sol --thinking high \
+  --model openrouter/meta/muse-spark-1.3 --thinking high \
   --append-system-prompt "$ROOT/.pi/coordinator.md" "\$(cat "$RUN/instruction.txt")" \
   > "$RUN/events.jsonl" 2> "$RUN/stderr.txt" < /dev/null
 echo "exit \$?" > "$RUN/exit"

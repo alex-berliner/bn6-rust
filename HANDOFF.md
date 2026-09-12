@@ -410,13 +410,16 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
     F2 claims task: Sol 23 turns $1.02, all three CONFIRMED (it measured claim 3); Muse 63 turns $0.37,
     CONFIRMED 1-2 by arithmetic plus the ROM source of the 120-frame mercy, left 3 UNCHECKED rather than
     measure, and flagged that the pairing's raw event logs are not committed. The role now tells it to
-    measure. Sol stays coordinator and escalation. The cheap `-contributor` tier ($0.10/$0.20) is NOT
+    measure. **The pi coordinator is also Muse Spark 1.3** (tools/pi_coordinator.sh, .pi/settings.json):
+    the same smoke test as Sol's (spend guard, one recon dispatch, status lines) took 8 turns and
+    $0.051 vs Sol's $0.101; it writes status times in UTC. Sol remains only the escalation model for
+    implementation that fails on the worker model. The cheap `-contributor` tier ($0.10/$0.20) is NOT
     used: its name implies Meta may train on prompts; the user decides that. DeepSeek V4 Pro is dropped
     as a candidate (AA ~36 on the user's chart, below the cheaper GLM-5.3-Flash).
   - Not used by default: Sonnet 5 (cache $0.20/M and turn-hungry), Gemini 3.8 Flash (partial caching),
     Grok 4.6 (cache $0.50/M), Kimi (tool-call reliability). Escalate by `--fork`, never by restarting.
 - **Routine coordination runs in pi, not in a Claude Code chat (2026-09-12).** `bash
-  tools/pi_coordinator.sh ["instruction"]` starts a detached GPT-5.6 Sol session with
+  tools/pi_coordinator.sh ["instruction"]` starts a detached Muse Spark 1.3 session (Sol until 2026-09-12) with
   `.pi/coordinator.md` appended: it takes the first OPEN ticket in TODO.md, dispatches the `worker`,
   then ALWAYS the `verifier`, merges only on a verifier PASS with every building-block claim
   CONFIRMED, writes the Result paragraph into TODO.md, writes the next ticket only if it follows from
