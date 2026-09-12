@@ -41,7 +41,7 @@ touch "$SITE/.nojekyll"
 # Hard guard: every ROM published must be one of ours.
 bad=0
 while IFS= read -r -d '' rom; do
-  title="$(dd if="$rom" bs=1 skip=160 count=12 2>/dev/null | tr -d '\0')"
+  title="$(dd if="$rom" bs=1 skip=160 count=12 2>/dev/null | tr -d '\0' | sed 's/ *$//')"
   sha="$(sha1sum "$rom" | cut -c1-40)"
   if [ "$sha" = "$REAL_SHA1" ] || [ "$title" = "MEGAMAN6_FXX" ] || [ "$title" != "BN6 RUST" ]; then
     echo "REFUSING: $rom is not a BN6 RUST build (title '$title', sha1 $sha)" >&2; bad=1
