@@ -17,11 +17,12 @@ because someone already made that mistake. Rules live in `AUDIT.md`; this file i
   3. **Every check must be able to fail.** The harness runs a negative fixture per check; a check
      that reads 0 on the broken pair is BLIND and is rejected, not passed.
   4. **Tickets state what to measure, not the hypothesis.** A guess goes on an "unverified" line.
-- Audio is parked. Do not work on it unless the user lifts that.
 
 ## 1. Files you must have, and must never commit
 
-Copyrighted inputs live only in `/tmp` and are gitignored everywhere they could land:
+Copyrighted inputs are **never tracked**: they are gitignored everywhere they could land, and the
+working copies the tools read live in `/tmp`. Local copies elsewhere are fine and wanted (the site's
+`web/real-bn6f.gba` is why the ROM survived the 2026-09-08 wipe); committing one is the violation.
 
 | path | what | regenerable? |
 |---|---|---|
@@ -35,8 +36,11 @@ Copyrighted inputs live only in `/tmp` and are gitignored everywhere they could 
 | every other `/tmp/*.state` | built states | yes: `states.py build <name>` |
 | `/tmp/mgba_capture` | the capture binary | yes: §2 |
 
-**`/tmp` is not durable.** Before anything else, copy the real ROM and the four root states somewhere
-outside `/tmp` and outside the repo. If they are gone, this project cannot measure anything.
+**`/tmp` is not durable.** The irreplaceable inputs are backed up in `/home/box/bn-backup` and on
+`/media/box/Scyther/bn-backup`, together with a git bundle of the submodule's `bn-notes` branch (the
+only copy of our disassembly annotations; it has no remote). `bash tools/restore_inputs.sh` restores
+the working set. Refresh both backups whenever a root state or `bn-notes` changes
+(`git -C reference/bn6f bundle create /home/box/bn-backup/bn6f-bn-notes.bundle bn-notes`).
 
 Gitignored on purpose (`.gitignore`): `web/roms/`, `web/bn6-rust.gba`, `web/build.txt`,
 `web/real-bn6f.gba`, `web/*.state`, `web/*.sav`, `target/`. Never `git add -f` any of them.
@@ -165,7 +169,7 @@ descriptors for everything they covered. Do not add new ones.
 | `--disable-obj` / `--disable-bg` | sprites off / all BG off |
 | `--diff-against dir:lag:file` | stream: diff each frame against `dir` at `lag`, write u32 counts, no frames |
 | `--trace-pc addr` (+`--trace-steps N`) | single-step the first N instructions of every frame, print regs on a PC hit. Diagnostic only; unbounded stepping corrupts the BIOS HLE |
-| `--audio-channel id`, `--dump-audio dir` | audio (parked). The advertised rate is wrong; the printed measured rate is right |
+| `--audio-channel id`, `--dump-audio dir` | audio (out of scope, §13). The advertised rate is wrong; the printed measured rate is right |
 | `--press-A ticks` | legacy: hold A from frame 60 |
 
 ## 6. States — `tools/states.py`

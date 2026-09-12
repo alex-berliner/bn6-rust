@@ -15,7 +15,8 @@ Keep this file short and stable: it is loaded into every child's context.
   of mechanism · one line of what is unverified.
 - Work only in your own worktree from `tools/worktree.sh <name>`; edit only the files the
   ticket names; stage by path (`git add -u <path>`); never `git add -A`; never push.
-- `reference/bn6f` is read-only for agents. Copyrighted inputs live in `/tmp`; never commit them.
+- `reference/bn6f` is read-only for agents. Copyrighted inputs (ROMs, save states, saves) are never
+  tracked; never `git add -f` anything gitignored.
 - Captures serialize: never run two harness rows at once on this machine.
 - Do the work yourself. A ticket that is bigger than it looked comes back as a report, not as
   a subcontract.
