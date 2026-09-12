@@ -539,12 +539,7 @@ impl CustomAssets {
                 custom.cursor_at = f.window_cursor;
             }
             Some(_) => {}
-            None => {
-                if cfg!(feature = "demo-custmatch") {
-                    custom.picks.push(4);
-                    custom.cursor_at = if cfg!(feature = "demo-cardname") { 0 } else { OK };
-                }
-            }
+            None => {}
         }
         for slot in 0..OFFERED {
             custom.draw_slot(bg, slot);

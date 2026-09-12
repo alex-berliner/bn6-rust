@@ -1,18 +1,21 @@
 //! AUDIT pairs 6, 14, 17 / FIXTURE.md: one ROM, any fixture.
 //!
-//! Today every fixture is a `demo-*` cargo feature that bakes one state into
-//! its own build (see Cargo.toml's `demo*` feature list and every
-//! `cfg!(feature = "demo...")` site in `main.rs`/`battle.rs`). This module
-//! is the runtime alternative: the harness writes a 64-byte descriptor into
-//! EWRAM at a fixed address before the ROM boots (and keeps writing it,
-//! frame by frame, so it survives whatever the emulator's cheat mechanism
-//! does), and `read()` parses it once at startup. `Battle::new` and the
-//! per-frame logic in `battle.rs` take everything -- enemies, positions, HP,
-//! hand, gauge, flags, backdrop/gauge seeds -- from the descriptor when one
-//! is present, and fall back to exactly today's behaviour (`cfg!`-gated demo
-//! features, or the plain release build) when it is absent. The `demo-*`
-//! features are NOT removed by this: they stay until wave 3 confirms the
-//! harness reproduces every check through descriptors instead.
+//! Every fixture used to be a `demo-*` cargo feature that baked one state
+//! into its own build. This module is the runtime replacement: the harness
+//! writes a 64-byte descriptor into EWRAM at a fixed address before the ROM
+//! boots (and keeps writing it, frame by frame, so it survives whatever the
+//! emulator's cheat mechanism does), and `read()` parses it once at startup.
+//! `Battle::new` and the per-frame logic in `battle.rs` take everything --
+//! enemies, positions, HP, hand, gauge, flags, backdrop/gauge seeds -- from
+//! the descriptor when one is present, and fall back to the plain release
+//! build's own behaviour when it is absent. The `demo-*` features and every
+//! `cfg!(feature = "demo...")` site that used to gate them in `main.rs`/
+//! `battle.rs`/`custom.rs` are gone (AUDIT pair 17 prune ticket, once the
+//! harness reproduced every check they covered through descriptors instead)
+//! -- the table below is kept as the historical record of what each one's
+//! bytes were, since the harness's own descriptors for the ported checks
+//! (`opening`/`mettaur`/`cannon`/`cursor` in tools/harness.py) are taken
+//! from it verbatim.
 //!
 //! Address **0x02000040**, 64 bytes, little-endian -- FIXTURE.md's own
 //! contract, mirrored here field for field. Reserved as bytes 64..128 of
@@ -47,11 +50,11 @@ pub const FLAG_OPEN_WINDOW: u8 = 1 << 0; // provenance: derived -- this project'
 /// comparison a box instead of a full screen. SET reproduces
 /// `demo-sterile`'s `hud_tiles: None`.
 pub const FLAG_BLANK_HUD: u8 = 1 << 1; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit2: blank backdrop. Reproduces `demo-sterile`'s WHOLE non-HUD
-/// background, not just the `backdrop` module: `backdrop: None`, the field
-/// layer (`self.bg`) replaced with a blank tilemap, and the hand-chip icon
-/// object suppressed (`hand_icon_palette: None`) -- exactly the three things
-/// `cfg!(feature = "demo-sterile")` already gates. Broader than its name
+/// bit2: blank backdrop. Reproduces the old `demo-sterile` feature's WHOLE
+/// non-HUD background, not just the `backdrop` module: `backdrop: None`,
+/// the field layer (`self.bg`) replaced with a blank tilemap, and the
+/// hand-chip icon object suppressed (`hand_icon_palette: None`) -- exactly
+/// the three things that feature used to gate. Broader than its name
 /// suggests; flagged in the report as worth a name/scope check with
 /// FIXTURE.md's author.
 pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
@@ -155,14 +158,15 @@ pub struct Fixture {
     /// needed for byte-identical reproduction and the published contract has
     /// none. 0xFF (per slot) => that slot's own `codes[0]`.
     pub deck_codes: [u8; 5],
-    /// NOT IN FIXTURE.md, offset +53. `demo-custmatch`'s own capture already
-    /// has ONE offered chip picked (the Cannon, slot 4) with the cursor
-    /// resting on OK when the window opens; `demo-cardname` is the identical
-    /// window with the cursor on the first slot instead, to show the card's
-    /// NAME rather than the OK confirmation message (`custom.rs`'s own
-    /// `cfg!(feature = "demo-cardname")` site -- which fixture.rs's own
-    /// descriptor table comment WRONGLY claimed had "no cfg site of its own"
-    /// before this ticket; see the ticket report). No FIXTURE.md field
+    /// NOT IN FIXTURE.md, offset +53. The old `demo-custmatch` feature's own
+    /// capture already had ONE offered chip picked (the Cannon, slot 4) with
+    /// the cursor resting on OK when the window opened; `demo-cardname` was
+    /// the identical window with the cursor on the first slot instead, to
+    /// show the card's NAME rather than the OK confirmation message (its own
+    /// `cfg!(feature = "demo-cardname")` site in `custom.rs`, gone along
+    /// with every other `demo-*` cfg site -- AUDIT pair 17 prune ticket; the
+    /// two rows now differ only in `window_cursor`, see CUSTMATCH_ROW/
+    /// CARDNAME_ROW in tools/harness.py). No FIXTURE.md field
     /// starts a window already mid-pick, so this is the same kind of
     /// reserved-region addition as `enemy_hp`/`deck_codes`. 0 => no
     /// pre-pick, `Custom::open`'s own fresh `picks: Vec::new()` /

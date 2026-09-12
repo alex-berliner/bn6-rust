@@ -44,7 +44,6 @@ Needs /tmp/mgba_capture (tools/mgba_capture.c) and the real ROM/state, which
 are never committed (TRANSFER.md).
 """
 
-import argparse
 import hashlib
 import json
 import os
@@ -74,7 +73,6 @@ ENEMY_TILES = "0x60103E0:448"
 # but the game refuses a chip once the deletion sequence has finished, so it
 # does not actually work.
 REAL_A_FRAME = 40
-REAL_START = 43
 
 
 def load(path):
@@ -139,14 +137,6 @@ XMAX = 140
 # With --bg the real ROM keeps its field, background and HUD, so the whole
 # screen is compared rather than the navi's half.
 BACKGROUNDS = False
-KEEP_ENEMY = False
-HIDE_ENEMY = False
-# The banner tiles are shared with the CHIP-NAME POPUP that family-0x15 chips
-# put up (AreaGrab, Invisibl, Barrier, Barr100, Barr200), so a comparison that
-# wants to see the popup cannot blank them. It only works together with
-# --hide-enemy: the tiles have to be left alone, so the ENEMY DELETED banner
-# has to be kept from happening at all, which means keeping the enemy alive.
-NO_BANNER_ZERO = False
 
 
 #: An explicit diff window, for a fixture that wants one region rather than the
@@ -254,26 +244,6 @@ def capture(rom, out, count, *args, retries=2):
         (got, count, diff_file or out))
 
 
-def capture_real(chip, out, count):
-    cmd_args = [
-        "--loadstate", STATE,
-        # The enemy is deleted so only the navi and its chip are on screen.
-        # KEEP_ENEMY makes it immortal instead, for watching it react.
-        # HIDE_ENEMY keeps it immortal and blanks its tiles, for a chip that
-        # needs something to aim at.
-        *(["--cheat", "0x0203ab84:0xffff", "--cheat", "0x0203ab86:0xffff"]
-          if KEEP_ENEMY or HIDE_ENEMY else
-          ["--cheat", "0x0203ab84:0", "--cheat", "0x0203ab86:0"]),
-        *library_pokes(int(chip, 16)),
-        "--cheat", f"{HAND_SLOT}:0x{chip}",
-        *([] if NO_BANNER_ZERO else ["--zero", BANNER_TILES]),
-        *(["--zero", ENEMY_TILES] if HIDE_ENEMY else []),
-        *([] if BACKGROUNDS else ["--disable-bg"]),
-        "--script", f"Start@10,A@{REAL_A_FRAME}",
-    ]
-    capture(STERILE, out, count, *cmd_args)
-
-
 def scratch(name=""):
     """A /tmp working directory unique to THIS checkout of the project.
 
@@ -302,7 +272,7 @@ def target_dir():
     `ROOT/target` anyway -- so a private target directory meant measuring
     whatever stale ELF happened to be sitting in the repo, with no error and a
     plausible-looking number. `cargo metadata` knows the answer however it was
-    set, environment or config.toml alike. `regress.py` uses this too.
+    set, environment or config.toml alike.
     """
     global _TARGET_DIR
     if _TARGET_DIR is None:
@@ -312,141 +282,3 @@ def target_dir():
     return _TARGET_DIR
 
 
-def build_and_capture_rust(feature, out, count):
-    # With backgrounds the Rust side needs its field and HUD, so the sterile
-    # arena is left out; the demo feature places the navi itself.
-    features = f"{feature},demo-auto" if BACKGROUNDS else f"demo-sterile,{feature},demo-auto"
-    subprocess.run(
-        ["cargo", "build", "--release", "--features", features],
-        cwd=ROOT, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    rom = scratch("rust_%s.gba" % feature)
-    elf = os.path.join(target_dir(), "thumbv4t-none-eabi", "release", "bn")
-    if not os.path.exists(elf):
-        raise SystemExit("cargo built no %s -- is CARGO_TARGET_DIR pointing somewhere odd?" % elf)
-    subprocess.run(
-        ["python3", os.path.join(ROOT, "tools", "gbafix.py"), elf, rom],
-        check=True, stdout=subprocess.DEVNULL,
-    )
-    capture(rom, out, count)
-
-
-BODY = (8, 57, 123)
-
-
-def body_box(im):
-    pts = [(x, y) for x in range(0, 140) for y in range(40, 160) if im.getpixel((x, y)) == BODY]
-    if not pts:
-        return None
-    xs = [p[0] for p in pts]
-    ys = [p[1] for p in pts]
-    return (min(xs), max(xs), min(ys), max(ys), len(pts))
-
-
-def first_body_change(dirname, idle_index, from_index, to_index):
-    """The first frame whose navi body box differs from the idle's. The whole
-    frame cannot be used: the real capture has the deleted Mettaur's remnant
-    dissolving on the right and HUD objects blinking, none of which is the
-    attack."""
-    idle = body_box(frame(dirname, idle_index))
-    for i in range(from_index, to_index):
-        if body_box(frame(dirname, i)) != idle:
-            return i
-    return None
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("chip")
-    ap.add_argument("feature")
-    ap.add_argument("--frames", type=int, default=60, help="frames to diff from the start")
-    ap.add_argument("--rust-frames", type=int, default=260)
-    ap.add_argument("--out", default=scratch("chip_compare"))
-    ap.add_argument("--no-build", action="store_true")
-    ap.add_argument("--clean", action="store_true",
-                    help="delete both captures when done. A run of 43 chips leaves about"
-                         " 4 GB of raw frames behind otherwise, which is how /tmp reached"
-                         " 37 GB and the machine ran out of swap. Not the default, because"
-                         " --no-build reuses the Rust capture from the previous run.")
-    ap.add_argument("--hide-enemy", action="store_true",
-                    help="keep the enemy alive but blank its tiles, for a chip that needs a live target (StepSwrd)")
-    ap.add_argument("--keep-enemy", action="store_true",
-                    help="leave the real capture's enemy alive (immortal) instead of deleting it")
-    ap.add_argument("--a-frame", type=int, default=40,
-                    help="frame the real capture presses A (default 40); raise it to let the deleted enemy finish dissolving")
-    ap.add_argument("--box", help="diff window as x0,y0,x1,y1 (default: the navi's half)")
-    ap.add_argument("--no-banner-zero", action="store_true",
-                    help="leave the banner tiles alone so the chip-name popup shows; needs --hide-enemy")
-    ap.add_argument("--bg", action="store_true",
-                    help="keep the real ROM's backgrounds and compare the whole screen")
-    ap.add_argument("--xmax", type=int, default=140,
-                    help="right edge of the diff window (the real capture's deleted Mettaur remnant sits at x>=149 for ~45 frames)")
-    ap.add_argument("--rust-start", type=int, default=None,
-                    help="the Rust frame of the attack's start, for chips that do not move the navi (demo-auto fires at 122)")
-    args = ap.parse_args()
-    global XMAX, BACKGROUNDS, KEEP_ENEMY, HIDE_ENEMY, REAL_A_FRAME, REAL_START
-    global NO_BANNER_ZERO, BOX
-    NO_BANNER_ZERO = args.no_banner_zero
-    if args.box:
-        BOX = tuple(int(v) for v in args.box.split(","))
-    KEEP_ENEMY = args.keep_enemy
-    HIDE_ENEMY = args.hide_enemy
-    REAL_A_FRAME = args.a_frame
-    REAL_START = REAL_A_FRAME + 3
-    BACKGROUNDS = args.bg
-    XMAX = 240 if args.bg else args.xmax
-    real = os.path.join(args.out, "real_" + args.chip)
-    rust = os.path.join(args.out, "rust_" + args.feature)
-    os.makedirs(args.out, exist_ok=True)
-    capture_real(args.chip, real, REAL_START + args.frames + 5)
-    if not args.no_build:
-        build_and_capture_rust(args.feature, rust, args.rust_frames)
-
-    # The real attack starts at 43; align on the first frame the navi's body
-    # changes on each side (the same number of frames after the start on
-    # both, since the lead-in is the game's).
-    if args.rust_start is not None:
-        real_first = REAL_START
-        rust_start = args.rust_start
-    else:
-        real_first = first_body_change(real, REAL_A_FRAME, REAL_START, REAL_START + 20)
-        rust_first = first_body_change(rust, 100, 101, args.rust_frames - args.frames)
-        if real_first is None or rust_first is None:
-            print("no attack seen: real", real_first, "rust", rust_first)
-            sys.exit(1)
-        rust_start = rust_first - (real_first - REAL_START)
-    print(f"real start {REAL_START} (first change {real_first}); rust start {rust_start}")
-
-    # diff_frames() reads both .rgb files straight into numpy arrays -- no
-    # per-frame PIL Image needed just to count differing pixels, which is
-    # the actual per-frame comparison this loop used to spend its time on.
-    box = BOX or ((0, 0, 240, 160) if BACKGROUNDS else (0, 40, XMAX, 160))
-    total = 0
-    worst = []
-    for c in range(args.frames):
-        d = diff_frames(real, REAL_START + c, rust, rust_start + c, box)
-        total += d
-        worst.append((d, c))
-        print("c%02d %5d" % (c, d), end="\n" if c % 6 == 5 else "  ")
-    print("\nmean %.1f px/frame; worst %s" % (total / args.frames, sorted(worst)[-5:]))
-
-    # A strip of the frames that differ most, plus the first and last.
-    picks = sorted({0, args.frames - 1} | {c for _, c in sorted(worst)[-7:]})
-    strip = Image.new("RGB", (100 * len(picks), 70 * 3 + 6), (40, 40, 40))
-    for i, c in enumerate(picks):
-        r = frame(real, REAL_START + c).crop((30, 50, 130, 120))
-        u = frame(rust, rust_start + c).crop((30, 50, 130, 120))
-        d = ImageChops.difference(r, u).point(lambda v: 255 if v else 0)
-        strip.paste(r, (i * 100, 0))
-        strip.paste(u, (i * 100, 73))
-        strip.paste(d, (i * 100, 146))
-    path = os.path.join(args.out, f"strip_{args.feature}.png")
-    strip.resize((strip.width * 2, strip.height * 2), Image.NEAREST).save(path)
-    print("frames", picks, "->", path)
-
-    if args.clean:
-        subprocess.run(["rm", "-rf", real, rust])
-
-
-if __name__ == "__main__":
-    main()

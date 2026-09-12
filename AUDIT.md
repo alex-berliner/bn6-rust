@@ -115,5 +115,8 @@ built from the manifest, a chip provably fires with no enemy, and the chip rows'
 them did not converge (plateaus ~43700). That convergence is the one piece missing before the chip
 scoreboard, `banner` and `popup` can be re-pointed at a fixture with no corpse in it.
 
-Still open, unchanged: `demo-*` flags and `tools/regress.py` come out once the harness reads zero
-through descriptors for everything they covered. Audio stays parked.
+DONE (2026-09-12): `demo-*` flags and `tools/regress.py` are out — the last four rows still building
+one (`opening`/`mettaur`/`cannon`/`cursor`) were ported to `fixture=`/`fixture_cheats()` first, same
+total/worst/frames/negative before and after, then every `cfg(feature = "demo-...")` site in `src/` and
+the `[features]` table in `Cargo.toml` came out (the default release ROM is byte-identical to before).
+Audio stays parked.

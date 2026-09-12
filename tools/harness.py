@@ -714,11 +714,13 @@ CHECKS: List[Check] = [
             note="canon: BATTLESTART is documented as the battle's real frame 0 "
                  "(eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just "
                  "120 battle-frames past that known origin, nothing searched on this side. "
-                 "rust: find_marker_origin() gives frame 8 for demo-open; a 21-wide band "
-                 "around it finds a UNIQUE zero at offset 119 (partial band shown in the "
-                 "report), the residual sub-frame timing the marker alone does not pin.",
+                 "rust: find_marker_origin() gives frame 8 for demo-open/OPEN_ROW; a 21-wide "
+                 "band around it finds a UNIQUE zero at offset 119 (partial band shown in the "
+                 "report), the residual sub-frame timing the marker alone does not pin. Ported "
+                 "from the demo-open feature to OPEN_ROW (fixture.rs's own table entry, AUDIT "
+                 "pair 17 prune ticket) -- same descriptor bytes, same numbers.",
         ),
-        rust=lambda ui: Side(features="demo-open",
+        rust=lambda ui: Side(rom=plain_rom(), fixture=OPEN_ROW,
                              extra=() if ui == "integrated" else ("--disable-obj",)),
         canon=lambda ui: Side(rom=REAL, loadstate=BATTLESTART,
                               extra=() if ui == "integrated" else ("--disable-obj",)),
@@ -744,9 +746,12 @@ CHECKS: List[Check] = [
                  "(the joint minimum -- matches worst=1566), 310 scores 37873, climbing steeply "
                  "either side. This band (295..325) brackets it with margin. NOT YET ZERO "
                  "(30864 px over 70 frames, worst 1566/frame) -- unresolved by this ticket, "
-                 "which only re-centred the search; the residue itself is src/ territory.",
+                 "which only re-centred the search; the residue itself is src/ territory. "
+                 "Ported from the demo-field feature to FIELD_ROW (fixture.rs's own table "
+                 "entry, already used by `wave` below; AUDIT pair 17 prune ticket) -- same "
+                 "descriptor bytes, same numbers, residue unchanged.",
         ),
-        rust=lambda ui: Side(features="demo-field", extra=("--disable-bg",)),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-bg",)),
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
                               extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
@@ -756,7 +761,15 @@ CHECKS: List[Check] = [
         ui="isolated",
         frames=40,
         align=ALIGN_CHIP,
-        rust=lambda ui: Side(features="demo-sterile,demo-cannon,demo-auto", extra=("--disable-bg",)),
+        # Ported from the demo-sterile,demo-cannon,demo-auto feature combo to
+        # _chip_rust("01") (AUDIT pair 17 prune ticket): fixture.rs's own
+        # table entry for this row (enemies 0, hp 100, col/row 2/2, hand
+        # [1], gauge 0, flags 0x1F, fire_frame 90) is byte-for-byte what
+        # _chip_rust builds for chip hex "01" -- the same descriptor the 43
+        # chip-scoreboard rows already use, and _cannon_canon below is
+        # already literally _chip_canon("01"). Same descriptor bytes, same
+        # numbers.
+        rust=_chip_rust("01"),
         canon=_cannon_canon,
         canon_variant="canon (sterile)",
     ),
@@ -876,6 +889,15 @@ def held(key: str, first: int, n: int) -> str:
     regress.py's own helper (unchanged; regress.py itself is not edited)."""
     return ",".join("%s@%d" % (key, first + j) for j in range(n))
 
+
+#: demo-open's row, fixture.rs's table -- battlestart.state is lost (§1), so
+#: this cannot be re-verified byte-identical against the feature build any
+#: more; kept exactly as fixture.rs's own table records it. Marker origin 8
+#: (measured live for demo-open), same family as demo-field.
+OPEN_ROW = dict(enemies=3, enemy_kind=0, enemy_col=4, enemy_row=1, megaman_hp=60,
+                megaman_col=2, megaman_row=2, hand=[], hand_count=0, gauge=0,
+                flags=0x01)
+OPEN_ORIGIN = 8
 
 #: demo-field's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
 #: enemy_hp: 0xFFFF here is not "use the default" (see fixture_cheats()'s
@@ -1176,9 +1198,12 @@ PORTED_CHECKS: List[Check] = [
                  "subtracted), so a future boot-length shift (the ONE THING that broke this, 0 "
                  "-> 602 pixels, all of it one frame of 170) self-corrects instead of silently "
                  "drifting. Script unchanged from regress.py (5 Left-presses, 30 frames apart); "
-                 "box removed, full screen, all 170 frames.",
+                 "box removed, full screen, all 170 frames. Ported from the demo-custmatch "
+                 "feature to CUSTMATCH_ROW (fixture.rs's own table entry, already used by "
+                 "`window` above; AUDIT pair 17 prune ticket) -- same descriptor bytes, same "
+                 "numbers.",
         ),
-        rust=lambda ui: Side(features="demo-custmatch", script=_CURSOR_WALK_RUST),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
         canon_variant="canon",
     ),
