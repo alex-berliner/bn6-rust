@@ -594,7 +594,7 @@ them. Merged as `61e1fdd`; the branch also carried stale reversions of `.pi/coor
 `tools/pi_coordinator.sh` (it predated main's spend-cap commit -- out of ticket scope), and the
 merge kept main's cap-enforcing versions. Worker GLM-5.3-Flash high, 67 turns, $0.077.
 
-### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(OPEN -- 2026-09-12)*
+### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(PARTIAL -- 2026-09-12, branch wt/f5-chipfire kept at 28a6104, not merged)*
 
 **Why.** 28 chip rows read exactly 14388 and 11 more read 14388 plus their own residue. The 14388 is
 canon's fixture, not our code: from PAUSED, a 528 px portrait box (canon frames 43-48) and the deleted
@@ -624,6 +624,24 @@ patching that compare did not restore firing, and it stopped for lack of a trace
 **Rules.** tools/ only; no src/; no allowlist change; captures one at a time. **Coordinator:**
 verify_rows on every chip row plus the verifier on the gate claim and on the patch being the minimal
 one; a PARTIAL from a wrong guess about the gate gets a follow-up ticket, not an escalation.
+
+**Result.** The prescribed route is dead, the gate is found (with corrections), and the next
+intervention is named but untested. Baselines: chip-cannon 14388/2350/40 (neg 21543), chip-vulcan
+14388/2350/60 (18314), chip-sword 14388/2350/40 (18435) -- region canon frames 43-52, OBJ layer
+(portrait box x0-150 y0-30 frames 43-48, corpse x149-196 y70-120 frames 43-52), rust side empty
+there. Corrected gate: sequencer 0x08 (`sub_80080D2`) refreshes the TWO alliance players' AIData
+via `sub_8012DFC` x2 (not every object); all-dead (`sub_800A152`==1, Unk_3a==0) advances to the
+94-frame RESULT countdown 0x0C at ROM 0x0800811C (`mov r0,#0xC; str r0,[r5]`, asm00_1.s:10547-48);
+state 0x0C (`sub_80081A4`) never refreshes AIData; `cmp r0,#6` at 0x80093A2 is irrelevant.
+The opt-in `--hold-banner` NOP holds 0x08 through frame 129 but freezes corpse+portrait forever,
+and the held battle's FSM dispatcher (`sub_8009158`) stops after save/reload; refilling 0x0203ca78
+keeps 0x0C and does not restore firing. verify_rows PASS: all three rows MATCH, negatives non-blind.
+Sol verifier: gate REFUTE-as-written / core SUPPORTED (scope + stale cites corrected above); patch
+CONFIRM (default output byte-identical, exactly 4 bytes change) with one doc defect
+(patch_sterile.py:74-76 falsely claims the hold produces a clean firing state); impossibility
+REFUTE -- a one-shot poke to MegaMan's AIData pressed field in 0x0C after cleanup was never tested
+though F5 allowed it, and that is F5b. Worker GLM-5.3-Flash high, 143 turns, $0.413; Sol verifier
+GPT-5.6-Sol high, 14 turns, $0.365 (plus a $0.020 GLM pre-check on the wrong role, superseded).
 
 ### F6. tiles/gauge isolated: 538 px over 8 frames  *(OPEN -- 2026-09-12)*
 
