@@ -7,7 +7,8 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
 
 ## The loop
 
-1. `python3 tools/or_spend.py --min 3` -- if it exits non-zero, STOP.
+1. `python3 tools/or_spend.py --min <floor>` (the floor your instruction names, else 3) -- if it exits
+   non-zero, STOP.
 2. Find the first ticket in TODO.md marked `*(OPEN ...)*`. If none, STOP ("no open ticket").
 3. Dispatch the worker with the `subagent` tool, exactly one child at a time (captures must never
    overlap): `{agent: "worker", async: false, timeoutMs: 10800000, cwd: "/home/box/Code/bn", task:
@@ -49,8 +50,9 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
 
 - the spend guard fails, or this session's children have cost more than $3 in total (or the cap your
   instruction names; a separate watcher also enforces that cap on total spend and will stop you);
-- two tickets in a row on the same objective end PARTIAL, BLOCKED or NEGATIVE (say what the options
-  are instead of writing a third);
+- two tickets in a row on the same objective end PARTIAL, BLOCKED or NEGATIVE: do not write a third --
+  mark the ticket BLOCKED with what was measured and the options, and continue with the next OPEN
+  ticket; STOP only when no OPEN ticket is left;
 - the next step would change what canon or canon (sterile) are (unless the ticket explicitly authorizes
   that one change), widen the allowlist, touch src/ outside a ticket that says so, delete a state or a row, or change HANDOFF §13's scope or order;
 - a verifier REFUTES a claim the next step needs;
