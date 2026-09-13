@@ -2,4 +2,4 @@ opening (integrated), FAILED: per-frame max 2691 px, total 72499 px over 40 fram
 
 canon: BATTLESTART is documented as the battle's real frame 0 (eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just 120 battle-frames past that known origin, nothing searched on this side. rust: find_marker_origin() gives frame 8 for demo-open/OPEN_ROW; a 21-wide band around it finds a UNIQUE zero at offset 119 (partial band shown in the report), the residual sub-frame timing the marker alone does not pin. Ported from the demo-open feature to OPEN_ROW (fixture.rs's own table entry, AUDIT pair 17 prune ticket) -- same descriptor bytes, same numbers.
 
-commit 82df214
+commit 58cb524
