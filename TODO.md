@@ -151,8 +151,9 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
 - F18 PARTIAL -- `windowclose` isolated: the close event's remaining total. windowclose 695603/28784/40/778748 -> 666451/28784/40/749690
-### F20b. `tiles`/`gauge` integrated: match the fixture's sprite positions to canon's state  *(OPEN -- 2026-09-13)*
+### F20b. `tiles`/`gauge` integrated: match the fixture's sprite positions to canon's state  *(DONE -- 2026-09-13, tiles/gauge integrated 25979/3282->3865/678/8 (negative 15891 not blind), isolated still 0/0/8)*
 
+**Result.** tiles/gauge integrated 25979/3282->3865/678/8 (negative 15891 not blind), isolated still 0/0/8. HUDMATCH descriptor in tools/harness.py corrected to canon-peeked BattleObject panel positions (MM col 3->2, enemy row 3->2; canon (2,2) @0x0203a9c2/3, enemy (5,2) @0x0203ab72/3); residual 3865 is canon Mettaur mid-attack vs ours idle (F17 family); wave/window/opening/chip-cannon 0, warp-integrated exceed pre-existing (stash-identical); AUDIT-6 stays. Committed 2b913aa directly on main (worker skipped worktree; single-file descriptor change, verified post-hoc). Worker worker-muse. Verifier verifier-glm: all 4 claims CONFIRMED (diff scope, offsets, HUDMATCH scope, residual sourced; caveat ours-side action byte 0x04/0x00 on tiles vs 0x04/0x09 from F17 context).
 **Why.** F20's verified decomposition: the HUD strip (y<24) reads 0 on all 8 frames and `--disable-obj`
 reads 0/0/8, so the whole 25979 px is sprites -- our fixture puts MegaMan at column 3 where canon's
 save state holds (2,2), and the enemy one row off canon's, so both navis and the enemy's HP readout sit
