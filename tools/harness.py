@@ -974,6 +974,18 @@ ZERO_ENEMY = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2,
                   hand=[], hand_count=0, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
 
+#: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
+#: `field` row's rust side resolves the way its own canon side does -- canon's
+#: deleted-enemy battle reaches the all-dead advance (sequencer 0x0C at canon
+#: 47, watched), ENEMY DELETED (canon 49..106, documented), the RESULT window
+#: (BG3, canon ~154..167) and its mark OBJ (canon 163..166, watch-write on
+#: dword_3002180), so a rust side that holds the fight open forever differs
+#: by the mark's 177 px for the last six compared frames. Only `field`
+#: carries the bit: warp/buster's own windows end before canon's mark enters
+#: (their tickets F11/F10), and chip-use must keep the fight alive to fire
+#: its chip at all.
+ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | FLAG_RESOLVE_OVER (bit5)
+
 #: `chip-use` alone: an A press with an empty hand uses nothing, so this
 #: variant carries Cannon (PAUSED's own queued chip) the way FIELD_ROW does.
 ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
@@ -1135,9 +1147,21 @@ PORTED_CHECKS: List[Check] = [
                  "does. frames=40, not 20: the idle navi's own pose settles once more around "
                  "canon frame 164 (k=34) -- a genuine one-time transition, not periodic -- and "
                  "pair 10's negative fixture is BLIND without it in the window (a fully frozen "
-                 "40-frame stretch cannot tell a 1-frame canon shift from no shift at all).",
+                 "40-frame stretch cannot tell a 1-frame canon shift from no shift at all). "
+                 "TODO F8 (2026-09-12): the k=34 transition is NOT the navi -- it is canon's "
+                 "RESULT window arriving: the canon side's deleted-enemy battle resolves "
+                 "(banner sequencer 0x08->0x0C at canon 47, ENEMY DELETED banner canon "
+                 "49..106, RESULT window BG3 slide-in canon ~154..167, mark OBJ entering "
+                 "canon 163..166), so the rust side now carries FLAG_RESOLVE_OVER and "
+                 "resolves on the same schedule (banner at battle 0 = capture 8, mark at "
+                 "capture ~121). The pairing is therefore by measured EVENT, not only by "
+                 "static score: the banner start (canon 49 <-> rust capture 8) and the mark's "
+                 "first wrapped frame (canon 163 <-> rust ~121) both give offset ~81, inside "
+                 "the unchanged band, where the search's minimum now sits; the static field "
+                 "alone cannot discriminate offsets, the mark event can.",
         ),
-        rust=_zero_enemy_rust("Start@10"),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=ZERO_ENEMY_RESOLVED, script="Start@10",
+                             extra=() if ui == "integrated" else ("--disable-bg",)),
         canon=_zero_enemy_canon("Start@10"),
         canon_variant="canon (sterile)",
     ),

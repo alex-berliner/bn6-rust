@@ -67,6 +67,19 @@ pub const FLAG_AUTO_FIRE: u8 = 1 << 3; // provenance: derived -- this project's 
 /// + 14-frame ramp, which is what `demo-open` and the default release build
 /// already do.
 pub const FLAG_SKIP_INTRO: u8 = 1 << 4; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+/// bit5: resolve. An enemy-less arena whose fight is already decided: `over`
+/// fires on the battle's first frame and the fight runs its whole end
+/// sequence (ENEMY DELETED banner, then the RESULT window 110 frames later)
+/// exactly as a fixture whose one enemy was killed before frame 0 would.
+/// This is the zero-enemy arena rows' stand-in for the canon side's own
+/// history, which is a battle whose enemy was deleted and whose all-dead
+/// check therefore advances: on the `field` row's own canon capture the
+/// banner sequencer enters its RESULT countdown 0x0C at canon frame 47 and
+/// the ENEMY DELETED banner runs canon 49..106 -- the real ROM resolves, so
+/// the fixture side has to be able to. Without the bit an empty `enemies`
+/// still holds the fight open forever (the chip-window fixtures depend on
+/// that: see battle.rs's own comment on `over`).
+pub const FLAG_RESOLVE_OVER: u8 = 1 << 5; // provenance: peeked -- canon's own deleted-enemy battle resolves (sequencer 0x08->0x0C at canon 47, watched on the field row's own canon capture, 2026-09-12, TODO F8); the bit assignment itself is this project's protocol
 
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's
