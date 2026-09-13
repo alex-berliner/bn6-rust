@@ -798,7 +798,9 @@ verifier. Worker GLM-5.3-Flash high, 19 turns, $0.009.
 
 **Rules.** src/ for the miss-pose fix, tools/harness.py for this row only; no allowlist change; no region change except by measured event. **Coordinator:** verify_rows plus the verifier on the caller-trace claim; a second miss marks F10 BLOCKED and moves on to F11.
 
-### F11. `warp` isolated: 9198 px over 30 frames  *(OPEN -- 2026-09-12)*
+### F11. `warp` isolated: 9198 px over 30 frames  *(DONE -- merged 389578d, 2026-09-13; warp 9198->0/0/30)*
+
+**Result.** DONE. warp isolated 9198/1577/30 -> PASS 0/0/30 (negative 8440, not blind, no longer shift-invariant); 6 canaries re-verified at 0. The Note's suspicion confirmed: canon's script presses were inert (sequencer 0x0C never refreshes AIData; canon centroid fixed x=61 while rust warped), so 9198 was our warp vs a static sprite, the negative equaled the nominal, and the old minimum was a band-edge artifact. Fix in tools/harness.py only (no src/): canon presses via one-shot pokes to AIData JoypadHeld 0x020340a2 (canon warps with rust's exact 5-frame 706/458/395/458/706 signature), ready-chip bubble blanked with per-frame --zero 0x020352E0:48 (sub_801C002/082, 6 slots at dword_20352E0), alignment pinned to the warp event (offset 51, canon 132 <-> rust 61, +-1 reads 8440). Integrated, decided option (a): old printed 328071/18287 was slope-gamed; at the honest lock old 392779 -> new 355385/19909 (~37k better) but prints WORSE vs the stale AUDIT-6 cap 19500 -- allowlist untouched, documented in the row note. verify_rows PASS on all 7 rows. No verifier (F12 does not build on these claims). Worker GLM-5.3-Flash high, 109 turns, $0.183.
 
 **Note.** Its negative control reads 9198 too -- the same as the nominal -- so first check whether the
 row's alignment or negative is meaningful before localizing the residue.
