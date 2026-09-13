@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Patch the canon bn6f ROM for the capture harness.
 
-Five patches: battle_isBattleOver always returns "not over", the ENEMY
-DELETED banner is never uploaded, (AUDIT wave 3c "zero-enemy" ticket,
---never-spawn, OPT-IN as of the "fresh-state" ticket -- see its own comment
-for why) the encounter's enemy is never spawned at all, (AUDIT wave 3c
-"inert-enemy" ticket, --inert-enemy, opt-in) an ALREADY-spawned enemy's own
-per-frame handler is stubbed so it never acts, updates its state machine, or
-(as far as this session could measure) draws, and (AUDIT wave 3c
-"fresh-state" ticket, --empty-net-encounter, opt-in) one specific ROM
-encounter-table entry's EnemySetup list is data-patched to terminate right
-after MegaMan, so THAT ONE encounter natively spawns no enemies at all --
-see its own comment below for why this succeeds where --never-spawn's code
-patch crashes.
+Six patches: battle_isBattleOver always returns "not over", the ENEMY
+DELETED banner is never uploaded, (TODO F5, --hold-banner, opt-in) the
+banner sequencer's ENEMY-DELETED completion advance is stubbed so the
+battle never leaves the phase in which chips can be fired, (AUDIT wave 3c
+"zero-enemy" ticket, --never-spawn, OPT-IN as of the "fresh-state" ticket
+-- see its own comment for why) the encounter's enemy is never spawned at
+all, (AUDIT wave 3c "inert-enemy" ticket, --inert-enemy, opt-in) an
+ALREADY-spawned enemy's own per-frame handler is stubbed so it never acts,
+updates its state machine, or (as far as this session could measure)
+draws, and (AUDIT wave 3c "fresh-state" ticket, --empty-net-encounter,
+opt-in) one specific ROM encounter-table entry's EnemySetup list is
+data-patched to terminate right after MegaMan, so THAT ONE encounter
+natively spawns no enemies at all -- see its own comment below for why
+this succeeds where --never-spawn's code patch crashes.
 
 The first two are the sterile real-battle arena: they stop the win/lose check
 from concluding the fight, so a battle with the enemy deleted stays live. The
@@ -27,11 +29,58 @@ clears as a side effect of that same death processing -- see
 tools/harness.py's ALIGN_CHIP comment and tools/states.py's "chip_ready"
 entry for the two rejected workarounds this replaces).
 
-usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] [--never-spawn]
+usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] [--hold-banner]
+                                            [--never-spawn]
                                             [--inert-enemy] [--empty-net-encounter]
 
 --keep-banner leaves the ENEMY DELETED banner in, for the one fixture that
 wants to compare the banner itself rather than get it out of the way.
+
+--hold-banner (TODO F5, 2026-09-12) is the chip-firing gate fix. MEASURED
+(mgba_capture --watch/--watch-write, this ticket): in a battle whose last
+enemy is deleted, chips fire ONLY while the generic banner sequencer
+(dword_203CA70) sits in its ENEMY DELETED state 0x08 -- the firing A press
+reaches MegaMan through sub_800FB54 (asm00_2.s:1994, AIData joypad-flag
+gated, asm00_2.s:2006) and works at any frame of that phase. The moment
+the sequencer advances to state 0x0c (the victory countdown, sub_80081A4,
+asm00_1.s:10615), input dies: a press that fires at phase-0x08 frame 40
+does NOT fire at frame 120 of the same continuous run, with the FSM
+(eBattleState.Index_01, 0x02034881) still in 0x0c and byte_203CA74 still
+0. The countdown's own expiry (byte_203CA74=1 written at asm00_1.s:10704,
+which sub_800938A consumes at asm00_1.s:13137-13145 and moves the FSM to
+0x10) is a SECOND, later cutoff -- refilling the countdown halfword
+0x0203ca78 with a --poke keeps the FSM in 0x0c and byte_203CA74 at 0 and
+still does not restore firing. So the previous session's refused-press
+symptom ("a state saved past the dissolve refuses every chip press",
+harness.py ALIGN_CHIP comment) is canon's own end-of-battle flow, not a
+gate bug: past the dissolve the battle is merely waiting out its 94-frame
+countdown to the RESULT window, and no unpatched canon battle fires chips
+there. The advance out of state 0x08 is sub_80080D2's own turn-end branch:
+sub_80080D2 is the sequencer's PLAYER-TURN handler (it calls UnpauseBattle
+in its init, asm00_1.s:10521) and every frame asks sub_800A152() -- the
+"which alliance still has actors" probe (asm00_1.s:15080) -- advancing to
+the RESULT countdown (state 0x0c, sub_80081A4, asm00_1.s:10615) when the
+last opponent is gone: `mov r0,#0xC; str r0,[r5]` at loc_8008116
+(asm00_1.s:10543-10545, ROM 0x0800811C..0x0800811F, bytes 0C 20 28 60).
+TRACED LIVE (--trace-pc 0x0800811C): the hit comes with r0=1 (sub_800A152
+returned 1), r1=eBattleState (0x02034880), r5=dword_203CA70, 36 frames
+after the enemy's death -- exactly the frame the press at 120 stops
+working. (An earlier cut of this patch NOPed the same byte pattern at
+0x080083C4 -- sub_800838A's advance, reachable only from sequencer state
+0x18 -- and changed nothing: the state still went 0x08 -> 0x0c at frame
+47, which is what pinned the real site.) This patch NOPs those 4 bytes
+(00 BF 00 BF), so the turn never ends when the last enemy dies. With
+the banner upload already stubbed and its tiles zeroed, holding the phase
+is invisible; the dissolve and the portrait-box cleanup complete
+normally, so a state saved after the dissolve is CLEAN and still fires
+chips -- which is exactly what the chip-row fixtures need. Side effect,
+accepted: sub_80080D2's oBattleState_Unk_18 increment (asm00_1.s:10543,
+one instruction before the NOPed store) now runs every frame instead of
+once per turn; it is a single wrapping byte whose only other reader is
+sub_800AF50 (asm00_1.s:11814), reachable only through the FSM fire path
+that byte_203CA74=0 keeps dead while the turn is held. The result
+countdown's init (victory music, the 0xe4c53 dispatch) never runs, which
+is the point: the battle never starts ending.
 
 CAVEAT, measured (AUDIT wave 3c "zero-enemy" ticket, and confirmed FATAL by
 the "fresh-state" ticket): --never-spawn only stops FUTURE spawns -- it
@@ -55,6 +104,7 @@ def main():
               "[--never-spawn] [--inert-enemy] [--empty-net-encounter]")
         return 2
     keep_banner = "--keep-banner" in sys.argv[3:]
+    hold_banner = "--hold-banner" in sys.argv[3:]
     never_spawn = "--never-spawn" in sys.argv[3:]
     inert_enemy = "--inert-enemy" in sys.argv[3:]
     empty_net_encounter = "--empty-net-encounter" in sys.argv[3:]
@@ -80,6 +130,17 @@ def main():
         print(f"warning: expected push at 0x{banner:08x}, got {d[banner:banner+2].hex()}")
     if not keep_banner:
         d[banner:banner + 2] = b'\x70\x47'  # bx lr
+
+    # Sixth patch (TODO F5), --hold-banner, OPT-IN: hold the banner
+    # sequencer in its ENEMY DELETED state 0x08 forever, so the phase in
+    # which chips can be fired never ends. See the docstring above for the
+    # full measurement trail and the address/bytes justification.
+    if hold_banner:
+        advance = 0x0800811C - base
+        if d[advance:advance + 4] != b'\x0c\x20\x28\x60':
+            print(f"warning: expected mov r0,#0xC; str r0,[r5] at 0x{advance + 0x08000000:08x}, "
+                  f"got {d[advance:advance + 4].hex()}")
+        d[advance:advance + 4] = b'\x00\xbf\x00\xbf'  # nop; nop
 
     # The chip-name popup that family-0x15 chips put up (AreaGrab, Invisibl,
     # Barrier, Barr100, Barr200) is NOT patched out any more: this build draws
@@ -289,8 +350,9 @@ def main():
 
     with open(sys.argv[2], 'wb') as f:
         f.write(d)
-    print("patched battle_isBattleOver%s, enemy spawn%s%s: %s"
+    print("patched battle_isBattleOver%s%s, enemy spawn%s%s: %s"
           % ("" if keep_banner else " and the ENEMY DELETED banner",
+             " (banner phase held)" if hold_banner else "",
              " (never-spawn)" if never_spawn else "",
              " and enemy inertness" if inert_enemy else "",
              sys.argv[2]))
