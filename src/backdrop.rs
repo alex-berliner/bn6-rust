@@ -219,7 +219,18 @@ impl Backdrop {
     /// fresh navi's 100, and as 7bc's chip-window bracket.
     pub fn seed(&mut self, entry: usize, timer: u16, x_q: u32, y_q: u32) {
         self.entry = entry;
-        self.timer = timer;
+        // Plus the same construction lead `new` builds into its own fresh
+        // timer (STEP_HOLD[0] + 1, see above): the seed is applied at
+        // construction, one tick before the battle moment the peeked Timer
+        // describes, so the peeked value would fire every art step one frame
+        // early. Measured: with the bare peeked Timer 4 the `tiles`/`gauge`
+        // rows read k=0..6 at 0 and 208 px at k=7 -- our art upload lands
+        // where canon's frame-52 upload lands one aligned frame early
+        // (watch-write both sides; canon's copy goes through
+        // QueueEightWordAlignedGFXTransfer, reference/bn6f/asm/asm00_0.s:3752
+        // sub_8001C94) -- and with this +1 it lands on canon's frame.
+        // Unseeded battles are untouched (`opening` stays 0).
+        self.timer = timer + 1; // provenance: derived -- same construction-lead mechanism as new()'s STEP_HOLD[0] + 1 (build ticks once before the peeked battle moment); tiles k=7 208 -> 0
         self.x_q = x_q;
         self.y_q = y_q;
     }
