@@ -356,6 +356,61 @@ impl RegularBackground {
         self
     }
 
+    /// Copy a block of pre-resolved map entries into the background map.
+    ///
+    /// `words` holds full map entries as produced by
+    /// [`MappedTile::word`](super::MappedTile::word), in row-major order with
+    /// `width` entries per row; the block's top-left lands at map position
+    /// `pos` (which wraps the same way [`set_tile`](Self::set_tile) does).
+    /// Cells whose entry is unchanged are skipped, and changed cells only
+    /// adjust VRAM refcounts -- the tile lookup never repeats. Prefer this
+    /// over a `set_tile` loop when rewriting a whole window every frame: one
+    /// pass over the block, no per-cell hash lookup.
+    ///
+    /// The [`MappedTile`](super::MappedTile)s the words came from must
+    /// outlive the call, since their held references are what keep the
+    /// entries' VRAM tiles pinned.
+    ///
+    /// Returns self so you can chain with other `set_` calls.
+    pub fn copy_map_block(
+        &mut self,
+        pos: impl Into<Vector2D<i32>>,
+        width: usize,
+        words: &[u16],
+    ) -> &mut Self {
+        assert!(width > 0, "copy_map_block needs a nonzero width");
+        assert!(
+            words.len() % width == 0,
+            "copy_map_block block length is not a whole number of rows"
+        );
+        let origin = pos.into();
+        let size = self.screenblock.size();
+        let colours = self.tiles.colours();
+        let rows = words.len() / width;
+        // Nested loops (not a flat index) so the per-cell address math is
+        // shifts and adds: a flat `i / width` / `i % width` compiles to two
+        // software divisions per cell on ARM, which cost more than the rest
+        // of the blit put together.
+        for dy in 0..rows {
+            for (dx, &word) in words[dy * width..(dy + 1) * width].iter().enumerate() {
+                let at = size.gba_offset(Vector2D::new(origin.x + dx as i32, origin.y + dy as i32));
+                let old = self.tiles.get(at);
+                let new = Tile(word);
+                if old == new {
+                    continue;
+                }
+                if old != Tile::default() {
+                    VRAM_MANAGER.remove_tile(old.tile_index(colours));
+                }
+                if new != Tile::default() {
+                    VRAM_MANAGER.increase_reference(new.tile_index(colours));
+                }
+                self.tiles.set_tile(at, new);
+            }
+        }
+        self
+    }
+
     fn set_tile_at_pos(&mut self, pos: usize, tileset: &TileSet, tile_setting: TileSetting) {
         let old_tile = self.tiles.get(pos);
 

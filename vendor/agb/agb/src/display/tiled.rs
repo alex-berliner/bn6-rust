@@ -286,6 +286,77 @@ impl Tile {
     }
 }
 
+/// A background-map entry with its VRAM tile already resolved.
+///
+/// Resolving a [`TileSet`] / [`TileSetting`] pair through the VRAM manager
+/// costs a hash lookup the first time a tile is seen, and the manager's
+/// lookup cache only covers the last few tiles: rewriting a whole map over
+/// several tilesets (a sliding window drawing its frame, font and picture
+/// tiles) misses it on nearly every cell, so a `set_tile` loop pays one
+/// hash lookup per cell per frame. A `MappedTile` pays that lookup once and
+/// holds one VRAM reference on the tile for its lifetime, so a per-frame
+/// rewrite can go through
+/// [`copy_map_block`](RegularBackground::copy_map_block), which only
+/// adjusts refcounts for cells whose entry actually changed.
+///
+/// Pass slices of [`word`](MappedTile::word) to `copy_map_block`. The words
+/// stay valid only while the `MappedTile`s they came from are alive:
+/// dropping every guard for a tile lets the manager recycle its VRAM slot,
+/// after which a stale word would point at another tile's graphics.
+#[derive(Debug)]
+pub struct MappedTile {
+    word: u16,
+    index: Option<TileIndex>,
+}
+
+impl MappedTile {
+    /// Resolve `setting` within `tileset` to a map entry, pinning the tile.
+    ///
+    /// The blank setting (tile id `0xffff`) maps to the zero entry and holds
+    /// no reference, mirroring what `set_tile` stores for it.
+    #[must_use]
+    pub fn new(tileset: &TileSet, setting: TileSetting) -> Self {
+        if setting.tile_id() == TRANSPARENT_TILE_INDEX {
+            Self {
+                word: Tile::default().0,
+                index: None,
+            }
+        } else {
+            let index = VRAM_MANAGER.add_tile(tileset, setting.tile_id(), false);
+            Self {
+                word: Tile::new(index, setting).0,
+                index: Some(index),
+            }
+        }
+    }
+
+    /// The full map entry: VRAM tile index plus setting bits.
+    #[must_use]
+    pub const fn word(&self) -> u16 {
+        self.word
+    }
+}
+
+impl Clone for MappedTile {
+    fn clone(&self) -> Self {
+        if let Some(index) = self.index {
+            VRAM_MANAGER.increase_reference(index);
+        }
+        Self {
+            word: self.word,
+            index: self.index,
+        }
+    }
+}
+
+impl Drop for MappedTile {
+    fn drop(&mut self) {
+        if let Some(index) = self.index {
+            VRAM_MANAGER.remove_tile(index);
+        }
+    }
+}
+
 struct ScreenblockAllocator;
 
 pub(crate) const VRAM_START: usize = 0x0600_0000;

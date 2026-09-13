@@ -1643,6 +1643,9 @@ impl<'a> Battle<'a> {
         self.results_mark = Some(self.custom_assets.mark_sprite());
         let mut shown = self.results.show(kind, time, level, 0, zenny);
         shown.fast_forward(elapsed);
+        if shown.blit_needed {
+            self.results.blit_slide(&mut shown);
+        }
         self.shown = Some(shown);
     }
 
@@ -2087,6 +2090,9 @@ impl<'a> Battle<'a> {
                     self.results_mark = None;
                 }
             }
+        }
+        if matches!(self.shown.as_ref(), Some(w) if w.blit_needed) {
+            self.results.blit_slide(self.shown.as_mut().unwrap());
         }
         // The fade-out ends on full black; the next battle's intro fades the
         // field back in from there.
@@ -3406,14 +3412,12 @@ impl<'a> Battle<'a> {
         // (dword_3002180) shows x = ([r5+6]*8+13) & 0x1ff with the counter
         // ramping +2/frame and clamping at 3 (the enqueue is sub_802CA5C,
         // asm03_0.s:13225; the ramp lives in the RESULT object's own state
-        // machine). Canon's mark's first wrapped frame is canon 163 and its
-        // ENEMY DELETED banner goes up at canon 49 (both on this same
-        // scenario), so the mark enters banner+114; our results window comes
-        // up banner+110 (RESULTS_DELAY), so the mark's wrapped frame is the
-        // window's 4th frame, settling on the 7th.
+        // machine). The wrapped frame is the slide's own end (j=-2), so the
+        // mark rides the slide counter (`results::mark_x_at`), settling at 37
+        // with the window, on every path.
         if let Some(mark) = self.results_mark.as_ref() {
-            let age = self.shown.as_ref().map(|w| w.age()).unwrap_or(u32::MAX);
-            if let Some(x) = results::mark_x_at(age) {
+            if let Some(window) = self.shown.as_ref() {
+                let x = results::mark_x_at(window.slide_x());
                 Object::new(mark.clone())
                     .set_priority(Priority::P0)
                     .set_pos((x, RESULTS_MARK_AT.1))
