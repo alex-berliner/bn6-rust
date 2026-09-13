@@ -3631,6 +3631,29 @@ impl<'a> Battle<'a> {
                     .show(frame);
             }
         }
+        // A seed's pod sorts above the navi, ahead of his body and its
+        // own shadow alike: the real ROM's OAM at the pod stage reads pod
+        // ball, navi body, seed shadow, navi shadow (chip-poisseed k=9:
+        // ball OAM5-6, body OAM7-10, shadow OAM11, navi shadow OAM12; the
+        // landing frame reads the same way, ball OAM0-1 over shadow OAM5,
+        // so the ball covers the shadow where they overlap). Gated on the
+        // seed family: every other thrown object keeps its ball below the
+        // navi (chip-minibomb reads 0 that way).
+        // provenance: peeked -- bilateral OAM watch at k9-14 and k47.
+        for b in &self.bombs {
+            if !b.poison {
+                continue;
+            }
+            let (x, y) = b.position();
+            for part in b.player.parts().iter().skip(1).rev() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
         if !self.megaman.is_defeated() {
             let bubble = self.bubble.as_ref();
             let (mc, mr) = self.megaman.panel();
@@ -3655,6 +3678,35 @@ impl<'a> Battle<'a> {
                         Object::new(part.sprite.clone())
                             .set_priority(Priority::P2)
                             .set_pos((bx + part.x, by + part.y))
+                            .set_hflip(part.hflip)
+                            .set_vflip(part.vflip)
+                            .show(frame);
+                    }
+                }
+                // A seed's pod shadow sorts between the navi's body and
+                // his own shadow: the real ROM's OAM at the pod stage
+                // reads pod ball, navi body, seed shadow, navi shadow
+                // (chip-poisseed k=9: ball OAM5-6, body OAM7-10, shadow
+                // OAM11, navi shadow OAM12), so the shadow covers his feet
+                // where they overlap and his body covers it. Gated on the
+                // seed family: every other thrown object keeps its shadow
+                // below the navi (chip-minibomb's ball OAM5 and shadow
+                // OAM9/10 sort below him). The after-balls loop below
+                // draws this shadow a second time, underneath everything:
+                // same pixels at the same spot, so it is fully covered
+                // here and costs nothing, and it preserves the old picture
+                // on the frames the navi himself is not drawn (defeated,
+                // blink), where this slot never runs.
+                // provenance: peeked -- bilateral OAM watch at k9-14.
+                for b in &self.bombs {
+                    if !b.poison {
+                        continue;
+                    }
+                    let (gx, gy) = b.ground();
+                    if let Some(part) = b.player.parts().first() {
+                        Object::new(part.sprite.clone())
+                            .set_priority(Priority::P2)
+                            .set_pos((gx + part.x, gy + part.y))
                             .set_hflip(part.hflip)
                             .set_vflip(part.vflip)
                             .show(frame);
@@ -3695,6 +3747,10 @@ impl<'a> Battle<'a> {
             imp.show(frame);
         }
         for b in &self.bombs {
+            // Seeds draw their ball above, ahead of the navi block.
+            if b.poison {
+                continue;
+            }
             let (x, y) = b.position();
             // LilBolr carries its damage under the thing it lobs, in the same
             // number objects the HP counters use. Measured on the real ROM:
@@ -3727,7 +3783,11 @@ impl<'a> Battle<'a> {
         // OAM carries the ball ahead of the navi and the shadow behind him,
         // so the shadow must sort below the ball (provenance: peeked -- OAM
         // dump of the canon chip-minibomb capture, ball entry 0, shadow
-        // entry 4, sub_80C5DBC's object, asm31.s:29657).
+        // entry 4, sub_80C5DBC's object, asm31.s:29657). A seed's shadow
+        // is ALSO drawn in the navi's underlay slot above, between his
+        // body and his own shadow where the real ROM sorts it; this copy
+        // underneath is fully covered there and only shows on the frames
+        // he is not drawn.
         for b in &self.bombs {
             let (gx, gy) = b.ground();
             if let Some(part) = b.player.parts().first() {
