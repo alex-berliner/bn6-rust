@@ -2753,15 +2753,21 @@ impl<'a> Battle<'a> {
             self.poison_pending -= 1;
             if self.poison_pending == 0 {
                 let (first, last) = field::half(true);
-                // Canon overlap order in the 24px inter-panel zones, read off
-                // the real ROM's OAM at the landing: zone B has R148 (OAM0)
-                // over L188 (OAM5), i.e. the middle column's sheet sorts above
-                // both neighbours. Effects draw last-pushed-first, so the
-                // middle column is pushed last: outside-in, 4, 6, 5.
-                // provenance: peeked -- canon OAM dump at the seed landing.
+                // Canon overlap order row by row, read off the real ROM's
+                // OAM watch at the sheet stage: each row is one OAM group --
+                // back row OAM0-5, middle OAM6-11, front OAM15-20 -- with the
+                // middle column's sheet on top throughout (zone B still has
+                // R148 over L188). Within a row the outer columns follow the
+                // middle as [first, last], except on the back row, which runs
+                // [last, first]: OAM0-5 reads c5, c4, c6 while OAM6-11 and
+                // OAM15-20 read c5, c6, c4. Effects draw last-pushed-first,
+                // so rows go front to back and the middle column stays last.
+                // provenance: peeked -- canon OAM watch at the sheet stage.
                 let mid = first + SHEET_MID_STEP;
-                for c in [first, last, mid] {
-                    for r in 1..=field::ROWS {
+                for r in 1..=field::ROWS {
+                    // Back-row outer columns run last-first (peeked: canon
+                    // back-row OAM reads c5, c4, c6); other rows first-last.
+                    for c in if r == field::ROWS { [last, first, mid] } else { [first, last, mid] } {
                         // NOT in the sterile arena: the real capture's field
                         // layer is stripped, so its poison panels cannot show,
                         // while this build's field would paint them and cost
