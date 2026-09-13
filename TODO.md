@@ -128,6 +128,29 @@ MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ON
 this ticket, smallest residue first (the rows at 10-8338), and bring its rows to 0; mark this ticket
 PARTIAL with which family is done and leave it OPEN for the next family, until every chip row is 0.
 
+### F16. Oracle coverage: every harness row, not two  *(OPEN -- 2026-09-13)*
+
+**Why.** `tools/oracle.py` names the first divergent state field and frame, which is what turns a
+three-attempt ticket into a one-attempt ticket, but it supports only `wave` and `mettaur`. Attribution
+is where the money goes (R3-R5, F10: two to four attempts each). Cost reducer for every ticket after it.
+
+**Do, in order.**
+1. Generalize `oracle.py <row>` to any row in `harness.py --list`: reuse the row's own Sides and Align
+   (as it does for wave/mettaur), watch the same field set on both sides, print the full table, the
+   first divergence, the pixel diff's first non-zero frame on the same alignment, and the one-frame-shift
+   negative. Rows whose fixture has no enemy skip the enemy fields with an explicit `n/a`, never a fake
+   match. Fail loudly on a row whose alignment cannot be reproduced.
+2. Extend the export block only if a row needs a field the block lacks (document the layout change in
+   HANDOFF §3a of the long handoff and keep the block behavior-neutral: wave/window/opening/cannon/field
+   still 0).
+3. **Acceptance:** `oracle.py` runs on every row; on three rows with a known residue (card, mettaur,
+   tiles) the first divergent field's frame is consistent with the row's first non-zero pixel frame
+   (report both); on three rows at 0 the compared fields show no divergence over the window; every
+   negative control changes the result; verify_rows on the six rows unchanged.
+
+**Rules.** tools/ and the export block in src/ only; no behavior change; captures one at a time.
+**Coordinator:** verify_rows plus the verifier on the "consistent with the pixel diff" claims.
+
 ### F13. `card` isolated: 18486 px over 16 frames  *(OPEN -- 2026-09-12)*
 
 **Why.** HANDOFF §10 names the chip window's cursor-move timing.

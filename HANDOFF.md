@@ -59,6 +59,14 @@ vs after -- a merge that changed nothing is not parity).
   short, never for a disproven prediction; no model overrides in dispatches; Opus 5 last resort.
   Measured: a GLM ticket costs $0.01-0.37; a verifier pass ~$0.02-0.03 on the contributor tier
   (was $0.37 Muse, $1.02-1.38 Sol).
+- **Worker A/B in progress (2026-09-13):** Muse Spark 1.3 contributor scores ~48 on the user's chart to
+  GLM's 42 and is cheaper on every line ($0.10/$0.20, cache $0.002/M): the coordinator alternates
+  `worker-muse` and `worker` on F12's families (verifier `verifier-glm` when the worker was Muse, so
+  the checker is a different family) and records model, turns and cost per ticket. Decide from two
+  tickets each: if Muse matches or beats GLM on outcome and cost, worker = Muse contributor and
+  verifier = GLM for good. Judgment work off the Claude plan: `bash tools/pi_judge.sh` proposes the
+  next three tickets to docs/proposals/ for about a cent. `tools/probe.py` (watch/peek/frame/diff in
+  one call) replaces the throwaway scripts workers wrote.
 - **Verification is two-tier:** `tools/verify_rows.py` reproduces every claimed harness line from a
   clean detached checkout, always, free; the verifier role checks the two or three claims the next
   ticket would build on (memory findings, causes, exclusions, partial/negative outcomes), with a hard

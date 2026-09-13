@@ -12,7 +12,11 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    last relevant Result paragraphs and the section's shared procedure. If it prints "no OPEN ticket",
    STOP. Never read TODO.md whole.
 2. Dispatch the worker with the `subagent` tool, exactly one child at a time (captures must never
-   overlap), passing the ticket TEXT you just got:
+   overlap), passing the ticket TEXT you just got. **Worker A/B (until HANDOFF §3 says it is
+   decided):** alternate tickets between `worker` (GLM) and `worker-muse` (Muse contributor), starting
+   with `worker-muse`; when the worker was `worker-muse`, dispatch `verifier-glm` instead of
+   `verifier` so the checker is a different family; record each child's model, turns and cost in the
+   ticket's Result so the two can be compared.
    `{agent: "worker", async: false, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
    toolBudget: {soft: 80}, task: "<next_ticket.py output verbatim>\n\nStart your worktree as the
    ticket says (default: bash tools/worktree.sh <short-name>). Commit per landed step on your branch;
@@ -43,6 +47,10 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 6. **Next ticket.** Write one only if it follows directly from this ticket's verified report AND stays
    inside HANDOFF.md §3's scope and order; put it in TODO.md in the R/F format (why, numbered steps,
    rules, measure-and-report), marked OPEN, commit it alone, and go to step 1. Otherwise go to step 1.
+7. **End of run (once, not per ticket):** `python3 tools/archive_tickets.py`; regenerate the gallery
+   for the rows that changed this run in ONE harness call (`python3 tools/harness.py --only
+   ROW,ROW,...` without --no-gallery, then `python3 tools/captures_manifest.py`) and commit
+   `web/captures`; during tickets always pass `--no-gallery`.
 
 ## Stop and hand back to the user when
 
