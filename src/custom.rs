@@ -1000,7 +1000,23 @@ impl Custom<'_> {
                 let x = (x + SLIDE_STEP).min(SLIDE_FROM);
                 bg.set_scroll_pos((x, 0));
                 self.vacate(bg, x);
-                Phase::Closing { x }
+                // Canon's slide-out advances AND finishes in the same call:
+                // sub_8026BF4 (reference/bn6f/asm/asm03_0.s:1037) adds 0xc
+                // to the slide counter on entry (asm03_0.s:1060-1062) and,
+                // once it reads exactly 0x78, flips JumpOffset01/Unk_02 in
+                // that same tenth call (asm03_0.s:1119-1125) -- it never
+                // rests a frame at the fully-off-screen position. Returning
+                // Closing { x: SLIDE_FROM } here spent one extra frame on
+                // the blank window, so the post-close HUD redraw (battle.rs
+                // runs it the update after `custom` becomes None) landed a
+                // frame late: windowclose BG3 k=10 blank on both sides, k=11
+                // canon settled / ours still blank (2447 px, y0..15), k=12
+                // settled on both sides (measured this ticket, offset 253).
+                if x == SLIDE_FROM {
+                    Phase::Done
+                } else {
+                    Phase::Closing { x }
+                }
             }
             Phase::Closing { .. } => Phase::Done,
             Phase::Done => Phase::Done,
