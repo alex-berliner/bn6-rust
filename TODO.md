@@ -233,6 +233,19 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Measure and report.** Row `result` before/after (total/worst/frames) on the identical script and window, inside/outside-window split before/after, oracle/watch-write writer and frame before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, tail-state attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F21c. `result` field-row pairing: re-justify after the slide rework *(OPEN -- 2026-09-13)*
+
+**Files.** src/results.rs, tools/harness.py
+
+**Why.** F21b's verified Result: `result` 408337/31895 -> 190633/24647/40 on branch wt/f21b-result-tail (kept unmerged at 9aa72e9) via tilemap-column slide (START_X=-240, SLIDE_STEP=16, SLIDE_HOLD=16) plus peeked backdrop seed; verifier CONFIRMED the mechanism against the canon driver chain but REFUTED the field-regression story -- the 16-frame hold and re-timed mark execute inside the field row's compared frames (field ZERO_ENEMY_RESOLVED has no result_elapsed key, hold applies; mark entry steps no longer pair with canon's 163..166), so field isolated 0 -> 1048/177 is mark/slide re-timing, not an HP tail. Also flagged: stale asm03_0.s:13225 citation for sub_802CA5C (comment-only) and the offset 31=15+16 justification living only in results.rs, not the harness note.
+**Do, in order.**
+1. Start in `tools/worktree.sh f21c-field-pairing` from branch wt/f21b-result-tail (continue that work, do not start from main). Baseline `python3 tools/harness.py --only result,field --no-gallery` (must read result 190633/24647/40 and field isolated 1048/177, negatives not blind), plus per-frame/bbox location of the field residue, measured.
+2. Re-justify the field row's event-derived pairing against the new mark timeline (or re-time the mark so the field row pairs at 0 again), fix the 13225 citation, document the offset-31 justification in the RESULT_ROW harness note per F2's rule, measured on the field row and the result row.
+3. Re-run `result`, `field`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse; field isolated must read 0 again before this lands with F21b's result improvement.
+**Rules.** src/ + harness-note documentation only; no allowlist change; no region change; captures one at a time.
+**Measure and report.** Rows `result` + `field` before/after (total/worst/frames), field residue bbox before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (pairing attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
+
 ### F12. The chip rows' own residues, family by family  *(OPEN -- 2026-09-13, F12e feet theory refuted, no change, ticket stays OPEN)*
 
 **Result.** F12e feet theory refuted, no change, ticket stays OPEN. chip-poisseed 247/43/70/50822, chip-iceseed 132/16/70/52022, chip-grasseed 132/16/70/52022 (verify_rows PASS on HEAD a7ee2ac, negatives not blind); k9-14 feet is NOT a palette-table selection -- bilateral OAM shows identical pos/size/palette family (canon pal 1, ours pal 7, body pixels exact), our shadow ellipse is wider tile art (rust (16,16,16) vs canon black), i.e. asset-content outside src scope; canon cite asm31.s:108961/off_80EB6F8/sub_80CE44E (seeds throw via type-3 object 0x4f, shadow path untraced); corners #2 and reorder #3 unattempted (budget, gated on #1); no commits, branch wt/f12-seed-feet deleted, main untouched at a7ee2ac. Worker worker-muse (muse-spark-1.3-contributor:high, 81 turns, $0.042). No verifier (nothing landed; refutation is measurement, not a claim to build on). Next: scope decision on assets/poisseed.bin shadow tiles, or trace t3_0x4f shadow path, or corners row-order pass.
