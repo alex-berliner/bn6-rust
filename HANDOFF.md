@@ -435,6 +435,19 @@ Made after the model research (`MODEL_RESEARCH.md`) and the workflow audit (`WOR
     as a candidate (AA ~36 on the user's chart, below the cheaper GLM-5.3-Flash).
   - Not used by default: Sonnet 5 (cache $0.20/M and turn-hungry), Gemini 3.8 Flash (partial caching),
     Grok 4.6 (cache $0.50/M), Kimi (tool-call reliability). Escalate by `--fork`, never by restarting.
+- **Token economy, 2026-09-13 (after a day that spent ~1,000 Claude Code turns and $29 of OpenRouter).**
+  Measured shares: the Claude Code chat itself was the largest consumer (every turn re-sends the whole
+  conversation; ~40 turns were acknowledgements of monitor events); on OpenRouter, verifiers $8.5,
+  coordinators $6.2, workers $6.3 of which GLM's 1,587 turns cost $2.9. Changes: (1) coordination runs
+  in pi; a Claude Code session opens for judgment, reads this file fresh, and closes -- it does not
+  mirror the run; (2) a Claude Code session watches a run with `bash tools/pi_watch.sh <run dir>`
+  (ticket-level events only), never per step; (3) agents get their ticket from `tools/next_ticket.py`
+  (~1k tokens) instead of TODO.md (33k); (4) the coordinator's mechanical steps are scripts --
+  `tools/land.sh` (verify_rows + merge + cleanup) and `tools/ticket_result.py` (status + Result +
+  commit) -- so a ticket costs it ~4 turns, not ~20; (5) the verifier gets pre-extracted claims and a
+  hard tool budget (30), workers a soft one (80); (6) Sol is nowhere by default (escalation only, and
+  only for implementation shortfalls); (7) agents read `AGENT_GUIDE.md` (~2k tokens) instead of this
+  file's §0-§6; (8) `tools/spend_ledger.py` prints spend per role and model from the session files.
 - **Routine coordination runs in pi, not in a Claude Code chat (2026-09-12).** `bash
   tools/pi_coordinator.sh ["instruction"]` starts a detached Muse Spark 1.3 session (Sol until 2026-09-12) with
   `.pi/coordinator.md` appended: it takes the first OPEN ticket in TODO.md, dispatches the `worker`,

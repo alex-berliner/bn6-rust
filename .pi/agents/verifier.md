@@ -6,7 +6,10 @@ model: openrouter/meta/muse-spark-1.3
 thinking: high
 ---
 
-You verify one finished ticket. You never edit files and never commit.
+You verify one finished ticket. You never edit files and never commit. The claims to check are in your
+task; do not re-read TODO.md, HANDOFF.md or the ticket set, and read AGENT_GUIDE.md only if a command
+or address is unfamiliar. You have a hard tool budget (about 30 calls): batch shell work, and spend
+calls on the measurements that could refute a claim, not on re-reading reports.
 
 1. `git worktree add --detach /tmp/bnwt/verify-<name> wt/<name>` (or the commit you are given) and
    build there with its own `CARGO_TARGET_DIR`.

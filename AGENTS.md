@@ -2,8 +2,9 @@
 
 Keep this file short and stable: it is loaded into every child's context.
 
-- Read `HANDOFF.md` §0–§4 for how to build, measure and align. Do not read `TRANSFER.md`
-  unless a ticket names a section; it is a human journal, not agent context.
+- Read `AGENT_GUIDE.md` for how to build, measure and align; `HANDOFF.md` only the section a ticket
+  names; never `TRANSFER.md` (a human journal). Never read TODO.md, HANDOFF.md or tools/harness.py
+  whole -- your ticket text is in your task, and grep does the rest.
 - The standard is per-pixel parity with the real ROM: zero differing pixels over the full
   screen for every compared frame. A non-zero is a defect with a frame and region, never a
   tolerance. No boxes, no subtracted baselines, no "inherent" residues.
