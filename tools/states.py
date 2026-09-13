@@ -343,6 +343,43 @@ STATES = [
              "which is what pair 4 asked for.",
     ),
     State(
+        name="afterdissolve_0x0c",
+        path="/tmp/afterdissolve_0x0c.state",
+        root=False,
+        rom=STERILE,
+        base=PAUSED,
+        script="Start@10",
+        cheats=DELETE_ENEMY,
+        frames=60,
+        description="TODO F5b step 2: PAUSED's battle resumed (Start@10) with the "
+                    "Mettaur held at HP 0 (DELETE_ENEMY), saved 60 frames in -- past "
+                    "the corpse's full dissolve (portrait box and corpse both 0, they "
+                    "end at capture-relative 43-52 in the chip rows) and inside the "
+                    "banner sequencer's RESULT countdown state 0x0C (dword_203CA70, "
+                    "entered 36 frames after the enemy's death per F5, countdown 94 "
+                    "frames, so 60 leaves ~80 frames of runway). The state where a chip press is "
+                    "refused because NOTHING refreshes the alliance players' AIData "
+                    "from the joypad mirror (0x08 does it via sub_8012DFC x2, 0x0C "
+                    "never does) -- the base for the one-shot AIData JoypadPressed poke "
+                    "test.",
+        note="VERIFIED (this ticket). Peek at load: dword_203CA70 (0x0203ca70) reads "
+             "0x000c (sequencer in the countdown state; byte 3 carries 0x04 from "
+             "sub_80081A4's own init at 0x080081CA), byte_203CA74 reads 0 (countdown "
+             "not expired), MegaMan CurState/CurAction (0x0203a9b8) reads 0x0804 "
+             "(idle). Portrait box and corpse both gone at load (rendered frame 0 "
+             "inspected; they end at capture-relative 43-52 and 60 > 52). Reloaded, "
+             "the state holds sequencer 0x0C and idle for 90+ straight frames (byte "
+             "watches on 0x0203ca70/0x0203a9b8, no change). MegaMan's AIDataPtr at "
+             "0x0203aa08 reads 0x02034080 -- JoypadHeld 0x020340a2, JoypadPressed "
+             "0x020340a4, Unk_44 0x020340c4; alliance-0 joypad mirror at 0x02036820 "
+             "(pressed candidate halfword 0x02036822, sub_8012DFC asm00_2.s:8977). "
+             "Determinism: 40 frames from two independent builds diff to 0 pixels. "
+             "The F5b poke test on this state FIRES: --poke-at 3:0x020340a4:0x0001 "
+             "(+ mirror 0x02036822) writes CurAction 0x08->0x14 at 0x0801169A "
+             "(lr 0x0800FBF7, object_setAttack2 from sub_800FB54) the same frame, "
+             "identical to the A@40-from-PAUSED control's fire chain.",
+    ),
+    State(
         name="chip_ready",
         path="/tmp/chip_ready.state",
         root=False,
