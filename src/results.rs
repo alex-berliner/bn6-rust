@@ -11,9 +11,10 @@
 
 use agb::display::Priority;
 use agb::display::tiled::{
-    RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
+    MappedTile, RegularBackground, RegularBackgroundSize, TileEffect, TileFormat, TileSet, TileSetting,
 };
 use agb::display::{Palette16, Rgb15};
+use alloc::vec::Vec;
 
 const MAGIC: &[u8; 4] = b"BNRS";
 pub const WIN: usize = 0;
@@ -32,6 +33,17 @@ const SLIDE_STEP: i32 = 16; // provenance: derived -- sub_802BE36's +2 columns (
 /// Frames between setup and the first slide tick: canon holds j=-30 from
 /// setup through its frame 15 and ticks during 16..32 (right-edge fit).
 const SLIDE_HOLD: u8 = 16; // provenance: peeked -- first slide tick during canon frame 16; which driver timer holds it there was not identified
+/// The window's own map size in cells, and the BG map strip the slide
+/// rewrite covers: the full 32-cell map width, the window's 18 rows.
+const WIN_W: usize = 24; // provenance: derived -- BNRS variant maps are 24x18 cells (Results::new reads w, h)
+const WIN_H: usize = 18; // provenance: derived -- BNRS variant maps are 24x18 cells (Results::new reads w, h)
+const MAP_W: usize = 32; // provenance: derived -- Background32x32 map width chosen in Results::show
+/// Pixels per tile column: `Shown::slide_x` keeps pixels, the map works in
+/// columns, so the blit divides by this.
+const TILE_PX: i32 = 8; // provenance: derived -- GBA background tile size
+/// Where the rewrite block lands in the BG map: top-left, like the old
+/// per-tile loop's (col, row) origin.
+const MAP_ORIGIN: (i32, i32) = (0, 0); // provenance: derived -- the slide redraw covers map rows 0..18, cols 0..32 from the origin
 /// `Shown::cells` tags: which tileset a stored raw map entry belongs to --
 /// the window's own tiles, the battle text font, the reward picture. A local
 /// encoding, not ROM data.
@@ -182,6 +194,16 @@ pub struct Shown {
     /// each belongs to (`CELL_*`), so the slide can re-blit them at a new
     /// column the way canon's `CopyBackgroundTiles` redraw does.
     cells: [(u8, u16); 24 * 18],
+    /// The slide rewrite's pre-resolved map words, one per `cells` entry,
+    /// plus the pinned VRAM tiles they point at. Rebuilt by
+    /// `resolve_cells` whenever `cells` change (show, reward reveal), so
+    /// the per-tick blit is one `copy_map_block`, not 576 VRAM-manager
+    /// lookups. The guards must stay alive while `words`/`blank` are used.
+    guards: Vec<MappedTile>,
+    words: [u16; WIN_W * WIN_H],
+    /// The off-window fill (variant tile 0), for map columns the window
+    /// does not cover; `guards[0]` pins it.
+    blank: u16,
     /// Set whenever the slide position moved (or at `show`); the battle
     /// re-blits through `Results::blit_slide` when it sees this.
     pub blit_needed: bool,
@@ -384,9 +406,12 @@ impl Results {
         // Fresh cells already render as blank, and j=START_X/8 is fully
         // clipped, so there is nothing to blit until the first tick.
         bg.set_scroll_pos((0, -Y));
-        Shown {
+        let mut shown = Shown {
             bg,
             cells,
+            guards: Vec::new(),
+            words: [0; WIN_W * WIN_H],
+            blank: 0,
             blit_needed: false,
             phase: Phase::Sliding {
                 x: START_X,
@@ -394,7 +419,9 @@ impl Results {
             },
             variant,
             zenny,
-        }
+        };
+        self.resolve_cells(&mut shown);
+        shown
     }
 
     /// Draw the WIN reward content (coin picture, amount line, edge row)
@@ -444,7 +471,48 @@ impl Results {
                     (CELL_BASE, REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12);
             }
             shown.blit_needed = true;
+            self.resolve_cells(shown);
             self.blit_slide(shown);
+    }
+
+    /// Resolve every distinct `(tileset, raw)` pair in `shown.cells` to a
+    /// pinned VRAM map word once, so the per-tick slide rewrite is one
+    /// `copy_map_block`, not 576 VRAM-manager lookups (F21d: the manager's
+    /// lookup cache holds 8 tiles across this window's 3 tilesets, so nearly
+    /// every `set_tile` paid the hash path -- ~0.5 frame per blit, missing
+    /// vblank every third slide frame). Called whenever `cells` change.
+    fn resolve_cells(&self, shown: &mut Shown) {
+        let v = &self.variants[shown.variant];
+        let tileset = |tag: u8| match tag {
+            CELL_FONT => &self.font,
+            CELL_REWARD => &self.reward,
+            _ => &v.tiles,
+        };
+        shown.guards.clear();
+        // Guard 0 is the off-window blank (variant tile 0), which the
+        // blit writes to map columns the window does not cover.
+        shown.guards.push(MappedTile::new(&v.tiles, entry(0)));
+        shown.blank = shown.guards[0].word();
+        let mut distinct: Vec<(u8, u16)> = Vec::new();
+        for (i, &(tag, raw)) in shown.cells.iter().enumerate() {
+            if tag == CELL_BASE && raw == 0 {
+                shown.words[i] = shown.blank;
+                continue;
+            }
+            let found = distinct.iter().position(|&(t, r)| t == tag && r == raw);
+            let k = match found {
+                Some(k) => k,
+                None => {
+                    distinct.push((tag, raw));
+                    shown
+                        .guards
+                        .push(MappedTile::new(tileset(tag), entry(raw)));
+                    distinct.len() - 1
+                }
+            };
+            // Guard k+1 parallels distinct[k] (guard 0 is the blank).
+            shown.words[i] = shown.guards[k + 1].word();
+        }
     }
 
     /// Draw the stored cells into the background at the slide's current
@@ -454,26 +522,41 @@ impl Results {
     /// not a scroll. Cells the window does not cover read back as the
     /// fresh-map blank, which is what an untouched cell renders as anyway.
     pub fn blit_slide(&self, shown: &mut Shown) {
-        let v = &self.variants[shown.variant];
-        let j = shown.slide_x() / 8;
-        for row in 0..18i32 {
-            for col in 0..32i32 {
-                let wc = col - j;
-                let (ts, raw) = if (0..24).contains(&wc) {
-                    shown.cells[row as usize * 24 + wc as usize]
-                } else {
-                    (CELL_BASE, 0)
-                };
-                let tiles = match ts {
-                    CELL_FONT => &self.font,
-                    CELL_REWARD => &self.reward,
-                    _ => &v.tiles,
-                };
-                shown.bg.set_tile((col, row), tiles, entry(raw));
+        unsafe {
+            core::ptr::write_volatile(BLIT_ENTRY, vcount());
+        }
+        let j = shown.slide_x() / TILE_PX;
+        let mut block = [shown.blank; MAP_W * WIN_H];
+        for row in 0..WIN_H {
+            for col in 0..MAP_W {
+                let wc = col as i32 - j;
+                if (0..WIN_W as i32).contains(&wc) {
+                    block[row * MAP_W + col] = shown.words[row * WIN_W + wc as usize];
+                }
             }
         }
+        shown.bg.copy_map_block(MAP_ORIGIN, MAP_W, &block);
         shown.blit_needed = false;
+        unsafe {
+            core::ptr::write_volatile(BLIT_EXIT, vcount());
+            let n = core::ptr::read_volatile(BLIT_COUNT);
+            core::ptr::write_volatile(BLIT_COUNT, n.wrapping_add(1));
+        }
     }
+}
+
+/// TEMP PROBE (F21d, removed before landing): VCOUNT at the slide blit's
+/// entry/exit plus a blit counter, for the per-frame scanline cost.
+/// Raw marker-padding addresses (main.rs: BATTLE_MARKER owns
+/// 0x02000000..0x02000080, marker uses ..0x08, oracle ..0x30) -- a `static
+/// mut` probed unwritten at runtime (dead-store elimination), so volatile
+/// writes to reserved padding instead.
+const BLIT_ENTRY: *mut u16 = 0x0200_0030 as *mut u16;
+const BLIT_EXIT: *mut u16 = 0x0200_0032 as *mut u16;
+const BLIT_COUNT: *mut u16 = 0x0200_0034 as *mut u16;
+const VCOUNT_REG: *const u16 = 0x0400_0006 as *const u16; // canon: GBA VCOUNT register
+fn vcount() -> u16 {
+    unsafe { core::ptr::read_volatile(VCOUNT_REG) }
 }
 
 fn entry(e: u16) -> TileSetting {
