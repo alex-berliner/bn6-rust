@@ -961,16 +961,17 @@ impl Actor {
         // While invulnerable the object carries OBJECT_FLAGS_FLASHING
         // (asm00_2.s:23893) and blinks. The mercy handler's blink reads
         // `FlashingInvisTimer >> 2` and hides the object when the carry bit
-        // from that shift is set (asm00_2.s:16796-16806), i.e. the timer's
-        // bit 2 toggles the sprite hidden every four frames: four frames
-        // visible, four hidden.
+        // from that shift is clear (asm00_2.s:16796-16806): the `lsr #2`
+        // carry is the timer's bit 1, so the sprite hides iff bit 1 is set --
+        // two frames hidden, two shown, period 4 (blindVisualHandledHere_8016934,
+        // ARM `lsr` carry = last bit shifted out).
         if matches!(self.action, Action::Gone | Action::Hidden) {
             return;
         }
         // The mercy blink stops mattering once the navi is being deleted; the
         // die state's own white/visibility handling takes over.
         let dying = matches!(self.action, Action::Dying { .. });
-        if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable / 4) % 2 == 1 {
+        if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable >> 1) & 1 != 0 {
             return;
         }
         // Invisibl: the navi is not drawn on the frames where bit 1 of its
