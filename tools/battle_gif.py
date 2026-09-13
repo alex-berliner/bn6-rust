@@ -47,14 +47,9 @@ def main():
         f.write("The release ROM played by a fixed player script (tools/battle_gif.py), %d frames at every "
                 "%dth: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', "
                 "BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and "
-                "RESULT. The faded copy of the chip window that used to stay on the left of the field "
-                "after the window closed (TODO F3) is FIXED: vacate() never cleared a single column "
-                "(its condition tested a scroll value the slide never reaches), so the whole window "
-                "map reappeared on BG3 at scroll 0; it now clears each column on the frame canon does "
-                "(sub_8026BF4's cadence, measured on eS20364C0 +0x44), and the harness's new "
-                "windowclose row compares the close directly (977410 -> 695603 full screen, the "
-                "window's own layer exact over the whole slide). "
-                "This is the build as a player sees it, not a parity "
+                "RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it "
+                "stays drawn on the left of the field for the whole battle; no harness row covers the window "
+                "closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity "
                 "measurement; the per-row GIFs are the measurements.\n\ncommit %s" % (a.frames, a.step, rev))
     print("wrote %s (%d frames, %.1f MB)" % (a.out, len(frames), os.path.getsize(a.out) / 1e6))
 

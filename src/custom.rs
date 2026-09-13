@@ -589,8 +589,8 @@ impl Custom<'_> {
 
     /// The slide-out clears the columns the window has vacated with the
     /// blank tile (byte_8026C88; sub_8026BF4). Canon clears them from the
-    /// LEFT edge, one column when the new scroll x has bit 2 clear and two
-    /// when it is set (sub_8026BF4's `and #4 / lsr #2 / eor #1` bit count --
+    /// LEFT edge, one column when the new scroll x has bit 2 set and two
+    /// when it is clear (sub_8026BF4's `and #4 / lsr #2 / eor #1` bit count --
     /// the slide-in's own count without the eor), which over the ten 0xc
     /// steps is exactly "column c on the first call whose x has carried it
     /// fully off the left edge, (c + 1) * 8 <= x": measured against the real
