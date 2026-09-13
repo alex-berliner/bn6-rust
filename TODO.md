@@ -205,8 +205,9 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` slide-frame totals and k=11 transient before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, sequencing cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-### F18c. `windowclose` isolated: the relocated k=9/k=10 close-frame blank/redraw *(OPEN -- 2026-09-13)*
+### F18c. `windowclose` isolated: the relocated k=9/k=10 close-frame blank/redraw  *(PARTIAL -- 2026-09-13, windowclose 651885/28430->650544/27555/40 [BG3 k9 1898->0, k10 1408->0, k11 0->1596)*
 
+**Result.** windowclose 651885/28430->650544/27555/40 (BG3 k9 1898->0, k10 1408->0, k11 0->1596; net -1341). Deferred scroll-reset/redraw one frame in src/battle.rs (close_redraw_pending, gauge gated so blank stays blank) per RenderInfo+0x18 watch (0x78@90->0@91) and 80B blanking at canon 91; guards 0, field-int 358162->357495 (in cap). Landed b0ba8a5. Worker worker-muse. Verifier verifier-glm: all 4 CONFIRMED with independent reproduction (parent 651885, branch 650544, BG3 profiles exact). Remaining: k11 1596 gauge-body single-step redraw (F18d).
 **Files.** src/custom.rs
 
 **Why.** F18b's verified Result: `windowclose` 666451/28784/40 -> 651885/28430/40 (landed f5e5380); the k=11 BG3 transient (2447) is 0, but relocated to k=9 1898 (x0-11 y0-159, close-frame scroll-0-blank) + k=10 1408 (x2-165 y0-15, pre-redraw HUD) vs canon's 0x78-slide then blank-91. Verifier CONFIRMED the relocation is exactly what a one-frame-earlier Done predicts. What is missing is canon-91 scroll/map evidence and a deferred scroll-reset/redraw design, deliberately not widened into F18b.
