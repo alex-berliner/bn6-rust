@@ -109,8 +109,16 @@ CHANGE the nominal result -- the per-field first-divergence table has to
 move -- or the oracle is BLIND on that row. "Still diverges somewhere" on
 an already-divergent row proves nothing and is reported as BLIND.
 
+Since TODO F16 the oracle runs on ANY harness.py comparison row: it derives
+the enemy-slot configuration from the row's own fixture descriptor
+(`enemies` field) and a per-row table of verified canon enemy slots. Rows
+whose fixture has no enemy (the 49 sterile-arena rows) skip the enemy
+fields with an explicit n/a -- never a fake match against a canon side
+that still carries a live object from its own state. `rollup` fails
+loudly: it is a no-crash walk with no Sides and no Align to reuse.
+
 Usage:
-  python3 tools/oracle.py <row>            # wave, mettaur only
+  python3 tools/oracle.py <row>            # any harness.py row but rollup
   python3 tools/oracle.py <row> --shift N  # canon shifted N frames (default 0)
 """
 
@@ -139,14 +147,37 @@ GAUGE_ADDR = 0x020352A0  # eStruct2035280 + 0x20
 RNG_ADDR = 0x020013F0  # ePrimaryRngSeed
 MM_ORACLE_ADDR = 0x02000008  # the rust export block ("ORCL", 40 bytes)
 
-#: Per-row configuration: the canon address of the POPULATED enemy slot.
-#: Everything else is the row's own Check definition. Only the rows R7
-#: accepts are here: adding a row needs its enemy slot verified populated
-#: (the ALIVE-cheat-address proof) and every parity field's conversion
-#: verified against a canon watch capture -- see HANDOFF §3a.
-ROWS = {
-    "wave": dict(enemy_slot=0x0203AB60),
-    "mettaur": dict(enemy_slot=0x0203AB60),
+#: The canon battle-object table (ewram.s:2972-2992): slot 0 is MegaMan
+#: (0x0203a9b0, watched at +0x08), the struct stride is 0xD8
+#: (eT1BattleObject1 at 0x203aa88, 2 at 0x203ab60). HP is +0x24 of the
+#: struct, which is where the ALIVE cheat pokes.
+ENEMY_TABLE = 0x0203A9B0
+ENEMY_STRIDE = 0xD8
+
+#: Per-row configuration: the INDEX of the populated enemy slot in the
+#: canon table, for every row whose fixture descriptor has enemies > 0.
+#: Everything else about a row is its own Check definition (Sides, Align,
+#: frames -- reused verbatim). (provenance: peeked -- one canon capture
+#: per row watching the whole table, tools/f16_slot_probe.py, read at the
+#: row's own canon_ref: every row keeps its enemy in slot 2 (= the PAUSED
+#: proof, 0x0203ab60: the ALIVE cheat's own address 0x0203ab84 = base +
+#: 2*0xD8 + oBattleObject_HP) except `opening`, whose three enemies sit in
+#: slots 1..3 and whose export block is `enemies.first()` (battle.rs
+#: oracle_snapshot), so canon's counterpart is the FIRST enemy, slot 1;
+#: and `result`, whose slot-2 enemy is already DELETED at canon_ref 21
+#: (state 0x08, hp 0x0000) -- the row is about the battle-over sequence,
+#: the watch is the honest one, the fields simply read the dead object.
+ENEMY_SLOT = {
+    "opening": 1,
+    "mettaur": 2,
+    "tiles": 2,
+    "gauge": 2,
+    "wave": 2,
+    "window": 2,
+    "card": 2,
+    "cursor": 2,
+    "windowclose": 2,
+    "result": 2,
 }
 
 #: fields watched and printed but NEVER compared: the two FIXTURES disagree
@@ -235,21 +266,31 @@ FIELD_PAIRS = [
 
 
 def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
-            canon_rng: list, offset: int, frames: int) -> dict:
+            canon_rng: list, offset: int, frames: int,
+            has_enemy: bool = True) -> dict:
     """First divergent frame per compared field at `offset` (rust row index
     = offset + k, canon row index = canon_ref + k, already applied by the
-    callers slicing the row lists)."""
+    callers slicing the row lists). Fields whose name starts with
+    "enemy_" are compared only when the row's fixture has an enemy
+    (F16): a sterile-arena row's export block carries the 0xffff
+    no-enemy sentinel, and the canon side's own state may still hold a
+    live object from its own history -- comparing the two would be a
+    fake match or a fake divergence, so they are skipped entirely."""
+    pairs = [p for p in FIELD_PAIRS
+             if has_enemy or not p[0].startswith("enemy_")]
     out = {}
-    for name in [p[0] for p in FIELD_PAIRS] + ["rng_cadence"]:
-        out[name] = dict(first=None, count=0, canon=None, rust=None)
+    for name in [p[0] for p in pairs] + ["rng_cadence"]:
+        out[name] = dict(first=None, count=0, canon=None, rust=None,
+                         pairs=set())
     prev_rust_rng = prev_canon_rng = None
     for k in range(frames):
         r = rust_fields(rust_rows[offset + k])
         c = canon_fields_mm(canon_mm[k])
-        e = canon_fields_enemy(canon_enemy[k])
-        for name, rget, cget in FIELD_PAIRS:
+        e = canon_fields_enemy(canon_enemy[k]) if has_enemy else c
+        for name, rget, cget in pairs:
             cval = cget(e if name.startswith("enemy_") else c)
             rval = rget(r)
+            out[name]["pairs"].add((cval, rval))
             if rval != cval:
                 f = out[name]
                 if f["first"] is None:
@@ -262,6 +303,7 @@ def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
         if prev_rust_rng is not None:
             if r["rng"] != rng_step(prev_rust_rng) or crng != rng_step(prev_canon_rng):
                 f = out["rng_cadence"]
+                f["pairs"].add(((prev_canon_rng, crng), (prev_rust_rng, r["rng"])))
                 if f["first"] is None:
                     f["first"] = k
                     f["canon"] = (prev_canon_rng, crng)
@@ -279,21 +321,39 @@ def main() -> None:
                          "control is --shift 1 on the same captures)")
     args = ap.parse_args()
 
-    if args.row not in ROWS:
+    if args.row == "rollup":
         raise SystemExit(
-            "UNSUPPORTED row %r: the oracle only runs wave and mettaur "
-            "(TODO R7). A new row needs its canon enemy slot verified "
-            "populated and every parity field's conversion verified against "
-            "a canon watch capture -- see HANDOFF §3a. Configured rows: %s"
-            % (args.row, ", ".join(sorted(ROWS))))
-    cfg = ROWS[args.row]
-    check = [c for c in H.CHECKS if c.name == args.row][0]
-    if check.ui not in ("isolated", "integrated"):
+            "row 'rollup' is a no-crash walk, not a comparison (harness.py "
+            "run_rollup): it has no Sides and no Align to reuse, so there is "
+            "nothing for the oracle to watch on a canon side")
+    checks = [c for c in H.CHECKS if c.name == args.row]
+    if not checks:
+        raise SystemExit(
+            "unknown row %r: harness.py --list names the rows (rollup is a "
+            "no-crash walk, not a comparison)" % (args.row,))
+    check = checks[0]
+    if check.ui not in ("isolated", "integrated", "both"):
         raise SystemExit("row %s has ui=%r; the oracle runs one variant"
                          % (args.row, check.ui))
     variant = "isolated" if check.ui in ("isolated", "both") else "integrated"
 
-    enemy_slot = cfg["enemy_slot"]
+    # F16: enemy presence is a property of the row's own fixture descriptor
+    # (which lives on the RUST side; the canon side reproduces the scenario
+    # via its own state/pokes and carries no descriptor). A row with no
+    # fixture enemy skips the enemy fields with an explicit n/a.
+    enemy_count = (check.rust(variant).fixture or {}).get("enemies", 0)
+    has_enemy = enemy_count > 0
+    if has_enemy and args.row not in ENEMY_SLOT:
+        raise SystemExit(
+            "row %s's fixture has %d enemies but the oracle has no verified "
+            "canon enemy slot for it: run the slot probe (tools/"
+            "f16_slot_probe.py -- one canon capture watching the whole "
+            "eT1BattleObjects table, ewram.s:2972, read at the row's own "
+            "canon_ref), verify the populated slot, and add it to ENEMY_SLOT "
+            "with the probe as provenance -- see HANDOFF §3a"
+            % (args.row, enemy_count))
+    enemy_slot = (ENEMY_TABLE + ENEMY_SLOT[args.row] * ENEMY_STRIDE + 0x08
+                  if has_enemy else None)
     # The canon watches ride in `extra`, so `harness.run()`'s own captures
     # carry them -- the alignment machinery is reused verbatim, not copied.
     canon_rng_file = cc.scratch("o_canonrng_%s.bin" % args.row)
@@ -304,10 +364,12 @@ def main() -> None:
     canon_watch = [
         "--watch", "%#x:4:%s" % (RNG_ADDR, canon_rng_file),
         "--watch", "%#x:30:%s" % (MM_BASE, canon_mm_file),
-        # slot + oBattleObject_CurState (+0x08): same layout as the MM watch
-        "--watch", "%#x:30:%s" % (enemy_slot + 0x08, canon_enemy_file),
         "--watch", "%#x:2:%s" % (GAUGE_ADDR, canon_gauge_file),
     ]
+    if has_enemy:
+        # slot + oBattleObject_CurState (+0x08): same layout as the MM watch
+        canon_watch[2:2] = ["--watch", "%#x:30:%s"
+                            % (enemy_slot, canon_enemy_file)]
     rust_watch = ["--watch", "%#x:40:%s" % (MM_ORACLE_ADDR, rust_block_file)]
 
     def sides():
@@ -319,8 +381,8 @@ def main() -> None:
                                     extra=canon_side.extra + tuple(canon_watch))
         return rust, canon
 
-    for path in (canon_rng_file, canon_mm_file, canon_enemy_file,
-                 canon_gauge_file, rust_block_file):
+    for path in ((canon_rng_file, canon_mm_file, canon_gauge_file,
+                  rust_block_file) + ((canon_enemy_file,) if has_enemy else ())):
         if os.path.exists(path):
             os.unlink(path)
 
@@ -329,7 +391,7 @@ def main() -> None:
 
     rust_rows = watch_rows(rust_block_file, 40)
     canon_mm = watch_rows(canon_mm_file, 30)
-    canon_enemy = watch_rows(canon_enemy_file, 30)
+    canon_enemy = watch_rows(canon_enemy_file, 30) if has_enemy else []
     canon_rng = watch_rows(canon_rng_file, 4)
     canon_gauge = watch_rows(canon_gauge_file, 2)
     # The displayed table sits at +shift; the negative control needs the
@@ -338,9 +400,9 @@ def main() -> None:
     need = check.frames + max(args.shift, 1)
     for name, rows, width in (("rust block", rust_rows, 40),
                               ("canon mm", canon_mm, 30),
-                              ("canon enemy", canon_enemy, 30),
                               ("canon rng", canon_rng, 4),
-                              ("canon gauge", canon_gauge, 2)):
+                              ("canon gauge", canon_gauge, 2)) + (
+            (("canon enemy", canon_enemy, 30),) if has_enemy else ()):
         if len(rows) < need:
             raise SystemExit("%s watch has only %d rows (need %d)"
                              % (name, len(rows), need))
@@ -354,7 +416,8 @@ def main() -> None:
     def at(off):
         return compare(rust_rows[result.rust_origin + result.rust_offset:],
                        canon_mm[base + off:], canon_enemy[base + off:],
-                       canon_rng[base + off:], 0, check.frames)
+                       canon_rng[base + off:], 0, check.frames,
+                       has_enemy=has_enemy)
 
     # The displayed (and nominal) table sits at `base` = canon_ref + shift;
     # the control is the same captures at base+1.
@@ -363,6 +426,13 @@ def main() -> None:
     control = at(1)
 
     first0 = rust_fields(rust_rows[result.rust_origin + result.rust_offset])
+    if has_enemy:
+        print("enemy fields watched at canon slot %d (%#x, the populated "
+              "enemy for this row; fixture enemies=%d)"
+              % (ENEMY_SLOT[args.row], enemy_slot, enemy_count))
+    else:
+        print("fixture enemies=0: enemy fields SKIPPED (n/a) -- the canon "
+              "side's own state object is not this row's fixture")
     print("row %s%s: aligned canon frame %d+k <-> rust marker origin %d + "
           "offset %d + k (search %s); pixel total %d worst %d over %d frames"
           % (args.row, " [canon shifted %+d]" % shift if shift else "",
@@ -378,7 +448,8 @@ def main() -> None:
              base, base + check.frames - 1))
 
     diverged = {n: f for n, f in res.items() if f["first"] is not None}
-    parity_names = [p[0] for p in FIELD_PAIRS] + ["rng_cadence"]
+    parity_names = [n for n in [p[0] for p in FIELD_PAIRS]
+                    if has_enemy or not n.startswith("enemy_")] + ["rng_cadence"]
     print("")
     print("PARITY FIELDS -- full table, every compared field "
           "(%d compared frames):" % check.frames)
@@ -408,7 +479,6 @@ def main() -> None:
     # print each one's actual values so a silent change cannot hide.
     r0 = rust_fields(rust_rows[result.rust_origin + result.rust_offset])
     c0 = canon_fields_mm(canon_mm[base])
-    e0 = canon_fields_enemy(canon_enemy[base])
     print("")
     print("INFO-ONLY (fixtures disagree by design -- watched, not compared):")
     print("  rng_abs      canon=%08x rust=%08x (different fixture ages; "
@@ -416,8 +486,12 @@ def main() -> None:
           % (struct.unpack("<I", canon_rng[base])[0], r0["rng"]))
     print("  mm_hp        canon=%d rust=%d (PAUSED's own damaged navi vs "
           "the descriptor's megaman_hp)" % (c0["hp"], r0["hp"]))
-    print("  enemy_hp     canon=%d rust=%d (ALIVE poke vs the kind's default)"
-          % (e0["hp"], r0["enemy_hp"]))
+    if has_enemy:
+        e0 = canon_fields_enemy(canon_enemy[base])
+        print("  enemy_hp     canon=%d rust=%d (ALIVE poke vs the kind's "
+              "default)" % (e0["hp"], r0["enemy_hp"]))
+    else:
+        print("  enemy_hp     n/a (fixture enemies=0)")
     print("  gauge        canon=%d rust=%d (old battle's full gauge vs ours "
           "ticking from the descriptor)"
           % (struct.unpack("<H", canon_gauge[base])[0], r0["gauge"]))
@@ -426,10 +500,14 @@ def main() -> None:
     print("  battle_frame rust=%d (canon has NO known battle-frame RAM word "
           "-- R6 searched; the row's Align is the frame pairing)"
           % r0["battle_frame"])
-    print("  enemy_timer  canon=%d rust=%d (canon reads a CONSTANT 0x0002 at "
-          "slot+0x20 -- R6 probe; the timing countdown lives outside the "
-          "probed +0x00..+0x2f, so nothing dynamic to model)"
-          % (e0["timer"], r0["enemy_timer"]))
+    if has_enemy:
+        e0 = canon_fields_enemy(canon_enemy[base])
+        print("  enemy_timer  canon=%d rust=%d (canon reads a CONSTANT "
+              "0x0002 at slot+0x20 -- R6 probe; the timing countdown lives "
+              "outside the probed +0x00..+0x2f, so nothing dynamic to model)"
+              % (e0["timer"], r0["enemy_timer"]))
+    else:
+        print("  enemy_timer  n/a (fixture enemies=0)")
 
     # the pixel side of the same alignment, for the consistency report
     counts = [cc.diff_frames(result.canon_dir, base + k,
@@ -466,9 +544,29 @@ def main() -> None:
                   % (n, nominal[n]["first"], nominal[n]["count"],
                      control[n]["first"], control[n]["count"]))
     else:
+        # Not every UNCHANGED verdict means the same thing (F16): if every
+        # compared field held ONE (canon, rust) value pair for the whole
+        # window, the state has no timing in it at all -- a one-frame shift
+        # cannot move any first-divergence, exactly like the harness's own
+        # negative="pixel" precedent for `window` (no timing in the picture
+        # to get wrong). If some field IS dynamic yet the table still did
+        # not move, that is a genuine red flag, not a static window.
+        static = [n for n in sorted(nominal)
+                  if len(nominal[n]["pairs"]) > 1 and n != "rng_cadence"]
         print("NEGATIVE CONTROL (canon shifted +1 frame, same captures): "
               "the nominal result is UNCHANGED on every compared field -- "
               "BLIND: a one-frame misalignment would go unreported")
+        if not static:
+            print("  honest-static: every compared field except the "
+                  "shift-invariant-by-construction rng_cadence holds "
+                  "exactly ONE (canon, rust) value pair across all %d "
+                  "frames -- there is no state timing in this window to "
+                  "shift (the row's own pixel negative covers its "
+                  "alignment)" % check.frames)
+        else:
+            print("  NOT honest-static: %s change value across the window, "
+                  "yet no first-divergence moved -- investigate before "
+                  "trusting this row" % ", ".join(static))
 
 
 if __name__ == "__main__":
