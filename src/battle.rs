@@ -337,9 +337,10 @@ const SEED_THROWN_ANIM: usize = 9;
 /// share the sprite's index 0 and GrasSeed takes 8. Matched by dumping OBJ
 /// bank 1 while each sheet is up and comparing it against the asset's own
 /// palettes.
+const SHEET_PALETTE_GRAS: usize = 8; // provenance: derived -- dumped OBJ bank 1 palette against the asset's own palettes (see sheet_palette)
 const fn sheet_palette(id: u16) -> usize {
     match id {
-        CHIP_GRASSEED => 8,
+        CHIP_GRASSEED => SHEET_PALETTE_GRAS,
         _ => 0,
     }
 }
@@ -347,11 +348,14 @@ const fn sheet_palette(id: u16) -> usize {
 /// One palette per seed, and it is the chip's attack_param_2: IceSeed 1,
 /// GrasSeed 2, PoisSeed 3. BugBomb shares their sprite and takes 0; VDoll has
 /// its own sprite and takes 0 too.
+const SEED_PALETTE_ICE: usize = 1; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
+const SEED_PALETTE_GRAS: usize = 2; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
+const SEED_PALETTE_POIS: usize = 3; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
 const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
     match id {
-        CHIP_ICESEED => 1,
-        CHIP_GRASSEED => 2,
-        CHIP_POISSEED => 3,
+        CHIP_ICESEED => SEED_PALETTE_ICE,
+        CHIP_GRASSEED => SEED_PALETTE_GRAS,
+        CHIP_POISSEED => SEED_PALETTE_POIS,
         CHIP_BUGBOMB | CHIP_VDOLL => 0,
         _ => bomb_palette(id, thrown),
     }
@@ -456,12 +460,16 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
 /// extra shot lengthens the attack by 11 frames: the gun is on screen 35,
 /// 46 and 57 frames for the three chips.
 // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892.
+const VULCAN1_SHOTS: u8 = 3; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
+const VULCAN2_SHOTS: u8 = 4; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
+const VULCAN3_SHOTS: u8 = 5; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
+const SUPRVULC_SHOTS: u8 = 10; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
 const fn vulcan_shots(id: u16) -> u8 {
     match id {
-        CHIP_VULCAN2 => 4,
-        CHIP_VULCAN3 => 5,
-        CHIP_SUPRVULC => 10,
-        _ => 3,
+        CHIP_VULCAN2 => VULCAN2_SHOTS,
+        CHIP_VULCAN3 => VULCAN3_SHOTS,
+        CHIP_SUPRVULC => SUPRVULC_SHOTS,
+        _ => VULCAN1_SHOTS,
     }
 }
 
@@ -474,26 +482,36 @@ const fn vulcan_shots(id: u16) -> u8 {
 /// formula.
 // provenance: peeked -- "the measurements rather than a formula" (the state
 // machine's own tick rate does not map to frames one-for-one).
+const VULCAN1_TIMING: (u8, u8) = (20, 13); // provenance: peeked -- the firing pose's last frame and gun-on-screen frames, measured on the real ROM (see vulcan_timing)
+const VULCAN2_TIMING: (u8, u8) = (34, 10); // provenance: peeked -- the firing pose's last frame and gun-on-screen frames, measured on the real ROM (see vulcan_timing)
+const VULCAN3_TIMING: (u8, u8) = (45, 10); // provenance: peeked -- the firing pose's last frame and gun-on-screen frames, measured on the real ROM (see vulcan_timing)
+const SUPRVULC_TIMING: (u8, u8) = (100, 10); // provenance: peeked -- flashes run to c101 and the gun is on screen 112 frames, measured on the real ROM (see vulcan_timing)
 const fn vulcan_timing(shots: u8) -> (u8, u8) {
     match shots {
-        4 => (34, 10),
-        5 => (45, 10),
+        VULCAN2_SHOTS => VULCAN2_TIMING,
+        VULCAN3_SHOTS => VULCAN3_TIMING,
         // SuprVulc's ten shots: its flashes run to c101 and the gun is on
         // screen 112 frames, measured the same way.
-        10 => (100, 10),
-        _ => (20, 13),
+        SUPRVULC_SHOTS => SUPRVULC_TIMING,
+        _ => VULCAN1_TIMING,
     }
 }
 
+/// The first state holds animation 0xa for two ticks with the arm gun
+/// spawned; the firing state sets animation 0xd (sub_80EBF10,
+/// asm31.s:109821).
+const VULCAN_WINDUP_ANIM: u8 = 0xa; // provenance: derived -- sub_80EBF10, asm31.s:109821
+const VULCAN_WINDUP_TICKS: u8 = 2; // provenance: derived -- sub_80EBF10, asm31.s:109821
+const VULCAN_FIRE_ANIM: u8 = 0xd; // provenance: derived -- sub_80EBF10, asm31.s:109821
 const fn vulcan(shots: u8) -> actor::AttackSpec {
     let (frames, recover) = vulcan_timing(shots);
     actor::AttackSpec {
-        windup: Some((0xa, 2)),
-        anim: 0xd,
+        windup: Some((VULCAN_WINDUP_ANIM as usize, VULCAN_WINDUP_TICKS)),
+        anim: VULCAN_FIRE_ANIM as usize,
         frames,
         strike_at: 1,
         recover,
-        recover_anim: Some(0xa),
+        recover_anim: Some(VULCAN_WINDUP_ANIM as usize),
         pose: None,
     }
 }
@@ -502,7 +520,7 @@ const fn vulcan(shots: u8) -> actor::AttackSpec {
 /// arm-position row 0xe: +23 forward, 25 up, byte_80188C0[28..30]).
 const fn vulcan_gun_frames(shots: u8) -> u8 {
     let (firing, recover) = vulcan_timing(shots);
-    2 + firing + recover
+    VULCAN_WINDUP_TICKS + firing + recover
 }
 const VULCAN_ARM: (i32, i32) = (23, -25); // provenance: derived -- byte_80B8BD4 row 0xd, byte_80188C0[28..30]
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
@@ -547,19 +565,23 @@ const BARRIER_HP: u16 = 10; // provenance: derived -- byte_8020B2C, dat01.s:189
 /// real captures against sprite_832F8C8's thirteen palettes. The asset is
 /// exported with all of them for this.
 // provenance: peeked -- matched colour for colour against the real captures.
+const BARRIER_PALETTE_GOLD: usize = 3; // provenance: peeked -- matched colour for colour against the real captures (see barrier_palette)
+const BARRIER_PALETTE_PINK: usize = 6; // provenance: peeked -- matched colour for colour against the real captures (see barrier_palette)
 const fn barrier_palette(id: u16) -> usize {
     match id {
-        CHIP_BARR100 => 3,
-        CHIP_BARR200 => 6,
+        CHIP_BARR100 => BARRIER_PALETTE_GOLD,
+        CHIP_BARR200 => BARRIER_PALETTE_PINK,
         _ => 0,
     }
 }
 
 // provenance: derived -- byte_8020B2C, data/dat01.s:189.
+const BARR100_HP: u16 = 100; // provenance: derived -- byte_8020B2C, data/dat01.s:189
+const BARR200_HP: u16 = 200; // provenance: derived -- byte_8020B2C, data/dat01.s:189
 const fn barrier_hp(id: u16) -> u16 {
     match id {
-        CHIP_BARR100 => 100,
-        CHIP_BARR200 => 200,
+        CHIP_BARR100 => BARR100_HP,
+        CHIP_BARR200 => BARR200_HP,
         _ => BARRIER_HP,
     }
 }
@@ -625,13 +647,20 @@ const HAND_ICON_AT: (i32, i32) = (-1, -56); // provenance: peeked -- measured of
 /// The icon's OBJECT palette, byte_872CFD4, which the exporter reads: it is
 /// not the chip window's icon bank, which is a background palette and differs
 /// at two entries.
+/// The BNHI asset's header: a 4-byte magic, then a version word, then the
+/// sixteen 2-byte BGR555 palette entries at byte 8
+/// (tools/hand_icon_export.py's own layout).
+const BNHI_MAGIC_LEN: usize = 4; // provenance: derived -- tools/hand_icon_export.py's own BNHI layout
+const BNHI_PALETTE_AT: usize = 8; // provenance: derived -- tools/hand_icon_export.py's own BNHI layout
+const BNHI_PALETTE_COLOURS: usize = 16; // provenance: derived -- tools/hand_icon_export.py's own BNHI layout
+const BGR555_BYTES: usize = 2; // provenance: derived -- one BGR555 palette colour is two bytes
 fn hand_icon_palette() -> PaletteVramSingle {
     let data = crate::HAND_ICON;
-    assert_eq!(&data[0..4], b"BNHI", "not a BNHI asset");
-    let mut colours = [agb::display::Rgb15::new(0); 16];
+    assert_eq!(&data[0..BNHI_MAGIC_LEN], b"BNHI", "not a BNHI asset");
+    let mut colours = [agb::display::Rgb15::new(0); BNHI_PALETTE_COLOURS];
     for (i, slot) in colours.iter_mut().enumerate() {
-        let o = 8 + i * 2;
-        *slot = agb::display::Rgb15::new(u16::from_le_bytes(data[o..o + 2].try_into().unwrap()));
+        let o = BNHI_PALETTE_AT + i * BGR555_BYTES;
+        *slot = agb::display::Rgb15::new(u16::from_le_bytes(data[o..o + BGR555_BYTES].try_into().unwrap()));
     }
     PaletteVramSingle::try_allocate_shared(&agb::display::Palette16::new(colours))
         .expect("hand icon palette should fit in vram")
@@ -690,10 +719,20 @@ const BOMB_GRAVITY: i32 = 0x2800; // provenance: derived -- byte_80C5D58, asm31.
 /// second frame uses -- and animation 3 is a five-frame loop at four frames
 /// each, which is the bomb tumbling, where MiniBomb's animation 1 is a single
 /// held frame.
+/// Which animation of the bomb sprite a bomb plays, held and thrown.
+/// MiniBomb, BlkBomb and BigBomb use 0 and 1; EnergBom and MegEnBom use 2
+/// and 3. Found by pulling the real bomb's tiles out of OBJ VRAM and looking
+/// for those exact bytes among the sprite's graphics blobs (see bomb_anim's
+/// own doc below).
+const BOMB_ANIM_ENER_HELD: usize = 2; // provenance: derived -- the sprite's own graphics blobs (see bomb_anim)
+const BOMB_ANIM_ENER_THROWN: usize = 3; // provenance: derived -- animation 3 is a five-frame loop at four frames each, the bomb tumbling (see bomb_anim)
+const BOMB_PALETTE_BLK_HELD: usize = 4; // provenance: derived -- byte_80EB738 row 0x2d, asm31.s:108898 (see bomb_palette)
+const BOMB_PALETTE_BIG: usize = 3; // provenance: derived -- byte_80C5BA0[3]'s fourth byte, asm31.s:29422 (see bomb_palette)
+const BOMB_PALETTE_ENER: usize = 5; // provenance: peeked -- the only one of sprite_82F569C's thirteen palettes holding the real held bomb's grey, brown and orange (see bomb_palette)
 const fn bomb_anim(id: u16, thrown: bool) -> usize {
     match (id, thrown) {
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => 2,
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, true) => 3,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => BOMB_ANIM_ENER_HELD,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, true) => BOMB_ANIM_ENER_THROWN,
         (_, true) => 1,
         _ => 0,
     }
@@ -701,8 +740,8 @@ const fn bomb_anim(id: u16, thrown: bool) -> usize {
 
 const fn bomb_palette(id: u16, thrown: bool) -> usize {
     match (id, thrown) {
-        (CHIP_BLKBOMB, false) => 4,
-        (CHIP_BIGBOMB, _) => 3,
+        (CHIP_BLKBOMB, false) => BOMB_PALETTE_BLK_HELD,
+        (CHIP_BIGBOMB, _) => BOMB_PALETTE_BIG,
         // EnergBom and MegEnBom are MiniBomb's own held sprite row in
         // another palette (byte_80EB738 pair 1, asm31.s:108898), and they
         // throw through the same sub_80C5DBC. The exporter's palette order is
@@ -710,7 +749,7 @@ const fn bomb_palette(id: u16, thrown: bool) -> usize {
         // is grey with brown and orange, and palette 5 is the only one of
         // sprite_82F569C's thirteen that holds all of those colours. The
         // asset is exported with every palette so that index exists.
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, _) => 5,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, _) => BOMB_PALETTE_ENER,
         _ => 0,
     }
 }
@@ -784,12 +823,12 @@ impl Bomb {
 
     /// Screen position of the bomb; the game truncates Y and Z separately.
     fn position(&self) -> (i32, i32) {
-        (self.x >> 16, (self.y >> 16) - (self.z >> 16))
+        (self.x >> Q16_SHIFT, (self.y >> Q16_SHIFT) - (self.z >> Q16_SHIFT))
     }
 
     /// Where the shadow goes: on the ground under the bomb.
     fn ground(&self) -> (i32, i32) {
-        (self.x >> 16, self.y >> 16)
+        (self.x >> Q16_SHIFT, self.y >> Q16_SHIFT)
     }
 }
 /// The CHIP-NAME POPUP. A family-0x15 chip puts its name up in the middle of
@@ -837,9 +876,16 @@ impl NamePopup {
         // ones -- checked byte for byte against the tiles the real ROM leaves
         // at 0x6016E00 for every letter of "Barrier".
         let font = crate::TEXT_FONT;
-        let at = |o: usize| u32::from_le_bytes(font[o..o + 4].try_into().unwrap()) as usize;
-        let fo = at(0x08);
-        let raw = &font[fo + 4..fo + 4 + at(fo) / 2];
+/// The BNTF font's glyph-table pointer sits 8 bytes into the header
+/// (tools/font_export.py's own layout, shared with custom::BNTF_TABLE_OFF);
+/// entries are 4-byte words and the popup uses the raw first half of the
+/// glyph data.
+const BNTF_GLYPH_TABLE_AT: usize = 0x08; // provenance: derived -- tools/font_export.py's own BNTF layout
+const BNTF_WORD_LEN: usize = 4; // provenance: derived -- tools/font_export.py's own BNTF layout
+const BNTF_RAW_HALF_DIV: usize = 2; // provenance: derived -- the popup uses the raw first half of the glyph data (see NamePopup::new)
+        let at = |o: usize| u32::from_le_bytes(font[o..o + BNTF_WORD_LEN].try_into().unwrap()) as usize;
+        let fo = at(BNTF_GLYPH_TABLE_AT);
+        let raw = &font[fo + BNTF_WORD_LEN..fo + BNTF_WORD_LEN + at(fo) / BNTF_RAW_HALF_DIV];
         let palette = PaletteVramSingle::try_allocate_shared(&agb::display::Palette16::new(
             POPUP_PALETTE.map(agb::display::Rgb15::new),
         ))
@@ -853,7 +899,7 @@ impl NamePopup {
                     .to_vram(palette.clone())
             })
             .collect();
-        let left = POPUP_CENTRE - letters.len() as i32 * POPUP_CELL / 2;
+        let left = POPUP_CENTRE - letters.len() as i32 * POPUP_CELL / 2; // canon: POPUP_CENTRE centring
         Self { letters, left, t: 0 }
     }
 
@@ -871,8 +917,8 @@ impl NamePopup {
         else {
             return;
         };
-        let matrix = AffineMatrixObject::new(AffineMatrix::<Num<i32, 8>> {
-            a: Num::from_raw(0x100),
+        let matrix = AffineMatrixObject::new(AffineMatrix::<Num<i32, 8>> { // canon: 8.8 fixed-point affine entries
+            a: Num::from_raw(AFFINE_UNITY),
             b: Num::from_raw(0),
             c: Num::from_raw(0),
             d: Num::from_raw(scale as i32),
@@ -888,6 +934,9 @@ impl NamePopup {
     }
 }
 
+/// 0x100 is 1.0 in the affine matrix's 8.8 fixed-point entries: the popup
+/// keeps the X axis unscaled and scales Y by the banner roll-out.
+const AFFINE_UNITY: i32 = 0x100; // provenance: derived -- 8.8 fixed-point 1.0 in the affine matrix
 /// Bytes of one 8x16 glyph in the battle text font: two 4bpp tiles.
 const GLYPH_BYTES: usize = 64;
 
@@ -1011,8 +1060,8 @@ pub struct Battle<'a> {
     /// rebuilt, and the navi's and the sword's last four sprite frames, so
     /// the afterimage can lag by three.
     step_sword_art: Option<(&'static [u8], usize)>,
-    step_trail: [((usize, usize), (i32, i32)); 4],
-    step_trail_sword: [Option<(usize, usize)>; 4],
+    step_trail: [((usize, usize), (i32, i32)); STEP_TRAIL_LEN],
+    step_trail_sword: [Option<(usize, usize)>; STEP_TRAIL_LEN],
     /// The panel the step went to. The afterimage keeps taking new frames
     /// after the navi has gone home -- frame 24's copy carries the navi's
     /// frame-21 sprite -- but only from frames where the navi was still over
@@ -1157,6 +1206,55 @@ pub struct Battle<'a> {
     fixture: Option<Fixture>,
 }
 
+/// The oracle snapshot's own 40-byte export block (see the layout table on
+/// `oracle_snapshot`): this project's own protocol, so the length is chosen,
+/// not read.
+const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this project's own oracle protocol (see oracle_snapshot's table)
+/// A fixture field left at its default: 0xFFFF means "no seed"
+/// (art_entry), "default" (gauge_tick), "unset" (banner_at,
+/// result_elapsed) throughout this project's fixture contract.
+const FIXTURE_UNSET: u16 = 0xFFFF; // provenance: chosen -- this project's own fixture "default" (see FIXTURE.md and the gauge_tick/art_entry docs)
+/// The fixture hand holds five chips, and a deck_codes entry of 0xff
+/// means "no override, use the chip's own codes[0]" (see Battle::new).
+const HAND_SIZE: usize = 5; // provenance: chosen -- this project's own five-slot fixture hand (see Battle::new)
+const DECK_CODE_FOLLOWS_CHIP: u8 = 0xff; // provenance: chosen -- this project's own deck_codes "no override" (see Battle::new)
+/// Bits in a Q16 fixed-point position: the speeds this module keeps
+/// (BOMB_VX and friends) are 16.16, so shifting by this converts.
+const Q16_SHIFT: u32 = 16; // provenance: derived -- the Q16 fixed-point speeds this module keeps (BOMB_VX and friends)
+/// The afterimage trail is a ring of four frames so the copy can lag three
+/// behind the navi; both copies blink two frames shown and two hidden.
+const STEP_TRAIL_LEN: usize = 4; // provenance: derived -- step_trail's own four-frame ring (see its doc)
+const STEP_TRAIL_NEXT: usize = 1; // provenance: derived -- one slot round the four-frame ring is three frames back (see below)
+const STEP_RING_PERIOD: u8 = 4; // provenance: derived -- step_trail's own four-frame ring (see its doc)
+const STEP_BLINK_SHOWN: u8 = 2; // provenance: peeked -- the copies blink two on and two off (see STEP_GHOST2_FIRST)
+const STEP_GHOST_FIRST: u8 = 2; // provenance: peeked -- the first drawn age in STEP_GHOST_LAST's measured drawn frames
+/// The no-fixture lineup: an empty hand, MegaMan at column 2, row 2, and
+/// one Mettaur at (5, 3) (see Battle::new).
+const DEMO_COL: i32 = 2; // provenance: chosen -- this build's no-fixture lineup (see Battle::new)
+const DEMO_ROW: i32 = 2; // provenance: chosen -- this build's no-fixture lineup (see Battle::new)
+const DEMO_ENEMY_COL: i32 = 5; // provenance: chosen -- this build's no-fixture lineup (see Battle::new)
+const DEMO_ENEMY_ROW: i32 = 3; // provenance: chosen -- this build's no-fixture lineup (see Battle::new)
+/// BambSwrd's blade is the plain sword sprite in palette 2: byte_80B8BD4's
+/// row 0x1c (see use_chip's sword match).
+const BAMBSWRD_SWORD_PALETTE: usize = 2; // provenance: derived -- byte_80B8BD4 row 0x1c, asm31.s:109348
+/// The deletion effect's timer: an enemy's deletion runs 0x5a frames
+/// (see Battle::new's effects).
+const DELETE_FRAMES: u8 = 90; // provenance: derived -- the enemy's 0x5a-frame deletion timer (see Battle::new's effects)
+/// The windup telegraph ticks every 8th winding frame for non-Mettaur styles.
+const WINDUP_TELEGRAPH_EVERY: u8 = 8; // provenance: peeked -- measured telegraph cadence
+/// The long swords reach two panels ahead (byte_80EBA18's shapes: the panel
+/// ahead, the column ahead, two panels ahead -- see the CHIP_ doc above).
+const LONG_SWORD_FAR: i32 = 2; // provenance: derived -- byte_80EBA18's shapes (see the CHIP_ doc above)
+/// FIELD_SLIDE is kept in half-pixels (see its doc), so halving converts
+/// the slide to a screen scroll.
+const FIELD_SUBPX: u16 = 2; // provenance: derived -- FIELD_SLIDE is kept in half-pixels (see its doc)
+/// The results screen fade runs 1-16 and 16 means fully black
+/// (results::Shown::update).
+const RESULTS_FADE_BLACK: u8 = 16; // provenance: derived -- results::Shown::update: 16 means the screen is fully black
+/// The slash arc rides above the front panel's centre; the offset is this
+/// build's own, tuned to the panel art.
+const SWORD_ARC_UP: i32 = 0x10; // provenance: fitted -- this build's own arc height, tuned to the panel art
+
 impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
     /// hold + 14-frame ramp (`false`) or the old `demo-*` fixtures' own
@@ -1216,34 +1314,34 @@ impl<'a> Battle<'a> {
     /// reservation (bytes 8..48), which nothing else touches -- the first
     /// cut placed it at 0x02000080, which is agb's `SPRITE_LOADER` (nm),
     /// and the two fought every frame.
-    pub fn oracle_snapshot(&self, battle_frame: u32) -> [u8; 40] {
-        let mut b = [0u8; 40];
+    pub fn oracle_snapshot(&self, battle_frame: u32) -> [u8; ORACLE_SNAPSHOT_LEN] {
+        let mut b = [0u8; ORACLE_SNAPSHOT_LEN];
         b[0..4].copy_from_slice(&crate::ORACLE_MAGIC.to_le_bytes()); // "ORCL", see main.rs's ORACLE_MAGIC (provenance: chosen -- this project's own protocol constant)
-        b[4..8].copy_from_slice(&battle_frame.to_le_bytes());
-        b[8..12].copy_from_slice(&self.primary_rng.state().to_le_bytes());
+        b[4..8].copy_from_slice(&battle_frame.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        b[8..12].copy_from_slice(&self.primary_rng.state().to_le_bytes()); // canon: oracle snapshot layout, see the table above
         let mm = self.megaman.oracle_fields(true, false);
-        b[12..14].copy_from_slice(&mm.cur_state_action.to_le_bytes());
-        b[14] = mm.anim;
-        b[15] = mm.panel_x;
-        b[16] = mm.panel_y;
-        b[18..20].copy_from_slice(&mm.timer.to_le_bytes());
-        b[20..22].copy_from_slice(&mm.hp.to_le_bytes());
+        b[12..14].copy_from_slice(&mm.cur_state_action.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        b[14] = mm.anim; // canon: oracle snapshot layout, see the table above
+        b[15] = mm.panel_x; // canon: oracle snapshot layout, see the table above
+        b[16] = mm.panel_y; // canon: oracle snapshot layout, see the table above
+        b[18..20].copy_from_slice(&mm.timer.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        b[20..22].copy_from_slice(&mm.hp.to_le_bytes()); // canon: oracle snapshot layout, see the table above
         // First enemy. Every oracle row so far has exactly one; the empty
         // slots around it export 0xffff sentinels.
         if let Some(enemy) = self.enemies.first() {
             let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
             let e = enemy.oracle_fields(false, ai_wait);
-            b[22..24].copy_from_slice(&e.cur_state_action.to_le_bytes());
-            b[24] = e.anim;
-            b[25] = e.panel_x;
-            b[26] = e.panel_y;
-            b[28..30].copy_from_slice(&e.timer.to_le_bytes());
-            b[30..32].copy_from_slice(&e.hp.to_le_bytes());
+            b[22..24].copy_from_slice(&e.cur_state_action.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+            b[24] = e.anim; // canon: oracle snapshot layout, see the table above
+            b[25] = e.panel_x; // canon: oracle snapshot layout, see the table above
+            b[26] = e.panel_y; // canon: oracle snapshot layout, see the table above
+            b[28..30].copy_from_slice(&e.timer.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+            b[30..32].copy_from_slice(&e.hp.to_le_bytes()); // canon: oracle snapshot layout, see the table above
         } else {
-            b[22..24].copy_from_slice(&0xffffu16.to_le_bytes());
-            b[30..32].copy_from_slice(&0xffffu16.to_le_bytes());
+            b[22..24].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+            b[30..32].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // canon: oracle snapshot layout, see the table above
         }
-        b[32..34].copy_from_slice(&self.gauge.to_le_bytes());
+        b[32..34].copy_from_slice(&self.gauge.to_le_bytes()); // canon: oracle snapshot layout, see the table above
         b
     }
 
@@ -1276,10 +1374,10 @@ impl<'a> Battle<'a> {
         // default that FIXTURE.md's field alone would give.
         match fixture {
             Some(f) if f.deck_count > 0 => {
-                let mut entries = [crate::deck::EMPTY; 5];
+                let mut entries = [crate::deck::EMPTY; HAND_SIZE];
                 for i in 0..f.deck_count as usize {
                     let id = f.deck[i] as u16;
-                    let code = if f.deck_codes[i] != 0xff {
+                    let code = if f.deck_codes[i] != DECK_CODE_FOLLOWS_CHIP {
                         f.deck_codes[i]
                     } else {
                         chips.by_id(id).map(|c| c.codes[0]).unwrap_or(0)
@@ -1357,9 +1455,9 @@ impl<'a> Battle<'a> {
                     .collect(),
                 f.megaman_col as i32,
             ),
-            None => (alloc::vec::Vec::new(), 2),
+            None => (alloc::vec::Vec::new(), DEMO_COL),
         };
-        let demo_row = fixture.map(|f| f.megaman_row as i32).unwrap_or(2);
+        let demo_row = fixture.map(|f| f.megaman_row as i32).unwrap_or(DEMO_ROW);
         let megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, demo_row, false, player);
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
         // A debug build fights just the Mettaur, to exercise the hand, chips
@@ -1393,8 +1491,8 @@ impl<'a> Battle<'a> {
             (
                 alloc::vec![Actor::new(
                     spr::Assets::new(METTAUR),
-                    5,
-                    3,
+                    DEMO_ENEMY_COL,
+                    DEMO_ENEMY_ROW,
                     true,
                     enemy(METTAUR_HP)
                 )],
@@ -1409,13 +1507,18 @@ impl<'a> Battle<'a> {
         let effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)> = Vec::new();
         // AUDIT pairs 6/14/17: a fixture's own FLAG_SKIP_INTRO drives this;
         // no fixture means no reason to skip (see `skip_intro`'s own doc).
+/// The skip-intro fade starts here (the legacy black-ramp branch's own
+/// value, see INTRO_RAMP's doc) and the white hold lasts 71 frames
+/// (full white through the 71st frame, see INTRO_RAMP's doc).
+const INTRO_SKIP_FADE: u16 = 0x10 * 2; // provenance: derived -- the legacy black-ramp branch's own value (see INTRO_RAMP's doc)
+const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st frame (see INTRO_RAMP's doc)
         let intro_fade: u16 = if fixture
             .map(|f| f.flag(fixture::FLAG_SKIP_INTRO))
             .unwrap_or(false)
         {
-            0x10 * 2
+            INTRO_SKIP_FADE
         } else {
-            71 + INTRO_RAMP
+            INTRO_HOLD + INTRO_RAMP
         };
         let intro_next = 0usize;
         for enemy in enemies.iter_mut() {
@@ -1483,7 +1586,7 @@ impl<'a> Battle<'a> {
         // own doc. 0xFFFF ("default" throughout this contract) leaves the
         // fresh `new()` value above.
         if let (Some(hud), Some(f)) = (hud_tiles.as_mut(), fixture) {
-            if f.gauge_tick != 0xffff {
+            if f.gauge_tick != FIXTURE_UNSET {
                 hud.seed_gauge(f.gauge_tick as u32);
             }
         }
@@ -1507,8 +1610,8 @@ impl<'a> Battle<'a> {
             step_ghost2_key: None,
             step_ghost2_sword: None,
             step_sword_art: None,
-            step_trail: [((0, 0), (0, 0)); 4],
-            step_trail_sword: [None; 4],
+            step_trail: [((0, 0), (0, 0)); STEP_TRAIL_LEN],
+            step_trail_sword: [None; STEP_TRAIL_LEN],
             step_dest: (0, 0),
             presentation: None,
             popup: None,
@@ -1667,7 +1770,7 @@ impl<'a> Battle<'a> {
             // battle defaults". No fixture: no seed either -- the default
             // release build always starts fresh.
             match self.fixture {
-                Some(f) if f.art_entry != 0xFFFF => {
+                Some(f) if f.art_entry != FIXTURE_UNSET => {
                     backdrop.seed(
                         f.art_entry as usize,
                         f.art_timer,
@@ -1842,7 +1945,7 @@ impl<'a> Battle<'a> {
             } else {
                 self.field_slide.saturating_sub(FIELD_SLIDE_STEP).max(want)
             };
-            self.bg.set_scroll_pos((0, -((self.field_slide / 2) as i32)));
+            self.bg.set_scroll_pos((0, -((self.field_slide / FIELD_SUBPX) as i32))); // (see FIELD_SUBPX)
         }
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
@@ -2036,7 +2139,7 @@ impl<'a> Battle<'a> {
             // frames is always enough -- extra fast_forward calls past
             // Phase::Waiting are no-ops), otherwise the field's own
             // frame count.
-            let elapsed = if f.result_elapsed == 0xFFFF {
+            let elapsed = if f.result_elapsed == FIXTURE_UNSET { // (see FIXTURE_UNSET)
                 results::Shown::SETTLED
             } else {
                 f.result_elapsed as u32
@@ -2085,7 +2188,7 @@ impl<'a> Battle<'a> {
             }
             if let Some(fade) = window.update(confirm) {
                 self.fade_out = fade;
-                if fade == 16 {
+                if fade == RESULTS_FADE_BLACK {
                     self.shown = None;
                     self.results_mark = None;
                 }
@@ -2096,7 +2199,7 @@ impl<'a> Battle<'a> {
         }
         // The fade-out ends on full black; the next battle's intro fades the
         // field back in from there.
-        if self.fade_out == 16 {
+        if self.fade_out == RESULTS_FADE_BLACK {
             return true;
         }
 
@@ -2190,8 +2293,11 @@ impl<'a> Battle<'a> {
             }
         }
 
+        // The charge states index the glow sprite's animation (see GLOW_ANIM):
+        // 0 idle, 1 charging, 2 full.
+        const CHARGE_STATE_FULL: usize = 2; // provenance: derived -- the glow's animation index is the charge state (see GLOW_ANIM)
         let state = match self.charge {
-            c if c >= CHARGE_FRAMES => 2,
+            c if c >= CHARGE_FRAMES => CHARGE_STATE_FULL,
             c if c >= CHARGING_FROM => 1,
             _ => 0,
         };
@@ -2296,7 +2402,7 @@ impl<'a> Battle<'a> {
                     Some(CHIP_FIRESWRD) => (FIRE_SWORD, 0),
                     Some(CHIP_AQUASWRD) => (AQUA_SWORD, 0),
                     Some(CHIP_ELECSWRD) => (ELEC_SWORD, 0),
-                    Some(CHIP_BAMBSWRD) => (SWORD_SPR, 2),
+                    Some(CHIP_BAMBSWRD) => (SWORD_SPR, BAMBSWRD_SWORD_PALETTE),
                     _ => (SWORD_SPR, 0),
                 };
                 let mut sword = spr::Player::new(spr::Assets::new(asset), 0);
@@ -2351,7 +2457,7 @@ impl<'a> Battle<'a> {
                 // about 13% loud; 4603 * 112/127 = 4060, which is the real
                 // figure to within a third of a percent.
                 let mut channel = agb::sound::mixer::SoundChannel::new(BUSTER_HIT);
-                channel.volume(agb::fixnum::Num::<i16, 8>::new(112) / 127);
+                channel.volume(agb::fixnum::Num::<i16, 8>::new(112) / 127); // canon: 112/127 trims agb's 1.0 to the real peak (see above)
                 mixer.play_sound(channel);
             }
         }
@@ -2380,7 +2486,7 @@ impl<'a> Battle<'a> {
         let banner_target = self
             .fixture
             .map(|f| f.banner_at)
-            .filter(|&v| v != 0xffff)
+            .filter(|&v| v != FIXTURE_UNSET)
             .map(|v| v as u32);
         if banner_target == Some(self.clock) && !self.opened {
             self.opened = true;
@@ -2424,8 +2530,8 @@ impl<'a> Battle<'a> {
         if let Some((gun, _, _)) = self.vulcan_gun.as_mut() {
             match navi_update {
                 // The firing state's first frame is also its first shot.
-                Update::PoseBegun | Update::Strike { .. } if gun.anim() == 0 => gun.play(1),
-                Update::Recovering => gun.play(2),
+                Update::PoseBegun | Update::Strike { .. } if gun.anim() == 0 => gun.play(1), // unnamed: gun object's firing animation
+                Update::Recovering => gun.play(2), // unnamed: gun object's recovery animation
                 _ => {}
             }
         }
@@ -2499,7 +2605,7 @@ impl<'a> Battle<'a> {
             Update::Died => {
                 let at = field::panel_centre(self.megaman.panel().0, self.megaman.panel().1);
                 self.effects
-                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false, false));
+                    .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, DELETE_FRAMES, false, false));
             }
             _ => {}
         }
@@ -2562,7 +2668,7 @@ impl<'a> Battle<'a> {
             };
             match update {
                 Update::Winding { frame }
-                    if frame % 8 == 0 && !matches!(ai.style(), ai::Style::Mettaur) =>
+                    if frame % WINDUP_TELEGRAPH_EVERY == 0 && !matches!(ai.style(), ai::Style::Mettaur) =>
                 {
                     for &(col, row) in &targets {
                         if (1..=field::COLS).contains(&col) && (1..=field::ROWS).contains(&row) {
@@ -2573,7 +2679,7 @@ impl<'a> Battle<'a> {
                 Update::Died => {
                     let at = field::panel_centre(enemy.panel().0, enemy.panel().1);
                     self.effects
-                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, 90, false, false));
+                        .push((spr::Player::new(spr::Assets::new(DELETE), 0), at, DELETE_FRAMES, false, false));
                 }
                 // The Mettaur's strike is a wave set rolling from the front
                 // panel; the swords land on their targets at once.
@@ -2696,22 +2802,22 @@ impl<'a> Battle<'a> {
             *age += 1;
             let age = *age;
             let (mcol, mrow) = self.megaman.panel();
-            self.step_trail[age as usize % 4] =
+            self.step_trail[age as usize % STEP_TRAIL_LEN] =
                 (self.megaman.sprite_key(), field::panel_centre(mcol, mrow));
             if age == STEP_GHOST2_FIRST {
                 self.step_dest = field::panel_centre(mcol, mrow);
             }
-            self.step_trail_sword[age as usize % 4] =
+            self.step_trail_sword[age as usize % STEP_TRAIL_LEN] =
                 self.effects.first().map(|(p, _, _, _, _)| p.frame_key());
             // Refreshed on the first frame of each blink pair and held for
             // the second: on frames 16 AND 17 the real copy carries the
             // navi's frame-13 sprite, not 13 and then 14.
             // It stops taking new frames once the navi has gone home: from
             // then on it holds the last pose the navi had on that panel.
-            if age >= STEP_GHOST2_FIRST && (age - STEP_GHOST2_FIRST) % 4 == 0 {
+            if age >= STEP_GHOST2_FIRST && (age - STEP_GHOST2_FIRST) % STEP_RING_PERIOD == 0 {
                 // Three frames back is the next slot round the ring of four,
                 // and only while the navi was still on the far panel then.
-                let (delayed, was_at) = self.step_trail[(age as usize + 1) % 4];
+                let (delayed, was_at) = self.step_trail[(age as usize + STEP_TRAIL_NEXT) % STEP_TRAIL_LEN];
                 if self.step_ghost2_key != Some(delayed) && was_at == self.step_dest {
                     let mut ghost =
                         spr::Player::frozen_at(spr::Assets::new(MEGAMAN), delayed.0, delayed.1);
@@ -2720,7 +2826,7 @@ impl<'a> Battle<'a> {
                     self.step_ghost2 = Some((ghost, at));
                     self.step_ghost2_key = Some(delayed);
                     self.step_ghost2_sword = match (
-                        self.step_trail_sword[(age as usize + 1) % 4],
+                        self.step_trail_sword[(age as usize + STEP_TRAIL_NEXT) % STEP_TRAIL_LEN],
                         self.step_sword_art,
                     ) {
                         (Some((anim, f)), Some((art, pal))) => {
@@ -3012,9 +3118,17 @@ impl<'a> Battle<'a> {
                 // measured from the held ball's centre, (37,88) on the real
                 // ROM against (59,98) drawn at the panel's origin.
                 let at = field::panel_centre(mc, mr);
-                let at = if flash { (at.0 - 22, at.1 - 10) } else { at };
+/// The flash bomb's sprite carries its own part offsets, 22 right and 10
+/// down of the bomb sprite's (measured (37,88) on the real ROM against
+/// (59,98) drawn at the panel's origin, see below); the raised ball sits 14
+/// right and 24 up of that.
+const FLASH_AT_DX: i32 = 22; // provenance: peeked -- measured (37,88) on the real ROM against (59,98) at the panel origin (see below)
+const FLASH_AT_DY: i32 = 10; // provenance: peeked -- measured (37,88) on the real ROM against (59,98) at the panel origin (see below)
+const FLASH_RAISE_DX: i32 = 14; // provenance: peeked -- measured off the real ROM (see below)
+const FLASH_RAISE_DY: i32 = 24; // provenance: peeked -- measured off the real ROM (see below)
+                let at = if flash { (at.0 - FLASH_AT_DX, at.1 - FLASH_AT_DY) } else { at };
                 if flash {
-                    self.held_raise = Some((HELD_RAISE_AT, (at.0 + 14, at.1 - 24)));
+                    self.held_raise = Some((HELD_RAISE_AT, (at.0 + FLASH_RAISE_DX, at.1 - FLASH_RAISE_DY)));
                 }
                 // The flash bomb's sprite carries a ground shadow as its
                 // first part, and the real ROM does not draw it while the ball
@@ -3052,8 +3166,12 @@ impl<'a> Battle<'a> {
                 // byte_80B8BD4 rows 0-2: the same barrel with palette 0, 1
                 // and 2 for Cannon, HiCannon and M-Cannon.
                 barrel.set_palette_add((chip.id - CHIP_CANNON) as usize);
+/// The cannon barrel rides 16 forward and 24 up of the navi's panel centre
+/// (measured off the real ROM).
+const CANNON_BARREL_DX: i32 = 16; // provenance: peeked -- measured off the real ROM
+const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real ROM
                 self.effects
-                    .push((barrel, (mx + 16, my - 24), CANNON_FRAMES, false, false));
+                    .push((barrel, (mx + CANNON_BARREL_DX, my - CANNON_BARREL_DY), CANNON_FRAMES, false, false));
             }
             CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 | CHIP_SUPRVULC => {
                 self.chip_in_use = Some(chip);
@@ -3142,7 +3260,7 @@ impl<'a> Battle<'a> {
                         panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
                     }
                     CHIP_LONGSWRD | CHIP_LONGBLDE | CHIP_MURAMASA => {
-                        panels.extend([(col + dx, row), (col + 2 * dx, row)])
+                        panels.extend([(col + dx, row), (col + LONG_SWORD_FAR * dx, row)])
                     }
                     _ => panels.push((col + dx, row)),
                 }
@@ -3160,13 +3278,13 @@ impl<'a> Battle<'a> {
                 // palette 0, and the blades' rows 0x19/0x1a are animations
                 // 0 and 1 in palette 5 (asm31.s:85787).
                 let (arc_anim, blade_palette) = match chip.id {
-                    CHIP_LONGSWRD => (1, 0),
-                    CHIP_SWORD => (2, 0),
-                    CHIP_WIDEBLDE => (0, 5),
-                    CHIP_LONGBLDE => (1, 5),
+                    CHIP_LONGSWRD => (1, 0), // canon: byte_80EBAD8 arc row per subfamily (see above)
+                    CHIP_SWORD => (2, 0), // canon: byte_80EBAD8 arc row per subfamily (see above)
+                    CHIP_WIDEBLDE => (0, 5), // canon: byte_80EBAD8 arc row per subfamily (see above)
+                    CHIP_LONGBLDE => (1, 5), // canon: byte_80EBAD8 arc row per subfamily (see above)
                     // Muramasa's row 0x2d: the same animation as LongBlde's
                     // in palette 6.
-                    CHIP_MURAMASA => (1, 6),
+                    CHIP_MURAMASA => (1, 6), // canon: byte_80EBAD8 arc row per subfamily (see above)
                     _ => (0, 0),
                 };
                 let (fx, fy) = field::panel_centre(col + dx, row);
@@ -3175,16 +3293,16 @@ impl<'a> Battle<'a> {
                 // effect object adds to the sprite's palette
                 // (asm31.s:109198-109206; sub_80E0568, asm31.s:85852).
                 let arc_palette = match chip.id {
-                    CHIP_FIRESWRD => 1,
-                    CHIP_AQUASWRD => 2,
-                    CHIP_ELECSWRD => 3,
-                    CHIP_BAMBSWRD => 4,
+                    CHIP_FIRESWRD => 1, // canon: subfamily - 0xb ORed into Param3 (see above)
+                    CHIP_AQUASWRD => 2, // canon: subfamily - 0xb ORed into Param3 (see above)
+                    CHIP_ELECSWRD => 3, // canon: subfamily - 0xb ORed into Param3 (see above)
+                    CHIP_BAMBSWRD => 4, // canon: subfamily - 0xb ORed into Param3 (see above)
                     _ => blade_palette,
                 };
                 let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
                 arc.set_palette_add(arc_palette);
                 self.effects
-                    .push((arc, (fx, fy - 0x10), SWORD_ARC_FRAMES[arc_anim], true, false));
+                    .push((arc, (fx, fy - SWORD_ARC_UP), SWORD_ARC_FRAMES[arc_anim], true, false));
                 for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                     if panels.contains(&enemy.panel()) {
                         enemy.take_damage(chip.power);
@@ -3205,7 +3323,12 @@ impl<'a> Battle<'a> {
                 // BugBomb and VDoll throw and LAND AND STAY rather than
                 // bursting or laying a sheet.
                 let rests = matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL);
-                let target = ((col + 3 * dx).clamp(1, field::COLS), row);
+                // The slash arc rides above the front panel's centre; the offset is this
+                // build's own, tuned to the panel art.
+                const SWORD_ARC_UP: i32 = 0x10; // provenance: fitted -- this build's own arc height, tuned to the panel art
+                // The thrown bomb lands about three panels out (see BOMB_FLIGHT).
+                const BOMB_RANGE_PANELS: i32 = 3; // provenance: derived -- the bomb flies about three panels (see BOMB_FLIGHT)
+                let target = ((col + BOMB_RANGE_PANELS * dx).clamp(1, field::COLS), row);
                 // BlkBomb's thrown ball is its own sprite, not the bomb
                 // sprite in another palette: a dark brown ball with a fuse
                 // and a ground shadow, three parts in one frame. Identified
@@ -3269,8 +3392,8 @@ impl<'a> Battle<'a> {
                     rests,
                     moves_before_falling: chip.id == CHIP_VDOLL || flash,
                     seed_palette: sheet_palette(chip.id),
-                    x: (mx << 16) + dx * BOMB_SPAWN_AHEAD,
-                    y: my << 16,
+                    x: (mx << Q16_SHIFT) + dx * BOMB_SPAWN_AHEAD,
+                    y: my << Q16_SHIFT,
                     z: BOMB_SPAWN_UP,
                     vx: if chip.id == CHIP_VDOLL {
                         dx * VDOLL_VX
@@ -3329,7 +3452,10 @@ impl<'a> Battle<'a> {
                 let (fc, fr) = self.megaman.front_panel();
                 // Shots per chip, from the subfamily (dword_80EBFEC =
                 // 0xA050403: Vulcan1 3, Vulcan2 4, Vulcan3 5,
-                // asm31.s:109878-109892).
+                // asm31.s:109878-109892). Each extra shot lengthens the
+                // attack by ~11 frames (see vulcan_shots); the delay staggers
+                // them 10 frames apart.
+                const VULCAN_SHOT_DELAY_STEP: u8 = 0xa; // provenance: peeked -- staggers the stream so each extra shot lengthens the attack ~11 frames (see vulcan_shots)
                 for i in 0..vulcan_shots(chip.id) as usize {
                     self.shots.push(Shot::vulcan(
                         spr::Assets::new(SHOTFX),
@@ -3338,7 +3464,7 @@ impl<'a> Battle<'a> {
                         dx,
                         chip.power,
                         FAN[i % FAN.len()],
-                        (i as u8) * 0xa,
+                        (i as u8) * VULCAN_SHOT_DELAY_STEP,
                     ));
                 }
             }
@@ -3446,10 +3572,10 @@ impl<'a> Battle<'a> {
             // black ramp, so its fixtures' offsets still hold; a fixture's
             // FLAG_SKIP_INTRO reproduces the same choice at runtime.
             if self.skip_intro() {
-                let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2));
+                let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2)); // canon: INTRO_SKIP_FADE counts half blend steps
                 frame
                     .blend()
-                    .darken(amount.min(Num::from_raw(16)))
+                    .darken(amount.min(Num::from_raw(16))) // canon: agb full-weight blend (16)
                     .enable_background(bg_id)
                     .enable_object();
             } else {
@@ -3459,7 +3585,7 @@ impl<'a> Battle<'a> {
                 // 48 to its settled level at 86 -- sixteen frames of ramp, not
                 // the instant cut this first had.
                 let left = self.intro_fade.min(INTRO_RAMP);
-                let amount = (16 * left / INTRO_RAMP) as u8;
+                let amount = (16 * left / INTRO_RAMP) as u8; // canon: agb full-weight blend (16)
                 let mut blend = frame.blend();
                 let mut fade = blend.brighten(Num::from_raw(amount));
                 fade.enable_background(bg_id).enable_object();
@@ -3480,7 +3606,7 @@ impl<'a> Battle<'a> {
             frame.mosaic().set_object(mosaic, mosaic);
             frame
                 .blend()
-                .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha))
+                .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha)) // canon: agb full-weight blend (16)
                 .enable_background(bg_id);
         }
         // The emotion window is OAM objects 2 and 3 on the real ROM, so it
@@ -3565,7 +3691,7 @@ impl<'a> Battle<'a> {
             (self.step_ghost2.as_ref(), self.step_ghost.as_ref())
         {
             if (STEP_GHOST2_FIRST..=STEP_GHOST2_LAST).contains(age)
-                && (*age - STEP_GHOST2_FIRST) % 4 < 2
+                && (*age - STEP_GHOST2_FIRST) % STEP_RING_PERIOD < STEP_BLINK_SHOWN
             {
                 for (q, (qx, qy)) in self
                     .step_ghost2_sword
@@ -3586,7 +3712,7 @@ impl<'a> Battle<'a> {
         }
         // Two frames shown, two hidden, starting on the attack's frame 1.
         if let Some((p, (x, y), age)) = self.step_ghost.as_ref() {
-            if *age <= STEP_GHOST_LAST && *age >= 2 && (*age - 2) % 4 < 2 {
+            if *age <= STEP_GHOST_LAST && *age >= STEP_GHOST_FIRST && (*age - STEP_GHOST_FIRST) % STEP_RING_PERIOD < STEP_BLINK_SHOWN {
                 for part in p.parts().iter().rev() {
                     Object::new(part.sprite.clone())
                         .set_priority(Priority::P2)
@@ -3659,7 +3785,8 @@ impl<'a> Battle<'a> {
             let (mc, mr) = self.megaman.panel();
             let (bx, by) = field::panel_centre(mc, mr);
             // Two pixels forward of the origin on the real ROM.
-            let bx = bx + 2 * self.megaman.facing_dx();
+            const CURSOR_FORWARD_PX: i32 = 2; // provenance: peeked -- two pixels forward of the origin on the real ROM
+            let bx = bx + CURSOR_FORWARD_PX * self.megaman.facing_dx();
             self.megaman.show_with_underlay(frame, |frame| {
                 // The navi's underlay carries only his bubble here. A thrown
                 // object's GROUND SHADOW used to be drawn in this slot too
@@ -3732,7 +3859,7 @@ impl<'a> Battle<'a> {
             self.hud.draw_number_in(
                 frame,
                 hp,
-                px + self.hud.width(hp) / 2,
+                px + self.hud.width(hp) / 2, // unnamed: half the readout width, to centre it
                 py,
                 counter.set(),
             );
