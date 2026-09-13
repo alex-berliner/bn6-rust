@@ -128,115 +128,42 @@ MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ON
 this ticket, smallest residue first (the rows at 10-8338), and bring its rows to 0; mark this ticket
 PARTIAL with which family is done and leave it OPEN for the next family, until every chip row is 0.
 
-### F16. Oracle coverage: every harness row, not two  *(DONE -- 2026-09-13, Oracle generalized to all 60 comparison rows (tools/oracle.py +138/-41, new tools/f16_slot_probe.py, export bl)*
+- F16 DONE -- Oracle coverage: every harness row, not two. Oracle generalized to all 60 comparison rows (tools/oracle.py +138/-41, new tools/f16_slot_probe.py, export block untouched, landed ee6c494)
+- F13b DONE -- `card` isolated via fixture rewire (follow-up to F13's verified negative). card 18486->0 via fixture rewire, landed 4b16fd7
+- F14b PARTIAL -- `mettaur`: mercy-blink predicate bit 2 -> bit 1 (follow-up to F14's refuted negative). Blink experiment done, partial drop, landed 3e49236
+- F15 DONE -- tiles/gauge: the one vblank frame, 208 px at k=7. tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a
 
-**Result.** Oracle generalized to all 60 comparison rows (tools/oracle.py +138/-41, new tools/f16_slot_probe.py, export block untouched, landed ee6c494). Sweep 60/60 exit 0; card field k=0/pixel k=0 consistent, mettaur k=0/k=0 consistent, tiles field k=0 vs pixel k=7 (fixture disagreement, reported); only banner of 37 pixel-0 rows state-clean (36 show pixel-invisible src divergences); negatives 48/60 NOT BLIND, 11 honest-static, chip-use BLIND-dynamic flagged. verify_rows PASS six rows unchanged. Worker worker (glm-5.3-flash, 69 turns, $0.085). Verifier verifier (muse-spark-1.3-contributor, 22 turns, $0.009): all samples CONFIRMED (residues, n/a, loud fails, banner/cannon/chip-sword, blind split legitimate), ENEMY_SLOT probe + full censuses UNCHECKED (plausible, not refuted), no rule blockers. Deviations from ticket predictions are data findings, not tool defects; residuals (tiles fixture, chip-use BLIND, 0x14 citation) are src/fixture territory. Note: HANDOFF 3a oracle-coverage sentence now stale, needs docs pass.
-**Why.** `tools/oracle.py` names the first divergent state field and frame, which is what turns a
-three-attempt ticket into a one-attempt ticket, but it supports only `wave` and `mettaur`. Attribution
-is where the money goes (R3-R5, F10: two to four attempts each). Cost reducer for every ticket after it.
-
+### F17. `mettaur` isolated: enemy_anim k=61, the Mettaur's own animation *(OPEN -- 2026-09-13)*
+**Why.** F14b landed `3e49236`: `mettaur` 31075->19698 (worst 1566->1245, 70 frames, negative frame 60824 not blind); `src/actor.rs` only, mercy-blink predicate now `(invulnerable>>1)&1`; `mm_timer` 70/70, first oracle divergence `enemy_anim` k=61 (2/70); full table exactly one row differs (improved). The mercy seed/rate and blink predicate are settled and stay untouched -- the remainder is the enemy's animation state, not a third mercy ticket.
 **Do, in order.**
-1. Generalize `oracle.py <row>` to any row in `harness.py --list`: reuse the row's own Sides and Align
-   (as it does for wave/mettaur), watch the same field set on both sides, print the full table, the
-   first divergence, the pixel diff's first non-zero frame on the same alignment, and the one-frame-shift
-   negative. Rows whose fixture has no enemy skip the enemy fields with an explicit `n/a`, never a fake
-   match. Fail loudly on a row whose alignment cannot be reproduced.
-2. Extend the export block only if a row needs a field the block lacks (document the layout change in
-   HANDOFF §3a of the long handoff and keep the block behavior-neutral: wave/window/opening/cannon/field
-   still 0).
-3. **Acceptance:** `oracle.py` runs on every row; on three rows with a known residue (card, mettaur,
-   tiles) the first divergent field's frame is consistent with the row's first non-zero pixel frame
-   (report both); on three rows at 0 the compared fields show no divergence over the window; every
-   negative control changes the result; verify_rows on the six rows unchanged.
+1. Start in `tools/worktree.sh f17-mettaur-anim`. Baseline `python3 tools/harness.py --only mettaur` (must read 19698/1245/70, negative 60824 not blind), plus `tools/diffmask.py` region and `tools/oracle.py mettaur` (must read `mm_timer` 70/70, first divergence `enemy_anim` k=61), measured.
+2. Localize the `enemy_anim` k=61 frames to the Mettaur's attack element and pixels, find canon's Mettaur animation routine in `reference/bn6f` and cite it, fix `src/` only, measured on the same oracle fields and pixel frames.
+3. Re-run `mettaur`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** `src/` enemy-animation path only; mercy seed/rate/blink predicate and comments untouched; no allowlist change; no alignment or region change except by measured event (F2's rule); captures one at a time.
+**Measure and report.** Row `mettaur` before/after (total/worst/frames) on the identical script and window, oracle `mm_timer` match count and first `enemy_anim` divergent frame before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-**Rules.** tools/ and the export block in src/ only; no behavior change; captures one at a time.
-**Coordinator:** verify_rows plus the verifier on the "consistent with the pixel diff" claims.
-
-### F13. `card` isolated: 18486 px over 16 frames  *(NEGATIVE -- 2026-09-13, Precise negative, src ruled out by measurement (no edits, branch empty))*
-
-**Result.** Precise negative, src ruled out by measurement (no edits, branch empty). card stays 18486/3081/16 (verify_rows PASS, negative 15405 not blind); 18486 = 6x3081 k0-5 card-region x<128 + 10x0 k6-15; residue is highlighted-card slot 1 vs 0, slot 0 already exact. Canon custMenuSomeHandler_8028B74 (asm03_0.s:5194; cursor byte 0x020364C7 0a->4->3->2->1->0 at RAM 21/51/81/111/141, pixels P+2). Rust static: CARDNAME_ROW window_cursor=0, presses 20-145 land while window closed (opens ~131-141), no just_pressed edge. Our walk already P+2 with canon magnitudes; CURSOR_DELAY=2 correct. Worker worker-muse (muse-spark-1.3-contributor, 57 turns, $0.023). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.009): walk claim CONFIRMED empirically (RAM walk reproduced), static/oracle-reasoning structurally CONFIRMED, magnitudes/band sub-values UNCHECKED, fixture-rewire recipe actionable with 3 gaps (negative re-verify, window-open coverage, band arithmetic). Follow-up F13b written for the fixture rewire.
-**Why.** HANDOFF §10 names the chip window's cursor-move timing.
-
-### F13b. `card` isolated via fixture rewire (follow-up to F13's verified negative)  *(DONE -- 2026-09-13, card 18486->0 via fixture rewire, landed 4b16fd7)*
-
-**Result.** card 18486->0 via fixture rewire, landed 4b16fd7. Rust _CURSOR_WALK_REAL->_CURSOR_WALK_RUST, Align canon_ref 136->46 search 292..305, offset 298 event-locked on shared 4->3 (canon pixel 52 <-> rust pixel 312); band sweep unique min (0 vs 3046 off-by-one). card PASS 0/0/16, negative frame 3046 not blind; wave/window/opening-isolated/chip-cannon PASS 0; full table matches F12a record (only card moved); CURSOR_DELAY split did not surface. Worker worker (glm-5.3-flash, 38 turns, $0.029). Verifier verifier (muse-spark-1.3-contributor, 32 turns, $0.008): CONFIRMED all with independent re-measurement (canon RAM walk, rust origin 8, band sweep, cross-diff path, negative teeth, rules CLEAN). Residuals: rust walk has no RAM trace; window-open animation uncovered by any card band; bracket-vs-card 1-frame split still open in src.
-**Result.** card 18486->0 via fixture rewire, landed 4b16fd7. Rust _CURSOR_WALK_REAL->_CURSOR_WALK_RUST, Align canon_ref 136->46 search 292..305, offset 298 event-locked on shared 4->3 (canon pixel 52 <-> rust pixel 312); band sweep unique min (0 vs 3046 off-by-one). card PASS 0/0/16, negative frame 3046 not blind; wave/window/opening-isolated/chip-cannon PASS 0; full table matches F12a record (only card moved); CURSOR_DELAY split did not surface. Worker worker (glm-5.3-flash, 88 msgs, cost from ledger). Verifier verifier (muse-spark): CONFIRMED all -- canon RAM walk, rust origin 8 + pixel transitions, band sweep, cross-diff path, negative teeth, rules CLEAN. Residuals: rust walk has no RAM trace (pixel-identity provenance); window-open animation uncovered by any card band; bracket-vs-card 1-frame split still open in src.
-**Why.** F13 (NEGATIVE, verified) ruled out src: canon walks OK->0 at RAM 21/51/81/111/141
-(`custMenuSomeHandler_8028B74`, asm03_0.s:5194; cursor byte `0x020364C7`) while rust holds static
-slot 0 (presses 20-145 land while the window is closed, opens ~131-141); our walk is already P+2
-with canon-identical magnitudes. The residue is the fixture: rust never walks. Rewire the fixture to
-walk and compare transition-vs-transition.
-
+### F18. `windowclose` isolated: the close event's remaining total *(OPEN -- 2026-09-13)*
+**Why.** `windowclose` isolated reads total 695603 (worst 28784) over 40 frames at canon 81+k, rust 8+253+k (`web/captures/windowclose-isolated.txt:1`); the row note (`tools/harness.py:1477`) records the measured event: `--watch 0x020364c0:0x48` shows JumpOffset 0x04->0x08 on the A-press frame with slide counter +0x40 counting 0x0c..0x78 across canon frames 81..90, rust slide calls at capture 261..270 (marker origin 8), event offset 253 where the ten slide frames compare EXACTLY 0 on `--only-bg 3`; a deeper meaningless basin sits near offset 264 (575089 vs 695603) from unshared-battle noise; the post-close BG3 residue at the true alignment is a flat 1402 px of HUD-strip fixture content (canon gauge RESETS empty then refills rows 8..15 while descriptor gauge=1 stays full; hand chip-name rows 148..158 `Cannon 40` vs none).
 **Do, in order.**
-1. Baseline card (harness line + `diffmask.py` region + `oracle.py`): must read 18486/3081/16,
-   negative not blind (15405).
-2. Rewire the card rust script `_CURSOR_WALK_REAL` -> `_CURSOR_WALK_RUST` (presses
-   250/280/310/340/370), re-centred on the shared 4->3 transition (canon RAM 51 / pixel 52):
-   `canon_ref=46` (band 46..61). Re-derive the rust band from a rust capture (marker origin 8,
-   regress lag) -- do NOT inherit an unverified ~276/~282. Account for canon-walks-from-OK vs
-   rust-walks-from-0 path difference.
-3. Say where the window-open frames stay checked: the old band kept the 142 window-open transition
-   in view; the new band must not let the row pass trivially -- keep window-open coverage or move it
-   to an explicit second comparison.
-4. Re-run card, wave, window, opening, chip-cannon and the full table -- nothing may get worse, and a
-   row that does is reported with its numbers. Re-run the frame-shift negative and confirm still
-   not-blind (from re-centring, not by weakening the negative).
-5. Report: row · frames · total · worst · region · commit · one line of mechanism · one line of what
-   is unverified. Watch-out (report, don't widen): the bracket-vs-card 1-frame split in the
-   `CURSOR_DELAY` comment may surface once the walk works.
+1. Start in `tools/worktree.sh f18-windowclose`. Baseline `python3 tools/harness.py --only windowclose` (695603/28784/40 at offset 253, negative confirmed not blind), plus `--only-bg 3` ten slide frames at 0 and the post-close BG3 1402 px split by element, measured.
+2. Attribute the post-close residue element by element (gauge-reset/refill vs hand chip-name) to fixture content vs `src/`, citing canon's close routine in `reference/bn6f`; fix the fixture/descriptor with `peeked` provenance or `src/`, never the alignment, measured on the same band.
+3. Re-run `windowclose`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** `src/` or fixture/descriptor per the attribution only; no allowlist change; no alignment or region change except by measured event -- offset 253 stands unless the watch names a new event frame (F2's rule); captures one at a time.
+**Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` slide-frame totals before/after, post-close BG3 residue by element before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, fixture-content class); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-**Rules.** Fixture/descriptor + row note only (`peeked` provenance for the band); no src/, no
-allowlist change, no region shrink except by the measured 52-transition event (F2's rule); captures
-one at a time.
-
-### F14. `mettaur` isolated: 31075 px over 70 frames  *(PARTIAL -- 2026-09-13, Wrong-guess PARTIAL, no edits (branch empty))*
-
-**Result.** Wrong-guess PARTIAL, no edits (branch empty). mettaur stays 31075/1566/70 (verify_rows PASS, negative 46554 not blind). Worker ruled out mercy/blink (seed 120 / first-observable 119 / -1/frame reproduced; blamed attack latency 82v81 on wave). Verifier CONFIRMED seed/rate/numbers but REFUTED the canon blink formula: lsr #2 carry is bit 1, so canon hides iff (timer>>1)&1 (repo Invisibl comment src/actor.rs:977-979 agrees); ours uses bit 2 -- predicates diverge half the mercy window, consistent with the row signature (k=0 404px flip at timer 93, diffs all 70 frames inside mercy 93->24). Worker worker-muse (muse-spark-1.3-contributor, 64 turns, $0.026). Verifier verifier-glm (glm-5.3-flash, 24 turns, $0.017). Follow-up F14b (corrected-predicate blink experiment) written; wave-timing premise on hold.
-**Why.** F2's event pairing left one field: `oracle.py mettaur` first diverges at `mm_timer` k=0
-(canon 7, ours 6) -- MegaMan one frame apart inside the 120-frame mercy -- and canon's MegaMan is
-blinking where ours is visible (mettaur-progress.gif). Find which side's mercy/blink timing is off by
-the frame, from canon's routine (`sub_801A5EE`, asm00_2.s:22252-22296 sets the 120), and fix it.
-
-### F14b. `mettaur`: mercy-blink predicate bit 2 -> bit 1 (follow-up to F14's refuted negative)  *(PARTIAL -- 2026-09-13, Blink experiment done, partial drop, landed 3e49236)*
-
-**Result.** Blink experiment done, partial drop, landed 3e49236. mettaur 31075->19698 (worst 1566->1245, 70 frames, negative frame 60824 not blind); src/actor.rs only (5+/4-, predicate (invulnerable>>1)&1, comment cites lsr-carry + routine); mm_timer 70/70, first divergence enemy_anim k=61 (2/70); full table exactly one row differs (improved). Worker worker (glm-5.3-flash, 36 turns, $0.020). Verifier verifier (muse-spark-1.3-contributor, 10 turns, $0.005): diff+rules CONFIRMED, partial-drop honest CONFIRMED, oracle/table values UNCHECKED by design (no re-runs); puzzles noted: render-only edit vs mm_timer state-field match unexplained, k=0 404-vs-509px conflict in worker texts. No F14c: two PARTIALs in a row on mettaur (F14, F14b), residuals (flash magnitude, enemy_anim k=61, wave latency) stay open for later tickets.
-**Result.** Blink experiment done, partial drop, landed 3e49236. mettaur 31075->19698 (worst 1566->1245, 70 frames, negative frame 60824 not blind); src/actor.rs only (5+/4-, predicate (invulnerable>>1)&1, comment cites lsr-carry + routine); mm_timer 70/70, first divergence enemy_anim k=61 (2/70); full table exactly one row differs (improved). Worker worker (glm-5.3-flash, 36 turns, $0.020). Verifier verifier (muse-spark-1.3-contributor, turns/cost from ledger): diff+rules CONFIRMED, partial-drop honest CONFIRMED, oracle/table values UNCHECKED by design (no re-runs); puzzles noted: render-only edit vs mm_timer state-field match unexplained, k=0 404-vs-509px conflict in worker texts. No F14c: two PARTIALs in a row on mettaur (F14, F14b), residuals (flash magnitude, enemy_anim k=61, wave latency) stay open for later tickets.
-**Why.** F14's worker matched mercy seed/rate (120, first-observable 119, -1/frame, CONFIRMED) but
-misread the canon blink formula; verifier REFUTED it: `lsr #2; bcc` (asm00_2.s:16795-16806) tests the
-carry, which is bit 1, so canon hides iff (timer>>1)&1 (2-on/2-off, period 4) -- the repo's own
-Invisibl comment (src/actor.rs:977-979) agrees, while the mercy comment (:963-967) repeats the bit-2
-error. Ours hides iff (invulnerable/4)%2==1 (bit 2, src/actor.rs:970). The predicates diverge on half
-the mercy-window frames; the row signature is consistent (k=0 404px flip at canon 140/timer 93, small
-diffs all 70 frames inside mercy 93->24). The wave-timing premise stays on hold until this experiment
-runs (stop rule: refuted claim).
-
+### F19. `popup` isolated: 107511 px over 80 frames *(OPEN -- 2026-09-13)*
+**Why.** `popup` isolated reads total 107511 (worst 1348) over 80 frames at canon 43+k, rust 1(marker)+122+k, canon (sterile) (`web/captures/popup-isolated.txt:1`); canon REAL_START=43 (A pressed at 40), rust marker origin 1 with a 26-frame band holding a unique zero at offset 122; `AUDIT.md` records the attribution as 100% OBJ -- the enemy's HP digits exposed because the popup needs that tile range unzeroed.
 **Do, in order.**
-1. Baseline mettaur (harness line + `diffmask.py` region + `oracle.py`): must read 31075/1566/70,
-   negative not blind (46554).
-2. Change the mercy blink predicate to bit-1 (`(invulnerable>>1)&1`-equivalent), fixing the
-   :963-967 comment; leave seed/rate (120, -1/frame) and the Invisibl path untouched. Cite
-   `blindVisualHandledHere_8016934` + ARM carry semantics in the commit note.
-3. Re-run mettaur, wave, window, opening, chip-cannon and the full table -- nothing may get worse,
-   and a row that does is reported with its numbers. If 31075 drops only partially, report the
-   remaining frames (wave-latency / enemy_anim k=61 / flash-magnitude residuals stay open).
-4. Report: row · frames · total · worst · region · commit · one line of mechanism · one line of what
-   is unverified.
+1. Start in `tools/worktree.sh f19-popup`. Baseline `python3 tools/harness.py --only popup` (107511/1348/80, negative confirmed not blind), plus `tools/diffmask.py` region (OBJ vs BG split) and `tools/oracle.py` where supported, measured.
+2. Localize the residue to frames and the HP-digit/popup element, find canon's routine for that element in `reference/bn6f` and cite it, fix `src/` (or the fixture/descriptor with `peeked` provenance if the residue is the tile-range fixture), measured on the same frames and region.
+3. Re-run `popup`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** `src/` (or fixture/descriptor when the residue is the fixture) only; no allowlist change; no alignment or region change except by measured event (F2's rule); captures one at a time.
+**Measure and report.** Row `popup` before/after (total/worst/frames) on the identical script and window, diffmask region before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-**Rules.** src/ blink predicate + comments only; no allowlist change, no alignment or region change;
-captures one at a time.
-
-### F15. tiles/gauge: the one vblank frame, 208 px at k=7  *(DONE -- 2026-09-13, tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a)*
-
-**Result.** tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a. Backdrop::seed +1 construction lead (src/backdrop.rs 12+/1-, derived; mirrors new() STEP_HOLD[0]+1); one-frame-early art step fixed (canon uploads 36/44/52 p8 vs ours 434/442; rust442==canon52). Canon ProcessGFXAnims (:3596) countdown match, sub_8001C94 (:3752) queue-vs-sync confirmed. Cursor watch-write both sides: canon writer BIOS-HLE 0x2F4 p8 (+p4 band near moves), rust vram_manager PCs; F3 +112 did not recur. Integrated tiles/gauge 26165->25979 same bucket; full table byte-identical except tiles/gauge improved (mettaur delta is F14b in main). verify_rows PASS 7 rows. Worker worker-muse (muse-spark-1.3-contributor, 86 turns, $0.121). Verifier verifier-glm (glm-5.3-flash, 20 turns, $0.018): root-cause/citations/scope/cursor/integrated CONFIRMED (rust period-16 + shift-test + gauge-t sub-details unchecked/descriptive-only), rules CLEAN. Note: coordinator restored README Website section (dd4b137, byte-exact, disclosed) accidentally deleted in worker commit.
-**Why.** F6 left k=0..6 at exactly 0 and 208 px on k=7, the vblank-race residue HANDOFF §9 records.
-It is a checkable claim, not a tolerance: find which write lands a frame early or late between the
-two binaries (the watchpoint names the writer on both sides) and make ours land where canon's does.
-Same ticket: `cursor` went 620802 -> 620914 (+112) at F3's merge although F3's code cannot run in that
-row (no OK press) -- the custmatch/cursor VRAM write HANDOFF §9 says lands a frame early between
-differently sized binaries. Measure it with --watch-write on both sides; no row may silently move with
-code size.
-
-**Common to F8-F15 unless the ticket says otherwise.** Baseline the row (harness line plus
+**Common to F8-F19 unless the ticket says otherwise.** Baseline the row (harness line plus
 `tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
 frames and an element; find canon's routine for that element in reference/bn6f and cite it; fix src/
 (or the fixture/descriptor when the residue is the fixture, with `peeked` provenance); re-run the row,
