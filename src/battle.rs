@@ -1774,8 +1774,18 @@ impl<'a> Battle<'a> {
         // on its first frame and hold the gauge, which is what opens the
         // window. No fixture: the default release build's own lineup always
         // fields at least one.
+        // EXCEPTION (TODO F8, measured): a fixture carrying FLAG_RESOLVE_OVER
+        // is an enemy-less arena whose fight is already decided -- the
+        // zero-enemy rows' stand-in for the canon side's own deleted-enemy
+        // history, which resolves (canon's all-dead advance measured: the
+        // banner sequencer enters 0x0C at canon 47 on the field row's own
+        // canon capture, and the ENEMY DELETED banner runs canon 49..106).
+        // With the bit, the vacuous all-defeated counts, `over` fires on the
+        // first battle frame, and the end sequence runs exactly as it would
+        // had a real enemy died before frame 0.
         let over = if self.fixture.is_some() {
-            !self.enemies.is_empty()
+            let f = self.fixture.unwrap();
+            (f.flag(fixture::FLAG_RESOLVE_OVER) || !self.enemies.is_empty())
                 && (self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated()))
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
@@ -3299,11 +3309,27 @@ impl<'a> Battle<'a> {
         // The RESULT window's corner badge: the chip window's regular-chip
         // mark, hung as OAM entry 0 at the window's top-left. Read off a live
         // results screen, where it is a 16x16 at (37,21) in OBJ bank 11.
+        // ENTRY ANIMATION (TODO F8, measured on the field row's own canon
+        // capture): canon's mark does not sit still -- it enters wrapped from
+        // the right edge, one frame at attr1 x=509 (a 9-bit coordinate, so
+        // the sprite's left 13 pixels draw at x 0..12), then x=13, x=29, and
+        // rests at 37 from the next frame on: watch-write on the shadow OAM
+        // (dword_3002180) shows x = ([r5+6]*8+13) & 0x1ff with the counter
+        // ramping +2/frame and clamping at 3 (the enqueue is sub_802CA5C,
+        // asm03_0.s:13225; the ramp lives in the RESULT object's own state
+        // machine). Canon's mark's first wrapped frame is canon 163 and its
+        // ENEMY DELETED banner goes up at canon 49 (both on this same
+        // scenario), so the mark enters banner+114; our results window comes
+        // up banner+110 (RESULTS_DELAY), so the mark's wrapped frame is the
+        // window's 4th frame, settling on the 7th.
         if let Some(mark) = self.results_mark.as_ref() {
-            Object::new(mark.clone())
-                .set_priority(Priority::P0)
-                .set_pos(RESULTS_MARK_AT)
-                .show(frame);
+            let age = self.shown.as_ref().map(|w| w.age()).unwrap_or(u32::MAX);
+            if let Some(x) = results::mark_x_at(age) {
+                Object::new(mark.clone())
+                    .set_priority(Priority::P0)
+                    .set_pos((x, RESULTS_MARK_AT.1))
+                    .show(frame);
+            }
         }
         if let Some(window) = &self.custom {
             window.show(frame, self.hud);

@@ -151,6 +151,30 @@ pub struct Shown {
     phase: Phase,
 }
 
+/// The RESULT mark's entry animation (TODO F8, measured -- battle.rs's
+/// draw-site comment carries the watch-write evidence): the mark is
+/// invisible for the window's first MARK_ENTER_AT frames, enters wrapped
+/// from the right edge at attr1 x=509 (a 9-bit OBJ coordinate, so the
+/// sprite draws at 509..511 and wraps onto 0..12), steps to 13 and 29,
+/// and rests at 37 from the 7th frame on.
+pub const MARK_ENTER_AT: u32 = 4; // provenance: peeked -- canon's ENEMY DELETED banner at 49 and the mark's first wrapped frame at 163 on the same scenario = 114 frames; our window comes up banner+110 (RESULTS_DELAY), so the mark enters on the window's 4th frame
+const MARK_X_WRAPPED: i32 = -3; // provenance: peeked -- shadow-OAM attr1 0x41FD = 509 = -3 mod 512, canon 163 (watch-write, TODO F8)
+const MARK_X_STEPS: [i32; 2] = [13, 29]; // provenance: peeked -- shadow-OAM attr1 0x400D / 0x401D, canon 164/165 (watch-write, TODO F8)
+const MARK_X_REST: i32 = 37; // provenance: peeked -- shadow-OAM attr1 0x4025 from canon 166 on (= RESULTS_MARK_AT.0)
+
+/// The mark's x for a window `age` (frames since show), None while hidden.
+pub fn mark_x_at(age: u32) -> Option<i32> {
+    if age < MARK_ENTER_AT {
+        return None;
+    }
+    match age - MARK_ENTER_AT {
+        0 => Some(MARK_X_WRAPPED),
+        1 => Some(MARK_X_STEPS[0]),
+        2 => Some(MARK_X_STEPS[1]),
+        _ => Some(MARK_X_REST),
+    }
+}
+
 impl Results {
     pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
         assert_eq!(&data[0..4], MAGIC, "not a BNRS asset");
@@ -365,6 +389,16 @@ fn entry(e: u16) -> TileSetting {
 }
 
 impl Shown {
+    /// Frames since the window was put up, derived from the slide phase so
+    /// `fast_forward` moves it exactly as a real wait would. The RESULT
+    /// mark's entry animation (battle.rs, TODO F8) is keyed on this.
+    pub fn age(&self) -> u32 {
+        match self.phase {
+            Phase::Sliding { x } => ((x - START_X) / SLIDE_STEP) as u32,
+            _ => u32::MAX,
+        }
+    }
+
     /// Advance a frame. `confirm` is whether A or Start is down. Returns the
     /// screen fade to apply, 1-16, once the window is being dismissed, and
     /// None before then; 16 means the screen is fully black.

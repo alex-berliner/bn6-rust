@@ -20,7 +20,7 @@ little-endian.
 | +12 | u8  | hand_count | 0..5 |
 | +13 | u8[5] | hand | chip ids in the game's own numbering (`byte_2004C20` index) |
 | +18 | u8  | gauge | 0 = empty, 1 = full |
-| +19 | u8  | flags | bit0 open with the chip window; bit1 blank HUD; bit2 blank backdrop; bit3 auto-fire the hand; bit4 skip the white intro |
+| +19 | u8  | flags | bit0 open with the chip window; bit1 blank HUD; bit2 blank backdrop; bit3 auto-fire the hand; bit4 skip the white intro; bit5 resolve (below) |
 | +20 | u16 | art_entry | backdrop animation entry, 0xFFFF = default |
 | +22 | u16 | art_timer | backdrop animation timer, 0xFFFF = default |
 | +24 | u16 | scroll_xq | backdrop scroll, quarter-pixels, 0xFFFF = default |
@@ -42,6 +42,16 @@ little-endian.
 | +56 | u16 | result_elapsed | when `start_state` = 1: frames of the RESULT sequence already elapsed at boot. 0 = the slide-in starts on the first battle frame; 0xFFFF = settled (the old `demo-resultmatch` picture) |
 | +58 | u32 | rng | the game's RNG state at battle frame 0, peeked from the canon state, so an RNG-gated enemy takes the same decisions on both sides; 0 = our default seed |
 | +62.. | | reserved | zero |
+
+**bit5 `resolve`.** An enemy-less arena whose fight is already decided. Without it a
+zero-enemy fixture holds the fight open forever (the chip-window fixtures depend on that:
+they would end on frame one). With it, `over` fires on the battle's first frame and the
+end sequence runs exactly as it would had a real enemy died before frame 0: the ENEMY
+DELETED banner goes up at once and the RESULT window slides in 110 frames later. This is
+the zero-enemy arena rows' stand-in for the canon side's own history, which is a battle
+whose enemy was deleted and which therefore resolves: on the `field` row's own canon
+capture the banner sequencer enters its RESULT countdown 0x0C at canon frame 47 and the
+ENEMY DELETED banner runs canon 49..106 (TODO F8, 2026-09-12).
 
 Fields +32 onward were added after wave 2's `src/` agent found the original contract could not
 express `demo-field`'s pinned enemy HP, `demo-custmatch`/`demo-cardname`'s offered deck,
