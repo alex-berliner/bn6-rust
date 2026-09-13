@@ -46,7 +46,9 @@ use agb::input::{Button, ButtonController, Tri};
 use crate::chips::{Chip, PICTURE_TILES, WILDCARD};
 use crate::hud::Hud;
 
-const MAGIC: &[u8; 4] = b"BNCW";
+const MAGIC: &[u8; 4] = b"BNCW"; // provenance: derived -- tools/custom_export.py's own BNCW magic
+/// The battle text font's own magic, checked the same way as MAGIC.
+const FONT_MAGIC: &[u8; 4] = b"BNTF"; // provenance: derived -- tools/font_export.py's own BNTF magic
 const MAP_W: usize = 15; // provenance: derived -- byte_86E625C's own 15x20 map (see the module doc above)
 const MAP_H: usize = 20; // provenance: derived -- byte_86E625C's own 15x20 map (see the module doc above)
 const SLIDE_FROM: i32 = 0x78; // provenance: derived -- sub_8026B04/sub_8026BF4, asm03_0.s:882/1026
@@ -124,11 +126,15 @@ const CURSOR_DELAY: u8 = 2; // provenance: fitted -- two vs. three both leave on
 const REGION_PICTURE: usize = 1; // provenance: derived -- byte_8027B2C's own record order (see the doc comment above)
 /// The attack power's cells, (6,9) 3x2: digits right-aligned in the row.
 const REGION_DAMAGE: usize = 4; // provenance: derived -- byte_8027B2C's own record order
+/// The first slot's icon and code cells, then two records per slot.
+const SLOT_ICON_BASE: usize = 5; // provenance: derived -- byte_8027B2C's own record order (see the doc comment above)
+const SLOT_CODE_BASE: usize = 6; // provenance: derived -- byte_8027B2C's own record order
+const SLOT_REGION_STRIDE: usize = 2; // provenance: derived -- one icon record and one code record per slot
 const fn region_slot_icon(slot: usize) -> usize {
-    5 + 2 * slot
+    SLOT_ICON_BASE + SLOT_REGION_STRIDE * slot
 }
 const fn region_slot_code(slot: usize) -> usize {
-    6 + 2 * slot
+    SLOT_CODE_BASE + SLOT_REGION_STRIDE * slot
 }
 /// The card's dark interior tile, which the real ROM uses for the parts of the
 /// name and damage rows it is not writing text into (its map has it at the
@@ -146,7 +152,8 @@ const PANEL_FLAT_TILE: u16 = 0x03e; // provenance: peeked -- read off the real R
 const MARK_AT: (i32, i32) = (95, 4); // provenance: peeked -- read off a live menu's own OAM
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
-const TEXT_REGIONS: [usize; 4] = [0, 2, 3, 4]; // provenance: derived -- byte_8027B2C's own record order
+const TEXT_REGION_COUNT: usize = 4; // provenance: derived -- byte_8027B2C's own record order (name, code, element, damage)
+const TEXT_REGIONS: [usize; TEXT_REGION_COUNT] = [REGION_NAME, REGION_CODE, REGION_ELEMENT, REGION_DAMAGE]; // provenance: derived -- byte_8027B2C's own record order
 /// The name row: eight glyph columns two tiles tall, written left to right
 /// and padded with blanks, which the font draws as flat colour 8 -- the same
 /// thing CARD_INTERIOR_TILE is.
@@ -158,13 +165,20 @@ const GLYPH_TILES: u16 = 2; // provenance: derived -- an 8x16 glyph is two stack
 /// The game's own character code for an ASCII byte, which is the glyph's index
 /// in the battle text font (constants/bn6-charmap.tbl). Shared with the
 /// chip-name popup in `battle.rs`, which draws the same font as objects.
+/// The font glyph a character starts at (constants/bn6-charmap.tbl):
+/// digits, uppercase, lowercase, and the dash; bytes with no glyph read 0.
+const CHAR_DIGIT_BASE: u16 = 0x01; // provenance: derived -- constants/bn6-charmap.tbl
+const CHAR_UPPER_BASE: u16 = 0x0b; // provenance: derived -- constants/bn6-charmap.tbl
+const CHAR_LOWER_BASE: u16 = 0x26; // provenance: derived -- constants/bn6-charmap.tbl
+const CHAR_DASH: u16 = 0x40; // provenance: derived -- constants/bn6-charmap.tbl
+const CHAR_NONE: u16 = 0; // provenance: derived -- constants/bn6-charmap.tbl (index 0 is blank)
 pub fn char_code(c: u8) -> u16 {
     match c {
-        b'0'..=b'9' => 0x01 + (c - b'0') as u16,
-        b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
-        b'a'..=b'z' => 0x26 + (c - b'a') as u16,
-        b'-' => 0x40,
-        _ => 0,
+        b'0'..=b'9' => CHAR_DIGIT_BASE + (c - b'0') as u16,
+        b'A'..=b'Z' => CHAR_UPPER_BASE + (c - b'A') as u16,
+        b'a'..=b'z' => CHAR_LOWER_BASE + (c - b'a') as u16,
+        b'-' => CHAR_DASH,
+        _ => CHAR_NONE,
     }
 }
 /// The element/code/damage row: the code letter, the element icon and the
@@ -181,13 +195,106 @@ const ELEMENT_PALETTE: usize = 12; // provenance: derived -- six BGR555 colours,
 /// after the empty icon, the 28 slot code glyphs, the OK box, the stack
 /// frame, the regular-chip mark, and the message card with its palette.
 /// provenance: derived -- tools/custom_export.py's own fixed asset layout.
+/// Pieces of the slot-art section: one empty icon, the 28 code glyphs,
+/// the OK box, the stack frame, the regular-chip mark and the message card.
+const TILE_BYTES: usize = 32; // provenance: derived -- one 8x8 4bpp tile is 32 bytes
+const SLOT_ICON_LEN: usize = 0x80; // provenance: derived -- tools/custom_export.py's own fixed asset layout (four 4bpp tiles)
+const CODE_GLYPH_COUNT: usize = 28; // provenance: derived -- tools/custom_export.py's own fixed asset layout (A-Z, '*' and the blank)
+const CODE_GLYPH_LEN: usize = 0x40; // provenance: derived -- tools/custom_export.py's own fixed asset layout (two tiles per glyph)
+const OK_BOX_LEN: usize = 0x100; // provenance: derived -- tools/custom_export.py's own fixed asset layout (eight tiles)
+const MESSAGE_TILES: usize = 42; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const CARD_DIGIT_GLYPHS: usize = 10; // provenance: derived -- tools/custom_export.py's own fixed asset layout (0-9)
+const ELEMENT_ICON_LEN: usize = 0x80; // provenance: derived -- tools/custom_export.py's own fixed asset layout (a 16x16 icon is four tiles)
+/// Cumulative offsets of each piece inside the slot-art section.
+const SLOT_CODE_GLYPHS_AT: usize = SLOT_ICON_LEN; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const SLOT_OK_AT: usize = SLOT_CODE_GLYPHS_AT + CODE_GLYPH_COUNT * CODE_GLYPH_LEN; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const SLOT_STACK_AT: usize = SLOT_OK_AT + OK_BOX_LEN; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const SLOT_MARK_AT: usize = SLOT_STACK_AT + SLOT_ICON_LEN; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const SLOT_MESSAGE_AT: usize = SLOT_MARK_AT + SLOT_ICON_LEN; // provenance: derived -- tools/custom_export.py's own fixed asset layout
 const fn card_fonts_at(slot_art: usize) -> usize {
-    slot_art + 0x80 + 28 * 0x40 + 0x200 + 42 * 32 + 32
+    slot_art + SLOT_MESSAGE_AT + MESSAGE_TILES * TILE_BYTES + PALETTE_VARIANT_BYTES
 }
 const REGION_OK: usize = 25; // provenance: derived -- byte_8027B2C's own record order
 const REGION_STACK: usize = 26; // provenance: derived -- byte_8027B2C's own record order
 /// The blank code glyph, dword_86E591C[0x1b] (sub_8028204).
 const CODE_NONE: usize = 0x1b; // provenance: derived -- dword_86E591C[0x1b], sub_8028204
+
+/// Byte sizes in the BNCW asset header and sections (tools/custom_export.py's
+/// own layout): every section but the map starts with a length word, and the
+/// six section pointers sit at these header offsets.
+const HDR_WORD_LEN: usize = 4; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_TILES: usize = 0x08; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_MAP: usize = 0x0c; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_PALETTE: usize = 0x10; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_REGIONS: usize = 0x14; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_CURSOR: usize = 0x18; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const HDR_SLOT_ART: usize = 0x1c; // provenance: derived -- tools/custom_export.py's own BNCW layout
+/// One patch record (byte_8027B2C) is eight bytes: x, y, w, h, bank and the
+/// column-major flag, then two unused.
+const REGION_RECORD_LEN: usize = 8; // provenance: derived -- byte_8027B2C's own record size
+const RF_X: usize = 0; // provenance: derived -- byte_8027B2C's own field order
+const RF_Y: usize = 1; // provenance: derived -- byte_8027B2C's own field order
+const RF_W: usize = 2; // provenance: derived -- byte_8027B2C's own field order
+const RF_H: usize = 3; // provenance: derived -- byte_8027B2C's own field order
+const RF_BANK: usize = 4; // provenance: derived -- byte_8027B2C's own field order
+const RF_ORDER: usize = 5; // provenance: derived -- byte_8027B2C's own field order
+const RECORD_COLUMN_MAJOR: u8 = 1; // provenance: derived -- byte_8027B2C's own flag value
+/// The map section stores its w,h words ahead of the u16 entries.
+const MAP_HEADER_LEN: usize = 8; // provenance: derived -- tools/custom_export.py's own BNCW layout
+const MAP_ENTRY_BYTES: usize = 2; // provenance: derived -- one u16 tilemap entry per cell
+/// One 16-colour BGR555 bank; the palette section holds five: three window
+/// variants, then the shared icon bank and its dimmed copy.
+const PALETTE_VARIANT_BYTES: usize = 32; // provenance: derived -- sixteen BGR555 colours, 2 bytes each
+const PALETTE_VARIANTS: usize = 5; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+const PAL_ENTRY_BYTES: usize = 2; // provenance: derived -- one BGR555 colour
+/// The cursor's blink phases, and the two tiles they take.
+const CURSOR_FRAMES: usize = 2; // provenance: derived -- the bracket's two blink phases (see Custom's own doc)
+const CURSOR_TILES_LEN: usize = CURSOR_FRAMES * TILE_BYTES; // provenance: derived -- tools/custom_export.py's own fixed asset layout
+/// The BNTF font's glyph-table pointer inside its header, and the
+/// colour-added copy being the font's second half.
+const BNTF_TABLE_OFF: usize = 0x08; // provenance: derived -- tools/font_export.py's own BNTF layout
+const FONT_HALVES: usize = 2; // provenance: derived -- tools/font_export.py's own BNTF layout (see new's own comment)
+/// BG tilemap entry fields (see set_column).
+const TILE_INDEX_MASK: u16 = 0x3ff; // provenance: derived -- GBA BG tilemap bits 0-9 are the tile index
+const TILE_HFLIP_BIT: u16 = 0x400; // provenance: derived -- GBA BG tilemap bit 10 flips horizontally
+const TILE_VFLIP_BIT: u16 = 0x800; // provenance: derived -- GBA BG tilemap bit 11 flips vertically
+const TILE_PALETTE_SHIFT: u32 = 12; // provenance: derived -- GBA BG tilemap bits 12-15 are the palette bank
+/// Tile 0 is the blank every column starts and ends as (byte_8026C88).
+const FIRST_TILE: u16 = 0; // provenance: derived -- byte_8026C88, sub_8026BF4 (see vacate's doc)
+/// One BG tile is 8px; the slide-in stages columns two tiles ahead.
+const TILE_PX: i32 = 8; // provenance: derived -- one BG tile is 8x8 pixels
+const REVEAL_MARGIN: i32 = 16; // provenance: derived -- sub_8026B04 stages two tiles ahead (see reveal's doc)
+/// Scroll positions: fully open is 0, and the layer never scrolls vertically.
+const SCROLL_OPEN: i32 = 0; // provenance: derived -- sub_8026B04's slide counter reaches 0 when fully open
+const SCROLL_Y: i32 = 0; // provenance: derived -- the window slides horizontally only
+/// Picks stack one 2x2 icon per row; the frame alternates two tiles with its
+/// own pair for the top two rows, one column either side of the stack.
+const STACK_CELL: usize = 2; // provenance: derived -- sub_80281D4 per-row layout, asm03_0.s:3942
+const STACK_FRAME_HEAD_ROWS: usize = 2; // provenance: derived -- read off a live menu (see draw_stack_frame's doc)
+const STACK_FRAME_HEAD_TILE: u16 = 2; // provenance: derived -- read off a live menu (see draw_stack_frame's doc)
+const STACK_FRAME_PAIR: usize = 2; // provenance: derived -- read off a live menu (see draw_stack_frame's doc)
+const STACK_FRAME_OFFSET: usize = 1; // provenance: derived -- the frame sits one column either side of the stack
+/// The damage row's decimal digits.
+const DECIMAL_BASE: u16 = 10; // provenance: derived -- decimal digits, one glyph each
+/// The fixture's first pick sets the name rule (sub_8028E4C).
+const FIRST_PICK: usize = 0; // provenance: derived -- sub_8028E4C compares against the first pick
+/// Cursor-ring ends (dword_802A7CC): slot 0 is first, slot 4 last, then OK.
+const FIRST_SLOT: u8 = 0; // provenance: derived -- dword_802A7CC, asm03_0.s:9062
+const LAST_SLOT: u8 = 4; // provenance: derived -- dword_802A7CC, asm03_0.s:9062 (OFFERED - 1)
+/// Left/right waiting out CURSOR_DELAY (custMenuSomeHandler_8028B74).
+const MOVE_RIGHT: i8 = 1; // provenance: derived -- custMenuSomeHandler_8028B74, asm03_0.s:5160
+const MOVE_LEFT: i8 = -1; // provenance: derived -- custMenuSomeHandler_8028B74, asm03_0.s:5160
+/// Bank 13's colours: the palette section's variant 0.
+const PANEL_VARIANT: usize = 0; // provenance: peeked -- variant 0 is the real ROM's bank 13 (see open's comment)
+/// Cursor-bracket origins in screen pixels: a slot sits at
+/// (8 + 16 * index, 0x68), OK at (0x58, 0x6b), each less 3 per axis
+/// (sub_8028894, sub_80288D0, asm03_0.s:4843-4884; see show's doc).
+const SLOT_ORIGIN_X: i32 = 8; // provenance: derived -- sub_8028894, asm03_0.s:4843-4884
+const SLOT_PITCH_X: i32 = 16; // provenance: derived -- sub_8028894, asm03_0.s:4843-4884
+const SLOT_ORIGIN_Y: i32 = 0x68; // provenance: derived -- sub_8028894, asm03_0.s:4843-4884
+const BRACKET_INSET: i32 = 3; // provenance: derived -- sub_8028894/sub_80288D0, asm03_0.s:4843-4884
+const OK_ORIGIN_X: i32 = 0x58; // provenance: derived -- sub_80288D0, asm03_0.s:4843-4884
+const OK_ORIGIN_Y: i32 = 0x6b; // provenance: derived -- sub_80288D0, asm03_0.s:4843-4884
 
 /// One bracket corner: offset from the cursor origin and its flips, per
 /// blink phase. The game's tables (byte_80288B0 for a slot, byte_80288E4
@@ -200,43 +307,49 @@ struct Corner {
     vflip: bool,
 }
 
+/// The blink table's flag bits: 0x10 flips horizontally, 0x20 vertically
+/// (see Corner's own doc above).
+const BRACKET_HFLIP: u8 = 0x10; // provenance: derived -- byte_80288B0/byte_80288E4 flag word
+const BRACKET_VFLIP: u8 = 0x20; // provenance: derived -- byte_80288B0/byte_80288E4 flag word
+const BRACKET_NONE: u8 = 0x00; // provenance: derived -- byte_80288B0/byte_80288E4 flag word (no flip bits)
+const BRACKET_CORNERS: usize = 4; // provenance: derived -- byte_80288B0 holds four corner words per blink phase
 const fn corner(dx: i32, dy: i32, flags: u8) -> Corner {
     Corner {
         dx,
         dy,
-        hflip: flags & 0x10 != 0,
-        vflip: flags & 0x20 != 0,
+        hflip: flags & BRACKET_HFLIP != BRACKET_NONE,
+        vflip: flags & BRACKET_VFLIP != BRACKET_NONE,
     }
 }
 
 // provenance: derived -- byte_80288B0, asm03_0.s:4860 (see the doc comment above)
-const SLOT_BRACKET: [[Corner; 4]; 2] = [
+const SLOT_BRACKET: [[Corner; BRACKET_CORNERS]; CURSOR_FRAMES] = [
     [
-        corner(0, 0, 0),
-        corner(0xe, 0, 0x10),
-        corner(0xe, 0xe, 0x30),
-        corner(0, 0xe, 0x20),
+        corner(0, 0, 0), // canon: byte_80288B0 slot-bracket phase 0, top-left
+        corner(0xe, 0, BRACKET_HFLIP), // canon: byte_80288B0 slot-bracket phase 0, top-right
+        corner(0xe, 0xe, BRACKET_HFLIP | BRACKET_VFLIP), // canon: byte_80288B0 slot-bracket phase 0, bottom-right
+        corner(0, 0xe, BRACKET_VFLIP), // canon: byte_80288B0 slot-bracket phase 0, bottom-left
     ],
     [
-        corner(1, 1, 0),
-        corner(0xc, 1, 0x10),
-        corner(0xc, 0xc, 0x30),
-        corner(1, 0xc, 0x20),
+        corner(1, 1, 0), // canon: byte_80288B0 slot-bracket phase 1, top-left
+        corner(0xc, 1, BRACKET_HFLIP), // canon: byte_80288B0 slot-bracket phase 1, top-right
+        corner(0xc, 0xc, BRACKET_HFLIP | BRACKET_VFLIP), // canon: byte_80288B0 slot-bracket phase 1, bottom-right
+        corner(1, 0xc, BRACKET_VFLIP), // canon: byte_80288B0 slot-bracket phase 1, bottom-left
     ],
 ];
 // provenance: derived -- byte_80288E4, asm03_0.s:4878 (see the doc comment above)
-const OK_BRACKET: [[Corner; 4]; 2] = [
+const OK_BRACKET: [[Corner; BRACKET_CORNERS]; CURSOR_FRAMES] = [
     [
-        corner(1, 2, 0),
-        corner(0x16, 2, 0x10),
-        corner(0x16, 0x14, 0x30),
-        corner(1, 0x14, 0x20),
+        corner(1, 2, 0), // canon: byte_80288E4 OK-bracket phase 0, top-left
+        corner(0x16, 2, BRACKET_HFLIP), // canon: byte_80288E4 OK-bracket phase 0, top-right
+        corner(0x16, 0x14, BRACKET_HFLIP | BRACKET_VFLIP), // canon: byte_80288E4 OK-bracket phase 0, bottom-right
+        corner(1, 0x14, BRACKET_VFLIP), // canon: byte_80288E4 OK-bracket phase 0, bottom-left
     ],
     [
-        corner(3, 4, 0),
-        corner(0x14, 4, 0x10),
-        corner(0x14, 0x12, 0x30),
-        corner(3, 0x12, 0x20),
+        corner(3, 4, 0), // canon: byte_80288E4 OK-bracket phase 1, top-left
+        corner(0x14, 4, BRACKET_HFLIP), // canon: byte_80288E4 OK-bracket phase 1, top-right
+        corner(0x14, 0x12, BRACKET_HFLIP | BRACKET_VFLIP), // canon: byte_80288E4 OK-bracket phase 1, bottom-right
+        corner(3, 0x12, BRACKET_VFLIP), // canon: byte_80288E4 OK-bracket phase 1, bottom-left
     ],
 ];
 
@@ -336,7 +449,7 @@ pub struct Custom<'a> {
     revealed: usize,
     phase: Phase,
     /// The two blink phases of the corner tile.
-    cursor: [SpriteVram; 2],
+    cursor: [SpriteVram; CURSOR_FRAMES],
     /// The regular-chip mark, which stands above the pick stack the whole
     /// time the window is up.
     mark: SpriteVram,
@@ -364,70 +477,71 @@ pub struct Custom<'a> {
 
 impl CustomAssets {
     pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
-        assert_eq!(&data[0..4], MAGIC, "not a BNCW asset");
-        let at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
-        let (t, m, p, r, c, a) = (at(0x08), at(0x0c), at(0x10), at(0x14), at(0x18), at(0x1c));
+        assert_eq!(&data[..MAGIC.len()], MAGIC, "not a BNCW asset");
+        let at = |o: usize| u32::from_le_bytes(data[o..o + HDR_WORD_LEN].try_into().unwrap()) as usize;
+        let (t, m, p, r, c, a) = (at(HDR_TILES), at(HDR_MAP), at(HDR_PALETTE), at(HDR_REGIONS), at(HDR_CURSOR), at(HDR_SLOT_ART));
         let len = at(t);
-        let tiles = &data[t + 4..t + 4 + len];
-        let (w, h) = (at(m), at(m + 4));
+        let tiles = &data[t + HDR_WORD_LEN..t + HDR_WORD_LEN + len];
+        let (w, h) = (at(m), at(m + HDR_WORD_LEN));
         assert_eq!((w, h), (MAP_W, MAP_H), "unexpected chip window map size");
-        let regions = (0..at(r))
+        let regions = (0..at(r)) // unnamed: one Region per patch record
             .map(|i| {
-                let e = &data[r + 4 + i * 8..r + 12 + i * 8];
+                let s = r + HDR_WORD_LEN + i * REGION_RECORD_LEN;
+                let e = &data[s..s + REGION_RECORD_LEN];
                 Region {
-                    x: e[0] as usize,
-                    y: e[1] as usize,
-                    w: e[2] as usize,
-                    h: e[3] as usize,
-                    bank: e[4],
-                    column_major: e[5] == 1,
+                    x: e[RF_X] as usize,
+                    y: e[RF_Y] as usize,
+                    w: e[RF_W] as usize,
+                    h: e[RF_H] as usize,
+                    bank: e[RF_BANK],
+                    column_major: e[RF_ORDER] == RECORD_COLUMN_MAJOR,
                 }
             })
             .collect();
         let tileset = |bytes: &'static [u8]| {
-            assert_eq!(bytes.as_ptr() as usize % 4, 0, "tile data must be word aligned");
+            assert_eq!(bytes.as_ptr() as usize % HDR_WORD_LEN, 0, "tile data must be word aligned"); // unnamed: a zero remainder means word aligned
             // SAFETY: alignment asserted; the exporter emits whole tiles.
             unsafe { TileSet::new(bytes, TileFormat::FourBpp) }
         };
         Self {
             tiles: tileset(tiles),
-            map: &data[m + 8..m + 8 + w * h * 2],
+            map: &data[m + MAP_HEADER_LEN..m + MAP_HEADER_LEN + w * h * MAP_ENTRY_BYTES],
             // Three variants from the window's own data, then the icon
             // bank and its dimmed copy the exporter appends.
-            palette: &data[p..p + 160],
+            palette: &data[p..p + PALETTE_VARIANTS * PALETTE_VARIANT_BYTES],
             regions,
-            cursor_tiles: &data[c..c + 64],
-            cursor_palette: read_palette(&data[c + 64..c + 96]),
-            cursor_obj_palette: read_palette(&data[c + 96..c + 128]),
-            regular_mark: &data[a + 0x80 + 28 * 0x40 + 0x180..a + 0x80 + 28 * 0x40 + 0x200],
-            message: tileset(&data[a + 0x80 + 28 * 0x40 + 0x200..a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32]),
+            cursor_tiles: &data[c..c + CURSOR_TILES_LEN],
+            cursor_palette: read_palette(&data[c + CURSOR_TILES_LEN..c + CURSOR_TILES_LEN + PALETTE_VARIANT_BYTES]),
+            cursor_obj_palette: read_palette(&data[c + CURSOR_TILES_LEN + PALETTE_VARIANT_BYTES..c + CURSOR_TILES_LEN + CURSOR_TILES_LEN]),
+            regular_mark: &data[a + SLOT_MARK_AT..a + SLOT_MESSAGE_AT],
+            message: tileset(&data[a + SLOT_MESSAGE_AT..a + SLOT_MESSAGE_AT + MESSAGE_TILES * TILE_BYTES]),
             message_palette: read_palette(
-                &data[a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32
-                    ..a + 0x80 + 28 * 0x40 + 0x200 + 42 * 32 + 32],
+                &data[a + SLOT_MESSAGE_AT + MESSAGE_TILES * TILE_BYTES
+                    ..a + SLOT_MESSAGE_AT + MESSAGE_TILES * TILE_BYTES + PALETTE_VARIANT_BYTES],
             ),
-            empty_icon: tileset(&data[a..a + 0x80]),
-            code_glyphs: tileset(&data[a + 0x80..a + 0x80 + 28 * 0x40]),
-            ok_box: tileset(&data[a + 0x80 + 28 * 0x40..a + 0x80 + 28 * 0x40 + 0x100]),
+            empty_icon: tileset(&data[a..a + SLOT_ICON_LEN]),
+            code_glyphs: tileset(&data[a + SLOT_CODE_GLYPHS_AT..a + SLOT_OK_AT]),
+            ok_box: tileset(&data[a + SLOT_OK_AT..a + SLOT_STACK_AT]),
             stack_frame: tileset(
-                &data[a + 0x80 + 28 * 0x40 + 0x100..a + 0x80 + 28 * 0x40 + 0x180],
+                &data[a + SLOT_STACK_AT..a + SLOT_MARK_AT],
             ),
-            card_letters: tileset(&data[card_fonts_at(a)..card_fonts_at(a) + 28 * 0x40]),
+            card_letters: tileset(&data[card_fonts_at(a)..card_fonts_at(a) + CODE_GLYPH_COUNT * CODE_GLYPH_LEN]),
             card_digits: tileset(
-                &data[card_fonts_at(a) + 28 * 0x40..card_fonts_at(a) + 38 * 0x40],
+                &data[card_fonts_at(a) + CODE_GLYPH_COUNT * CODE_GLYPH_LEN..card_fonts_at(a) + (CODE_GLYPH_COUNT + CARD_DIGIT_GLYPHS) * CODE_GLYPH_LEN],
             ),
             elements: tileset(
-                &data[card_fonts_at(a) + 38 * 0x40..card_fonts_at(a) + 38 * 0x40 + 11 * 0x80],
+                &data[card_fonts_at(a) + (CODE_GLYPH_COUNT + CARD_DIGIT_GLYPHS) * CODE_GLYPH_LEN..card_fonts_at(a) + (CODE_GLYPH_COUNT + CARD_DIGIT_GLYPHS) * CODE_GLYPH_LEN + ELEMENTS * ELEMENT_ICON_LEN],
             ),
             element_palettes: {
-                let o = card_fonts_at(a) + 38 * 0x40 + 11 * 0x80;
+                let o = card_fonts_at(a) + (CODE_GLYPH_COUNT + CARD_DIGIT_GLYPHS) * CODE_GLYPH_LEN + ELEMENTS * ELEMENT_ICON_LEN;
                 &data[o..o + ELEMENTS * ELEMENT_PALETTE]
             },
             font: {
-                assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
-                let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
-                let len = u32::from_le_bytes(font[fo..fo + 4].try_into().unwrap()) as usize;
+                assert_eq!(&font[..FONT_MAGIC.len()], FONT_MAGIC, "not a BNTF asset");
+                let fo = u32::from_le_bytes(font[BNTF_TABLE_OFF..BNTF_TABLE_OFF + HDR_WORD_LEN].try_into().unwrap()) as usize;
+                let len = u32::from_le_bytes(font[fo..fo + HDR_WORD_LEN].try_into().unwrap()) as usize;
                 // The second half is the colour-added copy.
-                tileset(&font[fo + 4 + len / 2..fo + 4 + len])
+                tileset(&font[fo + HDR_WORD_LEN + len / FONT_HALVES..fo + HDR_WORD_LEN + len])
             },
         }
     }
@@ -448,17 +562,17 @@ impl CustomAssets {
 
     /// One of the window's colour variants, or the two icon banks after them.
     pub fn palette(&self, variant: usize) -> Palette16 {
-        read_palette(&self.palette[variant * 32..variant * 32 + 32])
+        read_palette(&self.palette[variant * PALETTE_VARIANT_BYTES..variant * PALETTE_VARIANT_BYTES + PALETTE_VARIANT_BYTES])
     }
 
     /// The shared icon bank carrying this element's own last six entries,
     /// which is what the real ROM has in bank 11 while the card shows it.
     fn icon_palette(&self, element: u8) -> Palette16 {
-        let mut bytes = [0u8; 32];
-        let base = SHARED_ICON_VARIANT * 32;
-        let keep = 32 - ELEMENT_PALETTE;
+        let mut bytes = [0u8; PALETTE_VARIANT_BYTES]; // unnamed: zeroed scratch buffer
+        let base = SHARED_ICON_VARIANT * PALETTE_VARIANT_BYTES;
+        let keep = PALETTE_VARIANT_BYTES - ELEMENT_PALETTE;
         bytes[..keep].copy_from_slice(&self.palette[base..base + keep]);
-        let e = (element as usize).min(ELEMENTS - 1) * ELEMENT_PALETTE;
+        let e = (element as usize).min(ELEMENTS - 1) * ELEMENT_PALETTE; // unnamed: clamp to the last element
         bytes[keep..].copy_from_slice(&self.element_palettes[e..e + ELEMENT_PALETTE]);
         read_palette(&bytes)
     }
@@ -483,11 +597,11 @@ impl CustomAssets {
         gfx: &Graphics,
         fixture: Option<crate::fixture::Fixture>,
     ) -> Custom<'_> {
-        bg.set_scroll_pos((SLIDE_FROM, 0));
+        bg.set_scroll_pos((SLIDE_FROM, SCROLL_Y));
         let palette = PaletteVramSingle::try_allocate_shared(&self.cursor_obj_palette)
             .expect("cursor palette should fit in vram");
-        let cursor = [0, 1].map(|i| {
-            DynamicSprite16::from_bytes(Size::S8x8, &self.cursor_tiles[i * 32..i * 32 + 32])
+        let cursor = [0, 1].map(|i| { // unnamed: the two blink phases
+            DynamicSprite16::from_bytes(Size::S8x8, &self.cursor_tiles[i * TILE_BYTES..i * TILE_BYTES + TILE_BYTES])
                 .to_vram(palette.clone())
         });
         // The mark shares the cursor's object palette, as the real ROM's OAM
@@ -500,15 +614,15 @@ impl CustomAssets {
         }
         let mut custom = Custom {
             assets: self,
-            revealed: 0,
+            revealed: 0, // unnamed: no columns drawn yet
             phase: Phase::Opening { x: SLIDE_FROM },
             cursor,
             mark,
-            cursor_at: 0,
-            pending_move: 0,
-            move_in: 0,
+            cursor_at: FIRST_SLOT,
+            pending_move: 0, // unnamed: no direction waiting
+            move_in: 0, // unnamed: no delayed move counting down
             pending_palettes: Vec::new(),
-            frames: 0,
+            frames: 0, // unnamed: the open-window frame counter starts here
             slots,
             picks: Vec::new(),
             pictured: None,
@@ -519,7 +633,7 @@ impl CustomAssets {
         // bank 9. Setting variant 0 into bank 9 is what made the frame render
         // salmon where the real ROM's is grey.
         gfx.set_background_palette(BANK, &self.cursor_palette);
-        gfx.set_background_palette(PANEL_BANK, &self.palette(0));
+        gfx.set_background_palette(PANEL_BANK, &self.palette(PANEL_VARIANT));
         gfx.set_background_palette(ICON_BANK, &self.palette(SHARED_ICON_VARIANT));
         gfx.set_background_palette(DIM_BANK, &self.palette(DIM_ICON_VARIANT));
         for (i, slot) in custom.slots.iter().enumerate() {
@@ -534,21 +648,21 @@ impl CustomAssets {
         // present -- see their own doc in fixture.rs for why they are not
         // FIXTURE.md fields.
         match fixture {
-            Some(f) if f.window_pick_count > 0 => {
+            Some(f) if f.window_pick_count > 0 => { // unnamed: the fixture carries picks
                 custom.picks.push(f.window_pick_slot as usize);
                 custom.cursor_at = f.window_cursor;
             }
             Some(_) => {}
             None => {}
         }
-        for slot in 0..OFFERED {
+        for slot in 0..OFFERED { // unnamed: every offered slot
             custom.draw_slot(bg, slot);
         }
         for slot in OFFERED..SLOT_CELLS {
             if slot < SLOT_CELLS_SHOWN {
                 custom.fill(bg, region_slot_icon(slot), &self.empty_icon, Some(ICON_BANK));
                 let r = self.regions[region_slot_code(slot)];
-                custom.fill_from(bg, r, &self.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+                custom.fill_from(bg, r, &self.code_glyphs, (CODE_NONE * GLYPH_TILES as usize) as u16, r.bank);
             } else {
                 custom.fill_flat(bg, region_slot_icon(slot));
                 custom.fill_flat(bg, region_slot_code(slot));
@@ -565,10 +679,10 @@ impl CustomAssets {
 }
 
 fn read_palette(bytes: &[u8]) -> Palette16 {
-    let mut colours = [Rgb15::new(0); 16];
+    let mut colours = [Rgb15::new(0); 16]; // unnamed: overwritten entry by entry below
     for (i, slot) in colours.iter_mut().enumerate() {
         *slot = Rgb15::new(u16::from_le_bytes(
-            bytes[i * 2..i * 2 + 2].try_into().unwrap(),
+            bytes[i * PAL_ENTRY_BYTES..i * PAL_ENTRY_BYTES + PAL_ENTRY_BYTES].try_into().unwrap(),
         ));
     }
     Palette16::new(colours)
@@ -581,9 +695,9 @@ impl Custom<'_> {
     /// column more than two tiles past the edge would otherwise wrap round
     /// and show at the right of the screen.
     fn reveal(&mut self, bg: &mut RegularBackground, x: i32) {
-        while self.revealed < MAP_W && (self.revealed as i32) * 8 + 16 >= x {
+        while self.revealed < MAP_W && (self.revealed as i32) * TILE_PX + REVEAL_MARGIN >= x {
             self.set_column(bg, self.revealed, true);
-            self.revealed += 1;
+            self.revealed += 1; // unnamed: one more column drawn
         }
     }
 
@@ -604,20 +718,20 @@ impl Custom<'_> {
     /// copy of the window TODO F3 measures staying on the field for the
     /// whole battle.
     fn vacate(&mut self, bg: &mut RegularBackground, x: i32) {
-        while self.revealed > 0 && (MAP_W - self.revealed + 1) as i32 * 8 <= x {
+        while self.revealed > 0 && (MAP_W - self.revealed + 1) as i32 * TILE_PX <= x { // unnamed: columns fully past the left edge
             let col = MAP_W - self.revealed;
-            self.revealed -= 1;
+            self.revealed -= 1; // unnamed: one more column cleared
             self.set_column(bg, col, false);
         }
     }
 
     fn set_column(&mut self, bg: &mut RegularBackground, col: usize, visible: bool) {
-        for row in 0..MAP_H {
+        for row in 0..MAP_H { // unnamed: every map row
             let i = row * MAP_W + col;
             let e = if visible {
-                u16::from_le_bytes(self.assets.map[i * 2..i * 2 + 2].try_into().unwrap())
+                u16::from_le_bytes(self.assets.map[i * MAP_ENTRY_BYTES..i * MAP_ENTRY_BYTES + MAP_ENTRY_BYTES].try_into().unwrap())
             } else {
-                0
+                FIRST_TILE
             };
             // Cells inside the drawn regions are the renderers' and stay put
             // once revealed; the template only fills them when the column
@@ -629,8 +743,8 @@ impl Custom<'_> {
                 (col as i32, row as i32),
                 &self.assets.tiles,
                 TileSetting::new(
-                    e & 0x3ff,
-                    TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
+                    e & TILE_INDEX_MASK,
+                    TileEffect::new(e & TILE_HFLIP_BIT != 0, e & TILE_VFLIP_BIT != 0, (e >> TILE_PALETTE_SHIFT) as u8), // unnamed: a clear bit means no flip
                 ),
             );
         }
@@ -648,11 +762,11 @@ impl Custom<'_> {
     /// tiles blank it.
     fn fill(&mut self, bg: &mut RegularBackground, region: usize, tiles: &TileSet, bank: Option<u8>) {
         let r = self.assets.regions[region];
-        self.fill_from(bg, r, tiles, 0, bank.unwrap_or(r.bank));
+        self.fill_from(bg, r, tiles, FIRST_TILE, bank.unwrap_or(r.bank));
     }
 
     fn fill_from(&mut self, bg: &mut RegularBackground, r: Region, tiles: &TileSet, first: u16, bank: u8) {
-        for k in 0..r.w * r.h {
+        for k in 0..r.w * r.h { // unnamed: cells from the first
             let (dx, dy) = if r.column_major {
                 (k / r.h, k % r.h)
             } else {
@@ -670,8 +784,8 @@ impl Custom<'_> {
     /// for the slot cells it does not show.
     fn fill_flat(&mut self, bg: &mut RegularBackground, region: usize) {
         let r = self.assets.regions[region];
-        for dy in 0..r.h {
-            for dx in 0..r.w {
+        for dy in 0..r.h { // unnamed: cells from the top
+            for dx in 0..r.w { // unnamed: cells from the left
                 bg.set_tile(
                     ((r.x + dx) as i32, (r.y + dy) as i32),
                     &self.assets.tiles,
@@ -685,12 +799,12 @@ impl Custom<'_> {
     fn blank(&mut self, bg: &mut RegularBackground, region: usize) {
         let r = self.assets.regions[region];
         let tiles = &self.assets.tiles;
-        for dy in 0..r.h {
-            for dx in 0..r.w {
+        for dy in 0..r.h { // unnamed: cells from the top
+            for dx in 0..r.w { // unnamed: cells from the left
                 bg.set_tile(
                     ((r.x + dx) as i32, (r.y + dy) as i32),
                     tiles,
-                    TileSetting::new(0, TileEffect::new(false, false, r.bank)),
+                    TileSetting::new(FIRST_TILE, TileEffect::new(false, false, r.bank)),
                 );
             }
         }
@@ -699,7 +813,7 @@ impl Custom<'_> {
     /// Repaint every offered slot. A pick changes which of the OTHERS may
     /// still be taken, so they all have to be redrawn, not just the one.
     fn draw_offered(&mut self, bg: &mut RegularBackground) {
-        for slot in 0..OFFERED {
+        for slot in 0..OFFERED { // unnamed: every offered slot
             self.draw_slot(bg, slot);
         }
     }
@@ -715,7 +829,7 @@ impl Custom<'_> {
                 self.fill(bg, region_slot_icon(slot), &icon, Some(bank));
                 let code = offer.code as usize;
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(bg, r, &assets.code_glyphs, (code * 2) as u16, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (code * GLYPH_TILES as usize) as u16, r.bank);
             }
             // A PICKED slot keeps its code letter and loses only its icon.
             // Read off the real ROM: its fifth slot shows the empty-cell art
@@ -725,12 +839,12 @@ impl Custom<'_> {
             Some(offer) => {
                 self.fill(bg, region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(bg, r, &assets.code_glyphs, (offer.code as u16) * 2, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (offer.code as u16) * GLYPH_TILES, r.bank);
             }
             None => {
                 self.fill(bg, region_slot_icon(slot), &assets.empty_icon, Some(ICON_BANK));
                 let r = assets.regions[region_slot_code(slot)];
-                self.fill_from(bg, r, &assets.code_glyphs, (CODE_NONE * 2) as u16, r.bank);
+                self.fill_from(bg, r, &assets.code_glyphs, (CODE_NONE * GLYPH_TILES as usize) as u16, r.bank);
             }
         }
     }
@@ -740,8 +854,8 @@ impl Custom<'_> {
     fn fill_card_text_background(&mut self, bg: &mut RegularBackground) {
         for index in TEXT_REGIONS {
             let r = self.assets.regions[index];
-            for dy in 0..r.h {
-                for dx in 0..r.w {
+            for dy in 0..r.h { // unnamed: cells from the top
+                for dx in 0..r.w { // unnamed: cells from the left
                     bg.set_tile(
                         ((r.x + dx) as i32, (r.y + dy) as i32),
                         &self.assets.tiles,
@@ -761,9 +875,9 @@ impl Custom<'_> {
     fn draw_card_name(&mut self, bg: &mut RegularBackground, name: &str) {
         let r = self.assets.regions[REGION_NAME];
         let bytes = name.as_bytes();
-        for col in 0..r.w {
+        for col in 0..r.w { // unnamed: glyph columns from the left
             let g = char_code(bytes.get(col).copied().unwrap_or(b' '));
-            for half in 0..r.h {
+            for half in 0..r.h { // unnamed: top tile over bottom tile
                 bg.set_tile(
                     ((r.x + col) as i32, (r.y + half) as i32),
                     &self.assets.font,
@@ -798,10 +912,10 @@ impl Custom<'_> {
         );
         let r = assets.regions[REGION_DAMAGE];
         let mut n = power;
-        for col in (0..r.w).rev() {
-            let digit = (n % 10) as u16;
-            let blank = power == 0 || (n == 0 && col + 1 != r.w);
-            for half in 0..r.h {
+        for col in (0..r.w).rev() { // unnamed: digits right-aligned, from the last cell
+            let digit = (n % DECIMAL_BASE) as u16;
+            let blank = power == 0 || (n == 0 && col + 1 != r.w); // unnamed: chipless power and leading cells stay interior
+            for half in 0..r.h { // unnamed: top tile over bottom tile
                 let (tiles, tile) = if blank {
                     (&assets.tiles, CARD_INTERIOR_TILE)
                 } else {
@@ -813,7 +927,7 @@ impl Custom<'_> {
                     TileSetting::new(tile, TileEffect::new(false, false, r.bank)),
                 );
             }
-            n /= 10;
+            n /= DECIMAL_BASE;
         }
     }
 
@@ -822,7 +936,7 @@ impl Custom<'_> {
     /// template must not paint over them as the window slides in.
     fn in_stack_frame(&self, col: usize, row: usize) -> bool {
         let stack = self.assets.regions[REGION_STACK];
-        (col == (stack.x - 1) as usize || col == (stack.x + stack.w) as usize)
+        (col == stack.x - STACK_FRAME_OFFSET || col == (stack.x + stack.w) as usize)
             && (stack.y as usize..(stack.y + stack.h) as usize).contains(&row)
     }
 
@@ -832,17 +946,17 @@ impl Custom<'_> {
     fn draw_stack_frame(&mut self, bg: &mut RegularBackground) {
         let stack = self.assets.regions[REGION_STACK];
         let tiles = &self.assets.stack_frame;
-        for row in 0..stack.h {
+        for row in 0..stack.h { // unnamed: frame cells from the top
             // The right column is the left one MIRRORED: the real ROM's map
             // has the same two tiles there with h-flip set.
-            for (col, hflip) in [(stack.x - 1, false), (stack.x + stack.w, true)] {
+            for (col, hflip) in [(stack.x - STACK_FRAME_OFFSET, false), (stack.x + stack.w, true)] {
                 bg.set_tile(
                     (col as i32, (stack.y + row) as i32),
                     tiles,
                     // The top two rows have their own pair; the rest
                     // alternate the first two down the column.
                     TileSetting::new(
-                        if row < 2 { 2 + row as u16 } else { (row % 2) as u16 },
+                        if row < STACK_FRAME_HEAD_ROWS { STACK_FRAME_HEAD_TILE + row as u16 } else { (row % STACK_FRAME_PAIR) as u16 },
                         TileEffect::new(hflip, false, BANK),
                     ),
                 );
@@ -855,21 +969,21 @@ impl Custom<'_> {
     fn draw_stack(&mut self, bg: &mut RegularBackground) {
         let assets = self.assets;
         let stack = assets.regions[REGION_STACK];
-        for row in 0..HAND_SIZE {
+        for row in 0..HAND_SIZE { // unnamed: one icon per pick row
             let cell = Region {
                 x: stack.x,
-                y: stack.y + row * 2,
-                w: 2,
-                h: 2,
+                y: stack.y + row * STACK_CELL,
+                w: STACK_CELL,
+                h: STACK_CELL,
                 bank: stack.bank,
                 column_major: false,
             };
             match self.picks.get(row).and_then(|&slot| self.slots[slot]) {
                 Some(offer) => {
                     let icon = offer.chip.icon();
-                    self.fill_from(bg, cell, &icon, 0, ICON_BANK);
+                    self.fill_from(bg, cell, &icon, FIRST_TILE, ICON_BANK);
                 }
-                None => self.fill_from(bg, cell, &assets.empty_icon, 0, stack.bank),
+                None => self.fill_from(bg, cell, &assets.empty_icon, FIRST_TILE, stack.bank),
             }
         }
     }
@@ -882,12 +996,12 @@ impl Custom<'_> {
             // No chip to preview -- the cursor is on OK, or over a slot
             // already picked -- so the real ROM puts its "sending chip data"
             // card here instead, in the picture region's own bank.
-            if self.pictured.is_some() || self.frames == 0 {
+            if self.pictured.is_some() || self.frames == 0 { // unnamed: first frame, or the card showed a chip
                 self.pictured = None;
                 self.pending_palettes
                     .push((PICTURE_BANK, self.assets.message_palette.clone()));
                 let r = self.assets.regions[REGION_PICTURE];
-                self.fill_from(bg, r, &self.assets.message, 0, PICTURE_BANK);
+                self.fill_from(bg, r, &self.assets.message, FIRST_TILE, PICTURE_BANK);
                 // The name and the row under the picture go with the card:
                 // the real ROM clears both to flat colour 8 when the message
                 // is up, which is what the interior tile already is.
@@ -904,7 +1018,7 @@ impl Custom<'_> {
         let picture = offer.chip.picture();
         let r = self.assets.regions[REGION_PICTURE];
         debug_assert_eq!((r.w, r.h), PICTURE_TILES);
-        self.fill_from(bg, r, &picture, 0, PICTURE_BANK);
+        self.fill_from(bg, r, &picture, FIRST_TILE, PICTURE_BANK);
         self.draw_card_name(bg, offer.chip.name());
         self.draw_card_row(bg, offer.code, offer.chip.element, offer.chip.power, gfx);
     }
@@ -945,7 +1059,7 @@ impl Custom<'_> {
             .iter()
             .filter_map(|&s| self.slots[s])
             .collect();
-        let name = picked[0].chip.name();
+        let name = picked[FIRST_PICK].chip.name();
         if picked.iter().all(|o| o.chip.name() == name) && offer.chip.name() == name {
             return true;
         }
@@ -974,9 +1088,9 @@ impl Custom<'_> {
             gfx.set_background_palette(bank, &palette);
         }
         self.phase = match self.phase {
-            Phase::Opening { x } if x > 0 => {
-                let x = (x - SLIDE_STEP).max(0);
-                bg.set_scroll_pos((x, 0));
+            Phase::Opening { x } if x > SCROLL_OPEN => {
+                let x = (x - SLIDE_STEP).max(SCROLL_OPEN);
+                bg.set_scroll_pos((x, SCROLL_Y));
                 self.reveal(bg, x);
                 // The real ROM's slide-in is state 0 of the window's own state
                 // machine (sub_8026B04, asm03_0.s:910-916): it seeds the same
@@ -989,16 +1103,16 @@ impl Custom<'_> {
                 // from state 4, so it started one frame late. Measured on a
                 // static window against /tmp/chipselect.state: 368 px over 32
                 // frames at the old timing, 0 at this one.
-                if x == 0 { Phase::Open } else { Phase::Opening { x } }
+                if x == SCROLL_OPEN { Phase::Open } else { Phase::Opening { x } }
             }
             Phase::Opening { .. } => Phase::Open,
             Phase::Open => {
-                self.frames += 1;
+                self.frames += 1; // unnamed: one frame passes
                 self.navigate(bg, input, gfx)
             }
             Phase::Closing { x } if x < SLIDE_FROM => {
                 let x = (x + SLIDE_STEP).min(SLIDE_FROM);
-                bg.set_scroll_pos((x, 0));
+                bg.set_scroll_pos((x, SCROLL_Y));
                 self.vacate(bg, x);
                 // Canon's slide-out advances AND finishes in the same call:
                 // sub_8026BF4 (reference/bn6f/asm/asm03_0.s:1037) adds 0xc
@@ -1032,29 +1146,29 @@ impl Custom<'_> {
         // separate every button from what it does here (7ag).
         match input.just_pressed_x_tri() {
             Tri::Positive => {
-                self.pending_move = 1;
+                self.pending_move = MOVE_RIGHT;
                 self.move_in = CURSOR_DELAY;
             }
             Tri::Negative => {
-                self.pending_move = -1;
+                self.pending_move = MOVE_LEFT;
                 self.move_in = CURSOR_DELAY;
             }
             Tri::Zero => {}
         }
-        if self.move_in > 0 {
-            self.move_in -= 1;
-            if self.move_in == 0 {
-                self.cursor_at = if self.pending_move > 0 {
+        if self.move_in > 0 { // unnamed: a delayed move is counting down
+            self.move_in -= 1; // unnamed: one frame closer to the move
+            if self.move_in == 0 { // unnamed: the delay has run out
+                self.cursor_at = if self.pending_move > 0 { // unnamed: the waiting direction is right
                     match self.cursor_at {
-                        4 => OK,
-                        OK => 0,
-                        i => i + 1,
+                        LAST_SLOT => OK,
+                        OK => FIRST_SLOT,
+                        i => i + 1, // unnamed: next slot in the ring
                     }
                 } else {
                     match self.cursor_at {
-                        0 => OK,
-                        OK => 4,
-                        i => i - 1,
+                        FIRST_SLOT => OK,
+                        OK => LAST_SLOT,
+                        i => i - 1, // unnamed: previous slot in the ring
                     }
                 };
             }
@@ -1064,7 +1178,7 @@ impl Custom<'_> {
         }
         if input.is_just_pressed(Button::A) {
             if self.cursor_at == OK {
-                return Phase::Closing { x: 0 };
+                return Phase::Closing { x: SCROLL_OPEN };
             }
             let slot = self.cursor_at as usize;
             if self.picks.len() < HAND_SIZE && !self.picks.contains(&slot) && self.allowed(slot)
@@ -1108,23 +1222,23 @@ impl Custom<'_> {
         // renders it into those tiles (sub_802869E draws the row); these are
         // the HUD's digit objects at the same place, and the chip name
         // beside it waits on the text font.
-        if let Some((_, power)) = self.pictured.filter(|&(_, p)| p > 0) {
+        if let Some((_, power)) = self.pictured.filter(|&(_, p)| p > 0) { // unnamed: chips with no attack show no digits
             let r = self.assets.regions[REGION_DAMAGE];
-            hud.draw_number(frame, power, ((r.x + r.w) * 8) as i32, (r.y * 8) as i32);
+            hud.draw_number(frame, power, ((r.x + r.w) * TILE_PX as usize) as i32, (r.y * TILE_PX as usize) as i32);
         }
         // The origin is the slot's position less 3 in each axis
         // (sub_8028894, sub_80288D0, asm03_0.s:4843-4884: a slot sits at
         // (8 + 16 * index, 0x68), OK at (0x58 + 3, 0x70 - 2)).
         let (x, y, bracket) = if self.cursor_at == OK {
-            (0x58, 0x6b, &OK_BRACKET)
+            (OK_ORIGIN_X, OK_ORIGIN_Y, &OK_BRACKET)
         } else {
-            (8 + 16 * self.cursor_at as i32 - 3, 0x68 - 3, &SLOT_BRACKET)
+            (SLOT_ORIGIN_X + SLOT_PITCH_X * self.cursor_at as i32 - BRACKET_INSET, SLOT_ORIGIN_Y - BRACKET_INSET, &SLOT_BRACKET)
         };
         // The counter is bumped at the top of the frame, before anything is
         // drawn, so the first DRAWN frame already reads 1 and every phase flip
         // lands a frame before the real ROM's. Draw from the value the frame
         // started with.
-        let phase = (self.frames.saturating_sub(1) >> BLINK_SHIFT) as usize & 1;
+        let phase = (self.frames.saturating_sub(1) >> BLINK_SHIFT) as usize & 1; // unnamed: previous frame's counter, low bit selects the phase
         for c in &bracket[phase] {
             Object::new(self.cursor[phase].clone())
                 .set_pos((x + c.dx, y + c.dy))
