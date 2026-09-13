@@ -522,9 +522,6 @@ impl Results {
     /// not a scroll. Cells the window does not cover read back as the
     /// fresh-map blank, which is what an untouched cell renders as anyway.
     pub fn blit_slide(&self, shown: &mut Shown) {
-        unsafe {
-            core::ptr::write_volatile(BLIT_ENTRY, vcount());
-        }
         let j = shown.slide_x() / TILE_PX;
         let mut block = [shown.blank; MAP_W * WIN_H];
         for row in 0..WIN_H {
@@ -537,26 +534,7 @@ impl Results {
         }
         shown.bg.copy_map_block(MAP_ORIGIN, MAP_W, &block);
         shown.blit_needed = false;
-        unsafe {
-            core::ptr::write_volatile(BLIT_EXIT, vcount());
-            let n = core::ptr::read_volatile(BLIT_COUNT);
-            core::ptr::write_volatile(BLIT_COUNT, n.wrapping_add(1));
-        }
     }
-}
-
-/// TEMP PROBE (F21d, removed before landing): VCOUNT at the slide blit's
-/// entry/exit plus a blit counter, for the per-frame scanline cost.
-/// Raw marker-padding addresses (main.rs: BATTLE_MARKER owns
-/// 0x02000000..0x02000080, marker uses ..0x08, oracle ..0x30) -- a `static
-/// mut` probed unwritten at runtime (dead-store elimination), so volatile
-/// writes to reserved padding instead.
-const BLIT_ENTRY: *mut u16 = 0x0200_0030 as *mut u16;
-const BLIT_EXIT: *mut u16 = 0x0200_0032 as *mut u16;
-const BLIT_COUNT: *mut u16 = 0x0200_0034 as *mut u16;
-const VCOUNT_REG: *const u16 = 0x0400_0006 as *const u16; // canon: GBA VCOUNT register
-fn vcount() -> u16 {
-    unsafe { core::ptr::read_volatile(VCOUNT_REG) }
 }
 
 fn entry(e: u16) -> TileSetting {
