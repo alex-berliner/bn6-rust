@@ -128,8 +128,9 @@ intervention is named but untested
 - F22b NEGATIVE -- `cursor` isolated: match the x>=112 unshared mid-battle content on the fixture side. cursor fixture backdrop-seed probe refuted, nothing landed
 - F18b PARTIAL -- `windowclose` isolated: the k=11 transient and the slide residue outside the window layer. windowclose 666451/28784/40->651885/28430/40 (k=11 BG3 transient 2447->0
 - F18c PARTIAL -- `windowclose` isolated: the relocated k=9/k=10 close-frame blank/redraw. windowclose 651885/28430->650544/27555/40 (BG3 k9 1898->0, k10 1408->0, k11 0->1596
-### F18d. `windowclose` isolated: the k11 gauge-body single-step redraw *(OPEN -- 2026-09-13)*
+### F18d. `windowclose` isolated: the k11 gauge-body single-step redraw  *(DONE -- 2026-09-13, windowclose 650544/27555/40->648948/27391/40 [BG3 k11 1596->0, x48-191 y0-15])*
 
+**Result.** windowclose 650544/27555/40->648948/27391/40 (BG3 k11 1596->0, x48-191 y0-15); wave/window/chip-cannon 0; opening isolated 0 (integrated 72499 pre-existing on base); verifier CONFIRMED all 3 claims (149B+50B single-step canon redraw, 1-frame agb lag mechanism, close_blank arms only on close); landed bb8e8f0; worker muse-spark-1.3-contributor 83 turns $0.106, verifier GLM
 **Files.** src/battle.rs, src/custom.rs
 
 **Why.** F18c's verified Result: `windowclose` 651885/28430 -> 650544/27555/40 (landed b0ba8a5); BG3 k9/k10 are 0, but k11 carries 1596 (x48-191 y0-15 canon-only): our gauge body lands k12 vs canon's single-step 149B+50B redraw at canon 92 (RGB-proven, mechanism unmodeled). Verifier independently reproduced the k9/k10/k11 relocation and confirmed a -369 px non-BG3 improvement rides along (net full-screen -1341).
