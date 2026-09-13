@@ -41,14 +41,19 @@ wants to compare the banner itself rather than get it out of the way.
 enemy is deleted, chips fire ONLY while the generic banner sequencer
 (dword_203CA70) sits in its ENEMY DELETED state 0x08 -- the firing A press
 reaches MegaMan through sub_800FB54 (asm00_2.s:1994, AIData joypad-flag
-gated, asm00_2.s:2006) and works at any frame of that phase. The moment
-the sequencer advances to state 0x0c (the victory countdown, sub_80081A4,
-asm00_1.s:10615), input dies: a press that fires at phase-0x08 frame 40
+gated, asm00_2.s:2006) and works at any frame of that phase -- because it
+is 0x08 (sub_80080D2) that refreshes the TWO alliance players' AIData
+from the joypad mirror every frame, via sub_8012DFC called twice (once
+per alliance player, asm00_1.s:10519-10522), and NOT every object. The
+moment the sequencer advances to state 0x0c (the victory countdown,
+sub_80081A4, asm00_1.s:10617), input dies -- 0x0c never refreshes
+AIData: a press that fires at phase-0x08 frame 40
 does NOT fire at frame 120 of the same continuous run, with the FSM
 (eBattleState.Index_01, 0x02034881) still in 0x0c and byte_203CA74 still
 0. The countdown's own expiry (byte_203CA74=1 written at asm00_1.s:10704,
-which sub_800938A consumes at asm00_1.s:13137-13145 and moves the FSM to
-0x10) is a SECOND, later cutoff -- refilling the countdown halfword
+which sub_800938A consumes and moves the FSM to 0x10; the `cmp r0,#6`
+at 0x080093A2 there, asm00_1.s:13137, is IRRELEVANT to the firing gate
+-- patching it changed nothing) is a SECOND, later cutoff -- refilling the countdown halfword
 0x0203ca78 with a --poke keeps the FSM in 0x0c and byte_203CA74 at 0 and
 still does not restore firing. So the previous session's refused-press
 symptom ("a state saved past the dissolve refuses every chip press",
@@ -59,9 +64,10 @@ there. The advance out of state 0x08 is sub_80080D2's own turn-end branch:
 sub_80080D2 is the sequencer's PLAYER-TURN handler (it calls UnpauseBattle
 in its init, asm00_1.s:10521) and every frame asks sub_800A152() -- the
 "which alliance still has actors" probe (asm00_1.s:15080) -- advancing to
-the RESULT countdown (state 0x0c, sub_80081A4, asm00_1.s:10615) when the
-last opponent is gone: `mov r0,#0xC; str r0,[r5]` at loc_8008116
-(asm00_1.s:10543-10545, ROM 0x0800811C..0x0800811F, bytes 0C 20 28 60).
+the RESULT countdown (state 0x0c, sub_80081A4, asm00_1.s:10617) when the
+last opponent is gone (sub_800A152 returns 1 AND oBattleState_Unk_3a is
+0): `mov r0,#0xC; str r0,[r5]` at loc_8008116
+(asm00_1.s:10547-10548, ROM 0x0800811C..0x0800811F, bytes 0C 20 28 60).
 TRACED LIVE (--trace-pc 0x0800811C): the hit comes with r0=1 (sub_800A152
 returned 1), r1=eBattleState (0x02034880), r5=dword_203CA70, 36 frames
 after the enemy's death -- exactly the frame the press at 120 stops
@@ -69,13 +75,21 @@ working. (An earlier cut of this patch NOPed the same byte pattern at
 0x080083C4 -- sub_800838A's advance, reachable only from sequencer state
 0x18 -- and changed nothing: the state still went 0x08 -> 0x0c at frame
 47, which is what pinned the real site.) This patch NOPs those 4 bytes
-(00 BF 00 BF), so the turn never ends when the last enemy dies. With
-the banner upload already stubbed and its tiles zeroed, holding the phase
-is invisible; the dissolve and the portrait-box cleanup complete
-normally, so a state saved after the dissolve is CLEAN and still fires
-chips -- which is exactly what the chip-row fixtures need. Side effect,
-accepted: sub_80080D2's oBattleState_Unk_18 increment (asm00_1.s:10543,
-one instruction before the NOPed store) now runs every frame instead of
+(00 BF 00 BF), so the turn never ends when the last enemy dies.
+
+MEASURED DEAD END (TODO F5 result, Sol-confirmed correction of an earlier
+claim here): holding the sequencer in 0x08 FREEZES the corpse dissolve and
+the portrait box forever (they complete only as part of the turn-end flow
+the NOP removes) and the held battle's FSM dispatcher (sub_8009158) STOPS
+after a save/reload -- a state saved under this hold is NOT a clean firing
+state, and refilling the countdown halfword 0x0203ca78 does not restore
+firing either. The chip-row fixtures cannot use this patch; the remaining
+untested route (TODO F5b) is a one-shot poke to MegaMan's AIData pressed
+field while the unpatched sequencer sits in 0x0C.
+
+Side effect,
+accepted: sub_80080D2's oBattleState_Unk_18 increment (asm00_1.s:10544-46,
+immediately before the NOPed store) now runs every frame instead of
 once per turn; it is a single wrapping byte whose only other reader is
 sub_800AF50 (asm00_1.s:11814), reachable only through the FSM fire path
 that byte_203CA74=0 keeps dead while the turn is held. The result
@@ -100,7 +114,7 @@ import sys
 
 def main():
     if len(sys.argv) < 3:
-        print("usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] "
+        print("usage: patch_sterile.py <in.gba> <out.gba> [--keep-banner] [--hold-banner] "
               "[--never-spawn] [--inert-enemy] [--empty-net-encounter]")
         return 2
     keep_banner = "--keep-banner" in sys.argv[3:]
