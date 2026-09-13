@@ -159,7 +159,9 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` slide-frame totals before/after, post-close BG3 residue by element before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, fixture-content class); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-### F19. `popup` isolated: 107511 px over 80 frames *(OPEN -- 2026-09-13)*
+### F19. `popup` isolated: 107511 px over 80 frames  *(PARTIAL -- 2026-09-13, popup 107511/1348/80/108815 -> 60614/1842/80/60806 (-44%, fixture only, landed c2c24e6))*
+
+**Result.** popup 107511/1348/80/108815 -> 60614/1842/80/60806 (-44%, fixture only, landed c2c24e6); canon ALIVE->DELETE_ENEMY (HP 0/0) + banner dissolve blanking; subject center band 0, enemy box 51991->6081, HUD bar 55520 unchanged; wave/window/chip-cannon/opening-isolated PASS 0, full table no other deltas (verify_rows PASS). Worker worker-muse (muse-spark-1.3-contributor:high, 66 turns, $0.0351). Verifier verifier-glm (glm-5.3-flash:high, 28 turns, $0.0162): sub_801EA34 citation + fixture class + F20 scoping all CONFIRMED; residual-bbox/Rust-HUD sub-values UNCHECKED (stale scratch captures, not refuted). Next: residual 55520 canon-only OBJ HUD HP bar is F20 OBJ-HUD work.
 **Why.** `popup` isolated reads total 107511 (worst 1348) over 80 frames at canon 43+k, rust 1(marker)+122+k, canon (sterile) (`web/captures/popup-isolated.txt:1`); canon REAL_START=43 (A pressed at 40), rust marker origin 1 with a 26-frame band holding a unique zero at offset 122; `AUDIT.md` records the attribution as 100% OBJ -- the enemy's HP digits exposed because the popup needs that tile range unzeroed.
 **Do, in order.**
 1. Start in `tools/worktree.sh f19-popup`. Baseline `python3 tools/harness.py --only popup` (107511/1348/80, negative confirmed not blind), plus `tools/diffmask.py` region (OBJ vs BG split) and `tools/oracle.py` where supported, measured.
