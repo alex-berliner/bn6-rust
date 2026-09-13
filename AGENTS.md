@@ -2,8 +2,8 @@
 
 Keep this file short and stable: it is loaded into every child's context.
 
-- Read `AGENT_GUIDE.md` for how to build, measure and align; `HANDOFF.md` only the section a ticket
-  names; never `TRANSFER.md` (a human journal). Never read TODO.md, HANDOFF.md or tools/harness.py
+- Read `AGENT_GUIDE.md` for how to build, measure and align. A ticket that cites "HANDOFF §N" means
+  that section of `docs/HANDOFF_2026-09-12.md`; read only that section. Never `TRANSFER.md` (a journal). Never read TODO.md, HANDOFF.md or tools/harness.py
   whole -- your ticket text is in your task, and grep does the rest.
 - The standard is per-pixel parity with the real ROM: zero differing pixels over the full
   screen for every compared frame. A non-zero is a defect with a frame and region, never a

@@ -2,7 +2,7 @@
 name: verifier
 description: Independently checks the claims a finished ticket makes beyond its harness lines (tools, memory findings, causes, exclusions, partial/negative outcomes) from a tree no agent holds; harness lines are already reproduced by tools/verify_rows.py.
 tools: read, bash, grep, find, ls
-model: openrouter/meta/muse-spark-1.3
+model: openrouter/meta/muse-spark-1.3-contributor
 thinking: high
 ---
 

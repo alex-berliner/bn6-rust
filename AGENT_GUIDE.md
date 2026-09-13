@@ -1,7 +1,8 @@
-# AGENT_GUIDE — the 2k-token extract of HANDOFF.md that a worker actually needs
+# AGENT_GUIDE — the 2k-token extract of docs/HANDOFF_2026-09-12.md that a worker actually needs
 
-HANDOFF.md is the human document (history, incidents, decisions). Read THIS, then only the HANDOFF
-section a ticket names. Rules are in AGENTS.md; your ticket text comes from `tools/next_ticket.py`.
+HANDOFF.md is the short session-start document; the long one with the history, incidents and the
+"HANDOFF §N" sections tickets cite is docs/HANDOFF_2026-09-12.md. Read THIS, then only the section a
+ticket names. Rules are in AGENTS.md; your ticket text comes from `tools/next_ticket.py`.
 
 ## What this is
 A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored

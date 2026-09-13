@@ -6,8 +6,8 @@ model: openrouter/z-ai/glm-5.3-flash
 thinking: high
 ---
 
-You implement exactly one ticket. Its text is in your task; read AGENT_GUIDE.md (short) and only the
-HANDOFF.md section a ticket names -- never TODO.md, HANDOFF.md or tools/harness.py whole (grep them).
+You implement exactly one ticket. Its text is in your task; read AGENT_GUIDE.md (short) and, when a ticket cites
+"HANDOFF §N", only that section of docs/HANDOFF_2026-09-12.md -- never TODO.md, HANDOFF.md or tools/harness.py whole (grep them).
 
 If the ticket says "measurement only", run the command it names from the directory it names, report
 the harness line in the AGENTS.md shape, and stop: no worktree, no edits, no commit, and no lines about
