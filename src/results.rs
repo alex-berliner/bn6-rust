@@ -130,6 +130,25 @@ enum Phase {
         x: i32,
     },
     Waiting,
+    /// The post-confirm reward reveal (WIN only): canon's `sub_802C044`
+    /// (reference/bn6f/asm/asm03_0.s:11959) draws the 42 coin tiles one per
+    /// frame in PrimaryRNG-shuffled order. This build draws the whole
+    /// reward at once when the phase is entered (see `draw_reward`) and
+    /// holds the phase for the same 42 frames.
+    Revealing {
+        left: u8,
+    },
+    /// The cooldown after the reveal: `sub_802C044` leaves `[r5,#0x0b]` =
+    /// 0x1e (asm03_0.s:11764), counted down by `sub_802C0A4`
+    /// (asm03_0.s:12010) and ending in the actual grant plus jingle --
+    /// confirms are ignored throughout `Revealing` and this phase
+    /// (measured: taps 30/60 frames after the first confirm do nothing,
+    /// a tap ~90 after dismisses).
+    Cooldown {
+        ticks: u8,
+    },
+    /// Waiting for the second confirm, which dismisses.
+    RewardWait,
     Dismissing {
         ticks: u8,
     },
@@ -149,8 +168,21 @@ enum Phase {
 pub struct Shown {
     bg: RegularBackground,
     phase: Phase,
+    /// WIN vs LOSE (`Results::show`'s `variant`): only WIN ever draws a
+    /// reward, so only WIN takes the post-confirm reveal path.
+    variant: usize,
+    /// The zenny amount to draw when the first confirm lands.
+    zenny: u16,
 }
 
+/// Frames of the post-confirm reward reveal, one tile a frame:
+/// `sub_802C044` (reference/bn6f/asm/asm03_0.s:11959) counts `[r5,#0x0b]`
+/// from 0 to 0x2a (asm03_0.s:11850) with a blip every 4th frame.
+const REVEAL_FRAMES: u8 = 42; // provenance: derived -- sub_802C044's 0x2a loop bound (asm03_0.s:11850)
+/// Frames between reveal end and the dismiss-confirm arming: `[r5,#0x0b]`
+/// = 0x1e (asm03_0.s:11764), counted down by `sub_802C0A4`
+/// (asm03_0.s:12010), ending in the actual grant plus jingle (0x95/0x96).
+const COOLDOWN_FRAMES: u8 = 30; // provenance: derived -- the 0x1e `sub_802C044` leaves (asm03_0.s:11764)
 /// The RESULT mark's entry animation (TODO F8, measured -- battle.rs's
 /// draw-site comment carries the watch-write evidence): the mark is
 /// invisible for the window's first MARK_ENTER_AT frames, enters wrapped
@@ -326,8 +358,36 @@ impl Results {
                 }
             }
         }
-        if variant == WIN {
-            // The reward line: the amount right-aligned to the digit column,
+        // The reward (coin picture, amount line, edge row) is NOT drawn
+        // here: canon draws it only after the first confirm -- `sub_802C34E`
+        // (reference/bn6f/asm/asm03_0.s:12397) queues the window's static
+        // GFX, the slide tick `sub_802BE36` (asm03_0.s:11666) draws only the
+        // clear time (`sub_802C4E8`) and level (`sub_802C6EC`), and the
+        // reward goes up one tile a frame in `sub_802C044`
+        // (asm03_0.s:11959) once `[r5,#1]` reaches 4. See `draw_reward`.
+        bg.set_scroll_pos((-START_X, -Y));
+        Shown {
+            bg,
+            phase: Phase::Sliding { x: START_X },
+            variant,
+            zenny,
+        }
+    }
+
+    /// Draw the WIN reward content (coin picture, amount line, edge row)
+    /// onto an already-shown window. Called once, when the first confirm
+    /// lands (`Shown::poll_reward_reveal`); a no-op for LOSE, which has no
+    /// reward. Canon reveals the 42 tiles progressively over REVEAL_FRAMES
+    /// in shuffled order -- this draws them at once; post-confirm frames
+    /// are compared by no live row, so the order is a follow-up, not here.
+    pub fn draw_reward(&self, shown: &mut Shown) {
+        if shown.variant != WIN {
+            return;
+        }
+        let v = &self.variants[shown.variant];
+        let zenny = shown.zenny;
+        let bg = &mut shown.bg;
+        // The reward line: the amount right-aligned to the digit column,
             // a blank, then a 'z'. Read off the capture's map, whose "100 z"
             // fills window columns 7-9 and 11 of rows 12-13.
             let mut n = zenny;
@@ -372,12 +432,6 @@ impl Results {
                     entry(REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12),
                 );
             }
-        }
-        bg.set_scroll_pos((-START_X, -Y));
-        Shown {
-            bg,
-            phase: Phase::Sliding { x: START_X },
-        }
     }
 }
 
@@ -410,10 +464,23 @@ impl Shown {
                 Phase::Sliding { x }
             }
             Phase::Sliding { .. } => Phase::Waiting,
+            // WIN never reaches this arm with confirm held: the battle
+            // calls `poll_reward_reveal` first, which moves a waiting WIN
+            // window into `Revealing`. LOSE has no reward and dismisses.
             Phase::Waiting if confirm => Phase::Dismissing {
                 ticks: DISMISS_FRAMES,
             },
             Phase::Waiting => Phase::Waiting,
+            Phase::Revealing { left } if left > 1 => Phase::Revealing { left: left - 1 },
+            Phase::Revealing { .. } => Phase::Cooldown {
+                ticks: COOLDOWN_FRAMES,
+            },
+            Phase::Cooldown { ticks } if ticks > 1 => Phase::Cooldown { ticks: ticks - 1 },
+            Phase::Cooldown { .. } => Phase::RewardWait,
+            Phase::RewardWait if confirm => Phase::Dismissing {
+                ticks: DISMISS_FRAMES,
+            },
+            Phase::RewardWait => Phase::RewardWait,
             Phase::Dismissing { ticks } if ticks > 1 => Phase::Dismissing { ticks: ticks - 1 },
             Phase::Dismissing { .. } => Phase::Fading { step: 1 },
             Phase::Fading { step } if step < 16 => Phase::Fading { step: step + 1 },
@@ -425,6 +492,19 @@ impl Shown {
             Phase::Done => Some(16),
             _ => None,
         }
+    }
+
+    /// If `confirm` is held while a WIN window waits pre-reward, start the
+    /// reveal now and report true so the caller (`Battle::update`, which
+    /// owns the tilesets via `Results`) draws the reward content. The
+    /// drawing lives on `Results`; the phase lives here. A no-op for LOSE
+    /// and for every phase but `Waiting`.
+    pub fn poll_reward_reveal(&mut self, confirm: bool) -> bool {
+        if confirm && self.variant == WIN && matches!(self.phase, Phase::Waiting) {
+            self.phase = Phase::Revealing { left: REVEAL_FRAMES };
+            return true;
+        }
+        false
     }
 
     /// Draw the window; the id is for including it in the screen fade.
