@@ -63,6 +63,9 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
   `ticket_result.py <ID> BLOCKED "<what was measured, the options>"` and continue with the next OPEN
   ticket; STOP only when no OPEN ticket is left (the queue is whatever `next_ticket.py` returns, in file
   order -- an instruction that names tickets is a hint about order, never a limit);
+  commits arriving on main from outside the run (the human session curating TODO.md, docs, web/) are
+  normal and never a stop reason, tickets that appear mid-run join the queue, and land.sh's own
+  clean-tree check at landing time is the only tree check that matters;
 - the next step would change what canon or canon (sterile) are (unless the ticket explicitly
   authorizes that one change), widen the allowlist, touch src/ outside a ticket that says so, delete a
   state or a row, or change HANDOFF.md §3's scope or order;

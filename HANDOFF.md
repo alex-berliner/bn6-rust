@@ -17,13 +17,17 @@ vs after -- a merge that changed nothing is not parity).
 
 ## 1. Where things stand
 
-- **At 0 differing frames (canon vs ours):** wave, window, opening, cannon, field, banner, warp, and
-  27 of the 43 chip rows -- 34 rows. tiles/gauge read 208 px on one frame (F15). `python3
-  tools/harness.py --list` names every row; `web/captures/` holds each row's GIF and caption.
-- **Open queue (`python3 tools/next_ticket.py --list`):** F12 the chip rows' own residues (one family
-  per pass), F13 card 18486, F14 mettaur 31075 (one frame of mercy timing), F15 the vblank frame and
-  cursor's +112. F10 buster is BLOCKED after two misses (branch kept). The integrated (full-HUD)
-  variants and popup/result/cursor come after. Closed tickets: `TODO_ARCHIVE.md`.
+- **At 0 differing frames (canon vs ours):** wave, window, opening, cannon, field, banner, warp, card,
+  tiles, gauge and 28 of the 43 chip rows -- 38 rows. `python3 tools/harness.py --list` names every
+  row; `web/captures/` holds each row's GIF and caption, plus a before/after GIF per landed ticket
+  (the gallery page), made at the end of every coordinator run.
+- **Open queue (`python3 tools/next_ticket.py --list`):** F18d windowclose (650544), F21d result
+  (block-copy the window's tilemap; F21b's slide rework, 190633, waits on it on its kept branch),
+  F12 seed feet (247/132/132), F25 Mettaur attack phase (mettaur 19698; tiles/gauge integrated 3865;
+  popup's HUD bar), F24 per-scanline backdrop scroll port (cursor 620802; result's backdrop tail),
+  F23 naming (battle.rs next). BLOCKED after two misses: F10/F10b buster. Closed tickets:
+  `TODO_ARCHIVE.md`. From run 4 the coordinator runs two workers on tickets with disjoint
+  `**Files.**` lines (`next_ticket.py --pair`).
 - **Order (the user, 2026-09-12):** every existing row to 0 before any new content. Scope after that:
   5 viruses, 2 bosses, player fidelity, the custom screen, battle flow. No Navis, Navi Customizer,
   Program Advances, audio, netbattle.
