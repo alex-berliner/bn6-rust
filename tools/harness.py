@@ -480,8 +480,11 @@ class Check:
 
 
 def _cannon_canon(ui: str) -> Side:
-    # Cannon (chip 01) is just the chip family's own row now -- see
-    # _chip_canon()'s comment for what changed and why.
+    # Cannon (chip 01) on the OLD PAUSED route -- NOT WIRED since TODO F7
+    # (2026-09-12) re-pointed the `cannon` Check onto _chip_canon_0c("01")
+    # + ALIGN_CHIP_0C, the same route F5b gave the 43 chip rows. Kept as
+    # the record of where the row's 14388/2350 baseline came from; no
+    # Check references this any more.
     return _chip_canon("01")(ui)
 
 
@@ -858,17 +861,22 @@ CHECKS: List[Check] = [
         name="cannon",
         ui="isolated",
         frames=40,
-        align=ALIGN_CHIP,
-        # Ported from the demo-sterile,demo-cannon,demo-auto feature combo to
-        # _chip_rust("01") (AUDIT pair 17 prune ticket): fixture.rs's own
-        # table entry for this row (enemies 0, hp 100, col/row 2/2, hand
-        # [1], gauge 0, flags 0x1F, fire_frame 90) is byte-for-byte what
-        # _chip_rust builds for chip hex "01" -- the same descriptor the 43
-        # chip-scoreboard rows already use, and _cannon_canon below is
-        # already literally _chip_canon("01"). Same descriptor bytes, same
-        # numbers.
+        align=ALIGN_CHIP_0C,
+        # TODO F7 (2026-09-12): re-pointed onto the SAME route and Align
+        # method F5b used for the 43 chip-scoreboard rows (chip-cannon is
+        # literally this comparison: same rust descriptor from _chip_rust,
+        # same canon recipe from _chip_canon_0c) -- the PAUSED route the
+        # row kept after the prune ticket paid the shared 14388/2350
+        # fixture-artifact baseline (PAUSED's leftover portrait box, canon
+        # frames 43-48, plus the deleted Mettaur's dissolve, 43-52) that
+        # afterdissolve_0x0c does not have. Rust side UNCHANGED from the
+        # prune ticket: _chip_rust("01") -- fixture.rs's own table entry
+        # for this row (enemies 0, hp 100, col/row 2/2, hand [1], gauge 0,
+        # flags 0x1F, fire_frame 90) -- byte-for-byte the descriptor the
+        # 43 chip-scoreboard rows already use. The ALIGN_CHIP_0C search
+        # band is kept only to CONFIRM the minimum, as for chip-cannon.
         rust=_chip_rust("01"),
-        canon=_cannon_canon,
+        canon=_chip_canon_0c("01"),
         canon_variant="canon (sterile)",
     ),
 ]
