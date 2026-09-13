@@ -1,5 +1,5 @@
-tiles (integrated), FAILED: per-frame max 3468 px, total 26495 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon
+tiles (integrated), FAILED: per-frame max 3468 px, total 26165 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon
 
 canon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.
 
-commit cc61979
+commit 82df214
