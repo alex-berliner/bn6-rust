@@ -185,7 +185,7 @@ change. **Coordinator:** verify_rows on result, field and the canaries; the veri
 **Result.** F12c seed family localized to OAM overlap order, ticket stays OPEN for the fix. chip-poisseed 2237/334/70/52258, chip-iceseed 2122/334/70/53458, chip-grasseed 2122/334/70/53458 (verify_rows PASS on HEAD f53cda8, negatives not blind); prior 'canon static vs our cycling' claim corrected -- both sides run pod, 1 black gap frame, 3-frame ellipse, 4-frame white, 3-frame green, 3-frame teal, diamonds frame-aligned, canon OAM static (18x 32x32 tile 31 pal 1 prio 2) while tile-31 VRAM content cycles; our VRAM tiles byte-identical to canon tile 31 (0/512), palettes identical, positions/flips identical; only divergence is overlap order in 24px inter-panel zones (zone B: canon R148 over L188, ours L188 over R148 -> 2px green-stripe shift x200-201 vs x198-199) plus 6px x160-161 corner residue and poisseed-only feet cover-order difference (canon shadow OAM11 above navi foot OAM12, ours reversed; canon BLACK vs ours (16,16,16)); no fix landed, no canon routine cited, branch wt/f12-seed2 deleted with no commits, main untouched at f53cda8. Worker worker-muse (muse-spark-1.3-contributor:high, 81 turns, $0.057). No verifier (nothing landed; mechanism unverified). Next: apply middle-column-last sheet push order (panel-148 above neighbors), re-run all three seed rows + wave/window/opening/chip-cannon + full table, then chase feet pois-only via ice/grass shadow-palette dumps.
 **Result.** F12b seed family localized, ticket stays OPEN for the fix. chip-poisseed 2237/334/70/52258 (k=52-61 2px stripe x197-202 y70-142 worst 334, plus k=9-14 feet residue 43->1px), chip-iceseed 2122/334/70/53458, chip-grasseed 2122/334/70/53458 (verify_rows PASS on wt/f12-seed 253198b, negatives not blind); canon sheet square-phase is one static image (tile 31 pal 1, OBJ VRAM byte-static) vs our 3-frame cycling, but canon tile-31 matches no poisarea.bin blob and no VRAM candidate (best 103/1024 mismatched) so no fix landed, branch wt/f12-seed kept unmerged, worktree removed. Worker worker (glm-5.3-flash, 78 turns, $0.098). No verifier (nothing landed; mechanism unverified). F12a minibomb 10/10->0/0 landed a607263 earlier. Next: find canon sheet pixels at the x=200 seam (OBJ/BG priority test), localize the feet component, decompose iceseed/grasseed from main.
 **Result.** F12a minibomb family done, ticket stays OPEN for seeds. chip-minibomb 10/10->0/0 (verify_rows PASS 0/0/60/17158, landed a607263); wave/window/opening-isolated/chip-cannon PASS 0; opening integrated 72499/2691 pre-existing identical on baseline; full table: energbom/megenbom -26, iceseed/grasseed 2145->2122, bugbomb 8338->8280, vdoll/suprvulc/buster/chip-use unchanged, except chip-poisseed 2145->2237 (worst 334, +92) owned by seed follow-up. Worker worker-muse (muse-spark-1.3-contributor, 75 turns, $0.068). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.016): fix code-CONFIRMED, opening pre-existing CONFIRMED, canon OAM order UNCHECKED (probe flag failure), poisseed regression PARTIALLY CONFIRMED (totals attributable, trail colors unchecked). Next: seed family (poisseed/iceseed/grasseed) with its own canon OAM dump.
-**Files.** src/, assets/, tools/harness.py
+**Files.** src/battle.rs, assets/, tools/harness.py
 
 **Next pass (human session, 2026-09-13 19:20).** Stamp this ticket OPEN after every family (PARTIAL/DONE close it and the human has had to re-open it twice); it ends when every chip row reads 0. Seeds are done (poisseed/iceseed/grasseed 0). Next families in order of size: bugbomb 8280, vdoll 628, then every other chip row the full table shows non-zero, one family per pass, with wave/window/opening/chip-cannon and minibomb/poisseed/iceseed/grasseed as canaries at 0.
 
@@ -246,7 +246,7 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 
 ### F25c. `mettaur`: the shockwave's flight is 44 frames, canon's is 45 -- the one frame between the enemy's phase and MegaMan's  *(BLOCKED -- 2026-09-13, mettaur 19698/1245->4265/800/70 [neg 45788 not blind], oracle 10/10 fields 70/70 FIRST-DIVERGENCE-none)*
 
-**Result.** mettaur 19698/1245->4265/800/70 (neg 45788 not blind), oracle 10/10 fields 70/70 FIRST-DIVERGENCE-none; verifier CONFIRMED canon citation (sub_80C6B64 present-at-init asm31.s:31461-31496, HP113->114, flight 45) and fix (hop_pending latch, wave 0/buster 3172/cannon 0, no fitted const) and residual distribution (exact 8 frames k=0,1,6,11,17,22,63,68, enemy_anim clean); partial gaps: T3 Timer-field mapping inferred, inbox=0 box-unchecked; acceptance 0 unmet -> branch wt/f25c-wave-flight 6b28e9b KEPT unmerged; third consecutive non-DONE on mettaur objective -> no follow-up per two-in-a-row rule; worker + verifier GLM
+**Result.** mettaur 19698/1245->4265/800/70 (neg 45788 not blind), oracle 10/10 fields 70/70 FIRST-DIVERGENCE-none; verifier CONFIRMED canon citation (sub_80C6B64 present-at-init asm31.s:31461-31496, HP113->114, flight 45) and fix (hop_pending latch, wave 0/buster 3172/cannon 0, no fitted const) and residual distribution (exact 8 frames k=0,1,6,11,17,22,63,68, enemy_anim clean); partial gaps: T3 Timer-field mapping inferred, inbox=0 box-unchecked; acceptance 0 unmet -> branch wt/f25c-wave-flight 6b28e9b KEPT unmerged; third consecutive non-DONE on mettaur objective -> no follow-up per two-in-a-row rule; worker + verifier GLM Landed on main by the human session as a verified partial (land.sh, verify_rows on mettaur and six canaries); the 8-frame spray residue is F25d.
 **Files.** src/shot.rs, src/ai.rs, tools/harness.py
 
 **Why.** F25b measured, and verify_rows reproduced, that our Mettaur's attack path is pixel-perfect at
@@ -278,9 +278,34 @@ actors ("PRE-TICKED", src/shot.rs:145-147), which is the kind of ordering that c
 constant (the 45 must come from canon's routine, cited). **Coordinator:** verify_rows on every row
 named; the verifier on the canon citation and the "same offset for both" claim; one follow-up at most.
 
+### F25d. `mettaur`: the departure spray on 8 frames, 4265 px, content not timing  *(OPEN -- 2026-09-13)*
+
+**Files.** src/shot.rs, src/spr.rs, assets/
+
+**Why.** F25c fixed the one-frame hit (shockwave flight 44 -> 45 per canon sub_80C6B64) and landed on
+main as a verified partial: mettaur 19698/1245 -> 4265/800 at offset 203, the oracle's ten state
+fields match 70/70, and the residue sits on exactly eight frames (k=0,1,6,11,17,22,63,68), all outside
+the enemy box, at the same post-hit phase on both sides. So the shockwave's departure spray around
+MegaMan differs in content, not timing (F25c's verified reading). That is the last thing between the
+mettaur row and 0.
+
+**Do, in order.**
+1. Start in `tools/worktree.sh f25d-spray`. Baseline mettaur 4265/800/70 (negative 45788 not blind).
+2. On those eight frames dump both sides' OAM for the spray objects (tile index, palette, position,
+   size, flip) and the tile bytes they point at, and say which differs: the art (asset), the palette,
+   or the sequence (which sprite on which frame). Cite canon's animation script for the spray (the
+   shockwave object's own anim, the family around sub_80C6B64), with file and lines.
+3. Fix it at the source: art extracted from the canon ROM into assets/, or the sequence in src/,
+   with a provenance comment. Never hand-drawn art.
+4. **Acceptance.** mettaur 0/0/70 (negative not blind); wave, window, opening, chip-cannon, field,
+   result 0 or unchanged; tiles/gauge integrated and popup re-measured and reported; nothing worse.
+
+**Rules.** No alignment or allowlist change; src/shot.rs, src/spr.rs and assets/ only.
+**Coordinator:** verify_rows on every row named; the verifier on the canon citation; one follow-up.
+
 ### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
 
-**Files.** src/backdrop.rs, src/actor.rs, tools/harness.py, tools/diffmask.py, tools/probe.py
+**Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
 
 **Why.** F24 refuted the raster theory: canon's battle HBlank scroll callback is a no-op (nullsub_38 for
 all 22 backdrop types, verifier confirmed in the disassembly) and the per-frame diagonal 3:2 scroll is
