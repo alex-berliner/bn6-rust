@@ -74,6 +74,10 @@ pub struct AttackSpec {
     /// pose's last frame (the real ROM holds the sword's final frame
     /// through its five recovery frames).
     pub recover_anim: Option<usize>,
+    /// Executor ticks the strike pose is shown; the executor's remaining
+    /// ticks already show the recovery pose. `None` (every attack but the
+    /// Mettaur's) shows the strike pose for the whole attack.
+    pub pose: Option<u8>,
 }
 
 /// The buster: animation 14. The disassembly's "five passes" are passes of
@@ -89,6 +93,7 @@ pub const BUSTER: AttackSpec = AttackSpec {
     strike_at: 3,
     recover: 0,
     recover_anim: None,
+    pose: None,
 };
 /// Colonel's overhead slash: animation 0xc held for 0x28 frames, the hit
 /// spawned when the countdown reads 0x14 (asm31.s:157462, 157464-157479).
@@ -100,6 +105,7 @@ pub const DIVIDE: AttackSpec = AttackSpec {
     strike_at: 20,
     recover: 0,
     recover_anim: None,
+    pose: None,
 };
 /// ProtoMan's basic strike, attack A of his AI: animation 0xf held for 16
 /// frames while the front panel flashes, then animation 5 for 30 with the
@@ -114,6 +120,7 @@ pub const THRUST: AttackSpec = AttackSpec {
     strike_at: 11,
     recover: 20,
     recover_anim: Some(anim::IDLE),
+    pose: None,
 };
 /// The Mettaur's pickaxe: animation 1 while a 0x40-frame counter runs down,
 /// the shockwave spawned at the front panel when it reads 0x1b
@@ -123,8 +130,18 @@ pub const THRUST: AttackSpec = AttackSpec {
 /// previous cut of this attack had `recover: 0`, which let bn's Mettaur
 /// re-attack as soon as the 0x40-frame pose ended, roughly DOUBLE the real
 /// cadence (64 frames observed vs. the real 64+40=104) and the dominant
-/// driver of the `mettaur`/`wave` residues (AUDIT wave 3d ticket).
+/// driver of the `mettaur`/`wave` residues (AUDIT wave 3d ticket). The pose
+/// itself reads one frame shorter than the counter: the executor zeroes
+/// CurAnim on the same tick the counter reaches 0 (the `sub; bne`
+/// falls through to `strb CurAnim, 0` + Unk_00 = 4 on that last tick,
+/// asm31.s:170838-170846), so 63 ticks show animation 1 and the 64th
+/// already shows the recovery pose, while the recovery keeps its own
+/// 0x28 ticks and the attack cadence stays 64 + 40 + 2 decision frames.
 // provenance: derived -- sub_8109DEC/sub_8109E4A, asm31.s:170792-170867; sub_80C6CE4, asm31.s:31563.
+/// Ticks of the 0x40 executor showing the strike pose (canon's CurAnim
+/// reads 1 for 63 frames: set on entry with the counter, cleared on the
+/// tick the counter reaches 0 -- sub_8109DEC, asm31.s:170830-170848).
+const SWING_POSE: u8 = 0x40 - 1; // provenance: derived -- sub_8109DEC, asm31.s:170830-170848
 pub const SWING: AttackSpec = AttackSpec {
     windup: None,
     anim: 1,
@@ -132,6 +149,7 @@ pub const SWING: AttackSpec = AttackSpec {
     strike_at: 0x40 - 0x1b + 1,
     recover: 0x28,
     recover_anim: Some(anim::IDLE),
+    pose: Some(SWING_POSE),
 };
 /// Colonel's 0xA slash: animation 6 held for 30 frames, then animation 5
 /// with the hit on its first frame, held 0x1e, then 24 frames of recovery
@@ -144,6 +162,7 @@ pub const CROSS: AttackSpec = AttackSpec {
     strike_at: 1,
     recover: 24,
     recover_anim: Some(anim::IDLE),
+    pose: None,
 };
 /// A charged shot first holds its aim for five frames before entering the
 /// same fire state (megamanChargeShotAiAttack_80EBE00, asm31.s:109703).
@@ -218,12 +237,17 @@ enum Action {
         next: AttackSpec,
     },
     /// Attacking; the strike lands when `ticks` counts down to `strike_tick`.
+    /// `pose` is the resolved strike-pose tick count (the spec's `pose`, or
+    /// the whole attack): the executor's remaining ticks already show the
+    /// recovery pose, the way canon's Mettaur executor zeroes CurAnim on
+    /// its last countdown tick.
     Attacking {
         ticks: u8,
         strike_tick: u8,
         charged: bool,
         recover: u8,
         recover_anim: Option<usize>,
+        pose: u8,
     },
     /// Reeling from a hit.
     Flinching {
@@ -715,6 +739,7 @@ impl Actor {
             charged,
             recover: spec.recover,
             recover_anim: spec.recover_anim,
+            pose: spec.pose.unwrap_or(spec.frames),
         };
     }
 
@@ -845,6 +870,7 @@ impl Actor {
                         charged,
                         recover,
                         recover_anim,
+                        pose,
                     } => {
                         update = if ticks == strike_tick {
                             Update::Strike { charged }
@@ -857,6 +883,7 @@ impl Actor {
                             charged,
                             recover,
                             recover_anim,
+                            pose,
                         }
                     }
                     other => other,
@@ -872,6 +899,7 @@ impl Actor {
                 charged,
                 recover,
                 recover_anim,
+                pose,
             } if ticks > 0 => {
                 if ticks == strike_tick {
                     update = Update::Strike { charged };
@@ -882,12 +910,22 @@ impl Actor {
                         frame: (self.pose_len - ticks) + 1,
                     };
                 }
+                // Past the strike pose's own ticks the executor already
+                // shows the recovery pose (canon's Mettaur zeroes CurAnim
+                // on its last countdown tick); every other attack's pose
+                // fills the whole attack, so this arm never fires for them.
+                if ticks + pose <= self.pose_len {
+                    if let Some(a) = recover_anim {
+                        self.player.play(a);
+                    }
+                }
                 Action::Attacking {
                     ticks: ticks - 1,
                     strike_tick,
                     charged,
                     recover,
                     recover_anim,
+                    pose,
                 }
             }
             Action::Attacking {
@@ -895,8 +933,15 @@ impl Actor {
                 recover_anim,
                 ..
             } => {
+                // The exit tick already shows the recovery pose when the
+                // strike pose ended a tick early (SWING above): replaying it
+                // would restart its animation a frame late. Every other
+                // attack still shows the strike pose here, so this guard
+                // changes nothing for them.
                 if let Some(a) = recover_anim {
-                    self.player.play(a);
+                    if self.player.anim() != a {
+                        self.player.play(a);
+                    }
                 } else if recover == 0 {
                     self.player.play(anim::IDLE);
                 }
