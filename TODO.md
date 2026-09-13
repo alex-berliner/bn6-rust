@@ -198,6 +198,32 @@ one at a time.
 blinking where ours is visible (mettaur-progress.gif). Find which side's mercy/blink timing is off by
 the frame, from canon's routine (`sub_801A5EE`, asm00_2.s:22252-22296 sets the 120), and fix it.
 
+### F14b. `mettaur`: mercy-blink predicate bit 2 -> bit 1 (follow-up to F14's refuted negative)  *(OPEN -- 2026-09-13)*
+
+**Why.** F14's worker matched mercy seed/rate (120, first-observable 119, -1/frame, CONFIRMED) but
+misread the canon blink formula; verifier REFUTED it: `lsr #2; bcc` (asm00_2.s:16795-16806) tests the
+carry, which is bit 1, so canon hides iff (timer>>1)&1 (2-on/2-off, period 4) -- the repo's own
+Invisibl comment (src/actor.rs:977-979) agrees, while the mercy comment (:963-967) repeats the bit-2
+error. Ours hides iff (invulnerable/4)%2==1 (bit 2, src/actor.rs:970). The predicates diverge on half
+the mercy-window frames; the row signature is consistent (k=0 404px flip at canon 140/timer 93, small
+diffs all 70 frames inside mercy 93->24). The wave-timing premise stays on hold until this experiment
+runs (stop rule: refuted claim).
+
+**Do, in order.**
+1. Baseline mettaur (harness line + `diffmask.py` region + `oracle.py`): must read 31075/1566/70,
+   negative not blind (46554).
+2. Change the mercy blink predicate to bit-1 (`(invulnerable>>1)&1`-equivalent), fixing the
+   :963-967 comment; leave seed/rate (120, -1/frame) and the Invisibl path untouched. Cite
+   `blindVisualHandledHere_8016934` + ARM carry semantics in the commit note.
+3. Re-run mettaur, wave, window, opening, chip-cannon and the full table -- nothing may get worse,
+   and a row that does is reported with its numbers. If 31075 drops only partially, report the
+   remaining frames (wave-latency / enemy_anim k=61 / flash-magnitude residuals stay open).
+4. Report: row · frames · total · worst · region · commit · one line of mechanism · one line of what
+   is unverified.
+
+**Rules.** src/ blink predicate + comments only; no allowlist change, no alignment or region change;
+captures one at a time.
+
 ### F15. tiles/gauge: the one vblank frame, 208 px at k=7  *(OPEN -- 2026-09-12)*
 
 **Why.** F6 left k=0..6 at exactly 0 and 208 px on k=7, the vblank-race residue HANDOFF §9 records.
