@@ -153,8 +153,9 @@ is where the money goes (R3-R5, F10: two to four attempts each). Cost reducer fo
 **Rules.** tools/ and the export block in src/ only; no behavior change; captures one at a time.
 **Coordinator:** verify_rows plus the verifier on the "consistent with the pixel diff" claims.
 
-### F13. `card` isolated: 18486 px over 16 frames  *(OPEN -- 2026-09-12)*
+### F13. `card` isolated: 18486 px over 16 frames  *(NEGATIVE -- 2026-09-13, Precise negative, src ruled out by measurement (no edits, branch empty))*
 
+**Result.** Precise negative, src ruled out by measurement (no edits, branch empty). card stays 18486/3081/16 (verify_rows PASS, negative 15405 not blind); 18486 = 6x3081 k0-5 card-region x<128 + 10x0 k6-15; residue is highlighted-card slot 1 vs 0, slot 0 already exact. Canon custMenuSomeHandler_8028B74 (asm03_0.s:5194; cursor byte 0x020364C7 0a->4->3->2->1->0 at RAM 21/51/81/111/141, pixels P+2). Rust static: CARDNAME_ROW window_cursor=0, presses 20-145 land while window closed (opens ~131-141), no just_pressed edge. Our walk already P+2 with canon magnitudes; CURSOR_DELAY=2 correct. Worker worker-muse (muse-spark-1.3-contributor, 57 turns, $0.023). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.009): walk claim CONFIRMED empirically (RAM walk reproduced), static/oracle-reasoning structurally CONFIRMED, magnitudes/band sub-values UNCHECKED, fixture-rewire recipe actionable with 3 gaps (negative re-verify, window-open coverage, band arithmetic). Follow-up F13b written for the fixture rewire.
 **Why.** HANDOFF §10 names the chip window's cursor-move timing.
 
 ### F14. `mettaur` isolated: 31075 px over 70 frames  *(OPEN -- 2026-09-12)*
