@@ -129,8 +129,9 @@ MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ON
 this ticket, smallest residue first (the rows at 10-8338), and bring its rows to 0; mark this ticket
 PARTIAL with which family is done and leave it OPEN for the next family, until every chip row is 0.
 
-### F16. Oracle coverage: every harness row, not two  *(OPEN -- 2026-09-13)*
+### F16. Oracle coverage: every harness row, not two  *(DONE -- 2026-09-13, Oracle generalized to all 60 comparison rows (tools/oracle.py +138/-41, new tools/f16_slot_probe.py, export bl)*
 
+**Result.** Oracle generalized to all 60 comparison rows (tools/oracle.py +138/-41, new tools/f16_slot_probe.py, export block untouched, landed ee6c494). Sweep 60/60 exit 0; card field k=0/pixel k=0 consistent, mettaur k=0/k=0 consistent, tiles field k=0 vs pixel k=7 (fixture disagreement, reported); only banner of 37 pixel-0 rows state-clean (36 show pixel-invisible src divergences); negatives 48/60 NOT BLIND, 11 honest-static, chip-use BLIND-dynamic flagged. verify_rows PASS six rows unchanged. Worker worker (glm-5.3-flash, 69 turns, $0.085). Verifier verifier (muse-spark-1.3-contributor, 22 turns, $0.009): all samples CONFIRMED (residues, n/a, loud fails, banner/cannon/chip-sword, blind split legitimate), ENEMY_SLOT probe + full censuses UNCHECKED (plausible, not refuted), no rule blockers. Deviations from ticket predictions are data findings, not tool defects; residuals (tiles fixture, chip-use BLIND, 0x14 citation) are src/fixture territory. Note: HANDOFF 3a oracle-coverage sentence now stale, needs docs pass.
 **Why.** `tools/oracle.py` names the first divergent state field and frame, which is what turns a
 three-attempt ticket into a one-attempt ticket, but it supports only `wave` and `mettaur`. Attribution
 is where the money goes (R3-R5, F10: two to four attempts each). Cost reducer for every ticket after it.
