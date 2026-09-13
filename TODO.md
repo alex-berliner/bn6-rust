@@ -135,7 +135,9 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 - F14b PARTIAL -- `mettaur`: mercy-blink predicate bit 2 -> bit 1 (follow-up to F14's refuted negative). Blink experiment done, partial drop, landed 3e49236
 - F15 DONE -- tiles/gauge: the one vblank frame, 208 px at k=7. tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a
 
-### F17. `mettaur` isolated: enemy_anim k=61, the Mettaur's own animation *(OPEN -- 2026-09-13)*
+### F17. `mettaur` isolated: enemy_anim k=61, the Mettaur's own animation  *(DONE -- 2026-09-13, mettaur 19698/1245/70/60824 unchanged pixels, oracle enemy_anim 2/70->1/70 (first k=61, mm_timer 70/70))*
+
+**Result.** mettaur 19698/1245/70/60824 unchanged pixels, oracle enemy_anim 2/70->1/70 (first k=61, mm_timer 70/70); SWING shows IDLE on 64th executor tick per canon sub_8109DEC (asm31.s:170830-170848, SWING_POSE=0x40-1 derived), six chip literals pose:None behavior-neutral; wave/window/chip-cannon/opening-isolated PASS 0, opening integrated 72499 pre-existing (verify_rows PASS, landed 5ef3a6d). Worker worker-muse (muse-spark-1.3-contributor:high, 81 turns, $0.0385). Verifier verifier-glm (glm-5.3-flash:high, 25 turns, $0.0129): routine semantics, neutrality, 0px idle all CONFIRMED by independent oracle+capture measurement. Unverified/next: 1-frame relative-phase skew (MegaMan-side, out of scope) is the follow-up.
 **Why.** F14b landed `3e49236`: `mettaur` 31075->19698 (worst 1566->1245, 70 frames, negative frame 60824 not blind); `src/actor.rs` only, mercy-blink predicate now `(invulnerable>>1)&1`; `mm_timer` 70/70, first oracle divergence `enemy_anim` k=61 (2/70); full table exactly one row differs (improved). The mercy seed/rate and blink predicate are settled and stay untouched -- the remainder is the enemy's animation state, not a third mercy ticket.
 **Do, in order.**
 1. Start in `tools/worktree.sh f17-mettaur-anim`. Baseline `python3 tools/harness.py --only mettaur` (must read 19698/1245/70, negative 60824 not blind), plus `tools/diffmask.py` region and `tools/oracle.py mettaur` (must read `mm_timer` 70/70, first divergence `enemy_anim` k=61), measured.
