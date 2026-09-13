@@ -33,6 +33,8 @@ while [ ! -f "$RUN/exit" ]; do
   used=\$(python3 "$ROOT/tools/or_spend.py" 2>/dev/null | sed -n 's/.*total \\\$\([0-9.]*\).*/\1/p')
   if [ -n "\$used" ] && python3 -c "import sys; sys.exit(0 if float('\$used') >= \$LIMIT else 1)"; then
     echo "\$(date +%H:%M) CAP HIT: total \$used >= \$LIMIT" >> "$RUN/status.log"
+    # timeout(1) puts pi in its own process group, so kill pi by its session dir as well as run.sh's group
+    for p in \$(pgrep -f "$RUN/session"); do kill -TERM \$p 2>/dev/null; done
     for p in \$(pgrep -f "$RUN/run.sh"); do kill -TERM -- -\$(ps -o pgid= \$p | tr -d ' ') 2>/dev/null; done
     echo "exit cap" > "$RUN/exit"; break
   fi
