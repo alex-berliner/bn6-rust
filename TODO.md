@@ -716,7 +716,7 @@ captions (says defect unresolved -- under-claiming, rides the next caption pass)
 re-run: every other row identical to F5b. Worker GLM-5.3-Flash high, 84 turns, $0.117; verifier
 Muse-Spark high, 33 turns, $0.421.
 
-### F3. After the chip window closes, a faded copy of it stays on the field  *(OPEN -- 2026-09-12)*
+### F3. After the chip window closes, a faded copy of it stays on the field  *(DONE -- 2026-09-12, merged; ghost layer exact 0, row 977410->695603, residue is fixture content)*
 
 **Why.** Playing the release ROM from power-on (tools/battle_gif.py's tour: pick FireSwrd, Start to
 OK, A), the window slides out after "Sending chip data" and then a faded copy of it -- the window's
@@ -742,6 +742,22 @@ Unverified: that canon shows nothing there (it should not, but that is the measu
 **Rules.** src/ for the fix; tools/harness.py for the new row; no allowlist change; captures one at a
 time. **Coordinator:** verify_rows plus the verifier on the canon routine claim; a PARTIAL from a wrong
 guess about the cause gets a follow-up ticket, not an escalation.
+
+**Result.** The ghost is gone by mechanism, not masking. Old `vacate()` tested a 128-px scroll the
+slide never reaches, so no column ever cleared and the whole window map reappeared on BG3 at
+scroll 0; new `vacate()` clears leftward per (c+1)*8<=x, matching canon `sub_8026BF4`
+(asm03_0.s:1026-1052, blank tile byte_8026C88, set->1 / clear->2 cadence) -- verifier CONFIRMED
+against the disassembly and decomp. windowclose 977410/33380 -> 695603/28784 (neg 778748,
+non-blind); the window's own layer is exact 0 over all ten slide frames, and the post-close 1402 px
+is fixture content (descriptor gauge=1 vs canon's empty/refill; our 'Cannon 40' chip name vs none).
+Full table identical to F5b/F6 except cursor 620802->620914 (+112): vacate cannot run there (no OK
+press -- premise CONFIRMED), race-noise acceptance plausible with the one-frame localization
+UNCHECKED. verify_rows PASS (windowclose/window/cursor/wave/card, all non-blind). Merge carve-outs:
+the branch's or_spend.py rewrite and TODO F7-F15 deletion never landed (merge kept main); the gif
+caption was reverted as out of scope and the inverted bit-2 comment fixed. Unverified: whether
+canon's post-close gauge reset/refill is src/ behaviour or fixture -- the windowclose residue's
+next question. Worker GLM-5.3-Flash high, 113 turns, $0.204; verifier Muse-Spark high, 28 turns,
+$0.346.
 
 ### F7. The legacy `cannon` row still compares against PAUSED: 14388  *(OPEN -- 2026-09-12)*
 
