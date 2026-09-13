@@ -144,8 +144,9 @@ intervention is named but untested
 
 - F21b PARTIAL -- `result` isolated: the ~2900 px/frame outside the window -- backdrop tail and one-frame slide lag. result 408337/31895->190633/24647/40 (tilemap-column slide j=-30+2/frame + 16-frame hold + peeked backdrop seed, k=10,12,13 zeroed
 - F21c BLOCKED -- `result` field-row pairing: re-justify after the slide rework. field re-pairing blocked on scope decision, nothing landed
-### F21d. `result`: write the window's tilemap by block copy, not 576 managed tile writes  *(OPEN -- 2026-09-13)*
+### F21d. `result`: write the window's tilemap by block copy, not 576 managed tile writes  *(DONE -- 2026-09-13, result 408337/31895->102547/14866/40 [neg 195579 not blind], field 1048/177->0/0/40)*
 
+**Result.** result 408337/31895->102547/14866/40 (neg 195579 not blind), field 1048/177->0/0/40; 17 blits in 17 consecutive frames (1/step, was 2/step +0.47 overrun); wave/window/opening/chip-cannon 0; field-int 358420->305263 better; verifier CONFIRMED all 3 claims (OAM trace 1f/step, refcount audit, scope); landed 90dd655; worker muse-spark-1.3-contributor 77 turns $0.069, verifier GLM
 **Files.** src/results.rs, src/backdrop.rs, vendor/agb
 
 **Why.** F21c's verified measurement: F21b's slide rework (result 408337 -> 190633 on wt/f21b) regressed
