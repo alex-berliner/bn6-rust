@@ -184,6 +184,20 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, element attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
 
+### F20b. `tiles`/`gauge` integrated: match the fixture's sprite positions to canon's state  *(OPEN -- 2026-09-13)*
+
+**Why.** F20's verified decomposition: the HUD strip (y<24) reads 0 on all 8 frames and `--disable-obj`
+reads 0/0/8, so the whole 25979 px is sprites -- our fixture puts MegaMan at column 3 where canon's
+save state holds (2,2), and the enemy one row off canon's, so both navis and the enemy's HP readout sit
+in the wrong cells. Fixture, not src/. **Do:** peek canon's positions from the row's own state
+(MegaMan's and the enemy's PanelX/PanelY in their BattleObjects, cite the offsets), set the row's
+descriptor (`HUDMATCH` in tools/harness.py) to them with `peeked` provenance, run tiles and gauge
+(both variants), wave, window, opening, chip-cannon and the full table. **Acceptance:** tiles/gauge
+integrated at 0 with a non-blind negative, or the residual reported by element with frames and
+regions; isolated still 0; nothing worse. **Rules:** tools/harness.py descriptor only; no allowlist
+change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never widened).
+**Coordinator:** verify_rows; no verifier unless a claim goes beyond harness lines.
+
 ### F21. `result` isolated: 497967 px over 40, its canon side is result_arrival *(OPEN -- 2026-09-13)*
 **Why.** `result` isolated reads total 497967 (worst 31882) over 40 frames at canon 21+k, rust 10(marker)+15+k (`web/captures/result-isolated.txt:1`, canon REAL+RESULT_ARRIVAL); rust is RESULT_ROW (RESULTMATCH_ROW + result_elapsed=0, `tools/harness.py:1148`); the row note (`tools/harness.py:1529-1535`) records the sweep: result_elapsed 0..40 at fixed offset bottoms at elapsed=14 (522212) but the joint minimum with the row's own search=range(0,60) is elapsed=0 at offset 15 (497967, every other sample 504-505k) -- result_elapsed is not the knob; localized shape is full-screen frame 0 (bbox x0-239,y0-159, 31882) decaying (30846, 29995, ... 17395 by k=10) to a flat ~6600-6900 px plateau from k=16 that never reaches 0; the reward-content theory is disproven (decoded frames: DeleteTime 0:29:33 = exactly 1760, Busting LV. 2, 100z, no chip -- RESULT_ROW's result_frames=1760/level=2/zenny=100 and megaman_hp=60 already match, peeked HP 0x3c/MaxHP 0x64); gauge=1 ruled out (identical 497967/31882); what is left is the pre-arrival battle tail, named lead eBGScrollCBCounters 0x02009690/0x02009694 reading 0x0530/0x8298 at RESULT_ARRIVAL frame 0.
 **Do, in order.**
