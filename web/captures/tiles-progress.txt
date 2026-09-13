@@ -1,0 +1,1 @@
+tiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

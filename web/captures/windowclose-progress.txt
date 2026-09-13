@@ -1,0 +1,1 @@
+windowclose (isolated), before and after: canon on top; ours at 2ad2733 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f0db79d (695603 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

@@ -1,0 +1,1 @@
+card (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

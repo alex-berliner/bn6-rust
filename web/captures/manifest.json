@@ -1,5 +1,71 @@
 [
   {
+    "file": "captures/banner-progress.gif",
+    "name": "banner-progress",
+    "label": "banner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/cannon-progress.gif",
+    "name": "cannon-progress",
+    "label": "cannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/card-progress.gif",
+    "name": "card-progress",
+    "label": "card (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/chip-cannon-progress.gif",
+    "name": "chip-cannon-progress",
+    "label": "chip-cannon (isolated), before and after: canon on top; ours at b21fce8 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at 3fa1eba (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/chip-minibomb-progress.gif",
+    "name": "chip-minibomb-progress",
+    "label": "chip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/field-progress.gif",
+    "name": "field-progress",
+    "label": "field (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/full-battle-before-F3.gif",
+    "name": "full-battle-before-F3",
+    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. THIS IS THE BEFORE: the ROM at 67f795f, before F3 removed the chip window's ghost -- compare full-battle-loop.gif, the current build.\n\ncommit 904f07b",
+    "added": null
+  },
+  {
+    "file": "captures/opening-progress.gif",
+    "name": "opening-progress",
+    "label": "opening (isolated), before and after: canon on top; ours at 2e22eac (1160 px over 40 frames, canon 120+k, rust offset 119); ours at 61e1fdd (0 px, canon 120+k, rust offset 119). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/tiles-progress.gif",
+    "name": "tiles-progress",
+    "label": "tiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/warp-progress.gif",
+    "name": "warp-progress",
+    "label": "warp (isolated), before and after: canon on top; ours at 7a3d97b (9198 px over 30 frames, canon 130+k, rust offset 30); ours at 389578d (0 px, canon 130+k, rust offset 51). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/windowclose-progress.gif",
+    "name": "windowclose-progress",
+    "label": "windowclose (isolated), before and after: canon on top; ours at 2ad2733 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f0db79d (695603 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
     "file": "captures/windowclose-isolated.gif",
     "name": "windowclose-isolated",
     "label": "windowclose (isolated), FAILED: per-frame max 28784 px, total 695603 px over 40 frames. Alignment: canon frame 81+k, rust frame 8(marker)+253+k. canon\n\nTODO F3: the window CLOSING -- no earlier row covered it (window/card/cursor stop while it is open). canon: REAL+CHIPSELECT, Start@50 (jump the cursor to OK, custMenuSomeHandler's Start branch) then A@80 (custMenuPressOK_8028D3A) -- pressed through to OK exactly as a player does. The close event is watched, not assumed: --watch 0x020364c0:0x48 (eS20364C0, the window's own state struct) shows JumpOffset01 0x04 -> 0x08 (the slide-out state, sub_8026BF4) on the frame of the A press and its slide counter (+0x40) counting 0x0c..0x78 across the ten calls at canon frames 81..90 -- canon_ref=81, the first frame the window is leaving. rust: the same CUSTMATCH_ROW as `window`/`card` (the window opens with the cursor already on OK, window_cursor=0xa), the SAME press shape (Start@230,A@260), full screen, no layer isolation -- the ticket compares the whole screen, the ghost included. Event-derived offset 253: our slide-out calls run at capture frames 261..270 (marker origin 8) against canon's 81..90, and at offset 253 the ten slide frames compare EXACTLY 0 on the window's own layer (--only-bg 3, measured) -- the band is centred there to CONFIRM a unique minimum, not to find one: over the full screen a deeper meaningless basin sits near offset 264 (575089 vs 695603), where the unshared-battle noise (the enemy acts on an RNG the two sides do not share, the same residue `cursor` carries) happens to score lower by pairing frames from different phases of the two diverging battles; the event, not the score, picks 253 (F2's method). The post-close BG3 residue at the true alignment is a flat 1402 px of HUD-strip fixture content, not window: canon's gauge RESETS to empty when the window closes and immediately refills (rows 8..15) while the descriptor's gauge=1 stays full, and ours shows the hand's chip name (rows 148..158, 'Cannon 40') where canon shows none -- both the known fixture-content class `window`'s note records, not src/ defects.\n\ncommit 58cb524",
@@ -572,7 +638,7 @@
   {
     "file": "captures/full-battle-loop.gif",
     "name": "full-battle-loop",
-    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. The faded copy of the chip window that used to stay on the left of the field after the window closed (TODO F3) is FIXED: vacate() never cleared a single column (its condition tested a scroll value the slide never reaches), so the whole window map reappeared on BG3 at scroll 0; it now clears each column on the frame canon does (sub_8026BF4's cadence, measured on eS20364C0 +0x44), and the harness's new windowclose row compares the close directly (977410 -> 695603 full screen, the window's own layer exact over the whole slide). This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements.\n\ncommit 58cb524",
+    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. \n\ncommit a5d6511",
     "added": "2026-09-07"
   },
   {
