@@ -594,7 +594,7 @@ them. Merged as `61e1fdd`; the branch also carried stale reversions of `.pi/coor
 `tools/pi_coordinator.sh` (it predated main's spend-cap commit -- out of ticket scope), and the
 merge kept main's cap-enforcing versions. Worker GLM-5.3-Flash high, 67 turns, $0.077.
 
-### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(PARTIAL -- 2026-09-12, branch wt/f5-chipfire kept at 28a6104, not merged)*
+### F5. The chip rows' fixture: fire a chip after the corpse has dissolved  *(PARTIAL -- 2026-09-12; gate commit 28a6104 landed via the F5b merge, branch deleted)*
 
 **Why.** 28 chip rows read exactly 14388 and 11 more read 14388 plus their own residue. The 14388 is
 canon's fixture, not our code: from PAUSED, a 528 px portrait box (canon frames 43-48) and the deleted
@@ -643,7 +643,7 @@ REFUTE -- a one-shot poke to MegaMan's AIData pressed field in 0x0C after cleanu
 though F5 allowed it, and that is F5b. Worker GLM-5.3-Flash high, 143 turns, $0.413; Sol verifier
 GPT-5.6-Sol high, 14 turns, $0.365 (plus a $0.020 GLM pre-check on the wrong role, superseded).
 
-### F5b. Fire a chip in state 0x0C by delivering the press to MegaMan's AIData directly  *(OPEN -- 2026-09-12)*
+### F5b. Fire a chip in state 0x0C by delivering the press to MegaMan's AIData directly  *(DONE -- 2026-09-12, merged; 27 chip rows to 0, every other chip row improved, none worse)*
 
 **Why.** F5's verified core: chips fire only while the banner sequencer is in 0x08, because 0x08
 (`sub_80080D2`) refreshes the alliance players' AIData from the joypad mirror every frame and 0x0C
@@ -678,6 +678,21 @@ allowlist change; captures one at a time. **Measure and report** the poke addres
 watch-write fire/refusal trace, every moved row's before/after line, in AGENTS.md shape.
 **Coordinator:** verify_rows on every moved row plus the Sol verifier on the fire-after-clean claim;
 a second wrong guess ends the 0x0C route (options then, not a third attempt).
+
+**Result.** The Sol-named gap closed with a measured fire. Poke `--poke-at 3:0x020340a4:0x0001`
+(AIData JoypadPressed, ptr live from 0x0203aa08) + mirror 0x02036822 on `afterdissolve_0x0c`
+(sequencer 0x0C, dissolved field) gives the identical chain as the A@40 control: Unk_44 0->0x4 at
+0x0800FFEA, CurAction 0x08->0x14 at 0x0801169A via `sub_800FB54`->`object_setAttack2`, attack ends
+frame 37 (minor: the end-frame cite is uncommitted, fire verdict unaffected). 27 chip rows PASS 0/0
+(was 14388/2350); suprvulc 2464/177/113; bombs/seeds/vdoll 10-8338; energbom/megenbom 19958/1871;
+0x15 rows 14740-73481 -- no row worse, none on PAUSED; wave/opening still 0, cannon 14388.
+verify_rows PASS on all 43 moved rows + wave/cannon/opening canaries from a clean rebuild, no BLIND
+negatives. Verifier (role default) CONFIRMs fire/scope/method with two recorded flags: the stale
+.pi/coordinator.md hunk was dropped at merge (main's verifier-role text kept), and the 5 POPUP rows
+now blank canon's popup against rust's drawn one (numbers stand; the popup ticket starts there).
+Offset 122 confirmed in the merged-main caption; chip-cannon PASS 0/0/40 on merged main; gallery
+GIFs for moved rows stale until the publish step. Worker GLM-5.3-Flash high, 131 turns, $0.219;
+verifier Muse-Spark high, 39 turns, $0.403.
 
 ### F6. tiles/gauge isolated: 538 px over 8 frames  *(OPEN -- 2026-09-12)*
 
