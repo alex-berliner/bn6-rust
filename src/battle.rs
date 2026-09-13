@@ -962,6 +962,13 @@ pub struct Battle<'a> {
     /// is present so `banner_at` is not armed for fixtures that compare
     /// against mid-battle captures, and the gauge needs the plain fact.
     window_closed: bool,
+    /// The window's state machine flips Done on its tenth slide-out call,
+    /// but canon's scroll reset and HUD redraw wait a frame: RenderInfo+0x18
+    /// still reads 0x78 on slide frame 90 and 0 on blank frame 91, and the
+    /// gauge redraw lands on frame 92 (F18c, peeked -- watch 0x0200ac58).
+    /// While set, the HUD stays in menu mode so no redraw leaks onto the
+    /// blank frame; the next update performs the visible reset instead.
+    close_redraw_pending: bool,
     /// Frames until it goes up, counting down from the chip window closing.
     banner_at: u16,
     /// Frames until the buster's blip sounds; see BUSTER_BLIP_DELAY.
@@ -1510,6 +1517,7 @@ impl<'a> Battle<'a> {
             banner_done: false,
             opened: false,
             window_closed: false,
+            close_redraw_pending: false,
             banner_at: 0,
             blip_in: 0,
             blip_off: 0,
@@ -1724,6 +1732,37 @@ impl<'a> Battle<'a> {
         // because `skip_intro()` takes `&self` and the borrow checker cannot
         // see that it only reads `self.fixture` -- calling it while `hud`
         // still holds `self.hud_tiles` mutably does not compile.
+        // F18c deferred close: the tenth slide-out call flips the window
+        // Done, but canon holds scroll 0x78 through that frame (slide 90)
+        // and only reads 0 on blank frame 91, redrawing the gauge on 92
+        // (RenderInfo+0x18 watch + VRAM dumps on this row's own capture).
+        // So the Done frame leaves scroll at 0x78 and arms this; the blank
+        // frame performs the visible reset AFTER the HUD has drawn in menu
+        // mode, and the redraw lands the frame after that, as on canon.
+        let close_blank = self.close_redraw_pending;
+        if close_blank {
+            // Canon's own BG3HOFS reads 0 here (RenderInfo+0x18 watch,
+            // 0x78 at slide 90 -> 0 at blank 91): the slide's last value
+            // stays up for the Done frame, not this one. HudTiles' own
+            // tile placement assumes an unscrolled background.
+            if let Some(bg) = self.hud_bg.as_mut() {
+                bg.set_scroll_pos((0, 0));
+            }
+            for (i, p) in self.results.palettes().iter().enumerate() {
+                gfx.set_background_palette(custom::BANK + i as u8, p);
+            }
+            // The window borrows banks 9-15, and the gauge's is 9, so it
+            // goes back last. On the real ROM the window covers this whole
+            // layer while it is up, which is why they can share a bank.
+            if let Some(hud) = self.hud_tiles.as_ref() {
+                gfx.set_background_palette(
+                    crate::hudtiles::GAUGE_BANK,
+                    &hud.gauge_palette(),
+                );
+            }
+            self.gauge = 0;
+            self.close_redraw_pending = false;
+        }
         let before_first_window = !self.window_closed && !self.skip_intro();
         let gauge_up = self.shown.is_none() && self.fade_out == 0 && !before_first_window;
         if let Some(hud) = self.hud_tiles.as_mut() {
@@ -1733,7 +1772,14 @@ impl<'a> Battle<'a> {
             // never the reverse), so this is never a fresh-blanked HUD.
             let bg = self.hud_bg.as_mut().unwrap();
             hud.set_menu(bg, self.custom.is_some());
-            hud.set_gauge(bg, self.gauge, GAUGE_FULL, gauge_up);
+            // F18c: on the blank frame after closing the gauge stays off:
+            // canon's blank-91 shows the HP box over a blank gauge area and
+            // only redraws the gauge on frame 92, so skip the body draw
+            // while the deferred close is still blanking (the menu flip
+            // above already cleared its columns and moved the HP box).
+            if !close_blank {
+                hud.set_gauge(bg, self.gauge, GAUGE_FULL, gauge_up);
+            }
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
@@ -1838,16 +1884,12 @@ impl<'a> Battle<'a> {
                 // trigger (selecting the chip for use mid-battle) is not
                 // modelled -- no compared capture reaches it.
                 self.name_suppressed = true;
-                // The shared background's scroll returns to 0 the instant
-                // the window finishes closing, same as canon's own BG3HOFS:
-                // measured live (this ticket) counting UP 12/frame as the
-                // window closes (same magnitude it counts down on open),
-                // ending on 120 -- then reading 0 the very next frame, not
-                // 120 forever after. HudTiles' own tile placement assumes
-                // an unscrolled background.
-                if let Some(bg) = self.hud_bg.as_mut() {
-                    bg.set_scroll_pos((0, 0));
-                }
+                // F18c: the visible half of closing waits a frame (see the
+                // latch above): this frame keeps scroll 0x78 like canon's
+                // slide 90, so only arm the blank-frame reset here. The
+                // logical half (hand, suppression, banner arming below)
+                // still lands on the Done frame.
+                self.close_redraw_pending = true;
                 // BATTLE START! follows the FIRST chip window, thirty frames
                 // after it closes. Measured from a save state at a battle's
                 // first frame: window opens 165, closes 259, banner 289.
@@ -1860,21 +1902,11 @@ impl<'a> Battle<'a> {
                     self.opened = true;
                     self.banner_at = BATTLE_START_AFTER_WINDOW;
                 }
-                for (i, p) in self.results.palettes().iter().enumerate() {
-                    gfx.set_background_palette(custom::BANK + i as u8, p);
-                }
-                // The window borrows banks 9-15, and the gauge's is 9, so it
-                // goes back last. On the real ROM the window covers this whole
-                // layer while it is up, which is why they can share a bank.
-                if let Some(hud) = self.hud_tiles.as_ref() {
-                    gfx.set_background_palette(
-                        crate::hudtiles::GAUGE_BANK,
-                        &hud.gauge_palette(),
-                    );
-                }
+                // F18c: palette restores and the gauge clear ride with the
+                // deferred visible reset above, so the blank frame shows
+                // neither the window's banks nor a redrawn gauge yet.
                 {
                 }
-                self.gauge = 0;
             }
         } else if self.gauge_pause > 0 && self.open_window_allowed() {
             // The HUD fixture holds a full gauge to match the capture, which
