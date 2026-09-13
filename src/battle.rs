@@ -1116,6 +1116,11 @@ pub struct Battle<'a> {
     intro_next: usize,
     gauge: u16,
     gauge_pause: u16,
+    /// Set when the chip window closes with picks committed: canon's close
+    /// routine blanks the chip-name strip and redraws nothing there (F18, see
+    /// the window-close site below). Until it is set the strip follows the
+    /// front of the hand, which is the behaviour every other row measures.
+    name_suppressed: bool,
     results_delay: u16,
     shown: Option<results::Shown>,
     /// The regular-chip mark the RESULT window hangs at its top-left corner,
@@ -1549,6 +1554,7 @@ impl<'a> Battle<'a> {
             intro_next,
             gauge,
             gauge_pause,
+            name_suppressed: false,
             results_delay,
             shown,
             results_mark,
@@ -1743,7 +1749,7 @@ impl<'a> Battle<'a> {
             // blank tiles simply never got seen). Skipping is closer but
             // not yet 0 -- see this ticket's report for where the
             // remaining residue localises.
-            if self.custom.is_none() {
+            if self.custom.is_none() && !self.name_suppressed {
                 match self.hand.get(self.hand_at) {
                     // The hand holds the chip itself, so take its name from
                     // that. Indexing the chip table BY ID names the wrong
@@ -1814,6 +1820,20 @@ impl<'a> Battle<'a> {
                     self.hand.push(offer.chip);
                 }
                 self.custom = None;
+                // Canon's close routine blanks the chip-name strip and leaves
+                // it blank: sub_8026BF4 (asm03_0.s:1037, the JumpOffset01
+                // 0x04->0x08 slide-out this row's watch names) calls
+                // sub_8029D80 (asm03_0.s) = CopyBackgroundTiles of tile 0
+                // over the 7x2 name region, and the OK press (custMenuPressOK
+                // _8028D3A) committed the picks to the sent-chip data
+                // (sub_8029110) rather than to anything the name display
+                // follows. Measured (F18): canon shows NOTHING in the strip
+                // for the whole 30-frame post-close window while this build
+                // redrew the hand-front chip's name there ("Cannon 40", 422
+                // px/frame). Suppressed from here on; canon's own re-show
+                // trigger (selecting the chip for use mid-battle) is not
+                // modelled -- no compared capture reaches it.
+                self.name_suppressed = true;
                 // The shared background's scroll returns to 0 the instant
                 // the window finishes closing, same as canon's own BG3HOFS:
                 // measured live (this ticket) counting UP 12/frame as the
