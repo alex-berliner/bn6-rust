@@ -55,6 +55,8 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    without --no-gallery, then `python3 tools/captures_manifest.py`) and commit `web/captures`; during
    tickets always pass `--no-gallery`.
 
+A ticket whose title or text says it stays OPEN (multi-pass, e.g. F12 per chip family) is stamped OPEN after every landed pass, never PARTIAL or DONE, until its stated end condition is met.
+
 ## Stop and hand back to the user when
 
 - the spend guard fails, or this session's children have cost more than the cap your instruction names
