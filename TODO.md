@@ -743,6 +743,58 @@ Unverified: that canon shows nothing there (it should not, but that is the measu
 time. **Coordinator:** verify_rows plus the verifier on the canon routine claim; a PARTIAL from a wrong
 guess about the cause gets a follow-up ticket, not an escalation.
 
+### F7. The legacy `cannon` row still compares against PAUSED: 14388  *(OPEN -- 2026-09-12)*
+
+**Why.** F5b moved all 43 chip rows onto `afterdissolve_0x0c` (27 now 0) but the separate ported
+`cannon` row (PORTED_CHECKS, `_cannon_canon`) still uses PAUSED and reads 14388 / 2350 / 40 -- the same
+fixture artifact. **Do:** point `cannon` at the same route and Align method F5b used for `chip-cannon`
+(or show why it cannot), baseline and after, negative non-blind. tools/harness.py only.
+
+### F8. `field` isolated: 1048 px over 40 frames  *(OPEN -- 2026-09-12)*
+
+### F9. `banner` isolated: 2248 px over 58 frames  *(OPEN -- 2026-09-12)*
+
+### F10. `buster` isolated: 3172 px over 32 frames  *(OPEN -- 2026-09-12)*
+
+### F11. `warp` isolated: 9198 px over 30 frames  *(OPEN -- 2026-09-12)*
+
+**Note.** Its negative control reads 9198 too -- the same as the nominal -- so first check whether the
+row's alignment or negative is meaningful before localizing the residue.
+
+### F12. The chip rows' own residues, family by family  *(OPEN -- 2026-09-12)*
+
+**Why.** After F5b: SuprVulc 2464 / 177 / 113; the bomb, seed and VDoll rows 10 to 8338; EnergBom and
+MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ONE family per run of
+this ticket, smallest residue first (the rows at 10-8338), and bring its rows to 0; mark this ticket
+PARTIAL with which family is done and leave it OPEN for the next family, until every chip row is 0.
+
+### F13. `card` isolated: 18486 px over 16 frames  *(OPEN -- 2026-09-12)*
+
+**Why.** HANDOFF §10 names the chip window's cursor-move timing.
+
+### F14. `mettaur` isolated: 31075 px over 70 frames  *(OPEN -- 2026-09-12)*
+
+**Why.** F2's event pairing left one field: `oracle.py mettaur` first diverges at `mm_timer` k=0
+(canon 7, ours 6) -- MegaMan one frame apart inside the 120-frame mercy -- and canon's MegaMan is
+blinking where ours is visible (mettaur-progress.gif). Find which side's mercy/blink timing is off by
+the frame, from canon's routine (`sub_801A5EE`, asm00_2.s:22252-22296 sets the 120), and fix it.
+
+### F15. tiles/gauge: the one vblank frame, 208 px at k=7  *(OPEN -- 2026-09-12)*
+
+**Why.** F6 left k=0..6 at exactly 0 and 208 px on k=7, the vblank-race residue HANDOFF §9 records.
+It is a checkable claim, not a tolerance: find which write lands a frame early or late between the
+two binaries (the watchpoint names the writer on both sides) and make ours land where canon's does.
+
+**Common to F8-F15 unless the ticket says otherwise.** Baseline the row (harness line plus
+`tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
+frames and an element; find canon's routine for that element in reference/bn6f and cite it; fix src/
+(or the fixture/descriptor when the residue is the fixture, with `peeked` provenance); re-run the row,
+wave, window, opening, chip-cannon and the full table -- nothing may get worse, and a row that does is
+reported with its numbers. No allowlist change; no alignment or region change except by measured event
+(F2's rule). **Coordinator:** verify_rows on every row the report names; the verifier only for claims
+beyond harness lines; a PARTIAL from a wrong guess about the cause gets one follow-up ticket; if that
+also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
+
 ## A. Measured residues — small, self-contained, all have a number
 
 ### A9. The opening's integrated residue: the rebuilt state's spawn cells and the enemy HP readout  *(filed from F4, 2026-09-12)*
