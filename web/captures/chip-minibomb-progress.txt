@@ -1,1 +1,3 @@
+MiniBomb's thrown ball. Ours (middle) drew the ball underneath its own shadow; canon's sprite order puts the ball above the shadow. F12a fixed the draw order to match canon's object order (bottom). The same change nudged the three seed chips, which share the code, by a few pixels; the seeds pass owns that.
+
 chip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

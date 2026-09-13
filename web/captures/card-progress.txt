@@ -1,1 +1,3 @@
+The chip window's cursor. In canon (top) the cursor walks the slots, one step every 30 frames. Our row's button presses were landing while the window was still closed, so ours (middle) sat on the first slot the whole time -- Vulcan1 stayed highlighted while canon had moved on to MiniBomb. No game code was wrong: the row's script was. F13b moved our presses to after the window opens and paired the two sides on a shared cursor transition, so both walk together (bottom).
+
 card (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

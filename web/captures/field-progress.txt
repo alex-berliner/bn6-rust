@@ -1,1 +1,3 @@
+The empty field after the enemy is deleted. In canon the battle resolves into the RESULT sequence when the last enemy goes, and the field is drawn in that state. Our fixture kept the battle running instead (middle). F8 added a fixture flag that makes our ROM resolve the battle the same way canon does, citing canon's resolve routine (bottom).
+
 field (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

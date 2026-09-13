@@ -54,6 +54,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("row"); ap.add_argument("before"); ap.add_argument("after", nargs="?", default="HEAD")
     ap.add_argument("--ui", default="isolated"); ap.add_argument("--out")
+    ap.add_argument("--note", default="", help="what happened between the two builds, in words -- goes first in the caption")
     a = ap.parse_args()
     tmp = "/tmp/bn-progress-%s" % a.row
     subprocess.run(["rm", "-rf", tmp])
@@ -74,7 +75,8 @@ def main():
     out = a.out or os.path.join(ROOT, "web/captures", "%s-progress.gif" % a.row)
     frames[0].save(out, save_all=True, append_images=frames[1:], duration=DELAY_MS, loop=0, optimize=True)
     with open(out[:-4] + ".txt", "w") as f:
-        f.write("%s (%s), before and after: canon on top; ours at %s (%d px over %d frames, canon %d+k, rust "
+        f.write((a.note.strip() + "\n\n" if a.note.strip() else "") +
+                "%s (%s), before and after: canon on top; ours at %s (%d px over %d frames, canon %d+k, rust "
                 "offset %d); ours at %s (%d px, canon %d+k, rust offset %d). Each build on its own commit's "
                 "alignment, from a clean checkout (tools/progress_gif.py).\n" % (
                     a.row, a.ui, bsha, bm["total"], bm["n"], bm["canon_ref"], bm["rust_offset"],
