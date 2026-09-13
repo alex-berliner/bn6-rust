@@ -59,153 +59,76 @@ const CUSTOM_TEXT: u16 = GAUGE_FIRST + 3; // provenance: peeked -- VRAM tile off
 /// the phase runs off the battle's frame counter or off the moment the gauge
 /// filled; this build counts from the latter.
 // provenance: peeked -- VRAM tile ids read off a live battle's BG3 map.
+/// Canon order, straight off sub_801C4E4 (asm00_2.s:26372-26373): the bar
+/// tile is 0x9232 + ((t div 7) mod 4), i.e. step 0..3 = VRAM 0x232, 0x233,
+/// 0x234, 0x235 = asset GAUGE_FIRST+7..+10 -- the rotation the old array had
+/// (+9, +10, +7, +8) was absorbed by the (now deleted) fitted BAR_EXTRA.
+/// (The old "NOT VERIFIED: where the cycle starts" hedge above is settled by
+/// the same routine: the cycle runs off the gauge-full counter t, see below.)
 const BAR_CYCLE: [u16; 4] = [
-    GAUGE_FIRST + 9,
-    GAUGE_FIRST + 10,
     GAUGE_FIRST + 7,
     GAUGE_FIRST + 8,
+    GAUGE_FIRST + 9,
+    GAUGE_FIRST + 10,
 ];
-const BAR_FRAMES: u32 = 7; // provenance: derived -- read off the real ROM's BG3 map frame by frame (each of the 4 flow tiles holds for 7 frames)
-const MARKER_FRAMES: u32 = 8; // provenance: derived -- read off the real ROM's BG3 map frame by frame (cyan/orange alternate every 8 frames)
-/// The flow runs one frame behind the counter that drives it. Found by
-/// aligning a whole battle screen against the real ROM on the BACKDROP's
-/// animation -- which leaves every tile but this bar identical, 360 px -- and
-/// then sweeping the gauge's own band alone: it matches at -1 and nowhere
-/// else, taking the whole 240x160 screen to zero.
-/// UPDATE (zero-layers ticket): the counter itself is now measured (see
-/// `BAR_EXTRA`'s doc below -- `gauge_tick` IS the real ROM's `t`, frame for
-/// frame, not merely related to it), so "the two counters are related at
-/// all" is settled. What is still fitted, not derived, is THIS SPECIFIC
-/// value: only the combination `BAR_EXTRA - BAR_PHASE` is pinned down by the
-/// bar/marker formulas (see `BAR_EXTRA`'s derivation), so any
-/// `(BAR_PHASE, BAR_EXTRA)` pair with the same difference reproduces the
-/// same pixels -- e.g. `BAR_PHASE=0, BAR_EXTRA=6` fits exactly as well as
-/// `BAR_PHASE=1, BAR_EXTRA=7`. This file keeps `BAR_PHASE=1` because it is
-/// the value the original whole-screen sweep against the real ROM actually
-/// found, not because the derivation above requires that specific split.
-const BAR_PHASE: u32 = 1; // provenance: fitted -- one of infinitely many (BAR_PHASE, BAR_EXTRA) splits with the same difference (see BAR_EXTRA's own derivation) that all reproduce the real ROM's pixels identically; this specific split matches a whole-screen sweep against one save state, not derived on its own
-/// The bar runs on its own offset from the marker, and this is a MEASURED
-/// number, not a derived one. Matching tiles by hash across a full cycle: the
-/// real ROM shows its frame-44 tile on frames 42..48 and this build showed the
-/// same tile 9 frames later in aligned time, while the MARKER measured offset
-/// 0 -- so the two cannot come off one counter as THIS CODE'S OWN MODEL
-/// assumed (a `gauge_tick` that resets to 0 every time the bar is not full;
-/// see `set_gauge`'s own comment, "starts over each time it fills"), and no
-/// single phase fixes both under THAT model (9 mod 28 with 0 mod 16 has no
-/// solution).
+const BAR_FRAMES: u32 = 7; // provenance: derived -- canon's own divisor, `svc 6` (SWI Div) by #7 in sub_801C4E4 (asm00_2.s:26368-26369); matches the BG3 map read frame by frame (each of the 4 flow tiles holds for 7 frames)
+/// THE MECHANISM, FOUND IN THE DISASSEMBLY (TODO F6, 2026-09-12 -- this
+/// replaces three fitted constants, `BAR_PHASE`/`BAR_EXTRA`/`MARKER_EXTRA`,
+/// whose history is summarised at the bottom of this block). Canon draws the
+/// flowing gauge in `sub_801C4E4` (asm00_2.s:26351-26423, dispatched from
+/// `sub_801BF64`'s per-frame flag table `off_801BF88`, slot 4). With the
+/// gauge value (`eStruct2035280+0x20`, word_20352A0) at its 0x4000 cap:
+///   - it increments `t` = byte `eStruct2035280+0x00` (0x02035280) by 1 and
+///     wraps it at 0x70 = 112 (asm00_2.s:26360-26366);
+///   - it draws ALL 16 bar cells (j=7, i=1, width 0x10, block 3) with the
+///     ONE tile `0x9232 + ((t div 7) & 3)` (svc 6 = SWI Div, asm00_2.s
+///     26367-26379) -- the four flow tiles 0x232..0x235 in direct order;
+///   - it draws the 4 marker cells (j=0xd, i=1, width 4) from the table
+///     `byte_801C6C0[t & 8]` (asm00_2.s:26380-26388): offset 0 gives
+///     0x9236..0x9239 (cyan) and offset 8 gives 0x923a..0x923d (orange), so
+///     the marker is ORANGE iff `(t >> 3) & 1` -- no additive phase
+///     anywhere, and the marker is the SAME four-tile row per state, not a
+///     separate 2-frame blink.
+/// Both animations are therefore exact functions of ONE free-running
+/// counter, which is the counter this file already models: the zero-src
+/// ticket's live measurement (kept below) established that `gauge_tick` --
+/// +1 per frame while full, starting at 1 on the first full frame -- IS the
+/// real ROM's `t` frame for frame, and the wrap at 112 = lcm(28,16) is why
+/// no `(BAR_PHASE, BAR_EXTRA)`-style pair of additive offsets could ever
+/// satisfy bar and marker simultaneously under the old formula shapes (the
+/// old shapes needed `gt - t = -BAR_EXTRA+1 mod 28` AND `= 9-MARKER_EXTRA
+/// mod 16`, which has no solution at the values measured best).
 ///
-/// ITEM 4 OF THE zero-src TICKET (2026-09-08) FOUND THE REAL MECHANISM, and
-/// it is one counter after all -- just not a resetting one. Loaded
-/// /tmp/bar122.state (real ROM, gauge already full, peeked 0x020352a0 ==
-/// 0x4000) and watched a wide RAM window (`--watch 0x02035200:0x300`)
-/// alongside the marker's own pixel colour and an MD5 hash of one bar cell's
-/// pixels, frame by frame, for 79 frames (until the state's own gauge-full
-/// timer pauses the battle and the counter freezes). The byte at
-/// **0x02035280** -- offset 0 of `eStruct2035280`, the same struct
-/// `SetCustGauge`/`ClearCustGauge` hold the gauge VALUE in at offset 0x20
-/// (asm00_2.s:29826-29851) -- increments by exactly 1 every frame and wraps
-/// at 112, not 256: observed going ...0x6d, 0x6e, 0x6f, 0x00... map this
-/// counter `t`, and BOTH animations are an exact function of it over the
-/// whole capture, phase included:
-///   bar step  (0..3, indexing BAR_CYCLE) = ((t + 6) % 28) / 7
-///   marker READY (vs WAITING)            = ((t + 7) % 16) < 8
-/// Confirmed by construction, not by search: the bar cell's hash takes
-/// exactly 4 distinct values, each a 7-long run of `t % 28`, unchanged
-/// across the 0x6f -> 0x00 wraparound; the marker is orange for 8 frames
-/// then cyan for 8, same treatment. 112 = lcm(28, 16), which is exactly why
-/// a single counter can drive both cycles and still look "inconsistent" to
-/// a search that assumes a SHARED PHASE rather than a shared COUNTER: 28
-/// and 16 are not multiples of each other, so which bar step coincides with
-/// which marker state keeps changing across the 112-frame wrap, and no pair
-/// of fixed additive offsets on one always-reset-on-refill tick can
-/// reproduce that. TODO.md A8's "9 mod 28 with 0 mod 16 has no solution" is
-/// true of that model and beside the point: the real ROM is not solving
-/// that system, it is reading one free-running counter twice with two
-/// different moduli.
+/// WHAT REMAINED WAS PURE FIXTURE PHASE (TODO F6): the `tiles`/`gauge` rows
+/// compare against PAUSED, whose `t` carries an arbitrary fill history
+/// (peeks 98 at load and advances even during the paused frames -- measured:
+/// `--watch 0x02035280` over the row's own canon capture reads
+/// `t(frame) = 99 + frame`, i.e. the draw inside canon frame c uses
+/// `t = 98 + c`), while the fixture-built battle starts `gauge_tick` at 0 at
+/// Battle::new. Rather than fit the gap into the formulas, the fixture now
+/// seeds it: HUDMATCH carries `gauge_tick=50` (descriptor +28, the field's
+/// documented purpose -- "a fixture compared against a save state where the
+/// CUSTOM gauge has already been full for an unknown time"), measured off
+/// the row's own alignment: the old build's marker flipped at rust frame
+/// 440 where canon's flipped at canon frame 46 and its bar at canon 49 --
+/// with `gt(u) = u - 7` (first set_gauge at the marker origin 8) that pins
+/// `gt(435) = 428` against canon's `t_used(44) = 30`, so the seed making
+/// `gt + seed = t_used (mod 112)` at every matched frame is
+/// 30 - 428 = -398 = 50 (mod 112). With the seed in, canon's formulas run
+/// verbatim on `gauge_tick` and both boundary frames coincide exactly.
 ///
-/// ZEROING RULE, SETTLED (zero-layers ticket, 2026-09-08): the one
-/// measurement above was still open -- loaded `/tmp/battlestart.state` (a
-/// real battle's own frame 0, TRANSFER.md 7aw), pressed Start (jumps the
-/// mandatory first chip-select window's cursor to OK) then A to close it --
-/// this is the ONLY way past that window found in this session: repeated
-/// single-frame `Right`/`A` taps from the window's own default cursor
-/// position (on a chip slot, not OK; confirmed live -- `/tmp/chipselect.state`
-/// is a hand-made root with its OWN saved cursor position, not the window's
-/// fresh-open default, so `regress.py`'s cursor-walk script is not a
-/// counterexample) landed on nothing for 400+ frames, KEYINPUT
-/// (`--watch 0x04000130:2`) confirming the presses DID reach the hardware
-/// register the whole time, so the window itself was ignoring them, not the
-/// capture dropping them -- then watched `0x02035280` (t) and `0x020352a0`
-/// (the gauge value SetCustGauge/ClearCustGauge hold, capped at 0x4000) for
-/// 3000 frames with `--disable-bg`. The gauge value ramps 0 -> 0x4000 over
-/// battle-frames ~400..869 (a real fill, not a step); `t` is 0 for EVERY ONE
-/// of those frames, then reads EXACTLY 1 on frame 869 -- the SAME frame the
-/// gauge value first reads 0x4000 -- and increments by 1 every frame after
-/// (2, 3, 4, ... verified through the captured 3000 frames, wrapping mod 112
-/// exactly as the original bar122.state measurement above found).
-///
-/// So `t` is NOT free-running from battle start (the module's own
-/// `gauge_tick`-resets-on-empty model, which this file already implements in
-/// `set_gauge` -- "starts over each time it fills", reset to 0 on refill,
-/// `wrapping_add(1)` every frame while full -- is the CORRECT rule, not the
-/// bug TODO A8/this doc's own earlier draft worried it might be). The one
-/// asymmetry: the real counter reads 1 (not 0) on the first full frame,
-/// which is exactly what this file's own `wrapping_add(1)`-before-use order
-/// already produces (`gauge_tick` starts at 0 while filling, the very next
-/// `set_gauge` call where `ready` is true adds 1 before anything reads it) --
-/// `HudTiles::gauge_tick` and the real ROM's `t` are the SAME counter, frame
-/// for frame, not merely congruent mod 112. No code change needed for the
-/// reset rule itself; `BAR_PHASE`'s doc above no longer needs the
-/// "NOT VERIFIED as a rule" hedge -- the counter it offsets is now measured,
-/// not assumed.
-///
-/// TRIED TO DERIVE `BAR_EXTRA`/`MARKER_EXTRA` FROM THE RULE (this ticket, per
-/// review) AND IT DID NOT HOLD UP -- reported rather than silently kept
-/// (AUDIT pair 15). Reasoning first: with `gauge_tick` == the real ROM's `t`
-/// exactly, `flow = gauge_tick.wrapping_sub(BAR_PHASE)` is `t - 1` whenever
-/// this file reads it, so substituting `t = flow + 1` into the measured
-/// formulas gives `bar step = ((flow+7) % 28)/7`, `marker RDY = ((flow+8) %
-/// 16) < 8` -- matching this file's own `((flow+BAR_EXTRA)/BAR_FRAMES) %
-/// BAR_CYCLE.len()` / `((flow+MARKER_EXTRA)/MARKER_FRAMES) % 2 == 0` term for
-/// term at `BAR_EXTRA=7`, `MARKER_EXTRA=8` (a `floor((x+a)/k)` step function
-/// depends on `a` only mod `k*n`, so those are the UNIQUE minimal solutions).
-/// Brute-forced against the measured formulas for 1000 values of `t`:
-/// `BAR_EXTRA=7` matches all 1000, the old `BAR_EXTRA=9` matches 715/1000.
-/// So far so good on paper -- but this reasoning silently assumes THIS
-/// file's own `gauge_tick`, in the fixture-built battle the `tiles`/`gauge`
-/// check actually captures, starts its count at the SAME PHASE as the real
-/// ROM's `t` does -- and that is a second, separate claim the reset-rule
-/// measurement does not cover. TESTED, NOT JUST ASSUMED: building with
-/// `BAR_EXTRA=7` and running `tools/harness.py --only tiles,gauge` made the
-/// isolated residue WORSE, 538 -> 1258 px (harness's own 25-frame realign
-/// search included -- not a one-frame miss), so whatever this file's
-/// `gauge_tick` is doing at the compared frame, it is not simply "the real
-/// ROM's raw `t`, phase and all" the way the reset-rule measurement (a
-/// battle-start capture, not this check's PAUSED-derived one) established
-/// for THAT capture. Likely culprit, not yet measured: `demo-hudmatch`'s own
-/// fixture starts the simulated battle with the gauge ALREADY full
-/// (`gauge=1`), so this file's `gauge_tick` counts from Battle::new, not
-/// from a real multi-hundred-frame fill -- while PAUSED's `t`, peeked
-/// directly, reads 98 at load (`--peek 0x02035280` on `/tmp/
-/// pausedwithcannon.state`), a real, unknown-length fill history the
-/// fixture path does not reproduce and this ticket did not have an
-/// instrumented build to compare against frame-for-frame. Per AUDIT pair 15
-/// ("state what to measure, not what I think the answer is"): the NEXT
-/// measurement this needs is `gauge_tick`'s own value on the rust side at
-/// the compared frame (a debug build or a temporary `--watch`-able mirror of
-/// it in EWRAM), diffed against PAUSED's `98 + (compared frame count)`, not
-/// another guess at `BAR_EXTRA`. Reverted to the prior fitted values, which
-/// measure BETTER (538 px) even though the mechanism behind them is now
-/// understood to be incomplete rather than unknown.
-const BAR_EXTRA: u32 = 9; // provenance: fitted -- the reset rule (gauge_tick resets to 0 on refill, +1 per frame while full, starting at 1 on the first full frame) is now DERIVED (measured live at 0x02035280 across a real fill-to-full transition, see the doc above) and this file's formula shape is verified correct against it, but this SPECIFIC value is not: substituting the derived rule gives 7, which measures WORSE against the real ROM (538 -> 1258 px, tools/harness.py tiles/gauge) -- the fixture-built battle's own gauge_tick evidently is not phase-identical to the real ROM's t at the compared frame (PAUSED's t peeks 98, a real fill history this file's construction-time-full fixture does not reproduce), and this ticket did not have time to instrument that gap. Kept at the value that measures best; see the doc above for the next measurement needed to derive it for real.
-/// And the marker sits half a blink from where this build put it -- the
-/// SAME derivation gives `MARKER_EXTRA == 8 mod 16`, which 8 already
-/// satisfies exactly (0/1000 mismatches brute-forced against the measured
-/// formula) -- but per `BAR_EXTRA`'s own doc just above, matching the STATED
-/// formula is not the same as matching the fixture-built battle's actual
-/// phase, so this is left `fitted` too rather than promoted on the strength
-/// of an algebra check that already failed once next to it.
-const MARKER_EXTRA: u32 = 8; // provenance: fitted -- unchanged in value (8 already equals the derived-formula answer, see BAR_EXTRA's own doc), but its provenance stays fitted alongside BAR_EXTRA's until the phase gap the reset-rule measurement does not cover is actually measured
+/// HISTORY OF THE FITTED VALUES THIS REPLACES (kept, compressed): A8's
+/// 446-px stripe defect was first zeroed by two MEASURED offsets
+/// (`BAR_EXTRA = 9`, `MARKER_EXTRA = 8`) nobody could derive; the zero-src
+/// ticket then measured the real counter at 0x02035280 (+1/frame while
+/// full, first full frame reads 1, wraps at 112 -- confirmed by
+/// construction across a fill-to-full transition and a mid-cycle capture)
+/// and derived `BAR_EXTRA=7`/`MARKER_EXTRA=8` from it, but building with 7
+/// measured WORSE (538 -> 1258 px) because the fixture's `gauge_tick` is
+/// not phase-identical to PAUSED's `t` -- the gap that this seed now
+/// supplies. The old 9-frame bar/marker disagreement ("9 mod 28 with 0 mod
+/// 16 has no solution") was the same missing-seed problem seen through the
+/// old formula shapes, not two clocks.
 /// The partly-filled bar's lit cell. NOT VERIFIED: the gauge is only ever
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
@@ -392,11 +315,14 @@ impl HudTiles {
         } else {
             self.gauge_tick = 0;
         }
-        let flow = self.gauge_tick.wrapping_sub(BAR_PHASE);
+        // Canon sub_801C4E4 (asm00_2.s:26367-26388): one counter, no phase
+        // offsets -- bar tile = BAR_CYCLE[(t div 7) mod 4], marker orange iff
+        // (t & 8) != 0. `gauge_tick` IS canon's t frame for frame while full
+        // (its doc above), given the fixture seed that matches phases.
         let (bar, marker) = if ready {
             (
-                BAR_CYCLE[(((flow + BAR_EXTRA) / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
-                if ((flow + MARKER_EXTRA) / MARKER_FRAMES) % 2 == 0 {
+                BAR_CYCLE[((self.gauge_tick / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
+                if self.gauge_tick & 8 != 0 {
                     MARKER_READY
                 } else {
                     MARKER_WAITING
