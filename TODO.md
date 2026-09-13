@@ -800,6 +800,10 @@ the frame, from canon's routine (`sub_801A5EE`, asm00_2.s:22252-22296 sets the 1
 **Why.** F6 left k=0..6 at exactly 0 and 208 px on k=7, the vblank-race residue HANDOFF §9 records.
 It is a checkable claim, not a tolerance: find which write lands a frame early or late between the
 two binaries (the watchpoint names the writer on both sides) and make ours land where canon's does.
+Same ticket: `cursor` went 620802 -> 620914 (+112) at F3's merge although F3's code cannot run in that
+row (no OK press) -- the custmatch/cursor VRAM write HANDOFF §9 says lands a frame early between
+differently sized binaries. Measure it with --watch-write on both sides; no row may silently move with
+code size.
 
 **Common to F8-F15 unless the ticket says otherwise.** Baseline the row (harness line plus
 `tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
