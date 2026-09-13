@@ -1,0 +1,1 @@
+opening (isolated), before and after: canon on top; ours at 2e22eac (1160 px over 40 frames, canon 120+k, rust offset 119); ours at 61e1fdd (0 px, canon 120+k, rust offset 119). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

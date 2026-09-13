@@ -1,0 +1,1 @@
+banner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

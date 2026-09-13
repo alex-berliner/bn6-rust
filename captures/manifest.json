@@ -1,5 +1,71 @@
 [
   {
+    "file": "captures/banner-progress.gif",
+    "name": "banner-progress",
+    "label": "banner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/cannon-progress.gif",
+    "name": "cannon-progress",
+    "label": "cannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/card-progress.gif",
+    "name": "card-progress",
+    "label": "card (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/chip-cannon-progress.gif",
+    "name": "chip-cannon-progress",
+    "label": "chip-cannon (isolated), before and after: canon on top; ours at b21fce8 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at 3fa1eba (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/chip-minibomb-progress.gif",
+    "name": "chip-minibomb-progress",
+    "label": "chip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/field-progress.gif",
+    "name": "field-progress",
+    "label": "field (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/full-battle-before-F3.gif",
+    "name": "full-battle-before-F3",
+    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. THIS IS THE BEFORE: the ROM at 67f795f, before F3 removed the chip window's ghost -- compare full-battle-loop.gif, the current build.\n\ncommit 904f07b",
+    "added": null
+  },
+  {
+    "file": "captures/opening-progress.gif",
+    "name": "opening-progress",
+    "label": "opening (isolated), before and after: canon on top; ours at 2e22eac (1160 px over 40 frames, canon 120+k, rust offset 119); ours at 61e1fdd (0 px, canon 120+k, rust offset 119). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/tiles-progress.gif",
+    "name": "tiles-progress",
+    "label": "tiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/warp-progress.gif",
+    "name": "warp-progress",
+    "label": "warp (isolated), before and after: canon on top; ours at 7a3d97b (9198 px over 30 frames, canon 130+k, rust offset 30); ours at 389578d (0 px, canon 130+k, rust offset 51). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/windowclose-progress.gif",
+    "name": "windowclose-progress",
+    "label": "windowclose (isolated), before and after: canon on top; ours at 2ad2733 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f0db79d (695603 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
     "file": "captures/windowclose-isolated.gif",
     "name": "windowclose-isolated",
     "label": "windowclose (isolated), FAILED: per-frame max 28784 px, total 695603 px over 40 frames. Alignment: canon frame 81+k, rust frame 8(marker)+253+k. canon\n\nTODO F3: the window CLOSING -- no earlier row covered it (window/card/cursor stop while it is open). canon: REAL+CHIPSELECT, Start@50 (jump the cursor to OK, custMenuSomeHandler's Start branch) then A@80 (custMenuPressOK_8028D3A) -- pressed through to OK exactly as a player does. The close event is watched, not assumed: --watch 0x020364c0:0x48 (eS20364C0, the window's own state struct) shows JumpOffset01 0x04 -> 0x08 (the slide-out state, sub_8026BF4) on the frame of the A press and its slide counter (+0x40) counting 0x0c..0x78 across the ten calls at canon frames 81..90 -- canon_ref=81, the first frame the window is leaving. rust: the same CUSTMATCH_ROW as `window`/`card` (the window opens with the cursor already on OK, window_cursor=0xa), the SAME press shape (Start@230,A@260), full screen, no layer isolation -- the ticket compares the whole screen, the ghost included. Event-derived offset 253: our slide-out calls run at capture frames 261..270 (marker origin 8) against canon's 81..90, and at offset 253 the ten slide frames compare EXACTLY 0 on the window's own layer (--only-bg 3, measured) -- the band is centred there to CONFIRM a unique minimum, not to find one: over the full screen a deeper meaningless basin sits near offset 264 (575089 vs 695603), where the unshared-battle noise (the enemy acts on an RNG the two sides do not share, the same residue `cursor` carries) happens to score lower by pairing frames from different phases of the two diverging battles; the event, not the score, picks 253 (F2's method). The post-close BG3 residue at the true alignment is a flat 1402 px of HUD-strip fixture content, not window: canon's gauge RESETS to empty when the window closes and immediately refills (rows 8..15) while the descriptor's gauge=1 stays full, and ours shows the hand's chip name (rows 148..158, 'Cannon 40') where canon shows none -- both the known fixture-content class `window`'s note records, not src/ defects.\n\ncommit 58cb524",
@@ -32,7 +98,7 @@
   {
     "file": "captures/card-isolated.gif",
     "name": "card-isolated",
-    "label": "card (isolated), FAILED: per-frame max 3081 px, total 18486 px over 16 frames. Alignment: canon frame 136+k, rust frame 8(marker)+190+k. canon\n\nSame wiring as `window`: --only-bg 3 on BOTH sides, SYMMETRIC as of this ticket (bg3-merge follow-up) -- the rust side's own HUD/backdrop blanking workaround (ISOLATED_CARDNAME_ROW) is dropped for plain CARDNAME_ROW (window_cursor=0, the one byte that distinguishes demo-cardname from demo-custmatch), HUD not blanked. Reads 0 (PASS) but is ALSO BLIND, measured live this ticket: unlike `window`, canon's BG3 here DOES move (the 5-press-Left script highlights a different slot each press -- diffed live: consecutive-frame changes at capture frames 22, 52, 82, 112, 142, ~2 frames after each press), but canon_ref=144 sat just past the LAST of those (142) with no sixth press to follow it, so the compared window (144..159) was itself in a static stretch and the negative fixture (+1 frame at the found offset) also read 0.\nFIXED by re-centring, not by weakening the negative (unlike `window`, whose subject genuinely never moves): canon_ref=136 puts the last real transition (142) inside the compared 136..151, so a one-frame canon shift now has something to break. The search band is widened to 190..245 because moving canon_ref back by 8 moves the matching rust offset by about the same. This deliberately makes the check able to fail on the cursor's own move timing, which is the point -- if our press response is a frame out, this is where it shows, and a non-zero here is a real finding rather than a check that could never have caught it. canon: REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below. rust: marker origin 8 plus that band (regress.py's own compared rust frame was start=144 PLUS lag[74,96] = 218..240, 210..232 once origin is subtracted -- the widened band still contains it).\n\ncommit 82df214",
+    "label": "card (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 16 frames. Alignment: canon frame 46+k, rust frame 8(marker)+298+k. canon\n\nSame wiring as `window`: --only-bg 3 on BOTH sides, plain CARDNAME_ROW (window_cursor=0), HUD not blanked. TODO F13b (2026-09-13): the rust side now WALKS -- _CURSOR_WALK_RUST (presses 250/280/310/340/370) instead of the real script, because F13 measured that rust's window opens ~131..142, so the real script's presses (20+30k) landed while it was still closed and rust held static slot 0 (row read 18486/3081, matching only from canon 142 where both showed slot 0's name). Measured live for this ticket: canon (REAL+CHIPSELECT, cursor byte 0x020364C7) walks OK->4->3->2->1->0 -- RAM transitions 21/51/81/111/141, pixels one later (22/52/82/112/142); rust (origin 8, re-measured live for this build) pixel transitions 252/282/312/342/372 (+2 after each press, same lag as canon). PATH DIFFERENCE, accounted: rust walks FROM 0 and its first Left wraps to OK, so its slot sequence is OK,4,3,2,1 -- cross-diffing every rust post-transition frame against every canon slot shows rust after transition n == canon slot (4-n) for n>=2 and nothing for n=1 (OK) -- so the shared events are press-index-shifted, and the alignment is event-locked, NOT press-index-locked: the shared 4->3 slot change is canon pixel 52 <-> rust pixel 312, i.e. offset 312-8-(52-46) = 298 (inheriting the naive 282-pairing would have aligned rust's OK->4 against canon's 4->3 -- a slot mismatch on every frame). Band 292..305 confirms a unique sharp minimum at 298 (0 px; 3046 px for the off-by-one neighbours -- F2's rule: chosen by the measured event, band only confirms). Compared window canon 46..61 straddles the 4->3 transition (RAM 51 / pixel 52), so a one-frame canon shift still has something to break -- non-blindness from re-centring, not from weakening the negative (negative stays 'frame'). WINDOW-OPEN coverage: the window-open ANIMATION itself (rust capture frames ~131..142) was never inside the old band (old rust window 198..213) and is not inside this one; what both bands keep in view is the OPEN window's live content -- here every compared frame shows an open window whose card name changes mid-window on both sides, which is the coverage that makes the row able to fail. canon: REAL+CHIPSELECT, the SAME 5-press-Left script as `cursor` below (presses 20+30k). rust: marker origin 8 plus the band above.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -182,7 +248,7 @@
   {
     "file": "captures/chip-minibomb-isolated.gif",
     "name": "chip-minibomb-isolated",
-    "label": "chip-minibomb (isolated), FAILED: per-frame max 10 px, total 10 px over 60 frames. Alignment: canon frame 5+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: fire event measured, not searched -- CurAction 0x08->0x14 at frame 3 of the afterdissolve_0x0c capture (watch-write 0x0203a9b8), +2 frames to the first visible attack frame, the same measured lead as the PAUSED route (A write 41, attack 43). rust: unchanged -- marker origin plus the same band as ALIGN_CHIP, kept to confirm the minimum did not move.\n\ncommit 82df214",
+    "label": "chip-minibomb (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 60 frames. Alignment: canon frame 5+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: fire event measured, not searched -- CurAction 0x08->0x14 at frame 3 of the afterdissolve_0x0c capture (watch-write 0x0203a9b8), +2 frames to the first visible attack frame, the same measured lead as the PAUSED route (A write 41, attack 43). rust: unchanged -- marker origin plus the same band as ALIGN_CHIP, kept to confirm the minimum did not move.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -194,7 +260,7 @@
   {
     "file": "captures/chip-poisseed-isolated.gif",
     "name": "chip-poisseed-isolated",
-    "label": "chip-poisseed (isolated), FAILED: per-frame max 334 px, total 2145 px over 70 frames. Alignment: canon frame 5+k, rust frame 1(marker)+122+k. canon (sterile)\n\ncanon: fire event measured, not searched -- CurAction 0x08->0x14 at frame 3 of the afterdissolve_0x0c capture (watch-write 0x0203a9b8), +2 frames to the first visible attack frame, the same measured lead as the PAUSED route (A write 41, attack 43). rust: unchanged -- marker origin plus the same band as ALIGN_CHIP, kept to confirm the minimum did not move.\n\ncommit 82df214",
+    "label": "chip-poisseed (isolated), FAILED: per-frame max 334 px, total 2237 px over 70 frames. Alignment: canon frame 5+k, rust frame 1(marker)+123+k. canon (sterile)\n\ncanon: fire event measured, not searched -- CurAction 0x08->0x14 at frame 3 of the afterdissolve_0x0c capture (watch-write 0x0203a9b8), +2 frames to the first visible attack frame, the same measured lead as the PAUSED route (A write 41, attack 43). rust: unchanged -- marker origin plus the same band as ALIGN_CHIP, kept to confirm the minimum did not move.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -326,13 +392,13 @@
   {
     "file": "captures/gauge-integrated.gif",
     "name": "gauge-integrated",
-    "label": "gauge (integrated), FAILED: per-frame max 3468 px, total 26165 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 82df214",
+    "label": "gauge (integrated), FAILED: per-frame max 3282 px, total 25979 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
     "file": "captures/gauge-isolated.gif",
     "name": "gauge-isolated",
-    "label": "gauge (isolated), FAILED: per-frame max 208 px, total 208 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 82df214",
+    "label": "gauge (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -350,13 +416,13 @@
   {
     "file": "captures/tiles-integrated.gif",
     "name": "tiles-integrated",
-    "label": "tiles (integrated), FAILED: per-frame max 3468 px, total 26165 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 82df214",
+    "label": "tiles (integrated), FAILED: per-frame max 3282 px, total 25979 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
     "file": "captures/tiles-isolated.gif",
     "name": "tiles-isolated",
-    "label": "tiles (isolated), FAILED: per-frame max 208 px, total 208 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 82df214",
+    "label": "tiles (isolated), PASS (all zero): per-frame max 0 px, total 0 px over 8 frames. Alignment: canon frame 44+k, rust frame 8(marker)+427+k. canon\n\ncanon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a documented scripted landing, not searched). rust: marker origin 8 (demo-hudmatch's own family) plus a 25-frame band around regress.py's old center (435-8=427) -- regress.py's `tiles`: backgrounds below the HUD. NOT boxed: regress.py split this same capture into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the gauge's stripe animation) that would otherwise contaminate a background-only reading -- full screen (pair 6) can no longer keep them apart by cropping, so both rows now read the SAME whole-screen number and the HUD defect is reported (and allowlisted, not hidden) on both.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -392,7 +458,7 @@
   {
     "file": "captures/mettaur-isolated.gif",
     "name": "mettaur-isolated",
-    "label": "mettaur (isolated), FAILED: per-frame max 1566 px, total 31075 px over 70 frames. Alignment: canon frame 140+k, rust frame 8(marker)+203+k. canon (sterile)\n\ncanon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock shared with rust's cold boot, so canon_ref=140 is the same documented fixed point regress.py's check_mettaur used (its own frame-140 window start), not searched. rust: marker origin (frame 8 for FIELD_ROW, re-measured this ticket). PAIRED BY EVENT, NOT SCORE (TODO F2, 2026-09-12): both sides run the same 106-frame Mettaur attack cycle, measured from --watch captures of this row's own sides -- canon attack anims start at canon frames 32 and 138, ours at battle frames 95, 201, 307, 413 (capture = battle + 8); MegaMan is hit mid-attack-1 on BOTH sides -- canon HP 60->50 at canon frame 114, ours battle frame 176 -- so both attack-2s fire while MegaMan is inside the 120-frame mercy from the attack-1 hit (canon mercy 114..233 covers 138; ours 176..295 covers 201). The old band (295..325, offset 309) paired canon's SECOND attack with our THIRD -- ours took its first hit at 176 and its third-attack wave falls outside that mercy, so the two sides sat in different situations for the whole window. Event-derived offset: rust attack-2 start capture 209 = origin 8 + offset + k with canon_ref+k=138 (k=-2) gives offset 203; the band re-centred on it CONFIRMS a single sharp V-minimum exactly there (202: 47063, 203: 31075, 204: 37873 over 70 frames), not chosen by score -- the old offset 309 scored 30864, LOWER, but pairs incompatible attack indices. NOT YET ZERO (31075 px over 70 frames, worst ~1566/frame) -- the remainder is src/ territory (the known 1-frame-late hit: rust's hit at capture 184 pairs with canon 113 vs canon's own 114). Ported from the demo-field feature to FIELD_ROW (fixture.rs's own table entry, already used by `wave` below; AUDIT pair 17 prune ticket) -- same descriptor bytes.\n\ncommit 82df214",
+    "label": "mettaur (isolated), FAILED: per-frame max 1245 px, total 19698 px over 70 frames. Alignment: canon frame 140+k, rust frame 8(marker)+202+k. canon (sterile)\n\ncanon: STERILE+PAUSED+ALIVE, Start@10 -- a scripted press with no clock shared with rust's cold boot, so canon_ref=140 is the same documented fixed point regress.py's check_mettaur used (its own frame-140 window start), not searched. rust: marker origin (frame 8 for FIELD_ROW, re-measured this ticket). PAIRED BY EVENT, NOT SCORE (TODO F2, 2026-09-12): both sides run the same 106-frame Mettaur attack cycle, measured from --watch captures of this row's own sides -- canon attack anims start at canon frames 32 and 138, ours at battle frames 95, 201, 307, 413 (capture = battle + 8); MegaMan is hit mid-attack-1 on BOTH sides -- canon HP 60->50 at canon frame 114, ours battle frame 176 -- so both attack-2s fire while MegaMan is inside the 120-frame mercy from the attack-1 hit (canon mercy 114..233 covers 138; ours 176..295 covers 201). The old band (295..325, offset 309) paired canon's SECOND attack with our THIRD -- ours took its first hit at 176 and its third-attack wave falls outside that mercy, so the two sides sat in different situations for the whole window. Event-derived offset: rust attack-2 start capture 209 = origin 8 + offset + k with canon_ref+k=138 (k=-2) gives offset 203; the band re-centred on it CONFIRMS a single sharp V-minimum exactly there (202: 47063, 203: 31075, 204: 37873 over 70 frames), not chosen by score -- the old offset 309 scored 30864, LOWER, but pairs incompatible attack indices. NOT YET ZERO (31075 px over 70 frames, worst ~1566/frame) -- the remainder is src/ territory (the known 1-frame-late hit: rust's hit at capture 184 pairs with canon 113 vs canon's own 114). Ported from the demo-field feature to FIELD_ROW (fixture.rs's own table entry, already used by `wave` below; AUDIT pair 17 prune ticket) -- same descriptor bytes.\n\ncommit 62e5547",
     "added": "2026-09-08"
   },
   {
@@ -572,7 +638,7 @@
   {
     "file": "captures/full-battle-loop.gif",
     "name": "full-battle-loop",
-    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. The faded copy of the chip window that used to stay on the left of the field after the window closed (TODO F3) is FIXED: vacate() never cleared a single column (its condition tested a scroll value the slide never reaches), so the whole window map reappeared on BG3 at scroll 0; it now clears each column on the frame canon does (sub_8026BF4's cadence, measured on eS20364C0 +0x44), and the harness's new windowclose row compares the close directly (977410 -> 695603 full screen, the window's own layer exact over the whole slide). This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements.\n\ncommit 58cb524",
+    "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. \n\ncommit a5d6511",
     "added": "2026-09-07"
   },
   {

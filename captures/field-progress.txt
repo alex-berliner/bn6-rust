@@ -1,0 +1,1 @@
+field (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
