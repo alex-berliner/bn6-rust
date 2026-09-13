@@ -1127,6 +1127,29 @@ RESULT_ARRIVAL = "/tmp/result_arrival.state"
 _CURSOR_WALK_REAL = ",".join(held("Left", 20 + 30 * k, 6) for k in range(5))
 _CURSOR_WALK_RUST = ",".join(held("Left", 250 + 30 * k, 6) for k in range(5))
 
+#: TODO F9 (2026-09-12): the banner row's canon side blanks the deleted enemy's
+#: dissolve with ENEMY_TILES (0x060103E0:448, the Mettaur's own 14 object tiles)
+#: PLUS this tail: the corpse's dissolve re-upload is 768 BYTES at the same base
+#: (measured: queue slot src=0x0839A610 dst=0x060103E0 size=768, canon frame 49),
+#: i.e. it also covers tiles 45..54, which the Mettaur's live sprite never used --
+#: so 0x060105A0:320 is dissolve-sheet territory alone (peeked from the GFX
+#: transfer queue, not from any OAM). Blank on canon per frame; the rust fixture
+#: has no enemy and the row's subject (BANNER_TILES 0x06016E00) is disjoint.
+ENEMY_DISSOLVE_TAIL = "0x60105A0:320"
+
+#: TODO F9 (2026-09-12): the per-frame --zero cannot blank canon frame 49 itself:
+#: the dissolve sheet's queue entry (queued during frame 48) is FLUSHED by
+#: ProcessGFXTransferQueue during frame 49's own vblank -- after that frame's zero
+#: has run -- so the corpse still renders on frame 49 (the leftover 562 px). The
+#: entry itself is killed instead: one-shot --poke-at 49 zeroes the SIZE word of
+#: queue slot 41 (fiveWordArr200B4B0 + 41*0x14 + 8 = 0x0200B7EC, measured live:
+#: that slot's dest word 0x0200B7E8 was written new=0x060103E0 at frame 48) before
+#: the flush, so CopyWords copies 0 bytes and the upload never lands. Slot 41 only:
+#: the banner text rides queue slots 0..40 (dests 0x06016E00..0x060172E0, watched
+#: live) and entries 42/43 are a BG copy and an IWRAM copy -- none touched. The
+#: F5b one-shot-poke pattern, applied to a canon Side's fixture machinery.
+ENEMY_DISSOLVE_SLOT_SIZE = "49:0x0200B7EC:0x0000"
+
 PORTED_CHECKS: List[Check] = [
     _tiles_gauge("tiles", "regress.py's `tiles`: backgrounds below the HUD"),
     _tiles_gauge("gauge", "regress.py's `gauge`: the HUD strip, TODO A8's stripe-flow defect"),
@@ -1485,11 +1508,33 @@ PORTED_CHECKS: List[Check] = [
                  "already built) + PAUSED, enemy HP forced to 0, Start@10 -- unchanged from "
                  "regress.py's check_banner. rust: BANNER_ROW through the descriptor (marker "
                  "origin 1, blanked HUD/backdrop family) plus a band around regress.py's old "
-                 "rust_start=132 (132-1=131).",
+                 "rust_start=132 (132-1=131). "
+                 "TODO F9 (2026-09-12): the old 2248/562/58 was the PAUSED route's own deleted-"
+                 "enemy corpse, not the banner: every differing pixel sat in the corpse region "
+                 "x149-196 y81-117 (ALIGN_CHIP's measurement, frames 43-52) on exactly canon "
+                 "frames 49-52 -- the dissolve's last 4 frames, gone by 53; frames 53..106 of "
+                 "the window (the banner itself) read exactly 0. Measured on the canon side "
+                 "here: the dissolve re-uploads the Mettaur's own OBJ tile DATA at 0x060103E0 "
+                 "twice (frames 46 and 49; --watch, 412 of 448 bytes change); the frame-49 "
+                 "upload is a 768-byte pre-dithered tile sheet from ROM 0x0839A610 queued "
+                 "into the GFX "
+                 "transfer queue (slot with dst=0x060103E0, from IWRAM battle code lr "
+                 "0x030060B4) and flushed by ProcessGFXTransferQueue (asm00_0.s:830-874) -- "
+                 "the death-dissolve gate itself is the still-unfound mechanism asm31.s:169274-"
+                 "169296 records (--inert-enemy did not reach it). Fixture content, not src/: "
+                 "the rust fixture has no enemy, so the canon side now blanks the element per "
+                 "frame (--zero ENEMY_TILES plus ENEMY_DISSOLVE_TAIL for the sheet's 768-byte "
+                 "extent, the same per-frame blanking the hide_enemy chip "
+                 "rows use) instead of carrying PAUSED's corpse into the window. BANNER_TILES "
+                 "(0x06016E00) is disjoint, and the banner text's own uploads observed in the "
+                 "same queue dump (dst 0x06016E00..0x060172E0) are all outside ENEMY_TILES, so "
+                 "the row's subject is untouched.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=BANNER_ROW, extra=("--disable-bg",)),
         canon=lambda ui: Side(rom="/tmp/bn6f_banner.gba", loadstate=PAUSED,
                               cheats=("0x0203ab84:0", "0x0203ab86:0"), script="Start@10",
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,),
                               extra=("--disable-bg",)),
         canon_variant="canon (banner-patched, sterile otherwise)",
     ),
