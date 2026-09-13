@@ -643,6 +643,42 @@ REFUTE -- a one-shot poke to MegaMan's AIData pressed field in 0x0C after cleanu
 though F5 allowed it, and that is F5b. Worker GLM-5.3-Flash high, 143 turns, $0.413; Sol verifier
 GPT-5.6-Sol high, 14 turns, $0.365 (plus a $0.020 GLM pre-check on the wrong role, superseded).
 
+### F5b. Fire a chip in state 0x0C by delivering the press to MegaMan's AIData directly  *(OPEN -- 2026-09-12)*
+
+**Why.** F5's verified core: chips fire only while the banner sequencer is in 0x08, because 0x08
+(`sub_80080D2`) refreshes the alliance players' AIData from the joypad mirror every frame and 0x0C
+(`sub_80081A4`) never does -- firing stops for lack of input delivery, not because of the countdown
+(the 0x0203ca78 refill test excludes expiry as the first gate). The Sol verifier REFUTED the
+categorical impossibility claim on one ground: nobody has tested a one-shot poke to MegaMan's
+AIData pressed field in 0x0C after the cleanup, though F5 allowed a one-shot poke. That test is
+this ticket. (Corrected scope: `sub_8012DFC` serves the two alliance players, not every object;
+true cites mov/str asm00_1.s:10547-48, `sub_80081A4` 10617, `cmp r0,#6` line 13137.)
+
+**Do, in order.**
+1. **Start** with `bash tools/worktree.sh f5b-aidata`, then `git merge --ff-only wt/f5-chipfire`.
+   First fix the branch's Sol-recorded doc defects on your branch and commit: patch_sterile.py:74-76
+   must say the hold FREEZES the dissolve and kills dispatch (dead end, not a clean firing state),
+   and the docstring's line cites/scope corrected as above. Default patch output stays byte-identical
+   (prove with cmp, as before).
+2. **The untested intervention.** Build (tools/states.py, a recipe, no hand-play) a sterile state past
+   the full dissolve (portrait and corpse both 0 at load, sequencer in 0x0C). At a chosen frame apply
+a one-shot poke to MegaMan's AIData JoypadPressed (with the A press in the mirror, as a player
+   press would be) and use `--watch-write` on CurState/CurAction plus the sequencer word to show the
+   fire path (`sub_800FB54` -> `object_setAttack2`, CurAction 0x08->0x14) or the exact refusing
+   condition. Cite reference/bn6f file:line for each step, and compare against the A@40 firing press.
+3. **If it fires on a clean field:** re-point the chip template at the new state and ROM variant, pin
+   the canon alignment by the fire event (MegaMan's CurState leaving idle, R2's method), run every
+   chip row one at a time before/after, and move only rows whose negative stays non-blind.
+4. **If it refuses:** report exactly what was observed (which instruction/condition fails) -- a precise
+   negative, no further intervention, no second patch idea.
+
+**Rules.** tools/ and docs only; no src/; F5 already spent the one authorized sterile-patch change,
+so no new patch_sterile.py option -- one-shot poke or held RAM only; canon never changes; no
+allowlist change; captures one at a time. **Measure and report** the poke address/frame, the
+watch-write fire/refusal trace, every moved row's before/after line, in AGENTS.md shape.
+**Coordinator:** verify_rows on every moved row plus the Sol verifier on the fire-after-clean claim;
+a second wrong guess ends the 0x0C route (options then, not a third attempt).
+
 ### F6. tiles/gauge isolated: 538 px over 8 frames  *(OPEN -- 2026-09-12)*
 
 **Why.** `tiles` and `gauge` are the same full-screen capture (see `_tiles_gauge()`'s note) and both
