@@ -244,8 +244,9 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Rows `cursor` + `result` before/after (total/worst/frames) on the identical scripts and windows, cursor x<112 vs x>=112 split and result inside/outside-window split before/after, canon raster routine cited with file and lines, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, per-scanline attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-### F25c. `mettaur`: the shockwave's flight is 44 frames, canon's is 45 -- the one frame between the enemy's phase and MegaMan's  *(OPEN -- 2026-09-13)*
+### F25c. `mettaur`: the shockwave's flight is 44 frames, canon's is 45 -- the one frame between the enemy's phase and MegaMan's  *(BLOCKED -- 2026-09-13, mettaur 19698/1245->4265/800/70 [neg 45788 not blind], oracle 10/10 fields 70/70 FIRST-DIVERGENCE-none)*
 
+**Result.** mettaur 19698/1245->4265/800/70 (neg 45788 not blind), oracle 10/10 fields 70/70 FIRST-DIVERGENCE-none; verifier CONFIRMED canon citation (sub_80C6B64 present-at-init asm31.s:31461-31496, HP113->114, flight 45) and fix (hop_pending latch, wave 0/buster 3172/cannon 0, no fitted const) and residual distribution (exact 8 frames k=0,1,6,11,17,22,63,68, enemy_anim clean); partial gaps: T3 Timer-field mapping inferred, inbox=0 box-unchecked; acceptance 0 unmet -> branch wt/f25c-wave-flight 6b28e9b KEPT unmerged; third consecutive non-DONE on mettaur objective -> no follow-up per two-in-a-row rule; worker + verifier GLM
 **Files.** src/shot.rs, src/ai.rs, tools/harness.py
 
 **Why.** F25b measured, and verify_rows reproduced, that our Mettaur's attack path is pixel-perfect at
