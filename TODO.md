@@ -759,12 +759,18 @@ canon's post-close gauge reset/refill is src/ behaviour or fixture -- the window
 next question. Worker GLM-5.3-Flash high, 113 turns, $0.204; verifier Muse-Spark high, 28 turns,
 $0.346.
 
-### F7. The legacy `cannon` row still compares against PAUSED: 14388  *(OPEN -- 2026-09-12)*
+### F7. The legacy `cannon` row still compares against PAUSED: 14388  *(DONE -- 2026-09-12, merged; 0/0/40)*
 
 **Why.** F5b moved all 43 chip rows onto `afterdissolve_0x0c` (27 now 0) but the separate ported
 `cannon` row (PORTED_CHECKS, `_cannon_canon`) still uses PAUSED and reads 14388 / 2350 / 40 -- the same
 fixture artifact. **Do:** point `cannon` at the same route and Align method F5b used for `chip-cannon`
 (or show why it cannot), baseline and after, negative non-blind. tools/harness.py only.
+
+**Result.** Exactly as predicted: `cannon` re-pointed onto F5b's route and Align (`_chip_canon_0c("01")`
++ `ALIGN_CHIP_0C` on `afterdissolve_0x0c`), 14388/2350/40 -> PASS 0/0/40 (neg 9505, non-blind);
+`chip-cannon` re-reads unchanged 0/0/40 with the same negative, so the whole 14388 was PAUSED
+fixture artifact. verify_rows PASS on both from a clean rebuild. Harness-lines-only claim, no
+verifier. Worker GLM-5.3-Flash high, 19 turns, $0.009.
 
 ### F8. `field` isolated: 1048 px over 40 frames  *(OPEN -- 2026-09-12)*
 
