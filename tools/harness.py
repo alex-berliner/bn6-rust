@@ -1650,7 +1650,25 @@ PORTED_CHECKS: List[Check] = [
         frames=80,
         align=ALIGN_CHIP,
         rust=_chip_rust("b1"),
-        canon=_chip_canon("b1", hide_enemy=True, banner_zero=False),
+        # F19: was _chip_canon("b1", hide_enemy=True, banner_zero=False) -- the
+        # ALIVE enemy acted on canon AI all window (sprite + ticking HP digits,
+        # 51991 px in x160-210 y60-125). DELETE (HP 0/0) + the banner row's own
+        # per-frame dissolve blanking (ENEMY_TILES + ENEMY_DISSOLVE_TAIL +
+        # slot-size poke) leaves the Invisibl popup itself untouched (canon
+        # popup frames 65..113 x49, identical before/after) and cuts the enemy
+        # box to the early dissolve (6081 px, worst k=0, flat 694 HUD-only
+        # from k=10). banner_zero=False stands: the popup glyph tiles live at
+        # 0x06016E00 (BANNER_TILES) -- zeroing it kills the subject (measured
+        # +29888 center-band). Residual is the canon-only OBJ HUD HP bar
+        # (x2-45 y18-33, 55520 px, static all 80) -- rust BLANK_HUD blanks it,
+        # canon draws it; not a BANNER_TILES/ENEMY_TILES resident (zeroing
+        # those grows or keeps the diff) -- belongs to F20's OBJ-HUD work.
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1"),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,),
+                              script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
         # No pending_src -- this is fully expressible today. Kept as its own
         # named row (regress.py's check_popup, Invisibl b1 as the
