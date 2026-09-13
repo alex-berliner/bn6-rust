@@ -1340,6 +1340,45 @@ PORTED_CHECKS: List[Check] = [
         canon_variant="canon",
     ),
     Check(
+        name="windowclose",
+        ui="isolated",
+        frames=40,
+        align=Align(
+            canon_ref=81,
+            search=range(248, 259),
+            note="TODO F3: the window CLOSING -- no earlier row covered it (window/card/cursor "
+                 "stop while it is open). canon: REAL+CHIPSELECT, Start@50 (jump the cursor to "
+                 "OK, custMenuSomeHandler's Start branch) then A@80 (custMenuPressOK_8028D3A) "
+                 "-- pressed through to OK exactly as a player does. The close event is watched, "
+                 "not assumed: --watch 0x020364c0:0x48 (eS20364C0, the window's own state "
+                 "struct) shows JumpOffset01 0x04 -> 0x08 (the slide-out state, sub_8026BF4) on "
+                 "the frame of the A press and its slide counter (+0x40) counting 0x0c..0x78 "
+                 "across the ten calls at canon frames 81..90 -- canon_ref=81, the first frame "
+                 "the window is leaving. rust: the same CUSTMATCH_ROW as `window`/`card` (the "
+                 "window opens with the cursor already on OK, window_cursor=0xa), the SAME "
+                 "press shape (Start@230,A@260), full screen, no layer isolation -- the ticket "
+                 "compares the whole screen, the ghost included. Event-derived offset 253: our "
+                 "slide-out calls run at capture frames 261..270 (marker origin 8) against "
+                 "canon's 81..90, and at offset 253 the ten slide frames compare EXACTLY 0 on "
+                 "the window's own layer (--only-bg 3, measured) -- the band is centred there "
+                 "to CONFIRM a unique minimum, not to find one: over the full screen a deeper "
+                 "meaningless basin sits near offset 264 (575089 vs 695603), where the "
+                 "unshared-battle noise (the enemy acts on an RNG the two sides do not share, "
+                 "the same residue `cursor` carries) happens to score lower by pairing frames "
+                 "from different phases of the two diverging battles; the event, not the "
+                 "score, picks 253 (F2's method). The post-close BG3 residue at the true "
+                 "alignment is a flat 1402 px of HUD-strip fixture content, not window: canon's "
+                 "gauge RESETS to empty when the window closes and immediately refills (rows "
+                 "8..15) while the descriptor's gauge=1 stays full, and ours shows the hand's "
+                 "chip name (rows 148..158, 'Cannon 40') where canon shows none -- both the "
+                 "known fixture-content class `window`'s note records, not src/ defects.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW,
+                             script="Start@230,A@260"),
+        canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script="Start@50,A@80"),
+        canon_variant="canon",
+    ),
+    Check(
         name="result",
         ui="isolated",
         frames=40,
