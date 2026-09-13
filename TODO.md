@@ -694,7 +694,7 @@ Offset 122 confirmed in the merged-main caption; chip-cannon PASS 0/0/40 on merg
 GIFs for moved rows stale until the publish step. Worker GLM-5.3-Flash high, 131 turns, $0.219;
 verifier Muse-Spark high, 39 turns, $0.403.
 
-### F6. tiles/gauge isolated: 538 px over 8 frames  *(OPEN -- 2026-09-12)*
+### F6. tiles/gauge isolated: 538 px over 8 frames  *(DONE -- 2026-09-12, merged; 208/208/8, residue is only the documented vblank frame)*
 
 **Why.** `tiles` and `gauge` are the same full-screen capture (see `_tiles_gauge()`'s note) and both
 read 538 / 208 / 8 isolated. Small, self-contained, two rows at once. **Do:** localize the 538 px with
@@ -702,6 +702,19 @@ tools/diffmask.py and the oracle (which frames, which element -- the custom gaug
 known TODO A8 candidate); find canon's routine for that element in reference/bn6f; fix src/ with the
 citation; re-run tiles, gauge, wave, window and the full table (nothing worse). No allowlist change;
 the integrated variants' allowlist entries stay until their own tickets.
+
+**Result.** Landed at the documented residue. `sub_801C4e4` (asm00_2.s:26351-26423, slot 4 of
+off_801BF88) draws bar `0x9232+((t div 7)&3)` via SWI Div and marker `byte_801C6C0[t&8]` off one
+counter t at 0x02035280, no phase; src/hudtiles.rs runs it verbatim on gauge_tick
+(BAR_PHASE/BAR_EXTRA/MARKER_EXTRA deleted, fitted 18->15; MARKER_FRAMES also deleted, derived
+145->144). Exclusion proved: old shapes need phase s == 6 (mod 28) and s == 1 (mod 16), no
+solution. Fixture seeds gauge_tick=50 from the measured flip (t_used=98+c; seed=(30-428) mod
+112). Residue 208 px = HANDOFF-9 vblank frame k=7 only, k=0..6 exactly 0. verify_rows PASS
+(tiles/gauge 208/208/8, wave 0/0/90, mettaur 31075 unchanged, negatives non-blind). Verifier
+CONFIRMs mechanism/exclusion/seed; flags stale A8 wording left in fixture.rs docs and harness
+captions (says defect unresolved -- under-claiming, rides the next caption pass). Full table
+re-run: every other row identical to F5b. Worker GLM-5.3-Flash high, 84 turns, $0.117; verifier
+Muse-Spark high, 33 turns, $0.421.
 
 ### F3. After the chip window closes, a faded copy of it stays on the field  *(OPEN -- 2026-09-12)*
 
