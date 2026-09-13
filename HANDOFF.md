@@ -27,6 +27,16 @@ vs after -- a merge that changed nothing is not parity).
 - **Order (the user, 2026-09-12):** every existing row to 0 before any new content. Scope after that:
   5 viruses, 2 bosses, player fidelity, the custom screen, battle flow. No Navis, Navi Customizer,
   Program Advances, audio, netbattle.
+- **After convergence (agreed 2026-09-13):** switch from behaviour-driven porting to trace- and
+  coverage-driven porting before any new content. In order: (1) widen the state oracle into a
+  state-trace harness -- record canon's structs per frame over scripted scenarios from power-on and
+  diff ours against them, first divergence named automatically, pixels as the gate on the same
+  recordings; (2) use the bn6f fork's profiler (master branch: function map + libmgba coverage) to
+  list the functions canon executes per scenario; (3) port canon's interpreters first -- the
+  animation bytecode player (replacing our own), the object dispatcher, the script VMs -- so chips,
+  viruses and maps become data; (4) then port remaining functions in coverage order, cited line by
+  line, each verified by the trace. The 5 viruses / 2 bosses come from data after (3), and are its
+  first test. Existing rows stay as free regression tests.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user keeps $5 in the account; runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
