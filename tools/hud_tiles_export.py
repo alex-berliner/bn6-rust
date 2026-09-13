@@ -68,6 +68,13 @@ def main():
     # A blank tile at the end, for clearing cells. Tile 0 of this asset is the
     # top half of digit zero, so it cannot serve as one.
     tiles += bytes(32)
+    # The gauge's EMPTY interior, blob tile 0 = VRAM tile 0x222: sub_801C4E4's
+    # not-full draw (asm00_2.s:26390-26393) fills ALL 16 bar cells -- the four
+    # marker cells included -- with map entry 0x9222 while the gauge is below
+    # its 0x4000 cap, and the old export range started at 0x22b so this tile
+    # was never in the asset. Appended after the blank so every existing index
+    # (GAUGE_FIRST..MARKER_READY, BLANK_TILE) stays put; new asset index 70.
+    tiles += gauge[0:32]
 
     out = bytearray(struct.pack("<4sIII", b"BNHT", 1, 0, 0))
     while len(out) % 4:

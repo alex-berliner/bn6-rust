@@ -133,9 +133,8 @@ const BAR_FRAMES: u32 = 7; // provenance: derived -- canon's own divisor, `svc 6
 /// seen full in the capture, so this is the first of the four flow patterns
 /// held still.
 const BAR: u16 = GAUGE_FIRST + 7; // provenance: fitted -- NOT VERIFIED, the gauge is only ever seen full in the capture (own doc above)
-/// The marker is cyan while the gauge is filling and orange once it is full,
-/// which is the swap the gauge shows instead of any proportional readout;
-/// full, it alternates between the two.
+/// The marker tile set is a FULL-state thing only: canon's not-full branch
+/// draws the interior tile across the marker cells too, no text (F18).
 const MARKER_WAITING: u16 = GAUGE_FIRST + 11; // provenance: peeked -- VRAM tile id read off the real ROM
 const MARKER_READY: u16 = GAUGE_FIRST + 15; // provenance: peeked -- VRAM tile id read off the real ROM
 /// Columns the gauge spans, and how many of them carry bar body.
@@ -147,6 +146,19 @@ pub const GAUGE_BANK: u8 = 9; // provenance: peeked -- the real ROM's own choice
 /// A blank tile the exporter appends, for clearing cells: tile 0 of this asset
 /// is the top half of digit zero and cannot serve as one.
 const BLANK_TILE: u16 = 69; // provenance: derived -- the exporter's own known asset layout
+/// The gauge's EMPTY interior, asset tile 70 = VRAM 0x222 (the exporter's
+/// gauge blob tile 0, appended after the blank): sub_801C4E4's not-full draw
+/// (asm00_2.s:26390-26393) fills ALL 16 bar cells -- the four marker cells
+/// included -- with map entry 0x9222 while the gauge is below its 0x4000 cap,
+/// so below the CUSTOM label row nothing shows but this tile and the caps.
+/// The L-or-R marker is drawn ONLY by the full branch; measured (F18): canon's
+/// post-close gauge strip is a flat interior-colored bar with no marker text,
+/// while this file used to paint the full-state MARKER_WAITING text there over
+/// black FILLER cells -- the whole 980 px of the windowclose row's post-close
+/// gauge residue. Lit cells and their sub-cell fractions (0x922a,
+/// 0x9223..0x9229) stay on BAR: the gauge is never seen partly filled in a
+/// compared capture, so they remain unmeasured.
+const INTERIOR: u16 = 70; // provenance: peeked -- VRAM tile 0x222, dumped from the real ROM post-close and matched into the gauge blob
 
 /// The palette bank the box draws in. The field uses 0-8 and the results
 /// windows 9-11, so this one is free and is the real ROM's own choice.
@@ -319,22 +331,33 @@ impl HudTiles {
         // offsets -- bar tile = BAR_CYCLE[(t div 7) mod 4], marker orange iff
         // (t & 8) != 0. `gauge_tick` IS canon's t frame for frame while full
         // (its doc above), given the fixture seed that matches phases.
-        let (bar, marker) = if ready {
-            (
+        // NOT ready, canon's not-full branch (loc_801C534, asm00_2.s:26390+)
+        // draws the interior tile 0x9222 across all 16 cells below the top
+        // row -- marker cells included, no L-or-R text, and no flow animation
+        // -- measured (F18) against the real ROM's own post-close BG3 map
+        // (16 consecutive 0x9222 entries, dump verified): our old not-full
+        // rendering put the full-state MARKER_WAITING text over black FILLER
+        // cells there, the whole 980 px gauge residue of `windowclose`. Lit
+        // cells keep BAR: no compared capture ever shows a partly-filled
+        // gauge (lit is 0 through this row's whole post-close window), so
+        // canon's lit tile 0x922a stays unmeasured and untouched.
+        let full_state: Option<(u16, u16)> = if ready {
+            Some((
                 BAR_CYCLE[((self.gauge_tick / BAR_FRAMES) % BAR_CYCLE.len() as u32) as usize],
                 if self.gauge_tick & 8 != 0 {
                     MARKER_READY
                 } else {
                     MARKER_WAITING
                 },
-            )
+            ))
         } else {
-            (BAR, MARKER_WAITING)
+            None
         };
-        if self.gauge_shown == Some((lit, bar, marker == MARKER_READY)) {
+        let bar_tile = full_state.map_or(0, |(bar, _)| bar);
+        if self.gauge_shown == Some((lit, bar_tile, full_state.map_or(false, |m| m.1 == MARKER_READY))) {
             return;
         }
-        self.gauge_shown = Some((lit, bar, marker == MARKER_READY));
+        self.gauge_shown = Some((lit, bar_tile, full_state.map_or(false, |m| m.1 == MARKER_READY)));
         let mut body = 0;
         for i in 0..GAUGE_CELLS {
             let col = GAUGE_COL + i;
@@ -342,9 +365,19 @@ impl HudTiles {
             let (top, bottom) = if i == 0 || last {
                 (CAP_TOP, CAP_BOTTOM)
             } else if (7..11).contains(&i) {
-                (CUSTOM_TEXT + (i as u16 - 7), marker + (i as u16 - 7))
+                // Ready: the four-tile L-or-R text base. Not ready: canon's
+                // uniform interior tile across all four marker cells (F18).
+                let cell = match full_state {
+                    Some((_, base)) => base + (i as u16 - 7),
+                    None => INTERIOR,
+                };
+                (CUSTOM_TEXT + (i as u16 - 7), cell)
             } else {
-                let cell = if body < lit { bar } else { FILLER };
+                let cell = if body < lit {
+                    full_state.map_or(INTERIOR, |(bar, _)| bar)
+                } else {
+                    INTERIOR
+                };
                 body += 1;
                 (FILLER, cell)
             };
