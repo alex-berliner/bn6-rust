@@ -205,6 +205,19 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` slide-frame totals and k=11 transient before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, sequencing cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F18c. `windowclose` isolated: the relocated k=9/k=10 close-frame blank/redraw *(OPEN -- 2026-09-13)*
+
+**Files.** src/custom.rs
+
+**Why.** F18b's verified Result: `windowclose` 666451/28784/40 -> 651885/28430/40 (landed f5e5380); the k=11 BG3 transient (2447) is 0, but relocated to k=9 1898 (x0-11 y0-159, close-frame scroll-0-blank) + k=10 1408 (x2-165 y0-15, pre-redraw HUD) vs canon's 0x78-slide then blank-91. Verifier CONFIRMED the relocation is exactly what a one-frame-earlier Done predicts. What is missing is canon-91 scroll/map evidence and a deferred scroll-reset/redraw design, deliberately not widened into F18b.
+**Do, in order.**
+1. Start in `tools/worktree.sh f18c-windowclose-k9k10`. Baseline `python3 tools/harness.py --only windowclose --no-gallery` (must read 651885/28430/40 at offset 253, negative confirmed not blind), plus `--only-bg 3` per-frame k=9/k=10/k=11 totals and bboxes, measured.
+2. Peek canon's scroll/map state at the blank-91 frame and the 0x78-slide frames from the row's own capture state, then design the deferred scroll-reset/redraw in `src/custom.rs` citing canon's close routine in `reference/bn6f`, measured on k=9/k=10 and the same region.
+3. Re-run `windowclose`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** `src/` only; no allowlist change; offset 253 stands unless a watch names a new event frame (F2's rule); captures one at a time.
+**Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` k=9/k=10/k=11 before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, scroll/map attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
+
 
 ### F21b. `result` isolated: the ~2900 px/frame outside the window -- backdrop tail and one-frame slide lag *(OPEN -- 2026-09-13)*
 
