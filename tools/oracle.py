@@ -280,7 +280,8 @@ def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
              if has_enemy or not p[0].startswith("enemy_")]
     out = {}
     for name in [p[0] for p in pairs] + ["rng_cadence"]:
-        out[name] = dict(first=None, count=0, canon=None, rust=None)
+        out[name] = dict(first=None, count=0, canon=None, rust=None,
+                         pairs=set())
     prev_rust_rng = prev_canon_rng = None
     for k in range(frames):
         r = rust_fields(rust_rows[offset + k])
@@ -289,6 +290,7 @@ def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
         for name, rget, cget in pairs:
             cval = cget(e if name.startswith("enemy_") else c)
             rval = rget(r)
+            out[name]["pairs"].add((cval, rval))
             if rval != cval:
                 f = out[name]
                 if f["first"] is None:
@@ -301,6 +303,7 @@ def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
         if prev_rust_rng is not None:
             if r["rng"] != rng_step(prev_rust_rng) or crng != rng_step(prev_canon_rng):
                 f = out["rng_cadence"]
+                f["pairs"].add(((prev_canon_rng, crng), (prev_rust_rng, r["rng"])))
                 if f["first"] is None:
                     f["first"] = k
                     f["canon"] = (prev_canon_rng, crng)
@@ -541,9 +544,29 @@ def main() -> None:
                   % (n, nominal[n]["first"], nominal[n]["count"],
                      control[n]["first"], control[n]["count"]))
     else:
+        # Not every UNCHANGED verdict means the same thing (F16): if every
+        # compared field held ONE (canon, rust) value pair for the whole
+        # window, the state has no timing in it at all -- a one-frame shift
+        # cannot move any first-divergence, exactly like the harness's own
+        # negative="pixel" precedent for `window` (no timing in the picture
+        # to get wrong). If some field IS dynamic yet the table still did
+        # not move, that is a genuine red flag, not a static window.
+        static = [n for n in sorted(nominal)
+                  if len(nominal[n]["pairs"]) > 1 and n != "rng_cadence"]
         print("NEGATIVE CONTROL (canon shifted +1 frame, same captures): "
               "the nominal result is UNCHANGED on every compared field -- "
               "BLIND: a one-frame misalignment would go unreported")
+        if not static:
+            print("  honest-static: every compared field except the "
+                  "shift-invariant-by-construction rng_cadence holds "
+                  "exactly ONE (canon, rust) value pair across all %d "
+                  "frames -- there is no state timing in this window to "
+                  "shift (the row's own pixel negative covers its "
+                  "alignment)" % check.frames)
+        else:
+            print("  NOT honest-static: %s change value across the window, "
+                  "yet no first-divergence moved -- investigate before "
+                  "trusting this row" % ", ".join(static))
 
 
 if __name__ == "__main__":
