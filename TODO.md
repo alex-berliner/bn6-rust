@@ -195,7 +195,26 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Row `cursor` before/after (total/worst/frames) on the identical script and window, diffmask BG3/OBJ split before/after, transition-frame alignment before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, cause); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
-**Common to F8-F22 unless the ticket says otherwise.** Baseline the row (harness line plus
+### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, lowest priority: run after F22)*
+
+**Why.** The user: "the code has a lot of unnamed values and magic numbers". Counted 2026-09-13: 524
+non-trivial numeric literals in src/, 325 outside any `const`/`static`; custom.rs 110 bare, battle.rs
+56, actor.rs 29, results.rs 29. A name with a provenance tag is documentation the next ticket reads for
+free; a bare 0x1F is a mystery every time.
+
+**Do, in order.** One file per pass, custom.rs first. For each bare literal: identify it (the canon
+symbol, struct offset or register it corresponds to, via reference/bn6f's include/structs and the
+routine the surrounding code cites) and lift it into a named `const` with a `// provenance:` tag, or
+annotate it `// canon: <symbol>`; spend at most a few commands per number, and tag the rest
+`// unnamed: <what it appears to be>`. No behaviour change of any kind. **Acceptance:** the full table
+reads identical line for line (verify_rows on every row), the release .gba differs from the baseline
+only by panic line numbers (same size; `cmp -l` count reported), and the file's bare-literal count
+(the script in the ticket's Result) drops by at least half. Mark the ticket OPEN again for the next file.
+
+**Rules.** src/ only, the named file only; no allowlist, alignment or fixture change. **Coordinator:**
+verify_rows on the full table; no verifier (no claims beyond harness lines).
+
+**Common to F8-F23 unless the ticket says otherwise.** Baseline the row (harness line plus
 `tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
 frames and an element; find canon's routine for that element in reference/bn6f and cite it; fix src/
 (or the fixture/descriptor when the residue is the fixture, with `peeked` provenance); re-run the row,

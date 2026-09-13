@@ -20,5 +20,10 @@ Keep this file short and stable: it is loaded into every child's context.
   tracked; never `git add -f` anything gitignored.
 - Captures are bounded by a machine-wide semaphore (3 slots, `BN_CAPTURE_SLOTS`), so a row's captures
   overlap and two processes cannot overload the box; still run one harness command at a time yourself.
+- Name the numbers you touch. A bare literal in a line you edit or cite gets a name: a `const` with a
+  `// provenance:` tag when its meaning is known, or the canon symbol in a comment (`// canon:
+  oBattleObject_HP`) for an address or offset. Spend at most a couple of commands finding the meaning;
+  if it stays unknown, tag it `// unnamed: <what it appears to be>` so a later pass can find it. Never
+  rename or move a value you did not need to understand for the ticket.
 - Do the work yourself. A ticket that is bigger than it looked comes back as a report, not as
   a subcontract.

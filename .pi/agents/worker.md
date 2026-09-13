@@ -26,5 +26,10 @@ ranges, never whole files over 200 lines; call `context_prune` after each finish
 a file rather than trust a prune summary when exact text or numbers matter; use `--ui isolated` for the inner loop and run both
 variants before reporting.
 
+Naming: every bare number in a line you edit gets a name (a `const` with its provenance tag) or a
+`// canon: <symbol>` comment for an address/offset, after at most a couple of commands of looking; an
+unknown one gets `// unnamed: <what it appears to be>`. Do not touch numbers outside the lines your
+ticket needs.
+
 Report in the AGENTS.md shape. If the number did not move as the ticket predicted, say so and stop;
 do not widen the change to make it move.
