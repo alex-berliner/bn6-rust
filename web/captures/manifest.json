@@ -3,67 +3,67 @@
     "file": "captures/chip-grasseed-f12d-progress.gif",
     "name": "chip-grasseed-f12d-progress",
     "label": "The seed chips across F12d. Canon pushes the seed sheet's middle column last so that in overlap zones it sorts above its neighbours; ours pushed the columns in order, so wherever two columns overlapped the wrong one was on top, a two-pixel stripe on frames 52 to 61. Pushing the middle column last, gated on the poison-pending state so only seed chips change, took poisseed from 2237 to 247 and iceseed and grasseed from 2122 to 132. The pixels that remain are the sheet's feet on frames 9 to 14, where our shadow ellipse's tile art is wider than canon's (F12 stays open for that).\n\nchip-grasseed (isolated), before and after: canon on top; ours at 1ce5eee (2122 px over 70 frames, canon 5+k, rust offset 123); ours at 002a69c (132 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/chip-iceseed-f12d-progress.gif",
     "name": "chip-iceseed-f12d-progress",
     "label": "The seed chips across F12d. Canon pushes the seed sheet's middle column last so that in overlap zones it sorts above its neighbours; ours pushed the columns in order, so wherever two columns overlapped the wrong one was on top, a two-pixel stripe on frames 52 to 61. Pushing the middle column last, gated on the poison-pending state so only seed chips change, took poisseed from 2237 to 247 and iceseed and grasseed from 2122 to 132. The pixels that remain are the sheet's feet on frames 9 to 14, where our shadow ellipse's tile art is wider than canon's (F12 stays open for that).\n\nchip-iceseed (isolated), before and after: canon on top; ours at 1ce5eee (2122 px over 70 frames, canon 5+k, rust offset 123); ours at 002a69c (132 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/chip-poisseed-f12d-progress.gif",
     "name": "chip-poisseed-f12d-progress",
     "label": "The seed chips across F12d. Canon pushes the seed sheet's middle column last so that in overlap zones it sorts above its neighbours; ours pushed the columns in order, so wherever two columns overlapped the wrong one was on top, a two-pixel stripe on frames 52 to 61. Pushing the middle column last, gated on the poison-pending state so only seed chips change, took poisseed from 2237 to 247 and iceseed and grasseed from 2122 to 132. The pixels that remain are the sheet's feet on frames 9 to 14, where our shadow ellipse's tile art is wider than canon's (F12 stays open for that).\n\nchip-poisseed (isolated), before and after: canon on top; ours at 1ce5eee (2237 px over 70 frames, canon 5+k, rust offset 123); ours at 002a69c (247 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/gauge-f15-progress.gif",
     "name": "gauge-f15-progress",
     "label": "The custom gauge row across F15, same fix as tiles: the backdrop's art step was a frame early because canon queues each tile upload one frame ahead while ours uploaded in sync. Seeding our backdrop one step ahead put the step on the same frame and the row reads 0 on all eight frames.\n\ngauge (isolated), before and after: canon on top; ours at d9f9c46 (208 px over 8 frames, canon 44+k, rust offset 427); ours at 12a130a (0 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/gauge-integrated-f20b-progress.gif",
     "name": "gauge-integrated-f20b-progress",
     "label": "The custom gauge gauge row in the integrated variant (the whole screen, HUD included) across F20b. The harness told our build to stand MegaMan and the Mettaur one panel away from where canon's battle objects actually stand (peeked from the objects themselves: MegaMan in column 2, the enemy in row 2), so every HUD sprite was compared against the wrong cell. Correcting that descriptor (harness only, no source change) took the integrated row from 25979 to 3865. The 3865 left are canon's Mettaur mid-attack while ours is still idle: the attack-phase work.\n\ngauge (integrated), before and after: canon on top; ours at a8bf3d7 (25979 px over 8 frames, canon 44+k, rust offset 427); ours at 2b913aa (3865 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/mettaur-f14b-progress.gif",
     "name": "mettaur-f14b-progress",
     "label": "The Mettaur row across F14b. During MegaMan's post-hit mercy frames canon blinks him on bit 1 of the invulnerability counter (its routine shifts that bit into the carry flag and tests it); ours had been reading bit 2, so our blink toggled every four frames instead of every two and every other blink frame disagreed. Reading the same bit took the row from 31075 to 19698 differing pixels. What is left starts at frame 61, where the Mettaur's own animation diverges: canon's is already in its attack cycle while ours is still idle, which is the attack-phase work that follows F17.\n\nmettaur (isolated), before and after: canon on top; ours at 2775ce7 (31075 px over 70 frames, canon 140+k, rust offset 203); ours at 3e49236 (19698 px, canon 140+k, rust offset 202). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/popup-f19-progress.gif",
     "name": "popup-f19-progress",
     "label": "The damage popup row across F19. Only the fixture changed: on the canon side the Mettaur now goes from ALIVE to DELETE_ENEMY with the dissolve blanking applied, the situation our side was already in, so the two sides finally compare the same moment (107511 to 60614). The popup digits themselves match exactly and the enemy's box dropped from 51991 to 6081. The 55520 pixels that remain are canon's sprite-layer HUD HP bar, which our build does not draw in this fixture yet (the OBJ HUD work of F20).\n\npopup (isolated), before and after: canon on top; ours at 4a2ce08 (107511 px over 80 frames, canon 43+k, rust offset 122); ours at c2c24e6 (60614 px, canon 43+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/result-f21-progress.gif",
     "name": "result-f21-progress",
     "label": "The results screen across F21. Canon draws the WIN reward on the first confirm press, not when the window is shown: its driver chain reveals the reward over 42 steps and then holds a 30-frame cooldown before it accepts the dismiss, so ours had been showing the reward too early and dismissing on the wrong frame. Following that chain (waiting, a 42-step reveal, a 30-frame cooldown, wait for the reward, dismiss) took the row from 497967 to 408337. The inside of the window is nearly matched now (3734 to 904 pixels on the plateau); what remains is the window's slide timing and the backdrop tail behind it, which F21b and F21d take on.\n\nresult (isolated), before and after: canon on top; ours at 09474d1 (497967 px over 40 frames, canon 21+k, rust offset 15); ours at 8bcd73c (408337 px, canon 21+k, rust offset 15). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/tiles-f15-progress.gif",
     "name": "tiles-f15-progress",
     "label": "The custom gauge tiles across F15, the last 208 pixels. The backdrop's art advanced one frame early on our side: canon queues each tile upload one frame before it takes effect, so its step counter runs one ahead of the frame you see, while ours uploaded in sync. Constructing our backdrop with its seed one step ahead (a derived constant, mirroring the first hold length plus one) made the art step land on the same frame, and the row reads 0 on all eight frames.\n\ntiles (isolated), before and after: canon on top; ours at d9f9c46 (208 px over 8 frames, canon 44+k, rust offset 427); ours at 12a130a (0 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/tiles-integrated-f20b-progress.gif",
     "name": "tiles-integrated-f20b-progress",
     "label": "The custom gauge tiles in the integrated variant (the whole screen, HUD included) across F20b. The harness told our build to stand MegaMan and the Mettaur one panel away from where canon's battle objects actually stand (peeked from the objects themselves: MegaMan in column 2, the enemy in row 2), so every HUD sprite was compared against the wrong cell. Correcting that descriptor (harness only, no source change) took the integrated row from 25979 to 3865. The 3865 left are canon's Mettaur mid-attack while ours is still idle: the attack-phase work.\n\ntiles (integrated), before and after: canon on top; ours at a8bf3d7 (25979 px over 8 frames, canon 44+k, rust offset 427); ours at 2b913aa (3865 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/windowclose-f18-progress.gif",
     "name": "windowclose-f18-progress",
     "label": "The chip window closing across F18 and F18b. After the close a flat band stayed under the HUD: on the way out canon fills all sixteen gauge cells with the not-full tile and blanks the name strip, and ours left both drawn (F18, 695603 to 666451). F18b then let the window report Done in the same call that reaches the slide's final position, as canon's close routine does, which removed a one-frame transient on frame 11 (666451 to 651885). What remains is a blank-and-redraw on frames 9 and 10 that F18c is measuring against canon's scroll and tilemap writes.\n\nwindowclose (isolated), before and after: canon on top; ours at 9ed8a42 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f5e5380 (651885 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/banner-progress.gif",
