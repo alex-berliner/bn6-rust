@@ -2024,6 +2024,12 @@ impl<'a> Battle<'a> {
         }
         if let Some(window) = self.shown.as_mut() {
             let confirm = input.is_pressed(Button::A) || input.is_pressed(Button::Start);
+            // Canon draws the WIN reward only after the first confirm
+            // (sub_802C044, asm03_0.s:11959): start the reveal here and
+            // draw its content (the tilesets live on `Results`).
+            if window.poll_reward_reveal(confirm) {
+                self.results.draw_reward(window);
+            }
             if let Some(fade) = window.update(confirm) {
                 self.fade_out = fade;
                 if fade == 16 {
