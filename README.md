@@ -8,6 +8,22 @@ submodule under `reference/`, rather than from memory of the games: sprites,
 tiles, palettes and fonts are extracted from it, and each mechanic is written
 against the routine that implements it, with the `file:line` cited in the code.
 
+## Website
+
+Everything is published from this repo's `gh-pages` branch by `tools/publish_site.sh`:
+
+- **Play it in the browser:** https://alex-berliner.github.io/bn6-rust/ — the current release ROM in
+  an in-page emulator (EmulatorJS; needs internet for its core), plus the dev build with test aids.
+- **Capture gallery:** https://alex-berliner.github.io/bn6-rust/gifs.html — every harness row as a GIF,
+  canon on top and this build below, with its caption and measured pixel counts; the before/after GIFs
+  (`*-progress.gif`) show one ticket's effect; `full-battle-loop.gif` is a scripted full battle.
+- **Screenshot log:** https://alex-berliner.github.io/bn6-rust/log.html — the dated log of how the
+  screen has looked along the way.
+- **ROMs:** [rollup.gba](https://alex-berliner.github.io/bn6-rust/roms/rollup.gba) (release build) and
+  [bn6-rust.gba](https://alex-berliner.github.io/bn6-rust/bn6-rust.gba) (dev build).
+- **Source:** https://github.com/alex-berliner/bn6-rust · the annotated disassembly:
+  https://github.com/alex-berliner/bn6f (branch `bn-notes`).
+
 ## Building
 
 Needs a nightly toolchain (`rust-toolchain.toml` pins it), and mGBA to run.
