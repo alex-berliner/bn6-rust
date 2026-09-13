@@ -374,8 +374,17 @@ def run(rust: Side, canon: Side, frames: int, align: Align) -> Result:
     rust_count = MARKER_MARGIN + upper + frames
     canon_count = align.canon_ref + frames + NEGATIVE_MARGIN
 
-    rust.do_capture(rust_dir, rust_count, watch_file=watch_file)
-    canon.do_capture(canon_dir, canon_count)
+    # Build (or fetch) the rust ROM BEFORE the threads start: cargo and the
+    # ROM cache are not something two threads should race on. The two captures
+    # are independent processes, so they overlap (bounded by cc.CAPTURE_SLOTS).
+    if not rust.capture_fn:
+        rust.resolved_rom()
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fr = pool.submit(rust.do_capture, rust_dir, rust_count, watch_file=watch_file)
+        fc = pool.submit(canon.do_capture, canon_dir, canon_count)
+        fr.result()
+        fc.result()
 
     origin = find_marker_origin(watch_file)
     # AUDIT pair 13: stream what we can, and do not keep what we cannot --
@@ -1790,7 +1799,7 @@ def _old_box_figure(check: Check, result: Result) -> Optional[Tuple[int, int]]:
     return boxed_total, result.total - boxed_total
 
 
-def run_check(check: Check, *, gallery: bool = True) -> Dict[str, dict]:
+def run_check(check: Check, *, gallery: bool = True, only_ui: Optional[str] = None) -> Dict[str, dict]:
     """Every ui variant of `check`: the positive run, its negative fixture
     (pair 10), and, if `gallery`, a written comparison GIF (pair 7). Returns
     {ui: {result, negative, blind, ok, allowed, box}}.
@@ -1803,10 +1812,18 @@ def run_check(check: Check, *, gallery: bool = True) -> Dict[str, dict]:
     no longer resolve to anything.
     """
     variants = ("isolated", "integrated") if check.ui == "both" else (check.ui,)
-    out = {}
-    for ui in variants:
-        rust_side = check.rust(ui)
-        canon_side = check.canon(ui)
+    if only_ui:
+        variants = tuple(v for v in variants if v == only_ui)
+    sides = {ui: (check.rust(ui), check.canon(ui)) for ui in variants}
+    # Resolve (build) every ROM up front, serially, so the parallel runs below
+    # never race cargo or the ROM cache.
+    for r, c in sides.values():
+        for side in (r, c):
+            if not side.capture_fn:
+                side.resolved_rom()
+
+    def one(ui):
+        rust_side, canon_side = sides[ui]
         result = run(rust_side, canon_side, check.frames, check.align)
         neg = negative_counts(result, check.frames, kind=check.negative)
         blind = all(c == 0 for c in neg)
@@ -1814,11 +1831,15 @@ def run_check(check: Check, *, gallery: bool = True) -> Dict[str, dict]:
         box = _old_box_figure(check, result)
         gif_path = write_gallery(check, ui, result) if gallery else None
         subprocess.run(["rm", "-rf", result.rust_dir, result.canon_dir], check=True)
-        out[ui] = {
+        return ui, {
             "result": result, "negative": neg, "blind": blind,
             "ok": result.ok, "allowed": allowed, "gif": gif_path, "box": box,
         }
-    return out
+
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=len(variants) or 1) as pool:
+        results = list(pool.map(one, variants))
+    return {ui: o for ui, o in sorted(results, key=lambda kv: variants.index(kv[0]))}
 
 
 def _fmt_row(name, ui, r: Result, neg, blind, allowed, box):
@@ -1845,6 +1866,7 @@ def main():
     ap.add_argument("--only", help="comma-separated check names")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--no-gallery", action="store_true", help="skip writing web/captures/*.gif")
+    ap.add_argument("--ui", choices=("isolated", "integrated"), help="run only this ui variant of each row (a worker's inner loop; landing runs both)")
     args = ap.parse_args()
 
     if args.list:
@@ -1862,7 +1884,7 @@ def main():
         if wanted and check.name not in wanted:
             continue
         try:
-            outcome = run_check(check, gallery=not args.no_gallery)
+            outcome = run_check(check, gallery=not args.no_gallery, only_ui=args.ui)
         except Exception as exc:
             print("%-10s ERROR %s" % (check.name, exc))
             failed += 1

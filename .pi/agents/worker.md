@@ -23,7 +23,8 @@ steps you skipped. Otherwise, steps, in order:
 Token discipline (every turn re-sends your whole context): batch related shell work into ONE command
 or a small script per stretch -- a turn that runs a single grep or reads 40 lines is waste; read file
 ranges, never whole files over 200 lines; call `context_prune` after each finished stretch, and re-read
-a file rather than trust a prune summary when exact text or numbers matter; captures one at a time.
+a file rather than trust a prune summary when exact text or numbers matter; use `--ui isolated` for the inner loop and run both
+variants before reporting.
 
 Report in the AGENTS.md shape. If the number did not move as the ticket predicted, say so and stop;
 do not widen the change to make it move.

@@ -31,7 +31,7 @@ json.dump({"n": len(res.counts), "total": res.total, "worst": res.worst, "canon_
 def dump(ref, row, ui, out):
     sha = subprocess.run(["git", "-C", ROOT, "rev-parse", "--short", ref], check=True,
                          capture_output=True, text=True).stdout.strip()
-    wt, target = "/tmp/bnwt/progress-%s" % sha, "/tmp/ct_progress-%s" % sha
+    wt, target = "/tmp/bnwt/progress-%s" % sha, "/tmp/ct_progress"  # persistent: warm rebuilds
     if not os.path.exists(wt):
         subprocess.run(["git", "-C", ROOT, "worktree", "add", "--detach", wt, sha], check=True, capture_output=True)
         subprocess.run(["rm", "-rf", os.path.join(wt, "reference/bn6f")], check=True)
@@ -40,7 +40,6 @@ def dump(ref, row, ui, out):
     subprocess.run([sys.executable, "-c", DUMP, row, ui, out], cwd=wt, env=env, check=True,
                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
     subprocess.run(["git", "-C", ROOT, "worktree", "remove", "--force", wt], capture_output=True)
-    subprocess.run(["rm", "-rf", target])
     return sha, json.load(open(out + "/meta.json"))
 
 

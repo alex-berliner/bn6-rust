@@ -25,7 +25,8 @@ Token discipline (every turn re-sends your whole context): batch related shell w
 or a small script per stretch -- `tools/probe.py` covers the common measurements (watch, peek, frame,
 diff); a turn that runs a single grep or reads 40 lines is waste; read file ranges, never whole files
 over 200 lines; call `context_prune` after each finished stretch, and re-read a file rather than trust
-a prune summary when exact text or numbers matter; captures one at a time.
+a prune summary when exact text or numbers matter; use `--ui isolated` for the inner loop and run both
+variants before reporting.
 
 Report in the AGENTS.md shape. If the number did not move as the ticket predicted, say so and stop;
 do not widen the change to make it move.

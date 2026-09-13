@@ -18,6 +18,7 @@ Keep this file short and stable: it is loaded into every child's context.
   ticket names; stage by path (`git add -u <path>`); never `git add -A`; never push (the coordinator pushes).
 - `reference/bn6f` is read-only for agents. Copyrighted inputs (ROMs, save states, saves) are never
   tracked; never `git add -f` anything gitignored.
-- Captures serialize: never run two harness rows at once on this machine.
+- Captures are bounded by a machine-wide semaphore (3 slots, `BN_CAPTURE_SLOTS`), so a row's captures
+  overlap and two processes cannot overload the box; still run one harness command at a time yourself.
 - Do the work yourself. A ticket that is bigger than it looked comes back as a report, not as
   a subcontract.

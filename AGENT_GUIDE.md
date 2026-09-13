@@ -22,7 +22,7 @@ tools/states.py build all` rebuilds every state from recipes).
 export CARGO_TARGET_DIR=/tmp/ct_<name>            # your worktree's own target dir (tools/worktree.sh prints it)
 cargo build --release && python3 tools/gbafix.py target/thumbv4t-none-eabi/release/bn /tmp/x.gba
 python3 tools/harness.py --list                  # every row
-python3 tools/harness.py --only ROW --no-gallery # one row; captures serialize -- never two at once
+python3 tools/harness.py --only ROW --no-gallery # one row (add --ui isolated for a fast inner loop; landing runs both)
 python3 tools/oracle.py wave|mettaur             # first divergent STATE field and frame (R7)
 python3 tools/verify_rows.py <branch> ROW,ROW --expect ROW=T/W/F/NEG   # reproduce claimed lines, clean checkout
 ```
@@ -75,3 +75,5 @@ one-shot poke here delivers a press -- F5b/F11) · joypad mirror 0x02036822 · s
   step with what was measured; never push.
 - Re-read a file rather than trust a prune summary when exact text or numbers matter. Batch shell work
   into one command or a script per stretch: every turn re-sends your whole context.
+- Wall time: a row's captures run in parallel (3 machine-wide slots); a fat-LTO release build is the slow
+  step (~1 min cold, seconds warm), so keep one target dir and do not `cargo clean`.

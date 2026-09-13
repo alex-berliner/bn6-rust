@@ -200,6 +200,36 @@ def _frames_written(out, diff_file):
     return len([f for f in os.listdir(out) if f.endswith(".rgb")])
 
 
+#: How many emulator captures may run at once on this machine, across every
+#: process (harness, verify_rows, a worker's own probes): a machine-wide
+#: semaphore of flock'd slot files. The rule used to be "never two at once"
+#: because captures came up short under memory pressure; the count check and
+#: retry in capture() catch that, and 3 slots on a 12-core, 15 GB box leave
+#: plenty of headroom while letting a row's independent captures overlap.
+CAPTURE_SLOTS = int(os.environ.get("BN_CAPTURE_SLOTS", "3"))
+
+
+class capture_slot:
+    """Context manager: hold one of CAPTURE_SLOTS machine-wide slots."""
+    def __enter__(self):
+        import fcntl, time
+        while True:
+            for i in range(CAPTURE_SLOTS):
+                f = open("/tmp/bn-capslot-%d" % i, "w")
+                try:
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    self.f = f
+                    return self
+                except OSError:
+                    f.close()
+            time.sleep(0.25)
+
+    def __exit__(self, *exc):
+        import fcntl
+        fcntl.flock(self.f, fcntl.LOCK_UN)
+        self.f.close()
+
+
 def capture(rom, out, count, *args, retries=2):
     """Run mgba_capture and make sure it actually produced `count` frames of
     output before trusting it, re-running up to `retries` times on a short
@@ -230,8 +260,9 @@ def capture(rom, out, count, *args, retries=2):
         subprocess.run(["rm", "-rf", out], check=True)
         if diff_file:
             subprocess.run(["rm", "-f", diff_file], check=True)
-        subprocess.run([CAPTURE, rom, out, str(count), *args], check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        with capture_slot():
+            subprocess.run([CAPTURE, rom, out, str(count), *args], check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         got = _frames_written(out, diff_file)
         if got == count:
             return

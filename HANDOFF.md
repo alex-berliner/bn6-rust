@@ -84,6 +84,11 @@ vs after -- a merge that changed nothing is not parity).
   turns Opus 5's mid-conversation-effort beta off and caps Opus 5/Sonnet 5 output at 32k; the context
   pruner is on in `agentic-auto` mode. Extensions: `pi-context-prune`, `pi-subagents`, `pi-goal-x`
   (project-local).
+- **Wall time (2026-09-13):** captures are parallel inside a row (rust and canon sides, and the isolated and
+  integrated variants together) under a machine-wide 3-slot semaphore in `chip_compare.capture`, so the old
+  "never two captures at once" rule is enforced by code instead of by agents; `harness.py --ui isolated`
+  runs one variant; `verify_rows.py`/`progress_gif.py` keep persistent target dirs (warm builds); `land.sh`
+  reuses a verify_rows PASS on the same commit from the last 30 minutes instead of re-running it.
 - **Build profile:** release is fat LTO with debug info, from agb's template; every harness number
   rests on it -- do not flip either setting without rerunning the table.
 

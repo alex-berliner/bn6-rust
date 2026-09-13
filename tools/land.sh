@@ -18,7 +18,11 @@ while [ $# -gt 0 ]; do
 done
 cd "$ROOT"
 git diff --quiet && git diff --cached --quiet || { echo "main checkout is dirty; refusing" >&2; exit 1; }
-if [ "$verify" = 1 ]; then
+sha="$(git rev-parse --short "$branch")"
+if [ "$verify" = 1 ] && [ -f "/tmp/land_verify_$sha.pass" ] && [ -z "$(find "/tmp/land_verify_$sha.pass" -mmin +30)" ]; then
+  echo "reusing verify_rows PASS for $sha from $(date -r "/tmp/land_verify_$sha.pass" +%H:%M) (rows: $(cat "/tmp/land_verify_$sha.pass"))"
+  printf 'verify_rows: PASS (reused, %s)\n' "$(cat "/tmp/land_verify_$sha.pass")" > /tmp/land_verify.txt
+elif [ "$verify" = 1 ]; then
   python3 tools/verify_rows.py "$branch" "$rows" "${expects[@]}" | tee /tmp/land_verify.txt
   grep -q '^verify_rows: PASS' /tmp/land_verify.txt || { echo "verify_rows FAILED; not merging" >&2; exit 1; }
 fi

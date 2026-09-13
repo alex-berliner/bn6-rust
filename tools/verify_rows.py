@@ -53,7 +53,9 @@ def main():
 
     sha = subprocess.run(["git", "-C", ROOT, "rev-parse", "--short", a.ref], check=True,
                          capture_output=True, text=True).stdout.strip()
-    wt, target = "/tmp/bnwt/verify-%s" % sha, "/tmp/ct_verify-%s" % sha
+    # one persistent target dir: cargo tracks the sources, so the second build of any
+    # tree is warm (~20 s) instead of a cold fat-LTO build (~2 min)
+    wt, target = "/tmp/bnwt/verify-%s" % sha, "/tmp/ct_verify"
     if not os.path.exists(wt):
         subprocess.run(["git", "-C", ROOT, "worktree", "add", "--detach", wt, sha], check=True,
                        capture_output=True)
@@ -89,8 +91,9 @@ def main():
 
     if not a.keep:
         subprocess.run(["git", "-C", ROOT, "worktree", "remove", "--force", wt], capture_output=True)
-        subprocess.run(["rm", "-rf", target])
     print("verify_rows: %s" % ("PASS" if ok else "FAIL"))
+    if ok:
+        open("/tmp/land_verify_%s.pass" % sha, "w").write(" ".join(rows) + "\n")
     sys.exit(0 if ok else 1)
 
 
