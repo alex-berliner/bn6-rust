@@ -889,7 +889,25 @@ CHECKS.extend(_chip_checks())
 #: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
 HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=60,
                 megaman_col=3, megaman_row=2, hand=[1], hand_count=1, gauge=1,
-                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724)
+                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                # TODO F6 (2026-09-12): the phase of the CUSTOM gauge's flow
+                # counter. Canon's gauge routine (sub_801C4E4, asm00_2.s:26351)
+                # draws bar and marker off ONE counter t (eStruct2035280+0x00,
+                # 0x02035280) with NO additive phase: bar tile 0x9232+((t div 7)
+                # & 3), marker orange iff (t & 8). PAUSED's t carries an
+                # arbitrary fill history -- measured over this row's own canon
+                # capture it reads 98 at state load and the draw inside canon
+                # frame c uses t = 98 + c (it advances even during the paused
+                # frames) -- while the fixture-built battle counts gauge_tick
+                # from Battle::new (gt(u) = u - 7, first set_gauge at the
+                # marker origin 8). Measured off this row's own alignment (old
+                # build: our marker flipped at rust 440, canon's at canon 46,
+                # its bar at canon 49): gt(435) = 428 must equal canon's
+                # t_used(44) = 30 mod 112, so the seed is 30 - 428 = -398 =
+                # 50 (mod 112). With it, src/hudtiles.rs's canon-verbatim
+                # formulas align bar AND marker exactly (tiles/gauge isolated
+                # residue 538 -> the 208-px wide-screen frame only).
+                gauge_tick=50)
 HUDMATCH_ORIGIN = 8
 
 

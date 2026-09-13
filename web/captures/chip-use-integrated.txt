@@ -2,4 +2,4 @@ chip-use (integrated), FAILED: per-frame max 26660 px, total 626461 px over 32 f
 
 Same shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] (Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A press use nothing at all, which is what the first attempt at this check did.
 
-commit cc61979
+commit 82df214
