@@ -212,6 +212,19 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Rows `mettaur`, `tiles`/`gauge` (both variants), `popup` before/after (total/worst/frames) on the identical scripts and windows, oracle `mm_timer` match count and first `enemy_anim` divergent frame before/after, tiles/gauge OBJ-cell and popup HUD-bar splits before/after, full-table deltas. **Acceptance:** `mettaur` 0/0/70 (negative not blind); `tiles`/`gauge` integrated at or below 3865 decomposed by element with frames and regions (0 if the attack phase lines up); `popup` HUD bar 55520 decomposed, enemy-box element toward 0; isolated variants still 0; nothing worse.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, attack-phase attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F25b. Mettaur +1 attack-phase offset: attribute it, fix only inside the attack path *(OPEN -- 2026-09-13)*
+
+**Files.** src/actor.rs, src/ai.rs
+
+**Why.** F25's verified Result (PARTIAL, branch wt/f25-mettaur-attack c7a5ce7 kept unmerged): attack entry now canon-shaped (act 0x0b/anim 0 one frame, pose 63, strike entry+38, period 106; routine identity sub_8109DEC/sub_8109E4A + Decide sub_810A126 CONFIRMED by verifier) but mettaur 19698/1245/70 unchanged, enemy_anim still diverges k=61 (canon 201=0, rust=1). Verifier measured the residual as a uniform +1 attack-phase offset present from the very first attack (canon entries at 31/137, ours shifted +1 throughout). UNCHECKED: whether the +1 comes from the intro-gate (attack-1 has no canon counterpart) or from wave flight 44 vs canon 45 (src/shot.rs pixel claim unverified), and the mm_timer counterfactual.
+**Do, in order.**
+1. Start with `bash tools/worktree.sh f25b-phase`, then `git merge wt/f25-mettaur-attack` (the verified attack-entry rework, kept unmerged). Baseline mettaur, tiles, gauge, popup there (19698/1245/70, tiles/gauge integrated 3865/678/8, popup 60614/1842/80) plus oracle mm_timer 70/70, enemy_anim k=61.
+2. Attribute the +1 phase: trace where our first attack entry's +1 vs canon 31 comes from (intro-gating in ai.rs/actor.rs vs wave-flight timing), measuring entry frames on both sides with watches on this row's own captures. Fix it only if the cause is inside src/actor.rs, src/ai.rs; wave timing (src/shot.rs) may be measured with existing tools but NOT edited. If the cause is the intro/fixture with no canon counterpart, report the measurement and stop (precise negative).
+3. Re-run `mettaur`, `tiles`, `gauge`, `popup`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** src/actor.rs, src/ai.rs only; no shot.rs/fixture/allowlist/alignment change; no region change except by measured event (F2's rule); captures one at a time.
+**Measure and report.** First-entry frames both sides before/after, enemy_anim first-divergence before/after, wave-flight frames both sides (measured, not edited), rows before/after, full-table deltas. **Acceptance:** `mettaur` toward 0 via the phase fix landing inside the attack path; if the +1 is intro/fixture-side, a measured attribution with the entry-frame traces and STOP (a second miss marks the objective BLOCKED).
+**Coordinator:** `verify_rows` on every row the report names; the verifier on the phase-attribution claim (it must confirm the +1 source); a second miss marks it BLOCKED and moves on.
+
 ### F24. `cursor`/`result` backdrop: port canon's per-scanline BG scroll (the BGScrollCB HBlank raster callback) into src/ *(OPEN -- 2026-09-13)*
 
 **Files.** src/backdrop.rs, tools/harness.py
