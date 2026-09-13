@@ -381,6 +381,7 @@ const SWORD: actor::AttackSpec = actor::AttackSpec {
     strike_at: 10,
     recover: 5,
     recover_anim: None,
+    pose: None,
 };
 /// StepSwrd holds its recovery pose one frame longer than the other swords.
 /// Measured against the real ROM: on the attack's frame 29 the navi is still
@@ -395,6 +396,7 @@ const STEP_SWORD: actor::AttackSpec = actor::AttackSpec {
     strike_at: SWORD.strike_at,
     recover: SWORD.recover + 1,
     recover_anim: SWORD.recover_anim,
+    pose: None,
 };
 
 /// MiniBomb (attack family 0x12, sub_80EB644, asm31.s:108790): animation 6
@@ -411,6 +413,7 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
     strike_at: 10,
     recover: 0,
     recover_anim: None,
+    pose: None,
 };
 /// The cannon pose: the counter runs to 0x1d (sub_80EBC28, asm31.s:109532,
 /// 109554), and the frame that reads 0x1d only queues the exit state, which
@@ -434,6 +437,7 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
     // (TRANSFER.md: idle again 33 frames after the attack starts).
     recover: 3,
     recover_anim: Some(15),
+    pose: None,
 };
 /// Vulcan1 (attack family 0x17, sub_80EBF10, asm31.s:109821): the first
 /// state holds animation 0xa for two ticks with the arm gun spawned; the
@@ -486,6 +490,7 @@ const fn vulcan(shots: u8) -> actor::AttackSpec {
         strike_at: 1,
         recover,
         recover_anim: Some(0xa),
+        pose: None,
     }
 }
 /// The Vulcan gun rides the arm for the whole attack (byte_80B8BD4 row
@@ -511,6 +516,7 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
     strike_at: 6,
     recover: 0,
     recover_anim: None,
+    pose: None,
 };
 /// The AirShot arm object lives as long as the pose (byte_80B8BD4 row
 /// 0x13: effect list 0xC index 0x18 = sprite_83138C4, animation 0 -- the
