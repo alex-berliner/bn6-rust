@@ -12,11 +12,8 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    last relevant Result paragraphs and the section's shared procedure. If it prints "no OPEN ticket",
    STOP. Never read TODO.md whole.
 2. Dispatch the worker with the `subagent` tool, exactly one child at a time (captures must never
-   overlap), passing the ticket TEXT you just got. **Worker A/B (until HANDOFF §3 says it is
-   decided):** alternate tickets between `worker` (GLM) and `worker-muse` (Muse contributor), starting
-   with `worker-muse`; when the worker was `worker-muse`, dispatch `verifier-glm` instead of
-   `verifier` so the checker is a different family; record each child's model, turns and cost in the
-   ticket's Result so the two can be compared.
+   overlap), passing the ticket TEXT you just got. The worker is `worker` (Muse contributor) and the verifier `verifier` (GLM) -- a
+   different family from the worker by design; never pass a `model` override.
    `{agent: "worker", async: false, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
    toolBudget: {soft: 80}, task: "<next_ticket.py output verbatim>\n\nStart your worktree as the
    ticket says (default: bash tools/worktree.sh <short-name>). Commit per landed step on your branch;
@@ -58,7 +55,8 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
   (a separate watcher also enforces a cap on total spend and will stop you);
 - two tickets in a row on the same objective end PARTIAL, BLOCKED or NEGATIVE: do not write a third --
   `ticket_result.py <ID> BLOCKED "<what was measured, the options>"` and continue with the next OPEN
-  ticket; STOP only when no OPEN ticket is left;
+  ticket; STOP only when no OPEN ticket is left (the queue is whatever `next_ticket.py` returns, in file
+  order -- an instruction that names tickets is a hint about order, never a limit);
 - the next step would change what canon or canon (sterile) are (unless the ticket explicitly
   authorizes that one change), widen the allowlist, touch src/ outside a ticket that says so, delete a
   state or a row, or change HANDOFF.md §3's scope or order;

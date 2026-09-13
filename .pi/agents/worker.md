@@ -2,7 +2,7 @@
 name: worker
 description: Implements one ticket in its own worktree — baseline, change, after — and reports both numbers with the frame window.
 tools: read, bash, edit, write, grep, find, ls
-model: openrouter/z-ai/glm-5.3-flash
+model: openrouter/meta/muse-spark-1.3-contributor
 thinking: high
 ---
 
@@ -21,7 +21,8 @@ steps you skipped. Otherwise, steps, in order:
 4. Commit on your branch per landed step with a message that says what was measured.
 
 Token discipline (every turn re-sends your whole context): batch related shell work into ONE command
-or a small script per stretch -- a turn that runs a single grep or reads 40 lines is waste; read file
+or a small script per stretch -- `tools/probe.py` covers the common measurements (watch, peek, frame,
+diff); a turn that runs a single grep or reads 40 lines is waste; read file
 ranges, never whole files over 200 lines; call `context_prune` after each finished stretch, and re-read
 a file rather than trust a prune summary when exact text or numbers matter; use `--ui isolated` for the inner loop and run both
 variants before reporting.

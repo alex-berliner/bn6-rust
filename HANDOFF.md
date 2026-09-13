@@ -69,7 +69,13 @@ vs after -- a merge that changed nothing is not parity).
   short, never for a disproven prediction; no model overrides in dispatches; Opus 5 last resort.
   Measured: a GLM ticket costs $0.01-0.37; a verifier pass ~$0.02-0.03 on the contributor tier
   (was $0.37 Muse, $1.02-1.38 Sol).
-- **Worker A/B in progress (2026-09-13):** Muse Spark 1.3 contributor scores ~48 on the user's chart to
+- **Worker A/B decided (2026-09-13, seven tickets):** Muse contributor workers on F17/F19/F21 cost
+  $0.039/$0.035/$0.110 (all landed, verified); GLM workers on F12/F18/F20/F22 cost $0.098/$0.231/
+  $0.045/$0.044 (one landed, three precise negatives/localizations). Same quality of report and
+  verdicts, Muse about 40% cheaper per ticket at a lower per-turn price. Worker = Muse contributor,
+  verifier = GLM-5.3-Flash (cross-family), coordinator = Muse contributor. The A/B roles
+  (worker-muse, verifier-glm) are deleted.
+- **Superseded note:** Muse Spark 1.3 contributor scores ~48 on the user's chart to
   GLM's 42 and is cheaper on every line ($0.10/$0.20, cache $0.002/M): the coordinator alternates
   `worker-muse` and `worker` on F12's families (verifier `verifier-glm` when the worker was Muse, so
   the checker is a different family) and records model, turns and cost per ticket. Decide from two
