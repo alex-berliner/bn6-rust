@@ -247,6 +247,38 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Measure and report.** Rows `result` + `field` before/after (total/worst/frames), field residue bbox before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (pairing attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F21d. `result`: write the window's tilemap by block copy, not 576 managed tile writes  *(OPEN -- 2026-09-13)*
+
+**Files.** src/results.rs, src/backdrop.rs, vendor/agb
+
+**Why.** F21c's verified measurement: F21b's slide rework (result 408337 -> 190633 on wt/f21b) regressed
+`field` 0 -> 1048 because our per-tick full-map rewrite (576 `set_tile` calls through agb's VRAM
+manager, ~0.46 frame per blit) overruns about one frame in three during slide frames 133-159, so our
+RESULT mark dwells 2 frames per step where canon's takes 1; skip-cache + blank-init + tile-warming
+cut the stalls 10 -> 1 with a remnant at capture 148/149. Canon copies the tilemap as a block
+(`CopyBackgroundTiles` in the sub_802BD60 driver chain). This is the engine-timing class of residue:
+fix the mechanism, not the content. **Decision (coordinator, 2026-09-13):** direct VRAM block writes
+for this window are in scope, including a helper inside vendor/agb if the public API cannot express
+it (fix agb, do not work around it -- see the vendor-deps rule).
+
+**Do, in order.**
+1. Start with `bash tools/worktree.sh f21d-blockcopy`, then `git merge wt/f21b` (the slide rework,
+   kept unmerged) and `git merge wt/f21c-field-pairing` if it has commits. Baseline result and field
+   there (190633 / 24647 / 40 and 1048 / 177 / 40) plus wave, window, opening, chip-cannon.
+2. Replace the per-tile rewrite with one block copy of the prepared tilemap into the window's BG map
+   (memcpy or DMA3 into VRAM, sized to the map; if agb's `RegularMap`/VRAM manager owns that memory,
+   add a minimal `copy_map_block` (or equivalent) to vendor/agb with a doc comment, and keep the
+   manager's bookkeeping consistent). Measure the blit's cost with a per-frame cycle/scanline probe
+   (or the marker's frame counter vs canon's) and report frames per step before/after.
+3. **Acceptance.** field back to 0/0/40 (negative not blind); result at or below 190633 with the mark
+   dwelling 1 frame per step like canon; wave/window/opening/chip-cannon 0; full table nothing worse.
+   Land F21b's rework together with this fix; if the copy cannot reach 1 frame/step, report the
+   measured cost per blit and stop.
+
+**Rules.** src/results.rs, src/backdrop.rs and vendor/agb only; no allowlist, alignment or fixture
+change. **Coordinator:** verify_rows on result, field and the canaries; the verifier on the
+"1 frame per step" claim (it must measure it, e.g. with the oracle or a frame-count watch).
+
 ### F12. The chip rows' own residues, family by family  *(OPEN -- 2026-09-13, F12e feet theory refuted, no change, ticket stays OPEN)*
 
 **Result.** F12e feet theory refuted, no change, ticket stays OPEN. chip-poisseed 247/43/70/50822, chip-iceseed 132/16/70/52022, chip-grasseed 132/16/70/52022 (verify_rows PASS on HEAD a7ee2ac, negatives not blind); k9-14 feet is NOT a palette-table selection -- bilateral OAM shows identical pos/size/palette family (canon pal 1, ours pal 7, body pixels exact), our shadow ellipse is wider tile art (rust (16,16,16) vs canon black), i.e. asset-content outside src scope; canon cite asm31.s:108961/off_80EB6F8/sub_80CE44E (seeds throw via type-3 object 0x4f, shadow path untraced); corners #2 and reorder #3 unattempted (budget, gated on #1); no commits, branch wt/f12-seed-feet deleted, main untouched at a7ee2ac. Worker worker-muse (muse-spark-1.3-contributor:high, 81 turns, $0.042). No verifier (nothing landed; refutation is measurement, not a claim to build on). Next: scope decision on assets/poisseed.bin shadow tiles, or trace t3_0x4f shadow path, or corners row-order pass.
