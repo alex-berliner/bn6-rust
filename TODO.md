@@ -226,8 +226,9 @@ runs (stop rule: refuted claim).
 **Rules.** src/ blink predicate + comments only; no allowlist change, no alignment or region change;
 captures one at a time.
 
-### F15. tiles/gauge: the one vblank frame, 208 px at k=7  *(OPEN -- 2026-09-12)*
+### F15. tiles/gauge: the one vblank frame, 208 px at k=7  *(DONE -- 2026-09-13, tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a)*
 
+**Result.** tiles+gauge isolated 208->0, cursor unmoved 620802, landed 12a130a. Backdrop::seed +1 construction lead (src/backdrop.rs 12+/1-, derived; mirrors new() STEP_HOLD[0]+1); one-frame-early art step fixed (canon uploads 36/44/52 p8 vs ours 434/442; rust442==canon52). Canon ProcessGFXAnims (:3596) countdown match, sub_8001C94 (:3752) queue-vs-sync confirmed. Cursor watch-write both sides: canon writer BIOS-HLE 0x2F4 p8 (+p4 band near moves), rust vram_manager PCs; F3 +112 did not recur. Integrated tiles/gauge 26165->25979 same bucket; full table byte-identical except tiles/gauge improved (mettaur delta is F14b in main). verify_rows PASS 7 rows. Worker worker-muse (muse-spark-1.3-contributor, 86 turns, $0.121). Verifier verifier-glm (glm-5.3-flash, 20 turns, $0.018): root-cause/citations/scope/cursor/integrated CONFIRMED (rust period-16 + shift-test + gauge-t sub-details unchecked/descriptive-only), rules CLEAN. Note: coordinator restored README Website section (dd4b137, byte-exact, disclosed) accidentally deleted in worker commit.
 **Why.** F6 left k=0..6 at exactly 0 and 208 px on k=7, the vblank-race residue HANDOFF §9 records.
 It is a checkable claim, not a tolerance: find which write lands a frame early or late between the
 two binaries (the watchpoint names the writer on both sides) and make ours land where canon's does.
