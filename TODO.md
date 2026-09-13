@@ -121,8 +121,7 @@ intervention is named but untested
 - F10 BLOCKED -- `buster` isolated: 3172 px over 32 frames. BLOCKED after the second miss, moving on
 - F10b BLOCKED -- `buster`: fire in the 0x08 window with the miss-pose fix, or close the row. 
 - F11 DONE -- `warp` isolated: 9198 px over 30 frames. DONE
-### F12. The chip rows' own residues, family by family  *(PARTIAL -- 2026-09-13, F12a minibomb family done, ticket stays OPEN for seeds)*
-
+### F12. The chip rows' own residues, family by family  *(OPEN -- 2026-09-13, F12a minibomb family done, ticket stays OPEN for seeds)*
 **Result.** F12a minibomb family done, ticket stays OPEN for seeds. chip-minibomb 10/10->0/0 (verify_rows PASS 0/0/60/17158, landed a607263); wave/window/opening-isolated/chip-cannon PASS 0; opening integrated 72499/2691 pre-existing identical on baseline; full table: energbom/megenbom -26, iceseed/grasseed 2145->2122, bugbomb 8338->8280, vdoll/suprvulc/buster/chip-use unchanged, except chip-poisseed 2145->2237 (worst 334, +92) owned by seed follow-up. Worker worker-muse (muse-spark-1.3-contributor, 75 turns, $0.068). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.016): fix code-CONFIRMED, opening pre-existing CONFIRMED, canon OAM order UNCHECKED (probe flag failure), poisseed regression PARTIALLY CONFIRMED (totals attributable, trail colors unchecked). Next: seed family (poisseed/iceseed/grasseed) with its own canon OAM dump.
 **Why.** After F5b: SuprVulc 2464 / 177 / 113; the bomb, seed and VDoll rows 10 to 8338; EnergBom and
 MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ONE family per run of
