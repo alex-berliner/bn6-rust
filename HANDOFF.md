@@ -255,6 +255,7 @@ file. `list` shows the manifest with each entry's verification note; `build <nam
 | `overworld_net` | no | the first overworld state: battlestart resolved to the net area |
 | `emptyfield_start` | no | a battle that spawned a real encounter and deleted it before frame 0 |
 | `chip_ready_empty` | no | from that, the chip window picked and closed by real inputs; a chip fires |
+| `afterdissolve_0x0c` | no | PAUSED's battle, enemy deleted, saved 60 frames in: past the full dissolve, banner sequencer in 0x0C. The chip rows' canon base (F5b): the press is delivered by one-shot pokes to MegaMan's AIData JoypadPressed (0x020340a4) + mirror (0x02036822) because 0x0C never refreshes AIData from the mirror -- and the poked chip FIRES (F5's refusal was delivery, not a gate) |
 | `chip_ready` | no | a rejected attempt, kept as the record; nothing loads it |
 
 Changing a fixture's comparison parameters means editing the recipe and rebuilding, never keeping a
