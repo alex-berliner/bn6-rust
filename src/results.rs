@@ -2,8 +2,8 @@
 //!
 //! sub_802C34E (asm/asm03_0.s:12353) puts up the RESULT window after the
 //! last enemy is deleted, or the LOSER window when the player is: a 24x18
-//! tilemap in palette bank 9 that slides in from x = -30 at two pixels a
-//! frame until it rests at x = 3, then waits for A or Start, holds 0x14 more
+//! tilemap in palette bank 9 that is redrawn into the tilemap at column j
+//! = -30, +2 columns a frame, until it rests at column j = 3, then waits for A or Start, holds 0x14 more
 //! frames and fades the screen out (sub_802C280, asm03_0.s:12234). The clear
 //! time is five BCD digits written right to left at row 4, columns 20, 19,
 //! 17, 16 and 14 as two-tile-tall glyphs from tile 0xa0, in palette bank
@@ -23,8 +23,21 @@ pub const LOSE: usize = 1;
 /// windows: 24 px right and 16 px down of what this build had, which is 3
 /// TILES and 2 tiles -- the disassembly's 3 is a tile column, not a pixel.
 const REST_X: i32 = 24; // provenance: peeked -- aligned against the real ROM's own window (see the doc comment above)
-const START_X: i32 = -30; // provenance: derived -- sub_802C34E, asm03_0.s:12353
-const SLIDE_STEP: i32 = 2; // provenance: derived -- sub_802C34E, asm03_0.s:12353 ("two pixels a frame")
+/// The slide counter's own units are TILE COLUMNS, not pixels: `sub_802C34E`
+/// stores 0xe2 (-30) to `[r5,#6]` and the slide tick `sub_802BE36` adds 2 to
+/// that signed byte (`ldrsb`), so the screen x this build keeps is the column
+/// times 8. The old 2-px step had read the column step as pixels.
+const START_X: i32 = -240; // provenance: derived -- sub_802C34E's 0xe2 (asm03_0.s:12425) times 8
+const SLIDE_STEP: i32 = 16; // provenance: derived -- sub_802BE36's +2 columns (asm03_0.s:11670) times 8; the capture's own right edge moves 16 px/frame (47+16k)
+/// Frames between setup and the first slide tick: canon holds j=-30 from
+/// setup through its frame 15 and ticks during 16..32 (right-edge fit).
+const SLIDE_HOLD: u8 = 16; // provenance: peeked -- first slide tick during canon frame 16; which driver timer holds it there was not identified
+/// `Shown::cells` tags: which tileset a stored raw map entry belongs to --
+/// the window's own tiles, the battle text font, the reward picture. A local
+/// encoding, not ROM data.
+const CELL_BASE: u8 = 0;
+const CELL_FONT: u8 = 1;
+const CELL_REWARD: u8 = 2;
 /// And two tile rows down.
 const Y: i32 = 16; // provenance: peeked -- aligned against the real ROM's own window (see the doc comment above)
 const DISMISS_FRAMES: u8 = 0x14; // provenance: derived -- sub_802C280, asm03_0.s:12234
@@ -126,9 +139,7 @@ pub struct Results {
 }
 
 enum Phase {
-    Sliding {
-        x: i32,
-    },
+    Sliding { x: i32, hold: u8 },
     Waiting,
     /// The post-confirm reward reveal (WIN only): canon's `sub_802C044`
     /// (reference/bn6f/asm/asm03_0.s:11959) draws the 42 coin tiles one per
@@ -167,6 +178,13 @@ enum Phase {
 /// A window on screen, driving its own slide, wait and dismissal.
 pub struct Shown {
     bg: RegularBackground,
+    /// The window's own 24x18 cells as raw map entries plus which tileset
+    /// each belongs to (`CELL_*`), so the slide can re-blit them at a new
+    /// column the way canon's `CopyBackgroundTiles` redraw does.
+    cells: [(u8, u16); 24 * 18],
+    /// Set whenever the slide position moved (or at `show`); the battle
+    /// re-blits through `Results::blit_slide` when it sees this.
+    pub blit_needed: bool,
     phase: Phase,
     /// WIN vs LOSE (`Results::show`'s `variant`): only WIN ever draws a
     /// reward, so only WIN takes the post-confirm reveal path.
@@ -183,28 +201,17 @@ const REVEAL_FRAMES: u8 = 42; // provenance: derived -- sub_802C044's 0x2a loop 
 /// = 0x1e (asm03_0.s:11764), counted down by `sub_802C0A4`
 /// (asm03_0.s:12010), ending in the actual grant plus jingle (0x95/0x96).
 const COOLDOWN_FRAMES: u8 = 30; // provenance: derived -- the 0x1e `sub_802C044` leaves (asm03_0.s:11764)
-/// The RESULT mark's entry animation (TODO F8, measured -- battle.rs's
-/// draw-site comment carries the watch-write evidence): the mark is
-/// invisible for the window's first MARK_ENTER_AT frames, enters wrapped
-/// from the right edge at attr1 x=509 (a 9-bit OBJ coordinate, so the
-/// sprite draws at 509..511 and wraps onto 0..12), steps to 13 and 29,
-/// and rests at 37 from the 7th frame on.
-pub const MARK_ENTER_AT: u32 = 4; // provenance: peeked -- canon's ENEMY DELETED banner at 49 and the mark's first wrapped frame at 163 on the same scenario = 114 frames; our window comes up banner+110 (RESULTS_DELAY), so the mark enters on the window's 4th frame
-const MARK_X_WRAPPED: i32 = -3; // provenance: peeked -- shadow-OAM attr1 0x41FD = 509 = -3 mod 512, canon 163 (watch-write, TODO F8)
-const MARK_X_STEPS: [i32; 2] = [13, 29]; // provenance: peeked -- shadow-OAM attr1 0x400D / 0x401D, canon 164/165 (watch-write, TODO F8)
-const MARK_X_REST: i32 = 37; // provenance: peeked -- shadow-OAM attr1 0x4025 from canon 166 on (= RESULTS_MARK_AT.0)
+/// The RESULT mark's x for a slide position: canon enqueues it as
+/// `([r5+6]*8+13) & 0x1ff` (`sub_802CA5C`, asm03_0.s:13225; the old
+/// watch-write readings 509/13/29/37 are exactly this formula at
+/// j=-2/0/2/3), so it rides the slide counter -- hidden off-screen right
+/// while the window is still out, wrapped at j=-2, resting at 37. Passing
+/// the possibly-negative value straight to OAM reproduces the masking.
+const MARK_DX: i32 = 13; // provenance: derived -- sub_802CA5C's +13 (asm03_0.s:13225)
 
-/// The mark's x for a window `age` (frames since show), None while hidden.
-pub fn mark_x_at(age: u32) -> Option<i32> {
-    if age < MARK_ENTER_AT {
-        return None;
-    }
-    match age - MARK_ENTER_AT {
-        0 => Some(MARK_X_WRAPPED),
-        1 => Some(MARK_X_STEPS[0]),
-        2 => Some(MARK_X_STEPS[1]),
-        _ => Some(MARK_X_REST),
-    }
+/// The mark's x for a window slide position `x` (pixels).
+pub fn mark_x_at(slide_x: i32) -> i32 {
+    slide_x + MARK_DX
 }
 
 impl Results {
@@ -311,9 +318,12 @@ impl Results {
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
+        let mut cells = [(CELL_BASE, 0u16); 24 * 18];
         for i in 0..24 * 18 {
-            let e = u16::from_le_bytes(v.map[i * 2..i * 2 + 2].try_into().unwrap());
-            bg.set_tile(((i % 24) as i32, (i / 24) as i32), &v.tiles, entry(e));
+            cells[i] = (
+                CELL_BASE,
+                u16::from_le_bytes(v.map[i * 2..i * 2 + 2].try_into().unwrap()),
+            );
         }
         if variant == WIN {
             // Minutes, seconds and hundredths as BCD, least significant first.
@@ -332,7 +342,7 @@ impl Results {
                 let top = FONT_TILE + d * 2;
                 let bank = 9 + rank.min(2) as u16;
                 for (dy, tile) in [(0, top), (1, top + 1)] {
-                    bg.set_tile((col as i32, 4 + dy), &v.tiles, entry(tile | bank << 12));
+                    cells[(4 + dy) as usize * 24 + col] = (CELL_BASE, tile | bank << 12);
                 }
                 bcd >>= 4;
             }
@@ -341,14 +351,16 @@ impl Results {
             let mut col = LEVEL_COL + 4;
             if level >= LEVEL_S {
                 for (dy, tile) in [(0, S_TILE), (1, S_TILE + 1)] {
-                    bg.set_tile((col, LEVEL_ROW + dy), &v.tiles, entry(tile | 10 << 12));
+                    cells[(LEVEL_ROW + dy) as usize * 24 + col as usize] =
+                        (CELL_BASE, tile | 10 << 12);
                 }
             } else {
                 let mut n = level.max(1);
                 loop {
                     let top = FONT_TILE + (n % 10) as u16 * 2;
                     for (dy, tile) in [(0, top), (1, top + 1)] {
-                        bg.set_tile((col, LEVEL_ROW + dy), &v.tiles, entry(tile | 9 << 12));
+                        cells[(LEVEL_ROW + dy) as usize * 24 + col as usize] =
+                            (CELL_BASE, tile | 9 << 12);
                     }
                     n /= 10;
                     if n == 0 {
@@ -365,10 +377,21 @@ impl Results {
         // clear time (`sub_802C4E8`) and level (`sub_802C6EC`), and the
         // reward goes up one tile a frame in `sub_802C044`
         // (asm03_0.s:11959) once `[r5,#1]` reaches 4. See `draw_reward`.
-        bg.set_scroll_pos((-START_X, -Y));
+        // Fixed scroll: the slide moves the tilemap cells, never the
+        // register -- canon's own BG HOFS/VOFS shadows read a constant 0
+        // throughout the arrival capture (battle.rs's bg3-merge comment),
+        // because the driver redraws the map at the slide column instead.
+        // Fresh cells already render as blank, and j=START_X/8 is fully
+        // clipped, so there is nothing to blit until the first tick.
+        bg.set_scroll_pos((0, -Y));
         Shown {
             bg,
-            phase: Phase::Sliding { x: START_X },
+            cells,
+            blit_needed: false,
+            phase: Phase::Sliding {
+                x: START_X,
+                hold: SLIDE_HOLD,
+            },
             variant,
             zenny,
         }
@@ -384,9 +407,8 @@ impl Results {
         if shown.variant != WIN {
             return;
         }
-        let v = &self.variants[shown.variant];
         let zenny = shown.zenny;
-        let bg = &mut shown.bg;
+        let cells = &mut shown.cells;
         // The reward line: the amount right-aligned to the digit column,
             // a blank, then a 'z'. Read off the capture's map, whose "100 z"
             // fills window columns 7-9 and 11 of rows 12-13.
@@ -395,11 +417,8 @@ impl Results {
             loop {
                 let g = Self::char_code(b'0' + (n % 10) as u8);
                 for half in 0..2u16 {
-                    bg.set_tile(
-                        (col, REWARD_TEXT_ROW + half as i32),
-                        &self.font,
-                        entry(g * 2 + half | (REWARD_TEXT_BANK as u16) << 12),
-                    );
+                    cells[(REWARD_TEXT_ROW + half as i32) as usize * 24 + col as usize] =
+                        (CELL_FONT, g * 2 + half | (REWARD_TEXT_BANK as u16) << 12);
                 }
                 n /= 10;
                 col -= 1;
@@ -412,26 +431,48 @@ impl Results {
             // out of VRAM and searching all 448 glyphs for it.
             let z = ZENNY_GLYPH;
             for half in 0..2u16 {
-                bg.set_tile(
-                    (REWARD_TEXT_LAST + 2, REWARD_TEXT_ROW + half as i32),
-                    &self.font,
-                    entry(z * 2 + half | (REWARD_TEXT_BANK as u16) << 12),
-                );
+                cells[(REWARD_TEXT_ROW + half as i32) as usize * 24
+                    + (REWARD_TEXT_LAST + 2) as usize] =
+                    (CELL_FONT, z * 2 + half | (REWARD_TEXT_BANK as u16) << 12);
             }
             for k in 0..REWARD_TILES {
-                bg.set_tile(
-                    (REWARD_COL + (k % REWARD_W) as i32, REWARD_ROW + (k / REWARD_W) as i32),
-                    &self.reward,
-                    TileSetting::new(k as u16, TileEffect::new(false, false, REWARD_BANK)),
-                );
+                cells[(REWARD_ROW + (k / REWARD_W) as i32) as usize * 24
+                    + (REWARD_COL + (k % REWARD_W) as i32) as usize] = (CELL_REWARD, k as u16);
             }
             for col in REWARD_EDGE_FIRST..=REWARD_EDGE_LAST {
-                bg.set_tile(
-                    (col, REWARD_EDGE_ROW),
-                    &v.tiles,
-                    entry(REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12),
-                );
+                cells[REWARD_EDGE_ROW as usize * 24 + col as usize] =
+                    (CELL_BASE, REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12);
             }
+            shown.blit_needed = true;
+            self.blit_slide(shown);
+    }
+
+    /// Draw the stored cells into the background at the slide's current
+    /// column, clipping off-screen columns. This is this build's version of
+    /// the driver's own `CopyBackgroundTiles(j, 2, block 3, ...)` call in
+    /// `sub_802BD60` (asm03_0.s:11575): a tilemap redraw every slide tick,
+    /// not a scroll. Cells the window does not cover read back as the
+    /// fresh-map blank, which is what an untouched cell renders as anyway.
+    pub fn blit_slide(&self, shown: &mut Shown) {
+        let v = &self.variants[shown.variant];
+        let j = shown.slide_x() / 8;
+        for row in 0..18i32 {
+            for col in 0..32i32 {
+                let wc = col - j;
+                let (ts, raw) = if (0..24).contains(&wc) {
+                    shown.cells[row as usize * 24 + wc as usize]
+                } else {
+                    (CELL_BASE, 0)
+                };
+                let tiles = match ts {
+                    CELL_FONT => &self.font,
+                    CELL_REWARD => &self.reward,
+                    _ => &v.tiles,
+                };
+                shown.bg.set_tile((col, row), tiles, entry(raw));
+            }
+        }
+        shown.blit_needed = false;
     }
 }
 
@@ -443,13 +484,13 @@ fn entry(e: u16) -> TileSetting {
 }
 
 impl Shown {
-    /// Frames since the window was put up, derived from the slide phase so
-    /// `fast_forward` moves it exactly as a real wait would. The RESULT
-    /// mark's entry animation (battle.rs, TODO F8) is keyed on this.
-    pub fn age(&self) -> u32 {
+    /// The window's current slide position in pixels, for the RESULT mark
+    /// (`mark_x_at`): the resting position once the slide is over, so post-
+    /// slide phases all read the same mark x.
+    pub fn slide_x(&self) -> i32 {
         match self.phase {
-            Phase::Sliding { x } => ((x - START_X) / SLIDE_STEP) as u32,
-            _ => u32::MAX,
+            Phase::Sliding { x, .. } => x,
+            _ => REST_X,
         }
     }
 
@@ -458,10 +499,11 @@ impl Shown {
     /// None before then; 16 means the screen is fully black.
     pub fn update(&mut self, confirm: bool) -> Option<u8> {
         self.phase = match self.phase {
-            Phase::Sliding { x } if x < REST_X => {
+            Phase::Sliding { x, hold } if hold > 0 => Phase::Sliding { x, hold: hold - 1 },
+            Phase::Sliding { x, .. } if x < REST_X => {
                 let x = (x + SLIDE_STEP).min(REST_X);
-                self.bg.set_scroll_pos((-x, -Y));
-                Phase::Sliding { x }
+                self.blit_needed = true;
+                Phase::Sliding { x, hold: 0 }
             }
             Phase::Sliding { .. } => Phase::Waiting,
             // WIN never reaches this arm with confirm held: the battle
@@ -535,8 +577,8 @@ impl Shown {
 
     /// `frames` for `fast_forward` that is guaranteed to reach
     /// `Phase::Waiting` from a fresh `Results::show` -- FIXTURE.md's
-    /// `result_elapsed` = 0xFFFF ("settled", today's demo-resultmatch
-    /// picture). Ceiling of `(REST_X - START_X) / SLIDE_STEP` so an
-    /// off-by-one never leaves the window a frame short of settled.
-    pub const SETTLED: u32 = ((REST_X - START_X + SLIDE_STEP - 1) / SLIDE_STEP) as u32; // provenance: derived -- this file's own slide constants (REST_X, START_X, SLIDE_STEP; sub_802C34E, asm03_0.s:12353), not a separate measurement
+    /// `result_elapsed` = 0xFFFF ("settled"). The setup hold plus the slide
+    /// ticks to rest, so an off-by-one never leaves the window short.
+    pub const SETTLED: u32 = SLIDE_HOLD as u32
+        + ((REST_X - START_X + SLIDE_STEP - 1) / SLIDE_STEP) as u32; // provenance: derived -- this file's own slide constants (REST_X, START_X, SLIDE_STEP, SLIDE_HOLD; sub_802C34E/sub_802BE36, asm03_0.s:12425/11670), not a separate measurement
 }

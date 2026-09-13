@@ -142,10 +142,10 @@ pub struct Fixture {
     /// never forced.
     pub banner_at: u16,
     /// +56 FIXTURE.md (AUDIT wave 3c item 2): when `start_state` = 1, frames
-    /// of the RESULT sequence already elapsed at boot. 0 = the slide-in
-    /// starts on the first battle frame (today's only behaviour, unchanged
-    /// when this field is absent/0); 0xFFFF = settled (the old
-    /// `demo-resultmatch` picture). See `results::Shown::fast_forward`.
+    /// of the RESULT sequence already elapsed at boot. 0 = setup at boot
+    /// (the slide itself starts 16 frames later -- `results::SLIDE_HOLD`);
+    /// 0xFFFF = settled (the old `demo-resultmatch` picture). See
+    /// `results::Shown::fast_forward`.
     pub result_elapsed: u16,
     /// +58 FIXTURE.md (AUDIT wave 3d ticket): the real ROM's primary RNG
     /// state (`ePrimaryRngSeed`, EWRAM 0x020013f0) at the capture's own
