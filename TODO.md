@@ -158,6 +158,36 @@ is where the money goes (R3-R5, F10: two to four attempts each). Cost reducer fo
 **Result.** Precise negative, src ruled out by measurement (no edits, branch empty). card stays 18486/3081/16 (verify_rows PASS, negative 15405 not blind); 18486 = 6x3081 k0-5 card-region x<128 + 10x0 k6-15; residue is highlighted-card slot 1 vs 0, slot 0 already exact. Canon custMenuSomeHandler_8028B74 (asm03_0.s:5194; cursor byte 0x020364C7 0a->4->3->2->1->0 at RAM 21/51/81/111/141, pixels P+2). Rust static: CARDNAME_ROW window_cursor=0, presses 20-145 land while window closed (opens ~131-141), no just_pressed edge. Our walk already P+2 with canon magnitudes; CURSOR_DELAY=2 correct. Worker worker-muse (muse-spark-1.3-contributor, 57 turns, $0.023). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.009): walk claim CONFIRMED empirically (RAM walk reproduced), static/oracle-reasoning structurally CONFIRMED, magnitudes/band sub-values UNCHECKED, fixture-rewire recipe actionable with 3 gaps (negative re-verify, window-open coverage, band arithmetic). Follow-up F13b written for the fixture rewire.
 **Why.** HANDOFF §10 names the chip window's cursor-move timing.
 
+### F13b. `card` isolated via fixture rewire (follow-up to F13's verified negative)  *(OPEN -- 2026-09-13)*
+
+**Why.** F13 (NEGATIVE, verified) ruled out src: canon walks OK->0 at RAM 21/51/81/111/141
+(`custMenuSomeHandler_8028B74`, asm03_0.s:5194; cursor byte `0x020364C7`) while rust holds static
+slot 0 (presses 20-145 land while the window is closed, opens ~131-141); our walk is already P+2
+with canon-identical magnitudes. The residue is the fixture: rust never walks. Rewire the fixture to
+walk and compare transition-vs-transition.
+
+**Do, in order.**
+1. Baseline card (harness line + `diffmask.py` region + `oracle.py`): must read 18486/3081/16,
+   negative not blind (15405).
+2. Rewire the card rust script `_CURSOR_WALK_REAL` -> `_CURSOR_WALK_RUST` (presses
+   250/280/310/340/370), re-centred on the shared 4->3 transition (canon RAM 51 / pixel 52):
+   `canon_ref=46` (band 46..61). Re-derive the rust band from a rust capture (marker origin 8,
+   regress lag) -- do NOT inherit an unverified ~276/~282. Account for canon-walks-from-OK vs
+   rust-walks-from-0 path difference.
+3. Say where the window-open frames stay checked: the old band kept the 142 window-open transition
+   in view; the new band must not let the row pass trivially -- keep window-open coverage or move it
+   to an explicit second comparison.
+4. Re-run card, wave, window, opening, chip-cannon and the full table -- nothing may get worse, and a
+   row that does is reported with its numbers. Re-run the frame-shift negative and confirm still
+   not-blind (from re-centring, not by weakening the negative).
+5. Report: row · frames · total · worst · region · commit · one line of mechanism · one line of what
+   is unverified. Watch-out (report, don't widen): the bracket-vs-card 1-frame split in the
+   `CURSOR_DELAY` comment may surface once the walk works.
+
+**Rules.** Fixture/descriptor + row note only (`peeked` provenance for the band); no src/, no
+allowlist change, no region shrink except by the measured 52-transition event (F2's rule); captures
+one at a time.
+
 ### F14. `mettaur` isolated: 31075 px over 70 frames  *(OPEN -- 2026-09-12)*
 
 **Why.** F2's event pairing left one field: `oracle.py mettaur` first diverges at `mm_timer` k=0
