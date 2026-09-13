@@ -1150,7 +1150,25 @@ RESULTMATCH_ORIGIN = 8
 #: frame" -- FIXTURE.md) is kept: it is the simplest legal value and the one
 #: this ticket can actually reason about without live measurement (see
 #: below), so the alignment moves canon_ref instead of tuning this field.
-RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0)
+#: RESULTMATCH_ROW plus result_elapsed, aimed at RESULT_ARRIVAL's own
+#: measured slide-in start rather than at demo-resultmatch's "long settled"
+#: endpoint. result_elapsed=0 ("the slide-in starts on the first battle
+#: frame" -- FIXTURE.md) is kept: it is the simplest legal value and the one
+#: this ticket can actually reason about without live measurement (see
+#: below), so the alignment moves canon_ref instead of tuning this field.
+#: F21b: the backdrop tail seed. RESULT_ARRIVAL is captured mid-battle, so
+#: its ambient backdrop clocks are mid-cycle: eGFXAnimStates[0] reads entry
+#: 24 (CommandPos 0x0807fc64 against LoopAddress 0x0807fba4, 8 bytes an
+#: entry), Timer 4, Param0 0x08617488 (this build's own blob -- the same
+#: schedule); eBGScrollCBCounters reads 0x0528/0x8294 after frame 0.
+#: art_entry/art_timer carry those peeked values verbatim (the seed's own +1
+#: construction lead still applies); scroll_xq/scroll_yq are the
+#: quarter-pixel counters reproducing the peeked registers 82/41 through
+#: this build's -((q+tick+3)/4) mapping at battle 0's own one-tick lead
+#: (x exact every frame, y exact every frame -- both verified by hand over
+#: the period). result_elapsed=0 and the reward fields are untouched.
+RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0,
+                  art_entry=24, art_timer=4, scroll_xq=692, scroll_yq=858)
 
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
 #: read -- pending_src). Marker origin 1 (measured live -- blanks HUD and
