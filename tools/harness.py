@@ -929,9 +929,14 @@ CHECKS.extend(_chip_checks())
 #: demo-hudmatch's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
 #: Marker origin measured live (this ticket): 8, same family as
 #: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
-HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=60,
-                megaman_col=3, megaman_row=2, hand=[1], hand_count=1, gauge=1,
+HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,
+                megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=1,
                 flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                # F20b (2026-09-13): positions peeked from this row's own canon
+                # capture (REAL + PAUSED + Start@10, canon frame 44): MegaMan
+                # PanelX/PanelY 0x0203a9c2/0x0203a9c3 (BattleObject 0x0203a9b0
+                # +0x12/+0x13) read (2,2), enemy 0x0203ab72/0x0203ab73 (slot
+                # 0x0203ab60 +0x12/+0x13) read (5,2) -- provenance: peeked.
                 # TODO F6 (2026-09-12): the phase of the CUSTOM gauge's flow
                 # counter. Canon's gauge routine (sub_801C4E4, asm00_2.s:26351)
                 # draws bar and marker off ONE counter t (eStruct2035280+0x00,
