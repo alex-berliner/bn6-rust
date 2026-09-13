@@ -2,68 +2,68 @@
   {
     "file": "captures/banner-progress.gif",
     "name": "banner-progress",
-    "label": "banner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The BATTLE START! banner. The 2248 px were never the banner: they were the deleted Mettaur's corpse dissolving underneath it on the canon side, a leftover of the hand-played save state the row starts from (compare the right of the field in the top pane early on). F9 blanks the enemy's tiles on the canon side, including the dissolve's extra tile upload, and cancels the one upload the per-frame blank could not catch. The banner itself had matched all along.\n\nbanner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/cannon-progress.gif",
     "name": "cannon-progress",
-    "label": "cannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The legacy cannon row, the same fix as chip-cannon: its canon side moved onto the post-dissolve state with the direct input write (F7). The 14388 px were the old save state's portrait box and corpse, not the cannon.\n\ncannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/card-progress.gif",
     "name": "card-progress",
-    "label": "card (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The chip window's cursor. In canon (top) the cursor walks the slots, one step every 30 frames. Our row's button presses were landing while the window was still closed, so ours (middle) sat on the first slot the whole time -- Vulcan1 stayed highlighted while canon had moved on to MiniBomb. No game code was wrong: the row's script was. F13b moved our presses to after the window opens and paired the two sides on a shared cursor transition, so both walk together (bottom).\n\ncard (isolated), before and after: canon on top; ours at 2798df5 (18486 px over 16 frames, canon 136+k, rust offset 190); ours at 4b16fd7 (0 px, canon 46+k, rust offset 298). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/chip-cannon-progress.gif",
     "name": "chip-cannon-progress",
-    "label": "chip-cannon (isolated), before and after: canon on top; ours at b21fce8 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at 3fa1eba (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The Cannon chip, and the shared artifact behind 27 chip rows. On the canon side, the save state every chip row started from had a stray portrait box and the deleted Mettaur's corpse inside the window (visible at the right of the field in the middle pane's canon frames of the old build's run). F5b starts canon from a state past the dissolve instead; because the game stops reading the joypad in that state, the chip press is written straight into MegaMan's input record. Every chip row lost the same 14388 px; 27 of them went to 0.\n\nchip-cannon (isolated), before and after: canon on top; ours at b21fce8 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at 3fa1eba (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/chip-minibomb-progress.gif",
     "name": "chip-minibomb-progress",
-    "label": "chip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "MiniBomb's thrown ball. Ours (middle) drew the ball underneath its own shadow; canon's sprite order puts the ball above the shadow. F12a fixed the draw order to match canon's object order (bottom). The same change nudged the three seed chips, which share the code, by a few pixels; the seeds pass owns that.\n\nchip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/field-progress.gif",
     "name": "field-progress",
-    "label": "field (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The empty field after the enemy is deleted. In canon the battle resolves into the RESULT sequence when the last enemy goes, and the field is drawn in that state. Our fixture kept the battle running instead (middle). F8 added a fixture flag that makes our ROM resolve the battle the same way canon does, citing canon's resolve routine (bottom).\n\nfield (isolated), before and after: canon on top; ours at ec37625 (1048 px over 40 frames, canon 130+k, rust offset 60); ours at 8a03b3f (0 px, canon 130+k, rust offset 80). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/full-battle-before-F3.gif",
     "name": "full-battle-before-F3",
     "label": "The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. THIS IS THE BEFORE: the ROM at 67f795f, before F3 removed the chip window's ghost -- compare full-battle-loop.gif, the current build.\n\ncommit 904f07b",
-    "added": null
+    "added": "2026-09-13"
   },
   {
     "file": "captures/opening-progress.gif",
     "name": "opening-progress",
-    "label": "opening (isolated), before and after: canon on top; ours at 2e22eac (1160 px over 40 frames, canon 120+k, rust offset 119); ours at 61e1fdd (0 px, canon 120+k, rust offset 119). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The battle's opening. Every one of the 40 frames differed by the same 29 px: the HP box's digits. The rebuilt canon save state has MegaMan at 100 HP; the row's fixture still said 60, a value copied from the state that was lost. F4 set the fixture to 100 and gave it the state's own RNG seed. Nothing about the opening's code changed.\n\nopening (isolated), before and after: canon on top; ours at 2e22eac (1160 px over 40 frames, canon 120+k, rust offset 119); ours at 61e1fdd (0 px, canon 120+k, rust offset 119). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/tiles-progress.gif",
     "name": "tiles-progress",
-    "label": "tiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The custom gauge under the HUD. Its stripe animation had been fitted by eye with three constants that were close but not right. F6 replaced them with canon's routine (bar tile from t/7, marker from t&8, one counter, no phase), which took the row from 538 px to 208 on one frame; that last frame was a one-frame-early backdrop art step, fixed later in F15, and the row now reads 0.\n\ntiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/warp-progress.gif",
     "name": "warp-progress",
-    "label": "warp (isolated), before and after: canon on top; ours at 7a3d97b (9198 px over 30 frames, canon 130+k, rust offset 30); ours at 389578d (0 px, canon 130+k, rust offset 51). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "MegaMan's warp between panels. Canon's scripted presses were silently ignored (the game stops reading the joypad in the battle state the row sits in), so canon's MegaMan stood still while ours warped -- the whole 9198 px was our warp against a static sprite, and the row's negative control read the same number as the row itself. F11 delivers the presses to MegaMan's input record directly, blanks the ready-chip bubble, and locks the alignment on the warp event. Now both warp together.\n\nwarp (isolated), before and after: canon on top; ours at 7a3d97b (9198 px over 30 frames, canon 130+k, rust offset 30); ours at 389578d (0 px, canon 130+k, rust offset 51). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/windowclose-progress.gif",
     "name": "windowclose-progress",
-    "label": "windowclose (isolated), before and after: canon on top; ours at 2ad2733 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f0db79d (695603 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "label": "The chip window closing. Before F3 (middle), a faded copy of the window stayed on the field after the slide-out -- our code waited for a scroll position the slide never reaches, so the window's tiles were never cleared. F3 clears the columns as the slide passes them, as canon does (bottom): the window's own layer now matches on all ten slide frames. The row's total did not move at this commit because it measures the whole screen during and after the close; the post-close band was fixed later in F18.\n\nwindowclose (isolated), before and after: canon on top; ours at 2ad2733 (695603 px over 40 frames, canon 81+k, rust offset 253); ours at f0db79d (695603 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
   },
   {
     "file": "captures/windowclose-isolated.gif",
@@ -74,7 +74,7 @@
   {
     "file": "captures/mettaur-progress.gif",
     "name": "mettaur-progress",
-    "label": "mettaur (isolated), before and after: canon on top; ours at 41b5d47 (30864 px over 70 frames, canon 140+k, rust offset 309); ours at cc61979 (31075 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "The Mettaur row across F2. Both sides run the same 106-frame attack cycle, but the row had been comparing canon's second attack with our third, so the two MegaMen were in different situations for the whole window. F2 pairs the attacks by measured events (same attack index, same post-hit invincibility state), which is why the total went slightly up: the correct pairing, not the lowest score. What remains visible here: canon's MegaMan blinking through his invincibility while ours is solid -- fixed in F14b (canon tests bit 1 of the timer, we tested bit 2).\n\nmettaur (isolated), before and after: canon on top; ours at 41b5d47 (30864 px over 70 frames, canon 140+k, rust offset 309); ours at cc61979 (31075 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-12"
   },
   {

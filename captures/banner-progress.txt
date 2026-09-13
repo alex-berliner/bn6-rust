@@ -1,1 +1,3 @@
+The BATTLE START! banner. The 2248 px were never the banner: they were the deleted Mettaur's corpse dissolving underneath it on the canon side, a leftover of the hand-played save state the row starts from (compare the right of the field in the top pane early on). F9 blanks the enemy's tiles on the canon side, including the dissolve's extra tile upload, and cancels the one upload the per-frame blank could not catch. The banner itself had matched all along.
+
 banner (isolated), before and after: canon on top; ours at 6a506f2 (2248 px over 58 frames, canon 49+k, rust offset 131); ours at 597875e (0 px, canon 49+k, rust offset 131). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
