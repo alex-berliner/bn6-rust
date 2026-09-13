@@ -23,7 +23,9 @@ TODO.md's "## R." section (and later sections) for tickets, HANDOFF.md §13 for 
      --expect ROW=TOTAL/WORST/FRAMES/NEG ...` (values copied from the report; include the canary rows
      the ticket lists). It rebuilds a clean detached checkout and reproduces each harness line; a
      mismatch, a BLIND negative or a row that fails to run is a FAIL.
-   - **Sol `verifier`, only when the ticket makes claims beyond harness lines:** new tools or
+   - **The `verifier` role, only when the ticket makes claims beyond harness lines** (its model is
+     set in .pi/agents/verifier.md -- never pass a `model` override for it, and never use a `worker`
+     as a verifier): new tools or
      infrastructure, RAM/memory findings, "X causes Y" or "Z was excluded", or ANY partial, blocked or
      negative outcome that the next ticket would build on. Dispatch it (same shape as the worker,
      `timeoutMs: 3600000`) with verify_rows' output pasted in and the two or three claims to check;
