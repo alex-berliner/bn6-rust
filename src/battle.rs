@@ -316,6 +316,14 @@ const BUG_VX: i32 = BLKBOMB_VX; // provenance: peeked -- tools/throw_dump.py 43 
 const BUG_VZ: i32 = 0x26062; // provenance: peeked -- tools/throw_dump.py 43
 const BUG_GRAVITY: i32 = 0x2800; // provenance: peeked -- tools/throw_dump.py 43
 const BUG_FLIGHT: u8 = 42; // provenance: peeked -- tools/throw_dump.py 43's own timer of 42
+/// How high BugBomb's resting ball floats above its panel: sub_80D9E94's
+/// landing (loc_80D9EC2, asm31.s:71831) writes Z = 0xa<<0x10 after snapping
+/// X/Y to the panel, so the ball sits ten above the ground its shadow stays
+/// on. The trajectory's own endpoint is lower and left of that -- the whole
+/// of chip-bugbomb's residue -- and the 60-frame fuse and blast that follow
+/// (sub_80D9F2C) fall past this row's 70 frames, so the freeze below stands
+/// in until a longer row needs them.
+const BUG_REST_Z: i32 = 0xa << Q16_SHIFT; // provenance: derived -- sub_80D9E94 loc_80D9EC2 (asm31.s:71831)
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
 /// top of the screen and hangs there -- so it gets its own launch, gravity and
 /// flight, and `tools/throw_dump.py 96` reads all four out of the object while
@@ -801,6 +809,10 @@ struct Bomb {
     seed_palette: usize,
     /// BugBomb and VDoll land and stay: the object rests on its panel.
     rests: bool,
+    /// BugBomb's landing snaps the ball onto its panel (sub_80D9E94);
+    /// VDoll's own landing routine is still open, so only BugBomb rests
+    /// this way until its pass reads it.
+    rest_snaps: bool,
     /// Whether the object moves and then feels the pull, rather than feeling
     /// it and then moving. A bomb does the pull first (sub_80C5C9C,
     /// asm31.s:29536); VDoll's doll does it last (sub_80D47C0, asm31.s:60530).
@@ -2912,21 +2924,42 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             b.step();
             b.ticks += 1;
             if b.ticks >= b.flight {
+                let mut keep = false;
                 if b.rests {
-                    // The thrown object is not replaced: it stops where it
-                    // lands and keeps its animation.
-                    let mut resting = core::mem::replace(
-                        &mut b.player,
-                        spr::Player::new(spr::Assets::new(MINIBOMB), 0),
-                    );
-                    resting.update();
-                    self.effects.push((
-                        resting,
-                        b.position(),
-                        RESTS_FRAMES,
-                        false,
-                        false,
-                    ));
+                    if b.rest_snaps {
+                        // BugBomb does not stop at the trajectory's endpoint:
+                        // the landing snaps X/Y to the target panel and Z to
+                        // ten above it (sub_80D9E94 loc_80D9EC2,
+                        // asm31.s:71822-71835), and the frozen bomb keeps
+                        // drawing through the bomb path, which is what splits
+                        // the ball from its ground shadow the way the real
+                        // ROM's OAM does.
+                        let (cx, cy) = field::panel_centre(b.target.0, b.target.1);
+                        b.x = cx << Q16_SHIFT;
+                        b.y = cy << Q16_SHIFT;
+                        b.z = BUG_REST_Z;
+                        b.vx = 0;
+                        b.vz = 0;
+                        b.gravity = 0;
+                        b.ticks = 0;
+                        b.flight = RESTS_FRAMES;
+                        keep = true;
+                    } else {
+                        // The thrown object is not replaced: it stops where it
+                        // lands and keeps its animation.
+                        let mut resting = core::mem::replace(
+                            &mut b.player,
+                            spr::Player::new(spr::Assets::new(MINIBOMB), 0),
+                        );
+                        resting.update();
+                        self.effects.push((
+                            resting,
+                            b.position(),
+                            RESTS_FRAMES,
+                            false,
+                            false,
+                        ));
+                    }
                 }
                 landed.push((
                     b.target,
@@ -2935,7 +2968,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     b.poison.then_some(b.seed_palette),
                     b.rests,
                 ));
-                false
+                keep
             } else {
                 true
             }
@@ -3390,6 +3423,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     show_damage: lilbolr,
                     poison: seed,
                     rests,
+                    rest_snaps: chip.id == CHIP_BUGBOMB,
                     moves_before_falling: chip.id == CHIP_VDOLL || flash,
                     seed_palette: sheet_palette(chip.id),
                     x: (mx << Q16_SHIFT) + dx * BOMB_SPAWN_AHEAD,
