@@ -1772,14 +1772,28 @@ impl<'a> Battle<'a> {
             // never the reverse), so this is never a fresh-blanked HUD.
             let bg = self.hud_bg.as_mut().unwrap();
             hud.set_menu(bg, self.custom.is_some());
-            // F18c: on the blank frame after closing the gauge stays off:
-            // canon's blank-91 shows the HP box over a blank gauge area and
-            // only redraws the gauge on frame 92, so skip the body draw
-            // while the deferred close is still blanking (the menu flip
-            // above already cleared its columns and moved the HP box).
-            if !close_blank {
-                hud.set_gauge(bg, self.gauge, GAUGE_FULL, gauge_up);
-            }
+            // F18d: draw the gauge body on the blank frame itself, one
+            // logic frame earlier than canon's redraw (canon update 92 -
+            // sub_8026BF4's close path in reference/bn6f asm03_0.s:1037
+            // clears the window columns per slide call via
+            // CopyBackgroundTiles, then a single update writes HP-home +
+            // label + 16x0x9222 body + 50B palette, VRAM-dump-verified on
+            // this row's own captures: post-91->post-92 = 48 map entries
+            // at 0x0600F800 rows 0-1 cols 0-23 + 50 palette bytes, 0 spread).
+            // Canon's direct VRAM writes are picture-visible same-frame,
+            // but our agb-buffered tile writes land one picture later
+            // (this row: update-272's draw showed in picture 273 while
+            // update-271's reset showed in 271 -- tile writes lag, palette
+            // and register writes do not, same rule as the HP box's own
+            // "tile writes land on the next [frame]" comment below).
+            // So the blank frame draws the empty body (gauge was just
+            // zeroed above; the menu flip already cleared its columns):
+            // its tiles appear in the next picture, exactly canon 92's
+            // slot, while this picture still shows the Done frame's blank
+            // gauge. F18c's skip double-compensated and pushed the body
+            // to k=12. The gauge_shown cache makes the redo on the next
+            // frame a no-op, so nothing draws twice.
+            hud.set_gauge(bg, self.gauge, GAUGE_FULL, gauge_up);
             // The real ROM names the chip that is ABOUT to be used, not the
             // one in flight: measured on a capture where the name stands from
             // the first frame and clears on the frame the chip fires. So it
