@@ -243,6 +243,39 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Rows `cursor` + `result` before/after (total/worst/frames) on the identical scripts and windows, cursor x<112 vs x>=112 split and result inside/outside-window split before/after, canon raster routine cited with file and lines, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, per-scanline attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F25c. `mettaur`: the shockwave's flight is 44 frames, canon's is 45 -- the one frame between the enemy's phase and MegaMan's  *(OPEN -- 2026-09-13)*
+
+**Files.** src/shot.rs, src/ai.rs, tools/harness.py
+
+**Why.** F25b measured, and verify_rows reproduced, that our Mettaur's attack path is pixel-perfect at
+its true phase: at offset 204 the enemy differs by 0 px over the whole row while MegaMan reads 30864;
+at the row's offset 203 MegaMan pairs and the enemy is one frame off (19698, the unique sharp
+minimum). Attack entries are canon 31/137/243 vs ours 95/201/307, exactly 64 apart all three times,
+so the intro-gate story is refuted. The one frame is the shockwave: ours reaches MegaMan 44 frames
+after launch, canon's 45 (F25b confirmed it in src/shot.rs and declared it out of that ticket's
+files). That is not a block, it is the fix. shot.rs already notes that shots are stepped before the
+actors ("PRE-TICKED", src/shot.rs:145-147), which is the kind of ordering that costs one frame.
+
+**Do, in order.**
+1. Start in `tools/worktree.sh f25c-wave-flight`. Baseline mettaur (19698/1245/70 at offset 203,
+   negative 60824 not blind) and wave, window, opening, chip-cannon, field, result, plus tiles/gauge
+   integrated (3865) and popup (60614).
+2. Measure canon's shockwave frame by frame from the Mettaur's launch to the hit: the wave object's
+   slot, x position and timer per frame (probe.py watch on both sides, same launch frame), and the
+   frame MegaMan's HP drops and his mercy counter starts. Do the same on ours. Name the frame where
+   the two diverge (spawn delay, hop cadence, hit-check order) and cite canon's routine for that step.
+3. Make ours identical there (src/shot.rs, or src/ai.rs if it is the launch), with a provenance
+   comment. Then re-align the mettaur row only by the measured event (the enemy's attack entry and
+   MegaMan's hit now at the same offset), never by score.
+4. **Acceptance.** mettaur 0/0/70 (negative not blind) at one offset for both the enemy and MegaMan;
+   wave, window, opening, chip-cannon, field, result 0 or unchanged; tiles/gauge integrated and popup
+   re-measured and reported (they wait on the same phase); full table nothing worse. If the wave row
+   moves, its per-frame split is the report.
+
+**Rules.** src/shot.rs, src/ai.rs and the mettaur row's Align note only; no allowlist change; no fitted
+constant (the 45 must come from canon's routine, cited). **Coordinator:** verify_rows on every row
+named; the verifier on the canon citation and the "same offset for both" claim; one follow-up at most.
+
 ### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
 
 **Files.** src/backdrop.rs, src/actor.rs, tools/harness.py, tools/diffmask.py, tools/probe.py
