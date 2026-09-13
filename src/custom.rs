@@ -588,11 +588,26 @@ impl Custom<'_> {
     }
 
     /// The slide-out clears the columns the window has vacated with the
-    /// blank tile (byte_8026C88; sub_8026BF4).
+    /// blank tile (byte_8026C88; sub_8026BF4). Canon clears them from the
+    /// LEFT edge, one column when the new scroll x has bit 2 clear and two
+    /// when it is set (sub_8026BF4's `and #4 / lsr #2 / eor #1` bit count --
+    /// the slide-in's own count without the eor), which over the ten 0xc
+    /// steps is exactly "column c on the first call whose x has carried it
+    /// fully off the left edge, (c + 1) * 8 <= x": measured against the real
+    /// ROM from /tmp/chipselect.state (Start@50,A@80), +0x44 of eS20364C0
+    /// -- its cleared-column counter -- reads 1,3,4,6,7,9,10,12,13,15 across
+    /// the ten calls at frames 81..90.
+    /// The previous condition here tested the RIGHTMOST column
+    /// ((MAP_W - 1) * 8 + 16 = 128, which no x in the slide ever reaches),
+    /// so nothing was ever cleared: the whole window map stayed on BG3 and
+    /// reappeared at scroll 0 the moment the close finished -- the faded
+    /// copy of the window TODO F3 measures staying on the field for the
+    /// whole battle.
     fn vacate(&mut self, bg: &mut RegularBackground, x: i32) {
-        while self.revealed > 0 && ((self.revealed - 1) as i32) * 8 + 16 < x {
+        while self.revealed > 0 && (MAP_W - self.revealed + 1) as i32 * 8 <= x {
+            let col = MAP_W - self.revealed;
             self.revealed -= 1;
-            self.set_column(bg, self.revealed, false);
+            self.set_column(bg, col, false);
         }
     }
 
