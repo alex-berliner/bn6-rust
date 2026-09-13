@@ -26,8 +26,10 @@ def main():
     ap.add_argument("--step", type=int, default=2, help="keep every Nth frame")
     ap.add_argument("--walk", action="store_true", help="use the rollup walk instead of the player tour")
     ap.add_argument("--out", default=os.path.join(ROOT, "web/captures/full-battle-loop.gif"))
+    ap.add_argument("--rom", help="use this ROM instead of building the current tree (e.g. a build of an older commit)")
+    ap.add_argument("--label", default="", help="text added to the caption, e.g. which commit the ROM is")
     a = ap.parse_args()
-    rom = h.plain_rom()
+    rom = a.rom or h.plain_rom()
     if a.walk:
         keys, last = h.ROLLUP_WALKS[0], a.frames - 50
         script = [h.held(keys[i % len(keys)], at, 3) for i, at in enumerate(range(60, last, 19))]
@@ -50,7 +52,7 @@ def main():
                 "RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it "
                 "stays drawn on the left of the field for the whole battle; no harness row covers the window "
                 "closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity "
-                "measurement; the per-row GIFs are the measurements.\n\ncommit %s" % (a.frames, a.step, rev))
+                "measurement; the per-row GIFs are the measurements. %s\n\ncommit %s" % (a.frames, a.step, a.label, rev))
     print("wrote %s (%d frames, %.1f MB)" % (a.out, len(frames), os.path.getsize(a.out) / 1e6))
 
 
