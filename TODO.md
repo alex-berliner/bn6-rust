@@ -189,12 +189,15 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Why.** F20's verified decomposition: the HUD strip (y<24) reads 0 on all 8 frames and `--disable-obj`
 reads 0/0/8, so the whole 25979 px is sprites -- our fixture puts MegaMan at column 3 where canon's
 save state holds (2,2), and the enemy one row off canon's, so both navis and the enemy's HP readout sit
-in the wrong cells. Fixture, not src/. **Do:** peek canon's positions from the row's own state
+in the wrong cells (canon: MegaMan (2,2), enemy (5,2)). F20's worker tried the corrected positions as
+a throwaway patch: 25979 -> 3865 (worst 678), and the remaining 3865 is canon's Mettaur mid-attack
+(CurState/CurAction 0x04/0x0b) against ours idle -- the enemy AI phase, F17's family, not this ticket.
+Fixture, not src/. **Do:** peek canon's positions from the row's own state
 (MegaMan's and the enemy's PanelX/PanelY in their BattleObjects, cite the offsets), set the row's
 descriptor (`HUDMATCH` in tools/harness.py) to them with `peeked` provenance, run tiles and gauge
 (both variants), wave, window, opening, chip-cannon and the full table. **Acceptance:** tiles/gauge
-integrated at 0 with a non-blind negative, or the residual reported by element with frames and
-regions; isolated still 0; nothing worse. **Rules:** tools/harness.py descriptor only; no allowlist
+integrated reads about 3865 or lower with a non-blind negative (0 if the Mettaur's attack phase also
+lines up), the residual reported by element with frames and regions; isolated still 0; nothing worse. **Rules:** tools/harness.py descriptor only; no allowlist
 change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never widened).
 **Coordinator:** verify_rows; no verifier unless a claim goes beyond harness lines.
 
