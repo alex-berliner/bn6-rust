@@ -772,7 +772,9 @@ fixture artifact. **Do:** point `cannon` at the same route and Align method F5b 
 fixture artifact. verify_rows PASS on both from a clean rebuild. Harness-lines-only claim, no
 verifier. Worker GLM-5.3-Flash high, 19 turns, $0.009.
 
-### F8. `field` isolated: 1048 px over 40 frames  *(OPEN -- 2026-09-12)*
+### F8. `field` isolated: 1048 px over 40 frames  *(DONE -- merged 8a03b3f, 2026-09-13; field 1048->0/0/40, integrated improved)*
+
+**Result.** DONE. field isolated 1048/177/40 -> PASS 0/0/40 (negative 1139, not blind); field integrated 397357/26479 -> 368525/23784 (allowed AUDIT-6, improved). Mechanism: the residue was canon's own deleted-enemy battle resolving -- sequencer 0x08->0x0C at canon frame 47, ENEMY DELETED banner 49..106, RESULT window slide-in ~154, mark OBJ (16x16 tile 0x200 pal 11) entering wrapped x=509 at 163 then 13/29/37; our zero-enemy fixture held the fight open forever by design. Fix: FIXTURE.md bit5 FLAG_RESOLVE_OVER carried only on the field descriptor, battle.rs over-gate honors it, results.rs mark entry animation (hidden 4 frames, 509/13/29/37). Align offset 60->80 by measured event (banner canon 49 <-> rust capture 8; mark canon 163 <-> rust 121), unique sharp minimum (0 vs 1139 at +-1) in unchanged band range(60,110). verify_rows PASS (field/wave/window/opening/chip-cannon/cannon). Verifier CONFIRMED all three claims (canon routine sub_802CA5C/sub_8009FF8 lines, flag scope, event pairing). Worker GLM-5.3-Flash high, 141 turns, $0.257; verifier Muse-Spark high, 59 turns, $1.089; children total $1.346.
 
 ### F9. `banner` isolated: 2248 px over 58 frames  *(OPEN -- 2026-09-12)*
 
