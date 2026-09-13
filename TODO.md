@@ -219,6 +219,19 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Measure and report.** Row `windowclose` before/after (total/worst/frames) on the identical script and window, `--only-bg 3` k=9/k=10/k=11 before/after, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, scroll/map attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F18d. `windowclose` isolated: the k11 gauge-body single-step redraw *(OPEN -- 2026-09-13)*
+
+**Files.** src/battle.rs, src/custom.rs
+
+**Why.** F18c's verified Result: `windowclose` 651885/28430 -> 650544/27555/40 (landed b0ba8a5); BG3 k9/k10 are 0, but k11 carries 1596 (x48-191 y0-15 canon-only): our gauge body lands k12 vs canon's single-step 149B+50B redraw at canon 92 (RGB-proven, mechanism unmodeled). Verifier independently reproduced the k9/k10/k11 relocation and confirmed a -369 px non-BG3 improvement rides along (net full-screen -1341).
+**Do, in order.**
+1. Start in `tools/worktree.sh f18d-windowclose-k11`. Baseline `python3 tools/harness.py --only windowclose --no-gallery` (must read 650544/27555/40 at offset 253, negative confirmed not blind), plus `--only-bg 3` per-frame k=10/k=11/k=12 totals and bboxes, measured.
+2. Model canon's single-step gauge redraw at canon 92 from the row's own capture state (149B+50B regions, palette/tile writes), then land our gauge body one frame earlier in `src/` citing canon's close routine in `reference/bn6f`, measured on k=11/k=12 and the same region.
+3. Re-run `windowclose`, `wave`, `window`, `opening`, `chip-cannon` and the full table -- nothing may get worse, and a row that does is reported with its numbers, measured.
+**Rules.** `src/` only; no allowlist change; offset 253 stands unless a watch names a new event frame (F2's rule); captures one at a time.
+**Measure and report.** Row `windowclose` before/after (total/worst/frames), `--only-bg 3` k=10/k=11/k=12 before/after, full-table deltas.
+**Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (redraw attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
+
 
 ### F21b. `result` isolated: the ~2900 px/frame outside the window -- backdrop tail and one-frame slide lag  *(PARTIAL -- 2026-09-13, result 408337/31895->190633/24647/40 [tilemap-column slide j=-30+2/frame + 16-frame hold + peeked backdrop see)*
 
