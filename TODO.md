@@ -190,8 +190,9 @@ walk and compare transition-vs-transition.
 allowlist change, no region shrink except by the measured 52-transition event (F2's rule); captures
 one at a time.
 
-### F14. `mettaur` isolated: 31075 px over 70 frames  *(OPEN -- 2026-09-12)*
+### F14. `mettaur` isolated: 31075 px over 70 frames  *(PARTIAL -- 2026-09-13, Wrong-guess PARTIAL, no edits (branch empty))*
 
+**Result.** Wrong-guess PARTIAL, no edits (branch empty). mettaur stays 31075/1566/70 (verify_rows PASS, negative 46554 not blind). Worker ruled out mercy/blink (seed 120 / first-observable 119 / -1/frame reproduced; blamed attack latency 82v81 on wave). Verifier CONFIRMED seed/rate/numbers but REFUTED the canon blink formula: lsr #2 carry is bit 1, so canon hides iff (timer>>1)&1 (repo Invisibl comment src/actor.rs:977-979 agrees); ours uses bit 2 -- predicates diverge half the mercy window, consistent with the row signature (k=0 404px flip at timer 93, diffs all 70 frames inside mercy 93->24). Worker worker-muse (muse-spark-1.3-contributor, 64 turns, $0.026). Verifier verifier-glm (glm-5.3-flash, 24 turns, $0.017). Follow-up F14b (corrected-predicate blink experiment) written; wave-timing premise on hold.
 **Why.** F2's event pairing left one field: `oracle.py mettaur` first diverges at `mm_timer` k=0
 (canon 7, ours 6) -- MegaMan one frame apart inside the 120-frame mercy -- and canon's MegaMan is
 blinking where ours is visible (mettaur-progress.gif). Find which side's mercy/blink timing is off by
