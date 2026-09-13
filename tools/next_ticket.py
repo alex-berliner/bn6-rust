@@ -11,7 +11,7 @@ usage: python3 tools/next_ticket.py [--id F12] [--results N] [--list]
 import argparse, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)[^)]*\)\*\s*$", re.M)
+HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)\b.*\)\*\s*$", re.M)
 
 
 def tickets(text):
@@ -28,6 +28,32 @@ def tickets(text):
     return out
 
 
+def files_of(body):
+    m = re.search(r"^\*\*Files\.\*\*\s*(.+?)$", body, re.M)
+    if not m:
+        return None
+    return [f.strip().rstrip(".") for f in re.split(r"[,;]\s*", m.group(1)) if f.strip()]
+
+
+def overlap(a, b):
+    for x in a:
+        for y in b:
+            if x == y or x.startswith(y.rstrip("/") + "/") or y.startswith(x.rstrip("/") + "/"):
+                return True
+    return False
+
+
+def pair_for(first, others):
+    fa = files_of(first["body"])
+    if not fa:
+        return None
+    for o in others:
+        fb = files_of(o["body"])
+        if fb and not overlap(fa, fb):
+            return o
+    return None
+
+
 def result_para(body):
     m = re.search(r"^\*\*Result\.\*\*.*?(?=\n\n|\Z)", body, re.M | re.S)
     return m.group(0) if m else None
@@ -36,6 +62,7 @@ def result_para(body):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--id"); ap.add_argument("--results", type=int, default=1); ap.add_argument("--list", action="store_true")
+    ap.add_argument("--pair", action="store_true", help="also print the next OPEN ticket whose **Files.** do not overlap the first's")
     a = ap.parse_args()
     text = open(os.path.join(ROOT, "TODO.md")).read()
     ts = tickets(text)
@@ -51,6 +78,13 @@ def main():
         sys.exit("no OPEN ticket" if not a.id else "no ticket %s" % a.id)
     t = pick[0]
     idx = ts.index(t)
+    if a.pair:
+        partner = pair_for(t, [x for x in ts if x["status"] == "OPEN" and x is not t])
+        if partner:
+            print(t["body"]); print("=== PAIR (disjoint files; may run concurrently) ===\n"); print(partner["body"])
+        else:
+            print(t["body"]); print("=== NO PAIR ===")
+        return
     base = re.match(r"[A-Z]+\d+", t["id"]).group(0)
     print(t["body"])
     shown = 0

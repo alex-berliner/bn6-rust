@@ -13,7 +13,7 @@ usage: python3 tools/archive_tickets.py [--archive-sections A B C D] [--dry-run]
 import argparse, datetime, os, re
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)[^)]*\)\*\s*$", re.M)
+HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)\b.*\)\*\s*$", re.M)
 SEC = re.compile(r"^## ([A-Z])\. ", re.M)
 
 

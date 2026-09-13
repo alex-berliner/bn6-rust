@@ -100,6 +100,13 @@ vs after -- a merge that changed nothing is not parity).
   turns Opus 5's mid-conversation-effort beta off and caps Opus 5/Sonnet 5 output at 32k; the context
   pruner is on in `agentic-auto` mode. Extensions: `pi-context-prune`, `pi-subagents`, `pi-goal-x`
   (project-local).
+- **Two workers in flight (2026-09-13, the user's call at <=5% overhead):** tickets declare a
+  `**Files.**` line; `next_ticket.py --pair` returns the first OPEN ticket plus the next OPEN one whose
+  files are disjoint; the coordinator runs two workers asynchronously, verifies and lands one at a
+  time, and re-runs the free row check on main after a merge when another ticket landed meanwhile
+  (revert on mismatch). Measured overhead is that extra free check plus a few hundred tokens of
+  coordinator context; the old sequential rule cost half the wall-clock. Every ticket without a
+  `**Files.**` line runs alone.
 - **Wall time (2026-09-13):** captures are parallel inside a row (rust and canon sides, and the isolated and
   integrated variants together) under a machine-wide 3-slot semaphore in `chip_compare.capture`, so the old
   "never two captures at once" rule is enforced by code instead of by agents; `harness.py --ui isolated`

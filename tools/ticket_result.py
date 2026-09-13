@@ -18,11 +18,11 @@ def main():
     commit = "--no-commit" not in sys.argv
     p = os.path.join(ROOT, "TODO.md")
     s = open(p).read()
-    m = re.search(r"^### %s\. (.*?)\s*\*\((\w+)[^)]*\)\*\s*$" % re.escape(tid), s, re.M)
+    m = re.search(r"^### %s\. (.*?)\s*\*\((\w+)\b.*\)\*\s*$" % re.escape(tid), s, re.M)
     if not m:
         sys.exit("no ticket %s" % tid)
     today = datetime.date.today().isoformat()
-    first = re.split(r"(?<=[.;])\s", result, 1)[0][:110].rstrip(".;")
+    first = re.split(r"(?<=[.;])\s", result, 1)[0][:110].rstrip(".;").replace("(", "[").replace(")", "]")
     head = "### %s. %s  *(%s -- %s, %s)*" % (tid, m.group(1), status, today, first)
     nxt = re.search(r"^#{2,3} ", s[m.end():], re.M)
     end = m.end() + (nxt.start() if nxt else len(s) - m.end())

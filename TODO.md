@@ -128,6 +128,8 @@ intervention is named but untested
 **Result.** F12c seed family localized to OAM overlap order, ticket stays OPEN for the fix. chip-poisseed 2237/334/70/52258, chip-iceseed 2122/334/70/53458, chip-grasseed 2122/334/70/53458 (verify_rows PASS on HEAD f53cda8, negatives not blind); prior 'canon static vs our cycling' claim corrected -- both sides run pod, 1 black gap frame, 3-frame ellipse, 4-frame white, 3-frame green, 3-frame teal, diamonds frame-aligned, canon OAM static (18x 32x32 tile 31 pal 1 prio 2) while tile-31 VRAM content cycles; our VRAM tiles byte-identical to canon tile 31 (0/512), palettes identical, positions/flips identical; only divergence is overlap order in 24px inter-panel zones (zone B: canon R148 over L188, ours L188 over R148 -> 2px green-stripe shift x200-201 vs x198-199) plus 6px x160-161 corner residue and poisseed-only feet cover-order difference (canon shadow OAM11 above navi foot OAM12, ours reversed; canon BLACK vs ours (16,16,16)); no fix landed, no canon routine cited, branch wt/f12-seed2 deleted with no commits, main untouched at f53cda8. Worker worker-muse (muse-spark-1.3-contributor:high, 81 turns, $0.057). No verifier (nothing landed; mechanism unverified). Next: apply middle-column-last sheet push order (panel-148 above neighbors), re-run all three seed rows + wave/window/opening/chip-cannon + full table, then chase feet pois-only via ice/grass shadow-palette dumps.
 **Result.** F12b seed family localized, ticket stays OPEN for the fix. chip-poisseed 2237/334/70/52258 (k=52-61 2px stripe x197-202 y70-142 worst 334, plus k=9-14 feet residue 43->1px), chip-iceseed 2122/334/70/53458, chip-grasseed 2122/334/70/53458 (verify_rows PASS on wt/f12-seed 253198b, negatives not blind); canon sheet square-phase is one static image (tile 31 pal 1, OBJ VRAM byte-static) vs our 3-frame cycling, but canon tile-31 matches no poisarea.bin blob and no VRAM candidate (best 103/1024 mismatched) so no fix landed, branch wt/f12-seed kept unmerged, worktree removed. Worker worker (glm-5.3-flash, 78 turns, $0.098). No verifier (nothing landed; mechanism unverified). F12a minibomb 10/10->0/0 landed a607263 earlier. Next: find canon sheet pixels at the x=200 seam (OBJ/BG priority test), localize the feet component, decompose iceseed/grasseed from main.
 **Result.** F12a minibomb family done, ticket stays OPEN for seeds. chip-minibomb 10/10->0/0 (verify_rows PASS 0/0/60/17158, landed a607263); wave/window/opening-isolated/chip-cannon PASS 0; opening integrated 72499/2691 pre-existing identical on baseline; full table: energbom/megenbom -26, iceseed/grasseed 2145->2122, bugbomb 8338->8280, vdoll/suprvulc/buster/chip-use unchanged, except chip-poisseed 2145->2237 (worst 334, +92) owned by seed follow-up. Worker worker-muse (muse-spark-1.3-contributor, 75 turns, $0.068). Verifier verifier-glm (glm-5.3-flash, 18 turns, $0.016): fix code-CONFIRMED, opening pre-existing CONFIRMED, canon OAM order UNCHECKED (probe flag failure), poisseed regression PARTIALLY CONFIRMED (totals attributable, trail colors unchecked). Next: seed family (poisseed/iceseed/grasseed) with its own canon OAM dump.
+**Files.** src/, tools/harness.py
+
 **Why.** After F5b: SuprVulc 2464 / 177 / 113; the bomb, seed and VDoll rows 10 to 8338; EnergBom and
 MegEnBom 19958 / 1871; the chip-family-0x15 rows 14740 to 73481. **Do:** take ONE family per run of
 this ticket, smallest residue first (the rows at 10-8338), and bring its rows to 0; mark this ticket
@@ -195,6 +197,8 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 
 ### F22b. `cursor` isolated: match the x>=112 unshared mid-battle content on the fixture side *(OPEN -- 2026-09-13)*
 
+**Files.** tools/harness.py
+
 **Why.** F22's Result is a precise refutation: `cursor` 620802/6884/170/728447 unchanged (nothing landed, branch empty, deleted); at event-locked offset 237 (252-8-(22-15), canon RAM 0x020364C7 walk 0x0a->4@21->3@51->2@81->1@111->0@141 per custMenuSomeHandler_8028B74 asm03_0.s:5194, rust 252/282/312/342/372) x<112 = 0 over all 170 frames -- walk, bracket, blink, names, pictures, offered deck already exact; the whole 620802 residue is x>=112 unshared mid-battle content (backdrop scroll/art phase, enemy, HP) between the CUSTMATCH fixture (art/scroll 0xFFFF fresh Backdrop) and canon's chipselect state. The re-pin probe 779920/5181/170 was documented NOT applied per coordinator decision B (worse headline, no fix; belongs in the follow-up owning the row definition). F15 left `cursor` unmoved at 620802 while fixing the shared vblank frame, so this is fixture content, not src/.
 **Do, in order.**
 1. Start in `tools/worktree.sh f22b-cursor-fixture`. Baseline `python3 tools/harness.py --only cursor` (must read 620802/6884/170, negative confirmed not blind), plus `tools/diffmask.py` x<112 vs x>=112 split confirming x<112 = 0 over all 170 frames at the event-locked alignment, measured.
@@ -206,6 +210,8 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 
 
 ### F18b. `windowclose` isolated: the k=11 transient and the slide residue outside the window layer *(OPEN -- 2026-09-13)*
+
+**Files.** src/custom.rs, tools/harness.py
 
 **Why.** F18's Result: `windowclose` 695603/28784/40/778748 -> 666451/28784/40/749690; post-close flat band k=12..39 1402->0 (gauge 980 not-full fill 0x9222 all 16 cells per sub_801C4E4 loc_801C534 + name 422 blanked per sub_8026BF4->sub_8029D80 w=7/h=2 tile 0); slide k=0..9 still 0 on `--only-bg 3`; k=11 transient 2447 unchanged (close-sequencing off-by-one, follow-up). The remaining residue is the close sequencing plus whatever the slide frames carry outside the window layer -- offset 253 stands (JumpOffset 0x04->0x08 on the A-press frame, slide counter +0x40 counting 0x0c..0x78 across canon frames 81..90, rust slide calls at capture 261..270).
 **Do, in order.**
@@ -219,6 +225,8 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 
 ### F21b. `result` isolated: the ~2900 px/frame outside the window -- backdrop tail and one-frame slide lag *(OPEN -- 2026-09-13)*
 
+**Files.** src/results.rs, src/backdrop.rs
+
 **Why.** F21's Result: `result` 497967/31882/40/476424 -> 408337/31895/40/383600 (-89630); WIN reward drawn on first confirm not at show per canon chain sub_802C34E->sub_802BE36->sub_802C044 (42 tiles 0x2a)->sub_802C0A4 (30f cooldown 0x1e), driver sub_802BD60; phases Waiting->Revealing42->Cooldown30->RewardWait->Dismissing, LOSE unchanged; plateau inside 3734->904, outside ~2900 px/frame backdrop tail + slide lagging canon by about a frame remain. Reward fields (result_frames=1760/level=2/zenny=100, megaman_hp=60) already match; result_elapsed=0 stays untouched. What is left is pre-arrival battle tail state plus the slide phase landing late.
 **Do, in order.**
 1. Start in `tools/worktree.sh f21b-result-tail`. Baseline `python3 tools/harness.py --only result` (must read 408337/31895/40 at offset 15, negative confirmed not blind), plus `tools/diffmask.py` inside-vs-outside-window split (inside plateau ~904, outside ~2900/frame) and `tools/oracle.py result` where supported, measured.
@@ -229,6 +237,8 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, tail-state attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, lowest priority: run after F22)*
+
+**Files.** src/custom.rs
 
 **Why.** The user: "the code has a lot of unnamed values and magic numbers". Counted 2026-09-13: 524
 non-trivial numeric literals in src/, 325 outside any `const`/`static`; custom.rs 110 bare, battle.rs
