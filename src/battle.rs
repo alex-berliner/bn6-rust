@@ -3538,24 +3538,19 @@ impl<'a> Battle<'a> {
             let (bx, by) = field::panel_centre(mc, mr);
             // Two pixels forward of the origin on the real ROM.
             let bx = bx + 2 * self.megaman.facing_dx();
-            let bombs = &self.bombs;
             self.megaman.show_with_underlay(frame, |frame| {
-                // A thrown object's GROUND SHADOW goes between the navi's
-                // body and the navi's own shadow: the real ROM's OAM has
-                // MiniBomb's bomb at entry 9, the navi's body at 10-13, the
-                // bomb's shadow at 14 and the navi's shadow at 15. The
-                // underlay lands in exactly that slot.
-                for b in bombs.iter() {
-                    let (gx, gy) = b.ground();
-                    if let Some(part) = b.player.parts().first() {
-                        Object::new(part.sprite.clone())
-                            .set_priority(Priority::P2)
-                            .set_pos((gx + part.x, gy + part.y))
-                            .set_hflip(part.hflip)
-                            .set_vflip(part.vflip)
-                            .show(frame);
-                    }
-                }
+                // The navi's underlay carries only his bubble here. A thrown
+                // object's GROUND SHADOW used to be drawn in this slot too
+                // (between his body and his own shadow, entries 14/15 on the
+                // real ROM) -- but the real ROM's OAM has the BALL itself at
+                // entry 0, ahead of the navi AND its own shadow, so where the
+                // two overlap on the landing frame the ball covers the shadow
+                // (chip-minibomb k=47: 10 blue px over the shadow's opaque
+                // core). Emitted here the shadow took the lower OAM index and
+                // covered the ball, so the shadows are drawn after the balls
+                // below instead -- they never touch his own shadow (opposite
+                // halves of the arena), so that documented order is unchanged
+                // where it is visible.
                 if let Some(bubble) = bubble {
                     for part in bubble.parts().iter().rev() {
                         Object::new(part.sprite.clone())
@@ -3615,14 +3610,31 @@ impl<'a> Battle<'a> {
             // is a constant, not b.damage, and drawing b.damage there scored
             // worse (404 px/frame against 352).
             // The frame's first part is the shadow (sprite_hasShadow) and it
-            // is NOT drawn here: it goes on the ground, in the navi's underlay,
-            // which is the only slot that puts it under his body and over his
-            // own shadow the way the real ROM's OAM does.
+            // is NOT drawn here: it goes on the ground after the balls, so
+            // the ball keeps the lower OAM index and covers the shadow where
+            // the two overlap on the landing frame, the way the real ROM's
+            // OAM does (ball first, shadow later).
             for part in b.player.parts().iter().skip(1).rev() {
                 let (px, py) = (x, y);
                 Object::new(part.sprite.clone())
                     .set_priority(Priority::P2)
                     .set_pos((px + part.x, py + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
+        // A thrown object's GROUND SHADOW, after the balls: the real ROM's
+        // OAM carries the ball ahead of the navi and the shadow behind him,
+        // so the shadow must sort below the ball (provenance: peeked -- OAM
+        // dump of the canon chip-minibomb capture, ball entry 0, shadow
+        // entry 4, sub_80C5DBC's object, asm31.s:29657).
+        for b in &self.bombs {
+            let (gx, gy) = b.ground();
+            if let Some(part) = b.player.parts().first() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((gx + part.x, gy + part.y))
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
                     .show(frame);
