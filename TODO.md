@@ -243,6 +243,38 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 **Measure and report.** Rows `cursor` + `result` before/after (total/worst/frames) on the identical scripts and windows, cursor x<112 vs x>=112 split and result inside/outside-window split before/after, canon raster routine cited with file and lines, full-table deltas.
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (routine identity, per-scanline attribution); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
+### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
+
+**Files.** src/backdrop.rs, src/actor.rs, tools/harness.py, tools/diffmask.py, tools/probe.py
+
+**Why.** F24 refuted the raster theory: canon's battle HBlank scroll callback is a no-op (nullsub_38 for
+all 22 backdrop types, verifier confirmed in the disassembly) and the per-frame diagonal 3:2 scroll is
+already in backdrop.rs. So F22b's two "coexisting translations" (116,16) and (52,48) are two different
+things on two layers, not one mechanism. cursor reads 620914/.../170 at offset 237 (F12's landing
+54abe87 added +112 on one frame; F18d/F21d exonerated); x<112 is 0 on every frame (walk, bracket,
+blink, names, pictures, deck exact). Everything left is x>=112: the battle behind the custom window
+(backdrop, panels, Mettaur, HP). Nobody has measured which layer carries what.
+
+**Do, in order.**
+1. Baseline cursor at offset 237. Capture both sides with each layer alone (`--only-bg N` and
+   `--disable-obj`, identical on both sides) and diff per layer per frame: report which layers carry
+   the residue and each one's per-frame shape (px, bbox, first differing frame).
+2. For each non-zero layer, find its mechanism by measurement, not by fit: for the backdrop BG, the
+   scroll (canon's counters at 0x02009690/0x02009694 vs our scroll state, per frame) and the art
+   phase (which tile set is uploaded on which frame, the step counter); for OBJ, the Mettaur's
+   CurState/CurAction and animation frame vs ours (F25/F25b's one-frame phase) and the HP/HUD
+   objects; for the panel BG, the tilemap content. Name the first differing frame and field per
+   layer and cite canon's routine.
+3. If a layer's cause is a small fix in src/ with a canon citation, make it and measure; otherwise
+   stop with the decomposition. **Acceptance.** a table layer x (px, first differing frame, mechanism
+   with canon routine); the +112 one-frame change from 54abe87 attributed to its object and push
+   order; any src/ change verified on cursor, wave, window, opening, chip-cannon, result and field
+   with nothing worse.
+
+**Rules.** No alignment change except by measured event (offset 237 stands until a watch names a new
+event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
+row named; the verifier only if src/ changes or a canon routine is cited.
+
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, F23 custom.rs naming landed, ticket OPEN for battle.rs)*
 
 **Result.** F23 custom.rs naming landed, ticket OPEN for battle.rs. Bare literals 299->0 (~60 provenance consts, canon/unnamed tags); release .text byte-identical branch-vs-main, .gba 541272B both, cmp-l 49 (0x41669-0x826a6 rodata panic lines); spot verify_rows PASS (window 0, poisseed 247/43); landed fb51444. Worker worker-muse. No verifier (no behavior claims beyond harness lines; .text proof independent). Next: battle.rs (56 bare).
