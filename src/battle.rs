@@ -360,6 +360,10 @@ const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
 /// frame durations.
 const POISON_ANIM: usize = 1; // provenance: derived -- the sprite's own frame durations
 const POISON_FRAMES: u8 = 16; // provenance: derived -- the sprite's own frame durations
+/// Step from the enemy half's first column to its middle column: the sheet's
+/// middle column is pushed last so it sorts above both neighbours in the
+/// inter-panel overlap zones (canon zone B: R148 over L188).
+const SHEET_MID_STEP: i32 = 1; // provenance: derived -- field::half(true) = 4..=6, middle is 5
 /// How long each slash arc animation runs, from its frame durations
 /// (6+4+3, 6+4+3, 4+3+3).
 const SWORD_ARC_FRAMES: [u8; 3] = [13, 13, 10]; // provenance: derived -- the sprite's own frame durations
@@ -2697,7 +2701,14 @@ impl<'a> Battle<'a> {
             self.poison_pending -= 1;
             if self.poison_pending == 0 {
                 let (first, last) = field::half(true);
-                for c in first..=last {
+                // Canon overlap order in the 24px inter-panel zones, read off
+                // the real ROM's OAM at the landing: zone B has R148 (OAM0)
+                // over L188 (OAM5), i.e. the middle column's sheet sorts above
+                // both neighbours. Effects draw last-pushed-first, so the
+                // middle column is pushed last: outside-in, 4, 6, 5.
+                // provenance: peeked -- canon OAM dump at the seed landing.
+                let mid = first + SHEET_MID_STEP;
+                for c in [first, last, mid] {
                     for r in 1..=field::ROWS {
                         // NOT in the sterile arena: the real capture's field
                         // layer is stripped, so its poison panels cannot show,
