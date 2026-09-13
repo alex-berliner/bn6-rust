@@ -191,8 +191,9 @@ change (the AUDIT-6 entry stays until the row reads 0, then it is removed, never
 **Coordinator:** `verify_rows` on every row the report names; the verifier only for claims beyond harness lines (fixture-content class, peeked offsets); a wrong-guess PARTIAL gets one follow-up; a second miss marks it BLOCKED and moves on.
 
 
-### F18b. `windowclose` isolated: the k=11 transient and the slide residue outside the window layer *(OPEN -- 2026-09-13)*
+### F18b. `windowclose` isolated: the k=11 transient and the slide residue outside the window layer  *(PARTIAL -- 2026-09-13, windowclose 666451/28784/40->651885/28430/40 [k=11 BG3 transient 2447->0)*
 
+**Result.** windowclose 666451/28784/40->651885/28430/40 (k=11 BG3 transient 2447->0; relocated to k=9 1898 + k=10 1408, net -14566). Same-call Done at x==SLIDE_FROM in src/custom.rs per canon sub_8026BF4 (asm03_0.s:1037, flip 1119-1125); guards wave/window/opening/chip-cannon 0, opening integrated 72499 pre-existing; field-integrated 358291->358162 (worst same, in cap). Landed f5e5380. Worker worker-muse. Verifier verifier-glm: all 4 claims CONFIRMED (asm cite line-for-line, relocation consistent, field delta measured both sides, clean single-commit tree). Remaining: relocated k=9/k=10 close-frame blank/redraw needs canon-91 scroll/map evidence (F18c).
 **Files.** src/custom.rs, tools/harness.py
 
 **Why.** F18's Result: `windowclose` 695603/28784/40/778748 -> 666451/28784/40/749690; post-close flat band k=12..39 1402->0 (gauge 980 not-full fill 0x9222 all 16 cells per sub_801C4E4 loc_801C534 + name 422 blanked per sub_8026BF4->sub_8029D80 w=7/h=2 tile 0); slide k=0..9 still 0 on `--only-bg 3`; k=11 transient 2447 unchanged (close-sequencing off-by-one, follow-up). The remaining residue is the close sequencing plus whatever the slide frames carry outside the window layer -- offset 253 stands (JumpOffset 0x04->0x08 on the A-press frame, slide counter +0x40 counting 0x0c..0x78 across canon frames 81..90, rust slide calls at capture 261..270).
