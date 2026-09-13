@@ -41,14 +41,24 @@ pub struct Shot {
     pub dx: i32,
     ticks: u8,
     interval: u8,
-    /// True on the update that just hopped the hitbox onto a new panel. The
-    /// caller (Battle::update's shots loop) reads it to apply the hit on the
-    /// HOP frame itself: canon's damage lands in the same frame the wave
-    /// advances onto the target's panel (F1 watch-write: the HP store from
-    /// applyDamageToPlayer_801ba12 and the flinch entry are both in canon
-    /// frame 114, the same frame the segment's light schedule puts the hop
-    /// in), not the frame after.
+    /// What the shots loop reads to land a hit. For the buster, cannon
+    /// and Vulcan shots this is true on the update that just hopped the
+    /// hitbox onto a new panel, so the hit lands on the hop frame itself.
+    /// For the shockwave it is true on the update AFTER the hop: canon's
+    /// new segment presents its collision during its own init tick
+    /// (`sub_80C6B64`, asm31.s:31461-31496), which runs in the same frame
+    /// the old segment's `sub_80C6C6A` spawns it, but the player's overlap
+    /// test has already run by then, so the damage lands the next frame
+    /// (F25c watch: PanelX reads (2,2) after canon frame 113, MegaMan's HP
+    /// 60->50 after frame 114 -- flight 45, ours was 44). See `hop_pending`.
     hopped: bool,
+    /// A shockwave hop the hit-check has not seen yet. Set on the hop
+    /// frame, reported through `hopped` on the next update, so
+    /// `just_hopped()` stays true one frame later for the shockwave only.
+    // provenance: derived -- sub_80C6B64's init-tick present (asm31.s:31461-31496)
+    // runs the same frame sub_80C6C6A hops (asm31.s:31570-31593); the hit lands
+    // the frame after (F25c probe: arrival canon frame 113, HP drop 114).
+    hop_pending: bool,
     /// Whether the hitbox keeps going after landing a hit.
     pub piercing: bool,
     /// Fired by the player, so it hits enemies; otherwise it hits the player.
@@ -185,16 +195,17 @@ impl Shot {
             assets,
             departure: None,
             hopped: false,
+            hop_pending: false,
         }
     }
 
-    /// True on the update that just hopped the hitbox onto a new panel --
-    /// read AFTER `update()`, by the shots loop, to land the hit on the hop
-    /// frame itself (canon does the same-frame damage: F1's watch-write shows
-    /// the HP store and the flinch entry inside canon frame 114, the frame
-    /// the wave's light schedule puts the hop in). A shot waiting out its
-    /// release delay never reports a hop, so a delayed shot's first hit
-    /// frame is unchanged.
+    /// True when the hitbox arrived on its panel on the previous update --
+    /// read AFTER `update()`, by the shots loop. For the buster, cannon
+    /// and Vulcan shots that is the hop frame itself; for the shockwave it
+    /// is the frame after, via the `hop_pending` latch (canon's hit lands
+    /// the frame after the arrival: F25c probe, arrival 113, HP drop 114).
+    /// A shot waiting out its release delay never reports a hop, so a
+    /// delayed shot's first hit frame is unchanged.
     pub fn just_hopped(&self) -> bool {
         self.hopped
     }
@@ -267,7 +278,15 @@ impl Shot {
                 self.departure = None;
             }
         }
-        self.hopped = false;
+        // The shockwave's hop becomes hittable one frame later (see
+        // `hop_pending`): report last frame's hop, then clear the latch.
+        // Every other shot reports the hop itself, as before.
+        if self.lights_panel {
+            self.hopped = self.hop_pending;
+            self.hop_pending = false;
+        } else {
+            self.hopped = false;
+        }
         if self.delay > 0 {
             self.delay -= 1;
             return true;
@@ -280,7 +299,11 @@ impl Shot {
         }
         self.ticks -= 1;
         if self.ticks == 0 {
-            self.hopped = true;
+            if self.lights_panel {
+                self.hop_pending = true;
+            } else {
+                self.hopped = true;
+            }
             if self.lights_panel {
                 self.left_panel = Some((self.col, self.row));
                 self.left_ticks = LIGHT_LINGER;
