@@ -250,6 +250,12 @@ class Side:
     script: Optional[str] = None
     cheats: Tuple[str, ...] = ()
     pokes: Tuple[str, ...] = ()
+    #: Each "frame:addr:val16" argument for --poke-at (ONE-SHOT write,
+    #: immediately before that frame) -- TODO F5b: how the chip rows deliver
+    #: the A press to MegaMan's AIData (JoypadPressed 0x020340a4 + mirror
+    #: 0x02036822, frame 3) when the banner sequencer sits in 0x0C, where
+    #: sub_8012DFC never refreshes AIData from the mirror.
+    pokes_at: Tuple[str, ...] = ()
     zero: Tuple[str, ...] = ()
     extra: Tuple[str, ...] = ()
     fixture: Optional[dict] = None
@@ -270,6 +276,8 @@ class Side:
             a += ["--cheat", c]
         for p in self.pokes:
             a += ["--poke", p]
+        for p in self.pokes_at:
+            a += ["--poke-at", p]
         for z in self.zero:
             a += ["--zero", z]
         if self.fixture is not None:
@@ -576,6 +584,25 @@ ALIGN_CHIP = Align(
          "here).",
 )
 
+#: TODO F5b: the same pairing, Pinned BY THE FIRE EVENT (R2's method) on the
+#: afterdissolve_0x0c route. Canon side: --watch-write on 0x0203a9b8 from load
+#: under the row's own pokes shows CurAction 0x08->0x14 written at frame 3
+#: (0x0801169A, lr 0x0800FBF7) -- the fire. The old route's own rule was "press
+#: lands at 41, the attack begins at 43" (chip_compare.py's REAL_START=43): a
+#: measured +2 lead from the CurAction write to the first visible attack frame.
+#: The same lead here pins canon_ref = 3 + 2 = 5. Rust side is UNCHANGED (same
+#: descriptor, same build), so the old band's unique minimum is expected at the
+#: same offset -- the band is kept only to CONFIRM it, not to find it.
+ALIGN_CHIP_0C = Align(
+    canon_ref=5,
+    search=range(110, 136),
+    note="canon: fire event measured, not searched -- CurAction 0x08->0x14 at frame 3 "
+         "of the afterdissolve_0x0c capture (watch-write 0x0203a9b8), +2 frames to the "
+         "first visible attack frame, the same measured lead as the PAUSED route (A "
+         "write 41, attack 43). rust: unchanged -- marker origin plus the same band as "
+         "ALIGN_CHIP, kept to confirm the minimum did not move.",
+)
+
 def _chip_pokes(chip_hex: str) -> Tuple[str, ...]:
     """cc.library_pokes() returns a flat ['--poke', 'addr:val', ...] list
     (it is built to be spliced straight into a subprocess argv); Side.pokes
@@ -626,6 +653,38 @@ def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
 #: ownership bit set -- see states.py's own build note -- but a different chip
 #: id needs its own byte poked the same way).
 CHIP_READY_EMPTY = "/tmp/chip_ready_empty.state"
+
+#: TODO F5b (2026-09-12): states.py's afterdissolve_0x0c -- PAUSED's battle
+#: resumed with the Mettaur deleted, saved at frame 60: past the corpse's full
+#: dissolve (portrait box and corpse both gone at load, rendered frame checked)
+#: and inside the banner sequencer's RESULT countdown state 0x0C (dword_203CA70
+#: = 0x000c at load, byte_203CA74 = 0, MegaMan idle 0x0804; the state holds
+#: both for 90+ frames after reload, byte watches). On this route the chip press
+#: is delivered by a ONE-SHOT poke to MegaMan's AIData JoypadPressed -- in 0x0C
+#: nothing refreshes AIData from the joypad mirror (0x08 does it via
+#: sub_8012DFC x2, asm00_1.s:10519-10522; 0x0C, sub_80081A4 asm00_1.s:10617,
+#: never does), which is exactly why F5's plain A press was refused here.
+#: Measured (this ticket): --poke-at 3:0x020340a4:0x0001 (+ mirror
+#: 0x02036822) FIRES in 0x0C -- Unk_44 0->0x4 at 0x0800FFEA (lr 0x08013235,
+#: sub_8012FC8's tail asm00_2.s:9520, still running per-frame from
+#: playerObject_update_80EA484 asm31.s:107160), then CurAction 0x08->0x14 at
+#: 0x0801169A (lr 0x0800FBF7, object_setAttack2 from sub_800FB54) -- the SAME
+#: write chain the A@40-from-PAUSED control shows at its frame 41.
+AFTER_DISSOLVE = "/tmp/afterdissolve_0x0c.state"
+
+#: MegaMan's AIData pointer and the alliance-0 joypad mirror, for the press
+#: delivery above. AIDataPtr read live from the BattleObject (0x0203a9b0+0x58
+#: = 0x0203aa08) on this state: 0x02034080. oAIData_JoypadPressed = +0x24
+#: (include/structs/AIData.inc); the mirror's pressed-candidate halfword is
+#: +2 (dword_2036820, read by sub_8012DFC asm00_2.s:8977). A = bit 0
+#: (JOYPAD_A, include/structs/Joypad.inc). JoypadPressed 0->1 for one frame
+#: is exactly what a player's press produces (control: mirror 0x02036824
+#: new=0x0001 at frame 41 -> sub_8012DFC writes AIData JoypadPressed 1 the
+#: same frame); in 0x0C the mirror poke itself is inert (nothing reads it),
+#: it is carried so the fixture says what a player press would have said.
+AIDATA_PRESSED = "0x020340a4"
+MIRROR_PRESSED = "0x02036822"
+PRESS_FRAME = 3  # --poke-at frame; the fire lands the same frame
 
 
 def library_pokes_empty(chip_id: int) -> Tuple[str, ...]:
@@ -690,6 +749,31 @@ def _chip_canon_empty(chip_hex: str, a_frame: int = 2) -> Callable[[str], Side]:
 # (time) -- see the ticket report.
 
 
+def _chip_canon_0c(chip_hex: str) -> Callable[[str], Side]:
+    """TODO F5b: the SAME chip-in-hand comparison, but on states.py's
+    afterdissolve_0x0c route -- a state 60 frames past the corpse's full
+    dissolve, sequencer in 0x0C, field already clean at load (no portrait box,
+    no corpse: the shared 14388/2350 baseline's entire region, canon frames
+    43-52 OBJ, does not exist here). The press is delivered by one-shot pokes
+    (AIData JoypadPressed + mirror) instead of a script A press, because 0x0C
+    never refreshes AIData from the mirror -- see AFTER_DISSOLVE's comment for
+    the measured fire chain. hide_enemy/banner_zero (the PAUSED route's
+    alive-cheat and banner-tile zeroing) have no work to do here: nothing
+    spawns, no banner is ever uploaded (patch #2), and the state was BUILT on
+    the sterile ROM so no ENEMY DELETED banner exists in its history.
+    """
+    def make(ui: str) -> Side:
+        pokes = list(_chip_pokes(chip_hex))
+        pokes.append("%s:0x%s" % (cc.HAND_SLOT, chip_hex))
+        return Side(rom=STERILE, loadstate=AFTER_DISSOLVE,
+                    pokes=tuple(pokes),
+                    pokes_at=("%d:%s:0x0001" % (PRESS_FRAME, AIDATA_PRESSED),
+                              "%d:%s:0x0001" % (PRESS_FRAME, MIRROR_PRESSED)),
+                    zero=(cc.BANNER_TILES,),
+                    extra=("--disable-bg",))
+    return make
+
+
 def _chip_checks() -> List[Check]:
     import scoreboard
     out: List[Check] = []
@@ -701,9 +785,9 @@ def _chip_checks() -> List[Check]:
             name=name,
             ui="isolated",
             frames=frames,
-            align=ALIGN_CHIP,
+            align=ALIGN_CHIP_0C,
             rust=_chip_rust(chip_hex),
-            canon=_chip_canon(chip_hex, hide_enemy=hide_enemy, banner_zero=banner_zero),
+            canon=_chip_canon_0c(chip_hex),
             canon_variant="canon (sterile)",
         ))
     return out
