@@ -1198,6 +1198,82 @@ CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_
                      window_pick_count=1, window_pick_slot=4, window_cursor=0xa)
 CUSTMATCH_ORIGIN = 8
 
+#: F26b (2026-09-13): the backdrop-phase seeds for the two CUSTMATCH_ROW rows
+#: that compare the WHOLE screen. `window`/`card` isolate BG3 and never see
+#: BG1, so CUSTMATCH_ROW itself stays unseeded; `cursor` and `windowclose`
+#: pair DIFFERENT canon frames of the same CHIPSELECT battle (canon 15 vs
+#: canon 81) with different rust frames, so one shared seed cannot serve both
+#: -- each carries its own, derived from canon's own counters at its own
+#: canon_ref, never fitted.
+#:
+#: THE SCROLL. canon's BGScrollCB_BG1Diagonal3to2Scroll
+#: (reference/bn6f/asm/asm00_0.s:3287-3303) subtracts 8 from Counter0 and 4
+#: from Counter1 (eBGScrollCBCounters, 0x02009690/0x02009694), `lsr #4` each,
+#: and strh's them into RenderInfo Unk_10/Unk_12 (BG1HOFS/BG1VOFS). Both
+#: counters are zeroed once at battle init (sub_8080D90/sub_8080DA0,
+#: asm00_1.s:8434-8435), so at battle frame f they read exactly -8f/-4f --
+#: measured on this row's own canon capture (--watch 0x02009690:4
+#: 0x02009694:4 over CHIPSELECT + this row's script): canon frame 0 reads
+#: 0xffff9d60/0xffffceb0 = -25248/-12624 = -8*3156/-4*3156, and every later
+#: frame is one more step of -8/-4, so CHIPSELECT sits at battle frame
+#: f0 = 3156 and canon frame c is battle frame 3156+c. src/backdrop.rs keeps
+#: the same phase in quarter-pixels (x_q += 2, y_q += 1 per frame) and emits
+#: -((q+3)/4), i.e. floor(-q/4) -- the same value canon's `lsr #4` of a
+#: falling counter produces -- so canon's phase in our units is
+#: x_q = 2f mod 1024, y_q = f mod 1024 (1024 = 256 px x 4).
+#:
+#: THE ART. eGFXAnimStates[0] (0x020094c0, GFXAnimState.inc: Timer +2,
+#: LoopAddress +4, CommandPos +8) walks src/backdrop.rs's STEP_ORDER/
+#: STEP_HOLD schedule (off_807FB98, dat20.s:140-172), 29 entries, 192 frames
+#: a cycle. Entry index = (CommandPos - LoopAddress)/8; position in the cycle
+#: = sum(STEP_HOLD[:entry]) + STEP_HOLD[entry] - Timer, and it advances by
+#: exactly 1 per frame on both sides. Watched on canon: frame 15 = entry 17 /
+#: Timer 4 (CommandPos 0x0807fc2c) = position 100; frame 81 = entry 25 /
+#: Timer 2 (0x0807fc6c) = position 166.
+#:
+#: THE ROW'S OWN OFFSET, AND THE TWO PIPELINE LEADS. Our Backdrop is built
+#: once, before the first `Battle::update`, and ticks once per frame from
+#: there. Watched live on this row's own rust capture (a temporary write of
+#: entry/timer/x_q/y_q to the scratch halfwords at 0x02000030, between R7's
+#: oracle block and this descriptor -- F26b, since removed) the tick count in
+#: RAM at capture frame R is n_ram = R - 6, and the marker's "BATT" first
+#: appears at capture frame 8 = the SECOND tick (main.rs's `clocks_visible`
+#: gate), which is where ORIGIN 8 comes from. What a frame SHOWS is not what
+#: its RAM holds, and the two clocks do not even agree with each other: our
+#: scroll is a register written by `commit()` at the following vblank, while
+#: our art is a `replace_tile` VRAM write inside `update()`. MEASURED on
+#: windowclose by sweeping each clock one tick at a time with the other held
+#: (BG1-only, both sides --only-bg 1, this row's own frames):
+#:   pixels at capture frame R show the scroll of tick R - 7
+#:   pixels at capture frame R show the art    of tick R - 5
+#: (with the art held, scroll_xq/yq 844/934 -- the seed the RAM tick count
+#: alone predicts -- reads 142518 nonzero on all 20 even k and 0 on all 20
+#: odd k, the exact signature of a half-pixel x error, and 846/935 reads
+#: 11153 on 7 frames; with the scroll held at 846/935, art entry 17 Timer 1
+#: reads 0 where Timer 0 and Timer 2 both read 11153 and Timer 3 reads
+#: 21150.) So with
+#: nx = ORIGIN + offset - 7 and na = ORIGIN + offset - 5, and `Backdrop::seed`
+#: applying at tick 0 while adding its own documented one-tick construction
+#: lead to the art timer (the fields therefore carry the state at tick 1):
+#:   scroll_xq = (2*(f0+canon_ref) - 2*nx) mod 1024
+#:   scroll_yq = (   f0+canon_ref  -   nx) mod 1024
+#:   art position of the (art_entry, art_timer) pair
+#:             = (canon position at canon_ref - na + 1) mod 192
+#: cursor      canon_ref 15: f=3171, x = 6342 mod 1024 = 198, y = 99;
+#:             nx = 8+237-7 = 238: 198-476 = -278 -> 746, 99-238 = -139 -> 885
+#:             na = 240: (100-240+1) mod 192 = 53 = entry 11 / Timer 3.
+#: windowclose canon_ref 81: f=3237, x = 6474 mod 1024 = 330, y = 165;
+#:             nx = 8+253-7 = 254: 330-508 = -178 -> 846, 165-254 = -89 -> 935
+#:             na = 256: (166-256+1) mod 192 = 103 = entry 17 / Timer 1.
+#: The two leads were measured ONCE, on windowclose, and then PREDICTED
+#: cursor: with no further tuning cursor's BG1 went 2214975/15746/170 -> 2/2/
+#: 170 (one frame, two pixels -- canon's own mid-frame tile transfer, see the
+#: cursor row's note). windowclose's BG1 went 877602/22658/40 -> 0/0/40.
+#: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
+#: each row's own canon capture, mapped through the arithmetic above.
+CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885)
+WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935)
+
 #: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
 #: window_cursor (0 = cursor on the first slot, showing the card's NAME
 #: rather than the OK confirmation message -- fixture.rs's own table
@@ -1655,9 +1731,66 @@ PORTED_CHECKS: List[Check] = [
                  "box removed, full screen, all 170 frames. Ported from the demo-custmatch "
                  "feature to CUSTMATCH_ROW (fixture.rs's own table entry, already used by "
                  "`window` above; AUDIT pair 17 prune ticket) -- same descriptor bytes, same "
-                 "numbers.",
+                 "numbers.\n"
+                 "F26b (2026-09-13), THE BACKDROP PHASE AND THE REPAIRED LAYER TABLE. This row "
+                 "now uses CURSOR_ROW, not bare CUSTMATCH_ROW: it pairs canon frame 15 where "
+                 "`windowclose` pairs canon 81, so the two need different backdrop seeds (the "
+                 "derivation sits above the descriptors). BG1 alone (--only-bg 1 --disable-obj, "
+                 "identical flags both sides) 2214975/15746/170 -> 2/2/170 (1/1 on the merged "
+                 "tree). Full screen 620802 -> 272341/1603/170. THE OLD 620802 WAS NOT AT THIS "
+                 "ROW'S OWN OFFSET: measured this ticket, the unseeded band's minimum sat at "
+                 "226 (620802) and the event-derived 237 read 779920 -- the backdrop's whole-"
+                 "screen phase error was big enough to drag the search 11 frames off the event, "
+                 "exactly what F2's rule warns about. With the seed the minimum is back at 237 "
+                 "(272341, against 459077 at 236 and 458617 at 238). "
+                 "LAYER TABLE, ARITHMETIC CLOSED. F26's table summed layer-local totals and got "
+                 "689572 > the 620802 full frame; the fix is to state two different quantities "
+                 "rather than one. LAYER-LOCAL |Li| = that layer captured alone on both sides "
+                 "and diffed: it ignores occlusion, so it can exceed the composite. ATTRIBUTED "
+                 "|C and Li| = the composite's differing pixels that the layer-local mask also "
+                 "calls differing, and those partition the composite exactly. Merged tree, 170 "
+                 "frames: composite 272341 = OBJ-only 272340 + BG1-only 1, no pixel in both and "
+                 "none UNEXPLAINED (every composite pixel is reproduced by some single-layer "
+                 "capture). OBJ layer-local is 612811, and the gap to its 272340 attribution is "
+                 "occlusion, measured: on the merged tree the OBJ diff falls in exactly two x "
+                 "bands -- 2..77 (y18..152, 340471 px-frames) and 122..189 (y18..159, 272340) "
+                 "-- and only the second is outside the chip window (BG3 covers x<112); "
+                 "340471 + 272340 = 612811, the layer-local total, and the visible half is "
+                 "the attribution to the pixel. (Before F29 landed there was a third band at "
+                 "x83..117 y70..113, 129687 px-frames: MegaMan at the wrong panel, hidden "
+                 "behind the window and so invisible in the composite either way.) THE FOUR UNCHECKED "
+                 "ATTRIBUTIONS OF F26, each now measured. (a) 'BG1 art phase, ours leads by 2' "
+                 "-- REFUTED as stated: it was not a 2-frame lead but an unseeded clock. "
+                 "Watched, canon eGFXAnimStates[0] is entry 17/Timer 4 at canon frame 15 and "
+                 "entry 25/Timer 2 at 81, while our unseeded build was entry 10/Timer 2 at the "
+                 "paired rust frame 245; with the derived seed the art matches on every frame. "
+                 "(b) 'the enemy is a Mettaur variant other than kind 0' -- there IS no Kind "
+                 "field (BattleObject.inc has none); the enemy at 0x0203ab60 reads NameID "
+                 "(+0x28) 0x0001, header word 0x02910037, Params 0x1e000000, CurState/CurAction "
+                 "0x04/0x0b, HP 40, panel (5,3), every one of them constant over 90 canon "
+                 "frames -- so the row's enemy_col/enemy_row/enemy HP already match and the "
+                 "open question is only what NameID 1 means, which no pixel here depends on. "
+                 "(c) 'enemy-HP portrait content identical, box-x canon 122-165 vs ours 2-45' "
+                 "-- CONFIRMED and sharpened to a pure 120 px x displacement: in the OBJ-only "
+                 "capture the 44x16 block at y18..33 holds 694 non-background pixels on OUR "
+                 "side at x2..45 (canon has none there) and 694 on CANON's at x122..165 (we "
+                 "have none there), and the two are identical on all 704 pixels when shifted by "
+                 "120, against 10/704 compared at the same x. It is worth 117980 of the visible "
+                 "OBJ residue's 272340 px-frames (the other 154360 are y107..159). Not fixed "
+                 "here: the HUD OBJ is another worker's file. (d) 'MegaMan at canon panel (2,3) "
+                 "vs fixture (3,2)' -- CONFIRMED by watch, canon PanelX/PanelY (0x0203a9c2/"
+                 "0x0203a9c3) read (2,3) on every frame of this capture; F29 has since landed "
+                 "megaman_col=2/megaman_row=3 in CUSTMATCH_ROW, which this row inherits.\n"
+                 "The one BG1 pixel left is not a phase error: 2 px (1 after the merge) at y=5, "
+                 "x=55 and x=183 -- the same texel twice, 128 apart, the map's own x+128 "
+                 "repeat -- on k=97 alone. Holding our art one frame later makes that frame "
+                 "read 1157 px over rows 5..156, so canon's frame carries the PREVIOUS step in "
+                 "rows 0..5 and the new one below it: canon's tile copy is queued "
+                 "(QueueEightWordAlignedGFXTransfer, sub_8001C94, asm00_0.s:3752) and drained "
+                 "part-way down the frame, while our replace_tile lands before scanline 0. A "
+                 "sub-frame difference, not a clock difference.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_RUST),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
         canon_variant="canon",
     ),
@@ -1813,9 +1946,25 @@ PORTED_CHECKS: List[Check] = [
                  "the PIXEL negative on this row is not blind, but tools/oracle.py windowclose "
                  "reports its own STATE-field negative as BLIND (a +1-frame canon shift moves "
                  "no first-divergence) -- the state oracle proves nothing on this row until "
-                 "that is fixed.",
+                 "that is fixed.\n"
+                 "F26b (2026-09-13): the backdrop phase is SEEDED now (WINDOWCLOSE_ROW, see "
+                 "its derivation above the descriptor) and BG1 is gone: BG1 alone (--only-bg 1 "
+                 "--disable-obj on BOTH sides, identical flags) 877602/22658/40 -> 0/0/40, all "
+                 "forty frames, the twenty odd ones included -- so the 'odd-frame rounding' the "
+                 "previous paragraph left open is not a defect at all (src/backdrop.rs's scroll "
+                 "write carries the proof). Full screen 648948/27391/40 -> 34707/2652/40 on the "
+                 "merged tree (F29 had taken it to 407778 on its own). Offset still 253 and now "
+                 "sharply so: 34707 against 222040 at 252 and 225712 at 254, where before the "
+                 "seed the same band read 648948/659965/673915 -- the event-derived alignment "
+                 "and the score minimum now agree by a factor of six. LAYER TABLE, arithmetic "
+                 "closed by partitioning the composite instead of summing layer-local totals "
+                 "(those double-count: a layer-local diff counts pixels the composite hides "
+                 "behind a layer above). Composite 34707 = OBJ-only 34707; BG0/BG1/BG2/BG3 "
+                 "layer-local all 0/40 frames, OBJ layer-local 46803 of which 12096 px-frames "
+                 "are occluded by the window. Nothing left on this row lives in a background "
+                 "layer.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW,
+        rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script="Start@50,A@80"),
         canon_variant="canon",
