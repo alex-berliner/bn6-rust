@@ -34,6 +34,7 @@ vs after -- a merge that changed nothing is not parity).
 - **Order (the user, 2026-09-12):** every existing row to 0 before any new content. Scope after that:
   5 viruses, 2 bosses, player fidelity, the custom screen, battle flow. No Navis, Navi Customizer,
   Program Advances, audio, netbattle.
+- **Phase switched to porting on 2026-09-14 (the user: "move straight to that"); docs/PHASE = porting; the T tickets in TODO.md carry the plan below.**
 - **After convergence (agreed 2026-09-13):** switch from behaviour-driven porting to trace- and
   coverage-driven porting before any new content. In order: (1) widen the state oracle into a
   state-trace harness -- record canon's structs per frame over scripted scenarios from power-on and

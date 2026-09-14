@@ -259,6 +259,50 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+## T. Trace-driven porting (phase "porting", 2026-09-14; the plan in HANDOFF §1)
+
+**Common to the T tickets.** The harness rows stay as free regression tests (every landing runs verify_rows on
+wave, window, mettaur, popup, buster, result, field and the row a ticket names). Acceptance in this phase is
+stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
+same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
+
+### T1. The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/trace.py (new), tools/states.py (scenario recipes), tools/mgba_capture.c (only if --watch needs a per-frame multi-field form), src/main.rs and src/fixture.rs (the oracle export block, widened and versioned), AGENT_GUIDE.md (the trace commands)
+
+**Why.** The oracle (tools/oracle.py) compares a 40-byte export block per frame on one row; the next phase needs the
+same over whole scripted battles. Field set, both sides, per frame: MegaMan's BattleObject (0x0203a9b0: CurState +8,
+CurAction +9, HP +0x24, panel +0x12/+0x13, Timer +0x20, the mercy counter via CollisionDataPtr +0x54 -> +0x24),
+the three enemy slots (0x0203aa88/0x0203ab60/0x0203ac38, same fields), the banner sequencer (0x0203CA70), the
+battle-HUD element mask (0x020352C0 update and draw words), the custom gauge, the camera (Camera+0x34, find the
+base from sub_8026BF4's use, asm03_0.s:1099), the backdrop counters (0x02009690/94) and GFX anim state
+(0x020094c0), the RNG seed (0x020013f0). Ours exports the same fields through the ORCL block (0x02000008 today;
+widen to a versioned block in a region measured free -- 0x02000080 collides with agb's sprite loader, R6).
+**Do.** (1) `tools/trace.py record <side> <scenario> --out DIR`: runs the scenario's recipe and input script on
+one side and writes a per-frame table of the field set (canon via mgba_capture --watch, ours via the export
+block); (2) `tools/trace.py diff canon.dir rust.dir --align <event>`: aligns on a measured event (the sequencer's
+BATTLE START state, or a row's Align) and prints the first divergent field and frame, then the divergence list;
+(3) scenarios in tools/states.py: `battle_full` (from BATTLE START, a fixed input script: open the custom
+screen, pick Cannon, fire, take the Mettaur's shockwave, win, dismiss RESULT) on both sides, plus the existing
+rows' scenarios; (4) calibration: on mettaur, popup and result the trace's first divergence must agree with
+tools/oracle.py's (or explain the difference); (5) the negative control: a one-frame shift of the canon trace
+must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
+the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
+
+### T2. Coverage: which canon routines each scenario executes, ranked  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/coverage.py (new), docs/coverage/ (new), tools/states.py (read)
+
+**Why.** The porting queue must come from what canon runs, not from guesses. The bn6f fork's master branch
+carries a profiler (a function map plus libmgba coverage) -- the submodule at reference/bn6f points at the
+bn-notes branch; clone the fork's master into /tmp (never change the submodule) and use its tooling.
+**Do.** `tools/coverage.py <scenario>`: run canon on the scenario's recipe and input script under the profiler,
+and write docs/coverage/<scenario>.md: every routine executed, with call counts and the first frame it ran,
+ranked by count, each named by the disassembly's symbol and file:line; a second table of routines executed
+in `battle_full` but not in any existing harness row's scenario (the uncovered set). **Acceptance.** the two
+tables for `battle_full` and for the mettaur row's scenario; the interpreters named in HANDOFF §1 (animation
+bytecode player, object dispatcher, script VMs) located in the ranking with their symbols.
+
 ### F37e. `windowclose` k=0..9: the objects and camera during the ten slide-out frames  *(OPEN -- 2026-09-14)*
 
 **Files.** src/battle.rs (the camera pan on the slide calls and the objects' offset from it), src/actor.rs (object Y under the camera), tools/harness.py (the windowclose row's note)
