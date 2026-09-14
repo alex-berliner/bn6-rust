@@ -142,60 +142,8 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T4. Port the animation bytecode player, steps 1 and 2 of the plan  *(PARTIAL -- 2026-09-14, anim steps 1-2 landed 6985d56: bind+tick ported [verifier CONFIRMED all])*
-
-**Result.** anim steps 1-2 landed 6985d56: bind+tick ported (verifier CONFIRMED all); main moved during run (human T1b landing bd45d2a): cursor base 3->44, result 58457->0 via layout shift; post-merge cursor 44->23 (port helps, single-frame tear class, frame unverified), result stays 0; T4b (steps 3-4) remains; worker muse-spark, verifier GLM
-**Files.** src/spr.rs (the player), src/anim.rs (new, if the port wants its own module), tools/trace.py (a field or two if the trace needs the player's state), tools/harness.py (row notes only), docs/coverage/plan-interpreters.md (progress notes)
-
-**Why.** docs/coverage/plan-interpreters.md section 1 is the plan: the real game's sprite animations are a
-bytecode the player interprets (`_sprite_loadAnimationData` asm38.s:1667-1719 binds a sprite blob's anim and
-frame tables; `_sprite_update` asm38.s:1722-1770 runs the normal stream: countdown, consume, loop or hold,
-with the output in Unk_05), and every sprite in battle_full passes through it (1.3 counts the callers). Our
-src/spr.rs player was written by hand to play the same extracted data; the residues of the F series were
-mostly its lifecycle differences (spawn-frame update, held frames). Porting the real player, routine by
-routine and cited line by line, makes the extracted `.bin` assets play exactly as the ROM plays them.
-**Do.** Steps 1 and 2 of section 1.4 only: (1) the bind path from the ROM sprite blob's tables (our assets
-carry the same tables; document the mapping), (2) the normal-stream update with the countdown/consume/loop
-semantics and the Unk_05 output, replacing src/spr.rs's equivalent behind the same interface so nothing
-else changes. Verification per section 1.5: the oracle and the trace (wt/t1b-trace-land, landing now) on
-mettaur, popup, buster, result, plus every row at its value (full table). **Acceptance.** the two routines
-ported with citations; full table identical to main (every isolated row 0, cursor 3, the integrated rows
-unchanged within their caps); the trace's first divergence unchanged or later on battle_full; a progress
-note in the plan file. Steps 3 and 4 are T4b.
-
-- T1 PARTIAL -- The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence. trace harness works, KEPT unmerged (branch wt/t1-trace 147bb0a+1ee6705): record/diff on battle_full+3 rows, calibration agrees with oracle, 
-- F37g PARTIAL -- Land F37f's window mark without the results-screen regression. window mark landed 4671a84: windowclose 1458/162/40->0/0/40, cursor 20->3/3/170
-- T3 DONE -- Locate canon's interpreters in the coverage ranking and write the port plan for the animation player. interpreter port plan landed 3249c71 (docs only): anim player cores (_sprite_update bx-r4, format), dispatcher chain to RunAIAttack, script 
-### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(DONE -- 2026-09-14, supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class)*
-
-**Result.** supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class; trace harness on main
-**Result.** trace harness landed bd45d2a (T1's TRC2 export block + tools/trace.py record/diff + scenarios, with T1b's FLAG_TRACE gate: no export stores when the flag is off; calibration agrees with the oracle on three rows; negative control live). The off-path residue the worker called a layout lottery (field integrated +33 with any code change, the F30 timing class) is accepted on that allowed row by the human session; every isolated row verified at its value from a clean checkout (mettaur/popup/buster/result/windowclose/wave/window/field 0), post-merge windowclose and result 0. Remaining from T1: the RNG field at k=271 and the RESULT dismissal in battle_full unconfirmed.
-**Files.** src/main.rs, src/fixture.rs, src/actor.rs, src/backdrop.rs, src/battle.rs (the export sites only), tools/trace.py, tools/states.py, AGENT_GUIDE.md
-
-**Why.** T1's harness works and is kept on wt/t1-trace (147bb0a: the versioned TRC2 64-byte export block at
-0x02000080, linker-placed; 1ee6705: record/diff, scenarios, docs; calibration agrees with the oracle on three
-rows, the negative control is live). It could not land because the per-frame export stores move field
-integrated 158950 -> 158983 (the verifier's control confirmed: disabling the stores restores the baseline
-exactly): extra work per frame shifts a mid-frame write, the class F30 measured. The pixel rows must run
-with the export off and byte-identical to main; only trace recordings turn it on.
-**Do.** Start with `bash tools/worktree.sh t1b-trace-land` then `git merge wt/t1-trace`. Gate every export
-store on one flag read once per frame (a fixture descriptor bit, provenance peeked, or a marker byte the
-trace recorder pokes at load): when off, no store executes on any path; when on, the block is written every
-frame. Prove it: with the flag off, the release .gba's behaviour is byte-identical to main on the full table
-(every row, both variants, identical lines; field integrated 158950 back); with the flag on, `tools/trace.py
-record rust battle_full` and the three calibration rows reproduce T1's results, and the negative control
-still fires. Confirm the two items T1 left unconfirmed (the RNG field at k=271, the RESULT dismissal in
-battle_full). **Acceptance.** full table identical to main with the flag off; T1's record/diff/calibration/
-negative with the flag on; AGENT_GUIDE.md's ten lines on the trace commands.
-
-- T2 DONE -- Coverage: which canon routines each scenario executes, ranked. supersedes PARTIAL-kept: human session landed tools+docs as 7c290d8
-- F37e PARTIAL -- `windowclose` k=0..9: the objects and camera during the ten slide-out frames. cam_dy floor-fix KEPT unmerged (branch wt/f37e 06fa98d): windowclose 4943/1116/40->1458/162/40 (enemy+MegaMan gone, 162x9 marcher for custom
-- F32b PARTIAL -- The end sequence as canon's sequencer states, from the killing blow to the results window's first slide frame. end-sequence watched per row, landed 8e44d2e (comments+assert only, zero behavior change): 0x0C@47/teardown@48/banner 49..106/slide 154..168
-- F37d PARTIAL -- The Mettaur's pickaxe object during the held attack pose (cursor 34902, windowclose 12538). pickaxe prime landed 91f766e: cursor 34902/232/170->8/6/170 (k37/k97 micro), windowclose 12538/1200/40->4943/1116/40 (k10-39 all 0
-- F38b NEGATIVE -- The integrated rows' results window: resolve the zero-enemy battle where canon does, now that `over` no longer freezes. resolve-flag retry refuted post-F33d, notes landed 66a6a3c (zero pixel effect): warp 40628->45751 (isolated 0->5123 banner tail), buster 546
-- F37c PARTIAL -- `cursor` and `windowclose` remainders: the objects' Y under the camera pan, the k=0 bracket, the pose frame. object-Y pan + k0 bracket landed 2ecb799: cursor 130221/767/170->34902/232/170, windowclose 19168/1878/40->12538/1200/40
-- F38 PARTIAL -- The integrated rows after F33d: the results window's slide on warp/buster/chip-use, and opening integrated decomposed. decomposition landed 07ad4e3 (notes+comment only, zero pixel effect): warp 40628/buster 54672/chip-use 275307 = canon RESULT slide w/o rust 
-- F23 DONE -- Naming pass: the bare numbers in src/custom.rs and src/battle.rs. results.rs naming landed b1bac4e: 81 bare->0 (46 provenance consts)
+- T4 PARTIAL -- Port the animation bytecode player, steps 1 and 2 of the plan. anim steps 1-2 landed 6985d56: bind+tick ported (verifier CONFIRMED all)
+- T1b DONE -- Land the trace harness with a zero-cost export: the stores only when tracing is on. supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class
 
 **Common to F8-F23 (and their b-tickets) unless the ticket says otherwise.** Baseline the row (harness line plus
 `tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
