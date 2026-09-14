@@ -1,7 +1,8 @@
 {
  "meta": {
   "generator": "tools/rom_enemy_tables.py",
-  "rom": "/tmp/bn6f_real.gba",
+  "rom": "bn6f_real.gba",
+  "rom_sha1": "0676ecd4d58a976af3346caebb44b9b6489ad099",
   "regenerate": "python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json",
   "identity_table": {
    "symbol": "byte_80182C4",
@@ -18,7 +19,23 @@
    "words": 32,
    "bound": "bound inferred from off_81090D0 (asm31.s:169485)",
    "cite": "asm/asm31.s:169420",
-   "note": "ticket predicted 96 words for off_8109050->off_81091D0 (0x180 bytes); the real span is three parallel 0x80-byte tables: off_8109050 think, off_81090D0 per-AIIndex Struct1 pointers (enemy_getStruct1, asm00_2.s:669-674), off_81091D0 act"
+   "semantics": "NOT a called routine: the word is passed as an argument to battle_801B1C4 (jump-table store, asm31.s:169395-169402); each entry is a CurAction-indexed state-handler TABLE pointer ('// indexed by CurAction * 4', asm31.s:170981-170984 and asm32.s:10122-10125)",
+   "note": "ticket predicted 96 words for off_8109050->off_81091D0 (0x180 bytes); the real span holds THREE parallel 0x80-byte tables: off_8109050 think, off_81090D0 per-AIIndex Struct1 pointers (enemy_getStruct1, asm00_2.s:669-674), off_8109150 per-AIIndex Struct2 pointers (enemy_getStruct2, asm00_2.s:713). The act table off_81091D0 starts exactly at the span's end"
+  },
+  "struct1_table": {
+   "symbol": "off_81090D0",
+   "address": "0x081090D0",
+   "words": 32,
+   "bound": "bound inferred from off_8109150 (asm31.s:169550)",
+   "cite": "asm/asm31.s:169485, selected for virus by enemy_getStruct1 (asm00_2.s:669-674)"
+  },
+  "struct2_table": {
+   "symbol": "off_8109150",
+   "address": "0x08109150",
+   "words": 32,
+   "bound": "bound inferred from off_81091D0 (asm31.s:169615)",
+   "cite": "asm/asm31.s:169550, selected for virus by enemy_getStruct2 (asm00_2.s:713)",
+   "struct": "{elem_hp: u16 @0x00, unk_02: u8 @0x02, unk_flags: u8 @0x03, elem_damage: u16 @0x04} (asm00_2.s:677-681)"
   },
   "act_table": {
    "symbol": "off_81091D0",
@@ -31,15 +48,50 @@
    "identity_rows": 452,
    "think_words": 32,
    "act_words": 32,
-   "think_named": 2,
-   "think_routine_unnamed": 0,
-   "think_data_or_other": 25,
-   "think_unresolved": 5,
-   "act_named": 0,
+   "think_handler_table_named_For": 2,
+   "think_handler_table_sub_nullsub": 0,
+   "think_handler_table_other_label": 30,
+   "think_unresolved": 0,
+   "act_named_routines": 0,
    "act_routine_unnamed": 32,
    "act_data_or_other": 0,
    "act_unresolved": 0,
-   "family_count": 27
+   "think_handler_table_count": 32
+  },
+  "rom_disasm_crosscheck": {
+   "think_checked": "32/32",
+   "act_checked": "11/32",
+   "note": "only entries whose label carries an address suffix can be checked; suffix-less labels (nullsub_13) have no address to check against"
+  },
+  "max_ai_index_by_actor_type": {
+   "ACTOR_TYPE_NAVI": "0x18",
+   "ACTOR_TYPE_PLAYER": "0x30",
+   "ACTOR_TYPE_VIRUS": "0x1F"
+  },
+  "hp_pointer": {
+   "table": "off_8109150 (per-AIIndex Struct2 pointers)",
+   "field": "elem_hp u16 @0x00",
+   "cite": "asm/asm31.s:169550; struct layout asm00_2.s:677-681",
+   "spot_checks": [
+    {
+     "family": "Mettaur",
+     "ai_index": 1,
+     "struct2_symbol": "MettaurEnemyStruct2_8109BD8",
+     "struct2_cite": "asm/asm31.s:170628",
+     "elem_hp": "0x0028",
+     "expected": "0x28",
+     "pass": true
+    },
+    {
+     "family": "Gunner",
+     "ai_index": 23,
+     "struct2_symbol": "GunnerEnemyStruct2_8112B9C",
+     "struct2_cite": "asm/asm32.s:9538",
+     "elem_hp": "0x003C",
+     "expected": "0x3C",
+     "pass": true
+    }
+   ]
   },
   "known_answer_checks": [
    {
@@ -50,7 +102,7 @@
    {
     "check": "idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078",
     "pass": true,
-    "cite": "asm/asm31.s:169468 (T9b)"
+    "cite": "asm/asm32.s:10123 (definition; table slot asm31.s:169468) (T9b)"
    }
   ],
   "rom_disasm_mismatches": [],
@@ -95,7 +147,6 @@
   "ai_index_think_act_existence_disagreement": [],
   "not_supplied_by_these_tables": [
    "NameID per enemy_idx (enemy name table not supplied by these index tables)",
-   "HP per enemy_idx (not in byte_80182C4 rows nor in the dispatch tables)",
    "sprite pointer per enemy_idx",
    "per-version parameter tables (the six per-version tables T9b cited for the Gunner)",
    "Navi bosses (whether boss Navis share these tables at all is unverified)",
@@ -1038,10 +1089,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1063,10 +1114,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1088,10 +1139,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1113,10 +1164,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1138,10 +1189,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1163,10 +1214,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -1188,10 +1239,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1213,10 +1264,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1238,10 +1289,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1263,10 +1314,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1288,10 +1339,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1313,10 +1364,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -1338,10 +1389,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1363,10 +1414,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1388,10 +1439,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1413,10 +1464,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1438,10 +1489,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1463,10 +1514,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -1488,10 +1539,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1513,10 +1564,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1538,10 +1589,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1563,10 +1614,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1588,10 +1639,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1613,10 +1664,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -1638,10 +1689,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -1663,10 +1714,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -1688,10 +1739,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -1713,10 +1764,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -1738,10 +1789,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -1763,10 +1814,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -7438,10 +7489,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7463,10 +7514,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7488,10 +7539,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7513,10 +7564,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7538,10 +7589,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7563,10 +7614,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -7588,10 +7639,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7613,10 +7664,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7638,10 +7689,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7663,10 +7714,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7688,10 +7739,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7713,10 +7764,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -7738,10 +7789,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7763,10 +7814,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7788,10 +7839,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7813,10 +7864,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7838,10 +7889,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7863,10 +7914,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -7888,10 +7939,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -7913,10 +7964,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -7938,10 +7989,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -7963,10 +8014,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -7988,10 +8039,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -8013,10 +8064,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -8038,10 +8089,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -8063,10 +8114,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -8088,10 +8139,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -8113,10 +8164,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -8138,10 +8189,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -8163,10 +8214,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,
@@ -10688,10 +10739,10 @@
     "index": 7,
     "rom_word": "0x0810C6F0",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810C6F0",
+    "file": "data/dat31.s",
+    "line": 377,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 7,
@@ -10713,10 +10764,10 @@
     "index": 8,
     "rom_word": "0x0810CD60",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810CD60",
+    "file": "data/dat31.s",
+    "line": 1123,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 8,
@@ -10738,10 +10789,10 @@
     "index": 9,
     "rom_word": "0x0810D0F4",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D0F4",
+    "file": "data/dat31.s",
+    "line": 1450,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 9,
@@ -10763,10 +10814,10 @@
     "index": 10,
     "rom_word": "0x0810D554",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D554",
+    "file": "data/dat31.s",
+    "line": 1960,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 10,
@@ -10788,10 +10839,10 @@
     "index": 11,
     "rom_word": "0x0810D910",
     "thumb_bit": 0,
-    "symbol": null,
-    "file": null,
-    "line": null,
-    "kind": "unresolved"
+    "symbol": "off_810D910",
+    "file": "data/dat31.s",
+    "line": 2362,
+    "kind": "data_or_other"
    },
    "act": {
     "index": 11,

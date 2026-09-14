@@ -4,22 +4,27 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 
 - identity rows: 452 (byte_80182C4, bound inferred from getBattleArmPositionMaybe_8018810, asm00_2.s:20449)
 - think words: 32 (off_8109050, bound inferred from off_81090D0, asm31.s:169485); act words: 32 (off_81091D0, bound inferred from off_8109250, asm31.s:169680)
-- think entries named `For*_HHHHHHHH`: 2/32; distinct think routines over used AIIndexes (family count): 27
+- between them: Struct1 ptrs off_81090D0 (32 words, asm31.s:169485) and Struct2 ptrs off_8109150 (32 words, asm31.s:169550) — the ticket's 0x180 span is think+Struct1+Struct2; act starts exactly at its end
+- think entries are CurAction-indexed state-handler TABLE pointers (passed to battle_801B1C4 as a jump table, asm31.s:169395-169402; '// indexed by CurAction * 4', asm31.s:170981-170984) — NOT called routines; act words ARE called (mov lr,pc; bx r0)
+- think handler-table pointers named `For*_HHHHHHHH`: 2/32; distinct think handler tables over used AIIndexes (family count): 32; act routines named `For*`: 0/32
+- ROM/disasm cross-check coverage: think 32/32, act 11/32 (suffix-less labels like nullsub_13 have no address to check against)
+- HP pointer: off_8109150 Struct2 elem_hp (asm31.s:169550, layout asm00_2.s:677-681); spot-check Mettaur elem_hp=0x0028 vs expected 0x28: **PASS**
+- HP pointer: off_8109150 Struct2 elem_hp (asm31.s:169550, layout asm00_2.s:677-681); spot-check Gunner elem_hp=0x003C vs expected 0x3C: **PASS**
 - known-answer: idx 0x01..0x04 -> AIIndex 0x01 -> ForMettaur_8109EF4: **PASS** (asm/asm31.s:170982 (T6))
-- known-answer: idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078: **PASS** (asm/asm31.s:169468 (T9b))
+- known-answer: idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078: **PASS** (asm/asm32.s:10123 (definition; table slot asm31.s:169468) (T9b))
 - AIIndex with no think entry (32-word table): 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30
 - AIIndex with no act entry (32-word table): 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30
 
 ## Not supplied by these tables (T10 gap list)
 
+- NOT a gap — HP per enemy_idx: reachable via off_8109150 Struct2 pointer table (asm31.s:169550), struct {elem_hp u16 @0, unk_02 u8, unk_flags u8, elem_damage u16 @4} (asm00_2.s:677-681)
 - NameID per enemy_idx (enemy name table not supplied by these index tables)
-- HP per enemy_idx (not in byte_80182C4 rows nor in the dispatch tables)
 - sprite pointer per enemy_idx
 - per-version parameter tables (the six per-version tables T9b cited for the Gunner)
 - Navi bosses (whether boss Navis share these tables at all is unverified)
 - formations / BattleSettings records (which enemy_idx set a battle spawns)
 
-## Families (grouped by think routine; cites are think file:line)
+## Families (grouped by think handler-table pointer; cites are think file:line; think entries are CurAction-indexed handler tables, not called routines)
 
 ### ForGunner_8113078 — 12 enemy_idx (think cite asm/asm32.s:10123)
 
@@ -237,6 +242,96 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x123 | 4 | ACTOR_TYPE_NAVI | 0x06 | nullsub_13 |
 | 0x124 | 5 | ACTOR_TYPE_NAVI | 0x06 | nullsub_13 |
 | 0x1A6 | 0 | ACTOR_TYPE_PLAYER | 0x06 | nullsub_13 |
+
+### off_810C6F0 — 13 enemy_idx (think cite data/dat31.s:377)
+
+| enemy_idx | version | ActorType | AIIndex | act |
+|---|---|---|---|---|
+| 0x25 | 0 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x26 | 1 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x27 | 2 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x28 | 3 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x29 | 4 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x2A | 5 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
+| 0x125 | 0 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x126 | 1 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x127 | 2 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x128 | 3 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x129 | 4 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x12A | 5 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
+| 0x1A7 | 0 | ACTOR_TYPE_PLAYER | 0x07 | nullsub_13 |
+
+### off_810CD60 — 13 enemy_idx (think cite data/dat31.s:1123)
+
+| enemy_idx | version | ActorType | AIIndex | act |
+|---|---|---|---|---|
+| 0x2B | 0 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x2C | 1 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x2D | 2 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x2E | 3 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x2F | 4 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x30 | 5 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
+| 0x12B | 0 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x12C | 1 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x12D | 2 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x12E | 3 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x12F | 4 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x130 | 5 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
+| 0x1A8 | 0 | ACTOR_TYPE_PLAYER | 0x08 | nullsub_13 |
+
+### off_810D0F4 — 13 enemy_idx (think cite data/dat31.s:1450)
+
+| enemy_idx | version | ActorType | AIIndex | act |
+|---|---|---|---|---|
+| 0x31 | 0 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x32 | 1 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x33 | 2 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x34 | 3 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x35 | 4 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x36 | 5 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
+| 0x131 | 0 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x132 | 1 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x133 | 2 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x134 | 3 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x135 | 4 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x136 | 5 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
+| 0x1A9 | 0 | ACTOR_TYPE_PLAYER | 0x09 | nullsub_13 |
+
+### off_810D554 — 13 enemy_idx (think cite data/dat31.s:1960)
+
+| enemy_idx | version | ActorType | AIIndex | act |
+|---|---|---|---|---|
+| 0x37 | 0 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x38 | 1 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x39 | 2 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x3A | 3 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x3B | 4 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x3C | 5 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
+| 0x137 | 0 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x138 | 1 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x139 | 2 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x13A | 3 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x13B | 4 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x13C | 5 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
+| 0x1AA | 0 | ACTOR_TYPE_PLAYER | 0x0A | nullsub_13 |
+
+### off_810D910 — 13 enemy_idx (think cite data/dat31.s:2362)
+
+| enemy_idx | version | ActorType | AIIndex | act |
+|---|---|---|---|---|
+| 0x3D | 0 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x3E | 1 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x3F | 2 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x40 | 3 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x41 | 4 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x42 | 5 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
+| 0x13D | 0 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x13E | 1 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x13F | 2 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x140 | 3 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x141 | 4 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x142 | 5 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
+| 0x1AB | 0 | ACTOR_TYPE_PLAYER | 0x0B | nullsub_13 |
 
 ### off_810E120 — 12 enemy_idx (think cite asm/asm32.s:914)
 
@@ -526,75 +621,10 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x9C | 5 | ACTOR_TYPE_VIRUS | 0x1A | sub_8115098 |
 | 0x1AD | 0 | ACTOR_TYPE_PLAYER | 0x1A | sub_8115098 |
 
-### (no think entry) — 82 enemy_idx (think cite -)
+### (no think entry) — 17 enemy_idx (think cite -)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
-| 0x25 | 0 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x26 | 1 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x27 | 2 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x28 | 3 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x29 | 4 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x2A | 5 | ACTOR_TYPE_VIRUS | 0x07 | nullsub_13 |
-| 0x2B | 0 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x2C | 1 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x2D | 2 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x2E | 3 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x2F | 4 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x30 | 5 | ACTOR_TYPE_VIRUS | 0x08 | nullsub_13 |
-| 0x31 | 0 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x32 | 1 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x33 | 2 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x34 | 3 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x35 | 4 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x36 | 5 | ACTOR_TYPE_VIRUS | 0x09 | nullsub_13 |
-| 0x37 | 0 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x38 | 1 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x39 | 2 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x3A | 3 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x3B | 4 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x3C | 5 | ACTOR_TYPE_VIRUS | 0x0A | nullsub_13 |
-| 0x3D | 0 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x3E | 1 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x3F | 2 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x40 | 3 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x41 | 4 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x42 | 5 | ACTOR_TYPE_VIRUS | 0x0B | nullsub_13 |
-| 0x125 | 0 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x126 | 1 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x127 | 2 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x128 | 3 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x129 | 4 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x12A | 5 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
-| 0x12B | 0 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x12C | 1 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x12D | 2 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x12E | 3 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x12F | 4 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x130 | 5 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
-| 0x131 | 0 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x132 | 1 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x133 | 2 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x134 | 3 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x135 | 4 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x136 | 5 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
-| 0x137 | 0 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x138 | 1 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x139 | 2 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x13A | 3 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x13B | 4 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x13C | 5 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
-| 0x13D | 0 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x13E | 1 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x13F | 2 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x140 | 3 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x141 | 4 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x142 | 5 | ACTOR_TYPE_NAVI | 0x0B | nullsub_13 |
-| 0x1A7 | 0 | ACTOR_TYPE_PLAYER | 0x07 | nullsub_13 |
-| 0x1A8 | 0 | ACTOR_TYPE_PLAYER | 0x08 | nullsub_13 |
-| 0x1A9 | 0 | ACTOR_TYPE_PLAYER | 0x09 | nullsub_13 |
-| 0x1AA | 0 | ACTOR_TYPE_PLAYER | 0x0A | nullsub_13 |
-| 0x1AB | 0 | ACTOR_TYPE_PLAYER | 0x0B | nullsub_13 |
 | 0x1B3 | 0 | ACTOR_TYPE_PLAYER | 0x20 | (none) |
 | 0x1B4 | 0 | ACTOR_TYPE_PLAYER | 0x21 | (none) |
 | 0x1B5 | 0 | ACTOR_TYPE_PLAYER | 0x22 | (none) |
