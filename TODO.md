@@ -360,8 +360,9 @@ as a proposal with the measurement behind it.
 **Acceptance.** the decomposition table with citations; every fix verified on windowclose plus
 wave, window, opening, chip-cannon, field; full table nothing worse.
 
-### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(CLAUDE -- 2026-09-13)*
+### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(PARTIAL -- 2026-09-13, the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, th)*
 
+**Result.** the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, the battle-result mark (16x16 tile 0x200 pal 11 prio 0 sliding to (37,21)): 163 + 17x177 = 3172 = the whole row, on k=14..31; canon's scripted B at 150/151 never fires (CurState/CurAction/CurAnim/HP 04/08/00/60 and the sequencer 0x0400000c constant over canon 145..186, F10's 0x0C delivery wall re-measured) and our ZERO_ENEMY fixture never resolves so we never draw the mark; the alignment 122 is the first of an 8-wide plateau (122..129 all 3172; 90..105 all 13959; the event-locked offset 100 reads 13959/794/32); our buster pose (rust 111..129) lies entirely outside the compared window 130..161. Landed: canon's t3_0x0_80C4E58 (asm31.s:27690-27697, off_80C4E70 :27703, sub_80C4E7C sprite_load :27725-27727) shows a shot's first animation frame on its spawn frame, ours ran a frame late (fresh player's first update eaten, src/spr.rs:336-343): the pre-tick now lives once in Shot::new (removed from shockwave(), behaviour-neutral for every current row; full table byte-identical both ways, field integrated -5). The plain buster builds no Shot at all (Update::Strike charged:false is a hitscan). Measured against a canon side that fires (Start@10,B@30,B@31 in the 0x08 window): pose 25 frames = 5 fire ticks (sub_80EB450 asm31.s:108680-108691) + byte_80209CC[Rapid*6+min(free panels,5)] (sub_800FAF6 asm00_2.s:1944-1990, dat01.s:146) = 5+0x14 vs ours 19; barrel at pose+0 vs ours +2 (BUSTER_ARM_DELAY); muzzle at pose+1 vs +4 and our FX double-ticked on its spawn frame (battle.rs:2623 fx.update() plus the effects loop); both objects live until object_exitAttackState (sub_80EB502 asm31.s:108712-108722) vs our fixed 18/7 frames. Next: F31b re-cuts the row around a canon side that fires and lands those four. Claude Opus agent, 69 tool calls, 20 min, 195k tokens.
 **Files.** src/shot.rs, tools/harness.py (the buster row's note only)
 
 **Why.** buster isolated reads 3172 px over 32 frames and has been BLOCKED since F10/F10b (two
@@ -474,6 +475,24 @@ canon's phase (state DELETE, HP 0, dissolve counter peeked) or show why F19's bl
 **Acceptance.** tiles and gauge integrated 0/0/8 (negatives not blind) with the isolated variants still 0;
 popup 0/0/80 or its residual attributed per frame; mettaur, wave, window, opening, chip-cannon, field 0 or
 unchanged; the field integrated +5 re-measured; nothing worse.
+
+### F31b. `buster`: re-cut the row around a canon side that fires, then land the four measured buster defects  *(CLAUDE -- 2026-09-13)*
+
+**Files.** tools/harness.py (the buster row, its fixture and Align), tools/states.py (a recipe if one is needed), src/actor.rs (the BUSTER pose constants only), src/battle.rs (the buster hunks only: fx.update() at ~2623, BUSTER_ARM_DELAY, BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES)
+
+**Why.** F31 showed the buster row measures nothing about the buster: canon's press never fires in it and the
+3172 is the result mark; its offset is a plateau tie-break, not an event. Canon fires when the press lands
+in the 0x08 window (Start@10,B@30,B@31 on the STERILE+PAUSED+DELETE side: action 0x11 at f33, anim 0x0e
+f34..f58, barrel f35, muzzle f36, both gone f60). A row is honest only if both sides fire: cut the canon
+side there, lock canon_ref to the measured press event (the action write, watched), align by the same
+event on our side (rust press frame), and re-sweep the band for a unique minimum. Then land the four
+measured defects (pose length 25 = 5 + byte_80209CC lookup, derived; barrel on tick 0; the FX ticked once
+on its spawn frame; barrel and muzzle until object_exitAttackState) with citations, measuring each alone.
+**Acceptance.** a new buster row that compares two firing busters (state watches on both sides show the
+attack state on the same offset), negative not blind, alignment by event; buster as low as the four fixes
+take it; buster integrated re-measured; wave, window, opening, chip-cannon, field, mettaur, popup 0 or
+unchanged; every chip row unchanged (they share the fixture path); nothing worse. The old 3172 alignment is
+not to be "fixed" by giving our side the result mark: a row that draws nothing on either side proves nothing.
 
 ### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
 
