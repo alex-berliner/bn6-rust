@@ -72,6 +72,10 @@ confirmed, is LANDED and stamped PARTIAL even when the ticket's acceptance is no
 unmerged only when a row regressed, the verifier refuted a claim, or the report's numbers did not
 reproduce. Write the follow-up for the remainder as usual.
 
+**No budget of your own.** You were given no token, credit or turn budget, and you must not invent one: the
+run's spend and credit limits are enforced outside you (the exit file), and the only stop reasons are the
+ones listed below. Keep taking tickets until `next_ticket.py` and the judge refill leave none OPEN.
+
 ## Stop and hand back to the user when
 
 - the spend guard fails, or this session's children have cost more than the cap your instruction names
