@@ -23,12 +23,25 @@ T13's, on disk at `/tmp/aud_t13/`, re-read for this ticket at zero runs.
 ## 1. The ungated hit sample — FIXED
 
 canon's own gate, cited: the plain buster's hit sound (SOUND_HIT_6B) is played
-only from the shot-impact handler `sub_80F2180` (asm/asm31.s:123097), on the
-path where `sprite_getFrameParameters` (asm/sprite.s:1192) reports the
-sprite's impact frame (bit 0x80 tested at asm/asm31.s:123061-123064) AND the
-enemy's HP is actually decremented on the same path (asm/asm31.s:123087-123093,
-`strh` to oBattleObject_HP immediately before the `PlaySoundEffect`). No
-overlapping enemy, no sample.
+from the shot-impact handler `sub_80F2180` (asm/asm31.s:123097 -- one of five
+SOUND_HIT_6B sites in the ROM: asm29.s:7966, asm00_2.s:11526, asm37_1.s:2069,
+asm25.s:637, asm31.s:123097), on the path where `sprite_getFrameParameters`
+(asm/sprite.s:1192) reports the sprite's impact frame (bit 0x80 tested at
+asm/asm31.s:123061-123064) AND the enemy's HP is actually decremented on the
+same case (asm/asm31.s:123087-123093, `strh` to oBattleObject_HP immediately
+before the `PlaySoundEffect`). No overlapping enemy, no sample.
+
+Two qualifications the verifier found and that must not be copied forward
+overstated: (a) the handler branches on `[r5,#0x75]`, and cases 0/2 take
+`loc_80F21DE` (asm/asm31.s:123106-123108), which plays a DIFFERENT sound
+(0x144) with no HP decrement at all -- so a non-damaging impact reaction is
+still audible in canon; (b) nothing on the cited path tests a barrier or a
+mercy window. Our gate is therefore STRONGER than the cited condition on those
+two axes (take_damage returns false when barrier/invulnerable/invisible,
+src/actor.rs:601-608, so those hits are silent in ours and would not be in
+canon). Not reachable in today's build: `set_barrier` is called only on MegaMan
+(src/battle.rs:3146) and the buster fires one shot per press, so no measured row
+shows the difference. Recorded here as a latent gap, not a regression.
 
 src/battle.rs armed `hit_in = BUSTER_HIT_DELAY` unconditionally in
 `Update::Strike`'s uncharged arm. It now arms only when the same strike's
@@ -66,7 +79,7 @@ subtracted sample-exactly at all pre-press frames):
 
 | side | onset | phase within its frame |
 |---|---|---|
-| canon | frame 135 = press+5, pair 1119/1605, L first (its frame 135 is a partial frame: 486 of 3210 samples) | 69.7% into the frame |
+| canon | frame 135 = press+5, pair 1119/1605, L first (a full frame: 1605 pairs; 486 is what remains AFTER the onset, not the frame's length) | 69.7% into the frame |
 | ours | frame 114 = press+6, pair 149/1605, full frame | 9.3% into the frame |
 
 Residual: ours is LATER by (1 frame − 970 pairs) = **635 interleaved pairs ≈
@@ -77,8 +90,8 @@ pairs = 10.1 ms and fail a sample-exact check it should pass. The offset is
 frame-granular parity (both blips land within the same press+5/+6 window
 modulo the one-frame arm difference) plus a sub-frame phase residue of 635
 pairs. `BUSTER_BLIP_DELAY` is left at its fitted 1: at frame granularity ours
-is one frame late (press+6 vs canon's partial-frame press+5), but the
-partial-frame onset is a mixer-phase fact, not a delay constant, and no
+is one frame late (press+6 vs canon's press+5), but the sub-frame onset phase
+is a mixer-phase fact, not a delay constant, and no
 constant in src can move a sub-frame onset. Recorded as residue.
 
 ## 3. Frame 0 — the capture harness's own priming, cited
@@ -105,6 +118,16 @@ Stopped there, per the ticket; the tool is out of this ticket's editable
 scope anyway.
 
 ## Parity and residue after T13b
+
+Video side, disclosed in full: the 71-line before/after table differs on exactly
+TWO lines. `cursor` isolated 13 -> 10 (worst 11 -> 9) is the ticket's own
+"reported, not chased" single-frame tear, and it moved because it moves between
+runs, not because of this change. `field` INTEGRATED allowed-failure total rose
+158934 -> 158993 (worst 5605 -> 5664, negative 261033 -> 261092) -- still inside
+its AUDIT-6 allowance (<=28000 worst) and the allowance text is byte-identical,
+but it is a movement this branch did not predict, and a later ticket touching
+`field` should know the audio gate is the last thing that ran against it. Every
+other isolated row reads 0 on both sides; no row's compared-frame count changed.
 
 Parity (measured): the ungated hit sample is gone from the zero-enemy
 scenario — our ch4 tree reads peak 0 end to end, matching canon's no-onset

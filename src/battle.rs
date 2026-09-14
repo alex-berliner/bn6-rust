@@ -3251,14 +3251,20 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         }
                     }
                     // THE HIT SAMPLE IS GATED ON A LANDED HIT, the way the
-                    // ROM gates it: canon plays SOUND_HIT_6B only from the
-                    // shot-impact handler sub_80F2180 (asm/asm31.s:123097),
-                    // on the path where sprite_getFrameParameters
+                    // ROM gates it: canon plays SOUND_HIT_6B from the
+                    // shot-impact handler sub_80F2180 (asm/asm31.s:123097)
+                    // -- one of five SOUND_HIT_6B sites, the only buster-shot
+                    // one -- on the path where sprite_getFrameParameters
                     // (asm/sprite.s:1192) reports the sprite's impact frame
                     // (bit 0x80, asm/asm31.s:123061-123064) AND the enemy's
                     // HP is actually decremented on the same path
                     // (asm/asm31.s:123087-123093) -- no overlapping enemy,
-                    // no sample. Ours used to arm hit_in unconditionally,
+                    // no sample. The handler also has non-damaging cases that
+                    // play a DIFFERENT sound (0x144, asm/asm31.s:123106-123108)
+                    // and it never tests a barrier, so this gate is stronger
+                    // than the cited condition on the barrier/mercy axes; not
+                    // reachable in this build (set_barrier is MegaMan-only,
+                    // src/battle.rs:3146). See docs/coverage/audio-buster.md. Ours used to arm hit_in unconditionally,
                     // so the zero-enemy buster row played
                     // assets/buster_hit.wav at press+10 (frames 118..130,
                     // peak 11221 -- the whole-tree peak) where canon's same
