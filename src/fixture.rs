@@ -118,6 +118,15 @@ pub const FLAG_TRACE: u8 = 1 << 7; // provenance: derived -- this project's own 
 #[derive(Clone, Copy)]
 pub struct Fixture {
     pub enemies: u8,
+    /// +5 FIXTURE.md: the enemies' kinds, PACKED TWO BITS PER SLOT -- slot 0
+    /// in bits 0-1, slot 1 in bits 2-3, slot 2 in bits 4-5; the kind values
+    /// are [`crate::battle`]'s fixture table's own numbering: 0 = Mettaur,
+    /// 1 = Gunner (see `kind_of`). Before the Gunner ticket (T9c) this byte
+    /// was documented as one kind applied to every enemy -- every descriptor
+    /// written before then stores 0 here, which decodes to Mettaur in every
+    /// slot, so the packing is backward compatible by construction. Bits 6-7
+    /// unused (a fourth enemy slot does not exist: the game's own roll fields
+    /// at most three BattleObjects, 0x0203aa88/0x0203ab60/0x0203ac38).
     pub enemy_kind: u8,
     pub enemy_col: u8,
     pub enemy_row: u8,
@@ -236,9 +245,22 @@ pub struct Fixture {
     pub enemy_action: u8,
 }
 
+/// Kind values for the packed `enemy_kind` byte (two bits per slot, see the
+/// field's doc): the art/style/default-HP triple in `battle.rs`'s fixture
+/// enemy construction keys off these.
+pub const KIND_METTAUR: u8 = 0; // provenance: derived -- this project's own protocol numbering (FIXTURE.md +5's pre-ticket value for every existing row)
+pub const KIND_GUNNER: u8 = 1; // provenance: derived -- T9b's slot probe of BattleSettings record 6 (0x080b4bd8): slot 1's BattleObject reads NameID 0x0085 (enemy_idx 0x85, the Gunner)
+
 impl Fixture {
     pub fn flag(&self, bit: u8) -> bool {
         self.flags & bit != 0
+    }
+
+    /// The kind of enemy `slot` (0-based; slots past `enemies` are never
+    /// built): two bits of the packed `enemy_kind` byte -- see the field's
+    /// doc for the layout and the backward-compatibility argument.
+    pub fn kind_of(&self, slot: usize) -> u8 {
+        (self.enemy_kind >> (slot * 2)) & 0b11
     }
 }
 

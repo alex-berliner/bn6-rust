@@ -11,7 +11,7 @@ little-endian.
 |-----|------|-------|---------|
 | +0  | u32 | magic | `0x46495854` "FIXT". Absent → the ROM runs its normal full battle. |
 | +4  | u8  | enemies | number of enemies, 0 = empty arena |
-| +5  | u8  | enemy_kind | 0 = Mettaur (only kind for now) |
+| +5  | u8  | enemy_kind | the enemies' kinds, packed two bits per slot: slot 0 in bits 0-1, slot 1 in bits 2-3, slot 2 in bits 4-5. 0 = Mettaur, 1 = Gunner. A plain 0 (every descriptor written before the Gunner ticket) decodes to Mettaur in every slot, so older rows are unchanged. |
 | +6  | u8  | enemy_col | panel column of the first enemy |
 | +7  | u8  | enemy_row | panel row |
 | +8  | u16 | megaman_hp | starting HP (canon captures use 60) |
