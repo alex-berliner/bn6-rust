@@ -6,6 +6,7 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::AffineMatrix;
+use agb::display::{Palette16, Rgb15};
 use agb::display::object::{
     AffineMatrixObject, AffineMode, DynamicSprite16, Object, ObjectAffine,
     PaletteVramSingle, Size, SpriteVram,
@@ -34,7 +35,7 @@ use crate::{
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
-    SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
+    SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
 use crate::fixture::{self, Fixture};
@@ -561,6 +562,56 @@ const fn vulcan_gun_frames(shots: u8) -> u8 {
     VULCAN_WINDUP_TICKS + firing + recover
 }
 const VULCAN_ARM: (i32, i32) = (23, -25); // provenance: derived -- byte_80B8BD4 row 0xd, byte_80188C0[28..30]
+/// SuprVulc's detached muzzle-fire ball. Canon spawns a live 16x16 object
+/// (OAM obj0, tile 512, pal 11) that slides in from the left edge and parks
+/// above the gun tip for the volley's tail: OAM x 285 +16/frame from gun-age
+/// 85 (capture 90), wrapping past 512 to 13/29, pinned at 37 from gun-age
+/// 102 (capture 107) through the gun's last frame, y 21 throughout -- all
+/// peeked off the sterile-row capture (watch 0x02034b80/0x02034c00/0x07000000;
+/// the per-frame shadow-table writer is the strh at ROM 0x0802C4CC inside the
+/// strip copier 0x0802C4B6, called from the 5-part sprite builder 0x0802C4E8,
+/// fed by a CpuFastSet ROM 0x08731DF4 -> EWRAM 0x02034B30 at capture 88).
+/// Only SuprVulc's gun lives long enough (112 frames) to reach these ages.
+const VULCAN_FIREBALL_X0_AGE: u8 = 85; // provenance: peeked -- OAM obj0 becomes tile-512/pal-11 at capture 90 = gun-age 85
+const VULCAN_FIREBALL_X0: i32 = 285; // provenance: peeked -- OAM x at capture 90
+const VULCAN_FIREBALL_DX: i32 = 16; // provenance: peeked -- OAM x +16/frame, captures 90-104
+const VULCAN_FIREBALL_PARK_AGE: u8 = 102; // provenance: peeked -- OAM x pinned from capture 107 = gun-age 102
+const VULCAN_FIREBALL_PARK_X: i32 = 37; // provenance: peeked -- parked OAM x (gun tip)
+const VULCAN_FIREBALL_Y: i32 = 21; // provenance: peeked -- OAM y, constant captures 90-129
+const VULCAN_FIREBALL_FIRST_VISIBLE: u8 = 99; // provenance: peeked -- x wraps on-screen (509 -> -3) at capture 104 = gun-age 99
+const VULCAN_FIREBALL_LAST_VISIBLE: u8 = 112; // provenance: peeked -- still parked past the row's end (capture 117+)
+/// Canon's object palette bank 11 on the fireball's frames (dumped off OBJ
+/// pal RAM at capture 110): baked as a `&'static` so the sprite takes the
+/// static loader path (`PaletteVramSingle::new`) rather than a runtime
+/// colour-keyed bank -- the runtime path's extra bank turned the navi gray
+/// on every frame of this row (mechanism not traced, see the ticket report).
+// provenance: derived -- canon OBJ palette RAM bank 11, dumped at capture 110 (/tmp/f12dump/objpal.bin)
+static VULCAN_FIREBALL_PAL: Palette16 = Palette16::new([
+    Rgb15::new(0x0000),
+    Rgb15::new(0x7fff),
+    Rgb15::new(0x5294),
+    Rgb15::new(0x163c),
+    Rgb15::new(0x1536),
+    Rgb15::new(0x7c1f),
+    Rgb15::new(0x53be),
+    Rgb15::new(0x6b5a),
+    Rgb15::new(0x7c1f),
+    Rgb15::new(0x14a5),
+    Rgb15::new(0x0e5e),
+    Rgb15::new(0x013d),
+    Rgb15::new(0x175f),
+    Rgb15::new(0x1f9f),
+    Rgb15::new(0x10df),
+    Rgb15::new(0x24d7),
+]);
+fn vulcan_fireball_x(age: u8) -> i32 {
+    if age >= VULCAN_FIREBALL_PARK_AGE {
+        VULCAN_FIREBALL_PARK_X
+    } else {
+        (VULCAN_FIREBALL_X0 + VULCAN_FIREBALL_DX * (age as i32 - VULCAN_FIREBALL_X0_AGE as i32))
+            & 0x1FF
+    }
+}
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
 /// object from the first frame, sound 0xaf; the hit goes out on the frame
 /// the counter reads 5 -- the sixth -- as an instant one-panel hitbox one
@@ -1033,6 +1084,10 @@ pub struct Battle<'a> {
     /// real ROM's gun follows the navi's states this way; how the game
     /// passes the state to the object was not traced.
     vulcan_gun: Option<(spr::Player, (i32, i32), u8)>,
+    /// SuprVulc's detached muzzle-fire ball: a prebuilt 16x16 VRAM sprite
+    /// (canon's tile-512 art, palette above) plus its age in gun-ages (None
+    /// on its spawn frame, then 0, 1, ...).
+    vulcan_fireball: Option<(SpriteVram, Option<u8>)>,
     /// A family-0x15 chip mid-presentation: the game freezes time, dims the
     /// screen and shows the chip's name before the effect lands
     /// (object_timefreezeBegin, object_dimScreen, object_drawChipName;
@@ -1685,6 +1740,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             hit_in: 0,
             bubble: None,
             vulcan_gun: None,
+            vulcan_fireball: None,
             bombs: Vec::new(),
             panels,
             filler_bg,
@@ -2877,6 +2933,15 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 *ticks -= 1;
             }
         }
+        // The fireball ages on its own clock (None = spawned this frame, so
+        // the spawn frame ends at age 0 and ages match canon's gun-ages).
+        if let Some((_, age)) = self.vulcan_fireball.as_mut() {
+            *age = Some(age.map_or(0, |a| a.saturating_add(1)));
+        }
+        if matches!(self.vulcan_fireball, Some((_, Some(age))) if age > VULCAN_FIREBALL_LAST_VISIBLE)
+        {
+            self.vulcan_fireball = None;
+        }
         for (counter, hp) in self.hp_shown.iter_mut().zip(
             core::iter::once(self.megaman.hp()).chain(self.enemies.iter().map(|e| e.hp())),
         ) {
@@ -3334,6 +3399,10 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     (mx + dx * VULCAN_ARM.0, my + VULCAN_ARM.1),
                     vulcan_gun_frames(shots),
                 ));
+                let fireball_tiles = spr::Assets::new(VULCAN_FIREBALL).gfx(0);
+                let fireball = DynamicSprite16::from_bytes(Size::S16x16, fireball_tiles)
+                    .to_vram(PaletteVramSingle::new(&VULCAN_FIREBALL_PAL));
+                self.vulcan_fireball = Some((fireball, None));
             }
             CHIP_AIRSHOT => {
                 self.chip_in_use = Some(chip);
@@ -3851,6 +3920,17 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     .set_pos((x + part.x, y + part.y))
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
+        // SuprVulc's parked muzzle fire, over the gun that shed it.
+        if let Some((sprite, Some(age))) = &self.vulcan_fireball {
+            if (*age >= VULCAN_FIREBALL_FIRST_VISIBLE
+                && *age <= VULCAN_FIREBALL_LAST_VISIBLE)
+            {
+                Object::new(sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((vulcan_fireball_x(*age), VULCAN_FIREBALL_Y))
                     .show(frame);
             }
         }
