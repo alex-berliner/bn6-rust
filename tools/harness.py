@@ -773,6 +773,17 @@ def _aidata_tap_pokes(key_bits: int, first: int) -> Tuple[str, ...]:
 
 BUSTER_AIDATA_POKES = _aidata_tap_pokes(JOYPAD_B, BUSTER_PRESS_POKE)
 
+#: F12 chip-use (2026-09-14): the A press for the Cannon, delivered the F31b way.
+#: A = bit 0 (JOYPAD_A, include/structs/Joypad.inc), the same tap shape as the
+#: buster's: pressed+held on `first`, held on `first`+1, released on `first`+2.
+#: Measured on this row's own canon side (PAUSED+DELETE, Start@10): the poke
+#: fires where the scripted A@150 was refused -- CurAction 0x0203a9b9 goes
+#: 0x08->0x14 on the poke frame, CurAnim 0x08 runs from the next frame, anim
+#: 0x07 at tail, idle (0x04/0x08, anim 0x00) back after the attack's last frame.
+JOYPAD_A = 0x0001  # provenance: derived -- include/structs/Joypad.inc, active high
+CHIPUSE_PRESS_POKE = 130
+CHIPUSE_AIDATA_POKES = _aidata_tap_pokes(JOYPAD_A, CHIPUSE_PRESS_POKE)
+
 
 WARP_AIDATA_POKES = (_aidata_held_pokes(JOYPAD_RIGHT, 130)
                      + _aidata_held_pokes(JOYPAD_DOWN, 150))
@@ -1890,20 +1901,44 @@ PORTED_CHECKS: List[Check] = [
     Check(
         name="chip-use",
         ui="both",
-        frames=32,
+        frames=30,
         align=Align(
-            canon_ref=150,
-            search=range(90, 130),
-            note="Same shape as `buster`, A instead of B: canon Start@10,A@150,A@151 (past the "
-                 "DELETE dissolve; PAUSED's own queued Cannon, see ZERO_ENEMY_WITH_HAND, is "
-                 "what A actually uses), rust A held at marker origin 8 + 100/101, hand=[1] "
-                 "(Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A "
-                 "press use nothing at all, which is what the first attempt at this check did.",
+            canon_ref=CHIPUSE_PRESS_POKE,
+            search=range(94, 111),
+            note="F12 re-cut (2026-09-14): BOTH sides fire, the buster treatment. The old "
+                 "row's scripted A@150,A@151 never reached MegaMan: the battle is resolved "
+                 "(enemy DELETED, banner sequencer 0x0C from canon 47) and in 0x0C nothing "
+                 "refreshes AIData from the joypad mirror (sub_8012DFC runs from 0x08 only) "
+                 "-- measured on the old row's own captures: sequencer low byte 0x0c on "
+                 "canon 140..186, JoypadPressed 0x020340a4 reads 0 even on the A frames, MM "
+                 "stays CurState/CurAction (0x04/0x08) CurAnim 0x00 on every frame, canon "
+                 "pixels static k=0..15 with a 177 px idle-flame flicker from k=16, while "
+                 "the rust side entered its chip attack (ORCL action 0x0b, anim 8) at "
+                 "battle 102 -- so the old event pairing compared our Cannon against "
+                 "canon's idle (32847 at the event offset 100; the search's 9514 at 129 "
+                 "was a score minimum at the band edge, F2). canon: the zero-enemy arena "
+                 "(STERILE+PAUSED+DELETE, Start@10) with the A tap poked into AIData -- "
+                 "see CHIPUSE_AIDATA_POKES for the measured fire (CurAction 0x14 on the "
+                 "poke frame 130, attack state through 163, idle back at 164). canon_ref "
+                 "is that MEASURED fire event. rust: A held at battle-frame 100/101 "
+                 "(marker origin 8 + 100/101, unchanged) with hand=[1] Cannon; our ORCL "
+                 "action byte flips 0x08->0x0b at rust capture 110, so the event lock is "
+                 "offset 101 (sharp unique minimum: 0 here, 7768 at 100 and 102), kept to confirm "
+                 "the minimum is unique, not to find it. STILL OPEN, pixel-invisible (buster's "
+                 "own ambiguity): the state watches sit one frame apart here -- canon writes "
+                 "CurAction 0x14 at k=0, our ORCL flips to 0x0b at k=1 -- while both sides "
+                 "DRAW the windup on k=0..1 and the pose from k=2. 30 frames = both attacks' common "
+                 "span from the fire frame (canon 130..159, attack through 163; ours "
+                 "battle 101..130); the window STOPS at 159 on purpose, before canon's "
+                 "result mark from 164 (an OBJ the rust side never draws without "
+                 "FLAG_RESOLVE_OVER) -- the same stop buster uses. Canon's 4-frame-longer "
+                 "tail (attack through 163 vs ours through 131) sits outside the window "
+                 "and stays OPEN with this ticket.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CHIPUSE_ZERO,
                              script=held("A", 8 + 100, 2),
                              extra=() if ui == "integrated" else ("--disable-bg",)),
-        canon=_zero_enemy_canon("Start@10," + held("A", 150, 2)),
+        canon=_zero_enemy_canon("Start@10", pokes_at=CHIPUSE_AIDATA_POKES),
         canon_variant="canon (sterile)",
     ),
     Check(
