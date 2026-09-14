@@ -153,6 +153,35 @@ resolution, not the flat tables.
   palette-add/offset/white/red handling) — the Player becomes a thin shell
   over the ported tick/bind fed by BNSP tables kept in ROM layout.
 
+### 1.6 Port log (T4, steps 1-2 landed)
+
+- `src/spr.rs::Player` now carries the ROM state (`anim` = `Unk_00`,
+  `countdown` = `Unk_01`, `cmd_flags` = `Unk_02`, `unk05` = `Unk_05`) with
+  `bind()` = `_sprite_loadAnimationData` normal path (asm38.s:1667-1719)
+  and `update()` = `_sprite_update` normal stream + `Unk_05` tail
+  (asm38.s:1722-1790), over the BNSP tables (`duration` = command byte 1,
+  `flags` = command byte 2 with `0x80` end / `0x40` loop; the exporter's
+  frame-select pre-resolves `cmd[0]`; `Unk_05` = first OAM entry's palette
+  bank, exposed via `unk05()` for the trace tooling). The hold state keeps
+  a `done` latch for `finished()` instead of re-consuming the end marker
+  (display-identical). Alt stream and `sprite_setAnimation`/`CurAnim` path
+  stay T4b. No `src/anim.rs`: the port lives behind `Player`'s existing
+  interface. No `tools/trace.py` exists, so no trace changes.
+- Two things the port had to get right: the tick compares the full
+  post-decrement register (durations above 127 exist -- vulcan_fireball
+  holds a frame 255 ticks -- so no signed-byte view of the countdown),
+  and every shipped animation ends its stream with `0x80` exactly on its
+  last frame (scanned all assets/*.bin: no mid-stream use, none missing).
+- Verification: full harness table vs pre-change baseline differs in
+  exactly one line -- cursor isolated 3/3/170 -> 1/1/170, same alignment
+  (offset 237, origin 8), same single compared frame k=97 (canon 112): the
+  documented canon mid-frame tile transfer sampled 3px vs 1px across
+  captures (solo runs: baseline 3, port 1, 1; one busy-box run additionally
+  tore 9px at k=37, never reproduced). All other isolated rows 0,
+  windowclose 0/0/40, integrated rows byte-identical incl. opening
+  72499/2691 and field 158950/5621. Oracle PARITY identical: wave first
+  divergence enemy_anim k=24 (mm_* k=43), mettaur no divergence (70/70).
+
 ---
 
 ## 2. Object dispatcher (T1/T3 tables → per-type entries → AI dispatch)
