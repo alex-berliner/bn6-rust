@@ -196,7 +196,7 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 - F33c NEGATIVE -- The integrated rows after F32: let the zero-enemy fixtures resolve where canon's battle resolves. resolve-flag hypothesis refuted with structure (warp 40628->83175 tried+reverted
 ### F33d. Post-0x0C simulation: act after the countdown starts instead of freezing in `over`  *(PARTIAL -- 2026-09-14, verifier verdict: canon citations CONFIRMED [sub_800801C:10422, off_8008038 table, sub_80081A4:10617, 0x0C@0x0)*
 
-**Result.** verifier verdict: canon citations CONFIRMED (sub_800801C:10422, off_8008038 table, sub_80081A4:10617, 0x0C@0x0800811E, sub_8012DFC:8977 not called from 0x0C handler, sub_801BED6 teardown, sub_802BD60:11549); scope/rules CONFIRMED (src/battle.rs only); watch-trace frame values + stall attribution UNCHECKED (worker assertions, disassembly-consistent); branch KEPT unmerged; verifier GLM Human session measured the kept branch from a clean checkout: chip-use integrated 567780 -> 275307, warp 40628 / buster 54672 / opening 72499 unchanged, field 158938 -> 159061 (+123, jitter class), all nine isolated canaries 0; landed as a verified partial (land.sh); the warp/buster ramps and chip-use's remainder stay open for the next integrated ticket.
+**Result.** verifier verdict: canon citations CONFIRMED (sub_800801C:10422, off_8008038 table, sub_80081A4:10617, 0x0C@0x0800811E, sub_8012DFC:8977 not called from 0x0C handler, sub_801BED6 teardown, sub_802BD60:11549); scope/rules CONFIRMED (src/battle.rs only); watch-trace frame values + stall attribution UNCHECKED (worker assertions, disassembly-consistent); branch KEPT unmerged; verifier GLM Human session measured the kept branch from a clean checkout and landed it (208c158) as a cited behaviour change with no pixel effect: all nine isolated canaries 0; integrated warp 40628 / buster 54672 / opening 72499 / field 159061 (+123 jitter) unchanged, and chip-use integrated reads 275307 on both sides of the merge -- its drop from 567780 came from F12's chip-use re-cut (1a3ca80), not from this branch. The warp/buster ramps and chip-use's 275307 stay open for the next integrated ticket.
 **Result.** post-0x0C split ported but no reduction: warp 40628/11744/30, buster 54672/12977/28, chip-use 275307/18091/30 all identical to baseline; field 158954->159061 (+107 k=5 show-frame only, mechanism unexplained, deterministic); isolated warp/buster/chip-use/field all 0; opening/cursor/windowclose byte-identical; stall attributed (synchronous show_results ~4-frame CPU, battle 109 never presented) but not reduced; k=0..23/0/0..3 pre-ramps 0 held; branch wt/f33d 7cd1f5c KEPT unmerged (acceptance unmet: stall not reduced, field +107); worker muse-spark
 **Files.** src/battle.rs, src/banner.rs
 
@@ -257,6 +257,23 @@ the same pose; measure its box alone. (3) The hand icon and the k=0 bracket on w
 HUD element mask on that capture (F27b/F33's dispatcher tables). Each change measured alone.
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
+
+### F38. The integrated rows after F33d: the results window's slide on warp/buster/chip-use, and opening integrated decomposed  *(OPEN -- 2026-09-14)*
+
+**Files.** src/results.rs, src/battle.rs (the end-sequence and results hand-off hunks only), tools/harness.py (the integrated rows' notes and descriptor fields)
+
+**Why.** With every BG layer 0 until the ramp (F33b) and inputs/objects running after the countdown (F33d),
+warp integrated 40628 (from k=24), buster 54672 (name 8862 on k=1..21 + ramp from k=22) and chip-use 275307
+are canon's RESULT window sliding in on frames where ours has none or a different one; F34/F34b took the
+result row itself to 0 with canon's driver chain (sub_802BD60 -> sub_802BE36 slide 16 px/frame -> the
+handover -> sub_802BF0C wait), so the window's content is right and what differs is WHEN and FROM WHICH
+state it starts on these rows: measure the sequencer (dword_203CA70) and the window driver's state on both
+sides per frame from the countdown to the first slide frame, and make ours enter the results screen at
+canon's frame from the zero-enemy end sequence. opening integrated 72499/2691/40 has never been decomposed:
+do it per layer and region first. field integrated 159061 keeps F33b/F33c's stall attribution.
+**Acceptance.** warp, buster, chip-use integrated 0 or their per-frame remainder with the sequencer traces;
+opening integrated decomposed with citations; every isolated row and the result row unchanged at 0;
+allowlist entries removed only for rows that read 0; nothing worse.
 
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-14, actor.rs naming landed ffe8bac: 39 bare->0 [9 provenance consts])*
 

@@ -1,3 +1,0 @@
-The chip-use row in the integrated variant (whole screen) across F33d. Once the RESULT countdown starts, canon's sequencer keeps running inputs and objects while ours had frozen everything in its end state; letting inputs and objects continue after the countdown, with the clock still gated as before, took this row from 567780 to 275307. The warp and buster variants did not move: their remainder is the results window itself sliding in, which the next integrated ticket takes on.
-
-chip-use (integrated), before and after: canon on top; ours at d2629f5 (275307 px over 30 frames, canon 130+k, rust offset 94); ours at 208c158 (275307 px, canon 130+k, rust offset 94). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
