@@ -23,14 +23,19 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    - **Always, free:** `python3 tools/verify_rows.py wt/<name> <every row the report names>
      --expect ROW=TOTAL/WORST/FRAMES/NEG ...` (values copied from the report; include the canary rows
      the ticket lists). A mismatch, a BLIND negative or a row that fails to run is a FAIL.
-   - **The `verifier` role, only when the ticket makes claims beyond harness lines** (a new tool, a
-     RAM/memory finding, "X causes Y", "Z was excluded", or any partial/blocked/negative outcome the
-     next ticket would build on). Its model comes from .pi/agents/verifier.md -- never pass a `model`
-     override, never use a worker as a verifier. Dispatch it with the claims already extracted:
+   - **The `verifier` role, only when BOTH hold: (a) the branch will be merged on this pass, AND
+     (b) the report makes a claim verify_rows cannot check** (a new or changed tool, a RAM address and
+     what it means, "X causes Y", "Z was excluded" with a named exclusion run). A DONE whose only
+     claims are harness lines (a row taken to zero, negative not blind) or a byte-identical release
+     build (naming-only diff) needs none: verify_rows PASS is the whole check. A PARTIAL, BLOCKED,
+     NEGATIVE or OPEN-without-merge needs none UNLESS you paste, in the verifier task, the single
+     forward-blocking claim quoted from the report plus the exact --peek/--watch/--watch-write
+     re-check that would refute it; "the next ticket may want context" is never a claim. Its model
+     comes from .pi/agents/verifier.md -- never pass a `model` override, never use a worker as a
+     verifier. Dispatch it with the claims already extracted:
      `{agent: "verifier", async: false, timeoutMs: 3600000, toolBudget: {soft: 20, hard: 30}, task:
      "Branch wt/<name>, commit <sha>. verify_rows output:\n<paste>\nClaims to check: (1) ... (2) ...
      (3) ... Do not re-run harness rows or re-read TODO.md."}`
-     A ticket whose only claim is harness lines (a row taken to zero, negative not blind) needs none.
 4. **Land or keep -- one landing at a time, never while another landing is in progress.** Merge only
    if the ticket's acceptance is met, verify_rows PASSes, the verifier (when dispatched) CONFIRMS every
    claim you build on, and `python3 tools/states.py build all` still builds what it builds today when
