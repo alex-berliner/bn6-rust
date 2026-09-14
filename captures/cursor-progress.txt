@@ -1,3 +1,3 @@
-F37b-F37g+T4: pan, pose, icon, object-Y, bracket, closing mark, anim port; cursor 154361->23 (k97 tear class)
+T5 object dispatcher ported: table and dispatch with citations; isolated rows 0, cursor tear 15->1
 
-cursor (isolated), before and after: canon on top; ours at 3347893 (154361 px over 170 frames, canon 15+k, rust offset 237); ours at f322bf9 (23 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
+cursor (isolated), before and after: canon on top; ours at b8b45ad (15 px over 170 frames, canon 15+k, rust offset 237); ours at 163293b (1 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
