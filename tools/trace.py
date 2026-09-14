@@ -189,7 +189,7 @@ def scenario_side(scen: dict, side: str) -> H.Side:
     if "harness_row" in scen:
         checks = [c for c in H.CHECKS if c.name == scen["harness_row"]]
         assert checks, scen
-        got = (check.canon if side == "canon" else check.rust)("isolated")
+        got = (checks[0].canon if side == "canon" else checks[0].rust)("isolated")
         return with_trace(got) if side == "rust" else got
     spec = dict(scen[side])
     if side == "rust":
