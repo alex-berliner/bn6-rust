@@ -314,6 +314,14 @@ fn main(mut gba: agb::Gba) -> ! {
         // the backdrop's art step (see its doc comment), it does not tick.
         write_battle_marker(0, 0);
         let mut battle_frame: u32 = 0;
+        // T1b gate: FLAG_TRACE (src/fixture.rs) read once per battle --
+        // the descriptor is stable (the harness pokes identical bytes
+        // every frame, which is what the startup `fixture::read()`
+        // already relies on). The frame path below keeps one taken-never
+        // branch when clear: no snapshot computation, none of the 64
+        // stores. Set only by tools/trace.py recordings; clear on every
+        // pixel-row descriptor and every boot with no descriptor.
+        let trace_on = fixture::trace_enabled();
         // The very first `commit()` this program ever calls does not
         // actually reach the screen. `VBlank::get()` records the vblank
         // count once, early, inside `gba.graphics.get()` above; by the time
@@ -357,7 +365,12 @@ fn main(mut gba: agb::Gba) -> ! {
             // the same-block anim/panel bytes flipping on the same k as
             // canon's CurAnim/PanelX/Y with identical per-k pixel seqs.
             write_oracle_block(&battle.oracle_snapshot(battle_frame));
-            write_trace_block(&battle.trace_snapshot(battle_frame));
+            // T1b gate (see `trace_on` above): off skips the snapshot
+            // computation and all 64 stores; on writes the block every
+            // frame like the oracle's.
+            if trace_on {
+                write_trace_block(&battle.trace_snapshot(battle_frame));
+            }
             if clocks_visible {
                 write_battle_marker(BATTLE_MAGIC, battle_frame);
                 battle_frame += 1;

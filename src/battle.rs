@@ -1611,7 +1611,7 @@ impl<'a> Battle<'a> {
     /// |  8  | u32 battle frame | -- (canon has no battle-frame word; R6) | same counter as oracle_snapshot |
     /// | 12  | u32 primary RNG | 0x020013f0 ePrimaryRngSeed (ewram.s:262) | primary_rng.state() |
     /// | 16  | u16 MM state\|action<<8 | 0x0203a9b8 (BattleObject+8) | oracle_fields |
-    /// | 18  | u8 MM anim, u8 panel_x, u8 panel_y, u8 mercy | +0x10/+0x12/+0x13, mercy [CollisionDataPtr]+0x24 | oracle_fields (+mercy) |
+    /// | 18  | u8 MM anim, u8 panel_x, u8 panel_y, u8 mercy | +0x10/+0x12/+0x13, mercy [CollisionDataPtr]+0x24 | oracle_fields (+mercy accessor, T1b) |
     /// | 22  | u16 MM timer, u16 MM hp | +0x20/+0x24 | oracle_fields |
     /// | 26  | u16 E1 state\|action<<8, u8 anim, u8 panel_x, u8 panel_y | first populated enemy slot +8... | oracle_fields of enemies.first() |
     /// | 32  | u16 E1 timer (0), u16 E1 hp | slot +0x20/+0x24 | as above (timer unsupported, R6) |
@@ -1638,7 +1638,7 @@ impl<'a> Battle<'a> {
         b[18] = mm.anim; // trace snapshot layout, see the table above
         b[19] = mm.panel_x; // trace snapshot layout, see the table above
         b[20] = mm.panel_y; // trace snapshot layout, see the table above
-        b[21] = mm.mercy; // trace snapshot layout, see the table above
+        b[21] = self.megaman.mercy(); // trace snapshot layout, see the table above (accessor, not OracleFields: keeps the oracle path's struct identical to main, T1b)
         b[22..24].copy_from_slice(&mm.timer.to_le_bytes()); // trace snapshot layout, see the table above
         b[24..26].copy_from_slice(&mm.hp.to_le_bytes()); // trace snapshot layout, see the table above
         if let Some(enemy) = self.enemies.first() {

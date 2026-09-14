@@ -33,6 +33,7 @@ mechanisms differ (banner phase mapping, camera, backdrop phase).
 """
 
 import argparse
+import dataclasses
 import json
 import os
 import struct
@@ -162,17 +163,39 @@ def rows_of(path: str, width: int) -> list:
     return [data[i * width:(i + 1) * width] for i in range(len(data) // width)]
 
 
+#: The rust-side trace-enable bit (T1b): src/fixture.rs FLAG_TRACE, bit 7
+#: of the descriptor's flags byte. Recordings OR it into the rust fixture
+#: so the ROM writes the TRC2 block every frame; pixel rows leave it clear
+#: and run byte-identical to a build without the export (field integrated
+#: back at 158950). Per-frame --cheat delivery, like every other flag, so
+#: it survives boot -- never a one-shot --poke.
+TRACE_FLAG = 0x80
+
+
+def with_trace(side: H.Side) -> H.Side:
+    """The same side with the trace export switched on (recordings only)."""
+    if side.fixture is not None:
+        fixture = dict(side.fixture)
+        fixture["flags"] = fixture.get("flags", 0) | TRACE_FLAG
+        return dataclasses.replace(side, fixture=fixture)
+    # No descriptor on this side: plant just the flags word (descriptor
+    # +18: low byte gauge, high byte flags) -- trace_enabled reads the raw
+    # byte with no magic check, so this still switches the export on.
+    return dataclasses.replace(
+        side, cheats=tuple(side.cheats) + ("0x02000052:0x8000",))
+
+
 def scenario_side(scen: dict, side: str) -> H.Side:
     if "harness_row" in scen:
         checks = [c for c in H.CHECKS if c.name == scen["harness_row"]]
         assert checks, scen
-        check = checks[0]
-        return (check.canon if side == "canon" else check.rust)("isolated")
+        got = (check.canon if side == "canon" else check.rust)("isolated")
+        return with_trace(got) if side == "rust" else got
     spec = dict(scen[side])
     if side == "rust":
-        return H.Side(rom=H.plain_rom(), fixture=spec.pop("fixture"),
+        return with_trace(H.Side(rom=H.plain_rom(), fixture=spec.pop("fixture"),
                       script=spec.pop("script", None),
-                      extra=tuple(spec.pop("extra", ())), **spec)
+                      extra=tuple(spec.pop("extra", ())), **spec))
     return H.Side(**spec)
 
 

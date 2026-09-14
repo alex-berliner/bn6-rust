@@ -406,12 +406,6 @@ pub struct OracleFields {
     pub timer: u16,
     /// canon's HP u16 at BattleObject+0x24 (BattleObject.inc:101).
     pub hp: u16,
-    /// Post-hit invulnerability remaining: canon's mercy counter at
-    /// [CollisionDataPtr]+0x24 (CollisionDataPtr is BattleObject+0x54,
-    /// BattleObject.inc:144; measured 119..0 after a shockwave hit on the
-    /// mettaur row's own canon capture, 2026-09-14, T1) vs this actor's
-    /// own `mercy` (PLAYER_MERCY_FRAMES = 120, same scale by construction).
-    pub mercy: u8,
 }
 
 /// Invisibl hides the navi while bit 1 of its timer is set (see `show`).
@@ -722,8 +716,21 @@ impl Actor {
             panel_y: self.row as u8,
             timer,
             hp: self.hp,
-            mercy: self.mercy,
         }
+    }
+
+    /// Post-hit invulnerability remaining for the state-trace export
+    /// only (T1b): canon's mercy counter at [CollisionDataPtr]+0x24
+    /// (CollisionDataPtr is BattleObject+0x54, BattleObject.inc:144;
+    /// measured 119..0 after a shockwave hit on the mettaur row's own
+    /// canon capture, 2026-09-14, T1) vs this actor's own `mercy`
+    /// (PLAYER_MERCY_FRAMES = 120, same scale by construction). A
+    /// separate accessor -- NOT a field of `OracleFields` -- so the
+    /// oracle path's per-frame struct stays the exact bytes main builds
+    /// (a wider return-by-value copy costs cycles every frame, T1b
+    /// measured +6 on field integrated); read only while tracing.
+    pub fn mercy(&self) -> u8 {
+        self.mercy
     }
 
     /// The panel the actor currently stands on, 1-based. During a warp this is
