@@ -51,7 +51,8 @@ def plain(text):
 
 
 def numbers(s):
-    return set(re.findall(r"0x[0-9a-fA-F]+|\d[\d.,]*", s))
+    """the numbers a text states: hex values and digit runs (with inner separators; trailing punctuation is not a digit)"""
+    return set(re.findall(r"0x[0-9a-fA-F]+|\d+(?:[.,]\d+)*", s))
 
 
 def model_paragraph(tid, title, status, result, facts):
@@ -78,7 +79,7 @@ def model_paragraph(tid, title, status, result, facts):
         if last: break
     last = re.sub(r"\s+", " ", last).strip()
     if not last or len(last.split()) > 130: return ""
-    if numbers(last) - numbers(facts): return ""          # invented a number
+    if numbers(last) - numbers(facts + " " + tid + " " + title): return ""          # invented a number
     if re.search(r"/tmp/|wt/|worktree|\bbranch\b", last): return ""
     return last
 
