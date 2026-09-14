@@ -3,6 +3,25 @@
 //! The binary layout is produced by `tools/spr_export.py`; see that file for
 //! the format. Multi-byte fields are read byte-wise because the asset is
 //! embedded with `include_bytes!` and ARM7TDMI faults on unaligned word loads.
+//!
+//! `Player` is a port of the ROM animation bytecode player, steps 1-2 of
+//! docs/coverage/plan-interpreters.md §1.4: the bind path
+//! (`_sprite_loadAnimationData`, reference/bn6f/asm/asm38.s:1667-1719) and
+//! the normal-stream tick with its `Unk_05` output (`_sprite_update`,
+//! reference/bn6f/asm/asm38.s:1722-1793). The BNSP asset carries the same
+//! tables flattened at export time: one command stream per animation, each
+//! command a (frame-select, duration, flags) triple. The exporter
+//! pre-resolved the frame-select (`cmd[0]`, which the ROM scales by 4 to
+//! index the pointer table at `[Unk_1c+0xC]`, asm38.s:1779-1788) into the
+//! frame's own (gfx, pal, OAM range); `duration` is the ROM command byte 1
+//! (loaded into `Unk_01` by the bind, decremented by the tick at
+//! asm38.s:1725-1729) and `flags` the ROM command byte 2 (loaded into
+//! `Unk_02`, tested for end-of-stream at asm38.s:1737-1738 and loop at
+//! asm38.s:1770). `Unk_05` (emitted by the bind at asm38.s:1717 and by the
+//! tick at asm38.s:1790) is the selected OAM list's first entry byte 4
+//! shifted right 4 -- that entry's palette bank, which `sub_8002818` adds
+//! to the base palette when drawing the frame
+//! (reference/bn6f/asm/sprite.s:254-302).
 
 use agb::display::object::{DynamicSprite16, PaletteVramSingle, Size, SpriteVram};
 use agb::display::{Palette16, Rgb15};
@@ -161,20 +180,47 @@ pub struct Part {
 /// being hit, and the Mettaur's wave covers him whenever that happens.
 const WHITE: u16 = 0x7ffe; // provenance: peeked -- measured across three captures/476 frames (see the doc comment above); the exact flash use-case itself is flagged NOT VERIFIED there
 
+/// End-of-stream bit of a command's flags byte (ROM command byte 2,
+/// `Unk_02`): `_sprite_update` tests it at asm38.s:1737-1738 and, when set,
+/// either loops or holds the last frame instead of advancing to the next
+/// command. Every shipped asset sets it exactly on each animation's last
+/// frame (scanned all assets/*.bin: no mid-stream use, no missing last).
+const CMD_END: u8 = 0x80; // provenance: derived -- `_sprite_update`'s `tst r0, r2` with r2 = 0x80, reference/bn6f/asm/asm38.s:1737-1738
+/// Loop bit: with `CMD_END` set, the stream restarts through
+/// `_sprite_loadAnimationData` (asm38.s:1770-1776) instead of holding.
+const CMD_LOOP: u8 = 0x40; // provenance: derived -- `_sprite_update`'s `tst r0, r2` with r2 = 0x40, reference/bn6f/asm/asm38.s:1770
+
 pub struct Player {
     assets: Assets,
+    /// `Unk_00`: the bound animation index, written by `sprite_setAnimation`
+    /// (reference/bn6f/asm/sprite.s:1130) and consumed by the bind.
     anim: usize,
+    /// Flattened `Unk_20`: index of the current command in the animation's
+    /// stream. The ROM steps it by one 3-byte command (`add r1, #3`,
+    /// asm38.s:1740); ours steps by one flattened frame.
     frame_in_anim: usize,
-    ticks_left: u8,
+    /// `Unk_01`: remaining ticks on the current command. The bind loads it
+    /// from command byte 1 (`_sprite_loadAnimationData`, asm38.s:1667-1719);
+    /// the tick decrements it and consumes commands while it goes negative
+    /// (asm38.s:1725-1729).
+    countdown: u8,
+    /// `Unk_02`: the current command's flags byte (command byte 2).
+    cmd_flags: u8,
+    /// `Unk_05`: the emitted frame key -- the selected OAM list's first
+    /// entry byte 4 shifted right 4, i.e. that entry's palette bank. The
+    /// bind emits it (asm38.s:1717) and the tick re-emits it (asm38.s:1790).
+    /// Our renderer resolves palettes per frame/OAM entry in `load_frame`,
+    /// so this is stored for the trace tooling rather than consumed here.
+    unk05: u8,
     /// Added to every frame's palette index, as the game's temp attack
     /// objects add byte_80B8BD4's palette byte (HiCannon's barrel is the
     /// Cannon's with palette 1, M-Cannon's with 2).
     palette_add: usize,
-    /// Set by `new` and `play`: the frame just loaded is drawn this frame
-    /// and its duration counts from the next, as the game's sprites do (an
-    /// animation set during an object's update shows its first frame for
-    /// the full duration; verified frame-for-frame against the real ROM).
-    fresh: bool,
+    /// The hold state. The ROM keeps no latch: at end-of-stream without loop
+    /// it parks `Unk_01 = 1` (asm38.s:1772-1774) and re-consumes the end
+    /// marker every other tick, holding the last frame. Re-consuming is
+    /// display-identical to stopping, so the port latches here instead and
+    /// the game logic polls it through `finished()`.
     done: bool,
     /// The palette currently in VRAM and the index it came from. Frames of one
     /// animation almost always share a palette, so this avoids reallocating it
@@ -214,9 +260,10 @@ impl Player {
             assets,
             anim,
             frame_in_anim: 0,
-            ticks_left: 0,
+            countdown: 0,
+            cmd_flags: 0,
+            unk05: 0,
             palette_add: 0,
-            fresh: true,
             done: false,
             palette: None,
             offset_palettes: Default::default(),
@@ -227,17 +274,37 @@ impl Player {
             offsets_follow_shift: false,
             parts: Vec::new(),
         };
+        p.bind(anim);
         p.load_frame();
         p
+    }
+
+    /// Bind `anim`: the port of `_sprite_loadAnimationData`'s normal path
+    /// (`Unk_03 & 0x80 == 0`, asm38.s:1667-1719). Point at the stream's first
+    /// command, load its duration into the countdown (`Unk_01`) and its
+    /// flags into `cmd_flags` (`Unk_02`); `Unk_05` is emitted in
+    /// `load_frame` (asm38.s:1717). Like the ROM bind, this does not tick:
+    /// the countdown covers the bind frame, and the next `update` -- whether
+    /// it runs later this frame (`object_updateSprite` rebinds then ticks,
+    /// asm00_2.s:25044-25100) or next frame -- decrements it first.
+    /// (`sprite_setAnimation`'s `Unk_00` write itself is step 3, T4b; the
+    /// alt-stream branch is step 3 too.)
+    fn bind(&mut self, anim: usize) {
+        self.anim = anim;
+        self.frame_in_anim = 0;
+        let (first, _) = self.assets.anim(anim);
+        let cmd = self.assets.frame(first);
+        // Durations are 1-based on both sides: the exporter already writes
+        // `f.duration or 1`, so this only guards hand-built assets.
+        self.countdown = cmd.duration.max(1);
+        self.cmd_flags = cmd.flags;
+        self.done = false;
     }
 
     /// Restart on `anim`, even if it is already the current one, so a one-shot
     /// animation can be replayed.
     pub fn play(&mut self, anim: usize) {
-        self.anim = anim;
-        self.frame_in_anim = 0;
-        self.done = false;
-        self.fresh = true;
+        self.bind(anim);
         self.load_frame();
     }
 
@@ -255,11 +322,7 @@ impl Player {
         // keeps the palette it was built with -- PoisSeed's pod, whose every
         // part carries offset 9, stayed IceSeed's cyan however it was shifted.
         self.offset_palettes = Default::default();
-        let ticks = self.ticks_left;
-        let fresh = self.fresh;
         self.load_frame();
-        self.ticks_left = ticks;
-        self.fresh = fresh;
     }
 
     pub fn parts(&self) -> &[Part] {
@@ -281,8 +344,14 @@ impl Player {
     /// does not count down a fixed timer, it waits for its own animation to
     /// come back around to this frame.
     pub fn on_last_frame(&self) -> bool {
-        let (first, _) = self.assets.anim(self.anim);
-        self.assets.frame(first + self.frame_in_anim).flags & 0x80 != 0
+        self.cmd_flags & CMD_END != 0
+    }
+
+    /// The emitted frame key (`Unk_05`): the current frame's OAM list's
+    /// first entry byte 4 shifted right 4, i.e. its palette bank. Stored
+    /// for the trace tooling; the renderer resolves palettes itself.
+    pub fn unk05(&self) -> u8 {
+        self.unk05
     }
 
     /// Draw every part solid white, or normally again. Rebuilds the current
@@ -292,9 +361,7 @@ impl Player {
             return;
         }
         self.white_on = on;
-        let ticks = self.ticks_left;
         self.load_frame();
-        self.ticks_left = ticks;
     }
 
     /// Which animation this player is on, and how far into it. With
@@ -314,6 +381,13 @@ impl Player {
     pub fn frozen_at(assets: Assets, anim: usize, frame_in_anim: usize) -> Self {
         let mut p = Self::new(assets, anim);
         p.frame_in_anim = frame_in_anim;
+        // Keep the command state consistent with the frozen frame, as the
+        // bind would have left it had the stream run there: `on_last_frame`
+        // and `unk05` read the current command, not frame 0's.
+        let (first, _) = p.assets.anim(anim);
+        let cmd = p.assets.frame(first + frame_in_anim);
+        p.countdown = cmd.duration.max(1);
+        p.cmd_flags = cmd.flags;
         p.done = true;
         p.load_frame();
         p
@@ -325,40 +399,83 @@ impl Player {
             return;
         }
         self.red_on = on;
-        let ticks = self.ticks_left;
         self.load_frame();
-        self.ticks_left = ticks;
     }
 
-    /// Advance by one hardware frame, loading the next animation frame when the
-    /// current one's duration expires. A one-shot animation holds its last
-    /// frame rather than wrapping; the caller decides what to play next.
+    /// Advance by one hardware frame: the port of `_sprite_update`'s normal
+    /// stream (reference/bn6f/asm/asm38.s:1722-1790; the `Unk_03 & 0x80`
+    /// alt-stream branch at asm38.s:1747-1766 is step 3, T4b). Decrement the
+    /// countdown; while it goes negative, consume commands: at
+    /// end-of-stream loop through a rebind or hold the last frame, else
+    /// step to the next command and reload. Every exit re-emits `Unk_05`
+    /// (asm38.s:1790, in `load_frame`). A one-shot holds its last frame
+    /// rather than wrapping; the caller decides what to play next.
     pub fn update(&mut self) {
         if self.done {
             return;
         }
-        if self.fresh {
-            self.fresh = false;
-            return;
-        }
-        self.ticks_left = self.ticks_left.saturating_sub(1);
-        if self.ticks_left > 0 {
-            return;
-        }
-        let (first, count) = self.assets.anim(self.anim);
-        if self.assets.frame(first + self.frame_in_anim).flags & 0x40 == 0
-            && self.frame_in_anim + 1 >= count
-        {
+        // Decrement-then-compare (asm38.s:1725-1729: `ldrb r0, [Unk_01]` /
+        // `sub r0, #1` / `strb` / `cmp r0, #0` / `bge` to the emit tail): the
+        // compare is on the full register, so 0 goes to -1 and consumes
+        // while anything else keeps displaying the current command --
+        // including durations above 127 (vulcan_fireball holds a frame for
+        // 255 ticks), which a signed-byte view of the countdown would
+        // misread as negative.
+        loop {
+            if self.countdown == 0 {
+                // Countdown ran out: the register went negative, so consume
+                // the current command (below). Its flags live in `cmd_flags`
+                // as the ROM keeps them in `Unk_02` (asm38.s:1735-1738:
+                // `ldrb r0, [r1,#2]` then `tst r0, 0x80`).
+                self.countdown = 0xFF; // canon: the `strb` of r0 = -1 at asm38.s:1727; reloaded below before it can tick
+            } else {
+                self.countdown -= 1;
+                return;
+            }
+            let (first, count) = self.assets.anim(self.anim);
+            if self.cmd_flags & CMD_END == 0 && self.frame_in_anim + 1 < count {
+                // Next command (`add r1, #3`, asm38.s:1740): reload the
+                // countdown and flags (asm38.s:1742-1745), then keep
+                // consuming (asm38.s:1746 branches back to the decrement).
+                self.frame_in_anim += 1;
+                let cmd = self.assets.frame(first + self.frame_in_anim);
+                self.countdown = cmd.duration.max(1);
+                self.cmd_flags = cmd.flags;
+                self.load_frame();
+                continue;
+            }
+            if self.cmd_flags & CMD_LOOP != 0 {
+                // Loop: restart through the bind (asm38.s:1776:
+                // `bl _sprite_loadAnimationData`), then keep consuming
+                // (asm38.s:1777 branches back to the decrement).
+                self.bind(self.anim);
+                self.load_frame();
+                continue;
+            }
+            // Hold: park the countdown at 1 (asm38.s:1772-1774: `mov r4, #1`
+            // then `strb`) and fall through to the decrement above, which
+            // takes it to 0 and re-emits the last frame; the next tick
+            // re-consumes this same end marker. Latch `done` for the game
+            // logic polling `finished()` instead of re-consuming forever:
+            // display-identical.
+            self.countdown = 1; // canon: `_sprite_update` parks Unk_01 = 1, asm38.s:1772-1774
             self.done = true;
-            return;
         }
-        self.frame_in_anim = (self.frame_in_anim + 1) % count;
-        self.load_frame();
     }
 
     fn load_frame(&mut self) {
         let (first, _) = self.assets.anim(self.anim);
         let frame = self.assets.frame(first + self.frame_in_anim);
+        // Emit `Unk_05` (bind tail asm38.s:1717, tick tail asm38.s:1790):
+        // the selected OAM list's first entry byte 4 shifted right 4.
+        // The asset stores that nibble as the entry's `pal_offset`
+        // (`tools/spr_export.py` packs `pal_offset << 4`; `sub_8002818`
+        // draws the frame with palette `Unk_04 + Unk_05`).
+        self.unk05 = if frame.oam_count == 0 {
+            0
+        } else {
+            self.assets.oam(frame.oam_first as usize).pal_offset
+        };
         let tiles = self.assets.gfx(frame.gfx as usize);
         // The outgoing sprites hold the only other references to the previous
         // palette, so they go first; otherwise its slot is still occupied when
@@ -446,7 +563,7 @@ impl Player {
                 vflip: e.vflip,
             });
         }
-
-        self.ticks_left = frame.duration.max(1);
+        // Timing stays in `bind`/`update`: rebuilding the frame's VRAM
+        // (palette swaps, stills) must not disturb the countdown.
     }
 }
