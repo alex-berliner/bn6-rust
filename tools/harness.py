@@ -1132,21 +1132,27 @@ ZERO_ENEMY_ORIGIN = 8
 # derivation F26b is doing for cursor/windowclose. Deliberately not attempted
 # here: it is the backdrop's mechanism, not the HUD's.
 #
-# AND ONE MORE THING the field row's own alignment hides: our battle ENDS at
-# rust capture frame 116 (battle frame 108). `Battle::update` returns true,
-# src/main.rs:315 breaks the loop and builds a NEW battle, whose window opens
-# at once (FLAG_OPEN_WINDOW), so from capture 121 the capture shows a second
-# battle with `filler_bg` skipped and every layer one hardware BG lower
-# (measured: rust BG1 is byte-identical on captures 116..120 -- frozen -- and
-# rust BG0 carries the backdrop from 121, where canon's BG0 is empty). The
-# search band range(60,110) now bottoms at 108, i.e. with k=0 exactly on that
-# freeze; the row's own note documents the EVENT lock at ~81 (banner canon
-# 49 <-> rust 8, mark canon 163 <-> rust 121). At 81 the row reads 497776
-# with the backdrop residue nearly halved (172039 outside the HUD region
-# against 261797 at 108) and the RESULT-window mismatch correspondingly
-# larger. Neither alignment is left as an act of this ticket -- no alignment
-# was changed here -- but no HUD number from this row is worth much past
-# k=27 until the end sequence lasts as long as canon's (F32).
+# AND ONE MORE THING about the field row in particular, measured on its own
+# rust capture: our end sequence runs 30-odd frames early and then stalls.
+# The gauge goes at capture 117 (a 1596 px change), captures 117, 118, 119
+# and 120 are BYTE-IDENTICAL to each other (a three-frame stall: the backdrop
+# does not scroll, and it scrolls on every other frame before and after), and
+# from capture 121 `self.shown` is Some, so battle.rs:3594-3595 skips
+# `filler_bg` and every layer drops one hardware BG -- measured: from 121 our
+# BG0 carries the backdrop where canon's BG0 is empty, our BG1 the field
+# panels, our BG2 the HP box, our BG3 the RESULT window. Canon's RESULT
+# window does not begin its slide until canon 154. So `--only-bg N` is a
+# same-content comparison on this row only for k=0..4, and no number past
+# there is attributable by layer at all. On k=0..4: BG0 0, BG1 (backdrop)
+# 18508..17607 px/frame, BG2 (panels) 0, BG3 (HUD) 2047 px/frame.
+# The search band range(60,110) bottoms at 108, which puts k=0 one frame
+# before that stall; the row's own note documents the EVENT lock at ~81
+# (banner canon 49 <-> rust 8, mark canon 163 <-> rust 121). At 81 the row
+# reads 497776, with the residue outside the HUD region nearly halved
+# (172039 against 261797 at 108) and the RESULT-window mismatch
+# correspondingly larger. No alignment was changed by this ticket -- but no
+# HUD number from this row is worth much past the stall until the end
+# sequence lasts as long as canon's (F32).
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
