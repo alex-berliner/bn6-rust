@@ -130,8 +130,9 @@ intervention is named but untested
 - F18c PARTIAL -- `windowclose` isolated: the relocated k=9/k=10 close-frame blank/redraw. windowclose 651885/28430->650544/27555/40 (BG3 k9 1898->0, k10 1408->0, k11 0->1596
 - F18d DONE -- `windowclose` isolated: the k11 gauge-body single-step redraw. windowclose 650544/27555/40->648948/27391/40 (BG3 k11 1596->0, x48-191 y0-15)
 - F21d DONE -- `result`: write the window's tilemap by block copy, not 576 managed tile writes. result 408337/31895->102547/14866/40 (neg 195579 not blind), field 1048/177->0/0/40
-### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-14, chip-use re-cut landed 1a3ca80: chip-use isolated 9514/1185/32->0/0/30 [neg 7768 not blind])*
+### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(DONE -- 2026-09-14, every chip row reads 0: the last two were areagrab [orb draw order + burst palette walk, ad653c0] and chip-use)*
 
+**Result.** every chip row reads 0: the last two were areagrab (orb draw order + burst palette walk, ad653c0) and chip-use, re-cut F31b-style so canon fires its Cannon via an AIData A-tap poke (1a3ca80; the old row was vacuous), 9514/1185/32 -> 0/0/30 (neg 7768 not blind). 43 of 43 chip rows at 0; the multi-pass ticket's end condition is met (closed by the human session, 2026-09-14 03:30).
 **Result.** chip-use re-cut landed 1a3ca80: chip-use isolated 9514/1185/32->0/0/30 (neg 7768 not blind); old scripted A@150 refused in 0x0C (verifier CONFIRMED vacuity), AIData A-tap poke@130 fires canon Cannon (CurAction 0x08->0x14 CONFIRMED), both fire at offset 101; window stops pre-result-mark (buster stop); OPEN stays: canon 4f tail, 1f watch ambiguity, canon-side k=12 RNG slip (pixel-invisible); areagrab 0 held; HEAD re-check MATCH; worker branch TODO-stamp dropped by coordinator; worker muse-spark, verifier GLM
 **Result.** areagrab remainder landed ad653c0: chip-areagrab 1278/684/77->0/0/77 (neg 28276 not blind); wave/window/opening/chip-cannon/minibomb/3xseeds 0 held; chip-use 9514/1185/32 held for next pass; field-integrated +2 layout-jitter (verifier CONFIRMED dead-path); verifier ACCEPT with caveat (canon OAM y-descending order cited-not-reproduced, asm31.s:30497 anchor confirmed); HEAD re-check MATCH; worker muse-spark, verifier GLM
 **Result.** areagrab orbs: 25644->1278/684/77 (byte-proof extraction 67e3f4e2, 36c3a22 KEPT: acceptance 0 unmet); verifier CONFIRMED asset bytes + Z<=0 landing + held-art/burst-next in disassembly + scope/rules clean (palette/spawn-k consistent-unchecked; k=76 burst-bank unchecked but arithmetically forced); residual = burst bank + dim shading (dim undrawn, out of scope); stale fitted tag on AREAGRAB_PRESENTATION=77 noted for follow-up; cursor -15; worker muse-spark 83 turns $0.055, verifier GLM Landed on main by the human session at 68535fb as a verified partial (land.sh, verify_rows on chip-areagrab 1278/684/77 plus five canaries); the burst bank and dim shading stay with F12.
@@ -213,6 +214,24 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 - F35 PARTIAL -- Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art. mechanism mapped+cited, fix reverted honestly (scanline-6 wait: BG1 62->184/0->571 -- copy smear)
 - F35b BLOCKED -- Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline. fast copy 11->1 scanline works as mechanism but fixed placement fails both ways (vblank copy leaves 88, scanline-6 leaves 3007) -- canon usu
 - F36 DONE -- The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry). export placement verified frame-accurate (post-commit test strictly worse, reverted)
+### F37. `cursor` and `windowclose`: the sprite layer, object by object  *(OPEN -- 2026-09-14)*
+
+**Files.** src/ai.rs, src/hud.rs, src/emotion.rs, tools/harness.py (the cursor and windowclose rows' notes and CUSTMATCH_ROW/CURSOR_ROW/WINDOWCLOSE_ROW descriptor fields)
+
+**Why.** Both rows have every BG layer at 0 (F26b, F29, F33) and everything left is OBJ: cursor ~154k
+over 170 frames (F26b's partition: after F33 fixed the emotion window's x, the remainder is the y107..159
+band, ~154360 px-frames) and windowclose 27819 over 40 frames (F29: the Mettaur's phase, flat ~205
+px/frame from k=10, plus the HP boxes / hand icon on k<10). Nobody has split either by object with
+canon's OAM. Decompose per object on both sides (OAM dumps per frame: MegaMan, the Mettaur, the HUD
+objects, the emotion window), name each object's first differing frame and its mechanism with a canon
+citation: the Mettaur's state during a custom screen (canon pauses the battle; what does its object do,
+sub_8109DEC family) against ours, the HUD element mask on these rows (F27b/F33's dispatcher tables), the
+descriptor's enemy fields (F28/F28b's peeked mid-battle state) for the Mettaur's phase at the row's
+canon_ref. Fix what has a citation and a measured delta; seed through the descriptor only what canon's
+RAM at canon_ref says (peeked provenance).
+**Acceptance.** a per-object table for both rows; cursor and windowclose as low as the fixes take them,
+each fix measured alone; window, card, wave, opening, chip-cannon, mettaur, popup, result 0; nothing worse.
+
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 
 **Result.** battle.rs naming: 110 bare lines/38 values->0/0 (~60 consts); release .text md5-identical, .gba same size 553172B cmp-l 29 rodata panic-tables only; full table all 60 rows ran non-blind + rollup PASS (3x2600f); buster 3172 pre-existing; landed 67f2a7d; ticket OPEN for actor.rs; worker muse-spark 92 turns $0.052, no verifier
