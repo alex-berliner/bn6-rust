@@ -221,6 +221,36 @@ STATES = [
              "40 frames from two builds diff to 0 pixels.",
     ),
     State(
+        name="battlestart_gunner",
+        path="/tmp/battlestart_gunner.state",
+        root=False,
+        rom=REAL,
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),
+        # battlestart's own roll-open pokes PLUS T9b's frame-60 lever: a
+        # one-shot write of iCurrFrame (0x0200a210) 0x372 -> 0x371 makes the
+        # frame-60 encounter roll pick BattleSettings record 6 = 0x080b4bd8
+        # (setup byte_80B5347) instead of record 7 (0x080b4be8, the 3
+        # Mettaurs battlestart rolls naturally).
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0",
+                 "60:0x0200a210:0x371"),
+        frames=79,
+        description="A battle's real frame 0 whose encounter roll picked the "
+                     "Mettaur+Gunner record (T9b's frame-60 iCurrFrame lever). "
+                     "Base for the harness's gunner row.",
+        note="VERIFIED (ticket T9c). Recipe = battlestart's own plus the "
+             "iCurrFrame lever above; both re-measured on the built state's own "
+             "recipe run with --watch: chosen BattleSettings ptr 0x02001b9c reads "
+             "0x080b4bd8 from capture frame 60 on (never 0x080b4be8), and the "
+             "enemy BattleObject slots populate at capture frame 148 -- slot0 "
+             "panel (5,2) / NameID 0x0001 / HP 0x0028 (Mettaur, object at "
+             "0x0203aa88: panel +0x12 = 0x0205, NameID +0x28 = 0x0001, HP +0x24 "
+             "= 0x0028) and slot1 panel (6,3) / NameID 0x0085 / HP 0x003c (the "
+             "Gunner, object at 0x0203ab60), slot2 stays empty. Build time: "
+             "~0.15s.",
+    ),
+    State(
         name="emptyfield_start",
         path="/tmp/emptyfield_start.state",
         root=False,
