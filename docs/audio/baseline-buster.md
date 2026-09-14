@@ -83,8 +83,9 @@ stated length mismatch) and it is reported as one.
   event-paired frame for frame, and the tool is not asked to pretend they are.
 - differing samples: 639328 of 639402 COMPARED (99.9884%); the tool skips
   2140 L+R pairs where per-frame lengths differ (frame 0 alone is 1371 of
-  them) and now reports every mismatched frame, so the skip is visible
-  rather than silently compared at min(na, nb).
+  them) and counts all 106 per-frame length defects while listing only the
+  first 10 in detail ("... (96 more)"), so the skip is visible rather than
+  silently compared at min(na, nb).
 - max |Δ|: L 21956 (frame 119, offset 1438), R 19378 (frame 93, offset 1272).
 
 ## 3. Negative fixtures (both must read non-zero — they do)
@@ -129,7 +130,14 @@ press's own measured consequence:
 
 The blip's own body is frames 135..142: a partial-frame onset at press+5,
 peak 9179 at 136, decaying to 2123 by 142 — about 8 frames, beside the
-ROM-data reading of a 7-tick gate. From frame 143 the difference does NOT
+ROM-data reading of a 7-tick gate. Both of those numbers are peaks/RMS of
+the SUBTRACTION, not of the channel: the soloed ch0 in 135..142 is a
+channel where the blip has REPLACED the music the control subtracts, so
+the subtraction's peak there (9179) is not canon's own peak on that frame
+(8366) — label accordingly when quoting either. And the decay endpoint is
+measured against the ~3000 unattributed post-fire divergence floor the
+next paragraph disclaims: by 142 the difference has already decayed INTO
+that floor, so "2123" bounds the tail, it does not measure the blip alone. From frame 143 the difference does NOT
 go back to zero: it stays near RMS 3000 to the end of the capture. That
 sustained part is post-fire divergence between the pressed run and the
 control (the fired shot changes state the music and scene read), NOT the
@@ -172,8 +180,12 @@ One frame apart, not equal.
   This ticket names the channel, not the routine (the hit path in
   src/battle.rs is the suspect; fixing it is a src ticket this one feeds).
 - Canon's blip envelope, now measured against the no-press control (ch0,
-  frames 135..142): partial-frame onset at press+5, peak 9179 at 136, decay
-  to 2123 by 142 — about 8 frames beside the ROM data's 7-tick gate reading.
+  frames 135..142): partial-frame onset at press+5, peak 9179 at 136 (a
+  peak of the subtraction on a channel where the blip replaced the music;
+  canon's own peak at 136 is 8366), decay to 2123 by 142 — measured
+  against the ~3000 unattributed post-fire floor, so it is an upper bound
+  on the tail, not a pure-blip figure. About 8 frames beside the ROM
+  data's 7-tick gate reading.
   This is a measurement of canon's own PSG channel, not a target;
   src/battle.rs's `BUSTER_BLIP_ENVELOPE` (fitted, initial_volume 6, 2-frame
   software stop) remains what its own tag says it is — now with a
