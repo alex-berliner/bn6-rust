@@ -369,6 +369,42 @@ shockwave segment through it; `src/shot.rs` reimplements it by hand).
   no HUD code was touched). `derived` 362 -> 365 (the three T3 ids),
   `fitted` still 19.
 
+### 2.6 Port log (T6, step 4 landed)
+
+- `src/objects.rs::MettaurEntry` (new): the §2.3 step-4 per-type port --
+  `ForMettaur_8109EF4` (asm31.s:170982) with `sub_8109FD6`'s `off_8109FF0`
+  decision table and the CurAction-9 waiter (`sub_8109CBC`), driven through
+  `enemy_think`/`enemy_act` via `Ai::update`. Canon's fields mirrored one
+  for one: `decide`/`decide_sub`/`latch`/`wander_wait` = `oAIState_Unk_00`/
+  `02`/`03`/`08`, `wait` = `oAIAttackVars_Unk_10`, `hop_done` =
+  `oAIAttackVars_Unk_1a` (stored from `Actor::hop`'s own accept/refuse at
+  issue time), `param4` = `oBattleObject_Param4`, `cur_action` 8/9.
+  `src/ai.rs::MettaurState` removed behind the same interface
+  (`Ai::new(Style::Mettaur)`, `Ai::update`, `Ai::oracle_is_wait`); motion
+  stays in `Actor` (`hop` = 0x0A executor, `SWING` = 0x0B executor).
+  One deliberate edge change: refused hops now go AlignHop -> Decide per
+  `sub_810A080`'s `Unk_1a == 0` arm instead of back to RowCheck (never
+  fires in any fixture -- hops are never refused there). Guard executor
+  and `sub_810A204` special state have no arm (Version 0, no equipped
+  item, no status chips -- unchanged).
+- Verification: mettaur isolated PASS 0/0/70 (negative not blind), trace
+  mettaur 70/70 no divergence, trace battle_full first divergence
+  UNCHANGED (enemy_state_action k=0 canon=(4,10) rust=(4,0), counts
+  101/86/302/344/409/10 over 540); wave/popup/tiles/gauge/windowclose/
+  window/card/result/chip rows 0; opening integrated 72499/2691 and field
+  integrated 158950/5621 pre-existing (verified identical on the stashed
+  baseline for opening; field is an allowed AUDIT-6 row, same sampling
+  class as T5's -53px note). `derived` 365 -> 373 (nine METTAUR_* consts
+  minus the moved SPAWN_FRAMES), `fitted` still 19.
+- Cursor 1/1/170 -> 44/43, SAME tear not a behavior change: identical
+  alignment offset (237, unique minimum), same known mid-frame-transfer
+  frames (k37 43px + k97 1px, was k37 2px + k97 6px at F37d); mine-vs-base
+  captures differ on 3/450 raw frames only (boot fade band, one BG strip,
+  the k37 tile x217-238 y0-7), run-to-run deterministic on both ROMs. The
+  enemy is BattlePaused-frozen through the compared window so the entry
+  never runs there; the unfreeze path is covered by windowclose 0/0/40.
+  The pause pose comes from the same SWING routine, unchanged.
+
 ---
 
 ## 3. Script VMs (map-script + chatbox text-script opcode dispatch)

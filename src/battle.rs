@@ -2159,7 +2159,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // independent of any enemy's own decisions -- measured (see
         // `ai::Rng`'s own doc), not yet traced to a specific caller. Ticked
         // unconditionally here, before anything else this frame, so an
-        // RNG-gated enemy (`ai::MettaurState::Wander`/`WaitOut`, currently
+        // RNG-gated enemy (`MettaurEntry`'s wander arm, currently
         // unreachable -- see ai.rs's own module doc) draws from the same
         // point in the sequence the real ROM would have reached by the time
         // its own equivalent runs.

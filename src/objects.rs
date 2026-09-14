@@ -44,7 +44,7 @@
 //! work -- this port only names the entries so the walk has one place to
 //! change.
 
-use crate::actor::{Actor, Update};
+use crate::actor::{self, Actor, Update};
 use crate::ai::{Ai, Rng, Style};
 use crate::shot::Shot;
 
@@ -93,8 +93,7 @@ pub fn battle_common_path(actor: &mut Actor) -> Update {
 /// shares the `battle_801B1C4` core, so both arms reach `Ai::update` here),
 /// and the player never reaches this leg (see `t1_player_entry`). The
 /// Mettaur arm's behavior-table entry is `ForMettaur_8109EF4`
-/// (asm31.s:170982), ported as `MettaurState` in ai.rs (plan §2.3 step 4,
-/// already landed -- cited, not moved).
+/// (asm31.s:170982), ported as `MettaurEntry` below (plan §2.3 step 4).
 pub fn enemy_think(
     ai: &mut Ai,
     me: &mut Actor,
@@ -166,4 +165,263 @@ fn t3_0x12_entry(shot: &mut Shot) -> bool {
 /// shot.rs), travelling until the panel ahead is invalid.
 fn t3_0x16_entry(shot: &mut Shot) -> bool {
     shot.update()
+}
+
+/// T6 -- the Mettaur's per-type entry: `ForMettaur_8109EF4`
+/// (reference/bn6f/asm/asm31.s:170982), the `off_8109050` behavior-table arm
+/// for AIIndex 4, with the decision loop it dispatches to (`sub_8109FD6` over
+/// `off_8109FF0`) and the executors the loop arms: the CurAction-9 waiter
+/// `sub_8109CBC` (asm31.s:170665), the hop executor `sub_8109CE6`
+/// (asm31.s:170689), the attack executor `sub_8109DD2` (asm31.s:170814) and
+/// the guard executor `sub_8109E7A` (asm31.s:170908, unreachable -- see below).
+///
+/// Canon's fields, mirrored one for one (member names are the struct-field
+/// names in include/structs/AIAttackVars.inc, AIState.inc and
+/// BattleObject.inc):
+///
+/// - `decide` = `oAIState_Unk_00`, the `off_8109FF0` decision-table index.
+/// - `decide_sub` = `oAIState_Unk_02`, `sub_810A0BA`'s sub-state (0 = the
+///   hop arm `sub_810A0D4`, 4 = the roll/wait arm `sub_810A0EE`).
+/// - `latch` = `oAIState_Unk_03`, `sub_810A0EE`'s one-shot latch: 0 rolls
+///   this frame, 1 counts `wander_wait` down. Every `RowCheck` exit in
+///   `sub_810A004` clears it with the same `strh Unk_02` that clears
+///   `decide_sub`, so each blind episode rolls exactly once.
+/// - `wander_wait` = `oAIState_Unk_08`, the losing roll's idle counter.
+/// - `wait` = `oAIAttackVars_Unk_10`, the CurAction-9 waiter's countdown.
+/// - `cur_action`: the object's CurAction as the entry moves it (8 decide,
+///   9 wait; the hop/attack executors' 0x0A/0x0B live in `Actor`, below).
+/// - `hop_done` = `oAIAttackVars_Unk_1a`, the hop executor's report: 1 on
+///   the commit step (`sub_8109DBA`), 0 on the refused-move step
+///   (`sub_8109D08`'s `object_canMove` fail). `Actor::hop`'s own
+///   accept/refuse IS that check, so it is stored at issue time.
+/// - `param4` = `oBattleObject_Param4`, the one-time post-spawn gate.
+///
+/// What runs where. The decision loop (CurAction 8) only runs once an
+/// executor exits back to it, so `think` runs only while `Actor` is idle --
+/// the battle loop already gates `enemy_think` on `!is_busy`, and `think`
+/// re-checks. Motion itself stays in `Actor`: `hop` is the 0x0A executor's
+/// 6 frames plus its `byte_8109F46[0]` cooldown, `SWING` the 0x0B
+/// executor's 0x40 swing plus its 0x28 recovery (actor.rs cites both), and
+/// the battle loop re-enters `think` once `is_busy` clears -- the same
+/// frames canon's executors hand CurAction 8 back on. `sub_810A080`'s
+/// arming half (pick the panel via `sub_810A21A`, `object_setAttack0(0xA)`)
+/// is folded into the `RowCheck` arm that issues the hop: same frame,
+/// same direction, same accept/refuse.
+///
+/// Unreachable for this project's only Mettaur (Version 0, no equipped
+/// item, no status chips) and given no arm below: the guard executor
+/// (`sub_810A004`'s `Version != 0` "being hit" branch into CurAction 0x0C)
+/// and the `sub_810A204` special state (`sub_810A126`'s `sub_800ED90`
+/// equipped-ability gate into Unk_00 0x10). A stray 0x10 in `decide`
+/// re-enters `RowCheck` rather than stalling.
+pub struct MettaurEntry {
+    decide: u8,
+    decide_sub: u16,
+    latch: u8,
+    wander_wait: u16,
+    wait: u16,
+    cur_action: u8,
+    hop_done: u8,
+    param4: u8,
+}
+
+/// `off_8109FF0[0]`, `sub_810A004` (asm31.s:171129-171196): compare rows,
+/// branch to align/wander/decide. The value IS `oAIState_Unk_00`.
+const METTAUR_ROW: u8 = 0; // provenance: derived -- off_8109FF0[0], asm31.s:171195
+/// `off_8109FF0[1]`, `sub_810A080` (asm31.s:171199-171233): a hop toward the
+/// target's row is running; wait for its `Unk_1a` report, then RowCheck or
+/// Decide. The value IS `oAIState_Unk_00`.
+const METTAUR_ALIGN: u8 = 4; // provenance: derived -- off_8109FF0[1], asm31.s:171197
+/// `off_8109FF0[2]`, `sub_810A0BA` (asm31.s:171311-171376): blind/confused
+/// wander, in `decide_sub` halves. The value IS `oAIState_Unk_00`.
+const METTAUR_WANDER: u8 = 8; // provenance: derived -- off_8109FF0[2], asm31.s:171199
+/// `off_8109FF0[3]`, `sub_810A126` (asm31.s:171379-171451): rows equal,
+/// attack. The value IS `oAIState_Unk_00`.
+const METTAUR_DECIDE: u8 = 0x0c; // provenance: derived -- off_8109FF0[3], asm31.s:171201
+/// `sub_810A0D4`'s exit writes 4 to `oAIState_Unk_02`, selecting `sub_810A0EE`
+/// (asm31.s:171399-171403).
+const METTAUR_ROLL_SUB: u16 = 4; // provenance: derived -- sub_810A0D4, asm31.s:171399-171403
+/// The decision loop's own CurAction: `sub_8109FD6` runs as CurAction 8
+/// (`ForMettaur_8109EF4[8]`, asm31.s:171002).
+const METTAUR_ACT_DECIDE: u8 = 8; // provenance: derived -- ForMettaur_8109EF4[8], asm31.s:171002
+/// The plain "wait N frames" CurAction the spawn pause runs in
+/// (`ForMettaur_8109EF4[9]` = `sub_8109CBC`, asm31.s:171004).
+const METTAUR_ACT_WAIT: u8 = 9; // provenance: derived -- ForMettaur_8109EF4[9], asm31.s:171004
+/// The one-time pause before a freshly-spawned Mettaur's very first
+/// decision: `sub_810A004`'s own `oBattleObject_Param4 == 0` branch arms a
+/// flat 0x1e wait (CurAction 9, `sub_8109CBC`) the first time `RowCheck`
+/// ever runs, then never again (Param4 is left nonzero).
+/// asm31.s:171296-171305.
+///
+/// THE VALUE IS 0x1e AND THE WAIT IS 31 FRAMES LONG, not 30 (F28,
+/// 2026-09-13). `sub_8109CBC` (asm31.s:170665-170672) is
+/// `ldrh Unk_10; sub r0,#1; strh; bge locret` -- it returns while the
+/// DECREMENTED value is still >= 0, so an arming of 0x1e runs on the frames
+/// carrying 30, 29 ... 1, 0 and only exits on the 31st, where the subtract
+/// takes it to -1. `think` counts the same 31 frames.
+const METTAUR_SPAWN_WAIT: u16 = 0x1e; // provenance: derived -- sub_810A004, asm31.s:171296-171305
+/// The idle a losing wander roll arms: `sub_810A0EE` stores 0x32 to
+/// `oAIState_Unk_08` (asm31.s:171430-171432), which counts down past zero
+/// the same way the waiter does.
+const METTAUR_WANDER_WAIT: u16 = 0x32; // provenance: derived -- sub_810A0EE, asm31.s:171430-171432
+
+/// This project has no chip that sets `OBJECT_FLAGS_BLIND`,
+/// `OBJECT_FLAGS_CONFUSED` or `OBJECT_FLAGS_IMMOBILIZED` yet (grepped every
+/// `src/*.rs` chip effect; none exists) -- see ai.rs's `Rng` doc for the
+/// empirical per-frame-cadence check that the RNG-gated wander branch never
+/// fires in the fixtures this project measures. Named rather than inlined so
+/// a future status-effect chip has one place to flip it live.
+const BLIND_OR_CONFUSED: bool = false; // provenance: derived -- no chip in this project sets OBJECT_FLAGS_BLIND/CONFUSED/IMMOBILIZED (0xa000/0x4000) yet, include/structs/CollisionData.inc:16-18
+
+impl MettaurEntry {
+    /// Canon starts in the decision loop's state 0 with Param4 == 0: the
+    /// wait is armed BY `RowCheck`'s own first run, it is not the state the
+    /// object is born in (F28 measured the difference -- starting inside
+    /// the wait skipped canon's arming frame).
+    pub fn new() -> Self {
+        Self {
+            decide: METTAUR_ROW, // canon: oAIState_Unk_00, cleared for a fresh object
+            decide_sub: 0,
+            latch: 0,
+            wander_wait: 0,
+            wait: 0,
+            cur_action: METTAUR_ACT_DECIDE,
+            hop_done: 0,
+            param4: 0, // canon: oBattleObject_Param4, cleared for a fresh object
+        }
+    }
+
+    /// True while the Mettaur is in one of canon's plain "wait N frames"
+    /// states -- the spawn's one-time 0x1e pause (CurAction 0x09) or a
+    /// losing wander roll's 0x32 wait (same countdown inside `sub_810A0EE`).
+    /// The state oracle needs this because the entry lives here while the
+    /// exported CurAction byte is built in `Actor::oracle_fields`.
+    pub fn is_wait(&self) -> bool {
+        self.cur_action == METTAUR_ACT_WAIT
+            || (self.decide == METTAUR_WANDER && self.latch != 0)
+    }
+
+    /// The `off_8109050` Mettaur arm's think leg: `ForMettaur_8109EF4`
+    /// through `sub_8109FD6`'s decision table. Reached through
+    /// `enemy_think` (plan §2.3 step 2) into `Ai::update`; `blocked` is the
+    /// occupancy of every other object, `rng` the battle's primary
+    /// generator (FIXTURE.md's `rng` field, +58), shared the way the real
+    /// ROM's single `ePrimaryRngSeed` is. Only the unreachable
+    /// blind-wander arm draws from it.
+    pub fn think(
+        &mut self,
+        me: &mut Actor,
+        target: (i32, i32),
+        blocked: u32,
+        rng: &mut Rng,
+    ) {
+        // `sub_8109CBC` (asm31.s:170665-170672), the CurAction 9 waiter:
+        // `sub r0,#1; strh; bge locret` -- EVERY frame it runs is a frame of
+        // the wait, including the one whose stored value is 0; only the frame
+        // that takes the counter to -1 calls `object_exitAttackState`, and
+        // the decision loop is back the frame after that.
+        if self.cur_action == METTAUR_ACT_WAIT {
+            if self.wait > 0 {
+                self.wait -= 1;
+            } else {
+                self.cur_action = METTAUR_ACT_DECIDE;
+            }
+            return;
+        }
+        // Every arm below either issues a move/attack that takes the actor's
+        // one `CurAction` slot (matching the real machine, which dispatches
+        // through the SAME slot: the decision loop only runs again once
+        // CurAction has returned to 8) or is itself a pure wait, during
+        // which the actor is never busy.
+        if me.is_busy() {
+            return;
+        }
+        match self.decide {
+            METTAUR_ROW => {
+                let (_, row) = me.panel();
+                if self.param4 == 0 {
+                    // `sub_810A004`'s own first branch (asm31.s:171296-171305):
+                    // the very first time the decision loop runs for this
+                    // object it writes 0x1e to BOTH Param4 and the waiter's
+                    // Unk_10 and calls `object_setAttack0(9)`, then returns.
+                    // THIS FRAME IS SPENT: the row compare below does not run
+                    // on it and the waiter's own first tick is the next frame.
+                    self.param4 = METTAUR_SPAWN_WAIT as u8; // canon: oBattleObject_Param4 = 0x1e
+                    self.wait = METTAUR_SPAWN_WAIT; // canon: oAIAttackVars_Unk_10 = 0x1e
+                    self.cur_action = METTAUR_ACT_WAIT;
+                } else if BLIND_OR_CONFUSED {
+                    // `sub_810A254`: GetPositiveSignedRNG() & 1 picks which
+                    // neighbour row to try first (asm31.s:171478-171482),
+                    // issued here as `sub_810A0D4` would arm it; Unk_02/Unk_03
+                    // cleared as `sub_810A004`'s own `strh` does.
+                    let delta = if rng.positive() & 1 == 0 { 1 } else { -1 };
+                    self.hop_done = me.hop(0, delta, blocked) as u8;
+                    self.decide = METTAUR_WANDER;
+                    self.decide_sub = 0;
+                    self.latch = 0;
+                } else if row != target.1 {
+                    // `sub_810A080`'s arming half: `sub_810A21A`'s own
+                    // one-panel-toward-target rule, issued here.
+                    self.hop_done = me.hop(0, (target.1 - row).signum(), blocked) as u8;
+                    self.decide = METTAUR_ALIGN;
+                } else {
+                    self.decide = METTAUR_DECIDE;
+                }
+            }
+            METTAUR_ALIGN => {
+                // `sub_810A080`'s wait half (asm31.s:171314-171332):
+                // `Unk_1a` nonzero (the hop committed) returns to state 0;
+                // zero (the executor refused the move) goes to Decide.
+                self.decide = if self.hop_done != 0 {
+                    METTAUR_ROW
+                } else {
+                    METTAUR_DECIDE
+                };
+            }
+            METTAUR_WANDER => {
+                // `sub_810A0BA`: `Unk_02 == 0` is `sub_810A0D4` (its hop
+                // was issued by the `RowCheck` arm above); the first
+                // execution here advances to `sub_810A0EE`'s half.
+                if self.decide_sub == 0 {
+                    self.decide_sub = METTAUR_ROLL_SUB;
+                }
+                if self.latch == 0 {
+                    // `sub_810A0EE`'s own roll (asm31.s:171405-171429):
+                    // GetPositiveSignedRNG() & 0xf, < 2 (2/16) attacks now,
+                    // else arms the 0x32 wait below.
+                    self.latch = 1;
+                    if rng.positive() & 0xf < 2 {
+                        self.decide = METTAUR_DECIDE;
+                        self.decide_sub = 0;
+                    } else {
+                        self.wander_wait = METTAUR_WANDER_WAIT;
+                    }
+                } else if self.wander_wait > 0 {
+                    self.wander_wait -= 1;
+                } else {
+                    self.decide = METTAUR_ROW;
+                    self.decide_sub = 0;
+                }
+            }
+            METTAUR_DECIDE => {
+                // `sub_810A126`'s normal path (asm31.s:171451-171475): the
+                // `sub_800ED90` equipped-ability gate is never taken (no
+                // equippable item), so the version tables' tag
+                // (`byte_8109F40`) and damage (`byte_8109F28`, Version 0's
+                // 10 matching `WAVE_DAMAGE`) ride into `object_setAttack0`
+                // (0xb) -- the ATTACK executor, `SWING` in actor.rs with
+                // its 0x40 swing and 0x28 recovery.
+                me.attack(actor::SWING);
+                self.decide = METTAUR_ROW;
+                self.decide_sub = 0;
+            }
+            // `sub_810A204` (Unk_00 0x10): reachable only through `Decide`'s
+            // own "special chip" branch, which this entry never takes (see
+            // above). Re-enter `RowCheck` rather than stall.
+            _ => {
+                self.decide = METTAUR_ROW;
+                self.decide_sub = 0;
+            }
+        }
+    }
 }
