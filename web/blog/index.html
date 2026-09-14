@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><title>BN6 in Rust: project blog</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{font:16px/1.55 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:52rem;margin:2rem auto;padding:0 1rem;color:#222;background:#fafafa}
+h1{font-size:1.6rem}article{border-top:1px solid #ddd;padding:1.2rem 0}article h2{font-size:1.25rem;margin:.2rem 0}.date{color:#777;font-size:.9rem}
+code{background:#eee;padding:0 .25em;border-radius:3px}img{max-width:100%}a{color:#0a58a8}nav a{margin-right:1rem}ul{padding-left:1.2rem}</style></head><body>
+<nav><a href="../index.html">site</a><a href="../gifs.html">gallery</a><a href="../log.html">log</a><a href="https://github.com/alex-berliner/bn6-rust">repo</a></nav>
+<h1>Project blog: rebuilding Battle Network 6's battle system to the pixel</h1>
+<p>Milestones, medium and up: what was reached, the numbers before and after, the mechanism found, and the gallery GIFs that show it. Newest first.</p>
+<ul class="toc"><li><a href="#2026-09-14-the-mechanisms-behind-the-last-residues">The mechanisms behind the last residues</a> <span class="date">2026-09-14</span></li>
+<li><a href="#2026-09-14-phase-change-from-residue-chasing-to-trace-driven-porting">Phase change: from residue chasing to trace-driven porting</a> <span class="date">2026-09-14</span></li>
+<li><a href="#2026-09-14-every-chip-row-reads-zero">Every chip row reads zero</a> <span class="date">2026-09-14</span></li></ul>
+<article id="2026-09-14-the-mechanisms-behind-the-last-residues"><h2>The mechanisms behind the last residues</h2><div class="date">2026-09-14</div><p>For most of the project's life the largest remaining differences from the real ROM were single rows with tens or hundreds of thousands of differing pixels: the results screen, the chip window closing, the custom screen, the Mettaur. Over the last day they were taken apart layer by layer and object by object, and each turned out to be a small mechanism rather than an art or timing constant.</p>
+<ul>
+<li><strong>Objects update on the frame they spawn.</strong> Canon's object dispatcher loads a sprite and updates it in the same frame; ours skipped the first update on hop-spawned shockwave segments and on shot objects, so every animation change on them ran a frame late. One statement each. The Mettaur row went from 4265 to 0 (<a href="../captures/mettaur-f25d-progress.gif">GIF</a>).</li>
+<li><strong>The HUD is a mask of elements.</strong> Canon enables and draws HUD elements through a per-element mask and tears five of them down together on the frame the RESULT countdown starts; we hid the emotion window the moment the last enemy died. Popup went from 60614 to 0 (<a href="../captures/popup-f28b-progress.gif">GIF</a>).</li>
+<li><strong>The emotion window moves with the chip window.</strong> Its draw routine adds the chip window's slide counter to both objects' x, so it sits 120 pixels to the right while the custom screen is open. Cursor lost exactly the predicted 117980 pixels.</li>
+<li><strong>The backdrop's phase is derivable.</strong> Canon's scroll counters count down 8 and 4 per frame from battle init, so every fixture's backdrop seed can be derived from canon's RAM at the row's reference frame, once our engine's two pipeline lags were measured on one row and predicted on the next. Cursor's alignment had been sitting eleven frames off its event because of that missing seed.</li>
+<li><strong>The field pans from inside the window's slide routine.</strong> One and a half pixels per slide call, rounding down; ours panned ten frames late with the opposite rounding. The window-close row's field layer went to 0 on every frame.</li>
+<li><strong>Two frames in the Mettaur's wait arithmetic</strong> (canon's counter exits on negative, and arming takes its own frame) and the first attack that only looked 64 frames late: a scene difference, refuted with a measurement.</li>
+<li><strong>Three rows measured nothing.</strong> The buster and chip-use rows had canon standing idle because a scripted press could not reach its sequencer in a zero-enemy arena; the result was a vacuous alignment, an eight-wide tie rather than an event. Both were re-cut so canon fires, and both read 0 now (<a href="../captures/buster-f31b-progress.gif">buster GIF</a>).</li>
+</ul>
+<p>Cursor sits at 8 pixels on two frames (a tile copy that canon drains mid-frame and we land before the first scanline); window-close is on its last ticket; the results screen reads 0 (<a href="../captures/result-f34-progress.gif">GIF</a>).</p></article>
+<article id="2026-09-14-phase-change-from-residue-chasing-to-trace-driven-porting"><h2>Phase change: from residue chasing to trace-driven porting</h2><div class="date">2026-09-14</div><p>The rule for the first phase was simple: every existing row at 0 differing frames before any new content. As of today that gate is met for every isolated row but one 8-pixel timing residue, and the whole-screen variants of five rows wait on one thing, the end sequence entering the results screen on canon's frame, which four passes showed has to be ported as one state machine rather than fitted per row.</p>
+<p>So the method changes. Building a second virus the way the Mettaur was built would repeat the residue chasing that cost this phase its first two days. Instead:</p>
+<ul>
+<li><strong>A state-trace harness</strong> (T1): record canon's battle state per frame over whole scripted battles, replay ours on the same inputs, and name the first divergent field and frame automatically, with pixels as the gate on the same recording.</li>
+<li><strong>Coverage from the disassembly fork's profiler</strong> (T2): the routines canon actually executes per scenario, ranked, so the porting queue comes from what runs.</li>
+<li><strong>Interpreters before content</strong>: canon's animation bytecode player, object dispatcher and script VMs, each verified by trace. After that, chips, viruses and maps are data from the ROM, and the five viruses and two bosses in scope are the first test of it.</li>
+</ul>
+<h3>The workflow that got here</h3>
+<p>Tickets are written by judgment and worked by a cheap coordinator running two workers in separate worktrees; every branch is reproduced from a clean checkout before it merges, and a model verifier is used only for claims the script cannot check. Landed tickets have cost about $0.17 each on the cheap tier; a one-day burst of stronger agents on the hardest rows landed twelve tickets and found most of the mechanisms in the previous post. A daily review now records cost per landed ticket, the scoreboard and cache health, an auditor proposes changes to the setup when the failure pattern or the phase changes, and a replay benchmark re-runs archived tickets on candidate models before any role changes model (two free models were tried today; neither could hold a task).</p></article>
+<article id="2026-09-14-every-chip-row-reads-zero"><h2>Every chip row reads zero</h2><div class="date">2026-09-14</div><p>The multi-pass ticket that carried the 43 chip rows, F12, closed today with every one of them at 0 differing pixels against the real ROM, over every compared frame. Two days ago 28 were.</p>
+<h3>What it took</h3>
+<ul>
+<li><strong>The seed chips</strong> (PoisSeed, IceSeed, GrasSeed): canon pushes the seed sheet's middle column last so it sorts above its neighbours in overlap zones; then the feet needed a per-family push order because the fix that helped seeds broke MiniBomb.</li>
+<li><strong>BugBomb and VDoll</strong>: canon snaps the thrown object to its rest position at a fixed height, with a poison tick and a one-frame landing lag we lacked.</li>
+<li><strong>SuprVulc</strong>: the muzzle-fire object rebuilt from canon's data, gated to that chip only.</li>
+<li><strong>Invisibl, the three Barriers and AreaGrab</strong>: their popups were tied to whether an enemy was alive, where canon ties them to the battle HUD being live; AreaGrab's orbs then needed their art extracted byte for byte from the ROM, a draw order, and a palette walk on the burst.</li>
+<li><strong>Chip-use</strong>, the last one, turned out to measure nothing: canon's scripted press never fired in a zero-enemy arena, so the row was re-cut to deliver the press into canon's input data, and then it read 0 on all 30 frames.</li>
+</ul>
+<p>Each landing was reproduced from a clean checkout before merging, and each chip row has a shifted negative fixture that must keep failing, so a zero is never a blind comparison.</p>
+<h3>Cost</h3>
+<p>The eleven F12 passes cost $1.13 of worker and verifier time on the cheap tier, about a dime a chip family. The whole run that finished the series spent $0.17 per landed ticket.</p>
+<p>See the <a href="../gifs.html">gallery</a> for the before-and-after GIFs of each family (the ones named with an F12 suffix).</p></article>
+</body></html>

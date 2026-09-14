@@ -10,6 +10,8 @@ against the routine that implements it, with the `file:line` cited in the code.
 
 ## Website
 
+- Blog (milestones, medium and up): https://alex-berliner.github.io/bn6-rust/blog/index.html
+
 Everything is published from this repo's `gh-pages` branch by `tools/publish_site.sh`:
 
 - **Play it in the browser:** https://alex-berliner.github.io/bn6-rust/ — the current release ROM in
