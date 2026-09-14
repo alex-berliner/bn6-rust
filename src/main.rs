@@ -71,6 +71,10 @@ static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin"))
 /// VULCAN_FIREBALL_X0), packed as a one-frame BNSP asset by hand -- the
 /// bytes are canon's own, not drawn.
 static VULCAN_FIREBALL: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_fireball.bin")).0;
+/// AreaGrab's steal orb: sprite_830E44C (data/SpritePointersList.s:105),
+/// exported with tools/spr_export.py straight out of the ROM -- canon's own
+/// bytes, never hand-drawn art.
+static AREAGRAB_ORB: &[u8] = &Aligned(*include_bytes!("../assets/areagrab_orb.bin")).0;
 static BARRIER: &[u8] = &Aligned(*include_bytes!("../assets/barrier.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
