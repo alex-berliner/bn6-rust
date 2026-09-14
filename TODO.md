@@ -630,6 +630,22 @@ or better; an allowlist entry removed only for a row that reads 0; nothing worse
 **Measure and report.** Repaired layer table (definition stated, arithmetic closed), (a)-(d) confirmed or refuted each with the watch traces, rows before/after, full-table deltas. **Acceptance:** the table adds up and every attribution the next cursor ticket needs is measured, not inferred.
 **Coordinator:** `verify_rows` on every row the report names; the verifier on the repaired table and any canon citation.
 
+### F33c. The integrated rows after F32: let the zero-enemy fixtures resolve where canon's battle resolves  *(OPEN -- 2026-09-13)*
+
+**Files.** tools/harness.py (the ZERO_ENEMY descriptor flags and the integrated rows' Align notes), src/battle.rs (the end-sequence hunk only, if F32's count needs a fixture-side entry point)
+
+**Why.** F33b left warp integrated 40628, buster 54672, chip-use 567780 and field 158938 with every BG layer
+0 until canon's RESULT window slides in (warp from k=24, buster k=22, chip-use k=4): canon's deleted-enemy
+battle resolves at canon 154 while only field's fixture carries FLAG_RESOLVE_OVER. F32 has now landed
+canon's count (over 35 updates after the killing blow; death -> 0x0C at 47 = 12 pre-resume + 35). Re-measure
+the four rows on main first: if the ramp now differs only by when our side resolves, give the zero-enemy
+descriptors the resolve flag with the sequencer's event frame peeked from each row's canon capture
+(dword_203CA70 -> 0x0C), and lock the ramp by that event, never by score. field's own stall (captures 118-120
+byte-identical, then the filler BG dropped from 121) is measured on the same pass.
+**Acceptance.** warp, buster, chip-use integrated as low as the ramp takes them (0 if the window's content
+matches, F21/F34's chain); field integrated decomposed with its stall attributed; the isolated variants and
+every 0 row unchanged; allowlist entries removed only for rows that read 0; nothing worse.
+
 ### F35. Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art  *(OPEN -- 2026-09-13)*
 
 **Files.** src/backdrop.rs, src/main.rs
