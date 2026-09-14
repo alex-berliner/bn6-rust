@@ -313,6 +313,25 @@ impl Shot {
                 // the new segment it spawns on the next panel.
                 let anim = self.player.anim();
                 let old = core::mem::replace(&mut self.player, spr::Player::new(self.assets, anim));
+                // PRE-TICKED, exactly as the launched segment is in
+                // `shockwave()`: the segment a hop spawns runs its own init
+                // AND one `object_updateSprite` in the SAME frame the old one
+                // hops. `t3_0x16_80C6B40` (asm31.s:31413-31421) dispatches on
+                // CurState -- state 0 is `sub_80C6B64` (off_80C6B58,
+                // asm31.s:31425-31428), which loads the sprite and the
+                // animation (asm31.s:31456-31466) -- and then falls through to
+                // `bl object_updateSprite` (asm31.s:31420) on that very frame,
+                // so the new segment's first animation frame is DISPLAYED on
+                // the hop frame and its duration counts that frame. Without
+                // this tick `Player::new`'s `fresh` flag eats the next update
+                // and every frame of the segment's animation lands one frame
+                // late (F25d, measured: canon's anim-frame changes at hop+5,
+                // +10, +15, +21 -- assets/wave.bin anim 0 durations 5,5,5,6,5
+                // -- ours at +6, +11, +16, +22, and the departing segment
+                // vanished at hop+5 instead of hop+4).
+                // provenance: derived -- t3_0x16_80C6B40's post-dispatch
+                // object_updateSprite, asm31.s:31413-31421.
+                self.player.update();
                 self.departure = Some((old, (self.col, self.row)));
             }
             self.col += self.dx;
