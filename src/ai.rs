@@ -313,7 +313,11 @@ impl Ai {
     /// land on. `rng` is the battle's own primary generator (FIXTURE.md's
     /// `rng` field, +58), shared across every enemy the way the real ROM's
     /// single `ePrimaryRngSeed` is -- see `Rng`'s own doc. Only
-    /// `Style::Mettaur` currently draws from it.
+    /// `Style::Mettaur` currently draws from it. The per-type think entry
+    /// the dispatcher calls: reached through `objects::enemy_think` (plan
+    /// §2.3 step 2, `battle_8108F74` into `RunAIAttack`, asm31.s:169314 /
+    /// asm00_2.s:24781); the Mettaur arm is the `off_8109050` behavior entry
+    /// `ForMettaur_8109EF4` (asm31.s:170982), ported as `MettaurState`.
     pub fn update(&mut self, me: &mut Actor, target: (i32, i32), blocked: u32, rng: &mut Rng) {
         if matches!(self.style, Style::Mettaur) {
             self.update_mettaur(me, target, blocked, rng);

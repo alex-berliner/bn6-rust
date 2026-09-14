@@ -294,6 +294,11 @@ impl Shot {
     /// Advance one frame, hopping a panel whenever the timer runs out. Returns
     /// false once the shot leaves the field (col outside 1..=6) so the caller
     /// drops it; bn6f likewise destroys the shot when its panel goes invalid.
+    /// The per-type entry the dispatcher calls: reached through
+    /// `objects::t3_entry` (plan §2.3 step 3), which matches the shot's
+    /// `T3Kind` -- buster/cannon `t3_0x0_80C4E58`, Vulcan `t3_0x12`,
+    /// shockwave `t3_0x16` -- and falls through here, as each entry falls
+    /// through to `object_updateSprite` after its state routine.
     pub fn update(&mut self) -> bool {
         self.player.update();
         // The segment departed at the previous hop, if any: check its OWN
