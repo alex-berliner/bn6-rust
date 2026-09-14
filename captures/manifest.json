@@ -1,5 +1,23 @@
 [
   {
+    "file": "captures/gauge-integrated-f28b-progress.gif",
+    "name": "gauge-integrated-f28b-progress",
+    "label": "The custom gauge row in the integrated variant (whole screen, HUD included) reaching zero across F28b. The 3865 pixels left were canon's Mettaur mid-swing against ours standing idle: our battle had frozen the moment the gauge filled, because we re-armed the gauge pause every frame while canon's fight state unpauses each frame and only pauses by leaving for the custom screen. With the pause gated the way canon gates it, the fixture's phases were moved back by exactly three Mettaur attack cycles, to a moment where our MegaMan is still unhit like canon's at that frame, and every region of the screen reads 0 on all eight frames.\n\ngauge (integrated), before and after: canon on top; ours at a00bcff (3865 px over 8 frames, canon 44+k, rust offset 427); ours at b3d260f (0 px, canon 44+k, rust offset 109). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
+    "file": "captures/popup-f28b-progress.gif",
+    "name": "popup-f28b-progress",
+    "label": "The damage popup row reaching zero across F28b. The last 5094 pixels were the deleted Mettaur's dissolve on seven frames, which our side has no enemy to draw: the corpse used sprite tiles above the range an earlier ticket had blanked on the canon side, and its last three frames came through a transfer-queue slot that ticket had measured in the wrong place. Blanking the full tile range and sizing the right queue slot, one-shot, takes the row to 0 on all 80 frames, with the negative fixture still failing as it must.\n\npopup (isolated), before and after: canon on top; ours at a00bcff (5094 px over 80 frames, canon 43+k, rust offset 122); ours at b3d260f (0 px, canon 43+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
+    "file": "captures/tiles-integrated-f28b-progress.gif",
+    "name": "tiles-integrated-f28b-progress",
+    "label": "The custom gauge tiles in the integrated variant (whole screen, HUD included) reaching zero across F28b. The 3865 pixels left were canon's Mettaur mid-swing against ours standing idle: our battle had frozen the moment the gauge filled, because we re-armed the gauge pause every frame while canon's fight state unpauses each frame and only pauses by leaving for the custom screen. With the pause gated the way canon gates it, the fixture's phases were moved back by exactly three Mettaur attack cycles, to a moment where our MegaMan is still unhit like canon's at that frame, and every region of the screen reads 0 on all eight frames.\n\ntiles (integrated), before and after: canon on top; ours at a00bcff (3865 px over 8 frames, canon 44+k, rust offset 427); ours at b3d260f (0 px, canon 44+k, rust offset 109). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
     "file": "captures/windowclose-f29-progress.gif",
     "name": "windowclose-f29-progress",
     "label": "The chip window closing across F29. Decomposed by layer, the field behind the window was a 15-pixel camera pan: canon moves the camera from inside the window's own slide routine, one and a half pixels on each of the ten slide calls, rounding down; ours waited until the window was gone and then panned with the opposite rounding, ten frames late. Driving the pan from the slide calls with canon's arithmetic took the field layer to 0 on all 40 frames, and moving MegaMan to the panel canon's battle object actually holds took the sprite layer down too: 648948 to 407778. What remains is the backdrop's scroll phase, which this fixture never seeded, and the Mettaur's attack phase.\n\nwindowclose (isolated), before and after: canon on top; ours at ea8ab81 (648948 px over 40 frames, canon 81+k, rust offset 253); ours at f620086 (407778 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
