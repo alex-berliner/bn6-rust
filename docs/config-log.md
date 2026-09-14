@@ -20,3 +20,29 @@ every landing; no fitted constants; the $5 spend floor.
 | 2026-09-14 | Charm Hyper subscription (250 credits/day) in the loop: verifier and recon on Hyper's GLM 5.3 Flash / DeepSeek 4.1 Flash, a worker-hyper role on Qwen 3.8 Flash, the coordinator on Hyper Qwen (BN_COORD_MODEL), three workers in flight (next_ticket --pair 3; roles worker, worker-hyper, worker-hyper) | the user bought a month and wants every daily credit used; the free-tier benchmark was rate-limited before it could judge the models | credits used per day (target 250), cost per landed ticket on OpenRouter (Muse workers only now), pass rate of Hyper workers from the ledger and the replay table | applied run 8 (10:33); the subscription benchmark chain runs in parallel |
 | 2026-09-14 | Hyper-only operation: all roles on Hyper, the run stops when the day's credits are gone (hyperwatch), each day's run starts by cron 10:35 (hyper_day.sh); OpenRouter is a reserve | the user: "fully shut down when we run out of credits for the day; OpenRouter spend is reserve, not fallback" | OpenRouter spend per day (target 0), credits used per day (target 250), landed tickets per day | applied run 9 (11:0x) |
 | 2026-09-14 | worker-hyper = Hyper GLM 5.3 Flash; verifier = Hyper Qwen 3.8 Flash (cross-family) | replay benchmark under the subscription: GLM passes F18d ($0.33, 16 min) and F25c ($0.42, 13 min); Qwen passes both slower ($0.42/37 min, $0.62/53 min); MiniMax passes both dearer ($1.34, $0.73); Kimi fails F25c; DeepSeek no commit (docs/benchmarks/hyper-2026-09-14-deferred.md) | credits per landed ticket (target <= 9, i.e. $0.45), landed tickets per day | applied 13:20, effective from the next dispatch |
+
+## 2026-09-14 17:00 -- the loop runs without the human session (five gaps closed)
+
+Agreed with the user ("sounds good") after the question whether the setup can run unattended for months.
+One structural change per cycle was suspended for this batch because each item is a new mechanism, not a
+reshape of a working one:
+
+1. **Ticket supply.** When `next_ticket.py` prints "no OPEN ticket" the coordinator runs `tools/pi_judge.sh`
+   (against docs/SCOPE.md) and `tools/judge_append.py`, which admits a proposed ticket only if it has a fresh
+   ID, a `**Files.**` line, an acceptance section and a milestone or predecessor reference; the loop
+   continues from step 1 when anything was admitted.
+2. **Verified partials land.** A branch whose verify_rows PASS shows improvement and nothing worse, with any
+   claim beyond harness lines confirmed, lands and is stamped PARTIAL; kept-unmerged is reserved for a
+   regression, a refuted claim or numbers that did not reproduce (.pi/coordinator.md).
+3. **Watchdog.** `tools/hyper_day.sh` runs from cron every 30 minutes: restores the /tmp inputs from
+   /home/box/bn-backup after a reboot, prunes verify checkouts older than a day, and starts the all-Hyper
+   run when none is active and at least 100 credits remain (hyperwatch still stops it at exhaustion).
+4. **Daily digest.** `tools/digest_post.py`, run at the end of `tools/daily_review.sh` (cron 09:15): one blog
+   post per day that had a ticket result or a merge, built from the record (result commits, Result
+   paragraphs, new GIFs, the review's scoreboard, spend). A Hyper model may rewrite a Result into one plain
+   paragraph; the paragraph is dropped if it contains a number, hex value or path the facts do not.
+5. **Auditor proposals in the digest.** The digest lists the headings of any audit proposal from the last
+   24 hours under "Setup proposals waiting for a decision"; applying one stays a human decision.
+
+Rule kept: `tools/land.sh` is still the only path to main for agents; the digest commits web/blog under the
+landing lock and pushes main and gh-pages itself.

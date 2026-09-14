@@ -68,3 +68,7 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   fi
 } > "$OUT.tmp" 2>&1
 mv "$OUT.tmp" "$OUT"; echo "$OUT"
+# the automated digest post (agreed 2026-09-14): one blog post per day that had a ticket result or a merge,
+# built from the record the review just read, with the auditor's open proposals summarized in it
+python3 tools/digest_post.py --since "$SINCE" --review "$OUT" --post 2>&1 | tail -2
+
