@@ -64,6 +64,12 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 
 A ticket whose title or text says it stays OPEN (multi-pass, e.g. F12 per chip family) is stamped OPEN after every landed pass, never PARTIAL or DONE, until its stated end condition is met.
 
+**Landing a verified partial.** A branch whose verify_rows PASS shows its named rows improved (or a cited
+behaviour change with every row unchanged) and nothing worse, with any claim beyond harness lines
+confirmed, is LANDED and stamped PARTIAL even when the ticket's acceptance is not fully met; keep a branch
+unmerged only when a row regressed, the verifier refuted a claim, or the report's numbers did not
+reproduce. Write the follow-up for the remainder as usual.
+
 ## Stop and hand back to the user when
 
 - the spend guard fails, or this session's children have cost more than the cap your instruction names
