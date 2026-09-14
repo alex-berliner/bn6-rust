@@ -394,8 +394,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** dispatch third. It is the only M9 entry point that needs no src and no harness edit, and it is the ticket that turns an existing `provenance: fitted` constant into a measured one — the cross-cutting invariant "no fitted constants" is already violated in battle.rs's buster envelope and today's harness cannot see it. Costs 4-8 captures, so schedule it when T9c is between rows, never alongside T11 (both are capture-side and only two workers run at once). If step 4 shows non-determinism, stop and report: sample-exact parity would then need a decision from the user, not a tolerance from us.
 
 
-### T9d. Why the poked Gunner battle never goes live: write-watch the sequencer on the working scenario and name the difference  *(OPEN -- 2026-09-14)*
+### T9d. Why the poked Gunner battle never goes live: write-watch the sequencer on the working scenario and name the difference  *(DONE -- 2026-09-14, no writer for dword_203CA70 on either battlestart route [200f watch-write, both empty])*
 
+**Result.** no writer for dword_203CA70 on either battlestart route (200f watch-write, both empty); Index_01 parks 0x08 at sub_8009338's beq (asm00_1.s:13065-13067) because eS20364C0.JumpOffset00 parks at 4; sequencer moves only on hand-played PAUSED root (0x1C->8, f11, PC 0x080083F8). mettaur's live canon is PAUSED not battlestart (harness.py:958), so no row premise broken. verifier-hyper CONFIRMS claims 1-3, 3 cite fixes applied (13054/13065-13067/13126). landed 73d50fd
 **Files.** tools/states.py (only if a poke fixes it), docs/coverage/battlestart_gunner.md (corrected), docs/trace/t9d/ (new)
 
 **Why.** T9c landed (`1f7efc9`) the `battlestart_gunner` recipe and per-slot `enemy_kind`, and the verifier CONFIRMED
