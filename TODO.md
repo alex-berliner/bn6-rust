@@ -359,8 +359,9 @@ still fires. Confirm the two items T1 left unconfirmed (the RNG field at k=271, 
 battle_full). **Acceptance.** full table identical to main with the flag off; T1's record/diff/calibration/
 negative with the flag on; AGENT_GUIDE.md's ten lines on the trace commands.
 
-### T2. Coverage: which canon routines each scenario executes, ranked  *(PARTIAL -- 2026-09-14, coverage profiler and tables landed [covstep profiler + tools/coverage.py, docs/coverage/]: battle_full 1140 r)*
+### T2. Coverage: which canon routines each scenario executes, ranked  *(DONE -- 2026-09-14, supersedes PARTIAL-kept: human session landed tools+docs as 7c290d8)*
 
+**Result.** supersedes PARTIAL-kept: human session landed tools+docs as 7c290d8; verifier SUPPORTS stands
 **Result.** coverage profiler and tables landed (covstep profiler + tools/coverage.py, docs/coverage/): battle_full 1140 routines executed with 318 not covered by any existing harness row, mettaur 517; the object dispatcher located at 0x8108F50 (68/114 in the ranking); the animation player and script VM loop not pinned by the report (stop rule) -- T3 locates and plans them from the tables. Landed by the human session with land.sh --no-verify (no src change); pi's landing had been blocked by a dirty tree the deferred benchmark writes caused, now fixed (they write an untracked file).
 **Result.** coverage profiler+tables READY, KEPT unmerged (branch wt/t2-coverage 34efe17+79bd0d1): battle_full 1140 routines/318 uncovered, mettaur 517; dispatcher 8108F50 (68/114) located; VM loop + anim player unpinned per stop rule; verifier SUPPORTS all claims + scope clean (4 new files, covstep standalone); LANDING BLOCKED: main checkout dirty (human benchmark file, not mine to stash) -- land via land.sh when clean; worker muse-spark, verifier GLM
 **Files.** tools/coverage.py (new), docs/coverage/ (new), tools/states.py (read)
