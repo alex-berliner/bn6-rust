@@ -1,0 +1,8 @@
+{
+ "scenario": "result",
+ "side": "rust",
+ "frames": 40,
+ "canon_ref": 21,
+ "rust_base": 21,
+ "mercy_addr": 33785108
+}

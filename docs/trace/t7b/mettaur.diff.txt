@@ -1,0 +1,13 @@
+trace diff /tmp/t7b/base/c_met vs /tmp/t7b/base/r_met -- row mettaur: canon frame 140+k <-> rust export frame 205+k, 70 compared frames (shift 0)
+  sequencer          match          70/70 frames
+  mm_state_action    match          70/70 frames
+  mm_anim            match          70/70 frames
+  mm_panel_x         match          70/70 frames
+  mm_panel_y         match          70/70 frames
+  mm_timer           match          70/70 frames
+  enemy_state_action match          70/70 frames
+  enemy_anim         match          70/70 frames
+  enemy_panel_x      match          70/70 frames
+  enemy_panel_y      match          70/70 frames
+  rng_cadence        match          70/70 frames
+FIRST DIVERGENCE: none -- every parity field matches on every one of the 70 compared frames
