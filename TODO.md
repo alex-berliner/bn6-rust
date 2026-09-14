@@ -355,6 +355,38 @@ as a proposal with the measurement behind it.
 **Acceptance.** the decomposition table with citations; every fix verified on windowclose plus
 wave, window, opening, chip-cannon, field; full table nothing worse.
 
+### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/shot.rs, tools/harness.py (the buster row's note only)
+
+**Why.** buster isolated reads 3172 px over 32 frames and has been BLOCKED since F10/F10b (two
+misses: read both Results in TODO_ARCHIVE.md before anything else, and F1's, which changed the hit
+frame in shot.rs). F25d just showed the shape of these residues on the mettaur row: not art, not
+timing constants, but one object updating a frame late because our object lifecycle differs from
+canon's dispatcher (spawn-frame update). Measure the buster the same way: both sides' OAM for the
+shot and MegaMan per frame over the 32 frames, the tile bytes at phase-aligned pairs, the frame the
+shot spawns, moves and despawns, and the frame the enemy reacts (HP at 0x0203aa88+0x24, state +8/+9);
+cite canon's buster object routine and MegaMan's shooting state in reference/bn6f (file:line).
+**Acceptance.** buster 0/0/32 (negative not blind) with no alignment change except by a measured
+event; wave, window, opening, chip-cannon, field, mettaur 0; full table nothing worse. src/actor.rs
+is held by other workers: a change needed there is reported as an exact proposal, not made.
+
+### F30. `field` integrated: a one-scanline write lands on either side of a VBlank boundary depending on ROM layout  *(OPEN -- 2026-09-13)*
+
+**Files.** src/main.rs, src/field.rs
+
+**Why.** F25d measured that two builds differing only in ROM layout (545824 vs 553900 bytes, a
+one-statement change elsewhere) differ on field's own rust side at capture 121 by 39 px, all on
+scanline y=0, x 67..237, and at the boot frame; field isolated stays 0 but field integrated moved
+305258 -> 305263. A write that reaches VRAM or a register during that scanline's draw is sensitive
+to CPU time before VBlank: that is an engine-timing bug of ours (canon's driver copies during
+VBlank), not a canon difference, and it will bite every integrated row. Find the write (watch VRAM
+and the BG registers with mgba_capture --watch-write on that frame), move it under VBlank the way
+canon's driver sequences it (cite), and show the two builds' captures identical on every frame.
+**Acceptance.** field's rust side byte-identical between two ROM layouts (pad the ROM to prove it)
+on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
+chip-cannon 0.
+
 ### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
 
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
