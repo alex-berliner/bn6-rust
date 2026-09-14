@@ -19,6 +19,37 @@ use alloc::vec::Vec;
 const MAGIC: &[u8; 4] = b"BNRS";
 pub const WIN: usize = 0;
 pub const LOSE: usize = 1;
+/// How many window variants the blob carries: RESULT and LOSER.
+const VARIANT_N: usize = 2; // provenance: derived -- tools/results_export.py packs len(VARIANTS) = 2, and Results::new asserts the count
+/// BNRS blob header offsets (tools/results_export.py's `<4sIII`: MAGIC,
+/// version, variant count, palette offset).
+const BNRS_COUNT_OFF: usize = 0x08; // provenance: derived -- tools/results_export.py
+const BNRS_PAL_OFF: usize = 0x0c; // provenance: derived -- tools/results_export.py
+/// Where the first variant starts: past the 16-byte header.
+const BNRS_VARIANT_OFF: usize = 0x10; // provenance: derived -- tools/results_export.py
+/// A blob u32 field's width in bytes.
+const BLOB_U32: usize = 4; // provenance: derived -- tools/results_export.py's struct widths
+/// The exporter's alignment: every blob section is padded to a word.
+const BLOB_ALIGN: usize = 4; // provenance: derived -- tools/results_export.py pads len(out) % 4, and Results::new asserts word alignment
+/// A variant map's own header: the w and h u32s ahead of the u16 cells.
+const BNRS_MAP_HEAD: usize = 8; // provenance: derived -- tools/results_export.py's struct.pack("<II", 24, 18)
+/// A map cell is one u16 id.
+const CELL_BYTES: usize = 2; // provenance: derived -- tools/results_export.py's w*h u16 map
+/// A GBA 4bpp tile's bytes.
+const TILE_BYTES: usize = 32; // provenance: derived -- GBA 4bpp tile size (tools/results_export.py's FONT_TILE * 32 padding)
+/// The palette the blob appends: four banks of sixteen 2-byte colours --
+/// the window's banks 9-11 plus the reward picture's bank 12.
+const PAL_BANKS: usize = 4; // provenance: derived -- tools/results_export.py appends dword_8732814 (96 B) + dword_8733394 (32 B)
+const PAL_COLORS: usize = 16; // provenance: derived -- GBA palette bank size
+const PAL_BANK_BYTES: usize = 32; // provenance: derived -- 16 colours of 2 bytes (see above)
+const PAL_BYTES: usize = PAL_BANKS * PAL_BANK_BYTES; // provenance: derived -- four banks (see above)
+const PAL_ENTRY_BYTES: usize = 2; // provenance: derived -- a GBA palette entry is one u16
+/// BNTF blob (tools/text_font_export.py's `<4sII`: MAGIC, version, tiles
+/// offset): the glyph-table pointer and the two halves it points at --
+/// the raw glyphs, then the same glyphs with 8 added to every nibble.
+const FONT_MAGIC: &[u8; 4] = b"BNTF"; // provenance: derived -- tools/text_font_export.py
+const BNTF_TABLE_OFF: usize = 0x08; // provenance: derived -- tools/text_font_export.py
+const FONT_HALVES: usize = 2; // provenance: derived -- tools/text_font_export.py keeps tiles + colour-shifted copy
 
 /// Where the window rests, measured against the real ROM by aligning the two
 /// windows: 24 px right and 16 px down of what this build had, which is 3
@@ -53,8 +84,25 @@ const CELL_REWARD: u8 = 2;
 /// And two tile rows down.
 const Y: i32 = 16; // provenance: peeked -- aligned against the real ROM's own window (see the doc comment above)
 const DISMISS_FRAMES: u8 = 0x14; // provenance: derived -- sub_802C280, asm03_0.s:12234
+/// The dismissal fade's step count (see `Phase::Fading`).
+const FADE_STEPS: u8 = 16; // provenance: derived -- sub_802C280's own SetScreenFade 0x10
 /// The clear time is capped at 9'59"99 (dword_802C548).
 const TIME_CAP: u32 = 0x95999; // provenance: derived -- dword_802C548
+/// The clear time is stored in frames at the GBA's rate; the readout splits
+/// it into minutes, seconds and hundredths for the BCD digits below.
+const FPS: u32 = 60; // provenance: derived -- GBA frame rate (t.time counts frames)
+const CENTIS_PER_SEC: u32 = 100; // provenance: derived -- the readout's hundredths digit (see show)
+const SECS_PER_MIN: u32 = 60; // provenance: derived -- sixty seconds to the minute (see show)
+const MINUTE_FRAMES: u32 = 3600; // provenance: derived -- 60 fps times 60 s (see above)
+/// The readout caps at a single minutes digit (9'59"99 is the cap above).
+const TIME_MINUTES_MAX: u32 = 9; // provenance: derived -- single-digit minute readout capped by TIME_CAP
+/// The time digits' row: the five BCD digits sit two tiles tall at row 4
+/// (module doc; sub_802C4E8).
+const TIME_ROW: i32 = 4; // provenance: derived -- sub_802C4E8, asm03_0.s:12558
+/// The bank the time digits draw in: palette bank 9, recoloured by rank.
+const TIME_BANK: u16 = 9; // provenance: derived -- sub_802C4E8, asm03_0.s:12558
+/// The time's record colour rank runs 0-2 (see `show`).
+const RANK_MAX: u8 = 2; // provenance: derived -- rank 0-2 recolours the time digits (see show)
 const DIGIT_COLS: [usize; 5] = [20, 19, 17, 16, 14]; // provenance: derived -- sub_802C4E8, asm03_0.s:12558; byte_802C538
 /// The reward picture: 7x6 tiles at these window columns and rows, in the
 /// fourth palette bank. Read off a live results screen's map.
@@ -71,6 +119,9 @@ const REWARD_BANK: u8 = 12; // provenance: peeked -- read off a live results scr
 const REWARD_TEXT_ROW: i32 = 12; // provenance: peeked -- read off the capture's own map ("100 z" at rows 12-13)
 const REWARD_TEXT_LAST: i32 = 9; // provenance: peeked -- read off the capture's own map, columns 7-9 and 11
 const REWARD_TEXT_BANK: u8 = 9; // provenance: peeked -- read off the capture's own map
+/// The z glyph's column: past the last digit column, skipping the blank
+/// column 10 between the amount (7-9) and the z (11).
+const REWARD_Z_COL: i32 = REWARD_TEXT_LAST + 2; // provenance: peeked -- read off the capture's own map ("100 z" at columns 7-9 and 11)
 const ZENNY_GLYPH: u16 = 0xb3; // provenance: peeked -- found by searching all 448 glyphs of the real ROM's own font for the reward line's symbol
 /// The ten cells at window column 2, row 14 that canon's `sub_802C810`
 /// (reference/bn6f/asm/asm03_0.s:13013-13038) owns: it calls
@@ -88,6 +139,8 @@ const REWARD_EDGE_ROW: i32 = 14; // provenance: derived -- sub_802C810's r1 = 0x
 const REWARD_EDGE_FIRST: i32 = 2; // provenance: derived -- sub_802C810's r0 = 2 (asm03_0.s:13017)
 /// How many cells the run covers -- `sub_802C810`'s `mov r3, #0xa`.
 const PROMPT_W: usize = 10; // provenance: derived -- sub_802C810's r3 = 0xa (asm03_0.s:13019)
+/// How many runs `sub_802C810` chooses between: the flat face and the prompt (see above).
+const PROMPT_STATES: usize = 2; // provenance: derived -- byte_802C834/byte_802C848 (asm03_0.s:13029/13033)
 const REWARD_EDGE_LAST: i32 = REWARD_EDGE_FIRST + PROMPT_W as i32 - 1;
 const REWARD_EDGE_TILE: u16 = 0x0c4; // provenance: derived -- byte_802C834's tile (asm03_0.s:13029)
 /// The prompt's first tile; the ten run consecutively to 0xc3.
@@ -141,6 +194,13 @@ const LEVEL_ROW: i32 = 6; // provenance: derived -- sub_802C6EC, asm03_0.s:12830
 const LEVEL_COL: i32 = 16; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
 const S_TILE: u16 = 0xb6; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
 pub const LEVEL_S: u8 = 0xb; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+/// The level readout's last column: digits end at column 20 (see above).
+const LEVEL_LAST_COL: i32 = 20; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+/// The banks the level readout draws in: normal digits in 9, the S glyph in 10.
+const LEVEL_BANK: u16 = 9; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+const LEVEL_S_BANK: u16 = 10; // provenance: derived -- sub_802C6EC, asm03_0.s:12830-12888
+/// A two-tile-tall glyph's half count: top tile over bottom tile.
+const GLYPH_TILES: u16 = 2; // provenance: derived -- two-tile-tall glyphs (module doc; sub_802C4E8)
 
 /// What went into the busting level, from the game's per-alliance counters
 /// (byte_203EAE0; sub_800AC20, asm00_1.s:16678-17055).
@@ -163,22 +223,39 @@ pub struct Tally {
 /// points.
 /// provenance: derived (every constant below) -- off_800ADDC/byte_800AE00,
 /// sub_800AC20 asm00_1.s:16678-17055.
+/// The busting-level time gates in seconds and the base each grants, the hit
+/// count that still grants its point, and the floors (see `busting_level`).
+const BUST_FAST_S: u32 = 5; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_MID_S: u32 = 12; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_SLOW_S: u32 = 36; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_BASE_FAST: i32 = 6; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_BASE_MID: i32 = 5; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_BASE_SLOW: i32 = 4; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_BASE_FLOOR: i32 = 3; // provenance: derived -- off_800ADDC/byte_800AE00 (see busting_level)
+const BUST_HIT_CAP: u8 = 4; // provenance: derived -- sub_800AC20: four hits bottoms the bonus (see busting_level)
+const BUST_HIT_FLOOR: i32 = -3; // provenance: derived -- sub_800AC20 (see busting_level)
+const BUST_MOVE_CAP: u8 = 2; // provenance: derived -- sub_800AC20: moving at most twice grants the point (see busting_level)
+const BUST_MOVE_BONUS: i32 = 1; // provenance: derived -- sub_800AC20 (see busting_level)
 pub fn busting_level(t: &Tally) -> u8 {
-    let seconds = t.time / 60;
-    let base: i32 = if seconds < 5 {
-        6
-    } else if seconds < 12 {
-        5
-    } else if seconds < 36 {
-        4
+    let seconds = t.time / FPS;
+    let base: i32 = if seconds < BUST_FAST_S {
+        BUST_BASE_FAST
+    } else if seconds < BUST_MID_S {
+        BUST_BASE_MID
+    } else if seconds < BUST_SLOW_S {
+        BUST_BASE_SLOW
     } else {
-        3
+        BUST_BASE_FLOOR
     };
     let hit = match t.hits_taken {
-        x if x < 4 => 1 - x as i32,
-        _ => -3,
+        x if x < BUST_HIT_CAP => BUST_MOVE_BONUS - x as i32,
+        _ => BUST_HIT_FLOOR,
     };
-    let moved = if t.moves <= 2 { 1 } else { 0 };
+    let moved = if t.moves <= BUST_MOVE_CAP {
+        BUST_MOVE_BONUS
+    } else {
+        0
+    };
     (base + hit + moved).clamp(1, LEVEL_S as i32) as u8
 }
 
@@ -188,7 +265,7 @@ struct Variant {
 }
 
 pub struct Results {
-    variants: [Variant; 2],
+    variants: [Variant; VARIANT_N],
     palette: &'static [u8],
     /// The reward picture in the GET DATA box -- the zenny coin -- and its
     /// own bank. The game draws it into the window's map as a 7x6 image, the
@@ -244,7 +321,7 @@ pub struct Shown {
     /// The window's own 24x18 cells as raw map entries plus which tileset
     /// each belongs to (`CELL_*`), so the slide can re-blit them at a new
     /// column the way canon's `CopyBackgroundTiles` redraw does.
-    cells: [(u8, u16); 24 * 18],
+    cells: [(u8, u16); WIN_W * WIN_H],
     /// The slide rewrite's pre-resolved map words, one per `cells` entry,
     /// plus the pinned VRAM tiles they point at. Rebuilt by
     /// `resolve_cells` whenever `cells` change (show, reward reveal), so
@@ -267,7 +344,7 @@ pub struct Shown {
     /// The two ten-cell runs `sub_802C810` chooses between, already resolved
     /// to map words (state 0 = the flat face, state 1 = the prompt), so the
     /// blink is ten `words` stores and a re-blit rather than a re-resolve.
-    prompt: [[u16; PROMPT_W]; 2],
+    prompt: [[u16; PROMPT_W]; PROMPT_STATES],
     /// Which run is currently in `words`; `PROMPT_UNWRITTEN` until the
     /// driver's wait state writes one for the first time (canon's setup map
     /// stands until then).
@@ -306,25 +383,26 @@ pub fn mark_x_at(slide_x: i32) -> i32 {
 
 impl Results {
     pub fn new(data: &'static [u8], font: &'static [u8]) -> Self {
-        assert_eq!(&data[0..4], MAGIC, "not a BNRS asset");
-        let u32_at = |o: usize| u32::from_le_bytes(data[o..o + 4].try_into().unwrap()) as usize;
-        let count = u32_at(0x08);
-        assert_eq!(count, 2);
-        let pal = u32_at(0x0c);
-        let mut o = 0x10;
+        assert_eq!(&data[0..MAGIC.len()], MAGIC, "not a BNRS asset");
+        let u32_at =
+            |o: usize| u32::from_le_bytes(data[o..o + BLOB_U32].try_into().unwrap()) as usize;
+        let count = u32_at(BNRS_COUNT_OFF);
+        assert_eq!(count, VARIANT_N);
+        let pal = u32_at(BNRS_PAL_OFF);
+        let mut o = BNRS_VARIANT_OFF;
         let mut variant = || {
-            o = (o + 3) & !3;
+            o = (o + BLOB_ALIGN - 1) & !(BLOB_ALIGN - 1);
             let len = u32_at(o);
-            let tiles = &data[o + 4..o + 4 + len];
+            let tiles = &data[o + BLOB_U32..o + BLOB_U32 + len];
             assert_eq!(
-                tiles.as_ptr() as usize % 4,
+                tiles.as_ptr() as usize % BLOB_ALIGN,
                 0,
                 "tile data must be word aligned"
             );
-            o = (o + 4 + len + 3) & !3;
-            let (w, h) = (u32_at(o), u32_at(o + 4));
-            let map = &data[o + 8..o + 8 + w * h * 2];
-            o += 8 + w * h * 2;
+            o = (o + BLOB_U32 + len + BLOB_ALIGN - 1) & !(BLOB_ALIGN - 1);
+            let (w, h) = (u32_at(o), u32_at(o + BLOB_U32));
+            let map = &data[o + BNRS_MAP_HEAD..o + BNRS_MAP_HEAD + w * h * CELL_BYTES];
+            o += BNRS_MAP_HEAD + w * h * CELL_BYTES;
             Variant {
                 // SAFETY: alignment asserted above; the exporter emits whole
                 // 4bpp tiles.
@@ -336,18 +414,30 @@ impl Results {
         let b = variant();
         Self {
             variants: [a, b],
-            palette: &data[pal..pal + 128],
+            palette: &data[pal..pal + PAL_BYTES],
             // SAFETY: the exporter 4-aligns the blob and emits whole tiles.
             reward: unsafe {
-                TileSet::new(&data[pal + 128..pal + 128 + REWARD_TILES * 32], TileFormat::FourBpp)
+                TileSet::new(
+                    &data[pal + PAL_BYTES..pal + PAL_BYTES + REWARD_TILES * TILE_BYTES],
+                    TileFormat::FourBpp,
+                )
             },
             font: {
-                assert_eq!(&font[0..4], b"BNTF", "not a BNTF asset");
-                let fo = u32::from_le_bytes(font[0x08..0x0c].try_into().unwrap()) as usize;
-                let len = u32::from_le_bytes(font[fo..fo + 4].try_into().unwrap()) as usize;
+                assert_eq!(&font[0..FONT_MAGIC.len()], FONT_MAGIC, "not a BNTF asset");
+                let fo = u32::from_le_bytes(
+                    font[BNTF_TABLE_OFF..BNTF_TABLE_OFF + BLOB_U32]
+                        .try_into()
+                        .unwrap(),
+                ) as usize;
+                let len =
+                    u32::from_le_bytes(font[fo..fo + BLOB_U32].try_into().unwrap()) as usize;
                 // The second half is the colour-added copy.
-                let g = &font[fo + 4 + len / 2..fo + 4 + len];
-                assert_eq!(g.as_ptr() as usize % 4, 0, "font must be word aligned");
+                let g = &font[fo + BLOB_U32 + len / FONT_HALVES..fo + BLOB_U32 + len];
+                assert_eq!(
+                    g.as_ptr() as usize % BLOB_ALIGN,
+                    0,
+                    "font must be word aligned"
+                );
                 // SAFETY: alignment asserted; the exporter emits whole tiles.
                 unsafe { TileSet::new(g, TileFormat::FourBpp) }
             },
@@ -355,15 +445,15 @@ impl Results {
     }
 
     /// The three palette banks the windows use, for background banks 9-11.
-    pub fn palettes(&self) -> [Palette16; 4] {
+    pub fn palettes(&self) -> [Palette16; PAL_BANKS] {
         core::array::from_fn(|bank| {
-            let mut colours = [Rgb15::new(0); 16];
+            let mut colours = [Rgb15::new(0); PAL_COLORS];
             for (i, slot) in colours.iter_mut().enumerate() {
                 // Banks 9-11 are the window's; the fourth is the reward
                 // picture's bank 12, which the exporter appends.
-                let o = bank * 32 + i * 2;
+                let o = bank * PAL_BANK_BYTES + i * PAL_ENTRY_BYTES;
                 *slot = Rgb15::new(u16::from_le_bytes(
-                    self.palette[o..o + 2].try_into().unwrap(),
+                    self.palette[o..o + PAL_ENTRY_BYTES].try_into().unwrap(),
                 ));
             }
             Palette16::new(colours)
@@ -377,9 +467,9 @@ impl Results {
     /// index in this font (constants/bn6-charmap.tbl).
     fn char_code(c: u8) -> u16 {
         match c {
-            b'0'..=b'9' => 0x01 + (c - b'0') as u16,
-            b'A'..=b'Z' => 0x0b + (c - b'A') as u16,
-            b'a'..=b'z' => 0x26 + (c - b'a') as u16,
+            b'0'..=b'9' => 0x01 + (c - b'0') as u16, // canon: bn6-charmap.tbl digit base (see above)
+            b'A'..=b'Z' => 0x0b + (c - b'A') as u16, // canon: bn6-charmap.tbl uppercase base (see above)
+            b'a'..=b'z' => 0x26 + (c - b'a') as u16, // canon: bn6-charmap.tbl lowercase base (see above)
             _ => 0,
         }
     }
@@ -408,51 +498,56 @@ impl Results {
             RegularBackgroundSize::Background32x32,
             TileFormat::FourBpp,
         );
-        let mut cells = [(CELL_BASE, 0u16); 24 * 18];
-        for i in 0..24 * 18 {
+        let mut cells = [(CELL_BASE, 0u16); WIN_W * WIN_H];
+        for i in 0..WIN_W * WIN_H {
             cells[i] = (
                 CELL_BASE,
-                u16::from_le_bytes(v.map[i * 2..i * 2 + 2].try_into().unwrap()),
+                u16::from_le_bytes(
+                    v.map[i * CELL_BYTES..i * CELL_BYTES + CELL_BYTES]
+                        .try_into()
+                        .unwrap(),
+                ),
             );
         }
         if variant == WIN {
             // Minutes, seconds and hundredths as BCD, least significant first.
-            let frames = time.min(u32::MAX / 100);
-            let hundredths = frames % 60 * 100 / 60;
-            let seconds = frames / 60 % 60;
-            let minutes = (frames / 3600).min(9);
-            let mut bcd = hundredths % 10
-                | (hundredths / 10) << 4
-                | (seconds % 10) << 8
-                | (seconds / 10) << 12
-                | minutes << 16;
+            let frames = time.min(u32::MAX / CENTIS_PER_SEC);
+            let hundredths = frames % FPS * CENTIS_PER_SEC / FPS;
+            let seconds = frames / FPS % SECS_PER_MIN;
+            let minutes = (frames / MINUTE_FRAMES).min(TIME_MINUTES_MAX);
+            let mut bcd = hundredths % 10 // canon: BCD nibble packing (TIME_CAP is BCD: 9'59"99)
+                | (hundredths / 10) << 4 // canon: BCD nibble packing (see above)
+                | (seconds % 10) << 8 // canon: BCD nibble packing (see above)
+                | (seconds / 10) << 12 // canon: BCD nibble packing (see above)
+                | minutes << 16; // canon: BCD nibble packing (see above)
             bcd = bcd.min(TIME_CAP);
             for col in DIGIT_COLS {
-                let d = (bcd & 0xf) as u16;
-                let top = FONT_TILE + d * 2;
-                let bank = 9 + rank.min(2) as u16;
+                let d = (bcd & 0xf) as u16; // canon: BCD digit mask (see above)
+                let top = FONT_TILE + d * GLYPH_TILES;
+                let bank = TIME_BANK + rank.min(RANK_MAX) as u16;
                 for (dy, tile) in [(0, top), (1, top + 1)] {
-                    cells[(4 + dy) as usize * 24 + col] = (CELL_BASE, tile | bank << 12);
+                    cells[(TIME_ROW + dy) as usize * WIN_W + col] =
+                        (CELL_BASE, tile | bank << MAP_PAL_SHIFT);
                 }
-                bcd >>= 4;
+                bcd >>= 4; // canon: next BCD digit (see above)
             }
             // The level: S as its one glyph, else decimal digits right-aligned
             // to the readout's last column.
-            let mut col = LEVEL_COL + 4;
+            let mut col = LEVEL_LAST_COL;
             if level >= LEVEL_S {
                 for (dy, tile) in [(0, S_TILE), (1, S_TILE + 1)] {
-                    cells[(LEVEL_ROW + dy) as usize * 24 + col as usize] =
-                        (CELL_BASE, tile | 10 << 12);
+                    cells[(LEVEL_ROW + dy) as usize * WIN_W + col as usize] =
+                        (CELL_BASE, tile | LEVEL_S_BANK << MAP_PAL_SHIFT);
                 }
             } else {
                 let mut n = level.max(1);
                 loop {
-                    let top = FONT_TILE + (n % 10) as u16 * 2;
+                    let top = FONT_TILE + (n % 10) as u16 * GLYPH_TILES; // unnamed: decimal digit extraction
                     for (dy, tile) in [(0, top), (1, top + 1)] {
-                        cells[(LEVEL_ROW + dy) as usize * 24 + col as usize] =
-                            (CELL_BASE, tile | 9 << 12);
+                        cells[(LEVEL_ROW + dy) as usize * WIN_W + col as usize] =
+                            (CELL_BASE, tile | LEVEL_BANK << MAP_PAL_SHIFT);
                     }
-                    n /= 10;
+                    n /= 10; // unnamed: decimal digit extraction
                     if n == 0 {
                         break;
                     }
@@ -487,7 +582,7 @@ impl Results {
             },
             variant,
             zenny,
-            prompt: [[0; PROMPT_W]; 2],
+            prompt: [[0; PROMPT_W]; PROMPT_STATES],
             prompt_state: PROMPT_UNWRITTEN,
             frames: 0,
             wait_frames: 0,
@@ -514,12 +609,12 @@ impl Results {
             let mut n = zenny;
             let mut col = REWARD_TEXT_LAST;
             loop {
-                let g = Self::char_code(b'0' + (n % 10) as u8);
-                for half in 0..2u16 {
-                    cells[(REWARD_TEXT_ROW + half as i32) as usize * 24 + col as usize] =
-                        (CELL_FONT, g * 2 + half | (REWARD_TEXT_BANK as u16) << 12);
+                let g = Self::char_code(b'0' + (n % 10) as u8); // unnamed: decimal digit extraction
+                for half in 0..GLYPH_TILES {
+                    cells[(REWARD_TEXT_ROW + half as i32) as usize * WIN_W + col as usize] =
+                        (CELL_FONT, g * GLYPH_TILES + half | (REWARD_TEXT_BANK as u16) << MAP_PAL_SHIFT);
                 }
-                n /= 10;
+                n /= 10; // unnamed: decimal digit extraction
                 col -= 1;
                 if n == 0 {
                     break;
@@ -529,18 +624,18 @@ impl Results {
             // of the font, found by taking the real ROM's own reward line
             // out of VRAM and searching all 448 glyphs for it.
             let z = ZENNY_GLYPH;
-            for half in 0..2u16 {
-                cells[(REWARD_TEXT_ROW + half as i32) as usize * 24
-                    + (REWARD_TEXT_LAST + 2) as usize] =
-                    (CELL_FONT, z * 2 + half | (REWARD_TEXT_BANK as u16) << 12);
+            for half in 0..GLYPH_TILES {
+                cells[(REWARD_TEXT_ROW + half as i32) as usize * WIN_W
+                    + REWARD_Z_COL as usize] =
+                    (CELL_FONT, z * GLYPH_TILES + half | (REWARD_TEXT_BANK as u16) << MAP_PAL_SHIFT);
             }
             for k in 0..REWARD_TILES {
-                cells[(REWARD_ROW + (k / REWARD_W) as i32) as usize * 24
+                cells[(REWARD_ROW + (k / REWARD_W) as i32) as usize * WIN_W
                     + (REWARD_COL + (k % REWARD_W) as i32) as usize] = (CELL_REWARD, k as u16);
             }
             for col in REWARD_EDGE_FIRST..=REWARD_EDGE_LAST {
-                cells[REWARD_EDGE_ROW as usize * 24 + col as usize] =
-                    (CELL_BASE, REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << 12);
+                cells[REWARD_EDGE_ROW as usize * WIN_W + col as usize] =
+                    (CELL_BASE, REWARD_EDGE_TILE | (REWARD_TEXT_BANK as u16) << MAP_PAL_SHIFT);
             }
             shown.blit_needed = true;
             self.resolve_cells(shown);
@@ -588,14 +683,14 @@ impl Results {
         // `sub_802C810`'s two runs, resolved once so the blink costs ten
         // stores. Appended after the cells so `guards` still pins every word
         // the blit can write.
-        for state in 0..2usize {
+        for state in 0..PROMPT_STATES {
             for col in 0..PROMPT_W {
                 let tile = if state == 0 {
                     REWARD_EDGE_TILE
                 } else {
                     PROMPT_TILE + col as u16
                 };
-                let raw = tile | (REWARD_TEXT_BANK as u16) << 12;
+                let raw = tile | (REWARD_TEXT_BANK as u16) << MAP_PAL_SHIFT;
                 shown.guards.push(MappedTile::new(&v.tiles, entry(raw)));
                 shown.prompt[state][col] = shown.guards[shown.guards.len() - 1].word();
             }
@@ -634,10 +729,20 @@ impl Results {
     }
 }
 
+/// A GBA background map word: the tile id in bits 0-9, the flips in 10-11,
+/// the palette bank in 12-15.
+const MAP_TILE_MASK: u16 = 0x3ff; // provenance: derived -- GBA background map entry format
+const MAP_HFLIP: u16 = 0x400; // provenance: derived -- GBA background map entry format
+const MAP_VFLIP: u16 = 0x800; // provenance: derived -- GBA background map entry format
+const MAP_PAL_SHIFT: u16 = 12; // provenance: derived -- GBA background map entry format
 fn entry(e: u16) -> TileSetting {
     TileSetting::new(
-        e & 0x3ff,
-        TileEffect::new(e & 0x400 != 0, e & 0x800 != 0, (e >> 12) as u8),
+        e & MAP_TILE_MASK,
+        TileEffect::new(
+            e & MAP_HFLIP != 0,
+            e & MAP_VFLIP != 0,
+            (e >> MAP_PAL_SHIFT) as u8,
+        ),
     )
 }
 
@@ -683,7 +788,7 @@ impl Shown {
             Phase::RewardWait => Phase::RewardWait,
             Phase::Dismissing { ticks } if ticks > 1 => Phase::Dismissing { ticks: ticks - 1 },
             Phase::Dismissing { .. } => Phase::Fading { step: 1 },
-            Phase::Fading { step } if step < 16 => Phase::Fading { step: step + 1 },
+            Phase::Fading { step } if step < FADE_STEPS => Phase::Fading { step: step + 1 },
             Phase::Fading { .. } => Phase::Done,
             Phase::Done => Phase::Done,
         };
@@ -709,7 +814,7 @@ impl Shown {
         }
         match self.phase {
             Phase::Fading { step } => Some(step),
-            Phase::Done => Some(16),
+            Phase::Done => Some(FADE_STEPS),
             _ => None,
         }
     }
