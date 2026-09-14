@@ -435,3 +435,40 @@ than inventing a gate.
 either `tools/states.py` gains a poke that makes `dword_203CA70` advance (with a capture showing it, plus the frame
 of the first attack event, which is what the row will align on), or the report names the exact PC/byte where the
 poked battle's chain stops. Either way a follow-up row ticket becomes writable.
+### T13b. The two audio defects T13 measured: the ungated hit sample, and the 6.6 ms onset offset  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs, docs/audio/baseline-buster.md (three wording fixes), docs/coverage/audio-buster.md (new)
+
+**Why.** T13 landed (`9d52135`) the first sample-exact audio comparison and its verifier confirmed, from the trees
+on disk and with zero capture runs, two defects that are mechanical facts about our side -- not synthesis guesses:
+(a) `src/battle.rs:3235` sets `hit_in = BUSTER_HIT_DELAY` inside `Update::Strike { charged }`'s uncharged arm with
+**no enemy-overlap and no HP gate**, so `assets/buster_hit.wav` plays through the agb mixer on FIFO A (channel id 4)
+at press+10 (frames 118..130, RMS 2175.9, peak 11221 -- which is our *whole-tree* peak) in a scenario that has no
+enemy to hit; canon's run of the same scenario shows no such onset (its frame 140 = 2181.5 sits *below* 136-139 =
+2466/2519/2593/2782). It is the only `play_sound` call in all of `src`. (b) the buster blip's onset is **one frame
+later than canon's at frame granularity, and the verifier's mandatory qualifier is that the measured onset-to-onset
+distance is ~635 interleaved pairs = 6.6 ms, NOT one frame**: canon's first differing sample is pair 1119/1605 into
+its frame 135 (press+5, a partial frame -- 486 of 3210 samples, all in L) while ours starts at pair 149/1605 of
+frame 114 (press+6, a full frame), so a fix that shifts ours a whole frame earlier **overshoots by ~10 ms and fails
+a sample-exact check it should pass**. The frame-level attribution is now measured, not inferred: the no-press canon
+control subtracts sample-exactly at all 130 pre-press frames plus the four poke frames, cancelling the frames 12-27
+music (RMS 4234.6 / peak 8460 -> difference 0.0).
+**Do.**
+1. Gate the hit sample the way the ROM gates it → *find canon's own condition for the `SOUND_BUSTER_*` hit sound in
+   the disassembly (the fire phase's enemy-overlap/HP test, cited `symbol:file:line`), implement that predicate on
+   the `hit_in` write, and re-measure: our channel-4 tree in a zero-enemy fixture must go silent, and with an enemy
+   present the event must appear where the predicate says. Report both trees' peaks, not one.*
+2. Close the onset offset as a **time** difference, not a frame difference → *report the onset pair index on both
+   sides after the change (canon 1119/1605 of its onset frame is the target's phase); state the residual in pairs
+   and in ms at the measured 95999.1 / 95589.4 Hz, and do not claim parity at frame granularity alone.*
+3. Three wording fixes in `docs/audio/baseline-buster.md`, none of which changes a number: label the 9179 as a
+   **peak of the subtraction** on a channel where the blip *replaced* the music (canon's own peak at 136 is 8366);
+   note that "decay to 2123 by 142" is measured against the ~3000 unattributed divergence floor the doc already
+   disclaims; and change "now reports every mismatched frame" to what the tool does (counts all 106, lists the
+   first 10).
+4. Leave the frame-0 ramp ALONE but say what it is → *our frame 0 is short (234 pairs vs canon's 1605) AND silent
+   (max |sample| 0 over its 234 pairs), which is why the first cross-side difference is global s16 index 2; report
+   whether that is our boot-time audio ramp or the capture harness's own priming, with a cite, and stop there.*
+
+**Rules.** No edit to `tools/harness.py` (this adds **no row** -- audio is still not a harness verdict), `tools/mgba_capture.c`, `tools/states.py`, `tools/trace.py`, `FIXTURE.md`, `assets/`, `docs/coverage/` except the new `audio-buster.md`, `reference/bn6f` read-only. ≤8 capture runs, one at a time inside the 3-slot semaphore, and state the count honestly (T13 disclosed 13 runs against an 8 budget; a disclosed overage is fine, a quiet one is not). No fitted numbers: `BUSTER_BLIP_ENVELOPE`/`_FREQ`/`_FRAMES` may only change against a cited ROM value or a measured residue, and the `provenance:` tag must be updated in the same commit. `docs/inventory/enemies.{json,md}` are T12's generated output -- regenerate with its tool, never hand-edit.
+**Acceptance.** the full table identical to today -- every named row except the `rollup` line, i.e. the same set `python3 tools/harness.py --list` prints, each isolated row reading 0 (`cursor`'s single-frame tear reported, not chased) -- a `src/` change must not move a pixel; our channel-4 tree silent in the zero-enemy fixture with the predicate cited; the onset residual stated in pairs and ms against the 6.6 ms measurement; `docs/coverage/audio-buster.md` recording what is now parity and what is still residue.
