@@ -22,9 +22,10 @@
 # coordinator over minimax's workers while both have budget.
 
 [schedule]
-runs = ["hyper"]          # run profiles to keep going, in order; serial: the first that can start; parallel: all
-parallel = false
-reserve = ["openrouter", "minimax"]  # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
+runs = ["hyper", "minimax"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all
+parallel = true               # 2026-09-14 evening: two independent runs, each self-sufficient (M3 coordinated a full
+                              # cycle correctly: T7e landed 19:07); tickets are claimed per run
+reserve = ["openrouter"]      # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
 
 # ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
@@ -54,10 +55,10 @@ tail = false
 [providers.minimax]
 kind = "subscription"                     # the $22/month coding plan: a rolling 5-hour window and a weekly cap, both
 probe = "python3 tools/minimax_quota.py"  # reported as a remaining percentage by its own endpoint; --min N is in percent
-start_above = 10                          # percent of the window a run needs to start
-stop_below = 2                            # the watcher stops a run under this percent
-tail = false                              # a window refills by itself; nothing to spend down
-reset = "rolling 5h"                      # a window, not a daily balance: never paced, used whenever open
+start_above = 10                          # percent of the window a run needs to start; the probe also refuses once the
+stop_below = 2                            # day's weekly ALLOWANCE is spent (weekly remainder / days left, measured each
+tail = false                              # morning), so the week lasts the week: about 0.7% of the week per ticket cycle
+reset = "rolling 5h"                      # (2026-09-14), i.e. roughly 20 cycles a day at an even spend
 price_usd_per_month = 22
 daily_credits = 480                       # 100 percent points per 5-hour window, 4.8 windows a day: the price of a point
 
@@ -107,7 +108,7 @@ digest = ["openrouter/meta/muse-spark-1.3-contributor"]
 # auditor = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
 # digest = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
 #
-[runs.minimax]                            # minimax on its own (in the reserve until its benchmark is in)
+[runs.minimax]                            # minimax on its own: M3 coordinates and works, M2.7 verifies and maps
 workers = 2
 coordinator = ["minimax/MiniMax-M3"]
 worker = ["minimax/MiniMax-M3"]

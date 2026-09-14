@@ -69,3 +69,18 @@ launch; a run stops when the provider of its coordinator or worker is exhausted 
 on its fallbacks. Both subscriptions drain: the shared-coordinator run keeps going on its own coordinator
 once hyper is spent, and hyper's own run keeps going while hyper has credits. The rendered agent files did not
 change for today's run.
+
+## 2026-09-14 19:35 -- two subscriptions in parallel (the MiniMax verdict)
+
+MiniMax's $22 plan was put through its paces: M3 as worker passed 3 of 4 replays at Muse's and GLM's pace
+(F25c failed after 366 turns); as coordinator it ran a full cycle correctly on the third launch (T7e landed
+1b7187b with verify_rows PASS on every row and its own M2.7 verifier confirming four claims), the first two
+launches ending on a judgment call (handed back when the only open tickets were claimed) and on a watcher
+bug (hyper's exhaustion killed it by a role-name pattern). The plan refuses bursts long before its windows are
+used (error 2062), so pi talks to it through tools/api_pacer.py at 20 requests a minute with retries; and its
+weekly window is the binding budget (about 0.7% of the week per ticket cycle against 5% of a 5-hour window),
+so tools/minimax_quota.py enforces a daily allowance (weekly remainder at the day's start divided by the days
+left) and the run stops for the day when it is spent. Decision: schedule.runs = ["hyper", "minimax"], parallel;
+each run self-sufficient; the joint sketch (hyper coordinating minimax's workers) stays a comment -- it is not
+needed and would add a fourth hyper session, which trips hyper's hourly limit. Benchmarks are queued ahead of a
+provider's run, never beside it.
