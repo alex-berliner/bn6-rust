@@ -44,6 +44,6 @@ for line in open(sys.argv[1]):
         cost += ((m.get("usage") or {}).get("cost") or {}).get("total", 0)
         t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
         if t: last = t
-open(sys.argv[2], "w").write("# Proposed tickets %s (Muse Spark 1.3 contributor, $%.4f)\n\n%s\n" % (sys.argv[3], cost, last or "(no output -- see the session's stderr)"))
+open(sys.argv[2], "w").write("# Proposed tickets %s (hyper/qwen3.8-flash, $%.4f)\n\n%s\n" % (sys.argv[3], cost, last or "(no output -- see the session's stderr)"))
 print("%s ($%.4f)" % (sys.argv[2], cost))
 EOF

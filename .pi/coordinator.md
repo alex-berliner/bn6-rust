@@ -10,7 +10,9 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 1. `python3 tools/or_spend.py --min <floor>` (the floor your instruction names, else 3) -- if it exits
    non-zero, STOP. Then `python3 tools/next_ticket.py --pair N` (N = the number of workers the
    instruction allows, default 2): it prints the first OPEN ticket and, after each `=== PAIR ===`, another
-   OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints "no OPEN ticket", STOP. Never read TODO.md whole.
+   OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints "no OPEN ticket": run `bash tools/pi_judge.sh` (it prints a proposal file path), then
+   `python3 tools/judge_append.py <that file>`; if it admitted a ticket, continue the loop from step 1;
+   if it admitted none, STOP. Never read TODO.md whole.
 2. **Dispatch.** Start each printed ticket's worker with `async: true`, using the roles in the order the
    instruction lists them (e.g. `worker, worker-hyper, worker-hyper`: the first ticket to the first role);
    if there is a pair, start the
