@@ -535,6 +535,27 @@ integrated with canon routines; field integrated as low as the elements you fixe
 variants and wave/window/opening/chip-cannon/popup/tiles/gauge untouched at their values; an allowlist entry
 removed only for a row that reads 0; nothing worse.
 
+### F34b. `result` to 0: no intro fade when the fixture starts on the results screen, MegaMan's panel, no enemy  *(OPEN -- 2026-09-13)*
+
+**Files.** src/battle.rs (the intro_fade line at ~1632 only), tools/harness.py (RESULT_ROW / RESULTMATCH_ROW descriptor fields and the result row's note)
+
+**Why.** F34 measured the result row's remaining 93183/14866/40 to 0 with three changes applied together
+(each alone measured too): (1) `src/battle.rs:1632`: `intro_fade = 0` when the fixture's `start_state == 1`
+-- canon's RESULT_ARRIVAL state is 8048 battle frames in and has no fade left, while FLAG_SKIP_INTRO's
+INTRO_SKIP_FADE darkens our field and objects for the first ten compared frames: 93183 -> 7316/1878/40 with
+every BG layer 0 on all 40 frames (cite the intro fade's canon counterpart and why it is over by then);
+(2) RESULT_ROW `megaman_col` 3 -> 2: canon's BattleObject 0x0203a9b0+0x12 PanelX reads 2 on every frame
+(BattleObject.inc:63; megaman_row 2 is already right): 7316 -> 3330; (3) RESULT_ROW `enemies` 1 -> 0: canon's
+enemy slot 0x0203aa88 sits in CUR_STATE_DESTROY 0x08 at the row's canon_ref (BattleObject.inc:38), so we draw
+385-511 px canon does not: 7316 -> 3986. All three: `result isolated PASS 0/0/40, negative 111839 not blind`.
+The descriptor fields without the fade are worth only 56 px, so land the three together.
+**Do.** Start in `bash tools/worktree.sh f34b-result-zero`; baseline result 93183/14866/40; apply the three
+with the citations above (provenance peeked for the two descriptor fields, the fade rule as a comment on
+the canon state); measure each alone and all together. **Acceptance.** result 0/0/40 (negative not blind);
+field, wave, window, opening, chip-cannon, popup, mettaur, buster 0; cursor/windowclose and the integrated
+rows unchanged or better; nothing worse. **Coordinator:** verify_rows on result and the canaries; the
+verifier only on the fade citation.
+
 ### F32. End sequence: `over` fires at the last enemy's defeat, canon enters the RESULT countdown 47 frames later, after the dissolve  *(OPEN -- 2026-09-13)*
 
 **Files.** src/battle.rs (the end sequence only), src/banner.rs
@@ -550,7 +571,9 @@ ours enter the end sequence on the same event with the same count. **Acceptance.
 after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
 alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
 
-### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail *(CLAUDE -- 2026-09-13)*
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(PARTIAL -- 2026-09-13, result 102547/14866/40 -> 93183/14866/40 [neg 192263 not blind], landed: canon's PRESS-A-BUTTON prompt run in )*
+
+**Result.** result 102547/14866/40 -> 93183/14866/40 (neg 192263 not blind), landed: canon's PRESS-A-BUTTON prompt run in src/results.rs (sub_802C810 setup + the bit-3 blink of sub_802BF0C on eToolkit CurFramePtr 0x0200a210 = 0x22ef at canon 0, +1/frame; toggles at k=21/29/37 on both sides, first write at k=14 on both) took window+HUD 4819 -> 0, and RESULT_ROW's backdrop seed derived from canon's RAM at canon 21 of result_arrival.state (counters 0xffff0480/0xffff8240 = battle frame 8048; eGFXAnimStates[0] entry 27/Timer 7) took the backdrop 18982 -> 0. Layer table at origin 13 / offset 21: backdrop 0/40, window 0/40 (our BG2 HP box composited under BG3 vs canon BG3 = 0; the 704 px per layer is layer assignment only), field 18552/frame on k=0..9 then 0, OBJ 423 attributed; composite 93183 = 92760 BG (field, k=0..9) + 423 OBJ. New finding: the pipeline lags are marker-anchored, scroll tick = R - origin + 1 and art tick = R - origin + 3 (F26b/F33b's R-7/R-5 are the origin-8 case; this origin-13 row separates them: 692/858 + entry 24/Timer 6 gives backdrop 0/40 with a unique sharp minimum, the absolute reading 387793). Not exercised here: the reward reveal chain (sub_802C044/sub_802C0A4, no confirm press in the window). The whole remainder is measured to 0: intro_fade = 0 when the fixture's start_state == 1 (canon's arrival has no fade; FLAG_SKIP_INTRO's INTRO_SKIP_FADE darkens our first ten frames) 93183 -> 7316 with every BG layer 0/40; RESULT_ROW megaman_col 3 -> 2 (canon PanelX 2 at 0x0203a9c2) 7316 -> 3330; RESULT_ROW enemies 1 -> 0 (canon's enemy slot in CUR_STATE_DESTROY 0x08 at 0x0203aa90) 7316 -> 3986; all three: result PASS 0/0/40, negative 111839 not blind; descriptor fields without the fade only 56 px (F34b, pi). Full table 52 PASS, rollup PASS, nothing worse (cursor 154383 vs 154386 jitter). Claude Opus agents, 124 + ~40 tool calls, 28 + 30 min, 228k + ~150k tokens (the first agent was cut off by the session limit and had committed its work).
 **Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
 
 **Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
@@ -624,7 +647,7 @@ flush routine and its place in the frame loop), and drive scroll and art from on
 same amount; then re-derive the CURSOR_ROW/WINDOWCLOSE_ROW seeds by F26b's derivation with the new single
 lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor's BG1-only diff 0 on all 170
 frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
-0 or unchanged; nothing worse.
+0 or unchanged; nothing worse. F34 (result, marker origin 13) found the lags are marker-anchored, not absolute: scroll tick = R - origin + 1, art tick = R - origin + 3 (F26b/F33b's R-7/R-5 are the origin-8 case); use that form.
 
 ### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(OPEN -- 2026-09-13)*
 
