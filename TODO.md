@@ -302,6 +302,26 @@ tools/oracle.py's (or explain the difference); (5) the negative control: a one-f
 must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
 the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
 
+### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(OPEN -- 2026-09-14)*
+
+**Files.** src/main.rs, src/fixture.rs, src/actor.rs, src/backdrop.rs, src/battle.rs (the export sites only), tools/trace.py, tools/states.py, AGENT_GUIDE.md
+
+**Why.** T1's harness works and is kept on wt/t1-trace (147bb0a: the versioned TRC2 64-byte export block at
+0x02000080, linker-placed; 1ee6705: record/diff, scenarios, docs; calibration agrees with the oracle on three
+rows, the negative control is live). It could not land because the per-frame export stores move field
+integrated 158950 -> 158983 (the verifier's control confirmed: disabling the stores restores the baseline
+exactly): extra work per frame shifts a mid-frame write, the class F30 measured. The pixel rows must run
+with the export off and byte-identical to main; only trace recordings turn it on.
+**Do.** Start with `bash tools/worktree.sh t1b-trace-land` then `git merge wt/t1-trace`. Gate every export
+store on one flag read once per frame (a fixture descriptor bit, provenance peeked, or a marker byte the
+trace recorder pokes at load): when off, no store executes on any path; when on, the block is written every
+frame. Prove it: with the flag off, the release .gba's behaviour is byte-identical to main on the full table
+(every row, both variants, identical lines; field integrated 158950 back); with the flag on, `tools/trace.py
+record rust battle_full` and the three calibration rows reproduce T1's results, and the negative control
+still fires. Confirm the two items T1 left unconfirmed (the RNG field at k=271, the RESULT dismissal in
+battle_full). **Acceptance.** full table identical to main with the flag off; T1's record/diff/calibration/
+negative with the flag on; AGENT_GUIDE.md's ten lines on the trace commands.
+
 ### T2. Coverage: which canon routines each scenario executes, ranked  *(OPEN -- 2026-09-14)*
 
 **Files.** tools/coverage.py (new), docs/coverage/ (new), tools/states.py (read)
