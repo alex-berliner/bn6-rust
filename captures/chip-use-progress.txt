@@ -1,0 +1,3 @@
+F12 chip-use re-cut F31b-style: AIData A-tap poke fires canon Cannon; 9514/1185/32->0/0/30
+
+chip-use (isolated), before and after: canon on top; ours at 8067dc7 (9514 px over 32 frames, canon 150+k, rust offset 129); ours at 1a3ca80 (0 px, canon 130+k, rust offset 101). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
