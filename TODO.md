@@ -204,6 +204,26 @@ state sequence and frames from the killing blow to the results window's first sl
 integrated rows 0 or their per-frame remainder against F34's chain; result, popup, banner, field isolated
 0; opening integrated re-measured; allowlist entries removed only for rows that read 0; nothing worse.
 
+### T7b. Re-establish the sequencer evidence: fresh v3 traces, loud judge, kill-to-slide gap  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/trace.py (judge + align fixes only), src/battle.rs (only if the re-measurement indicts the Sequencer transition), docs/coverage/plan-interpreters.md (notes)
+
+**Why.** T7 (PARTIAL, branch wt/t7 @ 7b984df kept unmerged) landed the Sequencer states and the TRC2 v3
+export pixel-neutral (verify_rows: every isolated row 0 including mettaur, cursor 10/9 tear-smaller,
+both-rows 0) but its headline evidence is not reproducible: every retained rust record is TRC2 v2, the new
+sequencer judge reports "match" when the rust side lacks the field (false-green), and `--align sequencer=`
+crashes with StopIteration (verifier REFUTED the 239/239 + kill-slide gap as reproducible; CONFIRMED scope
+and the parity divergences enemy k=0, mm k=179, rng k=271). Base your worktree on wt/t7 (merge it into
+your branch; do not merge anything to main), re-record rust v3 traces (battle_full, mettaur, popup,
+result) and retain them with the report, fix the judge to fail loudly on a missing/mismatched-side field
+and fix the align crash, then re-measure: battle_full sequencer k-ranges, mettaur/popup 70/70 + 80/80,
+result 40/40 structural divergence, kill-to-slide gap on both sides (worker asserted canon +107 vs ours
++132: treat as unmeasured until you measure it).
+**Acceptance.** fresh v3 rust records retained and named in the report; sequencer trace equal on battle_full
+(or k-ranges re-measured with the remainder named frame by frame); judge false-green fixed and align crash
+fixed; kill-to-slide gap measured both sides; warp/buster/chip-use disposition unchanged (F34 ramps);
+result, popup, banner, field isolated 0; nothing worse.
+
 - T4b DONE -- Port the animation bytecode player, steps 3 and 4 of the plan. T4b steps 3-4 landed 6a2876e (was wt/t4b f86acb6): alt stream, setAnimation/Unk_00, updateSprite gate + variants
 - T5 DONE -- Port the object dispatcher, per section 2 of the plan. T5 dispatcher landed 163293b (was wt/t5 e17d8d3): objects.rs battle_common_path/enemy_think/enemy_act/t1_player_entry/t3_entry
 
