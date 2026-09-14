@@ -1,5 +1,17 @@
 [
   {
+    "file": "captures/cursor-f33-progress.gif",
+    "name": "cursor-f33-progress",
+    "label": "The custom screen cursor row across F33. With the backdrop phase settled by F26b, the largest sprite-layer difference was the emotion window: while the chip window is open canon draws it 120 pixels to the right, because its draw routine adds the window's slide counter to both objects' x, and ours drew it at the closed position. Taking that counter from the window's own slide state removed exactly the predicted 117980 pixels: 272362 to 154367. What remains is the bottom band of the field, the enemy's phase and HUD details.\n\ncursor (isolated), before and after: canon on top; ours at 4b19e3e (272341 px over 170 frames, canon 15+k, rust offset 237); ours at 870e3ef (154367 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
+    "file": "captures/windowclose-f33-progress.gif",
+    "name": "windowclose-f33-progress",
+    "label": "The chip window closing across F33. The emotion window now follows the window's slide counter as canon's draw routine does, so during the ten slide frames it moves with the window instead of sitting at the closed position: 34707 to 27819. The rest is on the sprite layer, the Mettaur's phase and HUD details.\n\nwindowclose (isolated), before and after: canon on top; ours at 4b19e3e (34707 px over 40 frames, canon 81+k, rust offset 253); ours at 870e3ef (27819 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
     "file": "captures/buster-f31b-progress.gif",
     "name": "buster-f31b-progress",
     "label": "The buster row across F31 and F31b. The old row (middle) had never measured a buster: canon's scripted press could not reach the sequencer in a zero-enemy arena, so canon stood idle and the 3172 pixels were the battle-result mark sliding in at the end of the window, at an alignment that was an eight-wide tie rather than an event. The row was re-cut: the press and release are delivered into canon's input data the way the warp row does it, the reference frame is the watched write of the attack state, and the alignment is a sharp unique minimum. Against that, the pose length now comes from canon's Rapid table (five fire ticks plus a lookup by free panels ahead, checked at three columns) and the barrel and muzzle live exactly as long as the pose: 0 differing pixels on all 28 frames, with the negative fixture still failing as it must.\n\nbuster (isolated), before and after: canon on top; ours at a4c0806 (3172 px over 32 frames, canon 150+k, rust offset 122); ours at f92383c (0 px, canon 132+k, rust offset 103). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",

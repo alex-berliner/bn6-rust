@@ -177,8 +177,9 @@ it (fix agb, do not work around it -- see the vendor-deps rule).
 change. **Coordinator:** verify_rows on result, field and the canaries; the verifier on the
 "1 frame per step" claim (it must measure it, e.g. with the oracle or a frame-count watch).
 
-### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, suprvulc family: 2464/177/113->0/0/113 PASS [neg 28047] via canon-data muzzle-fire replica [tile512+pal11 byte)*
+### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, invisibl fix validated, KEPT for cursor +28: chip-invisibl 14740->0/0/80 [neg 40080 pixel], popup 0 intact)*
 
+**Result.** invisibl fix validated, KEPT for cursor +28: chip-invisibl 14740->0/0/80 (neg 40080 pixel), popup 0 intact; verifier CONFIRMED sub_801E95C citation, sterile-zero vs PAUSED-presence (re-measured), FLAG_HUD_LIVE 0x4497/0x8084 disambiguator (nuance: upper-half field varies, live-bit holds), harness pixel-negative legitimate (window precedent); cursor +28 numbers CONFIRMED, 31px signature UNCHECKED; branch wt/f12-next2 6388e2b KEPT unmerged; worker muse-spark, verifier GLM
 **Result.** suprvulc family: 2464/177/113->0/0/113 PASS (neg 28047) via canon-data muzzle-fire replica (tile512+pal11 bytes verified) chip-gated to SuprVulc (gate cec8c48 fixes verifier-refuted guarantee); vulcans/seeds/bugbomb/minibomb/wave 0, cursor 272341 (total/worst better than HEAD 272362); verifier CONFIRMED asset+trajectory+scope; landed 7b551ad HEAD re-check MATCH; worker muse-spark + gate-micro 22 turns $0.008, verifier GLM
 **Result.** suprvulc: still 2464/177/113, no fix (budget stop, no edits); verifier CONFIRMED all 3 exclusions (T4 const 0x40000000 f0-134; gun slot static state4 to c115 + linkage confirmed, siblings static; volley 0xa-tick + 10 shots + FAN bytes match ours -- citation offset: mov/strh at ~109977); ball is LIVE object (shadow writes to c125), driver still unknown (spawn_t1_0x5 spawns nothing); next: tile-streaming lead 0x02034b80/c86-89 or replication fix; worker muse-spark 80 turns $0.032, verifier GLM
 **Result.** suprvulc pass: LOCALIZED not fixed (tool-budget stop, no edits, branch clean removed): residue = one 16x16 canon fireball (obj0 tile512 pal11) k99-112, parks x=37 from capture 107; canon 10 T3 shots/11f period vs ours stagger 10; hypothesis sub_80EBF6E last-shot beat / muzzle-fire / T4-pool UNVERIFIED; no verifier (no claims); worker muse-spark 76 turns $0.026
@@ -513,8 +514,9 @@ take it; buster integrated re-measured; wave, window, opening, chip-cannon, fiel
 unchanged; every chip row unchanged (they share the fixture path); nothing worse. The old 3172 alignment is
 not to be "fixed" by giving our side the result mark: a row that draws nothing on either side proves nothing.
 
-### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
+### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(PARTIAL -- 2026-09-13, field integrated 305263/10061/40 -> 304103/10032/40, warp integrated 363658 -> 362788, buster integrated 64369)*
 
+**Result.** field integrated 305263/10061/40 -> 304103/10032/40, warp integrated 363658 -> 362788, buster integrated 643698 -> 642770, chip-use integrated 644119 -> 643191 (all allowed rows; -29 px/frame: ZERO_ENEMY said megaman_hp=100 while every canon side holds 0x3c at 0x0203a9d4, element 2 the HP box); cursor 620802 -> 502822 on the branch and 154367/914/170 on main after F26b (the emotion window's OAM x takes the chip window's slide counter eStruct2035280+0x12 = SLIDE_FROM - x, added by sub_801CDEC asm00_2.s:27561-27572; Custom::hud_obj_x() -> Emotion::show; -117980 exactly as predicted); windowclose 648948 -> 642133 on the branch, 27819/1938/40 on main. Per-element table for field integrated from canon's dispatcher tables (update sub_801BEE0 asm00_2.s:25540-25563 / off_801BF04, draw sub_801BF64 :25564-25599 / off_801BF88; masks on every compared frame 0x0084 update / 0x00c5 draw: elements 2 and 7 updated, 0/2/6/7 drawn, gauge/icon/emotion torn down at canon 48): element 2 HP box 29 px/frame fixed; element 6 chip name + damage (sub_801C6EE :26619) 422 px/frame on field/warp/buster still drawn by canon and not by ours because ours ties the name to the hand with the icon (element 1, torn down) -- measured proposal: ZERO_ENEMY hand=[1] plus battle.rs:3743 filter '&& self.hud_live' gives field 287204 / warp 350128 / buster 629266, neither half alone; gauge_up should also require hud_live (element 4, unmeasured); and 86% of the four rows' residue is the BG1 backdrop phase: ZERO_ENEMY seeds none (canon 130: x -64176 / y -32088 -> x_q 684, y_q 854 by backdrop.rs's arithmetic, art phase to walk back) -- F33b. Landed 870e3ef; post-merge cursor 154367, windowclose 27819, popup/buster/tiles 0. Claude Opus agent, 103 tool calls, 35 min, 255k tokens.
 **Files.** src/hud.rs, src/hudtiles.rs, src/emotion.rs, tools/harness.py (the integrated rows' notes only), tools/allowlist.py entries removed only when a row reads 0
 
 **Why.** Four integrated (full-HUD) variants are allowlisted since AUDIT-6 ("HUD vs a zero-enemy arena, not
@@ -547,8 +549,7 @@ ours enter the end sequence on the same event with the same count. **Acceptance.
 after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
 alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
 
-### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(CLAUDE -- 2026-09-13)*
-
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail *(CLAUDE -- 2026-09-13)*
 **Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
 
 **Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
@@ -561,6 +562,30 @@ Then the window itself: canon's driver chain sub_802BD60 -> sub_802BE36 -> sub_8
 its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
+
+### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0 *(CLAUDE -- 2026-09-13)*
+**Files.** tools/harness.py (the ZERO_ENEMY descriptor and the four integrated rows' notes), src/battle.rs (the two HUD gates only: the chip-name filter at ~3743 and gauge_up), src/hud.rs, src/hudtiles.rs
+
+**Why.** F33's per-element decomposition: 86% of field integrated's 304103 (and of warp/buster/chip-use
+integrated) is the BG1 backdrop phase, because ZERO_ENEMY seeds no backdrop phase while its canon side is
+thousands of frames into pausedwithcannon; canon's counters at canon 130 read x -64176 / y -32088
+(-8f/-4f from battle init, F26b) and at 150 x -64336 / y -32168, so by backdrop.rs's arithmetic x_q=684,
+y_q=854 at canon 130 with the art phase to walk back the same way; the seed is per row (each row's
+canon_ref differs) and our pipeline lags are the ones F26b measured (scroll R-7, art R-5). The rest of the
+HUD: element 6 (chip name + damage, sub_801C6EE asm00_2.s:26619) is drawn by canon on every compared frame
+and not by ours because we tie the name to the hand together with the icon (element 1, torn down at 48):
+measured, ZERO_ENEMY hand=[1] plus `.filter(|_| self.chip_use_in != 1 && self.hud_live)` at battle.rs:3743
+gives field 304103 -> 287204, warp 362788 -> 350128, buster 642770 -> 629266 (422 px/frame), and neither
+half alone (the descriptor half alone regresses warp/buster isolated); gauge_up should also require
+hud_live (element 4). chip-use additionally keeps the name after the chip is used (canon reads
+dword_20352C8), ~444 px/frame.
+**Do.** (1) Derive and set each of the four rows' backdrop seed (art_entry/art_timer/scroll_xq/scroll_yq)
+from canon's counters and GFX state at that row's canon_ref, citing the derivation; measure BG1 alone
+per row. (2) The two gates with citations, with the hand descriptor, measured together; check windowclose
+and cursor (both enemies=0 rows) do not regress. (3) chip-use's name after use. **Acceptance.** BG1 0 on
+all frames of the four rows; each row's remaining residue decomposed by element and layer; the isolated
+variants, cursor, windowclose, popup, buster, tiles, gauge, wave, window, opening, chip-cannon unchanged
+or better; an allowlist entry removed only for a row that reads 0; nothing worse.
 
 ### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions  *(PARTIAL -- 2026-09-13, cursor 620802/6884/170 -> 272341/1603/170 [neg 458619 not blind] at the event offset 237 [the unseeded band's )*
 
