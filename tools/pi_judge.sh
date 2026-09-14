@@ -32,7 +32,7 @@ $BLOCKED
 Spend so far:
 $LEDGER
 
-Propose the next THREE tickets, in the exact R/F ticket format used in TODO.md (### ID. title *(OPEN -- date)*, **Why.** with the measured facts, numbered **Do** steps each ending in a measurement, **Rules**, **Measure and report**, a **Coordinator:** note). Order them by how many existing harness rows they bring to 0 per dollar, against docs/SCOPE.md's milestones (M2 before content; a virus, chip or Navi is a port under the interpreters, never a re-creation). Read only what you need to write them: the open tickets' text from TODO.md, and grep tools/harness.py or TODO_ARCHIVE.md for a specific fact. Reply with the three tickets only." \
+Propose the next THREE tickets, in the exact ticket format used in TODO.md, every part present or the ticket is refused by tools/judge_append.py: `### ID. title *(OPEN -- date)*` with a fresh ID, **Why.** with the measured facts, a **Files.** line naming the files the worker may touch, numbered **Do** steps each ending in a measurement, **Rules**, **Acceptance.** (what measured numbers close it) and **Measure and report.**, a **Coordinator:** note, and the docs/SCOPE.md milestone it advances (M1..M11). Order them by how many existing harness rows they bring to 0 per dollar, against docs/SCOPE.md's milestones (M2 before content; a virus, chip or Navi is a port under the interpreters, never a re-creation). Read only what you need to write them: the open tickets' text from TODO.md, and grep tools/harness.py or TODO_ARCHIVE.md for a specific fact. Reply with the three tickets only." \
   > "$SESS/events.jsonl" 2> "$SESS/stderr.txt" < /dev/null || true
 python3 - "$SESS/events.jsonl" "$OUT" "$STAMP" "$MODEL" <<'EOF'
 import json, sys
