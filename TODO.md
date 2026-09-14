@@ -558,7 +558,9 @@ its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
-### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(CLAUDE -- 2026-09-13)*
+### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions  *(PARTIAL -- 2026-09-13, cursor 620802/6884/170 -> 272341/1603/170 [neg 458619 not blind] at the event offset 237 [the unseeded band's )*
+
+**Result.** cursor 620802/6884/170 -> 272341/1603/170 (neg 458619 not blind) at the event offset 237 (the unseeded band's minimum had sat at 226, 11 frames off the event, with 237 reading 779920); windowclose 407778 -> 34707/2652/40 (neg 221819 not blind) at 253; BG1 alone 0 on all 40 windowclose frames and 2 px on 1 of 170 cursor frames. Derivation: BGScrollCB_BG1Diagonal3to2Scroll (asm00_0.s:3287-3303) writes (counter-8)>>4 and (counter-4)>>4 to BG1HOFS/VOFS, counters zeroed at battle init (sub_8080D90/DA0 asm00_1.s:8434-8435) so they hold -8f/-4f at battle frame f (watched: CHIPSELECT sits at battle frame 3156); canon's phase in our units x_q=2f mod 1024, y_q=f mod 1024; art from eGFXAnimStates[0] (0x020094c0) entry=(CommandPos-LoopAddress)/8 and Timer, 192/cycle; our pipeline lags measured once on windowclose (a capture frame R shows the scroll of tick R-7 and the art of tick R-5) and predicted cursor with no tuning (2214975 -> 2). Seeds: CURSOR_ROW art 11/3 scroll 746/885, WINDOWCLOSE_ROW 17/1 846/935; CUSTMATCH_ROW untouched (window/card 0). The odd-frame lsr-vs-floor note retired with a proof (lsr #4 of -8f = -ceil(f/2) = -((x_q+3)/4)), comment-only, .text/.rodata byte-identical to main. Layer table repaired (layer-local vs attributed): cursor 272341 = OBJ 272340 + BG1 1; windowclose 34707 = OBJ only. F26's UNCHECKED: (a) '2-frame art lead' refuted (an unseeded clock), (b) no Kind field exists (enemy NameID 1 constant), (c) the y18..33 HUD block is a pure 120 px x displacement: ours x2..45, canon x122..165, identical content, 117980 px-frames of cursor (the emotion window's custom-screen position; F33), (d) MegaMan panel (2,3) confirmed, landed by F29. Remaining: cursor's 1 px at k=97 is sub-frame (canon's tile copy is queued by QueueEightWordAlignedGFXTransfer/sub_8001C94 asm00_0.s:3752 and drained part-way down the frame, ours lands before scanline 0) and the 2-frame relative skew of our scroll and art clocks is absorbed per row by seeds rather than fixed in src (F35); the rest is OBJ (cursor: HUD block 117980 + y107..159 154360; windowclose 34707). Claude Opus agent, 92 tool calls, 32 min, 207k tokens.
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
 
 **Assigned to a Claude agent (2026-09-13 21:00) together with the backdrop-phase findings of F29.** F29 measured on windowclose (fixture CUSTMATCH_ROW, shared with cursor): the backdrop layer BG1 is a constant (20,10) px translation on all 40 frames (scroll rates SCROLL_X_Q=2/SCROLL_Y_Q=1 per frame are right; 40 frames of the phase gap is exactly (20,10)) because the fixture seeds no backdrop phase (art_entry etc. 0xFFFF, a fresh Backdrop::new at x_q=y_q=0) while /tmp/chipselect.state is thousands of frames into a battle. Canon at windowclose's reference frame 81: eBGScrollCBCounters (ewram.s:619, 0x02009690/0x02009694) = 0xffff9ad8 / 0xffffcd6c; eGFXAnimStates[0] (ewram.s:596, 0x020094c0) LoopAddress 0x0807fba4, CommandPos 0x0807fc6c = entry 25, first halfwords 0x0001 0x0002. An empirical seed scroll_xq=80/scroll_yq=40 took BG1 877602 -> 228662 and windowclose 648948 -> 392992, but the same seed takes cursor 620802 -> 1222398: cursor pairs rust 237 with canon 15 where windowclose pairs 253 with 81, so the seed must be derived per row from canon's counters at that row's own canon_ref, never shared. After the seed, BG1's residual alternates +1 px on odd multiples of 3 (k=3,9,15,...) and 0 on even multiples of 6: the lsr-of-a-falling-counter vs floor-divide difference src/backdrop.rs:278-283 already documents as untested; this row measures odd frames. Acceptance for this pass: BG1 0 on all 40 windowclose frames and on cursor's 170 frames, both with seeds derived from canon's counters (cite the derivation), cursor and windowclose totals reported per layer, wave/window/opening/chip-cannon/field/result 0 or unchanged.
@@ -571,6 +573,26 @@ its slide timing and tile content frame by frame against ours.
 **Rules.** Same files as F26; no alignment/allowlist/seed/scroll change except by measured event; captures one at a time.
 **Measure and report.** Repaired layer table (definition stated, arithmetic closed), (a)-(d) confirmed or refuted each with the watch traces, rows before/after, full-table deltas. **Acceptance:** the table adds up and every attribution the next cursor ticket needs is measured, not inferred.
 **Coordinator:** `verify_rows` on every row the report names; the verifier on the repaired table and any canon citation.
+
+### F35. Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art  *(OPEN -- 2026-09-13)*
+
+**Files.** src/backdrop.rs, src/main.rs
+
+**Why.** F26b measured two engine-timing facts on the backdrop. (1) Canon queues its backdrop tile copy
+(QueueEightWordAlignedGFXTransfer, sub_8001C94, asm00_0.s:3752) and the queue drains part-way down the
+frame, so on the frame of an art step canon shows the previous step in rows 0..5 and the new one below;
+ours lands before scanline 0. Visible as 2 px on cursor's frame k=97 (the same texel twice, 128 apart).
+(2) Our scroll register is written by commit() and the art by replace_tile() inside update(), so a
+capture frame R shows the scroll of tick R-7 and the art of tick R-5: a 2-frame relative skew between two
+clocks that canon does not have (one counter pair, one queue). The per-row seeds in the harness absorb
+it today; the mechanism should not need absorbing.
+**Do.** Watch canon's queue drain (the transfer's VRAM write frame and scanline via --watch-write on the
+tile region) and ours; make ours copy at the same point of the frame canon's queue does (cite the queue
+flush routine and its place in the frame loop), and drive scroll and art from one tick so both lead by the
+same amount; then re-derive the CURSOR_ROW/WINDOWCLOSE_ROW seeds by F26b's derivation with the new single
+lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor's BG1-only diff 0 on all 170
+frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
+0 or unchanged; nothing worse.
 
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 
