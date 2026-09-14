@@ -556,8 +556,9 @@ field, wave, window, opening, chip-cannon, popup, mettaur, buster 0; cursor/wind
 rows unchanged or better; nothing worse. **Coordinator:** verify_rows on result and the canaries; the
 verifier only on the fade citation.
 
-### F32. End sequence: `over` fires at the last enemy's defeat, canon enters the RESULT countdown 47 frames later, after the dissolve  *(OPEN -- 2026-09-13)*
+### F32. End sequence: `over` fires at the last enemy's defeat, canon enters the RESULT countdown 47 frames later, after the dissolve  *(DONE -- 2026-09-13, over 35 updates after killing blow [was 92]: death->0x0C 35/35 both canon routes [47 = 12 pre-resume + 35])*
 
+**Result.** over 35 updates after killing blow (was 92): death->0x0C 35/35 both canon routes (47 = 12 pre-resume + 35); result 93183 held (F34 value), guards/banner/popup/field/mettaur 0, cursor 154361; verifier CONFIRMED 35-count + all routine PCs + residuals-out-of-row (rust OAM 155/120 unchecked); landed d6102bb HEAD re-check MATCH; worker muse-spark 78 turns $0.064, verifier GLM
 **Files.** src/battle.rs (the end sequence only), src/banner.rs
 
 **Why.** F27b measured on the real ROM (PAUSED, enemy HP forced 0, Start@10): the banner sequencer enters
