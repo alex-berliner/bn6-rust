@@ -2263,8 +2263,19 @@ PORTED_CHECKS: List[Check] = [
                  "130266 -> 159656: at the wrong position the frame is a wash). (3) n/a "
                  "here (no hand icon while open; 130266 -> 130221). Remainder, measured: "
                  "actor object-Y pan (+15 while open -- actor.rs, out of scope) and the "
-                 "frozen pose frame. window/card/wave/opening/chip-cannon/mettaur/popup/" 
-                 "result/field all still 0.",
+                 "frozen pose frame. window/card/wave/opening/chip-cannon/mettaur/popup/"
+                 "result/field all still 0. "
+                 "F37d (2026-09-14), pickaxe prime landed (wt/f37d): canon's frozen "
+                 "sprite is anim-1 frame_in_anim 4, not frame 0 -- OAM on this row's own "
+                 "canon capture (frame 15, enemy pal 1) shows all five parts at "
+                 "(164,107,32x16), (172,123,8x16), (174,127,16x32), (166,131,8x16), "
+                 "(163,143,32x8), exactly our ROM-exported mettaur.bin anim-1 frame 4 "
+                 "(sub_8109DEC sets CurAnim 1, asm31.s:170830-170848; BattlePaused "
+                 "freezes it, asm00_1.s:90-110). No new art: the asset already holds "
+                 "it. The seeded SWING is primed 9 executor ticks (frame 4 spans ticks "
+                 "7..14 of durations 1,1,1,3,8). Measured: 34902/232/170 -> 8/6/170 "
+                 "(k37 2px, k97 6px, the known mid-frame tile transfer); mettaur row "
+                 "still 0.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
@@ -2470,7 +2481,15 @@ PORTED_CHECKS: List[Check] = [
                  "pose-only, total 26848 -> 19168/1878. Remainder, measured: k0 bracket "
                  "104 (custom.rs, out of scope) + first-slide step, k1..k9 pan ramp + "
                  "frozen-frame-0-vs-mid-raise pose, k10..39 the 205 pose frame. BG0/1/2/3 "
-                 "layer-local all 0; negatives not blind.",
+                 "layer-local all 0; negatives not blind. "
+                 "F37d (2026-09-14), pickaxe prime landed (wt/f37d, battle.rs seed site): "
+                 "the 205 was anim-1 frame 0 vs canon's frame 4 (see the `cursor` note "
+                 "for the OAM census); priming the seeded SWING 9 executor ticks reads "
+                 "12538/1200/40 -> 4943/1116/40 with k10..39 ALL 0. Remainder, measured: "
+                 "k0..9 slide frames -- 162px HUD-strip cells (x96-110 y4-18) on even k "
+                 "plus the enemy box (x160-191) on odd k (424-1116, worst k7); the "
+                 "slide-phase camera rounding lives in battle.rs/custom.rs, out of this "
+                 "ticket's files.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
