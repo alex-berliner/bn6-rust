@@ -43,6 +43,18 @@ def overlap(a, b):
     return False
 
 
+def pair_for_all(chosen, others):
+    """the first of `others` whose **Files.** overlap none of the already chosen tickets'"""
+    fas = [files_of(c["body"]) for c in chosen]
+    if not all(fas):
+        return None
+    for o in others:
+        fb = files_of(o["body"])
+        if fb and all(not overlap(fa, fb) for fa in fas):
+            return o
+    return None
+
+
 def pair_for(first, others):
     fa = files_of(first["body"])
     if not fa:
@@ -62,7 +74,7 @@ def result_para(body):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--id"); ap.add_argument("--results", type=int, default=1); ap.add_argument("--list", action="store_true")
-    ap.add_argument("--pair", action="store_true", help="also print the next OPEN ticket whose **Files.** do not overlap the first's")
+    ap.add_argument("--pair", nargs="?", const=2, type=int, default=0, help="print up to N OPEN tickets whose **Files.** overlap none of the earlier ones (N in flight; default 2)")
     a = ap.parse_args()
     text = open(os.path.join(ROOT, "TODO.md")).read()
     ts = tickets(text)
@@ -79,11 +91,17 @@ def main():
     t = pick[0]
     idx = ts.index(t)
     if a.pair:
-        partner = pair_for(t, [x for x in ts if x["status"] == "OPEN" and x is not t])
-        if partner:
-            print(t["body"]); print("=== PAIR (disjoint files; may run concurrently) ===\n"); print(partner["body"])
-        else:
-            print(t["body"]); print("=== NO PAIR ===")
+        chosen = [t]
+        for _ in range(max(a.pair, 2) - 1):
+            partner = pair_for_all(chosen, [x for x in ts if x["status"] == "OPEN" and x not in chosen])
+            if not partner:
+                break
+            chosen.append(partner)
+        print(t["body"])
+        for c in chosen[1:]:
+            print("=== PAIR (disjoint files; may run concurrently) ===\n"); print(c["body"])
+        if len(chosen) < 2:
+            print("=== NO PAIR ===")
         return
     base = re.match(r"[A-Z]+\d+", t["id"]).group(0)
     print(t["body"])

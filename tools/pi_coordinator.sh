@@ -3,7 +3,7 @@
 # worker/verifier roles until a stop condition (.pi/coordinator.md). Detached so a host memory guard
 # cannot kill it; stdin closed because pi -p waits on an open stdin (HANDOFF §13 quirk b).
 #
-# usage: [BN_PI_CAP=5] bash tools/pi_coordinator.sh ["extra instruction for this session"]
+# usage: [BN_PI_CAP=5] [BN_COORD_MODEL=hyper/qwen3.8-flash] bash tools/pi_coordinator.sh ["extra instruction for this session"]
 #   BN_PI_CAP: hard cap in dollars on the run's TOTAL real OpenRouter spend (coordinator + children),
 #   enforced by a watcher that reads tools/or_spend.py every minute and stops the run when usage passes
 #   the starting total plus the cap. Default 5.
@@ -18,7 +18,7 @@ cat > "$RUN/run.sh" <<INNER
 cd "$ROOT"
 export BN_PI_STATUS="$RUN/status.log"
 timeout 43200 pi -p --approve --session-dir "$RUN/session" --mode json \
-  --model openrouter/meta/muse-spark-1.3-contributor --thinking high \
+  --model "${BN_COORD_MODEL:-openrouter/meta/muse-spark-1.3-contributor}" --thinking high \
   --append-system-prompt "$ROOT/.pi/coordinator.md" "\$(cat "$RUN/instruction.txt")" \
   > "$RUN/events.jsonl" 2> "$RUN/stderr.txt" < /dev/null
 echo "exit \$?" > "$RUN/exit"

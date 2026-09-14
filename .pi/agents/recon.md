@@ -2,7 +2,7 @@
 name: recon
 description: Finds the routine or data in reference/bn6f (or src/) that drives a named behaviour and returns file:line plus the actual code; never edits.
 tools: read, grep, find, ls, bash
-model: openrouter/deepseek/deepseek-v4.1-flash
+model: hyper/deepseek-v4.1-flash
 thinking: medium
 ---
 

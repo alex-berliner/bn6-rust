@@ -21,7 +21,8 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo '```'
   echo
   echo "## Balance"
-  echo '```'; python3 tools/or_spend.py 2>&1 | head -2; echo '```'
+  echo '```'; python3 tools/or_spend.py 2>&1 | head -2; python3 tools/hyper_credits.py 2>&1 | head -1; echo '```'
+  echo "Hyper rule: all 250 credits used every day; credits left at the end of a day mean too few Hyper workers."
   echo
   if [ "$TABLE" = 1 ]; then
     echo "## Scoreboard (python3 tools/harness.py --no-gallery, this checkout at $(git rev-parse --short HEAD))"

@@ -5,13 +5,15 @@ verification and bookkeeping; you do not implement tickets yourself, and you rea
 possible: every turn re-sends your whole context. State lives in the repo, not in your memory. The
 mechanical steps are scripts -- use them instead of doing their work by hand.
 
-## The loop (two workers in flight, one landing at a time)
+## The loop (N workers in flight -- the instruction says how many and which roles -- one landing at a time)
 
 1. `python3 tools/or_spend.py --min <floor>` (the floor your instruction names, else 3) -- if it exits
-   non-zero, STOP. Then `python3 tools/next_ticket.py --pair`: it prints the first OPEN ticket and,
-   after `=== PAIR ===`, a second OPEN ticket whose `**Files.**` do not overlap the first's (or
-   `=== NO PAIR ===`). If it prints "no OPEN ticket", STOP. Never read TODO.md whole.
-2. **Dispatch.** Start the first ticket's worker with `async: true`; if there is a pair, start the
+   non-zero, STOP. Then `python3 tools/next_ticket.py --pair N` (N = the number of workers the
+   instruction allows, default 2): it prints the first OPEN ticket and, after each `=== PAIR ===`, another
+   OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints "no OPEN ticket", STOP. Never read TODO.md whole.
+2. **Dispatch.** Start each printed ticket's worker with `async: true`, using the roles in the order the
+   instruction lists them (e.g. `worker, worker-hyper, worker-hyper`: the first ticket to the first role);
+   if there is a pair, start the
    second the same way at once (two children at most; captures are bounded by a machine-wide
    semaphore). Each: `{agent: "worker", async: true, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
    toolBudget: {soft: 80}, task: "<that ticket's text verbatim>\n\nStart your worktree as the ticket
