@@ -22,7 +22,7 @@ bash tools/check_inputs.sh || exit 1
 exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
 git diff --quiet && git diff --cached --quiet || { echo "main checkout is dirty; refusing" >&2; exit 1; }
 sha="$(git rev-parse --short "$branch")"
-if [ "$verify" = 1 ] && [ -f "/tmp/land_verify_$sha.pass" ] && [ -z "$(find "/tmp/land_verify_$sha.pass" -mmin +30)" ]; then
+if [ "$verify" = 1 ] && [ -f "/tmp/land_verify_$sha.pass" ] && [ -z "$(find "/tmp/land_verify_$sha.pass" -mmin +30)" ] && [ "$(cat "/tmp/land_verify_$sha.pass")" = "$rows" ]; then
   echo "reusing verify_rows PASS for $sha from $(date -r "/tmp/land_verify_$sha.pass" +%H:%M) (rows: $(cat "/tmp/land_verify_$sha.pass"))"
   printf 'verify_rows: PASS (reused, %s)\n' "$(cat "/tmp/land_verify_$sha.pass")" > /tmp/land_verify.txt
 elif [ "$verify" = 1 ]; then
