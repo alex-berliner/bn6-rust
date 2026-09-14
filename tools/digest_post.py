@@ -17,7 +17,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
 RESULT_COMMIT = re.compile(r"^TODO ([A-Z]+\d+[a-z]?) (DONE|PARTIAL|BLOCKED|NEGATIVE)\b:? ?(.*)")
 HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)\b", re.M)
-DIGEST_MODEL = subprocess.run("python3 tools/roles.py model ${BN_PROVIDER:-$(python3 tools/roles.py first)} digest", shell=True,
+DIGEST_MODEL = subprocess.run("python3 tools/roles.py model ${BN_RUN:-${BN_PROVIDER:-$(python3 tools/roles.py first)}} digest --tail", shell=True,
                               capture_output=True, text=True).stdout.strip() or "hyper/qwen3.8-flash"
 
 

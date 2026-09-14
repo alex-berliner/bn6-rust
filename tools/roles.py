@@ -1,21 +1,35 @@
 #!/usr/bin/env python3
-"""The provider map (providers.toml) as a tool: renders the pi agent files, answers "which model for this
-role on this provider", checks a provider's budget, and prints the coordinator instruction for a run.
+"""providers.toml as a tool: resolves a run profile's jobs to models by current budget, renders the pi agent
+files, checks a provider's budget, and prints a run's instruction.
 
-  roles.py render                      write .pi/agents/<role>-<provider>.md for every provider and role
-                                       template in .pi/roles/, plus bare <role>.md aliases for the first
-                                       active provider (so an instruction may say "verifier" for short)
-  roles.py model <provider> <role>     print the model id (e.g. hyper worker -> hyper/glm-5.3-flash)
-  roles.py schedule                    shell lines: ACTIVE="hyper" PARALLEL=0 RESERVE="openrouter" WORKERS=2
+  roles.py check                          validate the file; exit 1 with the reasons
+  roles.py resolve <run>                  "<role> <model>" per job: the first candidate whose provider can start
+                                          work now (probes each provider once; a provider whose probe errors
+                                          is skipped); exit 1 if the coordinator or worker resolves to nothing
+  roles.py model <run> <role> [--tail]    one resolved model id; --tail accepts any provider above its
+                                          stop_below (a one-shot session's need), not only start_above
+  roles.py render [<run> ...]             write .pi/agents/<role>-<run>.md (worker, verifier, recon) from
+                                          .pi/roles/<role>.md with the resolved models, plus bare <role>.md
+                                          aliases for the first scheduled run; default: every run
+  roles.py instruction <run>              the coordinator instruction naming that run's roles
+  roles.py providers <run>                the providers of the resolved coordinator and worker (the watcher's set)
   roles.py budget <provider> --start|--stop
-                                       exit 0 when the provider can start a run / keep running, 1 when not,
-                                       2 when the probe failed (never treated as exhausted)
-  roles.py instruction <provider> [--workers N]
-                                       the run instruction naming that provider's roles
-  roles.py check                       validate the map; exit 1 with the reasons if it is inconsistent
-  roles.py first                       the first active provider (what one-shot tools default to)
+                                          exit 0 when the provider can start work / keep working, 1 when not,
+                                          2 when its probe failed (never treated as exhausted)
+  roles.py workers <run>                  the worker slots the run should have in flight right now: its `workers`
+                                          number, or for `workers = "pace"` the surplus rule (below); the
+                                          coordinator asks each cycle, so slots follow the budget through the day
+  roles.py schedule                       shell lines: RUNS="hyper" PARALLEL=0 RESERVE="openrouter"
+
+The pacing rule (a subscription with `reset = "daily HH:MM"`): remaining balance R (its probe), hours H to the
+reset, the reserve = coordinator_credits_per_hour x H for every other scheduled profile whose coordinator's first
+candidate is on this provider (that coordination comes first, however the other profile's own budget fares),
+surplus = R - stop_below - reserve; slots = ceil(surplus / (H x worker_credits_per_hour)), clamped to
+[pace_min, pace_max], 0 when the surplus is gone. Rolling windows (`reset = "rolling 5h"`) are never paced:
+they are used whenever open.
+  roles.py first                          the first scheduled run
 """
-import os, re, subprocess, sys, tomllib
+import functools, os, re, subprocess, sys, tomllib
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ROLES = ("coordinator", "worker", "verifier", "recon", "judge", "auditor", "digest")
@@ -27,120 +41,176 @@ def load():
 
 
 def first(cfg):
-    return cfg["schedule"]["active"][0]
+    return cfg["schedule"]["runs"][0]
 
 
-def model(cfg, provider, role):
-    try:
-        return cfg["providers"][provider]["roles"][role]
-    except KeyError:
-        sys.exit("providers.toml: no model for role %r on provider %r" % (role, provider))
-
-
-def render(cfg):
-    out = os.path.join(ROOT, ".pi", "agents"); os.makedirs(out, exist_ok=True)
-    written = []
-    for prov in cfg["providers"]:
-        for role in AGENT_ROLES:
-            tpl = open(os.path.join(ROOT, ".pi", "roles", role + ".md")).read()
-            fm, body = tpl.split("---\n", 2)[1], tpl.split("---\n", 2)[2]
-            names = [role + "-" + prov] + ([role] if prov == first(cfg) else [])
-            for name in names:
-                head = "name: %s\n%s\nmodel: %s" % (name, fm.rstrip("\n"), model(cfg, prov, role))
-                note = ("<!-- generated by tools/roles.py from providers.toml and .pi/roles/%s.md; edit those, not this -->\n"
-                        % role)
-                path = os.path.join(out, name + ".md")
-                open(path, "w").write("---\n%s\n---\n%s%s" % (head, note, body))
-                written.append(name)
-    # generated files for providers no longer in the map
-    for f in os.listdir(out):
-        if f.endswith(".md") and f[:-3] not in written and "generated by tools/roles.py" in open(os.path.join(out, f)).read():
-            os.remove(os.path.join(out, f)); print("removed stale", f)
-    print("rendered:", " ".join(written))
-
-
-def probe(cfg, provider):
-    p = cfg["providers"][provider]
-    r = subprocess.run(p["probe"], shell=True, capture_output=True, text=True, cwd=ROOT)
-    return r.returncode, (r.stdout + r.stderr).strip().splitlines()[-1] if (r.stdout + r.stderr).strip() else ""
+def provider_of(model):
+    return model.split("/")[0]
 
 
 def budget(cfg, provider, phase):
+    """0 ok, 1 no budget, 2 probe error; prints the probe's last line"""
     p = cfg["providers"][provider]
     if p["kind"] == "subscription":
         need = p["start_above"] if phase == "--start" else p["stop_below"]
         r = subprocess.run(p["probe"] + " --min %s" % need, shell=True, capture_output=True, text=True, cwd=ROOT)
-        line = (r.stdout + r.stderr).strip().splitlines()[-1] if (r.stdout + r.stderr).strip() else ""
-        print(line); return 0 if r.returncode == 0 else (1 if r.returncode == 1 else 2)
-    rc, line = probe(cfg, provider); print(line)
+        out = (r.stdout + r.stderr).strip(); print(out.splitlines()[-1] if out else "(no probe output)")
+        return 0 if r.returncode == 0 else (1 if r.returncode == 1 else 2)
+    r = subprocess.run(p["probe"], shell=True, capture_output=True, text=True, cwd=ROOT)
+    out = (r.stdout + r.stderr).strip(); line = out.splitlines()[-1] if out else ""; print(line or "(no probe output)")
     m = re.search(r"remaining \$([0-9.]+)", line)
-    if rc not in (0, 1) or not m: return 2
-    remaining = float(m.group(1)); floor = p.get("floor_usd", 0.0)
-    need = floor + (p.get("start_above", 1.0) if phase == "--start" else 0.0)
-    return 0 if remaining > need else 1
+    if r.returncode not in (0, 1) or not m: return 2
+    need = p.get("floor_usd", 0.0) + (p.get("start_above", 1.0) if phase == "--start" else 0.0)
+    return 0 if float(m.group(1)) > need else 1
 
 
-def instruction(cfg, provider, workers):
+@functools.lru_cache(maxsize=None)
+def can_start(provider, phase="--start"):
+    """--start: above start_above; --tail (or --stop): above stop_below, enough for a one-shot session"""
+    cfg = load()
+    if provider not in cfg["providers"]: return False
+    with open(os.devnull, "w") as devnull:
+        old = sys.stdout; sys.stdout = devnull
+        try: rc = budget(cfg, provider, "--start" if phase == "--start" else "--stop")
+        finally: sys.stdout = old
+    return rc == 0
+
+
+def resolve(cfg, run, phase="--start"):
+    """role -> model (or None): the first candidate whose provider has budget at that phase"""
+    r = cfg["runs"][run]; out = {}
+    for role in ROLES:
+        out[role] = next((m for m in r.get(role, []) if can_start(provider_of(m), phase)), None)
+    return out
+
+
+def render(cfg, runs):
+    out_dir = os.path.join(ROOT, ".pi", "agents"); os.makedirs(out_dir, exist_ok=True); written = []
+    for run in runs:
+        res = resolve(cfg, run)
+        for role in AGENT_ROLES:
+            model = res[role] or cfg["runs"][run][role][0]     # nothing can start: render the first candidate anyway
+            tpl = open(os.path.join(ROOT, ".pi", "roles", role + ".md")).read()
+            fm, body = tpl.split("---\n", 2)[1], tpl.split("---\n", 2)[2]
+            for name in [role + "-" + run] + ([role] if run == first(cfg) else []):
+                head = "name: %s\n%s\nmodel: %s" % (name, fm.rstrip("\n"), model)
+                note = "<!-- generated by tools/roles.py from providers.toml (run %s) and .pi/roles/%s.md; edit those, not this -->\n" % (run, role)
+                open(os.path.join(out_dir, name + ".md"), "w").write("---\n%s\n---\n%s%s" % (head, note, body)); written.append(name)
+    if set(runs) == set(cfg["runs"]):
+        for f in os.listdir(out_dir):
+            p = os.path.join(out_dir, f)
+            if f.endswith(".md") and f[:-3] not in written and "generated by tools/roles.py" in open(p).read():
+                os.remove(p); print("removed stale", f)
+    print("rendered:", " ".join(written))
+
+
+def instruction(cfg, run):
+    res = resolve(cfg, run); r = cfg["runs"][run]
+    provs = sorted({provider_of(m) for m in (res["coordinator"], res["worker"]) if m})
+    money = []
+    for p in provs:
+        pc = cfg["providers"][p]
+        if pc["kind"] == "subscription":
+            money.append("%s is a subscription with a daily balance the user wants spent to the end (a watcher outside you stops the run when it is gone)" % p)
+        else:
+            money.append("%s is pay as you go with a hard cap per run enforced outside you and a floor of $%.2f on the account" % (p, pc.get("floor_usd", 0.0)))
+    n = workers(cfg, run)
+    slots = ("%d workers in flight" % n) if isinstance(r["workers"], int) else (
+        "as many workers in flight as `python3 tools/roles.py workers %s` prints, asked before every dispatch (it follows the "
+        "day's budget; %d right now; if it prints 0, let the tickets in flight finish and STOP)" % (run, n))
+    return ("Run the loop with %s. The roles for this run are worker-%s, verifier-%s and recon-%s: dispatch "
+            "tickets to worker-%s, claims beyond harness lines to verifier-%s, code questions to recon-%s, and nothing to any "
+            "other role. Use `python3 tools/next_ticket.py --pair %d --claim`. %s; never stop for budget reasons yourself. The "
+            "phase is porting: the queue is whatever next_ticket.py returns until none is OPEN (then the judge refill in your "
+            "instructions). Each landing keeps the full table identical (every isolated row 0; cursor's single-frame tear moves "
+            "with the ROM layout and is reported, not chased), verified with tools/verify_rows.py and the trace as the tickets "
+            "say; the verifier only when the branch merges and a claim needs it. Commits arriving on main from the human session "
+            "or another run are normal. No model overrides beyond the roles named."
+            % (slots, run, run, run, run, run, run, max(n, 1), "; ".join(money)))
+
+
+def hours_to_reset(spec):
+    """'daily HH:MM' -> hours from now to the next such time (local); None for anything else"""
+    import datetime
+    m = re.match(r"daily (\d{1,2}):(\d{2})$", spec or "")
+    if not m: return None
+    now = datetime.datetime.now(); t = now.replace(hour=int(m.group(1)), minute=int(m.group(2)), second=0, microsecond=0)
+    if t <= now: t += datetime.timedelta(days=1)
+    return (t - now).total_seconds() / 3600.0
+
+
+def remaining(cfg, provider):
     p = cfg["providers"][provider]
-    roles = ", ".join("%s-%s" % (r, provider) for r in AGENT_ROLES)
-    if p["kind"] == "subscription":
-        money = ("%s is a subscription with a daily balance the user wants spent to the end; the run stops by itself "
-                 "when the balance is gone (a watcher outside you), so never stop for budget reasons." % provider)
-    else:
-        money = ("%s is pay as you go with a hard cap per run enforced outside you and a floor of $%.2f on the account; "
-                 "never stop for budget reasons yourself." % (provider, p.get("floor_usd", 0.0)))
-    return ("Run the loop with %d workers in flight. The roles for this run are %s: dispatch tickets to worker-%s, "
-            "claims beyond harness lines to verifier-%s, code questions to recon-%s, and nothing to any other role. "
-            "Use `python3 tools/next_ticket.py --pair %d --claim`. %s The phase is porting: the queue is whatever "
-            "next_ticket.py returns until none is OPEN (then the judge refill in your instructions). Each landing keeps "
-            "the full table identical (every isolated row 0; cursor's single-frame tear moves with the ROM layout and is "
-            "reported, not chased), verified with tools/verify_rows.py and the trace as the tickets say; the verifier only "
-            "when the branch merges and a claim needs it. Commits arriving on main from the human session or another "
-            "provider's run are normal. No model overrides beyond the roles named."
-            % (workers, roles, provider, provider, provider, workers, money))
+    out = subprocess.run(p["probe"], shell=True, capture_output=True, text=True, cwd=ROOT).stdout
+    m = re.search(r"remaining \$?([0-9.]+)", out); return float(m.group(1)) if m else None
+
+
+def workers(cfg, run):
+    import math
+    r = cfg["runs"][run]; w = r["workers"]
+    if isinstance(w, int): return w
+    if w != "pace": sys.exit("runs.%s.workers must be an integer or \"pace\"" % run)
+    prov = provider_of(r["worker"][0]); p = cfg["providers"][prov]
+    H = hours_to_reset(p.get("reset")); R = remaining(cfg, prov)
+    if H is None or R is None: return r.get("pace_min", 0)      # no daily reset or no balance: nothing to pace on
+    reserve = sum(p.get("coordinator_credits_per_hour", 0) * H for other, o in cfg["runs"].items()
+                  if other != run and other in cfg["schedule"]["runs"] and provider_of(o["coordinator"][0]) == prov)
+    surplus = R - p.get("stop_below", 0) - reserve
+    n = math.ceil(surplus / (H * p.get("worker_credits_per_hour", 20))) if surplus > 0 else 0
+    return max(r.get("pace_min", 0), min(r.get("pace_max", 4), n))
 
 
 def check(cfg):
-    bad = []
-    sched = cfg.get("schedule", {})
-    for key in ("active", "parallel", "reserve", "workers"):
-        if key not in sched: bad.append("schedule.%s missing" % key)
-    for prov in sched.get("active", []) + sched.get("reserve", []):
-        if prov not in cfg.get("providers", {}): bad.append("schedule names unknown provider %r" % prov)
+    bad = []; s = cfg.get("schedule", {})
+    for key in ("runs", "parallel", "reserve"):
+        if key not in s: bad.append("schedule.%s missing" % key)
+    for run in s.get("runs", []) + s.get("reserve", []):
+        if run not in cfg.get("runs", {}): bad.append("schedule names unknown run %r" % run)
     for prov, p in cfg.get("providers", {}).items():
-        if p.get("kind") not in ("subscription", "payg"): bad.append("%s.kind must be subscription or payg" % prov)
-        if "probe" not in p: bad.append("%s.probe missing" % prov)
+        if p.get("kind") not in ("subscription", "payg"): bad.append("providers.%s.kind must be subscription or payg" % prov)
+        if "probe" not in p: bad.append("providers.%s.probe missing" % prov)
+        if p.get("kind") == "subscription" and not all(k in p for k in ("start_above", "stop_below")): bad.append("providers.%s needs start_above and stop_below" % prov)
+        if p.get("kind") == "payg" and "floor_usd" not in p: bad.append("providers.%s needs floor_usd" % prov)
+    for run, r in cfg.get("runs", {}).items():
+        if not ((isinstance(r.get("workers"), int) and r["workers"] >= 1) or r.get("workers") == "pace"): bad.append("runs.%s.workers must be a positive integer or \"pace\"" % run)
+        if r.get("workers") == "pace" and provider_of(r["worker"][0]) in cfg.get("providers", {}) and not str(cfg["providers"][provider_of(r["worker"][0])].get("reset", "")).startswith("daily"):
+            bad.append("runs.%s: workers = \"pace\" needs a `reset = \"daily HH:MM\"` on provider %s" % (run, provider_of(r["worker"][0])))
         for role in ROLES:
-            m = p.get("roles", {}).get(role)
-            if not m: bad.append("%s.roles.%s missing" % (prov, role))
-            elif "/" not in m: bad.append("%s.roles.%s = %r is not a pi model id (provider/model)" % (prov, role, m))
-            elif not m.startswith(prov + "/"): print("note: %s.roles.%s borrows %s (its spend lands on that provider)" % (prov, role, m))
-        if p["kind"] == "subscription" and not all(k in p for k in ("start_above", "stop_below")):
-            bad.append("%s needs start_above and stop_below" % prov)
-        if p["kind"] == "payg" and "floor_usd" not in p: bad.append("%s needs floor_usd" % prov)
+            c = r.get(role)
+            if not isinstance(c, list) or not c: bad.append("runs.%s.%s must be a non-empty list of model ids" % (run, role)); continue
+            for m in c:
+                if "/" not in m: bad.append("runs.%s.%s: %r is not provider/model" % (run, role, m))
+                elif provider_of(m) not in cfg.get("providers", {}): bad.append("runs.%s.%s: %r names a provider not in [providers]" % (run, role, m))
     for role in AGENT_ROLES:
         if not os.path.exists(os.path.join(ROOT, ".pi", "roles", role + ".md")): bad.append(".pi/roles/%s.md missing" % role)
-    if bad:
-        print("\n".join("providers.toml: " + b for b in bad)); return 1
-    print("providers.toml ok: active %s, parallel %s, reserve %s, %d workers" % (
-        sched["active"], sched["parallel"], sched["reserve"], sched["workers"])); return 0
+    if bad: print("\n".join("providers.toml: " + b for b in bad)); return 1
+    joint = [run for run, r in cfg["runs"].items() if len({provider_of(m) for role in ROLES for m in r[role]}) > 1]
+    print("providers.toml ok: runs %s (parallel %s), reserve %s%s" % (s["runs"], s["parallel"], s["reserve"], ("; joint runs: %s" % joint) if joint else ""))
+    return 0
 
 
 def main():
     a = sys.argv[1:]
     if not a: sys.exit(__doc__)
     cfg = load(); cmd = a[0]
-    if cmd == "render": render(cfg)
-    elif cmd == "model": print(model(cfg, a[1], a[2]))
+    if cmd == "check": sys.exit(check(cfg))
     elif cmd == "first": print(first(cfg))
     elif cmd == "schedule":
-        s = cfg["schedule"]
-        print('ACTIVE="%s"\nPARALLEL=%d\nRESERVE="%s"\nWORKERS=%d' % (" ".join(s["active"]), 1 if s["parallel"] else 0, " ".join(s["reserve"]), s["workers"]))
+        s = cfg["schedule"]; print('RUNS="%s"\nPARALLEL=%d\nRESERVE="%s"' % (" ".join(s["runs"]), 1 if s["parallel"] else 0, " ".join(s["reserve"])))
     elif cmd == "budget": sys.exit(budget(cfg, a[1], a[2] if len(a) > 2 else "--start"))
-    elif cmd == "instruction":
-        n = int(a[a.index("--workers") + 1]) if "--workers" in a else cfg["schedule"]["workers"]
-        print(instruction(cfg, a[1], n))
-    elif cmd == "check": sys.exit(check(cfg))
+    elif cmd == "resolve":
+        res = resolve(cfg, a[1], "--tail" if "--tail" in a else "--start")
+        for role, m in res.items(): print("%-12s %s" % (role, m or "(no candidate can start)"))
+        sys.exit(0 if res["coordinator"] and res["worker"] else 1)
+    elif cmd == "model":
+        m = resolve(cfg, a[1], "--tail" if "--tail" in a else "--start")[a[2]]
+        if not m: sys.exit("no candidate for %s of run %s has budget now" % (a[2], a[1]))
+        print(m)
+    elif cmd == "workers": print(workers(cfg, a[1]))
+    elif cmd == "providers":
+        res = resolve(cfg, a[1]); print(" ".join(sorted({provider_of(m) for m in (res["coordinator"], res["worker"]) if m})))
+    elif cmd == "render": render(cfg, a[1:] or list(cfg["runs"]))
+    elif cmd == "instruction": print(instruction(cfg, a[1]))
     else: sys.exit("unknown command %r\n%s" % (cmd, __doc__))
 
 

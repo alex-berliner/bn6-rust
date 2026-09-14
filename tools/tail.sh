@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# A subscription provider's last credits. A run needs about a ticket's worth (start_above in providers.toml)
-# to reach a landing before the watcher stops it at stop_below, so under that tools/run_day.sh starts no
-# run; this spends what is left on single-shot sessions that need no landing: one judge pass per day
-# (tomorrow's tickets, admitted by tools/judge_append.py), then a recon map (docs/recon/<ID>.md, which the
-# coordinator hands to the worker) for every OPEN ticket that lacks one, until the balance is under
-# stop_below. usage: bash tools/tail.sh <provider>
-PROV="${1:?provider}"
+# A subscription's last credits. A run needs about a ticket's worth (start_above in providers.toml) to reach
+# a landing before the watcher stops it at stop_below, so under that tools/run_day.sh starts no run; this
+# spends what is left on single-shot sessions that need no landing: one judge pass per day (tomorrow's
+# tickets, admitted by tools/judge_append.py), then a recon map (docs/recon/<ID>.md, which the coordinator
+# hands to the worker) for every OPEN ticket that lacks one, until no candidate is above stop_below. The
+# judge and recon models resolve from the run profile at the --tail level. usage: bash tools/tail.sh <run>
+NAME="${1:?run profile}"
 set -uo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p docs/recon /tmp/bn-pi/tail
-python3 tools/roles.py budget "$PROV" --stop >/dev/null 2>&1 || { echo "tail: $PROV under stop_below or a probe error; nothing to spend"; exit 0; }
-mark="/tmp/bn-pi/tail/judge_${PROV}_$(date +%F)"
+MODEL="$(python3 tools/roles.py model "$NAME" recon --tail 2>/dev/null)" || { echo "tail: no recon candidate of run $NAME has budget; nothing to spend"; exit 0; }
+PROV="${MODEL%%/*}"
+mark="/tmp/bn-pi/tail/judge_${NAME}_$(date +%F)"
 if [ ! -f "$mark" ]; then
   touch "$mark"
-  f="$(BN_PROVIDER="$PROV" bash tools/pi_judge.sh 2>/dev/null | awk '{print $1}')"
+  f="$(BN_RUN="$NAME" bash tools/pi_judge.sh 2>/dev/null | awk '{print $1}')"
   [ -n "$f" ] && python3 tools/judge_append.py "$f" && git push -q origin main 2>/dev/null
 fi
-MODEL="$(python3 tools/roles.py model "$PROV" recon)"
 ROLE="$(awk 'BEGIN{n=0} /^---$/{n++; next} n>=2' .pi/roles/recon.md)"
 for t in $(python3 tools/next_ticket.py --list 2>/dev/null | awk '$2=="OPEN"{print $1}'); do
   [ -f "docs/recon/$t.md" ] && continue

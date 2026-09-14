@@ -59,3 +59,13 @@ ticket; verify_rows.py takes a machine-wide lock. The judge, auditor and digest 
 tools/bench_provider.py replays a fixed F-ticket set with a provider's worker and tables it against the Muse
 originals and every other provider's replays, with credits measured by balance delta and priced at the
 subscription's rate. No model changed in this reshape; the loop text changed only in how roles are named.
+
+## 2026-09-14 18:00 -- run profiles: joint orchestration across providers (the user's point)
+
+The user: joint orchestration is not a bad idea "if for instance hyper has a good coordinator and minimax
+doesnt. just requires some more coordination to make sure both are being used to the max". So the unit in
+providers.toml is now a run profile with candidate lists per job from any provider, resolved by budget at each
+launch; a run stops when the provider of its coordinator or worker is exhausted and the cron relaunches it
+on its fallbacks. Both subscriptions drain: the shared-coordinator run keeps going on its own coordinator
+once hyper is spent, and hyper's own run keeps going while hyper has credits. The rendered agent files did not
+change for today's run.

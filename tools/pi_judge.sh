@@ -8,7 +8,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-MODEL="$(python3 tools/roles.py model "${BN_PROVIDER:-$(python3 tools/roles.py first)}" judge)"
+MODEL="$(python3 tools/roles.py model "${BN_RUN:-${BN_PROVIDER:-$(python3 tools/roles.py first)}}" judge --tail)"
 mkdir -p docs/proposals /tmp/bn-pi/judge
 STAMP="$(date +%Y%m%d-%H%M%S)"; OUT="docs/proposals/$STAMP.md"; SESS="/tmp/bn-pi/judge/$STAMP"
 mkdir -p "$SESS"

@@ -64,20 +64,25 @@ vs after -- a merge that changed nothing is not parity).
   message for the rows and numbers it claims, run `python3 tools/verify_rows.py <branch> <rows> --expect
   ROW=T/W/F/-` and land with `bash tools/land.sh <branch> <rows> "<msg>" --expect ...`; then stamp the
   ticket with tools/ticket_result.py. Follow-ups go to pi's queue as OPEN tickets, not to Claude.
-- **Providers (from 2026-09-14 evening): `providers.toml` is the one place that says which model does which
-  job on which provider, and the schedule (active providers in order, serial or parallel, a reserve).**
-  `python3 tools/roles.py render` writes the pi agent files from it and `.pi/roles/<role>.md`; every launcher,
-  watcher and one-shot tool asks `roles.py model <provider> <role>`. Swapping a subscription = a new
-  `[providers.X]` block (plus its endpoint and key in pi's own `~/.pi/agent/models.json` / `auth.json`) and a
-  new `schedule.active`. The cron launcher `tools/run_day.sh` (every 30 min) starts a run for the first active
-  provider with budget (`roles.py budget <p> --start`), or all of them when `parallel = true` (tickets are
-  claimed per run by `next_ticket.py --claim`; landings and verifications serialize on their locks);
-  `tools/budget_watch.sh` stops a subscription run when its balance is under `stop_below`; under `start_above`
-  `tools/tail.sh` spends the rest on a judge pass and recon maps. The user's rule (2026-09-14 11:00): a
-  subscription's day is spent to the end, and OpenRouter is a RESERVE, never a fallback. Charm Hyper:
-  $20/month for 250 credits a day, `python3 tools/hyper_credits.py` prints what is left. Benchmarks of a
-  provider against the archived Muse answers: `python3 tools/bench_provider.py run <provider>` (a fixed set
-  of F tickets replayed with its worker; credits measured by balance delta) and `bench_provider.py table`.
+- **Providers and run profiles (from 2026-09-14 evening): `providers.toml` is the one place that says which
+  model does which job, and the schedule.** `[providers.X]` is a budget (a subscription's daily balance with a
+  probe and start/stop thresholds, or pay-as-you-go dollars with a floor and a per-run cap); `[runs.Y]` is a run
+  profile: per job (coordinator, worker, verifier, recon, judge, auditor, digest) a list of candidate models
+  from ANY provider in preference order. At launch each job takes the first candidate whose provider has
+  budget; `tools/budget_watch.sh` stops the run when the provider of its coordinator or worker is exhausted,
+  and the cron launcher `tools/run_day.sh` (every 30 min) relaunches it, resolving again, so a run whose
+  coordinator sits on hyper carries on with its fallback coordinator once hyper's day is spent. Joint
+  orchestration is therefore a profile, e.g. hyper's coordinator over minimax's workers (the commented
+  `[runs.minimax]` example). `python3 tools/roles.py render` writes the pi agent files (`.pi/agents/<role>-<run>.md`
+  from `.pi/roles/<role>.md`); one-shot tools ask `roles.py model <run> <job> --tail`. Swapping a subscription
+  = a `[providers.X]` block (plus its endpoint and key in pi's own `~/.pi/agent/models.json` / `auth.json`)
+  and a run profile; `schedule.parallel = true` keeps one run per profile going at once (tickets are claimed per
+  run by `next_ticket.py --claim`; landings and verifications serialize on their locks). Under `start_above`
+  `tools/tail.sh <run>` spends a subscription's rest on a judge pass and recon maps. The user's rule
+  (2026-09-14 11:00): a subscription's day is spent to the end, and OpenRouter is a RESERVE, never a fallback.
+  Charm Hyper: $20/month for 250 credits a day, `python3 tools/hyper_credits.py` prints what is left.
+  Benchmarks of a provider against the archived Muse answers: `python3 tools/bench_provider.py run <run>` (a
+  fixed set of F tickets replayed with its worker; credits measured by balance delta) and `bench_provider.py table`.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user's floor is $0.50 in the account (2026-09-14, was $5); runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.

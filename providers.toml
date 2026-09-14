@@ -1,62 +1,104 @@
-# providers.toml -- which model does each job, per provider. The one file to edit to swap a subscription.
+# providers.toml -- the agent setup as data: providers (a budget each), run profiles (a model per job, from any
+# provider, with fallbacks), and the schedule. The only file to edit to swap or combine subscriptions.
 #
-# tools/roles.py renders .pi/agents/<role>-<provider>.md from .pi/roles/<role>.md (the role's prompt, tools
-# and thinking level) plus this map, and every launcher, watcher and one-shot tool asks it for its model:
-#   python3 tools/roles.py render                 write the agent files (run after editing this file)
-#   python3 tools/roles.py model hyper worker     print one model id
-#   python3 tools/roles.py budget hyper --start   exit 0 if the provider can start a run now
-#   python3 tools/roles.py check                  validate the map
-# A provider named here must also exist in pi: ~/.pi/agent/models.json defines custom endpoints (hyper),
-# openrouter is built in; the keys live in ~/.pi/agent/auth.json. Model ids are pi's "<provider>/<model>".
+#   python3 tools/roles.py check                validate this file
+#   python3 tools/roles.py resolve hyper        which model each role of run "hyper" gets right now
+#   python3 tools/roles.py render               write the pi agent files (.pi/agents/<role>-<run>.md)
+#   python3 tools/roles.py model hyper judge    one resolved model id
+#   python3 tools/roles.py budget hyper --start exit 0 if PROVIDER hyper can start work now (1 no, 2 probe error)
 #
-# Roles: coordinator runs the loop (.pi/coordinator.md); worker implements a ticket; verifier checks a
-# landed branch's claims (a different model family from the worker); recon maps code for a ticket;
-# judge proposes tickets; auditor proposes setup changes; digest writes the daily blog paragraph.
+# A provider named here must also exist in pi (~/.pi/agent/models.json for custom endpoints such as hyper;
+# openrouter is built in; keys in ~/.pi/agent/auth.json). Model ids are pi's "<provider>/<model>".
 #
-# Each provider's block is self-sufficient: a run on it uses only its own roles, so its availability depends on
-# nothing else. A role may name another provider's model (roles.py notes it), but then that run needs both
-# providers up at once; prefer a same-provider model and accept the weaker family separation for the
-# verifier (verify_rows, the model-free check, still gates every landing).
+# Jobs: coordinator runs the loop (.pi/coordinator.md); worker implements a ticket; verifier checks a landed
+# branch's prose claims (verify_rows, the model-free check, gates every landing regardless); recon maps code
+# for a ticket; judge proposes tickets; auditor proposes setup changes; digest writes the daily blog paragraph.
+#
+# A run profile lists CANDIDATES per job in preference order, from any provider: at launch each job takes the
+# first candidate whose provider can start work, and the run's watcher stops it when the provider of its
+# coordinator or worker is exhausted; the cron launcher (tools/run_day.sh, every 30 min) then relaunches it,
+# resolving again -- so a run whose coordinator sits on hyper carries on with its fallback coordinator once
+# hyper's day is spent, and every subscription keeps draining. That is joint orchestration: e.g. hyper's
+# coordinator over minimax's workers while both have budget.
 
 [schedule]
-active = ["hyper"]        # providers that run, in this order: the launcher starts the first one with budget
-parallel = false          # true: one run per active provider at the same time (tickets are claimed per run,
-                          # landings and verifications serialize on their locks)
-reserve = ["openrouter"]  # never started by the launcher; a human starts a run on it by hand
-workers = 2               # worker slots per run
+runs = ["hyper"]          # run profiles to keep going, in order; serial: the first that can start; parallel: all
+parallel = false
+reserve = ["openrouter"]  # runs never started by the launcher; a human starts one by hand (BN_RUN=openrouter)
 
+# ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
-kind = "subscription"                     # a daily credit balance: the day's credits are spent to the end
-price_usd_per_month = 20                  # what the subscription costs; with daily_credits it prices a credit
-daily_credits = 250
-credits_per_nominal_usd = 26               # measured 2026-09-14 (164 credits for $6.3 of list-price usage); the benchmark's fallback
+kind = "subscription"                     # a daily credit balance the user wants spent to the end
 probe = "python3 tools/hyper_credits.py"  # prints the balance; --min N exits 1 below N and 2 on a probe error
-start_above = 10                          # a run starts only with at least this many credits (one ticket's worth)
-stop_below = 3                            # the watcher stops a run under this many
+start_above = 10                          # work starts on it only with at least this many credits (a ticket's worth)
+stop_below = 3                            # the watcher stops a run whose coordinator or worker sits on it under this
 tail = true                               # under start_above: spend the rest on one judge pass and recon maps
-
-[providers.hyper.roles]
-coordinator = "hyper/qwen3.8-flash"
-worker = "hyper/glm-5.3-flash"
-verifier = "hyper/qwen3.8-flash"
-recon = "hyper/deepseek-v4.1-flash"
-judge = "hyper/qwen3.8-flash"
-auditor = "hyper/qwen3.8-flash"
-digest = "hyper/qwen3.8-flash"
+price_usd_per_month = 20                  # with daily_credits: the real price of a credit, for the benchmarks
+daily_credits = 250
+credits_per_nominal_usd = 26              # measured 2026-09-14 (164 credits for $6.3 of list-price usage); the benchmark's fallback
+reset = "daily 10:35"                     # when the balance refreshes (local time); the pacing rule needs it
+coordinator_credits_per_hour = 4          # measured 2026-09-14: run 10's coordinator, ~15 credits over 3.9 h
+worker_credits_per_hour = 20              # measured 2026-09-14: ~164 credits over ~8 worker-hours, verification waits included
 
 [providers.openrouter]
 kind = "payg"                             # pay as you go, in dollars
 probe = "python3 tools/or_spend.py"       # prints "used today $X, total $Y, ... remaining $R"
 floor_usd = 0.50                          # never spend the account below this
-start_above = 1.0                         # dollars above the floor a run needs to start
+start_above = 1.0                         # dollars above the floor that work needs to start
 cap_per_run_usd = 5                       # the run's cap watcher stops it past this much real spend
 tail = false
 
-[providers.openrouter.roles]
-coordinator = "openrouter/meta/muse-spark-1.3-contributor"
-worker = "openrouter/meta/muse-spark-1.3-contributor"
-verifier = "openrouter/z-ai/glm-5.3-flash"
-recon = "openrouter/deepseek/deepseek-v4.1-flash"
-judge = "openrouter/meta/muse-spark-1.3-contributor"
-auditor = "openrouter/meta/muse-spark-1.3-contributor"
-digest = "openrouter/meta/muse-spark-1.3-contributor"
+# [providers.minimax]                     # the next candidate (the user, 2026-09-14): fill in after the endpoint
+# kind = "subscription"                   # and key are in pi's models.json/auth.json; the plan meters a rolling
+# probe = "python3 tools/minimax_quota.py"  # window, so the probe reports open (1) / exhausted (0) from a tiny request
+# start_above = 1
+# stop_below = 1
+# tail = false
+# reset = "rolling 5h"                    # a window, not a daily balance: no pacing on it, use it whenever open
+# price_usd_per_month = 0                 # fill in
+# daily_credits = 1
+
+# ---------------------------------------------------------------- run profiles: candidates per job, in order
+[runs.hyper]
+workers = 2                               # worker slots in flight
+coordinator = ["hyper/qwen3.8-flash"]
+worker = ["hyper/glm-5.3-flash"]
+verifier = ["hyper/qwen3.8-flash"]
+recon = ["hyper/deepseek-v4.1-flash"]
+judge = ["hyper/qwen3.8-flash"]
+auditor = ["hyper/qwen3.8-flash"]
+digest = ["hyper/qwen3.8-flash"]
+
+[runs.openrouter]
+workers = 2
+coordinator = ["openrouter/meta/muse-spark-1.3-contributor"]
+worker = ["openrouter/meta/muse-spark-1.3-contributor"]
+verifier = ["openrouter/z-ai/glm-5.3-flash"]
+recon = ["openrouter/deepseek/deepseek-v4.1-flash"]
+judge = ["openrouter/meta/muse-spark-1.3-contributor"]
+auditor = ["openrouter/meta/muse-spark-1.3-contributor"]
+digest = ["openrouter/meta/muse-spark-1.3-contributor"]
+
+# The joint plan the user described (2026-09-14): coordinate minimax's workers from hyper while minimax's window is
+# open, and burn whatever hyper credit that leaves with hyper's own workers before hyper's daily reset.
+#
+# [schedule]
+# runs = ["joint", "hyper"]
+# parallel = true
+#
+# [runs.joint]                            # hyper's coordinator and verifier over minimax's workers; minimax's own
+# workers = 2                             # coordinator only once hyper is spent
+# coordinator = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
+# worker = ["minimax/MiniMax-M3"]
+# verifier = ["hyper/qwen3.8-flash", "minimax/MiniMax-M2.7"]
+# recon = ["minimax/MiniMax-M2.7"]
+# judge = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
+# auditor = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
+# digest = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
+#
+# [runs.hyper]                            # the surplus burner: workers = "pace" sizes its worker slots every cycle
+# workers = "pace"                        # from hyper's balance, the hours to its reset, and the coordination the
+# pace_min = 0                            # other profiles will need from hyper until then (0 slots = stop; the run
+# pace_max = 4                            # comes back when a surplus appears)
+# coordinator = ["hyper/qwen3.8-flash"]
+# ... (the other jobs as in [runs.hyper] above)

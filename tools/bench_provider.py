@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Benchmark a provider against the others on this project's own archived work.
 
-  bench_provider.py run <provider> [--tickets F21b,F27b,...] [--role worker] [--thinking high]
-      replays each ticket with the provider's model for that role (tools/replay_bench.py: same base commit,
+  bench_provider.py run <run> [--model provider/model] [--tickets F21b,F27b,...] [--role worker] [--thinking high]
+      replays each ticket with the run profile's first candidate for that role, or --model (tools/replay_bench.py: same base commit,
       same ticket text, verify_rows judges the branch), measuring the provider's balance before and after
       each replay so a subscription's real cost is known in credits, and writes
       docs/benchmarks/provider-<provider>-<stamp>.md with the per-ticket table and totals.
@@ -51,8 +51,9 @@ def provider_of(model):
 
 
 def run(a):
-    c = cfg(); p = c["providers"][a.provider]
-    model = p["roles"][a.role]; stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    c = cfg()
+    model = a.model or c["runs"][a.run][a.role][0]; a.provider = provider_of(model); p = c["providers"][a.provider]
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     doc = "docs/benchmarks/provider-%s-%s.md" % (a.provider, stamp)
     others = subprocess.run("pgrep -fc 'pi -p --approve' || true", shell=True, capture_output=True, text=True).stdout.strip()
     rows = []
@@ -156,7 +157,7 @@ def table(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    r = sub.add_parser("run"); r.add_argument("provider"); r.add_argument("--tickets", default=",".join(DEFAULT[2:]))
+    r = sub.add_parser("run"); r.add_argument("run"); r.add_argument("--model"); r.add_argument("--tickets", default=",".join(DEFAULT[2:]))
     r.add_argument("--role", default="worker"); r.add_argument("--thinking", default="high")
     t = sub.add_parser("table"); t.add_argument("--tickets", default=",".join(DEFAULT))
     a = ap.parse_args(); a.tickets = [x for x in a.tickets.split(",") if x]
