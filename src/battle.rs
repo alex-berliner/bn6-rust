@@ -324,6 +324,11 @@ const BUG_FLIGHT: u8 = 42; // provenance: peeked -- tools/throw_dump.py 43's own
 /// (sub_80D9F2C) fall past this row's 70 frames, so the freeze below stands
 /// in until a longer row needs them.
 const BUG_REST_Z: i32 = 0xa << Q16_SHIFT; // provenance: derived -- sub_80D9E94 loc_80D9EC2 (asm31.s:71831)
+/// VDoll's doll rests ON its panel, not above it: sub_80D47C0's landing
+/// (loc_80D481E, asm31.s:60568) snaps X/Y to the panel with
+/// object_setCoordinatesFromPanels and then writes Z = 0, where BugBomb
+/// writes ten. The same landing poisons the panel (object_setPanelType 4).
+const VDOLL_REST_Z: i32 = 0; // provenance: derived -- sub_80D47C0 loc_80D481E (asm31.s:60568)
 /// VDoll's doll flies far higher and slower than any bomb -- it rises to the
 /// top of the screen and hangs there -- so it gets its own launch, gravity and
 /// flight, and `tools/throw_dump.py 96` reads all four out of the object while
@@ -334,6 +339,11 @@ const VDOLL_VX: i32 = 0x1EEEE; // provenance: peeked -- tools/throw_dump.py 96 r
 const VDOLL_VZ: i32 = 0x2F333; // provenance: peeked -- tools/throw_dump.py 96
 const VDOLL_GRAVITY: i32 = 0x2000; // provenance: peeked -- tools/throw_dump.py 96
 const VDOLL_FLIGHT: u8 = 60; // provenance: peeked -- tools/throw_dump.py 96
+/// Timer2 is decremented BEFORE the branch, so the doll only lands once it
+/// reads below zero: one frame after the 0x3c flight updates (sub_80D47C0
+/// loc_80D47FA-80D4848, asm31.s:60546-60568). Bomb.flight counts updates
+/// before the landing is processed, so it runs one past the timer seed.
+const VDOLL_LANDING_LAG: u8 = 1; // provenance: derived -- sub_80D47C0 loc_80D47FA lands only once Timer2 < 0 (asm31.s:60546)
 /// Its sprite's animations and palette shift, read off the real ROM's OAM.
 /// Every part of both animations carries an OAM palette offset of 9, and the
 /// live palette is the sprite's index 12, so the chip's own shift is 3 -- its
@@ -809,10 +819,17 @@ struct Bomb {
     seed_palette: usize,
     /// BugBomb and VDoll land and stay: the object rests on its panel.
     rests: bool,
-    /// BugBomb's landing snaps the ball onto its panel (sub_80D9E94);
-    /// VDoll's own landing routine is still open, so only BugBomb rests
-    /// this way until its pass reads it.
+    /// BugBomb's landing snaps the ball onto its panel (sub_80D9E94
+    /// loc_80D9EC2) and VDoll's snaps the doll the same way (sub_80D47C0
+    /// loc_80D481E, object_setCoordinatesFromPanels); both freeze through
+    /// the rows that follow.
     rest_snaps: bool,
+    /// Height the resting object floats at: ten above the panel for BugBomb's
+    /// ball, on the panel for VDoll's doll.
+    rest_z: i32,
+    /// VDoll's landing poisons the panel it rests on (object_setPanelType 4,
+    /// sub_80D47C0 loc_80D481E).
+    rest_poisons: bool,
     /// Whether the object moves and then feels the pull, rather than feeling
     /// it and then moving. A bomb does the pull first (sub_80C5C9C,
     /// asm31.s:29536); VDoll's doll does it last (sub_80D47C0, asm31.s:60530).
@@ -2933,17 +2950,26 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         // asm31.s:71822-71835), and the frozen bomb keeps
                         // drawing through the bomb path, which is what splits
                         // the ball from its ground shadow the way the real
-                        // ROM's OAM does.
+                        // ROM's OAM does. VDoll's doll snaps the same way but
+                        // rests ON the panel (sub_80D47C0 loc_80D481E,
+                        // asm31.s:60568, Z = 0) and poisons it
+                        // (object_setPanelType 4); doll and shadow coincide.
                         let (cx, cy) = field::panel_centre(b.target.0, b.target.1);
                         b.x = cx << Q16_SHIFT;
                         b.y = cy << Q16_SHIFT;
-                        b.z = BUG_REST_Z;
+                        b.z = b.rest_z;
                         b.vx = 0;
                         b.vz = 0;
                         b.gravity = 0;
                         b.ticks = 0;
                         b.flight = RESTS_FRAMES;
                         keep = true;
+                        // The poison shows on the field layer, which the
+                        // sterile arena strips -- same gate as the seeds'
+                        // sheets below (self.backdrop is None there).
+                        if b.rest_poisons && self.backdrop.is_some() {
+                            self.panels.set(b.target.0, b.target.1, field::PANEL_POISON);
+                        }
                     } else {
                         // The thrown object is not replaced: it stops where it
                         // lands and keeps its animation.
@@ -3399,7 +3425,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     player: thrown,
                     wide: chip.id == CHIP_BIGBOMB,
                     flight: if chip.id == CHIP_VDOLL {
-                        VDOLL_FLIGHT
+                        VDOLL_FLIGHT + VDOLL_LANDING_LAG
                     } else if chip.id == CHIP_BUGBOMB {
                         BUG_FLIGHT
                     } else if chip.id == CHIP_BLKBOMB {
@@ -3423,7 +3449,9 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     show_damage: lilbolr,
                     poison: seed,
                     rests,
-                    rest_snaps: chip.id == CHIP_BUGBOMB,
+                    rest_snaps: matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL),
+                    rest_z: if chip.id == CHIP_VDOLL { VDOLL_REST_Z } else { BUG_REST_Z },
+                    rest_poisons: chip.id == CHIP_VDOLL,
                     moves_before_falling: chip.id == CHIP_VDOLL || flash,
                     seed_palette: sheet_palette(chip.id),
                     x: (mx << Q16_SHIFT) + dx * BOMB_SPAWN_AHEAD,
