@@ -316,6 +316,15 @@ fn main(mut gba: agb::Gba) -> ! {
             // canon's units, next to the marker -- written from the first
             // battle update on (before the visibility gate below), so the
             // block always exists whenever a `--watch` reads it.
+            // F36 verdict: this pre-draw placement IS the frame-accurate
+            // one. Moving the write to after frame.commit() shifts the
+            // whole block exactly one capture row later (buster/warp
+            // mm_anim then diverge at k=1/k=0 with pixels still 0) -- a
+            // post-commit write lands past the vblank in the next row, so
+            // row F would describe frame F-1's draw. Kept between update
+            // and draw: row F describes frame F's own pixels, proven by
+            // the same-block anim/panel bytes flipping on the same k as
+            // canon's CurAnim/PanelX/Y with identical per-k pixel seqs.
             write_oracle_block(&battle.oracle_snapshot(battle_frame));
             if clocks_visible {
                 write_battle_marker(BATTLE_MAGIC, battle_frame);
