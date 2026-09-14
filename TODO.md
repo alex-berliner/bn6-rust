@@ -142,42 +142,40 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T4b. Port the animation bytecode player, steps 3 and 4 of the plan  *(DONE -- 2026-09-14, T4b steps 3-4 landed 6a2876e [was wt/t4b f86acb6]: alt stream, setAnimation/Unk_00, updateSprite gate + varian)*
+### T6. The Mettaur as canon's per-type routine: replace the hand-written brain with the ported AI entry  *(OPEN -- 2026-09-14)*
 
-**Result.** T4b steps 3-4 landed 6a2876e (was wt/t4b f86acb6): alt stream, setAnimation/Unk_00, updateSprite gate + variants. verify_rows PASS cursor 15/15/170 (was 23/22, tear moves), mettaur/popup/buster/result/wave/field isolated 0. field integrated 159011/5682 (+81/+81 vs 158930/5601, within AUDIT-6 worst cap 28000). oracle identical (mettaur/popup/buster/result/wave 0, first divergences unchanged). trace battle_full first divergence unchanged enemy_state_action k=0 canon(4,10) rust(4,0). trace record mettaur/popup/result unavailable pre-existing NameError trace.py:192 on main. independent worker verify-only; no verifier (harness-only claims).
-**Files.** src/spr.rs, src/anim.rs (if T4 created it), src/actor.rs and src/battle.rs (only the call sites that select or rebind an animation), tools/trace.py (fields if needed), docs/coverage/plan-interpreters.md (progress notes)
+**Files.** src/ai.rs, src/objects.rs (the per-type entry for the Mettaur), src/actor.rs (only the calls the entry makes), tools/trace.py, docs/coverage/plan-interpreters.md
 
-**Why.** T4 landed steps 1 and 2 (bind from the ROM tables, the normal-stream tick with countdown/consume/
-loop-or-hold, 6985d56). The plan's section 1.4 continues: (3) the alternate stream (the `Unk_03 & 0x80`
-branch) and the `sprite_setAnimation` / CurAnim -> Unk_00 write path, which is how a caller switches an
-object to a new animation; (4) the `object_updateSprite` gate with the CurAnim / CurAnimCopy rebind
-protocol (asm00_2.s:25045-25100), then the timestop / sub_801BC24 / UpdateBattleObjectSprite variants.
-These are the paths every actor and chip object goes through when it changes pose, so the hand-written
-selection code in actor.rs/battle.rs becomes calls into the ported player.
-**Do.** Port (3) then (4) with citations, each behind the same interface; switch the call sites to the
-ported selection path. Verify per section 1.5 (oracle + trace on mettaur, popup, buster, result; the trace
-on battle_full). **Acceptance.** full table identical to main (every isolated row 0; cursor's single-frame
-tear may move with the ROM layout, report its value; integrated rows within their caps); the trace's first
-divergence unchanged or later; the plan file's progress notes.
+**Why.** T5 landed the object dispatcher (objects.rs: battle_common_path / enemy_think / enemy_act / the
+per-type entries) and T4/T4b the animation player, so an enemy can now be canon's routine rather than
+ours. The Mettaur's brain in src/ai.rs is a hand-written state machine tuned to canon's counts (F17, F25,
+F28: sub_8109DEC / sub_8109CBC / sub_810A004 and the RunAIAttack chain in the plan's section 2). Port
+that chain as the Mettaur's per-type entry: the AI state table, the wait/align/hop/swing/shockwave states
+and their counters read from the same fields canon reads (the BattleObject's AI data), driven through
+enemy_think / enemy_act, with the hand-written state machine removed behind the same interface.
+**Acceptance.** mettaur 0/0/70 (negative not blind), wave 0, tiles/gauge integrated 0, popup 0, cursor and
+windowclose unchanged (the pause pose comes from the same routine now); the trace on battle_full and on
+mettaur: the enemy slot's CurState/CurAction/timers match canon frame for frame from spawn to the second
+attack (first divergence unchanged or later); every other row 0; plan notes.
 
-### T5. Port the object dispatcher, per section 2 of the plan  *(DONE -- 2026-09-14, T5 dispatcher landed 163293b [was wt/t5 e17d8d3]: objects.rs battle_common_path/enemy_think/enemy_act/t1_playe)*
+### T7. The battle end as canon's sequencer table: banner states, teardown, results hand-off  *(OPEN -- 2026-09-14)*
 
-**Result.** T5 dispatcher landed 163293b (was wt/t5 e17d8d3): objects.rs battle_common_path/enemy_think/enemy_act/t1_player_entry/t3_entry. verify_rows PASS cursor 1/1/170 (was 15), isolated 0. integrated: opening 72499/2691 identical, field 158958/5629 (-53/-53, cap 28000), warp/buster/chip-use identical. oracle identical, trace divergences unchanged. trace.py record NameError fixed. GLM verifier CONFIRMED all (citation nit t3_0x12 line docs-only).
-**Files.** src/battle.rs (the object update loop), src/actor.rs, src/shot.rs, src/ai.rs (only where an object's per-type entry is called), src/objects.rs (new, if the port wants its own module), tools/trace.py, docs/coverage/plan-interpreters.md
+**Files.** src/battle.rs (the end-sequence hunks), src/banner.rs, src/results.rs, tools/harness.py (the integrated rows' notes), tools/trace.py
 
-**Why.** docs/coverage/plan-interpreters.md section 2: the real game keeps a table of objects and, each
-frame, dispatches every live object to its per-type entry routine (the t3_0x.. routines, then RunAIAttack
-for AI objects; the chain from the dispatcher at 0x8108F50 is listed with its callers in 2.2). Ours
-updates actors, shots and effects in hand-written loops in battle.rs, which is where the lifecycle
-differences of the F series came from (spawn-frame updates, ordering). Port the table and the dispatch in
-the order section 2.3 gives, keeping our object types as the per-type entries at first.
-**Do.** Follow 2.3 step by step, each step landed behind the existing behaviour (the full table is the
-regression test), verified per 2.4 with the trace (the object slots' CurState/CurAction per frame on
-battle_full and mettaur). **Acceptance.** the dispatcher and table ported with citations; every isolated row
-0 (cursor's tear reported); the trace's first divergence unchanged or later; the plan file's notes.
+**Why.** The five integrated variants (opening 72499, field ~158k, warp 40628, buster 54672, chip-use
+275307) wait on one mechanism: canon's banner sequencer is a state table (sub_800801C, asm00_1.s:10422,
+dispatch through off_8008038; the 0x0C handler sub_80081A4 :10617 does the HUD teardown; the ENEMY DELETED
+banner element runs 49..106; the results driver sub_802BD60 starts the slide at 154 on every zero-enemy
+row, F32b/F38 measured) while ours is a hand-written sequence with BANNER_TO_RESULTS and a single `over`
+flag, which F33c/F38b showed cannot be made to fit per fixture. Port the sequencer as the state table with
+its per-state counts and handlers, the trace's sequencer field (dword_203CA70) as the acceptance: the
+state sequence and frames from the killing blow to the results window's first slide equal on both sides.
+**Acceptance.** the sequencer trace equal on battle_full and on warp/buster/chip-use integrated; those three
+integrated rows 0 or their per-frame remainder against F34's chain; result, popup, banner, field isolated
+0; opening integrated re-measured; allowlist entries removed only for rows that read 0; nothing worse.
 
-- T4 PARTIAL -- Port the animation bytecode player, steps 1 and 2 of the plan. anim steps 1-2 landed 6985d56: bind+tick ported (verifier CONFIRMED all)
-- T1b DONE -- Land the trace harness with a zero-cost export: the stores only when tracing is on. supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class
+- T4b DONE -- Port the animation bytecode player, steps 3 and 4 of the plan. T4b steps 3-4 landed 6a2876e (was wt/t4b f86acb6): alt stream, setAnimation/Unk_00, updateSprite gate + variants
+- T5 DONE -- Port the object dispatcher, per section 2 of the plan. T5 dispatcher landed 163293b (was wt/t5 e17d8d3): objects.rs battle_common_path/enemy_think/enemy_act/t1_player_entry/t3_entry
 
 **Common to F8-F23 (and their b-tickets) unless the ticket says otherwise.** Baseline the row (harness line plus
 `tools/diffmask.py` region, plus `tools/oracle.py` where the row is supported); localize the residue to
