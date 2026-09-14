@@ -302,6 +302,25 @@ tools/oracle.py's (or explain the difference); (5) the negative control: a one-f
 must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
 the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
 
+### T3. Locate canon's interpreters in the coverage ranking and write the port plan for the animation player  *(OPEN -- 2026-09-14)*
+
+**Files.** docs/coverage/ (the plan), tools/coverage.py (read), reference/bn6f (read)
+
+**Why.** T2's tables (docs/coverage/battle_full.md: 1140 routines, 318 uncovered by any row; mettaur.md: 517)
+locate the object dispatcher at 0x8108F50 but not the animation bytecode player or the script VM loop. Every
+sprite update in canon passes through the player (F25d/F31 cited sprite_setAnimation / sprite_loadAnimationData
+/ object_updateSprite, asm31.s:31461-31462, :27725-27732, and the t3 dispatchers that fall through to it);
+the script VMs drive chips and enemies (the Mettaur's sub_8109DEC family, the chip objects' t3_0x.. routines).
+**Do.** From the ranking and the disassembly: (1) name the animation player's entry routines, its bytecode
+format (the .spr/anim commands our assets/*.bin were extracted from), its per-frame state (the GFXAnimState
+fields T1 already reads) and every caller in battle_full; (2) the same for the object dispatcher and the
+script VM(s): the object table, the per-type entry points, the VM's opcode dispatch; (3) write
+docs/coverage/plan-interpreters.md: for each interpreter, the routines to port in order, what data it reads
+from the ROM, how the trace harness (T1b) verifies it (which fields, on which scenario), and what of ours it
+replaces (src/spr.rs's player, src/ai.rs's hand-written Mettaur, the chip objects). No src change.
+**Acceptance.** the three interpreters named with entry symbols and file:line, their callers counted from
+the coverage tables, and the plan file; the verifier checks the symbols against the disassembly.
+
 ### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(OPEN -- 2026-09-14)*
 
 **Files.** src/main.rs, src/fixture.rs, src/actor.rs, src/backdrop.rs, src/battle.rs (the export sites only), tools/trace.py, tools/states.py, AGENT_GUIDE.md
@@ -322,8 +341,9 @@ still fires. Confirm the two items T1 left unconfirmed (the RNG field at k=271, 
 battle_full). **Acceptance.** full table identical to main with the flag off; T1's record/diff/calibration/
 negative with the flag on; AGENT_GUIDE.md's ten lines on the trace commands.
 
-### T2. Coverage: which canon routines each scenario executes, ranked  *(PARTIAL -- 2026-09-14, coverage profiler+tables READY, KEPT unmerged [branch wt/t2-coverage 34efe17+79bd0d1]: battle_full 1140 routin)*
+### T2. Coverage: which canon routines each scenario executes, ranked  *(PARTIAL -- 2026-09-14, coverage profiler and tables landed [covstep profiler + tools/coverage.py, docs/coverage/]: battle_full 1140 r)*
 
+**Result.** coverage profiler and tables landed (covstep profiler + tools/coverage.py, docs/coverage/): battle_full 1140 routines executed with 318 not covered by any existing harness row, mettaur 517; the object dispatcher located at 0x8108F50 (68/114 in the ranking); the animation player and script VM loop not pinned by the report (stop rule) -- T3 locates and plans them from the tables. Landed by the human session with land.sh --no-verify (no src change); pi's landing had been blocked by a dirty tree the deferred benchmark writes caused, now fixed (they write an untracked file).
 **Result.** coverage profiler+tables READY, KEPT unmerged (branch wt/t2-coverage 34efe17+79bd0d1): battle_full 1140 routines/318 uncovered, mettaur 517; dispatcher 8108F50 (68/114) located; VM loop + anim player unpinned per stop rule; verifier SUPPORTS all claims + scope clean (4 new files, covstep standalone); LANDING BLOCKED: main checkout dirty (human benchmark file, not mine to stash) -- land via land.sh when clean; worker muse-spark, verifier GLM
 **Files.** tools/coverage.py (new), docs/coverage/ (new), tools/states.py (read)
 
