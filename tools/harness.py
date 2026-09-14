@@ -1018,7 +1018,19 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 #: canon side, so an empty rust hand is the match, not hand=[1] (tried
 #: first, against the pre-dissolve-wait frame 90 -- wrong once the compare
 #: window moved).
-ZERO_ENEMY = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2,
+#: megaman_hp: 60, not 100 -- F33 (2026-09-13). All four zero-enemy rows
+#: compare against the SAME canon state these fields describe (STERILE +
+#: pausedwithcannon + DELETE_ENEMY), whose navi holds 0x003c at 0x0203a9d4
+#: (BattleObject 0x0203a9b0 + 0x24) -- the value FIELD_ROW's own comment
+#: already records as peeked from PAUSED. The HUD's HP box is battle-HUD
+#: element 2 (mask dword_20352C0, updater sub_801C168 asm00_2.s:25854, draw
+#: sub_801C202 asm00_2.s:25952; bit 2 is set in canon's mask on every frame
+#: of all four rows' compared windows, measured with --watch 0x020352C0:8),
+#: so it is drawn on both sides and a wrong HP is a live pixel difference:
+#: measured on field integrated, ours drew "100" against canon's "60" for a
+#: steady ~30 px/frame in the box (the extra leading "1" at x19..20 y3..12
+#: plus the changed units digit). provenance: peeked.
+ZERO_ENEMY = dict(enemies=0, megaman_hp=60, megaman_col=2, megaman_row=2,
                   hand=[], hand_count=0, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
 
