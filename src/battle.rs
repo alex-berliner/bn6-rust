@@ -2387,18 +2387,30 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 if let Some(f) = self.fixture {
                     if f.enemy_state != 0 && f.enemy_action == 0x0b {
                         if let Some(enemy) = self.enemies.get_mut(0) {
-                            // NOTE (F37b): priming the pose past its first frame
-                            // was tried -- canon froze mid-raise, so frame 0
-                            // reads 205 off -- but a 9-tick prime measured
-                            // windowclose 26848 -> 21703 while cursor went
-                            // 130266 -> 159656 (worse), and the prime did not
-                            // reproduce the running build's k16..23 transient
-                            // at all, so it was reverted: the frozen frame is
-                            // a fitted knob with no clean evidence, and the
-                            // position remainder (actor.rs, out of scope)
-                            // dominates cursor either way. Reverted to the
-                            // plain seed.
+                            // F37d: canon froze the executor mid-raise, not on
+                            // entry. OAM on the row's own canon capture
+                            // (frame 15, enemy palette 1) shows all five of
+                            // anim 1's frame-4 parts at the mirrored boxes
+                            // (164,107,32x16), (172,123,8x16),
+                            // (174,127,16x32), (166,131,8x16) and
+                            // (163,143,32x8) -- our ROM-exported mettaur.bin
+                            // anim 1 frame_in_anim 4 exactly (32x16 at
+                            // (-16,-40), 8x16 at (0,-24), mirrored about the
+                            // enemy origin; sub_8109DEC sets CurAnim 1 on
+                            // entry, asm31.s:170830-170848, and the sprite
+                            // updater advances it until BattlePaused freezes
+                            // it, asm00_1.s:90-110). Frame 4 is reached after
+                            // the durations of frames 0..3 (1+1+1+3) and held
+                            // for its own 8, so priming the seeded attack
+                            // this many executor ticks lands the frozen sprite
+                            // on it. F37b's reverted 9-tick prime is this same
+                            // value; it measured worse only because the
+                            // actor-Y pan (F37c) had not landed yet.
+                            const SWING_PRIME: u8 = 9; // provenance: derived -- sprite-frame durations in the ROM-exported mettaur.bin (1,1,1,3, then 8) + the OAM part-box match above; any count in 7..=14 shows the same frame
                             enemy.attack(actor::SWING);
+                            for _ in 0..SWING_PRIME {
+                                enemy.update();
+                            }
                         }
                     }
                 }
