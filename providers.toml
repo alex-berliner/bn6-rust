@@ -12,6 +12,11 @@
 # Roles: coordinator runs the loop (.pi/coordinator.md); worker implements a ticket; verifier checks a
 # landed branch's claims (a different model family from the worker); recon maps code for a ticket;
 # judge proposes tickets; auditor proposes setup changes; digest writes the daily blog paragraph.
+#
+# Each provider's block is self-sufficient: a run on it uses only its own roles, so its availability depends on
+# nothing else. A role may name another provider's model (roles.py notes it), but then that run needs both
+# providers up at once; prefer a same-provider model and accept the weaker family separation for the
+# verifier (verify_rows, the model-free check, still gates every landing).
 
 [schedule]
 active = ["hyper"]        # providers that run, in this order: the launcher starts the first one with budget
