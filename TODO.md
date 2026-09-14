@@ -394,8 +394,9 @@ canon's driver sequences it (cite), and show the two builds' captures identical 
 on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
 chip-cannon 0.
 
-### F30b. VBlank re-sync spin: is cursor frame 0 better or worse, and gate the spin accordingly *(OPEN -- 2026-09-13)*
+### F30b. VBlank re-sync spin: is cursor frame 0 better or worse, and gate the spin accordingly  *(BLOCKED -- 2026-09-13, spin proven no-op on cursor [6 reps 620802 bit-identical, F30 +112 = layout jitter])*
 
+**Result.** spin proven no-op on cursor (6 reps 620802 bit-identical, F30 +112 = layout jitter); gate KEEP ungated; layout race NOT 0: with spin 6704px@capture8 (frame-121 fixed 85->0, battle-frame-0 remains; masked-VBlank hypothesis UNCONFIRMED, new-mechanism work out of scope); field-int +12 = layout jitter (spin on/off bit-identical 3x); verify_rows PASS 10/10 MATCH on e858b42; no verifier (no follow-up per two-in-a-row: F30 PARTIAL->F30b); branches kept unmerged; worker muse-spark
 **Files.** src/main.rs
 
 **Why.** F30's verified Result (PARTIAL, branch wt/f30-scanline c64b68a kept unmerged): the layout race is fixed (10585px -> 0 over 200 frames across ROM layouts; root cause and fix-faithfulness both verifier-CONFIRMED), but the combination moves cursor 620802 -> 620914 (+112). The verifier measured the diff as ONE compared frame (frame 0), a full-width scanline band at y~=40 -- the artifact class the spin targets -- and confirmed the 54-line spin is the only code delta, but better-vs-canon was UNMEASURED (one run per side; emulator nondeterminism not excluded) and the x<112-locality story was REFUTED.
