@@ -60,6 +60,11 @@ static POISSEED: &[u8] = &Aligned(*include_bytes!("../assets/poisseed.bin")).0;
 static POISAREA: &[u8] = &Aligned(*include_bytes!("../assets/poisarea.bin")).0;
 static VDOLL: &[u8] = &Aligned(*include_bytes!("../assets/vdoll.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
+/// EnergBom/MegEnBom's landing explosion: effect list 0x14 index 0x12
+/// (sprite_83B2494, reference/bn6f/data/SpritePointersList.s), exported with
+/// tools/spr_export.py straight out of the ROM -- canon's own bytes, never
+/// hand-drawn art.
+static ENERGBOM_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/energbom_blast.bin")).0;
 static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
 /// SuprVulc's detached muzzle-fire ball: canon OBJ-VRAM tile 512 + object
 /// palette 11, dumped off the sterile-row capture (see battle.rs's
