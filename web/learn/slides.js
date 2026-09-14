@@ -14,6 +14,16 @@
 //             something left out; say in the text what it was.
 //   text      about 60-100 words of plain English: how this part works, as
 //             it works today. No jargon the same slide does not explain.
+//   highlights 3 to 5 {code, text} pairs. Each is an EXACT substring of this
+//             slide's own `code` and `text`, and each must occur exactly
+//             once in its string -- lengthen the substring or reword the
+//             sentence if it does not. The first pair gets colour 1, the
+//             second colour 2, and so on up to 5; the code half and the
+//             text half are painted the same colour and light up together
+//             when either is hovered or tapped. Point them at the concrete
+//             things (a counter, a hop, the gauge), not whole sentences.
+//             A substring the page cannot find is skipped with a warning in
+//             the browser console, so check there after editing.
 
 var SLIDES = [
 
@@ -36,6 +46,18 @@ loop {
     frame.commit();
 }`,
   text: "The whole game is this loop. Read the buttons, step the shuffling number generator so every battle deals a different folder, advance the fight by exactly one frame, then draw the new picture and hand it over. The last call waits for the screen to finish its refresh, which is what paces the loop at sixty frames a second. Before any of it, the game looks at a small block of numbers left in memory: if one is there it describes the scene to set up, and if not the game starts an ordinary fight of its own.",
+  highlights: [
+    { code: "let fixture = fixture::read();",
+      text: "a small block of numbers left in memory" },
+    { code: "input.update();",
+      text: "Read the buttons" },
+    { code: "rng.next();",
+      text: "step the shuffling number generator" },
+    { code: "battle.update(&input, &gfx, &mut mixer)",
+      text: "advance the fight by exactly one frame" },
+    { code: "frame.commit();",
+      text: "waits for the screen to finish its refresh" },
+  ],
 },
 
 {
@@ -55,6 +77,16 @@ pub fn half(enemy_side: bool) -> (i32, i32) {
     if enemy_side { (4, COLS) } else { (1, 3) }
 }`,
   text: "Three rows, six columns, numbered from one. Columns one to three are yours, four to six the enemy's, and who owns each panel is stored per panel so a chip can steal one. Almost nothing in the code thinks in pixels: MegaMan, an enemy, a shot and a panel highlight all carry a column and a row. One short function turns that pair into the pixel at the middle of the panel, forty across and twenty-four down apiece. Moving is changing two small numbers, and everything that draws asks the same function where that is.",
+  highlights: [
+    { code: "pub const COLS: i32 = 6;\npub const ROWS: i32 = 3;",
+      text: "Three rows, six columns" },
+    { code: "pub fn panel_centre(col: i32, row: i32) -> (i32, i32)",
+      text: "One short function turns that pair into the pixel at the middle of the panel" },
+    { code: "(col * 40 - 20, row * 24 + 60)",
+      text: "forty across and twenty-four down apiece" },
+    { code: "if enemy_side { (4, COLS) } else { (1, 3) }",
+      text: "Columns one to three are yours, four to six the enemy's" },
+  ],
 },
 
 {
@@ -77,6 +109,18 @@ if !dying && self.flash == 0 && self.invulnerable > 0 && (self.invulnerable >> 1
     return;
 }`,
   text: "MegaMan holds one job at a time: standing, hopping to another panel, winding up, swinging, reeling from a hit, or being deleted. Each one carries its own countdown, and when that reaches zero the job goes back to standing, so nothing can start while something else is running. A hit that lands sets his health, flashes him white for a few frames, and starts a second counter. While that counter runs he cannot be hit again, and he is skipped on two frames out of every four, which is the blinking you see.",
+  highlights: [
+    { code: "if self.invulnerable > 0 || self.invisible > 0 {",
+      text: "he cannot be hit again" },
+    { code: "self.hp = self.hp.saturating_sub(amount);",
+      text: "sets his health" },
+    { code: "self.invulnerable = self.mercy;",
+      text: "starts a second counter" },
+    { code: "self.player.set_white(true);",
+      text: "flashes him white for a few frames" },
+    { code: "(self.invulnerable >> 1) & 1 != 0",
+      text: "skipped on two frames out of every four" },
+  ],
 },
 
 {
@@ -101,6 +145,18 @@ if !spent && arrived {
     // ... the same test against MegaMan for an enemy's shot, then:
     spent = hit && !self.shots[i].piercing;`,
   text: "A shot is not a moving picture with a box around it. It is a panel, a direction and a countdown: every frame the countdown drops by one, and at zero the shot steps one column and starts over, so the buster's bolt crosses a panel every two frames and a shockwave dwells twenty-two. On the frame it arrives, anything standing on that panel takes its damage. Yours hit enemies, an enemy's hits you, and unless the shot pierces it is spent on the first thing it touches.",
+  highlights: [
+    { code: "self.ticks -= 1;",
+      text: "every frame the countdown drops by one" },
+    { code: "self.col += self.dx;",
+      text: "the shot steps one column" },
+    { code: "self.ticks = self.interval;",
+      text: "starts over" },
+    { code: "enemy.take_damage(self.shots[i].damage);",
+      text: "anything standing on that panel takes its damage" },
+    { code: "spent = hit && !self.shots[i].piercing;",
+      text: "unless the shot pierces it is spent on the first thing it touches" },
+  ],
 },
 
 {
@@ -125,6 +181,18 @@ if !spent && arrived {
         MettaurState::RowCheck
     }`,
   text: "The Mettaur runs a tiny loop, and only when it is not already busy. It waits about thirty frames after appearing. Then it compares its row with yours: different, and it hops one panel toward you and waits for the hop to finish before looking again; the same, and it swings. The swing pose holds for sixty-four frames, the shockwave is launched partway through it, and forty frames of recovery follow before the loop starts over. Two branches for a confused Mettaur are left out above, because nothing in this game confuses one yet.",
+  highlights: [
+    { code: "if self.param4 == 0 {",
+      text: "It waits about thirty frames after appearing" },
+    { code: "} else if row != target.1 {",
+      text: "it compares its row with yours" },
+    { code: "me.hop(0, (target.1 - row).signum(), blocked);",
+      text: "it hops one panel toward you" },
+    { code: "MettaurState::AlignHop => MettaurState::RowCheck,",
+      text: "waits for the hop to finish before looking again" },
+    { code: "me.attack(actor::SWING);",
+      text: "the same, and it swings" },
+  ],
 },
 
 {
@@ -149,6 +217,18 @@ pub fn update(&mut self) {
     self.load_frame();
 }`,
   text: "Every character's artwork is pulled out of the original game into one file: a list of animations, each a run of frames, each frame naming its pixels, its colours, how many frames to hold, and the handful of pieces it is built from with their offsets and flips. Playing one is a countdown. Each frame subtract one; while it is above zero nothing changes at all, which is why the picture is rebuilt only when it actually moves. At zero, step to the next frame and load its pieces. A one-shot animation stops on its last frame and waits.",
+  highlights: [
+    { code: "pub oam_first: u16,\n    pub oam_count: u16,",
+      text: "the handful of pieces it is built from" },
+    { code: "pub duration: u8,",
+      text: "how many frames to hold" },
+    { code: "self.ticks_left = self.ticks_left.saturating_sub(1);",
+      text: "Each frame subtract one" },
+    { code: "if self.ticks_left > 0 {",
+      text: "while it is above zero nothing changes at all" },
+    { code: "self.frame_in_anim = (self.frame_in_anim + 1) % count;\n    self.load_frame();",
+      text: "step to the next frame and load its pieces" },
+  ],
 },
 
 {
@@ -173,6 +253,18 @@ Phase::Opening { x } if x > SCROLL_OPEN => {
 if self.picks.len() >= HAND_SIZE {
     return false;`,
   text: "The gauge is one number that grows by a fixed step every frame until it hits its top. That is the whole trigger: at the top the fight pauses for the chimes, then the window scrolls in from a hundred and twenty pixels away, twelve a frame, so it takes ten frames, revealing more of itself with every step. Inside, a cursor walks the five offered chips. One may join your hand of five if it shares a name or a code with what you have picked. Leaving empties the gauge and the picks become the hand.",
+  highlights: [
+    { code: "self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);",
+      text: "one number that grows by a fixed step every frame until it hits its top" },
+    { code: "self.gauge_pause = GAUGE_PAUSE;",
+      text: "the fight pauses for the chimes" },
+    { code: "const SLIDE_FROM: i32 = 0x78;",
+      text: "from a hundred and twenty pixels away" },
+    { code: "const SLIDE_STEP: i32 = 0xc;",
+      text: "twelve a frame" },
+    { code: "if self.picks.len() >= HAND_SIZE {",
+      text: "your hand of five" },
+  ],
 },
 
 {
@@ -197,6 +289,18 @@ pub fn update(&mut self, gfx: &Graphics) {
     }
     self.x_q = (self.x_q + SCROLL_X_Q) % (256 * 4);`,
   text: "Every frame the same stack is painted: the moving pattern at the back, the field over it, then the boxes, gauge and numbers on top. A health number never jumps to its new value. It walks, an eighth of the gap plus four each frame, and the digits wear a different colour set while it moves, so a big hit rolls down over several frames. Behind all of it the pattern slides half a pixel across and a quarter down every frame, while a separate schedule of twenty-nine entries swaps which artwork its squares are showing.",
+  highlights: [
+    { code: "let step = self.shown.abs_diff(actual) / 8 + 4;",
+      text: "an eighth of the gap plus four each frame" },
+    { code: "self.shown = if actual < self.shown {",
+      text: "A health number never jumps to its new value" },
+    { code: "const SCROLL_X_Q: u32 = 2;\nconst SCROLL_Y_Q: u32 = 1;",
+      text: "half a pixel across and a quarter down every frame" },
+    { code: "self.entry = (self.entry + 1) % STEP_ORDER.len();",
+      text: "a separate schedule of twenty-nine entries" },
+    { code: "self.show_step(gfx, STEP_ORDER[self.entry]);",
+      text: "swaps which artwork its squares are showing" },
+  ],
 },
 
 ];
