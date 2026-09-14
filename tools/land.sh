@@ -17,6 +17,7 @@ while [ $# -gt 0 ]; do
   esac; shift
 done
 cd "$ROOT"
+bash tools/check_inputs.sh || exit 1
 # landings are serialized machine-wide: two concurrent merges into the same checkout would corrupt it
 exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
 git diff --quiet && git diff --cached --quiet || { echo "main checkout is dirty; refusing" >&2; exit 1; }
