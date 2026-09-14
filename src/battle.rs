@@ -32,7 +32,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
+    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
@@ -867,6 +867,11 @@ const HELD_RAISE_AT: u8 = 5; // provenance: peeked -- measured off the real ROM
 /// 0x14 index 0, sprite_8399578, animation 0, 22 frames -- from the panel
 /// (sub_801BD3C, asm31.s:29569-29589) with sound 0x70.
 const BLAST_FRAMES: u8 = 22; // provenance: derived -- sub_801BD3C, asm31.s:29569-29589
+/// Frames the t3_0x11 energy explosion draws. Its update (sub_80C6854,
+/// asm31.s:31069) pulses the collision region on the init frame and 7 and 14
+/// frames later, then sits in phase 4 for a 0x14 Timer -- drawn init through
+/// init+33, destroyed the frame after.
+const ENERGBOM_BLAST_FRAMES: u8 = 34; // provenance: derived -- sub_80C6854, asm31.s:31069 (see above)
 
 /// A thrown MiniBomb in flight, in the game's 16.16 coordinates.
 struct Bomb {
@@ -911,6 +916,12 @@ struct Bomb {
     /// It is half a step of difference, which is a pixel wherever the arc is
     /// steep.
     moves_before_falling: bool,
+    /// EnergBom and MegEnBom throw Param1 == 2 (measured live: the thrown
+    /// object's +0x4 reads 2 for chips 0x37/0x38, 0 for MiniBomb's 0x36),
+    /// which routes the landing through sub_80C5D84's Param1 == 2 branch
+    /// (sub_80C68B0, asm31.s:29664 -- the t3_0x11 energy explosion) instead
+    /// of the single-panel type-4 blast MiniBomb's Param1 == 0 spreads.
+    ener: bool,
 }
 
 impl Bomb {
@@ -1233,6 +1244,14 @@ pub struct Battle<'a> {
     /// and the palette it takes.
     poison_pending: u8,
     poison_palette: usize,
+    /// Frames until EnergBom/MegEnBom's energy explosion starts, counted
+    /// from the bomb landing, and the panel it starts on. Canon's spawn runs
+    /// in the CurAction-4 handler (sub_80C5D84, asm31.s:29664), a frame after
+    /// the Timer-0 landing frame, and the new object draws its first frame
+    /// from init -- measured: the ball is gone on canon 53, the ring's first
+    /// dot shows on 54. Same one-frame delay shape as poison_pending above.
+    ring_pending: u8,
+    ring_target: (i32, i32),
     /// The palette for the chip-in-hand icon the game hangs over the navi.
     /// None in the sterile arena, which does not draw the icon: the bank it
     /// would hold is one the longest volley needs. SuprVulc panicked with
@@ -1775,6 +1794,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             field_slide: 0,
             poison_pending: 0,
             poison_palette: 0,
+            ring_pending: 0,
+            ring_target: (0, 0),
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
@@ -3151,6 +3172,29 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 }
             }
         }
+        // EnergBom/MegEnBom's landing bursts nothing -- their Param1 is 2,
+        // so the landing's region byte (dword_80C5D7C[2]) is 0 and
+        // sub_801BD3C spreads nothing. The t3_0x11 energy explosion
+        // (sprite_83B2494, effect list 0x14 index 0x12, animation 0, no
+        // shadow, sound 0xBB) starts on the frame after the landing instead.
+        if self.ring_pending > 0 {
+            self.ring_pending -= 1;
+            if self.ring_pending == 0 {
+                let (cx, cy) =
+                    field::panel_centre(self.ring_target.0, self.ring_target.1);
+                // Spawned after this frame's effect tick, so take this
+                // frame's tick now, exactly like the blast below.
+                let mut ring = spr::Player::new(spr::Assets::new(ENERGBOM_BLAST), 0);
+                ring.update();
+                self.effects.push((
+                    ring,
+                    (cx, cy),
+                    ENERGBOM_BLAST_FRAMES - 1,
+                    false,
+                    false,
+                ));
+            }
+        }
         // A bomb that lands bursts on its panel (sub_80C5DBC's fuse of zero:
         // the blast, setCollisionRegion(1), then sprite 0x26's animation 0).
         let mut landed = Vec::new();
@@ -3211,13 +3255,22 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     b.wide,
                     b.poison.then_some(b.seed_palette),
                     b.rests,
+                    b.ener,
                 ));
                 keep
             } else {
                 true
             }
         });
-        for ((col, row), damage, wide, poison, rests) in landed {
+        for ((col, row), damage, wide, poison, rests, ener) in landed {
+            // EnergBom and MegEnBom do not burst (see ring_pending): their
+            // landing spreads nothing, and the explosion follows a frame
+            // later.
+            if ener {
+                self.ring_pending = 1;
+                self.ring_target = (col, row);
+                continue;
+            }
             // A resting object does not burst: BugBomb's ball and VDoll's
             // doll just stop where they land.
             if rests {
@@ -3699,6 +3752,9 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     show_damage: lilbolr,
                     poison: seed,
                     rests,
+                    // Param1 == 2 on the live thrown object for 0x37/0x38
+                    // (0 for MiniBomb): the energy blast, not the burst.
+                    ener: matches!(chip.id, CHIP_ENERGBOM | CHIP_MEGENBOM),
                     rest_snaps: matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL),
                     rest_z: if chip.id == CHIP_VDOLL { VDOLL_REST_Z } else { BUG_REST_Z },
                     rest_poisons: chip.id == CHIP_VDOLL,
