@@ -1144,8 +1144,19 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 #: measured on field integrated, ours drew "100" against canon's "60" for a
 #: steady ~30 px/frame in the box (the extra leading "1" at x19..20 y3..12
 #: plus the changed units digit). provenance: peeked.
+#: hand: Cannon, not empty -- F33b (2026-09-13). pausedwithcannon's own
+#: queued Cannon40 is still in canon's "chip to use" slot (dword_20352C8) on
+#: every compared frame of all four rows, and canon's element 6 (draw
+#: sub_801C6EE asm00_2.s:26619, BG3 map rows 0x12/0x13) keeps writing its
+#: name and damage there -- measured: canon's BG3 carries "Cannon 40" at
+#: y148..158 x1..63, 422 px on every frame, which an empty rust hand cannot
+#: draw. What is gone on the canon side by frame 130 is the ICON, because
+#: that is element 1 and the teardown at canon 48 cleared it; the earlier
+#: note here read the missing icon as a missing chip. Both now follow canon:
+#: the descriptor carries the chip, and src/battle.rs gates the icon (not the
+#: name) on `hud_live`. provenance: peeked.
 ZERO_ENEMY = dict(enemies=0, megaman_hp=60, megaman_col=2, megaman_row=2,
-                  hand=[], hand_count=0, gauge=0, flags=0x11)
+                  hand=[1], hand_count=1, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
 
 # --------------------------------------------------------------------------
