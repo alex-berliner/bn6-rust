@@ -142,8 +142,9 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T4b. Port the animation bytecode player, steps 3 and 4 of the plan  *(OPEN -- 2026-09-14)*
+### T4b. Port the animation bytecode player, steps 3 and 4 of the plan  *(DONE -- 2026-09-14, T4b steps 3-4 landed 6a2876e [was wt/t4b f86acb6]: alt stream, setAnimation/Unk_00, updateSprite gate + varian)*
 
+**Result.** T4b steps 3-4 landed 6a2876e (was wt/t4b f86acb6): alt stream, setAnimation/Unk_00, updateSprite gate + variants. verify_rows PASS cursor 15/15/170 (was 23/22, tear moves), mettaur/popup/buster/result/wave/field isolated 0. field integrated 159011/5682 (+81/+81 vs 158930/5601, within AUDIT-6 worst cap 28000). oracle identical (mettaur/popup/buster/result/wave 0, first divergences unchanged). trace battle_full first divergence unchanged enemy_state_action k=0 canon(4,10) rust(4,0). trace record mettaur/popup/result unavailable pre-existing NameError trace.py:192 on main. independent worker verify-only; no verifier (harness-only claims).
 **Files.** src/spr.rs, src/anim.rs (if T4 created it), src/actor.rs and src/battle.rs (only the call sites that select or rebind an animation), tools/trace.py (fields if needed), docs/coverage/plan-interpreters.md (progress notes)
 
 **Why.** T4 landed steps 1 and 2 (bind from the ROM tables, the normal-stream tick with countdown/consume/
