@@ -344,8 +344,9 @@ event-locked alignment (if the event moves, re-sweep the band and report the new
 and the event that names it); popup's enemy box reported; wave, window, opening, chip-cannon, field
 0; full table nothing worse.
 
-### F29. `windowclose`: decompose the remaining 648948 by layer and frame, fix what lives in the window  *(CLAUDE -- 2026-09-13)*
+### F29. `windowclose`: decompose the remaining 648948 by layer and frame, fix what lives in the window  *(PARTIAL -- 2026-09-13, windowclose 648948/27391/40 -> 407778/11879/40 [neg 534875 not blind], landed)*
 
+**Result.** windowclose 648948/27391/40 -> 407778/11879/40 (neg 534875 not blind), landed; cursor exactly 620802/6884/170 unchanged though it shares CUSTMATCH_ROW; full table otherwise identical, field integrated -5. Decomposition at offset 253: BG0 0, BG3 0 (F18-F18d), BG2 field 266412/18864 on k=1..19 = canon's 15-px camera pan driven from inside the window's slide routine (sub_8026BF4 adds dword_8026CC8=0x18000 to Camera+0x34 per slide-out call, asm03_0.s:1099-1104, constant :1141-1142, slide-in subtracts :964-969) with an arithmetic shift (floor), ours ten frames late with ceil -> fixed in src/battle.rs (pan on the slide calls via Custom::is_closing(), div_euclid floor; FIELD_SLIDE/FIELD_SLIDE_STEP now derived = 10 x 0x18000), BG2 0 on all 40 frames; OBJ 97644 = MegaMan's panel (CUSTMATCH_ROW megaman_col/row 3,2 -> 2,3 per canon's BattleObject PanelX/Y +0x12/+0x13, -36620) + the Mettaur's phase (14228, flat 205/frame from k=10) + HP boxes on k<10; BG1 backdrop 877602 = a constant (20,10) px scroll-phase translation on all 40 frames because the fixture seeds no backdrop phase (F26b: per-row seed from canon's counters 0xffff9ad8/0xffffcd6c and GFX entry 25 at canon frame 81; a shared seed takes cursor to 1222398) plus the odd-frame lsr-vs-floor rounding backdrop.rs:278-283 predicts. Trap recorded: -x.div_euclid(2) parses as -(x.div_euclid(2)) and reproduces the old rounding on odd frames. Remaining 407778 = BG1 phase + Mettaur phase. Claude Opus agent, 103 tool calls, 33 min, 414k tokens.
 **Files.** src/custom.rs, src/hudtiles.rs, src/field.rs, tools/harness.py (the windowclose row's note only)
 
 **Why.** windowclose 648948/27391/40 after F18-F18d fixed the close transients; the slide (k0-9) is
@@ -507,6 +508,21 @@ result fixture's route, cite the routine that counts the dissolve and the one th
 ours enter the end sequence on the same event with the same count. **Acceptance.** the frame of 0x0C
 after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
 alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
+
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
+
+**Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
+(block-copied tilemap, one blit per frame, F21b's slide). F21 left "inside the window 904 on the plateau,
+outside ~2900/frame backdrop tail + slide lag"; nobody has decomposed the 102547 since F21d. Per-layer and
+per-frame first: the window's BG, the backdrop BG1 (its scroll phase is a per-row seed derived from canon's
+counters at the row's canon_ref -- F26b is deriving that mechanism for the CUSTMATCH rows; if its
+derivation lands first, apply it here, otherwise derive this row's seed the same way and cite it), OBJ.
+Then the window itself: canon's driver chain sub_802BD60 -> sub_802BE36 -> sub_802C044/sub_802C0A4 (F21),
+its slide timing and tile content frame by frame against ours.
+**Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
+(each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
 ### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(CLAUDE -- 2026-09-13)*
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
