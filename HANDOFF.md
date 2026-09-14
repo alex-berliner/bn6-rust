@@ -17,13 +17,15 @@ vs after -- a merge that changed nothing is not parity).
 
 ## 1. Where things stand
 
-- **At 0 differing frames (canon vs ours):** every isolated row except cursor (~154k), windowclose
-  (~28k), chip-areagrab (1278 after its landed partial) and chip-use (9514): 57 of 61 rows, including
-  result, mettaur, popup, buster and all three barrier rows since 2026-09-13/14; plus the integrated
-  tiles/gauge variants. The integrated opening/field/warp/buster/chip-use variants wait on F33d
-  (canon keeps acting after the RESULT countdown starts; ours freezes in `over`).
-  `python3 tools/harness.py --list` names every row; `web/captures/` holds each row's GIF and caption
-  plus a before/after GIF per landed ticket (the gallery page).
+- **At 0 differing frames (canon vs ours), 2026-09-14 08:00:** every isolated row -- all 43 chips, wave,
+  window, opening, cannon, field, banner, warp, card, tiles, gauge, mettaur, popup, buster, result and
+  windowclose -- except cursor at 3 px (one frame, the mid-frame tile-copy timing F35 mapped and could not
+  place); plus the integrated tiles/gauge variants. Not at 0: the integrated opening/field/warp/buster/
+  chip-use variants (canon's results window slides in on a frame our end sequence reaches differently per
+  fixture; four passes say it needs the end sequence ported as one state machine, which the porting phase
+  does). The harness is converged; the phase is porting (T tickets).
+- **Guard (2026-09-14):** `tools/check_inputs.sh` refuses any measurement or landing while /tmp's ROMs or
+  root states differ from the backup, after a benchmarked free model overwrote the real ROM at 06:54.
 - **Open queue (`python3 tools/next_ticket.py --list`):** F18d windowclose (650544), F21d result
   (block-copy the window's tilemap; F21b's slide rework, 190633, waits on it on its kept branch),
   F12 seed feet (247/132/132), F25 Mettaur attack phase (mettaur 19698; tiles/gauge integrated 3865;

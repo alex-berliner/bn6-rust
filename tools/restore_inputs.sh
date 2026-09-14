@@ -9,6 +9,7 @@ for f in bn6f_real.gba bn6f_real.srm bn6f_sterile.gba pausedwithcannon.state chi
   [ -f "/tmp/$f" ] || cp "$BACKUP/$f" /tmp/
 done
 want=$(cut -c1-40 reference/bn6f/bn6f.sha1); got=$(sha1sum /tmp/bn6f_real.gba | cut -c1-40)
+  cp -f "$BACKUP/bn6f_real.gba" /tmp/bn6f_real.gba; cp -f "$BACKUP/bn6f_sterile.gba" /tmp/bn6f_sterile.gba 2>/dev/null; echo "restored the ROMs from $BACKUP"
 [ "$want" = "$got" ] || { echo "real ROM sha1 mismatch: $got"; exit 1; }
 [ -x /tmp/mgba_capture ] || gcc tools/mgba_capture.c -o /tmp/mgba_capture -I/usr/include -lmgba -lm
 python3 tools/patch_sterile.py /tmp/bn6f_real.gba /tmp/.sterile_check.gba >/dev/null

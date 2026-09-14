@@ -150,6 +150,11 @@ const CARD_INTERIOR_TILE: u16 = 0x011; // provenance: peeked -- read off the rea
 const PANEL_FLAT_TILE: u16 = 0x03e; // provenance: peeked -- read off the real ROM's own VRAM (see the doc comment above)
 /// Where the regular-chip mark's ring lands on screen.
 const MARK_AT: (i32, i32) = (95, 4); // provenance: peeked -- read off a live menu's own OAM
+/// The last slide scroll at which canon still queues the mark: sub_8029C08
+/// returns early once RenderInfo+0x18 reads past this (asm03_0.s:7714), so
+/// over the 0xc-step slide-out the mark shows for displayed scrolls 0..96
+/// and is gone from 108 (windowclose k=0..8 vs k=9, measured).
+const MARK_SCROLL_MAX: i32 = 0x67; // provenance: derived -- sub_8029C08, asm03_0.s:7714
 /// The card regions that hold text: the chip name, and the element, code and
 /// damage row beneath the picture.
 const TEXT_REGION_COUNT: usize = 4; // provenance: derived -- byte_8027B2C's own record order (name, code, element, damage)
@@ -1247,20 +1252,33 @@ impl Custom<'_> {
         // Canon still draws the cursor bracket on the first slide-out
         // frame (windowclose k=0 carries its 104 px; gone from the second
         // -- the slide counter is still 0 on the first Closing draw and
-        // reads 0x0c from the second, the update running before the draw),
-        // while the mark and power go with the window contents at once.
+        // reads 0x0c from the second, the update running before the draw).
+        // The mark, unlike the bracket, rides the whole slide out: canon
+        // re-queues it on every slide-out call whose scroll still reads
+        // <= MARK_SCROLL_MAX (sub_8029C08, asm03_0.s:7714), and OAM shows
+        // each queue a frame later, so it is on screen for the nine frames
+        // the scroll reads 0..96 and gone from the tenth (x=108). The draw
+        // sees the pre-update counter, which IS that displayed scroll, so
+        // the mark is gated and shifted by it. The power digits go with
+        // the window contents at once, as before.
         let closing_first = matches!(self.phase, Phase::Closing { x } if x < SLIDE_STEP);
-        if !matches!(self.phase, Phase::Open) && !closing_first {
+        // The regular-chip mark sits above the pick stack. The real ROM's OAM
+        // has it as a 32x32 object at (87,-4) whose only four non-blank tiles
+        // are the ring, so the ring itself lands here; during the slide-out
+        // it marches left with the window, one step behind the BG scroll.
+        let mark_pos = match self.phase {
+            Phase::Open => Some(MARK_AT),
+            Phase::Closing { x } if x <= MARK_SCROLL_MAX => Some((MARK_AT.0 - x, MARK_AT.1)),
+            _ => None,
+        };
+        if !matches!(self.phase, Phase::Open) && !closing_first && mark_pos.is_none() {
             return;
         }
         let open = matches!(self.phase, Phase::Open);
-        // The regular-chip mark sits above the pick stack. The real ROM's OAM
-        // has it as a 32x32 object at (87,-4) whose only four non-blank tiles
-        // are the ring, so the ring itself lands here.
-        if open {
+        if let Some(pos) = mark_pos {
             Object::new(self.mark.clone())
                 .set_priority(Priority::P1)
-                .set_pos(MARK_AT)
+                .set_pos(pos)
                 .show(frame);
         }
         // The card's attack power, in the damage row's cells. The game
@@ -1273,25 +1291,29 @@ impl Custom<'_> {
                 hud.draw_number(frame, power, ((r.x + r.w) * TILE_PX as usize) as i32, (r.y * TILE_PX as usize) as i32);
             }
         }
-        // The origin is the slot's position less 3 in each axis
-        // (sub_8028894, sub_80288D0, asm03_0.s:4843-4884: a slot sits at
-        // (8 + 16 * index, 0x68), OK at (0x58 + 3, 0x70 - 2)).
-        let (x, y, bracket) = if self.cursor_at == OK {
-            (OK_ORIGIN_X, OK_ORIGIN_Y, &OK_BRACKET)
-        } else {
-            (SLOT_ORIGIN_X + SLOT_PITCH_X * self.cursor_at as i32 - BRACKET_INSET, SLOT_ORIGIN_Y - BRACKET_INSET, &SLOT_BRACKET)
-        };
-        // The counter is bumped at the top of the frame, before anything is
-        // drawn, so the first DRAWN frame already reads 1 and every phase flip
-        // lands a frame before the real ROM's. Draw from the value the frame
-        // started with.
-        let phase = (self.frames.saturating_sub(1) >> BLINK_SHIFT) as usize & 1; // unnamed: previous frame's counter, low bit selects the phase
-        for c in &bracket[phase] {
-            Object::new(self.cursor[phase].clone())
-                .set_pos((x + c.dx, y + c.dy))
-                .set_hflip(c.hflip)
-                .set_vflip(c.vflip)
-                .show(frame);
+        // The bracket stays on its old schedule -- open frames and the first
+        // slide-out frame only -- while the mark above rides the slide.
+        if open || closing_first {
+            // The origin is the slot's position less 3 in each axis
+            // (sub_8028894, sub_80288D0, asm03_0.s:4843-4884: a slot sits at
+            // (8 + 16 * index, 0x68), OK at (0x58 + 3, 0x70 - 2)).
+            let (x, y, bracket) = if self.cursor_at == OK {
+                (OK_ORIGIN_X, OK_ORIGIN_Y, &OK_BRACKET)
+            } else {
+                (SLOT_ORIGIN_X + SLOT_PITCH_X * self.cursor_at as i32 - BRACKET_INSET, SLOT_ORIGIN_Y - BRACKET_INSET, &SLOT_BRACKET)
+            };
+            // The counter is bumped at the top of the frame, before anything is
+            // drawn, so the first DRAWN frame already reads 1 and every phase flip
+            // lands a frame before the real ROM's. Draw from the value the frame
+            // started with.
+            let phase = (self.frames.saturating_sub(1) >> BLINK_SHIFT) as usize & 1; // unnamed: previous frame's counter, low bit selects the phase
+            for c in &bracket[phase] {
+                Object::new(self.cursor[phase].clone())
+                    .set_pos((x + c.dx, y + c.dy))
+                    .set_hflip(c.hflip)
+                    .set_vflip(c.vflip)
+                    .show(frame);
+            }
         }
     }
 }

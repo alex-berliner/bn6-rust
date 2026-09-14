@@ -34,6 +34,8 @@ def parse(text):
 
 
 def main():
+    if subprocess.run(["bash", os.path.join(ROOT, "tools", "check_inputs.sh")]).returncode != 0:
+        sys.exit("verify_rows: inputs changed; refusing to measure")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ref")
     ap.add_argument("rows")
