@@ -13,9 +13,14 @@
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
 use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
 
-/// Where the two objects go, measured off the real ROM's OAM.
-const LEFT: (i32, i32) = (0, 18); // provenance: peeked -- read off the sterile arena's own OAM (object 2)
-const RIGHT: (i32, i32) = (32, 18); // provenance: peeked -- read off the sterile arena's own OAM (object 3)
+/// Where the two objects go. Peeked off the real ROM's OAM first, then found
+/// hardcoded in canon's own draw routine for HUD element 14, sub_801CDEC
+/// (asm00_2.s:27554-27583): it hands sub_802FE28 the packed pairs
+/// 0x80004012 / 0xCBB4 and 0x40200012 / 0xCBBC -- y=18 x=0 shape 1 size 2
+/// (32x16) tile 0x3b4, and y=18 x=32 shape 0 size 1 (16x16) tile 0x3bc, both
+/// palette 12 priority 2, which is exactly what the OAM dump reads back.
+const LEFT: (i32, i32) = (0, 18); // provenance: derived -- canon sub_801CDEC's own 0x80004012 (asm00_2.s:27576), confirmed against the sterile arena's OAM
+const RIGHT: (i32, i32) = (32, 18); // provenance: derived -- canon sub_801CDEC's own 0x40200012 (asm00_2.s:27580), confirmed against the sterile arena's OAM
 /// Tiles in the wide object; the rest belong to the narrow one.
 const WIDE_TILES: usize = 8; // provenance: derived -- a 32x16 object is 4x2 8x8 tiles, the exporter's own asset layout
 

@@ -630,11 +630,13 @@ def plain_rom() -> str:
     return build_feature_rom("")
 
 
-def _chip_rust(chip_hex: str) -> Callable[[str], Side]:
+#: TODO F27b: `flags` defaults to every chip row's own 0x1F and only the
+#: `popup` row passes anything else -- see that row's own note.
+def _chip_rust(chip_hex: str, flags: int = 0x1F) -> Callable[[str], Side]:
     desc = {
         "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
         "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
-        "flags": 0x1F, "fire_frame": 90,
+        "flags": flags, "fire_frame": 90,
     }
     return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
 
@@ -1679,7 +1681,14 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=80,
         align=ALIGN_CHIP,
-        rust=_chip_rust("b1"),
+        # F27b: 0x1F | FLAG_HUD_LIVE (FIXTURE.md +19 bit6) -- the ONE thing
+        # this row's rust side needs that the other 43 chip rows do not:
+        # its canon side is a LIVE battle HUD (element mask 0x020352C0 =
+        # 0x4497, bit14 set, on all 125 frames), theirs is a battle already
+        # past the HUD teardown (afterdissolve_0x0c, 0x8084, bit14 clear on
+        # all 47). Both descriptors are otherwise identical, so the bit is
+        # the only place that difference can live -- see the note below.
+        rust=_chip_rust("b1", flags=0x5F),
         # F19: was _chip_canon("b1", hide_enemy=True, banner_zero=False) -- the
         # ALIVE enemy acted on canon AI all window (sprite + ticking HP digits,
         # 51991 px in x160-210 y60-125). DELETE (HP 0/0) + the banner row's own
@@ -1722,16 +1731,31 @@ PORTED_CHECKS: List[Check] = [
         # `cannon`/43-chip route (afterdissolve_0x0c, a battle already in its
         # RESULT countdown, whose HUD is torn down). So canon draws it here
         # and genuinely does not draw it there.
-        # A throwaway `fighting = true` in src/battle.rs measured both halves:
-        # popup 60614 -> 5094 with this box 0 on all 80 frames (our tiles,
-        # palette, position and priority are byte-identical to canon's), and
-        # cannon 0 -> 27760 (694 x 40). The gate therefore has to come from
-        # the row, not be deleted. NOT FIXED HERE -- src/battle.rs and
-        # src/fixture.rs belong to other tickets; the proposal is a fixture
-        # flag carrying canon's own mask bit 14, peeked per row, OR-ed into
-        # that gate: this row sets it, every chip row leaves it 0 and is
-        # unchanged. The remaining 5094 (x149-196 y81-126) is the enemy's
-        # dissolve, F28's Mettaur phase.
+        # FIXED F27b (2026-09-13): 60614 -> 5094, this box 0 on all 80 frames
+        # (our tiles, palette, position and priority are byte-identical to
+        # canon's over 80 consecutive frames). src/battle.rs now follows
+        # canon's rule -- the window goes with the HUD TEARDOWN, not with the
+        # last enemy: sub_80081A4 (asm00_1.s:10617-10621) clears elements 0,
+        # 1, 4, 10 and 14 in one sub_801BED6(0xE4C53) on the frame the banner
+        # sequencer enters its RESULT countdown 0x0C. Measured on the REAL rom
+        # under this row's own recipe (PAUSED, enemy HP forced to 0, Start@10,
+        # --disable-bg): dword_203CA70 goes 0x08 -> 0x0C at frame 47, the mask
+        # goes 0x4497 -> 0x0084 at frame 48 (--watch-write 0x20352C0:4:
+        # at=0x0801BEDC lr=0x080081B9), bit15 goes back up for the ENEMY
+        # DELETED banner (sub_801E792, asm00_2.s:31055-31112) which runs
+        # 49..106. So canon holds the window through the enemy's whole
+        # dissolve -- 47 frames of it -- where ours used to drop it at the
+        # death, and the STERILE rom this row uses never concludes, so canon
+        # holds it for all 125 frames here.
+        # The flags bit above is not a rendering switch, it is which canon
+        # STATE this row's canon capture sits in: this row and the 43 chip
+        # rows share one descriptor (_chip_rust, enemies=0, flags=0x1F) and
+        # their canon sides are on opposite sides of that teardown, so no rule
+        # computed from our own state can tell them apart. A zero-enemy arena
+        # has no canon counterpart at all; a fixture that fields an enemy
+        # needs no bit (see src/fixture.rs's FLAG_HUD_LIVE).
+        # The remaining 5094 (x149-196 y81-126) is the enemy's dissolve,
+        # F28's Mettaur phase.
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
