@@ -259,6 +259,24 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F37c. `cursor` and `windowclose` remainders: the objects' Y under the camera pan, the k=0 bracket, the pose frame  *(OPEN -- 2026-09-14)*
+
+**Files.** src/actor.rs (object Y under the camera pan), src/custom.rs (the k=0 bracket), src/ai.rs (the held pose's frame)
+
+**Why.** F37b landed the camera pan on open, the Mettaur's held pose and the hand icon: cursor 154361 ->
+130221/767/170, windowclose 27819 -> 19168/1878/40 (negatives 316499/214890 not blind). Its verified
+remainder, per object: the actors' sprite Y does not follow the panned camera (~765 px/frame on cursor:
+canon offsets every object by the camera's Y, our field pans but the objects stay), the chip window's
+bracket on windowclose's k=0 (104 px, custom.rs), and the held pose's animation frame (F37b's priming
+attempt was reverted; canon's frozen Mettaur shows a specific frame of pose 4/11 -- read it from its
+BattleObject's animation fields at canon_ref and cite the object's own frame selection).
+**Do.** Each measured alone on both rows with a per-object split; the object-Y pan cited from the camera
+routine F29/F37b used (Camera+0x34, sub_8026BF4 / the slide-in at asm03_0.s:964-969) and canon's object
+draw offset (the OAM Y written from the object's Y minus the camera's), seeds only from canon's RAM at
+canon_ref (peeked).
+**Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind) or the per-object remainder;
+window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
+
 ### F38. The integrated rows after F33d: the results window's slide on warp/buster/chip-use, and opening integrated decomposed  *(OPEN -- 2026-09-14)*
 
 **Files.** src/results.rs, src/battle.rs (the end-sequence and results hand-off hunks only), tools/harness.py (the integrated rows' notes and descriptor fields)
