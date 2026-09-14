@@ -61,19 +61,21 @@ def model_paragraph(tid, title, status, result, facts):
               "and, if the result names it, the mechanism found. Use only numbers that appear in the text; never add a "
               "number, a file path or a branch name; no headings, no lists, no preamble. Ticket %s (%s), status %s.\n\n%s"
               % (tid, title, status, result))
-    try:
-        out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", "hyper/qwen3.8-flash",
-                              "--tools", "read", prompt], capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL).stdout
-    except (subprocess.TimeoutExpired, FileNotFoundError):
-        return ""
     last = ""
-    for line in out.splitlines():
-        try: e = json.loads(line)
-        except ValueError: continue
-        m = e.get("message") if isinstance(e, dict) else None
-        if isinstance(m, dict) and m.get("role") == "assistant":
-            t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
-            if t: last = t
+    for attempt in range(2):                                   # one retry: a Hyper call now and then returns no text
+        try:
+            out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", "hyper/qwen3.8-flash",
+                                  "--tools", "read", prompt], capture_output=True, text=True, timeout=300, stdin=subprocess.DEVNULL).stdout
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return ""
+        for line in out.splitlines():
+            try: e = json.loads(line)
+            except ValueError: continue
+            m = e.get("message") if isinstance(e, dict) else None
+            if isinstance(m, dict) and m.get("role") == "assistant":
+                t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
+                if t: last = t
+        if last: break
     last = re.sub(r"\s+", " ", last).strip()
     if not last or len(last.split()) > 130: return ""
     if numbers(last) - numbers(facts): return ""          # invented a number
@@ -128,6 +130,9 @@ def main():
     for name, group in (("Done", done), ("Partial", part), ("Blocked or negative", stuck)):
         if not group: continue
         out.append("## " + name); out.append("")
+        if not a.no_model and name == "Done":
+            out.append("Each paragraph is a model's plain-language rewrite of the ticket's own result, checked so that every number in it "
+                       "comes from that result; the results themselves are in the repository's TODO_ARCHIVE.md."); out.append("")
         for tid, ttl, status, res in group:
             para = "" if a.no_model else model_paragraph(tid, ttl, status, res, facts)
             out.append("**%s, %s.** %s" % (tid, ttl, para or short(res))); out.append("")
