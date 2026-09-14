@@ -142,6 +142,24 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T7c. The sequencer's missing states: the custom-screen states our side never reads, and the end edge nine frames early  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs (the sequencer states and transitions), src/custom.rs (only where the custom screen enters and leaves), src/results.rs (only the arrival state), tools/trace.py, tools/harness.py (the integrated rows' notes)
+
+**Why.** T7/T7b landed the banner sequencer as canon's state table with fresh trace evidence (docs/trace/t7b/):
+on battle_full the sequencer field (dword_203CA70) is divergent on 174 of 540 frames, named frame by frame:
+k=31..32 canon 0x20, k=33..132 canon 0x24, k=133..135 0x00, k=136..195 0x04 -- canon's chip-select and
+custom-screen states, which our sequencer never enters (ours stays in the fight state while the window is
+open); and k=296..304 canon 0x08/0x0C vs ours a step earlier -- our end edge is nine frames early on that
+scenario (F32 set the kill-to-0x0C count on the zero-enemy fixtures; the full battle's path differs). Aligned
+on the end edge, the two sides match 239/239 to the end. The result row's sequencer reads 0x08 on our side
+at k=0 where canon is already 0x0C (F36's structural arrival). Port the missing states from the same table
+(sub_800801C / off_8008038 handlers for 0x20, 0x24, 0x00, 0x04: what enters them, what they run each frame,
+what leaves them), and find the nine frames on battle_full (watch both sides from the killing blow).
+**Acceptance.** battle_full sequencer 540/540 without re-alignment; result's sequencer 0x0C at k=0; the
+integrated warp/buster/chip-use rows re-measured (their slide starts on canon's frame now?); every isolated
+row 0 (cursor's tear reported); nothing worse.
+
 ### T9b. The second virus (Gunner): widen the fixture to field a non-Mettaur, build the canon recipe, port its routine  *(OPEN -- 2026-09-14)*
 
 **Files.** src/fixture.rs (enemy_kind honoured), src/battle.rs (the fixture's enemy construction: art, style and per-type entry chosen by enemy_kind), src/objects.rs, src/ai.rs, assets/ (Gunner art extracted from the ROM), tools/states.py (the recipe), tools/harness.py (the new row), FIXTURE.md, docs/coverage/
