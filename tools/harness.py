@@ -722,6 +722,58 @@ def _aidata_held_pokes(key_bits: int, first: int, n: int = 3) -> Tuple[str, ...]
     return tuple(pokes)
 
 
+#: F31b (2026-09-13): the buster row's press, delivered the same way as the
+#: warp row's directions, because the same wall is in the way. The buster's
+#: arena is the zero-enemy one, which means the enemy is DELETED, which means
+#: the battle is over and the banner sequencer sits in 0x0C from frame 47 --
+#: and in 0x0C nothing refreshes AIData from the joypad mirror, so a scripted
+#: B press never reaches MegaMan (F10 measured that, F31 re-measured it: CurState
+#: 0x04 / CurAction 0x08 / CurAnim 0x00 unchanged on every frame of the old
+#: row). Pressing INSIDE the 0x08 window is not an option either: 0x08 ends at
+#: 46 and the DELETE dissolve still has objects on screen through 52, so a
+#: buster fired there is compared against a rust side that has no enemy to
+#: dissolve.
+#:
+#: So the press is poked into AIData directly. Measured (this ticket) that the
+#: plain buster fires on the RELEASE, not the press: with a scripted
+#: B@30,B@31 in the 0x08 window, AIData reads JoypadPressed 0x0002 at 31,
+#: JoypadHeld 0x0002 at 31-32 and JoypadReleased 0x0002 at 33 -- and CurAction
+#: goes 0x08 -> 0x11 on 33, the RELEASE frame. Poking held alone therefore does
+#: nothing (measured: 24 frames of nothing); held then RELEASED fires. The idle
+#: value of the held word is 0xfc00, not 0, so the press ORs B into it and the
+#: release restores it rather than zeroing it. Measured on the row's own canon
+#: side: CurAction 0x11 at 132, CurAnim 0x0e 133..157, pose+barrel in OAM from
+#: 134, muzzle from 135, both gone at 159.
+JOYPAD_B = 0x0002  # provenance: derived -- include/structs/Joypad.inc, active high
+#: What the held word reads when nothing is pressed on this save state
+#: (watched 0x020340a2 over the whole capture). // unnamed: the non-key upper
+#: bits of oAIData_JoypadHeld
+AIDATA_HELD_IDLE = 0xfc00  # provenance: peeked -- watched on the row's own canon side
+AIDATA_RELEASED = "0x020340a6"  # canon: oAIData +0x26, the released-this-frame word
+#: The press event this row's canon_ref names: CurAction is written 0x11 on
+#: the release frame, so the poke frame + 2 IS the event.
+BUSTER_PRESS_POKE = 130
+BUSTER_ACTION_FRAME = BUSTER_PRESS_POKE + 2  # measured: CurAction 0x11 at 132
+
+
+def _aidata_tap_pokes(key_bits: int, first: int) -> Tuple[str, ...]:
+    """A one-frame tap delivered to AIData: pressed+held on `first`, held on
+    `first+1`, released on `first+2`, cleared on `first+3`."""
+    held = AIDATA_HELD_IDLE | key_bits
+    return (
+        "%d:%s:0x%04x" % (first, AIDATA_PRESSED, key_bits),
+        "%d:0x020340a2:0x%04x" % (first, held),
+        "%d:%s:0x0000" % (first + 1, AIDATA_PRESSED),
+        "%d:0x020340a2:0x%04x" % (first + 1, held),
+        "%d:0x020340a2:0x%04x" % (first + 2, AIDATA_HELD_IDLE),
+        "%d:%s:0x%04x" % (first + 2, AIDATA_RELEASED, key_bits),
+        "%d:%s:0x0000" % (first + 3, AIDATA_RELEASED),
+    )
+
+
+BUSTER_AIDATA_POKES = _aidata_tap_pokes(JOYPAD_B, BUSTER_PRESS_POKE)
+
+
 WARP_AIDATA_POKES = (_aidata_held_pokes(JOYPAD_RIGHT, 130)
                      + _aidata_held_pokes(JOYPAD_DOWN, 150))
 
@@ -1502,70 +1554,54 @@ PORTED_CHECKS: List[Check] = [
     Check(
         name="buster",
         ui="both",
-        frames=32,
+        frames=28,
         align=Align(
-            canon_ref=150,
-            search=range(90, 130),
-            note="canon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, "
-                 "Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE "
-                 "dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at "
-                 "battle-frame 100/101 (marker origin 8 + 100/101), not the first tried "
-                 "(origin+22) -- verified live that a press that early is BEFORE the navi is "
-                 "free to act at all (the diff at that offset was the SAME idle-pose-settling "
-                 "transition `field` has, not a shot); battle-frame 100 is well past it, in the "
-                 "same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP). "
-                 "F31 MEASURED WHAT THIS ROW ACTUALLY COMPARES, and it is not a buster. "
-                 "(a) THE 3172 IS CANON'S BATTLE-RESULT MARK, not our shot: canon's OAM holds "
-                 "four unchanging idle-MegaMan objects for the whole window and adds ONE object "
-                 "in slot 0 at canon frame 164 -- 16x16, tile 0x200, palette 11, priority 0 -- "
-                 "sliding x=-3,13,29 into a park at (37,21) and staying there to the end. It is "
-                 "worth 163 px on the clipped frame 164 and 177 px on each of canon 165..181: "
-                 "163 + 17*177 = 3172, the row's whole total, on exactly the frames k=14..31 "
-                 "that read non-zero. Our side never draws it because ZERO_ENEMY (flags 0x11) "
-                 "carries no FLAG_RESOLVE_OVER; `field`'s note above says warp/buster's windows "
-                 "end before the mark enters, and that is now STALE for buster -- canon_ref=150 "
-                 "+ 32 frames reaches canon 181, and the mark enters at 164. "
-                 "(b) THE ROW IS VACUOUS: canon's scripted B never fires (F10's finding, "
-                 "re-measured). Watching 0x0203a9b0 and the banner sequencer 0x0203CA70 over "
-                 "canon 145..186: CurState 0x04, CurAction 0x08, CurAnim 0x00, HP 60, sequencer "
-                 "0x0400000c, unchanged on every frame -- the 0x0C delivery wall. "
-                 "(c) THE ALIGNMENT'S MINIMUM IS NOT UNIQUE, so the search is not choosing it by "
-                 "an event (F2's rule). Scored over the whole band: offsets 90..105 read 13959 "
-                 "flat, then the total falls monotonically by ~617 px per step -- one frame of "
-                 "OUR buster leaving the window each time -- to 3172 at offset 122, and offsets "
-                 "122..129 ALL read 3172; min() keeps the first of that 8-wide plateau. Offset "
-                 "122 is precisely the first offset whose window opens after our buster has "
-                 "finished (our shoot pose runs rust capture frames 111..129, back to idle at "
-                 "130, and the window is 130..161). At the event-locked offset -- rust's press "
-                 "at capture 108 against canon's at 150, offset 100 -- the row reads "
-                 "13959/794/32. Left where it is: this ticket may not move an alignment, and the "
-                 "honest lock would print worse while still comparing our buster against a canon "
-                 "MegaMan that never fires. "
-                 "(d) WHAT A REAL BUSTER COMPARISON WOULD SHOW, measured off the same canon side "
-                 "with the press moved into the 0x08 window (Start@10,B@30,B@31): CurAction "
-                 "0x08->0x11 at canon 33, CurAnim 0x0e at 34 and held through 58 (25 frames), "
-                 "idle again at 59; OAM pose 35..59; the barrel object at pose+0 (spawned on "
-                 "tick 0 of sub_80EB450, asm31.s:108609-108625, via sub_80EB562/sub_80EB572, "
-                 "asm31.s:108743-108750, into oAIData_Unk_68) and the muzzle object at pose+1 "
-                 "(tick 1, sub_800FAAC -> sub_80C4FFE, asm00_2.s:1903-1916, into "
-                 "oBattleObject_RelatedObject1Ptr); its cells run 8x8@(96,78) x2, 32x16@(91,75) "
-                 "x2, 16x8@(93,76) x2, then the last 8x8 HELD to the end of the pose, and both "
-                 "objects vanish together at 60 when sub_80EB502 clears those two pointers and "
-                 "calls object_exitAttackState (asm31.s:108712-108722). The 25 is not a "
-                 "constant: 5 ticks of the fire phase (sub_80EB450's Unk_10 0..4, "
-                 "asm31.s:108680-108691) plus byte_80209CC[Rapid*6 + min(free panels ahead,5)] "
-                 "(sub_800FAF6, asm00_2.s:1944-1990; data/dat01.s:146) = 5 + 0x14 = 25 for a "
-                 "navi at column 2 with four free panels ahead. OURS: pose 111..129 (19 "
-                 "frames), barrel at pose+2, muzzle at pose+4 with cells 1/2/2/1 and then gone. "
-                 "Those live in src/actor.rs (pose length) and src/battle.rs "
-                 "(BUSTER_ARM_DELAY/BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES and the double tick on "
-                 "the FX's spawn frame), both held by other workers -- reported as proposals, "
-                 "not changed here. src/shot.rs is NOT on the plain buster's path at all: the "
-                 "uncharged shot is a hitscan (battle.rs's Update::Strike arm) and builds no "
-                 "Shot.",
+            canon_ref=BUSTER_ACTION_FRAME,
+            search=range(96, 113),
+            note="F31b re-cut: BOTH sides fire. canon: the zero-enemy arena (STERILE+PAUSED+"
+                 "DELETE, Start@10) with the B tap poked into AIData -- see "
+                 "BUSTER_AIDATA_POKES above for why a scripted press cannot reach MegaMan "
+                 "here and why the tap has to end in a RELEASE. canon_ref is the MEASURED "
+                 "EVENT, not a script frame: CurAction 0x0203a9b9 is written 0x11 on canon "
+                 "132 (watched), CurAnim 0x0e runs 133..157, the pose and the barrel enter "
+                 "OAM at 134, the muzzle at 135, and both objects vanish at 159 when the "
+                 "attack state exits. rust: B held at battle-frame 100/101 (marker origin 8 "
+                 "+ 100/101, unchanged from the old row) and the same event watched on our "
+                 "side -- the ORCL export block's CurAction byte (0x02000008+13) goes 0x08 "
+                 "-> 0x0b at rust capture 112, so the event lock is offset 104 and the band "
+                 "range(96,113) is +-8 around it, wide enough to show the minimum is unique "
+                 "and not a plateau. 28 frames = the attack from its state write to the "
+                 "first idle frame after it (canon 132..159); the window STOPS at 159 on "
+                 "purpose, because canon puts a 16x16 tile 0x350 palette 10 object at "
+                 "(59,52) from 160 (present only when the buster fired; not yet identified, "
+                 "// unnamed: a post-shot indicator above the navi) and the result mark "
+                 "(16x16 tile 0x200 palette 11 at (37,21), F31's 3172) from 164. The OLD row "
+                 "-- canon_ref=150, 32 frames, a scripted press -- compared two idle navis "
+                 "and 18 frames of that result mark, and its offset was the first of an "
+                 "8-wide plateau (122..129 all read 3172) that began exactly where our "
+                 "buster left the window: F31's measurement, and the reason this row was "
+                 "re-cut rather than re-aligned. The new alignment is a SHARP unique "
+                 "minimum, not a plateau: swept over range(96,113) the totals read 0 at "
+                 "offset 103 and 2911 at both 102 and 104, rising monotonically to either "
+                 "band edge. What the four fixes were worth, measured one at a time on this "
+                 "row: 4936 -> 736 for the pose length (17 -> the byte_80209CC lookup, "
+                 "actor.rs), 736 -> 0 for the barrel and muzzle living exactly as long as "
+                 "the pose (battle.rs), and 0 -> 0 for strike_at 3 -> 2 plus dropping the "
+                 "double tick on the muzzle's spawn frame -- that pair is a model fix with "
+                 "no pixels in it here, because assets/buster_fx.bin's first and last cells "
+                 "are both blank (canon's OAM carries an 8x8 object at (96,78) that draws "
+                 "nothing from canon 141 to 158), which is also why the row still read 0 "
+                 "with the pair reverted. STILL OPEN, pixel-invisible: the two sides' state "
+                 "watches sit one frame apart at this lock -- canon writes CurAction 0x11 on "
+                 "132 = k=0, our ORCL export block flips its CurAction byte to 0x0b on rust "
+                 "112 = k=1 -- while both sides DRAW the windup on k=0..1 and the pose from "
+                 "k=2. Our windup draws the same pixels as canon's two pre-pose idle frames, "
+                 "so the row cannot tell whether our attack state is entered one frame late "
+                 "or our export block is one frame behind the frame it describes; settling "
+                 "that is a main.rs/oracle question, not this row's.",
         ),
         rust=_zero_enemy_rust(held("B", 8 + 100, 2)),
-        canon=_zero_enemy_canon("Start@10," + held("B", 150, 2)),
+        canon=_zero_enemy_canon("Start@10", pokes_at=BUSTER_AIDATA_POKES),
         canon_variant="canon (sterile)",
     ),
     Check(

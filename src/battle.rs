@@ -71,7 +71,6 @@ const BUSTER_DAMAGE: u16 = 2; // provenance: derived -- sub_801265A, asm00_2.s:7
 /// The muzzle flash's origin above the front panel's centre, and how long its
 /// animation runs (durations 2,1,1,2,1).
 const BUSTER_FX_UP: i32 = 26; // provenance: peeked -- measured off the real ROM's OAM
-const BUSTER_FX_FRAMES: u8 = 7; // provenance: peeked -- measured off the real ROM's OAM
 // SOUND_BUSTER_6A (id 0x6A, reference/bn6f/constants/enums/SoundOffsets.inc:50), played the
 // instant the fire phase starts by sub_80BCF7A (asm31.s:10516-10528). It is a PSG channel-1
 // (square/sweep) blip, not a DirectSound sample: its song header (dat37.s:41516-41519,
@@ -152,12 +151,24 @@ const BUSTER_BLIP_FREQ: u16 = 2023; // provenance: peeked -- the measured onset 
 // agb's mixer double-buffers, so a channel started in `play_sound` is not in
 // the buffer the DMA is draining until the following `Mixer::frame()`.
 const BUSTER_HIT_DELAY: u8 = 4; // provenance: fitted -- swept to a clean residual-RMS minimum against the captured onset, not derived from a cited mechanism
-/// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
-/// offsets, and how long its four frames last (1,2,2,3).
-const BUSTER_ARM_FRAMES: u8 = 18; // provenance: derived -- byte_82F6ECC.spr's own OAM offsets
-/// Frames after the button before the barrel appears, which is the same
-/// windup the pose waits out.
-const BUSTER_ARM_DELAY: u8 = 2; // provenance: peeked -- measured off the real ROM
+// F31b: the barrel and the muzzle have no length of their own. canon holds
+// both in pointers -- the barrel in oAIData_Unk_68 (sub_80EB562/sub_80EB572,
+// asm31.s:108743-108750, spawned on the fire phase's FIRST tick, which is why
+// the barrel is in OAM on the pose's first frame) and the muzzle in
+// oBattleObject_RelatedObject1Ptr (sub_800FAAC -> sub_80C4FFE,
+// asm00_2.s:1903-1916, spawned on the second tick) -- and `sub_80EB502` ends
+// the attack by clearing BOTH pointers and calling object_exitAttackState
+// (asm31.s:108712-108722). Measured on the real ROM: pose+barrel enter OAM at
+// canon 134, the muzzle at 135, and both vanish together at 159, the frame the
+// 25-frame pose ends. So each one's lifetime is read from the pose the navi is
+// actually holding (actor::Actor::buster_spec), never from a constant of its
+// own; the old BUSTER_ARM_FRAMES=18 and BUSTER_FX_FRAMES=7 outlived the pose
+// on one side and died inside it on the other.
+// The barrel comes with the POSE, not with the button, so its delay IS the
+// pose's own lead-in: canon spawns it on the fire phase's first tick, the same
+// tick that calls object_setAnimation(0xe) (asm31.s:108614-108625), and it is
+// drawn on the pose's first frame.
+const BUSTER_ARM_DELAY: u8 = actor::BUSTER_WINDUP; // provenance: derived -- sub_80EB450 tick 0, asm31.s:108614-108625
 /// Frames between the chip button going down and the chip being used.
 const CHIP_USE_DELAY: u8 = 3; // provenance: peeked -- measured off the real ROM
 const CHARGED_DAMAGE: u16 = 20;
@@ -1766,13 +1777,12 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         let (mc, mr) = self.megaman.panel();
         // Its ONE part is the barrel itself, not a ground shadow, so the
         // no-shadow flag must be off or nothing is drawn at all.
-        self.effects.push((
-            arm,
-            field::panel_centre(mc, mr),
-            BUSTER_ARM_FRAMES - 1,
-            false,
-            false,
-        ));
+        // As long as the pose, and not one frame more: see the comment on
+        // BUSTER_ARM_DELAY's neighbours above for canon's two pointers and the
+        // object_exitAttackState that clears them.
+        let pose = self.megaman.buster_spec().frames;
+        self.effects
+            .push((arm, field::panel_centre(mc, mr), pose, false, false));
     }
 
     /// Put the results window up, taking its palette banks back first. The
@@ -2363,7 +2373,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 if self.charge >= CHARGE_FRAMES {
                     self.megaman.attack_charged();
                 } else if self.charge > 0 && !self.megaman.is_busy() {
-                    self.megaman.attack(actor::BUSTER);
+                    let spec = self.megaman.buster_spec();
+                    self.megaman.attack(spec);
                     // The barrel comes with the POSE, not with the button:
                     // the real navi stands in his idle first.
                     self.buster_arm_in = BUSTER_ARM_DELAY;
@@ -2694,15 +2705,20 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         }
                     }
                     let (px, py) = field::panel_centre(col, row);
-                    let mut fx = spr::Player::new(spr::Assets::new(BUSTER_FX), 0);
-                    fx.update();
-                    self.effects.push((
-                        fx,
-                        (px, py - BUSTER_FX_UP),
-                        BUSTER_FX_FRAMES - 1,
-                        false,
-                        false,
-                    ));
+                    // NOT pre-ticked. The effects loop already ticks every
+                    // effect on the frame it was pushed, so the extra tick here
+                    // ate the first cell of assets/buster_fx.bin's animation
+                    // (frame 0, duration 2) down to one frame and ran the whole
+                    // muzzle one frame early. canon's cells are 2/1/1/2 and then
+                    // the last frame is HELD (flags 0x80) until the attack state
+                    // exits -- measured: 8x8 at canon 135-136, 32x16 at 137-138,
+                    // 16x8 at 139-140, the last (blank) 8x8 at 141-158.
+                    let fx = spr::Player::new(spr::Assets::new(BUSTER_FX), 0);
+                    // Spawned one frame into the pose (the fire phase's second
+                    // tick), so it outlives the pose's remaining frames.
+                    let pose_left = self.megaman.buster_spec().frames.saturating_sub(1);
+                    self.effects
+                        .push((fx, (px, py - BUSTER_FX_UP), pose_left, false, false));
                 }
             }
             Update::Died => {

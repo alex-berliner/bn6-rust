@@ -57,7 +57,50 @@ const HOP_COOLDOWN: u8 = 0x1e; // provenance: derived -- byte_8109F46, asm31.s:1
 /// measured against a capture whose navi is pixel-identical to its idle
 /// through frame 64, with B pressed on 60 and released on 62, and changes on
 /// 65.
-const BUSTER_WINDUP: u8 = 2; // provenance: peeked -- measured against the real ROM
+pub const BUSTER_WINDUP: u8 = 2; // provenance: peeked -- measured against the real ROM
+/// The plain buster's pose is NOT a constant, and F31b measured the law on
+/// three columns. Canon runs the attack in two states: `sub_80EB450`
+/// (asm31.s:108609) is the FIRE phase and leaves after 5 ticks (its Unk_10
+/// counts 0..4 and exits above 4, asm31.s:108680-108691), then `sub_80EB502`
+/// (asm31.s:108695) HOLDS for Unk_12 frames and, when the countdown passes
+/// zero, clears the two spawned objects and calls `object_exitAttackState`
+/// (asm31.s:108712-108722). Unk_12 is what `sub_800FAAC` returned in the fire
+/// phase: it reads the navi's Rapid stat (`GetBattleNaviStatsByte` index 2,
+/// asm00_2.s:1917-1919) and hands it with the FRONT panel to `sub_800FAF6`
+/// (asm00_2.s:1944-1990), which walks forward while the panel is valid and
+/// unmasked, caps the count at 5, and returns
+/// `byte_80209CC[Rapid * 6 + free]` (data/dat01.s:146-149).
+///
+/// Measured on the real ROM (STERILE+PAUSED+DELETE, the B tap poked into
+/// AIData, CurAnim 0x0e watched at 0x0203a9c0), moving the navi with the same
+/// poke path before firing:
+///
+/// | navi column | free panels ahead | byte_80209CC[0][free] | anim 0x0e frames |
+/// |---|---|---|---|
+/// | 1 | 5 | 0x18 | 29 = 5 + 24 |
+/// | 2 | 4 | 0x14 | 25 = 5 + 20 |
+/// | 3 | 3 | 0x10 | 21 = 5 + 16 |
+///
+/// Three columns, three exact predictions -- so the row is 0 (`BUSTER_RAPID`)
+/// and the length is the table lookup, not the old flat 17.
+const BUSTER_FIRE_TICKS: u8 = 5; // provenance: derived -- sub_80EB450's Unk_10 0..4, asm31.s:108680-108691
+/// canon: byte_80209CC, data/dat01.s:146-149 -- six hold lengths per Rapid
+/// tier, indexed by the free panels ahead (the table's last two bytes are
+/// padding and are not a sixth row).
+const BUSTER_HOLD: [[u8; 6]; 5] = [
+    [0x04, 0x08, 0x0c, 0x10, 0x14, 0x18],
+    [0x03, 0x07, 0x0a, 0x0e, 0x11, 0x14],
+    [0x03, 0x06, 0x09, 0x0c, 0x0f, 0x11],
+    [0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c],
+    [0x02, 0x03, 0x04, 0x05, 0x06, 0x07],
+];
+/// Which row of `BUSTER_HOLD` this navi's Rapid stat selects. We do not model
+/// navi stats yet; the three measurements in the table above land on row 0 and
+/// on no other row (row 1 would need 5 free panels to give 0x14, and then
+/// column 1 and column 3 would both be wrong).
+const BUSTER_RAPID: usize = 0; // provenance: peeked -- the row the three measured columns select
+/// canon caps the walk at 5 (`cmp r0, #5 / ble`, asm00_2.s:1972-1975).
+const BUSTER_FREE_CAP: i32 = 5; // provenance: derived -- sub_800FAF6, asm00_2.s:1972-1975
 /// One attack's shape: the pose to hold, for how long, and on which frame of
 /// it the hit lands.
 #[derive(Clone, Copy)]
@@ -80,17 +123,21 @@ pub struct AttackSpec {
     pub pose: Option<u8>,
 }
 
-/// The buster: animation 14. The disassembly's "five passes" are passes of
-/// the ANIMATION, not game frames -- measured against the real ROM, the pose
-/// is held 21 frames and the shot leaves the gun on the eighth, which is
-/// where the capture's Mettaur loses its first HP (asm31.s:108536, 108547,
-/// 108608).
-// provenance: peeked -- measured against the real ROM (asm31.s:108536/108547/108608 cross-checked).
+/// The buster: animation 14 (canon's CurAnim 0x0e, watched). `frames` here is
+/// only the FIRE phase; the hold that follows depends on the navi's column, so
+/// `Actor::buster_spec` is what actually starts this attack -- see
+/// `BUSTER_FIRE_TICKS` for the two-state mechanism and the three measured
+/// columns. `strike_at` 2, not 3: canon spawns the muzzle object and resolves
+/// the damage on the fire phase's SECOND tick (`sub_80EB450`'s Unk_10 == 1
+/// arm, asm31.s:108632-108663 -- sound, `sub_800FAAC`, then
+/// `spawn_t1_0x5_tempAttackObject_80B8E30` at asm31.s:108676), and the muzzle
+/// is in OAM one frame later, on canon 135 against a pose that starts at 134.
+// provenance: derived -- sub_80EB450/sub_80EB502, asm31.s:108609-108739.
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: Some((anim::IDLE, BUSTER_WINDUP)),
     anim: 14,
-    frames: 17,
-    strike_at: 3,
+    frames: BUSTER_FIRE_TICKS,
+    strike_at: 2,
     recover: 0,
     recover_anim: None,
     pose: None,
@@ -389,6 +436,32 @@ impl Actor {
     /// The panel directly ahead, where a shot spawns or a sword lands.
     pub fn front_panel(&self) -> (i32, i32) {
         (self.col + self.facing_dx(), self.row)
+    }
+
+    /// Panels ahead of the navi, counted the way `sub_800FAF6` counts them
+    /// (asm00_2.s:1944-1990): start at the panel in FRONT, walk forward while
+    /// the panel is there, cap at `BUSTER_FREE_CAP`. Canon also stops at a
+    /// panel whose parameters hit `byte_800FB4C`'s alliance mask (a hole, a
+    /// broken panel, the far edge); this arena has none of those, so the field
+    /// edge is the only stop we can measure against today.
+    fn free_panels_ahead(&self) -> i32 {
+        let (fc, _) = self.front_panel();
+        let n = if self.facing_dx() > 0 {
+            field::COLS - fc + 1
+        } else {
+            fc
+        };
+        n.clamp(0, BUSTER_FREE_CAP)
+    }
+
+    /// The buster this navi would fire from where it stands: the 5-tick fire
+    /// phase plus `byte_80209CC[Rapid * 6 + free panels ahead]`. See
+    /// `BUSTER_FIRE_TICKS` for the citations and the three measured columns.
+    pub fn buster_spec(&self) -> AttackSpec {
+        AttackSpec {
+            frames: BUSTER_FIRE_TICKS + BUSTER_HOLD[BUSTER_RAPID][self.free_panels_ahead() as usize],
+            ..BUSTER
+        }
     }
 
     pub fn hp(&self) -> u16 {
@@ -841,7 +914,8 @@ impl Actor {
             }
             Action::Aiming { ticks } if ticks > 1 => Action::Aiming { ticks: ticks - 1 },
             Action::Aiming { .. } => {
-                self.begin(BUSTER, true);
+                let spec = self.buster_spec();
+                self.begin(spec, true);
                 self.action
             }
             // As with the pose: the lead-in is on screen for every tick from
