@@ -7,8 +7,9 @@ disassembly with citations, (c) state parity on the trace (tools/trace.py: no di
 (d) pixel parity (0 differing pixels on the scenario's frames). The counts below are placeholders until T10
 regenerates the per-item tables from the ROM's own tables (tools/inventory.py).
 
-Decisions still open (the user): audio (engine-triggered, excluded so far); netbattle (needs link emulation);
-Gregar-exclusive content (not in the Falzar ROM; would need the Gregar ROM as a second canon).
+Decisions (the user, 2026-09-14 14:00): audio IN scope; netbattle IN scope; Gregar-exclusive content in scope in
+principle, but no Gregar disassembly exists (dism-exe/bn6f covers Falzar only, sha1 0676ecd4...), so M11 starts
+with a measured ROM diff against bn6f's symbols once the user provides the Gregar ROM (never tracked).
 
 ## Milestones
 
@@ -22,7 +23,9 @@ Gregar-exclusive content (not in the Falzar ROM; would need the Gregar ROM as a 
 | M6 | Navis: every boss in the ROM, the Cybeasts, Bass | per Navi: scenario(s) covering its full pattern, port, trace, pixels | not started |
 | M7 | MegaMan's forms and emotion system: Crosses, Beast Out/Over, Cross Beast, charge shots, emotion window states and counter, NaviCust battle effects | per form/effect: scenario, port, trace, pixels | base form only |
 | M8 | Presentation completeness: every arena backdrop and palette, all banners and popups, HP displays, results variants (win/lose/escape/time-out) | per item: scenario, pixels | one arena; win results only |
-| M9 | Audio and netbattle | decision pending | -- |
+| M9 | Audio: the sound driver's battle side (music, SFX triggers from every routine that plays one), measured by dumping both sides' audio on a scenario and comparing sample-exact | per scenario: audio parity + the triggers' trace | not started (mgba can dump audio; a comparison tool is the first ticket) |
+| M10 | Netbattle: the link session (two instances, the handshake, chip trading rules, the netbattle-specific UI and timers) | two-instance recording vs two-instance replay, trace + pixels on both sides | not started (needs link emulation in the capture tool) |
+| M11 | Gregar-exclusive content (Navis, chips, Crosses, backdrops) | first a measured diff of the Gregar ROM against bn6f's symbol map (how much code differs, how much is data); then the same per-item standard with the Gregar ROM as a second canon | blocked on a Gregar ROM from the user; no disassembly exists |
 
 Cross-cutting invariants, checked by the daily review: no allowlist entries, no fitted constants, every negative
 fixture failing, the verifier cross-family from the worker, coverage closed per scenario (every executed routine

@@ -35,8 +35,9 @@ vs after -- a merge that changed nothing is not parity).
   `**Files.**` lines (`next_ticket.py --pair`).
 - **Scope (the user, 2026-09-14): the whole BN6 battle engine** -- every chip, virus, Navi, Program Advance,
   MegaMan form, the UI, the field and damage rules, battle flow -- measured by docs/SCOPE.md's milestone
-  ladder (a canon recording, ported routines with citations, trace parity, pixel parity per item). Open
-  decisions: audio, netbattle, Gregar-exclusive content (needs the Gregar ROM). The earlier order
+  ladder (a canon recording, ported routines with citations, trace parity, pixel parity per item). Decided
+  2026-09-14: audio and netbattle in scope (M9, M10); Gregar content in scope in principle (M11), blocked on a
+  Gregar ROM and on the fact that no Gregar disassembly exists (a ROM diff against bn6f's symbols comes first). The earlier order
   (existing rows to 0 first) was met on 2026-09-14.
 - **Phase switched to porting on 2026-09-14 (the user: "move straight to that"); docs/PHASE = porting; the T tickets in TODO.md carry the plan below.**
 - **After convergence (agreed 2026-09-13):** switch from behaviour-driven porting to trace- and
