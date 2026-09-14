@@ -89,9 +89,11 @@
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: 6px;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: hidden;
-    white-space: pre;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     tab-size: 4;
     font: 400 clamp(10.5px, 2.7vw, 13px)/1.42 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
@@ -101,6 +103,32 @@
     font-size: clamp(1rem, 3.9vw, 1.12rem);
     line-height: 1.5;
   }
+
+  /* Linked highlighting: a coloured span in the code and the phrase in the
+     explanation that talks about it share a colour and a `data-h` number.
+     Five soft pastels; the text itself stays the page's dark ink. */
+  mark {
+    background: none;
+    color: inherit;
+    border-radius: 3px;
+    padding: 0 0.14em;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  /* Inside the code, no side padding: it would shift the monospace columns. */
+  pre mark { padding: 0; border-radius: 2px; }
+  mark.h1 { background: #fbeea6; }
+  mark.h2 { background: #cee2fa; }
+  mark.h3 { background: #cdecd2; }
+  mark.h4 { background: #fad5e2; }
+  mark.h5 { background: #fbdcbd; }
+  /* Hovered or tapped: both halves of the pair brighten together. */
+  mark.on.h1 { background: #f5dc48; }
+  mark.on.h2 { background: #96c6f6; }
+  mark.on.h3 { background: #8ed99d; }
+  mark.on.h4 { background: #f5a4c2; }
+  mark.on.h5 { background: #f7bd80; }
+  mark.on { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2); }
 
   /* Fixed furniture: the counter and the dots. */
   #counter {
@@ -177,9 +205,72 @@
   var counter = document.getElementById('counter');
   var slides = (typeof SLIDES !== 'undefined' && SLIDES) || [];
 
-  // Build every slide from the data in learn/slides.js. Text goes in with
-  // textContent, so a snippet's < and & need no escaping in that file.
+  function escapeHtml(raw) {
+    return raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Turn one raw string into escaped HTML with each highlighted substring
+  // wrapped in its own <mark>. Matching happens on the RAW string, before
+  // escaping, so a pair in slides.js is written exactly as the code reads.
+  // A substring that is missing, ambiguous or overlapping is skipped with a
+  // warning: the slide still renders, just without that colour.
+  function highlight(raw, subs, where) {
+    var ranges = [];
+    subs.forEach(function (sub, k) {
+      if (!sub) { return; }
+      var at = raw.indexOf(sub);
+      if (at < 0) {
+        console.warn('learn: highlight ' + (k + 1) + ' of ' + where + ' not found: ' + JSON.stringify(sub));
+        return;
+      }
+      if (raw.indexOf(sub, at + 1) >= 0) {
+        console.warn('learn: highlight ' + (k + 1) + ' of ' + where + ' matches more than once: ' + JSON.stringify(sub));
+        return;
+      }
+      ranges.push({ at: at, end: at + sub.length, n: k + 1 });
+    });
+    ranges.sort(function (a, b) { return a.at - b.at; });
+    var out = '';
+    var cut = 0;
+    ranges.forEach(function (r) {
+      if (r.at < cut) {
+        console.warn('learn: highlight ' + r.n + ' of ' + where + ' overlaps an earlier one');
+        return;
+      }
+      out += escapeHtml(raw.slice(cut, r.at));
+      out += '<mark class="h' + r.n + '" data-h="' + r.n + '">' + escapeHtml(raw.slice(r.at, r.end)) + '</mark>';
+      cut = r.end;
+    });
+    return out + escapeHtml(raw.slice(cut));
+  }
+
+  // Hovering either half of a pair brightens both. A tap has no hover, so a
+  // click keeps the pair lit until the next click.
+  function linkMarks(sec) {
+    var marks = Array.prototype.slice.call(sec.querySelectorAll('mark[data-h]'));
+    var stuck = null;
+    function paint(n, on) {
+      marks.forEach(function (m) {
+        if (m.getAttribute('data-h') === n) { m.className = 'h' + n + (on ? ' on' : ''); }
+      });
+    }
+    marks.forEach(function (m) {
+      var n = m.getAttribute('data-h');
+      m.addEventListener('mouseenter', function () { paint(n, true); });
+      m.addEventListener('mouseleave', function () { if (stuck !== n) { paint(n, false); } });
+      m.addEventListener('click', function () {
+        if (stuck !== null && stuck !== n) { paint(stuck, false); }
+        stuck = stuck === n ? null : n;
+        paint(n, stuck === n);
+      });
+    });
+  }
+
+  // Build every slide from the data in learn/slides.js. Both the code and
+  // the explanation go in as escaped HTML so their highlights can be marked;
+  // a snippet's < and & still need no escaping in that file.
   slides.forEach(function (s, i) {
+    var pairs = s.highlights || [];
     var sec = document.createElement('section');
     sec.className = s.image ? 'slide' : 'slide nopic';
     sec.id = 'slide-' + (i + 1);
@@ -209,16 +300,17 @@
       sec.appendChild(path);
       var pre = document.createElement('pre');
       var code = document.createElement('code');
-      code.textContent = s.code;
+      code.innerHTML = highlight(s.code, pairs.map(function (h) { return h.code; }), 'slide ' + (i + 1) + ' code');
       pre.appendChild(code);
       sec.appendChild(pre);
     }
 
     var p = document.createElement('p');
     p.className = 'text';
-    p.textContent = s.text;
+    p.innerHTML = highlight(s.text, pairs.map(function (h) { return h.text; }), 'slide ' + (i + 1) + ' text');
     sec.appendChild(p);
 
+    linkMarks(sec);
     feed.appendChild(sec);
 
     var dot = document.createElement('button');
