@@ -32,7 +32,7 @@ use crate::results::{self, Results};
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
-    AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
+    AREAGRAB_ORB, AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
@@ -683,10 +683,65 @@ const fn barrier_hp(id: u16) -> u16 {
 /// created a frame before the bubble shows).
 const INVISIBL_PRESENTATION: u16 = 128; // provenance: peeked -- measured on the real ROM
 const BARRIER_PRESENTATION: u16 = 45; // provenance: peeked -- canon attack entry (CurAction 0x08->0x14) at capture frame 3, bubble's first visible frame at 49 (diff k=44): attack+46; the spawn fires one frame after the countdown hits 0, so 45
-/// AreaGrab's own length is still unmeasured (its steal orbs are not drawn
-/// yet -- F12 mechanism (b)), so it keeps Barrier's old 77 rather than the
-/// new 45.
+/// AreaGrab's own length is the attack's own: the steal orbs below land on
+/// its last frame (canon captures 5..81, burst on 81).
 const AREAGRAB_PRESENTATION: u16 = 77; // provenance: fitted -- held value pending the orb mechanism, not a measurement
+/// AreaGrab's steal orb: the type-3 object 0xf (sub_80C6548 -> t3_0xf_80C6414,
+/// asm31.s:30658/30497). sprite_load(0x80,0x0c,0x13) = sprite_830E44C
+/// (data/SpritePointersList.s:105), noShadow, CurAnim 0, Z 0x1000000 falling
+/// 0x80000 a frame; on landing the panel is stolen, CurAction 4 -> CurAnim 1
+/// (SE 0xa2), destroy at anim end (sub_80C64A0/sub_80C6524/sub_80C6536,
+/// asm31.s:30560-30650). Chip 163's attack parameter is nonzero, so the
+/// sub_80E0754 loop (asm31.s:85522) spawns one orb per row (PanelY 1..3) at
+/// the enemy half's edge column, all on the same frame -- the OAM watch
+/// shows three 16x32 pairs at x124/140, tile 31, pal 1, falling 8px/frame
+/// from captures 62/65/68 and all three bursting (anim 1) on capture 81.
+const AREAGRAB_ORB_Z0: i32 = 0x1000000; // provenance: derived -- dword_80C656C, asm31.s:30672
+const AREAGRAB_ORB_ZVEL: i32 = 0x80000; // provenance: derived -- dword_80C6568, asm31.s:30670
+/// Presentation age the orbs spawn at: canon spawns them on logic 48, 45
+/// frames after the chip press (capture 3 -- OAM watch: nothing at the edge
+/// column before, culled above, first pair at capture 62) -- and our fire
+/// sits 2 frames earlier in this row's locked alignment, so ours spawn at
+/// the same age off the chip fire and land on the row's last two frames.
+const AREAGRAB_SPAWN_AGE: u16 = 47; // provenance: peeked -- spawn k=43 both sides (OAM trajectory back-extrapolation); ours 47 post-fire, canon 45 post-press
+/// The falling / landing-burst animations of sprite_830E44C.
+const AREAGRAB_FALL_ANIM: usize = 0; // provenance: derived -- sub_80C6438 sets CurAnim 0, asm31.s:30517
+const AREAGRAB_BURST_ANIM: usize = 1; // provenance: derived -- sub_80C6524 sets CurAnim 1, asm31.s:30560
+/// Fall palette: the live fall holds anim 0's first frame (object_updateSprite
+/// is skipped during the chip timefreeze, so the OAM tile-31/pal-1 pair never
+/// changes -- OAM watch, captures 62..80) while the bank it sits in walks the
+/// sprite's rows one step per frame (OBJ palette watch). The walk phase is
+/// pinned by the row itself: with a constant add of 1 the row reads ~0 every
+/// 4th fall frame exactly where orb age % 4 == 2, so the live value there is 1
+/// and the cycle is (age + 3) % 4.
+const AREAGRAB_ORB_PAL_PHASE: usize = 3; // provenance: peeked -- constant-add-1 probe reads ~0 at orb ages 18, 22, 26, 30 (row k=61, 65, 69, 73)
+/// Fall palette cycle length: the live OBJ palette walks the sprite's rows
+/// one step per orb age past the spawn frame (OBJ palette watch).
+const AREAGRAB_ORB_PALS: usize = 4; // provenance: peeked -- OBJ palette RAM walk, one row per frame
+/// Top cull: canon writes no OAM until the pair's top passes -28 (first
+/// watch entry), one 8px step inside -32.
+const AREAGRAB_ORB_CULL_TOP: i32 = -32; // provenance: peeked -- first orb OAM at y=-28, nothing above (OAM watch)
+/// Bottom of the visible screen; the burst sits on its panel, always inside.
+const AREAGRAB_ORB_CULL_BOTTOM: i32 = 160; // provenance: derived -- GBA screen height
+/// One steal orb in flight: fixed x/y (its panel's centre), Z height in the
+/// game's 16.16, age in frames since the shared spawn frame; landed once Z
+/// reaches 0, bursting from the next frame.
+struct AreagrabOrb {
+    player: spr::Player,
+    x: i32,
+    y: i32,
+    z: i32,
+    age: u8,
+    landed: bool,
+    burst: bool,
+}
+
+impl AreagrabOrb {
+    /// Screen position; the game truncates Y and Z separately (cf. Bomb).
+    fn position(&self) -> (i32, i32) {
+        (self.x, self.y - (self.z >> Q16_SHIFT))
+    }
+}
 /// The thrown bomb (sub_80C5DBC -> t3_0x8_80C5BB0, asm31.s:29657, 29400):
 /// spawned 4 pixels ahead of the navi and 0x30 up, sprite_82F569C
 /// animation 1 with a shadow; it flies at 0x2e666 (2.9 px) a frame
@@ -1118,6 +1173,9 @@ pub struct Battle<'a> {
     /// (canon's tile-512 art, palette above) plus its age in gun-ages (None
     /// on its spawn frame, then 0, 1, ...).
     vulcan_fireball: Option<(SpriteVram, Option<u8>)>,
+    /// AreaGrab's steal orbs in flight (see AREAGRAB_ORB_Z0): spawned together
+    /// at AREAGRAB_SPAWN_AGE, falling, bursting and stealing on landing.
+    areagrab_orbs: Vec<AreagrabOrb>,
     /// A family-0x15 chip mid-presentation: the game freezes time, dims the
     /// screen and shows the chip's name before the effect lands
     /// (object_timefreezeBegin, object_dimScreen, object_drawChipName;
@@ -1792,6 +1850,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             bubble: None,
             vulcan_gun: None,
             vulcan_fireball: None,
+            areagrab_orbs: Vec::new(),
             bombs: Vec::new(),
             panels,
             filler_bg,
@@ -2756,21 +2815,55 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             self.opened = true;
             self.banner = Some(Banner::new(self.banner_assets, banner::ENEMY_DELETED));
         }
+        // AreaGrab's steal orbs fall 0x80000 a frame from 0x1000000 (32 steps,
+        // OAM watch: first pair at capture 62, +8px/frame, all three down at
+        // capture 80) and land when Z reaches 0 -- the column is stolen on the
+        // land frame (still showing the held fall frame), the burst plays from
+        // the next frame (sub_80C64A0 land + action 4, sub_80C6524 anim 1 on
+        // the frame after), and the orb is dropped when the burst is done
+        // (sub_80C6536 end-of-anim destroy).
+        let mut areagrab_landed = false;
+        for orb in self.areagrab_orbs.iter_mut() {
+            if orb.burst {
+                orb.player.update();
+                continue;
+            }
+            if orb.landed {
+                orb.burst = true;
+                orb.player.play(AREAGRAB_BURST_ANIM);
+                continue;
+            }
+            orb.age += 1;
+            orb.z -= AREAGRAB_ORB_ZVEL;
+            if orb.z <= 0 {
+                orb.z = 0;
+                orb.landed = true;
+                areagrab_landed = true;
+            }
+            orb.player
+                .set_palette_add((orb.age as usize + AREAGRAB_ORB_PAL_PHASE) % AREAGRAB_ORB_PALS);
+        }
+        self.areagrab_orbs
+            .retain(|orb| !orb.burst || !orb.player.finished());
+        if areagrab_landed {
+            let occupied = self
+                .enemies
+                .iter()
+                .filter(|e| e.is_present())
+                .fold(0, |m, e| m | e.occupancy());
+            for (col, row) in self.panels.steal_column(occupied) {
+                self.panels.highlight(col, row, 0);
+            }
+        }
         if let Some((chip, left)) = self.presentation {
             if left == 0 {
                 self.presentation = None;
                 match chip.id {
                     CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
-                    CHIP_AREAGRAB => {
-                        let occupied = self
-                            .enemies
-                            .iter()
-                            .filter(|e| e.is_present())
-                            .fold(0, |m, e| m | e.occupancy());
-                        for (col, row) in self.panels.steal_column(occupied) {
-                            self.panels.highlight(col, row, 0);
-                        }
-                    }
+                    // AreaGrab steals nothing here: each orb stole its panel
+                    // as it landed (see the orb update above), so by the time
+                    // the presentation ends there is nothing left to take.
+                    CHIP_AREAGRAB => {}
                     CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
                         self.megaman.set_barrier(barrier_hp(chip.id));
                         let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
@@ -2781,6 +2874,31 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     _ => {}
                 }
             } else {
+                // One orb per row at the enemy half's edge column, as the
+                // sub_80E0754 loop spawns them (PanelY 1..3).
+                if chip.id == CHIP_AREAGRAB
+                    && left == AREAGRAB_PRESENTATION - AREAGRAB_SPAWN_AGE
+                {
+                    for row in 1..=field::ROWS {
+                        let (lo, _) = self.panels.half(true, row);
+                        let (ox, oy) = field::panel_centre(lo, row);
+                        let mut player = spr::Player::frozen_at(
+                            spr::Assets::new(AREAGRAB_ORB),
+                            AREAGRAB_FALL_ANIM,
+                            0,
+                        );
+                        player.set_palette_add(AREAGRAB_ORB_PAL_PHASE % AREAGRAB_ORB_PALS);
+                        self.areagrab_orbs.push(AreagrabOrb {
+                            player,
+                            x: ox,
+                            y: oy,
+                            z: AREAGRAB_ORB_Z0,
+                            age: 0,
+                            landed: false,
+                            burst: false,
+                        });
+                    }
+                }
                 self.presentation = Some((chip, left - 1));
             }
         }
@@ -4115,6 +4233,22 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 Object::new(sprite.clone())
                     .set_priority(Priority::P2)
                     .set_pos((vulcan_fireball_x(*age), VULCAN_FIREBALL_Y))
+                    .show(frame);
+            }
+        }
+        // AreaGrab's steal orbs, over the field they are about to take.
+        // Culled until the pair's top is inside (canon writes no OAM above).
+        for orb in &self.areagrab_orbs {
+            let (x, y) = orb.position();
+            if y <= AREAGRAB_ORB_CULL_TOP || y >= AREAGRAB_ORB_CULL_BOTTOM {
+                continue;
+            }
+            for part in orb.player.parts().iter().rev() {
+                Object::new(part.sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((x + part.x, y + part.y))
+                    .set_hflip(part.hflip)
+                    .set_vflip(part.vflip)
                     .show(frame);
             }
         }
