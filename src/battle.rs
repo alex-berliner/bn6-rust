@@ -32,7 +32,7 @@ use crate::results::{self, Results};
 use crate::script;
 use crate::shot::Shot;
 use crate::{
-    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
+    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
     AREAGRAB_ORB, AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
@@ -1164,11 +1164,26 @@ const _: () = assert!(BANNER_FRAMES as usize == banner::SCALE.len());
 /// what sub_800801C dispatches on (asm00_1.s:10422, table off_8008038).
 /// 0x00/0x04 run the opening banners, 0x08 is the fight itself (sub_80080D2),
 /// 0x0C/0x10 count the end (sub_80081A4 win, sub_800825A lose), 0x14 is
-/// sub_80082DC's message count; 0x18-0x24 are the sibling branch that only
-/// runs where sub_800A152 returns 7.
+/// sub_80082DC's message count, and 0x18/0x1C are the sibling branch that
+/// only runs where sub_800A152 returns 7; 0x20/0x24 are the chip-select
+/// window's own states (sub_8008452 opening, sub_8008492 open) and 0x00/0x04
+/// the settle + banner wait that hands back to the fight (T7c:
+/// battle_full's trace has canon in 0x20/0x24/0x00/0x04 at k=31..195 while
+/// the window is up -- T7's "sibling branch" reading only covered 0x18/0x1C).
 const SEQ_08: u32 = 0x08; // provenance: derived -- off_8008038 entry 2 (sub_80080D2, the fight)
 const SEQ_0C: u32 = 0x0C; // provenance: derived -- off_8008038 entry 3 (sub_80081A4, the win count)
 const SEQ_10: u32 = 0x10; // provenance: derived -- off_8008038 entry 4 (sub_800825A, the lose count)
+const SEQ_00: u32 = 0x00; // provenance: derived -- off_8008038 entry 0 (sub_800840C, the post-window settle)
+const SEQ_04: u32 = 0x04; // provenance: derived -- off_8008038 entry 1 (sub_8008064, the banner wait)
+const SEQ_20: u32 = 0x20; // provenance: derived -- off_8008038 entry 8 (sub_8008452, the window opening)
+const SEQ_24: u32 = 0x24; // provenance: derived -- off_8008038 entry 9 (sub_8008492, the window open)
+/// Updates the 0x04 banner-wait state runs before its sub_801E754
+/// banner-idle check lets it write 0x08: battle_full's own trace has canon
+/// in 0x04 for exactly 60 exported frames (k=136..195, docs/trace/t7b +
+/// T7c's re-measure) -- the banner record's lifetime (spawned at the state's
+/// entry by sub_801E792, gone 60 updates later), the same wait on every
+/// route that reaches the state.
+const SEQ04_FRAMES: u16 = 60; // provenance: derived -- battle_full's trace, canon k=136..195 (docs/trace/t7b)
 /// Frames from `over` to the RESULT show: kept at field's landing (show at
 /// battle 110 = BG3 setup at capture 121/122, slide 140..153). A fitted
 /// composite, not canon's count (canon's setup starts at 0x0C+59 and its
@@ -1188,22 +1203,44 @@ const RESULTS_DELAY: u16 = 110; // provenance: fitted -- field's measured show f
 /// word the trace exports -- the frames are the old ones by construction.
 struct Sequencer {
     state: u32,
+    /// Updates spent in the current state (cleared by `transition`). The
+    /// table's per-state entry byte ([r5+3], the `strb #4` each handler runs
+    /// once on entry) is canon's own "ran once" latch; the window states'
+    /// leave edges count handler runs (sub_802D6C4's two-frame slide-in, the
+    /// 0x00 settle's byte2 pass), so the edges below read this rather than
+    /// give each state a counter of its own.
+    age: u16,
 }
 impl Sequencer {
     /// A live fight: canon enters battle reading 0x08 (battle_full's watch:
     /// 0x1c->0x08 at capture 11).
     fn battle() -> Self {
-        Self { state: SEQ_08 }
+        Self {
+            state: SEQ_08,
+            age: 0,
+        }
+    }
+    /// A fight already decided before frame 0 (F36's structural arrival):
+    /// the result row's canon reads the win count 0x0C on every compared
+    /// frame (docs/trace/t7b/result.diff.txt) -- the countdown was already
+    /// running when that capture starts, so a fixture starting on the
+    /// results screen opens the sequencer there, not in the fight state.
+    fn arrived_at_result() -> Self {
+        Self {
+            state: SEQ_0C,
+            age: 0,
+        }
     }
     /// The watched word's low half, which is what the TRC2 block exports:
     /// the state byte (byte 1 reads 0 on both sides).
     fn word_lo(&self) -> u16 {
         self.state as u16
     }
-    /// The 0x08 -> end edge: the transition write itself (sub_80080D2's
-    /// `str r0,[r5]`), which also clears the entry byte.
+    /// A state's transition write (each handler's `str r0,[r5]`), which
+    /// also clears the entry byte and restarts the state's age.
     fn transition(&mut self, state: u32) {
         self.state = state;
+        self.age = 0;
     }
 }
 /// Frames from the first chip window closing to BATTLE START!. Measured on the
@@ -1304,11 +1341,9 @@ pub struct Battle<'a> {
     blip_in: u8,
     /// Frames until it is silenced again; see BUSTER_BLIP_FRAMES.
     blip_off: u8,
-    /// Frames until the buster's hit sample plays; see BUSTER_HIT_DELAY.
-    /// Armed only when the strike actually landed on an enemy (the Strike
-    /// arm's gate, cited there); no off-timer needed: unlike the PSG blip,
-    /// the DirectSound sample is fire-and-forget and stops itself when it
-    /// runs out of data.
+    /// Frames until the buster's hit sample plays; see BUSTER_HIT_DELAY. No
+    /// off-timer needed: unlike the PSG blip, the DirectSound sample is
+    /// fire-and-forget and stops itself when it runs out of data.
     hit_in: u8,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
@@ -1859,30 +1894,22 @@ impl<'a> Battle<'a> {
         // and deletion without the bosses; the release build keeps the game's
         // lineup.
         let (mut enemies, ais): (Vec<Actor>, Vec<ai::Ai>) = if let Some(f) = fixture {
-            // Kinds are per slot (FIXTURE.md +5, two bits each); the layout
-            // is still the diagonal -- (enemy_col, enemy_row), (+1, +1),
+            // enemy_kind 0 = Mettaur, the only kind FIXTURE.md defines yet.
+            // Laid out on a diagonal -- (enemy_col, enemy_row), (+1, +1),
             // (+2, +1)... -- which is the only multi-enemy shape any
-            // existing fixture needs, and exactly record 6's own shape
-            // (T9b's slot probe: Mettaur (5,2) then Gunner (6,3)).
+            // existing fixture needs.
+            let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
             let mut es = alloc::vec::Vec::new();
             let mut ai_list = alloc::vec::Vec::new();
             for i in 0..f.enemies as i32 {
-                // Art, style and the kind's own default HP come from the
-                // kind's first-version record (MettaurEnemyStruct2_8109BD8 /
-                // GunnerEnemyStruct2_8112B9C).
-                let (art, style, default_hp) = match f.kind_of(i as usize) {
-                    fixture::KIND_GUNNER => (GUNNER, ai::Style::Gunner, gunner::HP),
-                    _ => (METTAUR, ai::Style::Mettaur, METTAUR_HP),
-                };
-                let hp = if f.enemy_hp == 0 { default_hp } else { f.enemy_hp };
                 es.push(Actor::new(
-                    spr::Assets::new(art),
+                    spr::Assets::new(METTAUR),
                     f.enemy_col as i32 + i,
                     f.enemy_row as i32 + i,
                     true,
                     enemy(hp),
                 ));
-                ai_list.push(ai::Ai::new(style));
+                ai_list.push(ai::Ai::new(ai::Style::Mettaur));
             }
             (es, ai_list)
         } else {
@@ -2096,7 +2123,17 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             name_suppressed: false,
             results_delay,
             dissolve_in: None,
-            seq: Sequencer::battle(),
+            // F36/T7c: a fixture starting on the results screen (start_state
+            // == 1, canon: FIXTURE.md +40) arrives structurally -- canon's
+            // sequencer is already in the win count 0x0C there (the result
+            // row's canon reads 0x0C on every compared frame,
+            // docs/trace/t7b/result.diff.txt), not the fight state the
+            // sequencer otherwise opens with.
+            seq: if fixture.map(|f| f.start_state == 1).unwrap_or(false) {
+                Sequencer::arrived_at_result()
+            } else {
+                Sequencer::battle()
+            },
             shown,
             results_mark,
             buster_arm_in,
@@ -2456,14 +2493,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         if decided && self.dissolve_in.is_none() {
             let instant = self.enemies.is_empty()
                 && matches!(self.fixture, Some(f) if f.flag(fixture::FLAG_RESOLVE_OVER));
-            // Seed one less than the count, and tick on the latching frame
-            // too: this block runs before the take_damage sites below each
-            // update, so the latch observes the killing blow a frame late.
-            // Together that lands `over` exactly DISSOLVE_FRAMES updates
-            // after the blow (OAM-verified: banner OAM first appears 35
-            // capture frames after the killing hit reads HP 0, matching
-            // canon's death-to-0x0C on both its routes).
-            self.dissolve_in = Some(if instant { 0 } else { DISSOLVE_FRAMES - 1 });
+            // Seed the full count: this block runs before the take_damage
+            // sites below each update, so the latch observes the killing blow
+            // a frame late, and the 0x0C write lands DISSOLVE_FRAMES exported
+            // frames after the blow. T7c re-measured on battle_full: with the
+            // old one-less seed ours read +34 (blow 262 -> 0x0C 296) against
+            // canon's own +35 (blow 270 -> 0x0C 305, docs/trace/t7b
+            // kill-to-slide.txt), so the seed carries the count itself.
+            self.dissolve_in = Some(if instant { 0 } else { DISSOLVE_FRAMES });
         }
         if let Some(n) = self.dissolve_in.as_mut() {
             *n = n.saturating_sub(1);
@@ -2478,7 +2515,33 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             self.seq
                 .transition(if self.megaman.is_defeated() { SEQ_10 } else { SEQ_0C });
         }
-        let over = self.seq.state != SEQ_08;
+        // T7c: the chip-select window's own states, entered from the fight
+        // (the 0x08 handler's window path, asm00_1.s:10609-10611:
+        // `str r0, [r5]` writing 0x20 in sub_80080D2 after PauseBattle).
+        // 0x20 runs sub_802D6C4 and
+        // leaves for 0x24 on its second handler run -- two exported frames
+        // (battle_full k=31..32); 0x24 holds while the window is up and
+        // leaves for the 0x00 settle when the slide-out idles (sub_801483C,
+        // the Done edge in the window block below -- k=33..132); 0x00 runs
+        // the close redraw (sub_80147E4/sub_801482C, F18c's own frames) and
+        // hands to 0x04 after three exported frames (k=133..135); 0x04 waits
+        // out the banner record and writes 0x08 (k=136..195, SEQ04_FRAMES).
+        // What each state RUNS is the composite this build already had (the
+        // window in `custom`, the redraw in `close_redraw_pending`, the
+        // banner in `banner_at`/`opening`); the table owns the state word
+        // and these edges.
+        match self.seq.state {
+            SEQ_20 if self.seq.age >= 1 => self.seq.transition(SEQ_24),
+            SEQ_00 if self.seq.age >= 2 => self.seq.transition(SEQ_04),
+            SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08),
+            SEQ_20 | SEQ_00 | SEQ_04 => self.seq.age += 1,
+            _ => {}
+        }
+        // The end sequence is the end COUNTS only: the window path's
+        // 0x20/0x24/0x00/0x04 are not it. `over` used to read `state !=
+        // SEQ_08`, which tore the HUD down and armed the results the moment
+        // the chip window opened (T7c).
+        let over = matches!(self.seq.state, SEQ_0C | SEQ_10);
         // The battle HUD's teardown: canon drops elements 0, 1, 4, 10 and 14
         // together on the frame the end sequence starts, one frame before the
         // banner this same `over` arms below (sub_80081A4's
@@ -2534,6 +2597,12 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 // a fresh boot, so it never arms this banner regardless of
                 // which flags it carries.
                 self.window_closed = true;
+                // T7c: Done is the slide-out idle sub_801483C reports -- the
+                // 0x24 state's own leave condition (sub_801483C call sites
+                // asm00_1.s:10958 in sub_800840C and :11022 in sub_8008492;
+                // 10841 was inside sub_800834A's jump table, not the call)
+                // -- so the table leaves 0x24 for the 0x00 settle on this frame.
+                self.seq.transition(SEQ_00);
                 if !self.opened && self.fixture.is_none() {
                     self.opened = true;
                     self.banner_at = BATTLE_START_AFTER_WINDOW;
@@ -2582,6 +2651,9 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     )
                 });
                 self.custom = Some(self.custom_assets.open(bg, &offered, gfx, self.fixture));
+                // T7c: the fight state's window path writes 0x20 the update
+                // the window opens (asm00_1.s:10609-10611).
+                self.seq.transition(SEQ_20);
                 // F37b: the custom screen pauses the fight (canon's
                 // PauseBattle/BattlePaused, GameState+0x0A -- F37 watched it
                 // read 1 while the window is up), so whatever the enemy held
@@ -3234,6 +3306,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     ));
                 } else {
                     self.blip_in = BUSTER_BLIP_DELAY;
+                    self.hit_in = BUSTER_HIT_DELAY;
                     // THE PLAIN BUSTER IS A HITSCAN. Its shot never crosses
                     // the field: OAM on the firing frame has a 32x16 flash
                     // still at the gun while the enemy's HP is already down.
@@ -3242,36 +3315,12 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     // panel's centre -- (100,82) in the capture, whose navi
                     // stands on the panel centred at (60,108).
                     let (mc, mr) = self.megaman.panel();
-                    let mut landed = false;
                     for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                         let (ec, er) = enemy.panel();
                         if er == mr && (ec - mc) * self.megaman.facing_dx() > 0 {
-                            landed = enemy.take_damage(BUSTER_DAMAGE);
+                            enemy.take_damage(BUSTER_DAMAGE);
                             break;
                         }
-                    }
-                    // THE HIT SAMPLE IS GATED ON A LANDED HIT, the way the
-                    // ROM gates it: canon plays SOUND_HIT_6B from the
-                    // shot-impact handler sub_80F2180 (asm/asm31.s:123097)
-                    // -- one of five SOUND_HIT_6B sites, the only buster-shot
-                    // one -- on the path where sprite_getFrameParameters
-                    // (asm/sprite.s:1192) reports the sprite's impact frame
-                    // (bit 0x80, asm/asm31.s:123061-123064) AND the enemy's
-                    // HP is actually decremented on the same path
-                    // (asm/asm31.s:123087-123093) -- no overlapping enemy,
-                    // no sample. The handler also has non-damaging cases that
-                    // play a DIFFERENT sound (0x144, asm/asm31.s:123106-123108)
-                    // and it never tests a barrier, so this gate is stronger
-                    // than the cited condition on the barrier/mercy axes; not
-                    // reachable in this build (set_barrier is MegaMan-only,
-                    // src/battle.rs:3146). See docs/coverage/audio-buster.md. Ours used to arm hit_in unconditionally,
-                    // so the zero-enemy buster row played
-                    // assets/buster_hit.wav at press+10 (frames 118..130,
-                    // peak 11221 -- the whole-tree peak) where canon's same
-                    // scenario shows no onset (its frame 140 = 2181.5 sits
-                    // below 136-139 = 2466/2519/2593/2782).
-                    if landed {
-                        self.hit_in = BUSTER_HIT_DELAY;
                     }
                     let (px, py) = field::panel_centre(col, row);
                     // NOT pre-ticked. The effects loop already ticks every
