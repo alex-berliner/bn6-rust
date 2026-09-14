@@ -1200,84 +1200,44 @@ ZERO_ENEMY_ORIGIN = 8
 # x1-63; pausedwithcannon's own queued Cannon40, whose OBJ icon is gone
 # because element 1 was torn down, while its NAME is element 6 and was not).
 #
-# PER-ELEMENT RESULT for field integrated (offset 108, canon_ref 130, 40
-# frames; "before" = this session's baseline 305263/10061):
-#   element 2, HP box .......  29 px/frame -> 0   (ZERO_ENEMY megaman_hp was
-#                                                  100, canon's navi holds 60;
-#                                                  fixed above, -1160/-870/
-#                                                  -928/-928 on the four rows)
-#   element 6, chip name .... 422 px/frame -> 0   only with the src/battle.rs
-#                                                  proposal below; NOT landed
-#   element 4, CUSTOM gauge . ~1596 px/frame on the frames before our own
-#                             RESULT window replaces it (k=0..5 here) -- canon
-#                             draws no gauge on ANY compared frame
-#   elements 0, 7 ...........   0 px (no slots active, no enemies)
-#   element 14, emotion .....   0 px (F27b already hides it)
-#   NOT the HUD ............. 261797 px of 305263 (86%) lies outside every
-#                             HUD element; see below.
-#
-# PROPOSAL (src/battle.rs, another worker's file -- measured here, reverted
-# before commit): canon's queued-chip ICON is element 1 and is torn down with
-# the rest, while its NAME (element 6) is not, so the two must be gated
-# separately. Ours ties both to the hand. With
-#     ZERO_ENEMY hand=[1], hand_count=1          (this file), AND
-#     src/battle.rs:3743
-#       -  .filter(|_| self.chip_use_in != 1)
-#       +  .filter(|_| self.chip_use_in != 1 && self.hud_live)
-# measured together: field 304103 -> 287204, warp 362788 -> 350128, buster
-# 642770 -> 629266 (exactly 422 px x 40/30/32), chip-use unchanged, and every
-# isolated variant unchanged (field 0, warp 0, buster 3172, chip-use 9514).
-# The descriptor half ALONE is a regression and is therefore not landed: with
-# hand=[1] and no gate the icon (a 16x16 OBJ canon does not draw) costs
-# exactly 256 px/frame -- warp isolated 0 -> 7680, buster isolated 3172 ->
-# 11364. A second proposal, unmeasured: gate `gauge_up` (battle.rs's
-# set_gauge call) on `hud_live` too, since the gauge is element 4 and is torn
-# down by the same routine.
-#
-# WHERE THE REST IS (field integrated, per-layer --only-bg N on BOTH sides,
-# same alignment): BG0 0, BG2 (field panels) 0, BG3 (HUD) 2047 px/frame,
-# BG1 (backdrop) 18508 px/frame -- on k=0..4. It is a PHASE error, not a
-# content one: the best rigid shift between the two BG1 images is (12,6) px
-# at k=0, which takes 18508 down to 8233 of 35112 overlapping px, and the
-# remainder is the art step (canon's BG1 changes by 7362 px with no shift
-# between canon 131 and 132 -- an art upload -- and ours steps on different
-# frames). ZERO_ENEMY seeds no backdrop phase at all (no art_entry/art_timer/
-# scroll_xq/scroll_yq, unlike HUDMATCH and FIELD_ROW) while its canon side is
-# thousands of frames into pausedwithcannon's battle. Canon's own counters,
-# peeked on the field row's canon capture (--watch 0x02009690:8,
-# eBGScrollCBCounters, ewram.s:619) fall by exactly 8 and 4 a frame (= our
-# SCROLL_X_Q=2 / SCROLL_Y_Q=1 quarter-pixels) and read
-#     canon 130: x -64176 (0xffff0550)  y -32088 (0xffff82a8)
-#     canon 150: x -64336 (0xffff04b0)  y -32168 (0xffff8258)
-# which by backdrop.rs's own register arithmetic (reg = lsr #4 of the
-# counter = -((q+3)/4) mod 256) is x_q = 684, y_q = 854 at canon 130. The
-# seed for battle frame 0 is that minus `offset` frames of scroll, so it is
-# PER ROW (each row has its own offset) and it needs the art phase
-# (eGFXAnimStates[0] at 0x020094c0) walked back the same way -- the same
-# derivation F26b is doing for cursor/windowclose. Deliberately not attempted
-# here: it is the backdrop's mechanism, not the HUD's.
-#
-# AND ONE MORE THING about the field row in particular, measured on its own
-# rust capture: our end sequence runs 30-odd frames early and then stalls.
-# The gauge goes at capture 117 (a 1596 px change), captures 117, 118, 119
-# and 120 are BYTE-IDENTICAL to each other (a three-frame stall: the backdrop
-# does not scroll, and it scrolls on every other frame before and after), and
-# from capture 121 `self.shown` is Some, so battle.rs:3594-3595 skips
-# `filler_bg` and every layer drops one hardware BG -- measured: from 121 our
-# BG0 carries the backdrop where canon's BG0 is empty, our BG1 the field
-# panels, our BG2 the HP box, our BG3 the RESULT window. Canon's RESULT
-# window does not begin its slide until canon 154. So `--only-bg N` is a
-# same-content comparison on this row only for k=0..4, and no number past
-# there is attributable by layer at all. On k=0..4: BG0 0, BG1 (backdrop)
-# 18508..17607 px/frame, BG2 (panels) 0, BG3 (HUD) 2047 px/frame.
-# The search band range(60,110) bottoms at 108, which puts k=0 one frame
-# before that stall; the row's own note documents the EVENT lock at ~81
-# (banner canon 49 <-> rust 8, mark canon 163 <-> rust 121). At 81 the row
-# reads 497776, with the residue outside the HUD region nearly halved
-# (172039 against 261797 at 108) and the RESULT-window mismatch
-# correspondingly larger. No alignment was changed by this ticket -- but no
-# HUD number from this row is worth much past the stall until the end
-# sequence lasts as long as canon's (F32).
+# PER-ELEMENT RESULT for field integrated, the F33 measurement (offset 108,
+# canon_ref 130, 40 frames), against F33's own baseline 305263/10061 --
+# EVERY line of it is now fixed or attributed; see F33b's own commits and the
+# seed note above for the after numbers:
+#   element 2, HP box .......  29 px/frame -> 0   (F33: ZERO_ENEMY megaman_hp
+#                                                  was 100, canon's navi holds
+#                                                  60)
+#   element 6, chip name .... 422 px/frame -> 0   (F33b: ZERO_ENEMY hand=[1],
+#                                                  the icon gated on hud_live)
+#   element 4, CUSTOM gauge . 1596 px/frame -> 0  (F33b: gauge_up gated on
+#                                                  hud_live)
+#   element 14, emotion .....   0 px (F27b hides it; F33 gave it the chip
+#                                     window's x displacement)
+#   elements 0, 1, 7, 10 ....   0 px (no slots active, no enemies, torn down)
+#   the BG1 backdrop phase .. 261797 px of 305263 (86%) -> 0 on every frame of
+#                             warp/buster/chip-use and on every field frame
+#                             before its own end-sequence stall (F33b's seeds)
+# What is left on these four rows is NOT the HUD and NOT the backdrop:
+#   * canon's RESULT window slides in from canon 154 on all four canon
+#     captures (the deleted-enemy battle resolves), and only `field` carries
+#     FLAG_RESOLVE_OVER, so warp k>=24, buster k>=22 and chip-use k>=4 are the
+#     window's own ramp: warp 40628 of 40628, buster 45810 of 54672, chip-use
+#     565717 of 567780, all of it on BG3.
+#   * buster additionally keeps drawing the name from k=1 where canon has
+#     stopped: canon's element 6 draws only while sub_800ED90 returns a
+#     non-zero r3 = oBattleObject_ChipsHeld (asm00_2.s:15-46, the branch at
+#     sub_801C6EE :26643), and on buster's canon route MegaMan's ChipsHeld
+#     goes to 0 on canon 133, the frame after CurAction 0x11 -- ours holds the
+#     chip forever. 422 px/frame x 21 frames = 8862 of buster's 54672.
+#   * field's own end sequence: captures 118, 119 and 120 are byte-identical
+#     to one another (a three-frame stall -- the backdrop scrolls on every
+#     other frame before and after, so BG1 is 0 only for k=0..1), and from
+#     capture 121 `self.shown` is Some, so battle.rs skips `filler_bg` and
+#     every layer drops one hardware BG (BG0 backdrop, BG1 panels, BG2 HP box,
+#     BG3 the RESULT window) while canon's own RESULT window has not started.
+#     That is F32's end-sequence offset, not a HUD or backdrop defect, and it
+#     is why --only-bg N is a same-content comparison on this row only for
+#     k=0..4.
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
