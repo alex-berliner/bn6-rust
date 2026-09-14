@@ -142,6 +142,36 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T7d. Drive the sequencer's window states with a fixture that closes the window, and put canon's predicates under the edges  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/states.py (the scenario that opens and then closes the chip window), src/battle.rs (the four
+sequencer edges only), tools/trace.py (only if a field must be watched to see an edge), docs/coverage/
+(notes), and the two citation fixes in src/battle.rs's comments
+
+**Why.** follows T7c (PARTIAL, kept unmerged at wt/t7c @ 510b5c6, which carries wt/t7's banner sequencer and
+wt/t7b's v3 records and judge fixes -- base your worktree on wt/t7c and merge that branch into yours). T7c
+ported the chip-select window's states 0x20/0x24/0x00/0x04 from sub_800801C/off_8008038 and took the
+result row's sequencer to 40/40, and the verifier CONFIRMED its divergence arithmetic (on battle_full our
+fixture's gauge reads 0 for all 540 frames, so the window never opens: canon's 165 window frames + 8
+kill-timing frames = the 173 still divergent, named frame by frame). What it REFUTED is the exoneration of
+src/battle.rs: the rows cited as exercising the handlers (mettaur 70/70, popup 80/80) contain no window
+states on either side, and the three fixtures that do open the window (window, cursor, card at gauge 16384)
+hold it open, so the path measured is 0x08 -> 0x20 (one frame) -> 0x24 (terminal) and **0x00 and 0x04 have
+zero measured coverage**; the edges are frame-count fits (age >= 2, SEQ04_FRAMES = 60) where canon tests a
+subroutine -- sub_8008452 leaves 0x20 on sub_802D6C4's return, sub_800840C gates 0x00 -> 0x04 on
+sub_801483C plus the [r5+2] latch, sub_8008064 writes 0x08 only when sub_801E754's banner-idle check
+returns 0 after arming timers 0x1e and 0x293 at entry. So: build the scenario that closes the window and
+watch 0x24 -> 0x00 -> 0x04 -> 0x08 happen, then replace each fitted edge with the predicate it stands for
+(ports of sub_802D6C4/sub_801483C/sub_801E754 as they already exist or as named traps), keeping the numbers
+canon's own record shows for that path. Also fix the two wrong citation line numbers T7c's verifier found
+(the 0x08 -> 0x20 write is asm00_1.s:10609-10611, not 10527-10537; the sub_801483C call sites are 10958 in
+0x00 and 11022 in 0x24, not 10841).
+**Acceptance.** a recorded trace pair on the closing-window scenario in which 0x00 and 0x04 are each entered
+and left, with the frame ranges named; battle_full's sequencer either 540/540 unaligned or the remainder
+named and shown to be kill-timing setup only; result's sequencer still 40/40; every isolated row 0 with
+cursor's tear reported as it moves; the two citations corrected; the SEQ04_FRAMES = 60 tag either promoted
+to a ROM-sourced constant or narrowed to what it is (a fit to one record).
+
 ### T9c. The Gunner: implement what T9b measured (the frame-60 lever, enemy_kind, the routine, the art, the row)  *(OPEN -- 2026-09-14)*
 
 **Files.** tools/states.py (the recipe), src/fixture.rs (enemy_kind honoured), src/battle.rs (the fixture's enemy construction by kind), src/objects.rs, src/ai.rs, assets/ (Gunner art extracted from the ROM), tools/harness.py (the new row), FIXTURE.md, docs/coverage/
