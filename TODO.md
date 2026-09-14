@@ -142,6 +142,28 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T9b. The second virus (Gunner): widen the fixture to field a non-Mettaur, build the canon recipe, port its routine  *(OPEN -- 2026-09-14)*
+
+**Files.** src/fixture.rs (enemy_kind honoured), src/battle.rs (the fixture's enemy construction: art, style and per-type entry chosen by enemy_kind), src/objects.rs, src/ai.rs, assets/ (Gunner art extracted from the ROM), tools/states.py (the recipe), tools/harness.py (the new row), FIXTURE.md, docs/coverage/
+
+**Why.** T9 measured the two blockers and could not touch them: (1) our fixture ignores enemy_kind
+(FIXTURE.md defines kind 0 only; src/battle.rs hardcodes the Mettaur's art and Style::Mettaur), so no
+Gunner row can exist; (2) on the canon side the encounter roll must be set BEFORE frame 60 builds the
+enemy list: the chosen BattleSettings pointer at 0x02001b9c (GameState+0x1c) goes 0 -> 0x080b4be8 on
+frame 60 (= byte_80B5354, the three-Mettaur record the battlestart recipe already forces; 16-byte records;
+index 6 = 0x080b4bd8 = byte_80B5347, Mettaur+Gunner 0x85); a poke at frame 61 sticks but the slots stay
+empty because the list is built from the rolled pointer inside frame 60. Use the battlestart recipe's own
+mechanism (its one-shot roll poke at frame 60 with EnemySetupArr) with index 6's record instead, and
+confirm the slots (panel 0x0203aa9a / 0x0203ab72, NameID 0x0203aab0 / 0x0203ab88) are populated.
+**Do.** (1) tools/states.py: a `battlestart_gunner` recipe forcing record index 6 at frame 60; confirm the
+enemy slots and record the Gunner's per-type routine from the coverage ranking on that scenario;
+(2) src/fixture.rs + src/battle.rs: enemy_kind selects art, style and the per-type entry (kind 1 = Gunner),
+FIXTURE.md updated; (3) src/objects.rs + src/ai.rs: the Gunner's routine ported under enemy_think/
+enemy_act with its art extracted byte for byte; (4) tools/harness.py: one row aligned by the Gunner's first
+attack event, negative not blind. **Acceptance.** the new row 0; the trace's enemy slot matching canon from
+spawn through the second attack on the Gunner scenario; every existing row unchanged (the Mettaur rows in
+particular, kind 0 unchanged); docs/coverage/<scenario>.md.
+
 ### T8. Port the script VMs, per section 3 of the plan (map-script and chatbox text-script dispatch)  *(OPEN -- 2026-09-14)*
 
 **Files.** src/script.rs (new), src/battle.rs (only where a script is started or stepped), tools/trace.py (progress notes go in this ticket's Result, not the plan file)
