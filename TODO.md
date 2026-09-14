@@ -279,8 +279,9 @@ warp, buster, chip-use integrated 0 or their per-frame remainder against F34's c
 unchanged or better; every isolated row and result 0; nothing worse. Human decision (2026-09-14 05:20): a
 third ticket on this objective is allowed because F38b's finding is a measured mechanism, not a guess.
 
-### F37d. The Mettaur's pickaxe object during the held attack pose (cursor 34902, windowclose 12538)  *(OPEN -- 2026-09-14)*
+### F37d. The Mettaur's pickaxe object during the held attack pose (cursor 34902, windowclose 12538)  *(PARTIAL -- 2026-09-14, pickaxe prime landed 91f766e: cursor 34902/232/170->8/6/170 [k37/k97 micro], windowclose 12538/1200/40->4943/1)*
 
+**Result.** pickaxe prime landed 91f766e: cursor 34902/232/170->8/6/170 (k37/k97 micro), windowclose 12538/1200/40->4943/1116/40 (k10-39 all 0; k0-9 slide residue for camera owner); no new art (mettaur.bin had frame); verifier: freeze-holds-prime + battle.rs-only-trigger CONFIRMED, 7..14-invariance REFUTED (7->7px vs 9->8px), Unk_02=4 unlocated; HEAD re-check PASS (windowclose neg fixture-noise 212849/205769); mettaur+9 canaries 0; worker muse-spark, verifier GLM
 **Files.** src/ai.rs, src/spr.rs, src/actor.rs (only if the object attaches through the actor), assets/ (art extracted from the canon ROM only), tools/harness.py (the two rows' notes)
 
 **Why.** F37c landed the camera pan for the objects and the k=0 bracket: cursor 130221 -> 34902/232/170,
