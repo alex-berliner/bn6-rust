@@ -259,6 +259,23 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F37d. The Mettaur's pickaxe object during the held attack pose (cursor 34902, windowclose 12538)  *(OPEN -- 2026-09-14)*
+
+**Files.** src/ai.rs, src/spr.rs, src/actor.rs (only if the object attaches through the actor), assets/ (art extracted from the canon ROM only), tools/harness.py (the two rows' notes)
+
+**Why.** F37c landed the camera pan for the objects and the k=0 bracket: cursor 130221 -> 34902/232/170,
+windowclose 19168 -> 12538/1200/40, and refuted the pose-frame theory (canon's Unk_02 = 0 is our frame 0).
+Its verified remainder is one object at ~205 px/frame: canon's Mettaur holds its attack pose under the
+custom-screen pause with its pickaxe drawn as a separate object, and ours draws no pickaxe (34902 over 170
+frames and 12538 over 40 are that object plus little else). Find the object in canon: its spawn from the
+Mettaur's attack routine (the sub_8109DEC family / the swing state that F17 and F25 cited), its object type
+and sprite (OAM dump on the row's canon capture: tile, palette, size, position relative to the Mettaur),
+and its lifetime under the pause; extract its art byte for byte from the ROM if ours lacks it, and spawn
+it from the same state with the same offset, cited.
+**Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind) or the per-object remainder;
+mettaur (the row where the pickaxe swings live) 0 unchanged; window, card, wave, opening, chip-cannon,
+popup, result, field 0; nothing worse.
+
 ### F38b. The integrated rows' results window: resolve the zero-enemy battle where canon does, now that `over` no longer freezes  *(OPEN -- 2026-09-14)*
 
 **Files.** tools/harness.py (ZERO_ENEMY's flags and the warp/buster/chip-use integrated rows' Align notes), src/battle.rs (the end-sequence / results hand-off hunk only), src/results.rs
