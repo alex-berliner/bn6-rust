@@ -187,8 +187,9 @@ windowclose unchanged (the pause pose comes from the same routine now); the trac
 mettaur: the enemy slot's CurState/CurAction/timers match canon frame for frame from spawn to the second
 attack (first divergence unchanged or later); every other row 0; plan notes.
 
-### T7. The battle end as canon's sequencer table: banner states, teardown, results hand-off  *(OPEN -- 2026-09-14)*
+### T7. The battle end as canon's sequencer table: banner states, teardown, results hand-off  *(PARTIAL -- 2026-09-14, Sequencer states + TRC2 v3 export landed pixel-neutral [verify_rows: isolated all 0 incl mettaur, cursor 10/9 )*
 
+**Result.** Sequencer states + TRC2 v3 export landed pixel-neutral (verify_rows: isolated all 0 incl mettaur, cursor 10/9 tear-smaller, both-rows 0; negatives not blind) but headline trace evidence NOT reproducible: retained rust records are v2, sequencer judge false-greens on missing field, --align sequencer= crashes (StopIteration). GLM verifier CONFIRMED scope (battle.rs/harness-notes/trace only, no allowlist change) + parity divergences (enemy k=0, mm k=179, rng k=271), REFUTED sequencer 239/239 + kill-slide gap as reproducible. Branch wt/t7 @7b984df kept unmerged. Follow-up T7b written.
 **Files.** src/battle.rs (the end-sequence hunks), src/banner.rs, src/results.rs, tools/harness.py (the integrated rows' notes), tools/trace.py
 
 **Why.** The five integrated variants (opening 72499, field ~158k, warp 40628, buster 54672, chip-use
