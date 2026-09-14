@@ -274,8 +274,9 @@ reads on that frame (before or after the slide call's add).
 **Acceptance.** windowclose 0/0/40 (negative not blind); cursor 8 or better; window, card, wave, opening,
 chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
-### F32b. The end sequence as canon's sequencer states, from the killing blow to the results window's first slide frame  *(OPEN -- 2026-09-14)*
+### F32b. The end sequence as canon's sequencer states, from the killing blow to the results window's first slide frame  *(PARTIAL -- 2026-09-14, end-sequence watched per row, landed 8e44d2e [comments+assert only, zero behavior change]: 0x0C@47/teardown@48)*
 
+**Result.** end-sequence watched per row, landed 8e44d2e (comments+assert only, zero behavior change): 0x0C@47/teardown@48/banner 49..106/slide 154..168 all rows; banner+2 costs field +4 (verifier independently reproduced 158950->158954); one schedule cannot serve warp-72 vs buster-122 (field score-locked); slide-px values + 12px path untraced per report; HEAD re-check PASS; worker muse-spark, verifier GLM
 **Files.** src/battle.rs (the end-sequence state machine: over, BANNER_TO_RESULTS, the results hand-off), src/banner.rs, src/results.rs, tools/harness.py (the integrated rows' notes and the ZERO_ENEMY flags)
 
 **Why.** F38b measured why the resolve flag cannot work with our end sequence as it is: with the flag, our
