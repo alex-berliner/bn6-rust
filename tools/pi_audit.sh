@@ -18,7 +18,7 @@ DIGEST="$(
   echo; echo "=== config changelog ==="; cat docs/config-log.md
 )"
 timeout 900 pi -p --approve --no-session --mode json \
-  --model openrouter/meta/muse-spark-1.3-contributor --thinking high --tools read,grep,find,ls \
+  --model hyper/qwen3.8-flash --thinking high --tools read,grep,find,ls \
   "You are the auditor for /home/box/Code/bn, a per-pixel reimplementation of a GBA game's battle system driven by tickets that agents work in a coordinator loop. You have read-only tools; you change nothing. Your job is to look at how the work is going and propose reshapes of the AGENT SETUP (not the game code): the role files in .pi/agents/*.md, the loop in .pi/coordinator.md, the rules in AGENTS.md and AGENT_GUIDE.md, the ticket format in TODO.md, the model routing, and the tools in tools/ that agents keep re-doing by hand. Read those files. Invariants you never touch: canon never changes, verify_rows runs before every landing, no fitted constants, the spend floor.
 
 Digest:

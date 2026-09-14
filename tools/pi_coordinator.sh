@@ -24,6 +24,7 @@ timeout 43200 pi -p --approve --session-dir "$RUN/session" --mode json \
 echo "exit \$?" > "$RUN/exit"
 INNER
 CAP="${BN_PI_CAP:-5}"
+# BN_HYPER=1: also stop the run when the day's Charm Hyper credits are gone (tools/hyperwatch.sh)
 START="$(python3 "$ROOT/tools/or_spend.py" | sed -n 's/.*total \$\([0-9.]*\).*/\1/p')"
 printf '%s\n\nThis run has a hard cap of $%s of total real spend (coordinator and children together),\nenforced outside you; plan to finish or stop well before it.\n' "$MSG" "$CAP" > "$RUN/instruction.txt"
 cat > "$RUN/capwatch.sh" <<CAPW
@@ -45,4 +46,5 @@ chmod +x "$RUN/capwatch.sh"
 chmod +x "$RUN/run.sh"
 setsid nohup "$RUN/run.sh" > /dev/null 2>&1 < /dev/null &
 setsid nohup "$RUN/capwatch.sh" > /dev/null 2>&1 < /dev/null &
+[ "${BN_HYPER:-0}" = 1 ] && (setsid nohup bash "$ROOT/tools/hyperwatch.sh" "$RUN" >/dev/null 2>&1 &)
 echo "$RUN"

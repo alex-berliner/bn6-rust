@@ -15,7 +15,7 @@ CTX="$(python3 tools/next_ticket.py --list 2>/dev/null || true)"
 BLOCKED="$(grep -E '^- .* BLOCKED -- ' TODO.md TODO_ARCHIVE.md 2>/dev/null | cut -c1-400 || true)"
 LEDGER="$(python3 tools/spend_ledger.py 2>/dev/null | tail -8 || true)"
 timeout 900 pi -p --approve --no-session --mode json \
-  --model openrouter/meta/muse-spark-1.3-contributor --thinking high --tools read,grep,find,ls \
+  --model hyper/qwen3.8-flash --thinking high --tools read,grep,find,ls \
   "You are the judge for /home/box/Code/bn. Read HANDOFF.md (short) and AGENTS.md. Do not edit or run anything; you have read-only tools. ${1:-}
 
 Open tickets:
