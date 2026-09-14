@@ -329,6 +329,46 @@ shockwave segment through it; `src/shot.rs` reimplements it by hand).
   `t3_0x0`-spawn bookkeeping cited in `src/shot.rs:6-9`
   (`sub_80C4E7C`/`sub_80C4F02`, `byte_80C6B00`).
 
+### 2.5 Port log (T5, steps 1-3 landed)
+
+- Step 1 -- tooling: `tools/trace.py scenario_side` referenced a bare
+  `check` instead of the filtered `checks[0]`, so `record` failed on every
+  `harness_row` scenario (pre-existing; T4b logged it and fell back to the
+  oracle). One-line fix, no ROM change. Trace baselines on the fixed tool
+  (pre-`src/` change): mettaur no divergence on 70/70 parity frames
+  (negative `--shift 1` moves: mm_timer k=0, enemy_anim k=60 -- not blind),
+  agreeing with oracle.py mettaur (70/70) by construction; battle_full
+  first divergence enemy_state_action k=0 (canon frame 11) canon=(4,10)
+  rust=(4,0), with mm_state_action/mm_anim/mm_timer k=179, enemy_anim k=21,
+  rng_cadence k=271 (counts 101/86/302/344/409/10 over 540 frames).
+- Steps 2-3 -- `src/objects.rs` (new): the §2.3 steps 1-3 dispatch shape
+  with per-symbol citations -- `battle_common_path` = `battle_801B1C4`
+  (asm00_2.s:23679), `enemy_think` = `t1_0x0`'s virus/navi arms into
+  `battleObject_dispatch_8108F50`/`battle_8108F74`/`RunAIAttack`
+  (asm31.s:15/169291/169314, asm00_2.s:24781), `enemy_act` =
+  `sub_8016E64` tail, `t1_player_entry` = the player arm into
+  `playerObject_main_80EA460`, `t3_entry` = `T3BattleObjectJumptable`
+  (asm00_1.s:2087) over a `repr(u8)` `T3Kind` whose discriminants ARE the
+  canon type numbers (`t3_0x0` buster/cannon :27691, `t3_0x12` vulcan seed
+  :31212, `t3_0x16` shockwave :31413). Per-type entries are our own types
+  at first (`Actor`/`Ai`/`Shot::update`, cited at each definition); §2.3
+  step 4 needs no move (`ForMettaur_8109EF4` etc. already `MettaurState`
+  in ai.rs). battle.rs routes every actor/shot tick through the entries in
+  the same shots-before-actors order with the gates untouched; effects,
+  gunner cursor/impacts, vulcan gun/fireball, orbs and bombs stay direct
+  (no CurState/CurAction lifecycle -- listed in objects.rs).
+- Verification: oracle identical (wave enemy_anim k=24, mettaur none);
+  trace first divergences unchanged with identical counts on both
+  scenarios; full table every isolated row 0 except cursor's single-frame
+  tear at 1/1/170 (was 15/15 -- the documented canon mid-frame tile
+  transfer sampled across captures, same class as T4/T4b's 3->1 and
+  23->15); opening integrated 72499/2691 and warp/buster/chip-use
+  byte-identical; field integrated 158958/5629 (was 159011/5682, -53px on
+  one HUD frame of an allowed AUDIT-6 row -- same sampling class, inside
+  the cap; the 540-frame trace and every isolated row are identical, and
+  no HUD code was touched). `derived` 362 -> 365 (the three T3 ids),
+  `fitted` still 19.
+
 ---
 
 ## 3. Script VMs (map-script + chatbox text-script opcode dispatch)

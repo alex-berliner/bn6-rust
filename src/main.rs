@@ -20,6 +20,7 @@ mod fixture;
 mod gunner;
 mod hud;
 mod hudtiles;
+mod objects;
 mod results;
 mod shot;
 mod spr;

@@ -904,6 +904,11 @@ impl Actor {
         };
     }
 
+    /// The per-type entry the dispatcher calls: reached through
+    /// `objects::battle_common_path` (plan §2.3 step 1, `battle_801B1C4`,
+    /// asm00_2.s:23679) from every T1 arm -- the virus/navi act legs and
+    /// the player entry. Owns the pose/HP/mercy bookkeeping of the common
+    /// path; the pause gate stays at the battle.rs call site.
     pub fn update(&mut self) -> Update {
         self.invisible = self.invisible.saturating_sub(1);
         self.invulnerable = self.invulnerable.saturating_sub(1);
