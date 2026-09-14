@@ -62,7 +62,7 @@ vs after -- a merge that changed nothing is not parity).
   ROW=T/W/F/-` and land with `bash tools/land.sh <branch> <rows> "<msg>" --expect ...`; then stamp the
   ticket with tools/ticket_result.py. Follow-ups go to pi's queue as OPEN tickets, not to Claude.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
-  limit and the account's credit). The user keeps $5 in the account; runs stop at that floor.
+  limit and the account's credit). The user's floor is $0.50 in the account (2026-09-14, was $5); runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
 - **Public:** repo https://github.com/alex-berliner/bn6-rust (main pushed after merges by the
   coordinator; agents never push); site https://alex-berliner.github.io/bn6-rust/ from the generated
