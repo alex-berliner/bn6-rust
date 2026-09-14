@@ -162,6 +162,20 @@
     cursor: pointer;
   }
   #dots button[aria-current="true"] { background: var(--accent); transform: scale(1.4); }
+  /* Clears the remembered place and jumps back to the first slide. */
+  #dots .restart {
+    width: auto;
+    height: auto;
+    margin-top: 0.35rem;
+    padding: 0.2rem 0.3rem;
+    border-radius: 4px;
+    background: none;
+    color: var(--dim);
+    font: 600 0.62rem/1 system-ui, sans-serif;
+    letter-spacing: 0.02em;
+    writing-mode: vertical-rl;
+  }
+  #dots .restart:hover { color: var(--accent); }
 
   #home {
     position: fixed;
@@ -200,6 +214,34 @@
 
 <script src="learn/slides.js"></script>
 <script>
+  // Where the reader got to, kept between visits. localStorage throws in a
+  // few browser settings (private mode, site data blocked), so a cookie is
+  // the fallback; if both fail the page simply forgets, which is harmless.
+  var POS_KEY = 'learn.pos';
+  function savePos(n) {
+    try {
+      localStorage.setItem(POS_KEY, String(n));
+      return;
+    } catch (e) { /* fall through to the cookie */ }
+    try {
+      document.cookie = POS_KEY + '=' + n + ';path=/;max-age=31536000;SameSite=Lax';
+    } catch (e) { /* nothing left to try */ }
+  }
+  function loadPos() {
+    var raw = null;
+    try { raw = localStorage.getItem(POS_KEY); } catch (e) { raw = null; }
+    if (raw === null) {
+      var hit = (' ' + document.cookie).match(/[; ]learn\.pos=(\d+)/);
+      raw = hit ? hit[1] : null;
+    }
+    var n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  }
+  function clearPos() {
+    try { localStorage.removeItem(POS_KEY); } catch (e) { /* ignore */ }
+    try { document.cookie = POS_KEY + '=;path=/;max-age=0;SameSite=Lax'; } catch (e) { /* ignore */ }
+  }
+
   var feed = document.getElementById('feed');
   var dots = document.getElementById('dots');
   var counter = document.getElementById('counter');
@@ -329,6 +371,7 @@
     current = i;
     counter.textContent = (i + 1) + ' / ' + sections.length;
     buttons.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+    savePos(i);
   }
 
   function go(i) {
@@ -352,6 +395,22 @@
     requestAnimationFrame(function () { ticking = false; sync(); });
   }, { passive: true });
 
+  // The same job, done by the browser where it can: whichever slide covers
+  // most of the window is the current one. `sync` above stays as the fallback
+  // for browsers without an observer.
+  if (typeof IntersectionObserver === 'function') {
+    var seen = new IntersectionObserver(function (entries) {
+      var best = null;
+      entries.forEach(function (e) {
+        if (e.isIntersecting && (!best || e.intersectionRatio > best.intersectionRatio)) { best = e; }
+      });
+      if (!best) { return; }
+      var i = sections.indexOf(best.target);
+      if (i >= 0 && i !== current) { mark(i); }
+    }, { root: feed, threshold: [0.5, 0.75] });
+    sections.forEach(function (sec) { seen.observe(sec); });
+  }
+
   document.addEventListener('keydown', function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey) { return; }
     var k = e.key;
@@ -366,10 +425,33 @@
     }
   });
 
-  // Land on the slide named in the address bar (#slide-3), if there is one.
+  // "Start over": forget the remembered place and go back to the top.
+  var restart = document.createElement('button');
+  restart.type = 'button';
+  restart.className = 'restart';
+  restart.textContent = 'start over';
+  restart.title = 'forget where I was and go back to slide 1';
+  restart.addEventListener('click', function () {
+    clearPos();
+    go(0);
+  });
+  dots.appendChild(restart);
+
+  // Where to land. An address ending in #slide-3 wins; otherwise the slide
+  // the reader last had on screen; otherwise the first.
   var want = parseInt((location.hash.match(/^#slide-(\d+)$/) || [])[1], 10);
+  if (!(want >= 1 && want <= sections.length)) {
+    var saved = loadPos();
+    if (saved !== null && saved >= 0 && saved < sections.length) { want = saved + 1; }
+  }
   mark(0);
-  if (want >= 1 && want <= sections.length) { go(want - 1); }
+  if (want >= 1 && want <= sections.length) {
+    // Jump rather than glide: a smooth scroll across twenty-odd slides on
+    // load is a long, pointless animation.
+    var to = sections[want - 1];
+    feed.scrollTop = to.offsetTop;
+    mark(want - 1);
+  }
 </script>
 </body>
 </html>
