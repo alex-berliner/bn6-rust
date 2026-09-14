@@ -2438,13 +2438,35 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // The opening banner holds the fight, as above. The closing one does
         // not need to: the fight is over by then.
         let opening = self.banner.is_some() && !self.banner_done;
-        let paused = over
-            || self.gauge_pause > 0
+        // F33d: `over` (the 0x0C end sequence, battle main 0x0800A09F ->
+        // sub_80081A4, reference/bn6f/asm/asm00_1.s:10617) does NOT pause the
+        // fight. Canon keeps simulating inputs/objects/HUD/RESULT after the
+        // countdown starts: the banner-sequencer dispatch sub_800801C
+        // (asm00_1.s:10422, table off_8008038) runs the 0x0C handler, and
+        // only the 0x08 arm refreshes AIData from the joypad mirror
+        // (sub_8012DFC, asm00_2.s:8977, called at asm00_1.s:10519-10522) --
+        // but the held word persists, so movement still reads it past
+        // battle 47 (traced on warp's own canon capture: poke Right@130
+        // warps at 132, Down@150 warps at 152; MegaMan's object 0x0203a9b8
+        // reads 0x00001004 through both warps, 0x00040804 between), the
+        // buster fires (CurAction 0x08->0x11 at canon 132) and chips fire
+        // (CurAction 0x08->0x14, object_setAttack2 0x0801169A) -- while our
+        // `paused` used to include `over` and froze the scripted subjects.
+        // What `over` still drives is unchanged: the HUD teardown
+        // (`hud_live = false`, canon's own mask 0x4497->0x8084 at 48 then
+        // 0x0084 at 106, watched), the ENEMY DELETED banner arming, and the
+        // RESULT countdown/slide (F32's count, F21/F34's driver chain).
+        let paused = self.gauge_pause > 0
             || self.custom.is_some()
             || intro
             || opening
             || presenting;
-        if !paused {
+        // ...except the clear-time clock, which keeps the old gate: the
+        // traces behind this split cover inputs (held word persists, warps
+        // fire), objects (CurAction writes) and HUD/RESULT updates -- nothing
+        // says the clock runs past the kill, and it feeds the RESULT time
+        // readout, so moving it shifts every post-show frame's digits.
+        if !(paused || over) {
             self.clock += 1;
         }
         // AUDIT pairs 6/14/17: `start_state` = 1 (FIXTURE.md +40) puts the
