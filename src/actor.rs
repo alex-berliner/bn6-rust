@@ -53,6 +53,8 @@ const WARP_DELAY: u8 = 1; // provenance: peeked -- measured against the real ROM
 /// (sub_8109CE6, asm31.s:170580, 170689; byte_8109F46).
 const HOP_FRAMES: u8 = 6; // provenance: derived -- sub_8109CE6, asm31.s:170580
 const HOP_COOLDOWN: u8 = 0x1e; // provenance: derived -- byte_8109F46, asm31.s:170689
+/// Half the hop: three frames up, three down -- the panel commits at the top (see above).
+const HOP_HALF: u8 = HOP_FRAMES / 2; // provenance: derived -- sub_8109CE6, asm31.s:170580
 /// The buster does nothing for two frames after the button is LET GO:
 /// measured against a capture whose navi is pixel-identical to its idle
 /// through frame 64, with B pressed on 60 and released on 62, and changes on
@@ -88,11 +90,11 @@ const BUSTER_FIRE_TICKS: u8 = 5; // provenance: derived -- sub_80EB450's Unk_10 
 /// tier, indexed by the free panels ahead (the table's last two bytes are
 /// padding and are not a sixth row).
 const BUSTER_HOLD: [[u8; 6]; 5] = [
-    [0x04, 0x08, 0x0c, 0x10, 0x14, 0x18],
-    [0x03, 0x07, 0x0a, 0x0e, 0x11, 0x14],
-    [0x03, 0x06, 0x09, 0x0c, 0x0f, 0x11],
-    [0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c],
-    [0x02, 0x03, 0x04, 0x05, 0x06, 0x07],
+    [0x04, 0x08, 0x0c, 0x10, 0x14, 0x18], // canon: byte_80209CC Rapid-tier-0 row (see above)
+    [0x03, 0x07, 0x0a, 0x0e, 0x11, 0x14], // canon: byte_80209CC Rapid-tier-1 row (see above)
+    [0x03, 0x06, 0x09, 0x0c, 0x0f, 0x11], // canon: byte_80209CC Rapid-tier-2 row (see above)
+    [0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c], // canon: byte_80209CC Rapid-tier-3 row (see above)
+    [0x02, 0x03, 0x04, 0x05, 0x06, 0x07], // canon: byte_80209CC Rapid-tier-4 row (see above)
 ];
 /// Which row of `BUSTER_HOLD` this navi's Rapid stat selects. We do not model
 /// navi stats yet; the three measurements in the table above land on row 0 and
@@ -135,9 +137,9 @@ pub struct AttackSpec {
 // provenance: derived -- sub_80EB450/sub_80EB502, asm31.s:108609-108739.
 pub const BUSTER: AttackSpec = AttackSpec {
     windup: Some((anim::IDLE, BUSTER_WINDUP)),
-    anim: 14,
+    anim: 14, // canon: CurAnim 0x0e (see above)
     frames: BUSTER_FIRE_TICKS,
-    strike_at: 2,
+    strike_at: 2, // canon: damage resolves on the fire phase's SECOND tick (see above)
     recover: 0,
     recover_anim: None,
     pose: None,
@@ -147,9 +149,9 @@ pub const BUSTER: AttackSpec = AttackSpec {
 // provenance: derived -- asm31.s:157462, 157464-157479.
 pub const DIVIDE: AttackSpec = AttackSpec {
     windup: None,
-    anim: 12,
-    frames: 40,
-    strike_at: 20,
+    anim: 12, // canon: animation 0xc (see above)
+    frames: 40, // canon: 0x28 frames (see above)
+    strike_at: 20, // canon: hit spawned when the countdown reads 0x14 (see above)
     recover: 0,
     recover_anim: None,
     pose: None,
@@ -161,11 +163,11 @@ pub const DIVIDE: AttackSpec = AttackSpec {
 /// asm31.s:142671, 142716; V1 tiers dword_80FBD28, dword_80FBD14).
 // provenance: derived -- sub_80FC226/sub_80FC26A/sub_80FC2DC, asm31.s:142671/142716.
 pub const THRUST: AttackSpec = AttackSpec {
-    windup: Some((15, 16)),
-    anim: 5,
-    frames: 30,
-    strike_at: 11,
-    recover: 20,
+    windup: Some((15, 16)), // canon: anim 0xf held 16 frames while the panel flashes (see above)
+    anim: 5, // canon: strike animation 5 (see above)
+    frames: 30, // canon: 30-frame strike (see above)
+    strike_at: 11, // canon: hit ten frames in, countdown 0x14 (see above)
+    recover: 20, // canon: 20 recovery frames (see above)
     recover_anim: Some(anim::IDLE),
     pose: None,
 };
@@ -191,10 +193,10 @@ pub const THRUST: AttackSpec = AttackSpec {
 const SWING_POSE: u8 = 0x40 - 1; // provenance: derived -- sub_8109DEC, asm31.s:170830-170848
 pub const SWING: AttackSpec = AttackSpec {
     windup: None,
-    anim: 1,
-    frames: 0x40,
-    strike_at: 0x40 - 0x1b + 1,
-    recover: 0x28,
+    anim: 1, // canon: pickaxe pose (see above)
+    frames: 0x40, // canon: 0x40-frame counter (see above)
+    strike_at: 0x40 - 0x1b + 1, // canon: shockwave spawned when the counter reads 0x1b, 1-based (see above)
+    recover: 0x28, // canon: separate 0x28 recovery (see above)
     recover_anim: Some(anim::IDLE),
     pose: Some(SWING_POSE),
 };
@@ -203,11 +205,11 @@ pub const SWING: AttackSpec = AttackSpec {
 /// (asm31.s:157045-157102).
 // provenance: derived -- asm31.s:157045-157102.
 pub const CROSS: AttackSpec = AttackSpec {
-    windup: Some((6, 30)),
-    anim: 5,
-    frames: 30,
-    strike_at: 1,
-    recover: 24,
+    windup: Some((6, 30)), // canon: animation 6 held 30 frames (see above)
+    anim: 5, // canon: strike animation 5 (see above)
+    frames: 30, // canon: 30-frame strike (see above)
+    strike_at: 1, // canon: hit on the strike's first frame (see above)
+    recover: 24, // canon: 24 recovery frames (see above)
     recover_anim: Some(anim::IDLE),
     pose: None,
 };
@@ -240,11 +242,19 @@ pub struct Profile {
 pub const ENEMY_DEATH_FRAMES: u8 = 92; // provenance: derived -- sub_8017122, asm00_2.s:17808
 pub const PLAYER_DEATH_FRAMES: u8 = 55; // provenance: derived -- asm00_2.s:18173-18212
 const PLAYER_FADE_FRAMES: u8 = 0x20; // provenance: derived -- asm00_2.s:18173-18212
+/// Mosaic block size at the end of the deletion fade (`t >> 1`, see `fade`).
+const FADE_MOSAIC_MAX: u8 = 15; // provenance: derived -- asm00_2.s:18212
+/// Opacity at the start of the deletion fade (`0x10 - t`, see `fade`).
+const FADE_ALPHA_FULL: u8 = 0x10; // provenance: derived -- asm00_2.s:18212
+/// The enemy die state forces the white palette on every carry of `timer >> 2`, two frames in four (see `update`).
+const DEATH_BLINK_SHIFT: u8 = 2; // provenance: derived -- sub_8017122, asm00_2.s:17808
 /// An enemy navi fades in over sixteen steps taken every other frame
 /// (sub_801641A, asm00_2.s:16099-16137). How each step maps to the mosaic
 /// and alpha values was not read; they are stepped linearly here.
 const APPEAR_STEPS: u8 = 0x10; // provenance: derived -- sub_801641A, asm00_2.s:16099-16137
-const APPEAR_FRAMES: u8 = APPEAR_STEPS * 2; // provenance: derived -- sub_801641A, asm00_2.s:16099-16137
+/// Ticks per fade step: a step every other frame (see above).
+const APPEAR_TICKS_PER_STEP: u8 = 2; // provenance: derived -- sub_801641A, sixteen steps taken every other frame (see above)
+const APPEAR_FRAMES: u8 = APPEAR_STEPS * APPEAR_TICKS_PER_STEP; // provenance: derived -- sub_801641A, asm00_2.s:16099-16137
 /// A hit forces the sprite white (sprite_forceWhitePalette, asm/sprite.s:1141)
 /// and the OAM builder keeps it so until the palette is reassigned
 /// (asm38.s:30060BE). Where that happens was not traced, so this length is a
@@ -398,6 +408,17 @@ pub struct OracleFields {
     pub hp: u16,
 }
 
+/// Invisibl hides the navi while bit 1 of its timer is set (see `show`).
+const INVIS_HIDE_BIT: u16 = 2; // provenance: derived -- blindVisualHandledHere_8016934, asm00_2.s:16787
+/// Canon's BattleObject CurState byte: every alive object reads
+/// CUR_STATE_UPDATE through the measured window (see `oracle_fields`).
+const CUR_STATE_UPDATE: u16 = 0x04; // provenance: derived -- BattleObject.inc:40-52, idle reads 0x0804
+/// CurAction rides in the high byte of the +0x8 word (see `oracle_fields`).
+const CUR_ACTION_SHIFT: u8 = 8; // provenance: derived -- BattleObject.inc:40-52
+/// Idle frames after a flinch whose +0x20 tail the export models: 1 sentinel
+/// frame (0xffff) + 10 counted down (see `oracle_fields`).
+const POST_FLINCH_FRAMES: u8 = 11; // provenance: fitted -- read off the PAUSED+Start@10 watch capture (see below)
+
 impl Actor {
     pub fn new(
         assets: spr::Assets,
@@ -491,10 +512,10 @@ impl Actor {
                 if self.death_frames == PLAYER_DEATH_FRAMES && ticks <= PLAYER_FADE_FRAMES =>
             {
                 let t = PLAYER_FADE_FRAMES - ticks;
-                Some(((t >> 1).min(15), 0x10u8.saturating_sub(t)))
+                Some(((t >> 1).min(FADE_MOSAIC_MAX), FADE_ALPHA_FULL.saturating_sub(t)))
             }
             Action::Appearing { ticks } => {
-                let step = (APPEAR_FRAMES - ticks) / 2;
+                let step = (APPEAR_FRAMES - ticks) / APPEAR_TICKS_PER_STEP;
                 Some((APPEAR_STEPS - 1 - step, step + 1))
             }
             _ => None,
@@ -640,24 +661,24 @@ impl Actor {
     ///   in the same capture).
     pub fn oracle_fields(&self, is_player: bool, ai_wait: bool) -> OracleFields {
         let cur_action: u8 = match &self.action {
-            Action::Flinching { .. } => 0x03,
-            Action::Dying { .. } | Action::Gone => 0x02,
-            Action::Attacking { .. } => 0x0b,
+            Action::Flinching { .. } => 0x03, // canon: PlayerObjectAIAttackJumptables[3] (see above)
+            Action::Dying { .. } | Action::Gone => 0x02, // canon: delete jumptable entry [2] (see above)
+            Action::Attacking { .. } => 0x0b, // canon: ForMettaur_8109EF4 attack executor (see above)
             // canon keeps the hop executor's own 0x0a through the hop's
             // cooldown recovery (measured: 0x0a for HOP_FRAMES +
             // HOP_COOLDOWN frames, asm31.s:170689) -- but only for the
             // enemy side, whose hops it is.
             Action::Recovering { .. } if !is_player => {
                 if self.hop_recovery {
-                    0x0a
+                    0x0a // canon: hop executor kept through the cooldown recovery (see above)
                 } else {
-                    0x0b
+                    0x0b // canon: attack executor across swing and recovery (see above)
                 }
             }
-            Action::Hopping { .. } if !is_player => 0x0a,
-            Action::Hidden | Action::Appearing { .. } => 0x00,
-            _ if !is_player && ai_wait => 0x09,
-            _ => 0x08,
+            Action::Hopping { .. } if !is_player => 0x0a, // canon: hop executor (see above)
+            Action::Hidden | Action::Appearing { .. } => 0x00, // canon: spawn-animation state (see above)
+            _ if !is_player && ai_wait => 0x09, // canon: plain wait-N-frames state (see above)
+            _ => 0x08, // canon: decision loop / player AI update [8] (see above)
         };
         // The enemy's +0x20 reads a constant 0x0002 through the whole
         // measured window (see the doc above): nothing dynamic to model, so
@@ -677,9 +698,8 @@ impl Actor {
                     if self.post_flinch > 0
                         && matches!(self.action, Action::Idle) =>
                 {
-                    if self.post_flinch == 11 {
-                        // provenance: fitted -- canon's own +0x20 sentinel on the first idle frame after a flinch, read off the PAUSED+Start@10 watch capture
-                        0xffff
+                    if self.post_flinch == POST_FLINCH_FRAMES {
+                        0xffff // provenance: fitted -- canon's own +0x20 sentinel on the first idle frame after a flinch, read off the PAUSED+Start@10 watch capture
                     } else {
                         (self.post_flinch - 1) as u16
                     }
@@ -690,7 +710,7 @@ impl Actor {
         OracleFields {
             // canon's u16 at +0x8 is CurState | CurAction << 8 -- idle
             // reads 0x0804, i.e. state in the LOW byte.
-            cur_state_action: 0x04u16 | ((cur_action as u16) << 8),
+            cur_state_action: CUR_STATE_UPDATE | ((cur_action as u16) << CUR_ACTION_SHIFT),
             anim: self.player.anim() as u8,
             panel_x: self.col as u8,
             panel_y: self.row as u8,
@@ -731,8 +751,8 @@ impl Actor {
     fn can_move_to(&self, col: i32, row: i32, blocked: u32) -> bool {
         // Which panels belong to this side is in `blocked`: the caller adds
         // the other side's panels, so a stolen column opens up on its own.
-        (1..=field::COLS).contains(&col)
-            && (1..=field::ROWS).contains(&row)
+        (1..=field::COLS).contains(&col) // canon: panels are 1-based (see panel)
+            && (1..=field::ROWS).contains(&row) // canon: panels are 1-based (see panel)
             && blocked & field::panel_bit(col, row) == 0
     }
 
@@ -815,7 +835,7 @@ impl Actor {
         self.pose_len = spec.frames;
         self.action = Action::Attacking {
             ticks: spec.frames,
-            strike_tick: spec.frames + 1 - spec.strike_at,
+            strike_tick: spec.frames + 1 - spec.strike_at, // canon: strike_at is 1-based (see AttackSpec)
             charged,
             recover: spec.recover,
             recover_anim: spec.recover_anim,
@@ -889,7 +909,7 @@ impl Actor {
                 }
             }
             Action::Hopping { to, ticks } if ticks > 1 => {
-                if ticks == HOP_FRAMES / 2 + 1 {
+                if ticks == HOP_HALF + 1 {
                     (self.col, self.row) = to;
                 }
                 Action::Hopping {
@@ -1040,7 +1060,7 @@ impl Actor {
                 // reads +0x20 = 0xffff on this first idle frame and 9..0
                 // over the ten after (PAUSED+Start@10 watch capture).
                 // provenance: fitted -- 1 sentinel frame + 10 counted off that capture, not derived from a cited instruction
-                self.post_flinch = 11;
+                self.post_flinch = POST_FLINCH_FRAMES;
                 Action::Idle
             }
             Action::Dying { ticks } if ticks == self.death_frames => {
@@ -1051,7 +1071,7 @@ impl Actor {
                 // The enemy die state forces the white palette on every
                 // carry of timer >> 2, two frames in four (asm00_2.s:17808);
                 // the player's forces it every frame (asm00_2.s:18212).
-                let white = self.death_frames == PLAYER_DEATH_FRAMES || (ticks >> 2) & 1 == 0;
+                let white = self.death_frames == PLAYER_DEATH_FRAMES || (ticks >> DEATH_BLINK_SHIFT) & 1 == 0;
                 self.player.set_white(white);
                 Action::Dying { ticks: ticks - 1 }
             }
@@ -1104,7 +1124,7 @@ impl Actor {
         // timer is set -- two hidden, two shown -- (blindVisualHandledHere_8016934,
         // asm00_2.s:16787: `lsr r0, r0, #2; bcc` on FlashingInvisTimer),
         // the timer having been counted down before the draw.
-        if self.invisible & 2 != 0 {
+        if self.invisible & INVIS_HIDE_BIT != 0 {
             return;
         }
         let (px, py) = field::panel_centre(self.col, self.row);
