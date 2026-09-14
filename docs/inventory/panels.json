@@ -1,0 +1,70 @@
+{
+ "generator": "tools/inventory.py",
+ "rows": [
+  {
+   "routine": "panel_800BFC4",
+   "cite": "asm/object.s:1018",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_getPanelParameters",
+   "cite": "asm/object.s:2153",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_crackPanel",
+   "cite": "asm/object.s:2201",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_breakPanel",
+   "cite": "asm/object.s:2305",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_breakPanelLoud",
+   "cite": "asm/object.s:2487",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_panel_setPoison",
+   "cite": "asm/object.s:2537",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_highlightPanel",
+   "cite": "asm/object.s:2569",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_setPanelType",
+   "cite": "asm/object.s:2600",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_setPanelAlliance",
+   "cite": "asm/object.s:2609",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_setPanelAllianceTimerLong",
+   "cite": "asm/object.s:2629",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_setPanelAllianceTimerShort",
+   "cite": "asm/object.s:2640",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_setPanelTypeBlink",
+   "cite": "asm/object.s:2651",
+   "status": "unrecorded"
+  },
+  {
+   "routine": "object_checkPanelParameters",
+   "cite": "asm/object.s:2688",
+   "status": "unrecorded"
+  }
+ ]
+}

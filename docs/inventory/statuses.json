@@ -1,0 +1,419 @@
+{
+ "generator": "tools/inventory.py",
+ "rows": [
+  {
+   "bit": "OBJECT_FLAGS_GUARD",
+   "value": "0x00000001",
+   "cite": "include/structs/CollisionData.inc:3",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_INVIS",
+   "value": "0x00000002",
+   "cite": "include/structs/CollisionData.inc:4",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_4",
+   "value": "0x00000004",
+   "cite": "include/structs/CollisionData.inc:5",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_INVULNERABLE",
+   "value": "0x00000008",
+   "cite": "include/structs/CollisionData.inc:6",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_AIRSHOE",
+   "value": "0x00000010",
+   "cite": "include/structs/CollisionData.inc:7",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_FLOATSHOE",
+   "value": "0x00000020",
+   "cite": "include/structs/CollisionData.inc:8",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_CANNOT_SLIDE",
+   "value": "0x00000040",
+   "cite": "include/structs/CollisionData.inc:9",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_8",
+   "value": "0x00000080",
+   "cite": "include/structs/CollisionData.inc:10",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_DEAD",
+   "value": "0x00000100",
+   "cite": "include/structs/CollisionData.inc:11",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_FLASHING",
+   "value": "0x00000200",
+   "cite": "include/structs/CollisionData.inc:12",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_FLINCHING",
+   "value": "0x00000400",
+   "cite": "include/structs/CollisionData.inc:13",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_PARALYZED",
+   "value": "0x00000800",
+   "cite": "include/structs/CollisionData.inc:14",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_SLIDING",
+   "value": "0x00001000",
+   "cite": "include/structs/CollisionData.inc:15",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_BLIND",
+   "value": "0x00002000",
+   "cite": "include/structs/CollisionData.inc:16",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_IMMOBILIZED",
+   "value": "0x00004000",
+   "cite": "include/structs/CollisionData.inc:17",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_CONFUSED",
+   "value": "0x00008000",
+   "cite": "include/structs/CollisionData.inc:18",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_FROZEN",
+   "value": "0x00010000",
+   "cite": "include/structs/CollisionData.inc:19",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_SUPERARMOR",
+   "value": "0x00020000",
+   "cite": "include/structs/CollisionData.inc:20",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNDERSHIRT",
+   "value": "0x00040000",
+   "cite": "include/structs/CollisionData.inc:21",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_MOVE_COMPLETE",
+   "value": "0x00080000",
+   "cite": "include/structs/CollisionData.inc:22",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_DRAG",
+   "value": "0x00100000",
+   "cite": "include/structs/CollisionData.inc:23",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_ANGER",
+   "value": "0x00200000",
+   "cite": "include/structs/CollisionData.inc:24",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_USING_ACTION",
+   "value": "0x00400000",
+   "cite": "include/structs/CollisionData.inc:25",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_24",
+   "value": "0x00800000",
+   "cite": "include/structs/CollisionData.inc:26",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_25",
+   "value": "0x01000000",
+   "cite": "include/structs/CollisionData.inc:27",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_AFFECTED_BY_ICE",
+   "value": "0x02000000",
+   "cite": "include/structs/CollisionData.inc:28",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_26",
+   "value": "0x04000000",
+   "cite": "include/structs/CollisionData.inc:29",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNAFFECTED_BY_POISON",
+   "value": "0x08000000",
+   "cite": "include/structs/CollisionData.inc:30",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_28",
+   "value": "0x10000000",
+   "cite": "include/structs/CollisionData.inc:31",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_29",
+   "value": "0x20000000",
+   "cite": "include/structs/CollisionData.inc:32",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_UNK_30",
+   "value": "0x40000000",
+   "cite": "include/structs/CollisionData.inc:33",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_BUBBLED",
+   "value": "0x80000000",
+   "cite": "include/structs/CollisionData.inc:34",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_00",
+   "value": "0x00000001",
+   "cite": "include/structs/CollisionData.inc:48",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_01",
+   "value": "0x00000002",
+   "cite": "include/structs/CollisionData.inc:49",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_02",
+   "value": "0x00000004",
+   "cite": "include/structs/CollisionData.inc:50",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_03",
+   "value": "0x00000008",
+   "cite": "include/structs/CollisionData.inc:51",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_04",
+   "value": "0x00000010",
+   "cite": "include/structs/CollisionData.inc:52",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_05",
+   "value": "0x00000020",
+   "cite": "include/structs/CollisionData.inc:53",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_06",
+   "value": "0x00000040",
+   "cite": "include/structs/CollisionData.inc:54",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_07",
+   "value": "0x00000080",
+   "cite": "include/structs/CollisionData.inc:55",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_08",
+   "value": "0x00000100",
+   "cite": "include/structs/CollisionData.inc:56",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_09",
+   "value": "0x00000200",
+   "cite": "include/structs/CollisionData.inc:57",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_10",
+   "value": "0x00000400",
+   "cite": "include/structs/CollisionData.inc:58",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_11",
+   "value": "0x00000800",
+   "cite": "include/structs/CollisionData.inc:59",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_12",
+   "value": "0x00001000",
+   "cite": "include/structs/CollisionData.inc:60",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_13",
+   "value": "0x00002000",
+   "cite": "include/structs/CollisionData.inc:61",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_14",
+   "value": "0x00004000",
+   "cite": "include/structs/CollisionData.inc:62",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_15",
+   "value": "0x00008000",
+   "cite": "include/structs/CollisionData.inc:63",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_16",
+   "value": "0x00010000",
+   "cite": "include/structs/CollisionData.inc:64",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_17",
+   "value": "0x00020000",
+   "cite": "include/structs/CollisionData.inc:65",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_18",
+   "value": "0x00040000",
+   "cite": "include/structs/CollisionData.inc:66",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_DO_UPDATE_COLLISION_PANELS",
+   "value": "0x00080000",
+   "cite": "include/structs/CollisionData.inc:67",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_20",
+   "value": "0x00100000",
+   "cite": "include/structs/CollisionData.inc:68",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_21",
+   "value": "0x00200000",
+   "cite": "include/structs/CollisionData.inc:69",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_22",
+   "value": "0x00400000",
+   "cite": "include/structs/CollisionData.inc:70",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_23",
+   "value": "0x00800000",
+   "cite": "include/structs/CollisionData.inc:71",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_24",
+   "value": "0x01000000",
+   "cite": "include/structs/CollisionData.inc:72",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_25",
+   "value": "0x02000000",
+   "cite": "include/structs/CollisionData.inc:73",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_26",
+   "value": "0x04000000",
+   "cite": "include/structs/CollisionData.inc:74",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_27",
+   "value": "0x08000000",
+   "cite": "include/structs/CollisionData.inc:75",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_28",
+   "value": "0x10000000",
+   "cite": "include/structs/CollisionData.inc:76",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_29",
+   "value": "0x20000000",
+   "cite": "include/structs/CollisionData.inc:77",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_30",
+   "value": "0x40000000",
+   "cite": "include/structs/CollisionData.inc:78",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "OBJECT_FLAGS_2_UNK_BIT_31",
+   "value": "0x80000000",
+   "cite": "include/structs/CollisionData.inc:79",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "DAMAGE_DOUBLE",
+   "value": "0x8000",
+   "cite": "include/structs/BattleObject.inc:119",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "DAMAGE_PARALYZE",
+   "value": "0x4000",
+   "cite": "include/structs/BattleObject.inc:120",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "DAMAGE_UNINSTALL",
+   "value": "0x2000",
+   "cite": "include/structs/BattleObject.inc:121",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "DAMAGE_ERASECROSS_SKULL_HIT",
+   "value": "0x1000",
+   "cite": "include/structs/BattleObject.inc:122",
+   "status": "unrecorded"
+  },
+  {
+   "bit": "DAMAGE_NOTHING",
+   "value": "0x0800",
+   "cite": "include/structs/BattleObject.inc:123",
+   "status": "unrecorded"
+  }
+ ]
+}
