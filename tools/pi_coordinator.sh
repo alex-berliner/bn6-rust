@@ -25,13 +25,27 @@ python3 "$ROOT/tools/roles.py" resolve "$NAME" > "$RUN/roles.txt"
 MSG="${1:-$(python3 "$ROOT/tools/roles.py" instruction "$NAME")}"
 cat > "$RUN/run.sh" <<INNER
 #!/usr/bin/env bash
+# The coordinator session, resumed up to 6 times when it ends by itself while work remains (a model now and then
+# ends its turn mid-loop -- Qwen at 16:27 and M3 at 18:10 on 2026-09-14 -- and waiting for the next cron tick
+# cost half an hour each time). A watcher's exit file ends the run for good.
 cd "$ROOT"
 export BN_PI_STATUS="$RUN/status.log"
-timeout 43200 pi -p --approve --session-dir "$RUN/session" --mode json \
-  --model "$COORD" --thinking high \
-  --append-system-prompt "$ROOT/.pi/coordinator.md" "\$(cat "$RUN/instruction.txt")" \
-  > "$RUN/events.jsonl" 2> "$RUN/stderr.txt" < /dev/null
-echo "exit \$?" > "$RUN/exit"
+for i in 1 2 3 4 5 6 7; do
+  sess="$RUN/session"; [ "\$i" -gt 1 ] && sess="$RUN/session-\$i"
+  note=""; [ "\$i" -gt 1 ] && note="
+
+You are resuming run $RUN (session \$i): the previous coordinator session ended its turn early. Continue the loop from step 1; branches and worktrees left by that session are in flight, not strays -- verify and land or record them first."
+  timeout 43200 pi -p --approve --session-dir "\$sess" --mode json \
+    --model "$COORD" --thinking high \
+    --append-system-prompt "$ROOT/.pi/coordinator.md" "\$(cat "$RUN/instruction.txt")\$note" \
+    >> "$RUN/events.jsonl" 2>> "$RUN/stderr.txt" < /dev/null
+  rc=\$?
+  [ -f "$RUN/exit" ] && exit 0                                   # a watcher ended the run
+  [ "\$rc" = 0 ] || break                                         # a crash or a timeout: stop and let the cron relaunch
+  python3 tools/next_ticket.py --list 2>/dev/null | grep -qE '^\S+\s+OPEN\b' || { f="\$(bash tools/pi_judge.sh 2>/dev/null | awk '{print \$1}')"; [ -n "\$f" ] && python3 tools/judge_append.py "\$f" | grep -q "admitted: \[[A-Z]" || break; }
+  echo "\$(date +%H:%M) coordinator session \$i ended early with work left; resuming" >> "$RUN/status.log"
+done
+echo "exit \$rc" > "$RUN/exit"
 INNER
 CAP="${BN_PI_CAP:-$(python3 -c "
 import tomllib; c = tomllib.load(open('$ROOT/providers.toml','rb'))['providers']
