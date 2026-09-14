@@ -1661,12 +1661,20 @@ impl<'a> Battle<'a> {
         let effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)> = Vec::new();
         // AUDIT pairs 6/14/17: a fixture's own FLAG_SKIP_INTRO drives this;
         // no fixture means no reason to skip (see `skip_intro`'s own doc).
+        // F34b: a fixture starting on the results screen (start_state == 1,
+        // canon: FIXTURE.md +40) has no fade left -- canon's RESULT_ARRIVAL
+        // capture is 8048 battle frames in (eBGScrollCBCounters fall 8/4 a
+        // frame from 0/0 at battle init), long past the battle-opening white
+        // hold + ramp (INTRO_HOLD + INTRO_RAMP) this fade reproduces, so the
+        // fixture starts settled.
 /// The skip-intro fade starts here (the legacy black-ramp branch's own
 /// value, see INTRO_RAMP's doc) and the white hold lasts 71 frames
 /// (full white through the 71st frame, see INTRO_RAMP's doc).
 const INTRO_SKIP_FADE: u16 = 0x10 * 2; // provenance: derived -- the legacy black-ramp branch's own value (see INTRO_RAMP's doc)
 const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st frame (see INTRO_RAMP's doc)
-        let intro_fade: u16 = if fixture
+        let intro_fade: u16 = if fixture.map(|f| f.start_state == 1).unwrap_or(false) {
+            0 // canon: no fade left 8048 battle frames in (see the F34b note above)
+        } else if fixture
             .map(|f| f.flag(fixture::FLAG_SKIP_INTRO))
             .unwrap_or(false)
         {
