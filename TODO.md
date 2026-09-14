@@ -278,8 +278,9 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T1. The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence  *(OPEN -- 2026-09-14)*
+### T1. The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence  *(PARTIAL -- 2026-09-14, trace harness works, KEPT unmerged [branch wt/t1-trace 147bb0a+1ee6705]: record/diff on battle_full+3 rows, ca)*
 
+**Result.** trace harness works, KEPT unmerged (branch wt/t1-trace 147bb0a+1ee6705): record/diff on battle_full+3 rows, calibration agrees with oracle, negative live; BLOCKERS: per-frame export stores move field 158950/5621->158983/5654 (verifier control CONFIRMED: disabling store restores baseline exactly) -- needs conditional/zero-cost-when-off export; scope: actor.rs/backdrop.rs/battle.rs sites necessary per verifier (ticket file-list under-scoped, follow-up must name them); rng k=271 + RESULT dismissal unconfirmed per report; worker muse-spark, verifier GLM
 **Files.** tools/trace.py (new), tools/states.py (scenario recipes), tools/mgba_capture.c (only if --watch needs a per-frame multi-field form), src/main.rs and src/fixture.rs (the oracle export block, widened and versioned), AGENT_GUIDE.md (the trace commands)
 
 **Why.** The oracle (tools/oracle.py) compares a 40-byte export block per frame on one row; the next phase needs the
