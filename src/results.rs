@@ -72,16 +72,67 @@ const REWARD_TEXT_ROW: i32 = 12; // provenance: peeked -- read off the capture's
 const REWARD_TEXT_LAST: i32 = 9; // provenance: peeked -- read off the capture's own map, columns 7-9 and 11
 const REWARD_TEXT_BANK: u8 = 9; // provenance: peeked -- read off the capture's own map
 const ZENNY_GLYPH: u16 = 0xb3; // provenance: peeked -- found by searching all 448 glyphs of the real ROM's own font for the reward line's symbol
-/// The GET DATA readout's bottom edge, which the live window and the stored
-/// map disagree about: the map's tile there carries a lit top pixel row
-/// (colour 9) and the real ROM's cells are flat colour 2, tile 0xc4. The
-/// game replaces the run of ten as it draws the reward, so this build does
-/// the same, in the same place. Read off the real ROM's own map -- the last
-/// 80 pixels of the window, one pixel row of ten cells.
-const REWARD_EDGE_ROW: i32 = 14; // provenance: peeked -- read off the real ROM's own map
-const REWARD_EDGE_FIRST: i32 = 2; // provenance: peeked -- read off the real ROM's own map
-const REWARD_EDGE_LAST: i32 = 11; // provenance: peeked -- read off the real ROM's own map
-const REWARD_EDGE_TILE: u16 = 0x0c4; // provenance: peeked -- read off the real ROM's own map
+/// The ten cells at window column 2, row 14 that canon's `sub_802C810`
+/// (reference/bn6f/asm/asm03_0.s:13013-13038) owns: it calls
+/// `sub_802C4B6(x=2, y=0xe, src, w=0xa, h=1)` with one of two ten-entry
+/// tables, `byte_802C834` (asm03_0.s:13029, ten copies of tile 0xc4 with
+/// attribute 0x90 = palette bank 9 -- the flat window face) for state 0 and
+/// `byte_802C848` (asm03_0.s:13033, tiles 0xba..0xc3 in the same bank -- the
+/// "PRESS A BUTTON" prompt) for state 1. The window's own SETUP map is
+/// neither: its cells there carry the face's lit top pixel row, which is
+/// what shows until the driver reaches its wait state and calls
+/// `sub_802C810` for the first time. Measured on this row (F34): canon's
+/// window row 14 columns 2-11 read the setup map's lit line through the
+/// slide and are rewritten flat from the first wait frame on.
+const REWARD_EDGE_ROW: i32 = 14; // provenance: derived -- sub_802C810's r1 = 0xe (asm03_0.s:13018)
+const REWARD_EDGE_FIRST: i32 = 2; // provenance: derived -- sub_802C810's r0 = 2 (asm03_0.s:13017)
+/// How many cells the run covers -- `sub_802C810`'s `mov r3, #0xa`.
+const PROMPT_W: usize = 10; // provenance: derived -- sub_802C810's r3 = 0xa (asm03_0.s:13019)
+const REWARD_EDGE_LAST: i32 = REWARD_EDGE_FIRST + PROMPT_W as i32 - 1;
+const REWARD_EDGE_TILE: u16 = 0x0c4; // provenance: derived -- byte_802C834's tile (asm03_0.s:13029)
+/// The prompt's first tile; the ten run consecutively to 0xc3.
+const PROMPT_TILE: u16 = 0x0ba; // provenance: derived -- byte_802C848 (asm03_0.s:13033)
+/// Canon blinks the prompt on BIT 3 of the game's global frame counter:
+/// `sub_802BF0C` (asm03_0.s:11810-11816) loads the halfword at
+/// eToolkit+0x24 `CurFramePtr` (ewram.s:583; incremented once a frame by the
+/// main loop, asm/main.s:24-28), `and`s 8, shifts it down by 3 and hands the
+/// 0/1 to `sub_802C810` -- eight frames on, eight frames off, on a counter
+/// that has been running since power-on.
+const PROMPT_BLINK_BIT: u32 = 8; // provenance: derived -- sub_802BF0C's `mov r1,#8; and r0,r1` (asm03_0.s:11813-11814)
+/// The phase of that counter at this build's own window frame 0. Canon's
+/// counter is global and free-running, so it is a PER-ROW seed exactly like
+/// the backdrop's `art_entry`/`scroll_xq` -- FIXTURE.md has no field for it
+/// yet, so the one value measured lives here: on the `result` row's canon
+/// capture (/tmp/result_arrival.state) the counter at 0x0200a210 reads
+/// 0x22ef + f at capture frame f, and the map a frame writes is displayed
+/// on the next frame (canon renders at the top of its main loop, asm/main.s
+/// :15-28), so the state showing on canon frame f is bit 3 of 0x22ee + f;
+/// the row's canon_ref is 21, giving 0x2303 + k over the compared frames.
+/// It BELONGS IN THE DESCRIPTOR (FIXTURE.md, next to art_entry/scroll_xq):
+/// any other fixture aimed at a canon capture of this window will need its
+/// own value, and a real battle's is whatever the counter happens to read.
+const PROMPT_BLINK_SEED: u32 = 0x2303_u32.wrapping_sub(PROMPT_WINDOW_FRAME_AT_K0); // provenance: peeked -- canon's own eToolkit CurFrame at this row's canon_ref (see above)
+/// CONFIRMED by a second pass (F34): watched at 0x0200a210 on this row's own
+/// canon capture, the halfword reads 0x22ef at canon frame 0 and +1 every
+/// frame after, so bit 3 flips at canon frames 41, 49 and 57; canon's OWN
+/// pixels inside the ten cells change one frame later -- 249 px at canon
+/// 42, 50 and 58 (k=21, 29, 37 of the compared window) -- and ours change on
+/// exactly those frames, with the first `sub_802C810` write (80 px, the
+/// setup map's lit line giving way to `byte_802C834`'s flat face) landing on
+/// k=14 on both sides.
+/// What this window's own `frames` reads at that same moment: the window is
+/// created on the fixture's first battle frame, which is the rust capture's
+/// marker origin, and the row pairs canon 21+k with rust origin+21+k, so at
+/// k=0 `frames` has been ticked 21 times plus this frame's own tick.
+const PROMPT_WINDOW_FRAME_AT_K0: u32 = 22; // provenance: peeked -- this row's own alignment (origin+21 <-> canon 21), confirmed by the blink's measured edges (F34)
+/// Frames canon spends between the slide's last tick and the first
+/// `sub_802C810` call: the wait state is not entered directly. The slide
+/// tick hands over with `[r5,#3]` = 0, which is `sub_802BED4`
+/// (asm03_0.s:11739-11769) for one frame; it leaves `[r5,#0xb]` = 1 (the
+/// `[r5,#0xc]` non-zero path, asm03_0.s:11757-11762) and `[r5,#3]` = 4,
+/// which is `sub_802BEFC` (asm03_0.s:11772-11782) for one more frame before
+/// it sets `[r5,#3]` = 8 and `sub_802BF0C` starts blinking.
+const PROMPT_WAIT_LEAD: u32 = 2; // provenance: derived -- sub_802BED4 one frame + sub_802BEFC's [r5,#0xb]=1 (asm03_0.s:11739-11782)
 const FONT_TILE: u16 = 0xa0; // provenance: derived -- sub_802C4E8, asm03_0.s:12558
 /// The level readout sits at row 6, columns 16-20, its digits right-aligned;
 /// level 0xb is the S rank, one glyph at tiles 0xb6/0xb7 in bank 10
@@ -213,7 +264,24 @@ pub struct Shown {
     variant: usize,
     /// The zenny amount to draw when the first confirm lands.
     zenny: u16,
+    /// The two ten-cell runs `sub_802C810` chooses between, already resolved
+    /// to map words (state 0 = the flat face, state 1 = the prompt), so the
+    /// blink is ten `words` stores and a re-blit rather than a re-resolve.
+    prompt: [[u16; PROMPT_W]; 2],
+    /// Which run is currently in `words`; `PROMPT_UNWRITTEN` until the
+    /// driver's wait state writes one for the first time (canon's setup map
+    /// stands until then).
+    prompt_state: u8,
+    /// Frames since the window went up -- the counterpart of canon's global
+    /// frame counter for `PROMPT_BLINK_SEED`.
+    frames: u32,
+    /// Frames spent in `Phase::Waiting`, so the prompt run waits out
+    /// `PROMPT_WAIT_LEAD` the way canon's two intermediate states do.
+    wait_frames: u32,
 }
+
+/// `Shown::prompt_state` before the wait state has written either run.
+const PROMPT_UNWRITTEN: u8 = 0xff;
 
 /// Frames of the post-confirm reward reveal, one tile a frame:
 /// `sub_802C044` (reference/bn6f/asm/asm03_0.s:11959) counts `[r5,#0x0b]`
@@ -419,6 +487,10 @@ impl Results {
             },
             variant,
             zenny,
+            prompt: [[0; PROMPT_W]; 2],
+            prompt_state: PROMPT_UNWRITTEN,
+            frames: 0,
+            wait_frames: 0,
         };
         self.resolve_cells(&mut shown);
         shown
@@ -513,6 +585,31 @@ impl Results {
             // Guard k+1 parallels distinct[k] (guard 0 is the blank).
             shown.words[i] = shown.guards[k + 1].word();
         }
+        // `sub_802C810`'s two runs, resolved once so the blink costs ten
+        // stores. Appended after the cells so `guards` still pins every word
+        // the blit can write.
+        for state in 0..2usize {
+            for col in 0..PROMPT_W {
+                let tile = if state == 0 {
+                    REWARD_EDGE_TILE
+                } else {
+                    PROMPT_TILE + col as u16
+                };
+                let raw = tile | (REWARD_TEXT_BANK as u16) << 12;
+                shown.guards.push(MappedTile::new(&v.tiles, entry(raw)));
+                shown.prompt[state][col] = shown.guards[shown.guards.len() - 1].word();
+            }
+        }
+        // A re-resolve (the reward draw) rebuilds `words` from `cells`, so
+        // put back whichever run the driver has already written.
+        if shown.prompt_state != PROMPT_UNWRITTEN {
+            let state = shown.prompt_state as usize;
+            for col in 0..PROMPT_W {
+                shown.words[REWARD_EDGE_ROW as usize * WIN_W
+                    + REWARD_EDGE_FIRST as usize
+                    + col] = shown.prompt[state][col];
+            }
+        }
     }
 
     /// Draw the stored cells into the background at the slide's current
@@ -590,6 +687,26 @@ impl Shown {
             Phase::Fading { .. } => Phase::Done,
             Phase::Done => Phase::Done,
         };
+        // Canon's wait state, `sub_802BF0C` (asm03_0.s:11787-11822), rewrites
+        // the ten cells at (2, 14) EVERY frame with `sub_802C810(bit3 of the
+        // global frame counter)` -- and with state 0 on the frame the confirm
+        // lands (asm03_0.s:11801). Nothing before the wait state touches them,
+        // which is why the setup map's lit line is right until then.
+        self.frames = self.frames.wrapping_add(1);
+        if matches!(self.phase, Phase::Waiting) {
+            self.wait_frames += 1;
+            let counter = self.frames.wrapping_add(PROMPT_BLINK_SEED);
+            let state = u8::from(counter & PROMPT_BLINK_BIT != 0);
+            if self.wait_frames > PROMPT_WAIT_LEAD && state != self.prompt_state {
+                self.prompt_state = state;
+                for col in 0..PROMPT_W {
+                    self.words[REWARD_EDGE_ROW as usize * WIN_W
+                        + REWARD_EDGE_FIRST as usize
+                        + col] = self.prompt[state as usize][col];
+                }
+                self.blit_needed = true;
+            }
+        }
         match self.phase {
             Phase::Fading { step } => Some(step),
             Phase::Done => Some(16),

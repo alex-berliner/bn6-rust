@@ -1557,14 +1557,48 @@ RESULTMATCH_ORIGIN = 8
 #: 24 (CommandPos 0x0807fc64 against LoopAddress 0x0807fba4, 8 bytes an
 #: entry), Timer 4, Param0 0x08617488 (this build's own blob -- the same
 #: schedule); eBGScrollCBCounters reads 0x0528/0x8294 after frame 0.
-#: art_entry/art_timer carry those peeked values verbatim (the seed's own +1
-#: construction lead still applies); scroll_xq/scroll_yq are the
-#: quarter-pixel counters reproducing the peeked registers 82/41 through
-#: this build's -((q+tick+3)/4) mapping at battle 0's own one-tick lead
-#: (x exact every frame, y exact every frame -- both verified by hand over
-#: the period). result_elapsed=0 and the reward fields are untouched.
+#: F34 DERIVES these four from canon's own counters at this row's canon_ref,
+#: exactly the way F26b derived CURSOR_ROW's and WINDOWCLOSE_ROW's (the
+#: mechanism, the ROM citations and the two pipeline lags are in their comment
+#: above; F21b's peeked art pair 24/Timer 4 and its 692/858 were the load-time
+#: reading and a hand-mapped scroll, and F34's first pass moved the timer to 6
+#: by frame-to-frame measurement -- this is where both numbers come from).
+#: WATCHED on canon's own capture of this row (tools/probe.py watch
+#: /tmp/bn6f_real.gba 30 0x02009690:4 0x02009694:4 0x020094c2:2 0x020094c8:4
+#: --loadstate /tmp/result_arrival.state), at canon frame 21:
+#:   eBGScrollCBCounters (ewram eBGScrollCBCounters, 0x02009690/0x02009694)
+#:     = 0xffff0480 / 0xffff8240 = -64384 / -32192, and the counters are
+#:     zeroed at battle init and fall by 8/4 a frame
+#:     (BGScrollCB_BG1Diagonal3to2Scroll, asm00_0.s:3287-3303; sub_8080D90/DA0,
+#:     asm00_1.s:8434-8435), so they read -8f/-4f at battle frame f = 8048
+#:     -> canon's phase in our units: x_q = 2f mod 1024 = 736, y_q = f mod
+#:     1024 = 880.
+#:   eGFXAnimStates[0] (0x020094c0): CommandPos 0x0807fc7c - LoopAddress
+#:     0x0807fba4 = 0xd8, 8 bytes an entry -> entry 27, Timer 7
+#:     (GFXAnimState.inc: Timer +0x2, LoopAddress +0x4, CommandPos +0x8)
+#:     -> art position 176 + (8 - 7) = 177 of the 192-frame
+#:     STEP_ORDER/STEP_HOLD schedule (10 entries of 4 then 19 of 8).
+#: THE LAG IS ANCHORED ON THE MARKER, NOT ON THE RAW CAPTURE FRAME. F26b
+#: measured "capture frame R shows the scroll of tick R-7 and the art of tick
+#: R-5" on two rows whose marker origin is 8; THIS row's origin is 13
+#: (find_marker_origin, the same 13 on every capture taken for it), and the
+#: tick a frame shows is origin-relative -- scroll tick = R - origin + 1, art
+#: tick = R - origin + 3, which IS F26b's -7/-5 at origin 8, and the two rows
+#: it was measured on cannot tell the two forms apart. With this row's own
+#: offset 21 (canon 21+k <-> rust 34+k) that is nx = 22 and na = 24:
+#:   scroll_xq = (736 - 2*22) mod 1024 = 692
+#:   scroll_yq = (880 -   22) mod 1024 = 858
+#:   art pair  = (177 - 24 + 1) mod 192 = 154 = entry 24 / Timer 6
+#: MEASURED, backdrop layer alone (our BG0 against canon's BG1, --only-bg on
+#: both sides, this row's own 40 frames at offset 21): 0 differing pixels on
+#: every frame, and the minimum is unique and sharp -- one tick either way
+#: reads 146948 (nx 21 / na 23 = 694/859, Timer 5) and 146362 (nx 23 / na 25
+#: = 690/857, Timer 7), and reading F26b's lags as absolute capture frames
+#: (nx 27 / na 29 = 682/853, entry 23 / Timer 3) reads 387793.
+#: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
+#: this row's own canon capture, mapped through the arithmetic above.
 RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0,
-                  art_entry=24, art_timer=4, scroll_xq=692, scroll_yq=858)
+                  art_entry=24, art_timer=6, scroll_xq=692, scroll_yq=858)
 
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
 #: read -- pending_src). Marker origin 1 (measured live -- blanks HUD and
@@ -2248,7 +2282,52 @@ PORTED_CHECKS: List[Check] = [
                  "swept 0..40, no field wide enough for a number this size even if it were) "
                  "cannot represent, and item 5's own 'pre-arrival battle tail' framing (backdrop "
                  "phase / HP / gauge) named exactly this before HP and gauge were ruled out -- "
-                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/.",
+                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/. "
+                 "F34 DECOMPOSED THE 102547 BY LAYER AND FRAME at this row's own alignment "
+                 "(marker origin 13, measured on every capture; offset 21, i.e. canon 21+k <-> "
+                 "rust 34+k), identical isolation flags on both sides. The two builds number "
+                 "their backgrounds differently: OUR BG0 is canon's BG1 (backdrop), our BG1 is "
+                 "canon's BG2 (field panels), our BG2 (the HP box) and our BG3 (the RESULT "
+                 "window) are BOTH canon's BG3, and canon's BG0 is blank. LAYER TABLE at this "
+                 "branch's 93183 (40 frames): backdrop (our BG0 vs canon BG1) 0 on every frame "
+                 "-- its seed is now DERIVED from canon's own counters, see RESULT_ROW's "
+                 "comment; field (our BG1 vs canon BG2) a flat 18552 on each of k=0..9 and 0 "
+                 "from k=10 (185520 layer-local, most of it behind the window); window+HUD 0 on "
+                 "every frame -- our BG3 alone against canon's BG3 reads a constant 704 px at "
+                 "(2,0)-(45,15) and our BG2 alone against canon's blank BG0 reads the SAME 704 "
+                 "px in the same box (the HP box's layer assignment, not a difference), and our "
+                 "BG2 composited under our BG3 against canon's BG3 is 0 on all 40 frames; OBJ "
+                 "(--disable-bg both sides) 1532-2088 a frame, 72512 layer-local. PARTITIONED "
+                 "(F26b's rule -- layer-local totals double-count what a layer above hides) the "
+                 "composite's 93183 = 92760 BG + 423 OBJ, all of it on k=0..9 and all of it "
+                 "inside the field's own y72..149 band. THE WINDOW IS EXACT AND THIS ROW DOES "
+                 "EXERCISE IT: the slide covers x < 48+16k on both sides through k=11 (F21b's "
+                 "tilemap-column slide), the first sub_802C810 write lands at k=14 (80 px change "
+                 "inside the prompt box: the setup map's lit line replaced by byte_802C834's "
+                 "flat face) and the bit-3 blink toggles 249 px at k=20/21, 28/29 and 36/37 -- "
+                 "the same pixels on the same frames on both sides. THE 92760 IS THE INTRO "
+                 "FADE: RESULT_ROW carries FLAG_SKIP_INTRO, so src/battle.rs starts the battle "
+                 "with intro_fade = INTRO_SKIP_FADE and darkens the field layer and the objects "
+                 "for the first ten compared frames, while canon's RESULT_ARRIVAL is 8048 battle "
+                 "frames in with no fade left. PROBED, NOT LANDED (src/battle.rs is another "
+                 "worker's file, and megaman_col/enemies are not this ticket's fields): "
+                 "intro_fade = 0 when the fixture's start_state == 1 takes the row 93183 -> "
+                 "7316/1878/40 and every BG layer to 0 on all 40 frames; what is left is OBJ "
+                 "alone and it decomposes exactly -- canon draws MegaMan at x43..77 y70..113 "
+                 "(766 px) and we draw the IDENTICAL 766-px sprite at x83..117, a pure "
+                 "one-panel-column +40 px displacement (canon's own BattleObject 0x0203a9b0 "
+                 "+0x12 PanelXY reads PanelX 2 / PanelY 2 on every frame of this row's canon "
+                 "capture -- BattleObject.inc:63 -- while RESULTMATCH_ROW carries megaman_col=3; "
+                 "its megaman_row=2 is right), and we draw an enemy of 385-511 px at x168..189 "
+                 "that canon does not draw at all (canon's enemy slot 0x0203aa88 sits in "
+                 "CurState 0x08 = CUR_STATE_DESTROY, BattleObject.inc:38, at the row's "
+                 "canon_ref: the Mettaur is already deleted when the RESULT window comes up). "
+                 "MEASURED, all three on top of each other: megaman_col 3->2 alone 7316 -> "
+                 "3330, enemies 1->0 alone 7316 -> 3986, both 7316 -> 0, and with all three the "
+                 "row reads PASS total 0 worst 0 frames 40, negative NOT blind (111839). ORDER "
+                 "MATTERS: the two descriptor fields WITHOUT the fade change are worth 56 px "
+                 "(93183 -> 93127) -- the fade darkens the sprites and the window hides them "
+                 "from k=9, so the fade change is what makes the other two visible.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
