@@ -1,0 +1,3 @@
+F12 popup-gate: FLAG_HUD_LIVE-gated popups (human impl, worker-verified); areagrab 43367 to 25644, orbs next
+
+chip-areagrab (isolated), before and after: canon on top; ours at 48d4447 (43367 px over 77 frames, canon 5+k, rust offset 110); ours at 6081948 (25644 px, canon 5+k, rust offset 110). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
