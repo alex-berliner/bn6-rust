@@ -276,8 +276,9 @@ it from the same state with the same offset, cited.
 mettaur (the row where the pickaxe swings live) 0 unchanged; window, card, wave, opening, chip-cannon,
 popup, result, field 0; nothing worse.
 
-### F38b. The integrated rows' results window: resolve the zero-enemy battle where canon does, now that `over` no longer freezes  *(OPEN -- 2026-09-14)*
+### F38b. The integrated rows' results window: resolve the zero-enemy battle where canon does, now that `over` no longer freezes  *(NEGATIVE -- 2026-09-14, resolve-flag retry refuted post-F33d, notes landed 66a6a3c [zero pixel effect]: warp 40628->45751 [isolated 0-)*
 
+**Result.** resolve-flag retry refuted post-F33d, notes landed 66a6a3c (zero pixel effect): warp 40628->45751 (isolated 0->5123 banner tail), buster 54672->81083 (isolated 0->2286), chip-use 275307->269172 (isolated 0->4026), all reverted; our over@capture-8/show~110 cannot sit at canon k=24..29 with one BANNER_TO_RESULTS (untouched for field); sequencer 0x0C@47 re-watched; allowlist kept; HEAD result re-check MATCH; no third ticket on this objective (F38 PARTIAL + F38b NEGATIVE); worker muse-spark
 **Files.** tools/harness.py (ZERO_ENEMY's flags and the warp/buster/chip-use integrated rows' Align notes), src/battle.rs (the end-sequence / results hand-off hunk only), src/results.rs
 
 **Why.** F38's decomposition (07ad4e3): warp integrated 40628, buster 54672 and chip-use 275307 are canon's
