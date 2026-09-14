@@ -634,8 +634,9 @@ or better; an allowlist entry removed only for a row that reads 0; nothing worse
 **Measure and report.** Repaired layer table (definition stated, arithmetic closed), (a)-(d) confirmed or refuted each with the watch traces, rows before/after, full-table deltas. **Acceptance:** the table adds up and every attribution the next cursor ticket needs is measured, not inferred.
 **Coordinator:** `verify_rows` on every row the report names; the verifier on the repaired table and any canon citation.
 
-### F33c. The integrated rows after F32: let the zero-enemy fixtures resolve where canon's battle resolves  *(OPEN -- 2026-09-13)*
+### F33c. The integrated rows after F32: let the zero-enemy fixtures resolve where canon's battle resolves  *(NEGATIVE -- 2026-09-14, resolve-flag hypothesis refuted with structure [warp 40628->83175 tried+reverted)*
 
+**Result.** resolve-flag hypothesis refuted with structure (warp 40628->83175 tried+reverted; paused includes over freezes inputs; banner tail parks k=0..9; canon acts post-0x0C); 0x0C@47 uniform x4 rows; field stall decomposed (lag-14->lag-11, results_delay coincidence, mechanism untraced); notes-only commit landed 2f49e18; no verifier (nothing landed behavioral; findings recorded for next integrated ticket); worker muse-spark 63 turns $0.049
 **Files.** tools/harness.py (the ZERO_ENEMY descriptor flags and the integrated rows' Align notes), src/battle.rs (the end-sequence hunk only, if F32's count needs a fixture-side entry point)
 
 **Why.** F33b left warp integrated 40628, buster 54672, chip-use 567780 and field 158938 with every BG layer
