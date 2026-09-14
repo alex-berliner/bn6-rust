@@ -204,6 +204,7 @@ if !spent && arrived {
     pub oam_first: u16,
     pub oam_count: u16,
     pub duration: u8,
+    // two flag bits on a frame: one means "this is the last frame", the other "loop after it"
     /// 0x80 marks the last frame, 0x40 that the animation restarts after it.
     pub flags: u8,
 }
@@ -234,13 +235,13 @@ pub fn update(&mut self) {
 {
   title: "The custom screen and the gauge",
   codePath: "src/battle.rs and src/custom.rs",
-  code: `// src/battle.rs -- 0xd of 0x4000 a frame; full, and the window is due.
+  code: `// src/battle.rs -- the gauge grows by 13 a frame; at 16384 (about 21 seconds) it is full and the window may open.
 self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
 if self.gauge == GAUGE_FULL && self.open_window_allowed() {
     self.gauge_pause = GAUGE_PAUSE;
 }
 
-// src/custom.rs -- it scrolls in from 0x78 to 0, 0xc of it a frame.
+// src/custom.rs -- the window starts 120 pixels off screen and slides 12 a frame: ten frames to arrive.
 const SLIDE_FROM: i32 = 0x78;
 const SLIDE_STEP: i32 = 0xc;
 Phase::Opening { x } if x > SCROLL_OPEN => {
