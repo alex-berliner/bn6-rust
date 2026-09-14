@@ -61,6 +61,12 @@ reset = "rolling 5h"                      # a window, not a daily balance: never
 price_usd_per_month = 22
 daily_credits = 480                       # 100 percent points per 5-hour window, 4.8 windows a day: the price of a point
 
+[providers.minimax.pacer]                 # the plan also refuses bursts ("Token Plan rate limit reached", code 2062) long before
+port = 8791                               # the window is used up: one worker at pi's pace tripped it after 84 turns in 3 minutes
+upstream = "https://api.minimax.io"       # (2026-09-14). tools/api_pacer.py sits at 127.0.0.1:8791 (pi's baseUrl for minimax),
+rpm = 20                                  # spaces request starts, and retries 429s itself, so the agents never see them.
+concurrency = 2
+
 # ---------------------------------------------------------------- run profiles: candidates per job, in order
 [runs.hyper]
 workers = 2                               # worker slots in flight

@@ -1,7 +1,7 @@
 # Replay F23 with openrouter/cohere/north-mini-code:free (off): NO-OP (no commits; the rows-unchanged check proved nothing)
 
 base 208c158 ((given))
-cost $0.0000, 39 turns, 1 min, thinking off, role worker
+cost $0.0000, 13 turns, 1 min, thinking off, role worker
 
 expected: {'window': ('0', '0', '16'), 'mettaur': ('0', '0', '70'), 'buster': ('0', '0', '28')}
 

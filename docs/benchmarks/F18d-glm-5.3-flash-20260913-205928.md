@@ -1,7 +1,7 @@
 # Replay F18d with openrouter/z-ai/glm-5.3-flash (high): FAIL
 
 base 9790ff1 (bb8e8f06596e4baac3a9589b5d7d7c0630acc923 F18d windowclose: draw gauge body on close-blank frame; BG3 k11 1596->0, total 650544->648948; verifier CONFIRMED all 3 claims)
-cost $0.1946, 238 turns, 40 min, thinking high, role worker
+cost $0.0973, 79 turns, 40 min, thinking high, role worker
 
 expected: {'windowclose': ('648948', '27391', '40')}
 

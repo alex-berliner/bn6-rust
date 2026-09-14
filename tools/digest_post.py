@@ -75,6 +75,7 @@ def model_paragraph(tid, title, status, result, facts):
             try: e = json.loads(line)
             except ValueError: continue
             m = e.get("message") if isinstance(e, dict) else None
+            if isinstance(e, dict) and e.get("type") not in (None, "turn_end"): continue      # pi emits one message in three events; count it once
             if isinstance(m, dict) and m.get("role") == "assistant":
                 t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
                 if t: last = t
