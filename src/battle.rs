@@ -3869,7 +3869,11 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // same event (it arms that banner on the frame it fires), so the
         // teardown hangs off it in `update`.
         if self.hud_live && self.shown.is_none() && self.fade_out == 0 {
-            self.emotion.show(frame);
+            // Canon's element-14 draw adds the HUD's shared object X
+            // displacement (eStruct2035280+0x12) to its two OAM words; see
+            // `Emotion::show` and `Custom::hud_obj_x` for the measurement.
+            self.emotion
+                .show(frame, self.custom.as_ref().map_or(0, |c| c.hud_obj_x()));
         }
         // The chip at the front of the hand hangs over the navi as a 16x16
         // object: read out of a live battle's OAM at (59,52) with the navi on

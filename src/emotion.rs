@@ -53,11 +53,26 @@ impl Emotion {
         }
     }
 
-    pub fn show(&self, frame: &mut GraphicsFrame) {
+    /// `x_offset` is canon's own per-frame X displacement for this element:
+    /// `sub_801CDEC` does not use the packed OAM words below as they stand,
+    /// it adds `eStruct2035280 + 0x12` (0x02035292) shifted into the X field
+    /// first -- `ldrb r4, [r5,#0x12]; lsl r4, r4, #0x10; add r0, r0, r4`
+    /// (asm00_2.s:27561-27568 and :27570-27572, once per object). That byte
+    /// is the chip window's own slide counter, counted from the open
+    /// position: measured with `--watch 0x02035290:8` on the real ROM it
+    /// reads 0 with no window, steps 0x0c a frame from 0 to 0x78 over the
+    /// ten frames of the slide-in (BATTLESTART, canon 187..196), holds 0x78
+    /// for as long as the window is up, and steps back 0x0c a frame to 0
+    /// over the ten frames of the slide-out (CHIPSELECT + Start@50,A@80,
+    /// canon 81..90). So the whole HUD's objects ride 120 px to the right
+    /// while the chip window covers the left of the screen -- F26b measured
+    /// exactly that displacement on `cursor`, canon x122..165 against our
+    /// x2..45, byte-identical content.
+    pub fn show(&self, frame: &mut GraphicsFrame, x_offset: i32) {
         for (sprite, at) in [(&self.wide, LEFT), (&self.narrow, RIGHT)] {
             Object::new(sprite.clone())
                 .set_priority(Priority::P2)
-                .set_pos(at)
+                .set_pos((at.0 + x_offset, at.1))
                 .show(frame);
         }
     }
