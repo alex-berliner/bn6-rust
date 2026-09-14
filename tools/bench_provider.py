@@ -85,7 +85,7 @@ def _run(a, c, p, model, stamp, doc):
     rows = []
     for tid in a.tickets:
         # other pi sessions on this provider (their spend would land in the balance delta); counted before our replay starts
-        others = subprocess.run("pgrep -fc 'pi -p .*%s/' || true" % a.provider, shell=True, capture_output=True, text=True).stdout.strip()
+        others = subprocess.run("pgrep -fc -- '--model %s/' || true" % a.provider, shell=True, capture_output=True, text=True).stdout.strip()
         before = balance(a.provider); t0 = time.time()
         r = subprocess.run(["python3", "tools/replay_bench.py", tid, "--model", model, "--thinking", a.thinking, "--role", a.role],
                            capture_output=True, text=True)
