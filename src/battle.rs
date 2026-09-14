@@ -2826,20 +2826,24 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         for orb in self.areagrab_orbs.iter_mut() {
             if orb.burst {
                 orb.player.update();
-                continue;
-            }
-            if orb.landed {
+            } else if orb.landed {
                 orb.burst = true;
                 orb.player.play(AREAGRAB_BURST_ANIM);
-                continue;
+            } else {
+                orb.z -= AREAGRAB_ORB_ZVEL;
+                if orb.z <= 0 {
+                    orb.z = 0;
+                    orb.landed = true;
+                    areagrab_landed = true;
+                }
             }
+            // The palette walk never freezes at the burst: the live OBJ
+            // palette cycles one sprite row per frame unbroken through the
+            // land frame and the burst (OBJ palette RAM watch, canon
+            // captures 62..81, period 4), while the sprite frame itself is
+            // held by object_updateSpriteTimestop (t3_0xf_80C6414,
+            // asm31.s:30497) -- so the age walk runs on burst frames too.
             orb.age += 1;
-            orb.z -= AREAGRAB_ORB_ZVEL;
-            if orb.z <= 0 {
-                orb.z = 0;
-                orb.landed = true;
-                areagrab_landed = true;
-            }
             orb.player
                 .set_palette_add((orb.age as usize + AREAGRAB_ORB_PAL_PHASE) % AREAGRAB_ORB_PALS);
         }
@@ -4238,7 +4242,15 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         }
         // AreaGrab's steal orbs, over the field they are about to take.
         // Culled until the pair's top is inside (canon writes no OAM above).
-        for orb in &self.areagrab_orbs {
+        // Lowest first: canon's OAM carries the orbs bottom-to-top (OAM watch
+        // at captures 66/70/74: y 4/-20, 36/12/-12, 68/44/20), so in the
+        // waist overlap where consecutive rings touch, the lower ring wins
+        // the same-priority tie. Spawn order is top-down and would show the
+        // upper ring instead (row k=60..75, x 134..145).
+        let mut areagrab_order: Vec<usize> = (0..self.areagrab_orbs.len()).collect();
+        areagrab_order.sort_by_key(|&i| core::cmp::Reverse(self.areagrab_orbs[i].position().1));
+        for i in areagrab_order {
+            let orb = &self.areagrab_orbs[i];
             let (x, y) = orb.position();
             if y <= AREAGRAB_ORB_CULL_TOP || y >= AREAGRAB_ORB_CULL_BOTTOM {
                 continue;
