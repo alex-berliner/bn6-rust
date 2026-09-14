@@ -80,7 +80,7 @@ vs after -- a merge that changed nothing is not parity).
   run by `next_ticket.py --claim`; landings and verifications serialize on their locks). Under `start_above`
   `tools/tail.sh <run>` spends a subscription's rest on a judge pass and recon maps. The user's rule
   (2026-09-14 11:00): a subscription's day is spent to the end, and OpenRouter is a RESERVE, never a fallback.
-  Charm Hyper: $20/month for 250 credits a day, `python3 tools/hyper_credits.py` prints what is left.
+  Charm Hyper: $20/month for 250 credits a day, `python3 tools/hyper_credits.py` prints what is left. MiniMax coding plan ($22/month, from 2026-09-14 evening): `python3 tools/minimax_quota.py` prints the 5-hour and weekly windows and the day's allowance; pi reaches it through `tools/pacer.sh start minimax` (a pacing proxy on 127.0.0.1:8791). Schedule: both runs in parallel, each self-sufficient.
   Benchmarks of a provider against the archived Muse answers: `python3 tools/bench_provider.py run <run>` (a
   fixed set of F tickets replayed with its worker; credits measured by balance delta) and `bench_provider.py table`.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
