@@ -10,3 +10,5 @@ expected: {'result': ('0', '0', '40')}
 ```
 
 session: /tmp/bn-pi/replay/20260914-162234
+
+rate-limited: 19 replies of 429 from the provider; verdict void

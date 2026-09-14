@@ -12,3 +12,5 @@ verify_rows: FAIL
 ```
 
 session: /tmp/bn-pi/replay/20260914-052619
+
+rate-limited: 20 replies of 429 from the provider; verdict void

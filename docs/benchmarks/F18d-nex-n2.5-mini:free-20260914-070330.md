@@ -10,3 +10,5 @@ expected: {'windowclose': ('648948', '27391', '40')}
 ```
 
 session: /tmp/bn-pi/replay/20260914-070330
+
+rate-limited: 19 replies of 429 from the provider; verdict void

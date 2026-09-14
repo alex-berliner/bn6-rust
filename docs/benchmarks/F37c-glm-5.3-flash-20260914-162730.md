@@ -10,3 +10,5 @@ expected: {'cursor': ('34902', '232', '170'), 'windowclose': ('12538', '1200', '
 ```
 
 session: /tmp/bn-pi/replay/20260914-162730
+
+rate-limited: 19 replies of 429 from the provider; verdict void
