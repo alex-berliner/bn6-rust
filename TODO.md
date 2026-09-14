@@ -389,8 +389,9 @@ canon's driver sequences it (cite), and show the two builds' captures identical 
 on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
 chip-cannon 0.
 
-### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(CLAUDE -- 2026-09-13)*
+### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(DONE -- 2026-09-13, popup 60614/1842/80 -> 5094/1148/80 [neg 5286 not blind], the x2-45 y18-33 emotion-window box 0 on all 80 fram)*
 
+**Result.** popup 60614/1842/80 -> 5094/1148/80 (neg 5286 not blind), the x2-45 y18-33 emotion-window box 0 on all 80 frames; the residual 5094 is the Mettaur's dissolve (F28). Canon's rule implemented: the emotion window is battle-HUD element 14 (mask dword_20352C0, sub_801BEE0 asm00_2.s:25540-25563, draw sub_801CDEC :27554-27583), cleared with elements 0/1/4/10 by sub_80081A4 -> sub_801BED6(0xE4C53) (asm00_1.s:10617-10621) on the frame the banner sequencer enters the RESULT countdown 0x0C, measured on the real ROM with --watch-write (frame 47 seq 0x0C, frame 48 mask 0x4497->0x0084 at lr 0x080081B9); canon holds the window through the enemy's death and its 47-frame dissolve, ours dropped it at the death. src/battle.rs: hud_live set at HUD init, cleared where over fires (same event in this build), draw gate hud_live && no popup && no fade; src/fixture.rs FLAG_HUD_LIVE bit 6 (peeked) because popup and the 43 chip rows share one zero-enemy descriptor while their canon captures sit on opposite sides of the teardown (popup mask 0x4497 on all 125 frames, afterdissolve 0x8084 on all 47), so only the descriptor can say which; src/emotion.rs LEFT/RIGHT provenance derived from sub_801CDEC. cannon/chip-cannon/chip-invisibl/mettaur/opening/tiles/gauge/field/wave/window/card/banner/cursor/windowclose/result unchanged. Remaining: our end sequence fires over at the last enemy's defeat where canon reaches the RESULT countdown 47 frames later after the dissolve (F32); the teardown models element 14 only. Claude Opus agent, 98 tool calls, 27 min, 380k tokens.
 **Files.** src/battle.rs (the emotion-window gate and the teardown only; pi's F12 worker edits other parts of battle.rs), src/emotion.rs, src/fixture.rs (only if a fixture rule must change), tools/harness.py (the popup row only)
 
 **Why.** F27 identified popup's 55520 px: two OBJs at (0,18) 32x16 tile 0x3b4 and (32,18) 16x16 tile
@@ -446,6 +447,40 @@ blink, names, pictures, deck exact). Everything left is x>=112: the battle behin
 **Rules.** No alignment change except by measured event (offset 237 stands until a watch names a new
 event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
 row named; the verifier only if src/ changes or a canon routine is cited.
+
+### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/hud.rs, src/hudtiles.rs, src/emotion.rs, tools/harness.py (the integrated rows' notes only), tools/allowlist.py entries removed only when a row reads 0
+
+**Why.** Four integrated (full-HUD) variants are allowlisted since AUDIT-6 ("HUD vs a zero-enemy arena, not
+compared before"): field 305263/10061/40, warp, buster, chip-use, each in the hundreds of thousands. F27b
+found the HUD is driven in canon by a per-element enable mask (dword_20352C0; elements 0, 1, 4, 10 and 14
+are torn down together at the RESULT countdown by sub_80081A4, asm00_1.s:10617-10621; the dispatcher
+sub_801BEE0 asm00_2.s:25540-25563 with an updater and a draw per element, e.g. element 14 = emotion window
+sub_801CADC/sub_801CDEC) and that our build models only element 14 of it. Decompose field integrated by
+element: capture both sides, split the residue by HUD region (the HP box, the custom gauge, the emotion
+window, the hand icon, the enemy HP objects, the chip name/icon) and by layer, name each element's canon
+draw routine from the dispatcher table and its enable bit, and compare our drawing of it frame by frame.
+**Do.** Fix element by element in your files with citations; measure each; then re-check warp, buster and
+chip-use integrated (same HUD) and report their deltas. **Acceptance.** a per-element table for field
+integrated with canon routines; field integrated as low as the elements you fixed take it, the isolated
+variants and wave/window/opening/chip-cannon/popup/tiles/gauge untouched at their values; an allowlist entry
+removed only for a row that reads 0; nothing worse.
+
+### F32. End sequence: `over` fires at the last enemy's defeat, canon enters the RESULT countdown 47 frames later, after the dissolve  *(OPEN -- 2026-09-13)*
+
+**Files.** src/battle.rs (the end sequence only), src/banner.rs
+
+**Why.** F27b measured on the real ROM (PAUSED, enemy HP forced 0, Start@10): the banner sequencer enters
+the RESULT countdown 0x0C at frame 47 and the HUD teardown fires at 48, while the enemy's death is at
+frame 0 and its dissolve fills the 47 frames between; ours fires `over` (banner + RESULT) at the defeat
+itself. No row measures that offset today because the result row is aligned by event on the results
+screen, but it is a battle-flow defect that every later row through the end of a battle will hit.
+**Do.** Watch canon's sequencer (dword_203CA70) and the enemy's state from the killing hit to 0x0C on the
+result fixture's route, cite the routine that counts the dissolve and the one that enters 0x0C, and make
+ours enter the end sequence on the same event with the same count. **Acceptance.** the frame of 0x0C
+after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
+alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
 
 ### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(CLAUDE -- 2026-09-13)*
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
