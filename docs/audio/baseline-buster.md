@@ -6,7 +6,7 @@ and compared whole by `tools/audio_probe.py`: every sample, no resampling,
 no trimming, no baseline subtraction. Then soloed per channel
 (`--audio-channel`) to attribute the residue.
 
-8 capture runs total, one at a time inside the 3-slot semaphore (budget 8/8):
+8 capture runs in the original pass, one at a time inside the 3-slot semaphore:
 
 | run | side | audio dir |
 |---|---|---|
@@ -16,6 +16,16 @@ no trimming, no baseline subtraction. Then soloed per channel
 | 6 | ours, `--audio-channel 0` | `aud_rust_ch0` |
 | 7 | ours, `--audio-channel 4` | `aud_rust_ch4` |
 | 8 | canon, `--audio-channel 4` | `aud_canon_ch4` |
+
+Run count, stated plainly: the original pass used the ticket's cap of 8. A
+revision pass then spent MORE, in two lots. Lot 1, deliberate: run 9, one
+no-press canon control (`aud_canon_ch0_ctl` — same state, same enemy cheats,
+same script, NO B pokes, `--audio-channel 0`), taken to make the blip onset a
+measurement instead of an inference. Lot 2, accidental and disclosed: a
+script-import mistake replayed the four full commands of runs 1-4 once more
+(same argv, same output dirs), so the grand total is 13 capture runs. The
+replayed trees re-verified byte-identical to their first versions, so no
+number below changed; the replay bought nothing.
 
 Scenario: the harness `buster` row's, reproduced flag for flag.
 canon = `/tmp/bn6f_sterile.gba` from `/tmp/pausedwithcannon.state`,
@@ -52,11 +62,14 @@ Silence-vs-sound is a number: canon's tree is a battle-music mix (RMS 4746.8
 over all 200 frames); ours is near-silent except the buster events (RMS 734.4
 — the music our side does not play yet dominates the difference).
 
-The 2744-sample tree-length mismatch is ONE frame: our frame 0 drains 234
-L+R pairs where canon's drains 1605 (every later frame is 1605..1618 on both
-sides). A capture-start artifact on our side, not an audio-path defect —
-but it is a defect by this ticket's own standard (a stated length mismatch)
-and it is reported as one.
+The 2744-sample tree-length mismatch: frame 0 accounts for 2742 of it (our
+frame 0 drains 234 L+R pairs where canon's drains 1605), and the remaining
+net 2 samples are the NET of 105 later frames whose per-frame pair counts
+differ by small amounts each way (both sides stay within 1605..1618; the
+tool's per-frame accounting puts 769 gross skipped L+R pairs on those 105
+frames, netting to one pair). A capture-start artifact on our side, not an
+audio-path defect — but it is a defect by this ticket's own standard (a
+stated length mismatch) and it is reported as one.
 
 ## 2. Whole-tree comparison, canon vs ours (the tool, no soloing)
 
@@ -68,7 +81,10 @@ and it is reported as one.
   second sample of frame 0, as boot music on one side and silence on the
   other would predict. Nothing here is a parity number: the sides are not
   event-paired frame for frame, and the tool is not asked to pretend they are.
-- differing samples: 639328 of 640170 (99.87%).
+- differing samples: 639328 of 639402 COMPARED (99.9884%); the tool skips
+  2140 L+R pairs where per-frame lengths differ (frame 0 alone is 1371 of
+  them) and now reports every mismatched frame, so the skip is visible
+  rather than silently compared at min(na, nb).
 - max |Δ|: L 21956 (frame 119, offset 1438), R 19378 (frame 93, offset 1272).
 
 ## 3. Negative fixtures (both must read non-zero — they do)
@@ -94,19 +110,37 @@ Per-frame RMS of the soloed runs around the fire frame. canon fires at 132,
 ours at 112; both presses sit at "capture press frame + 0" (canon poke 130,
 ours script 108), so "press+k" below is the shared clock.
 
-canon `--audio-channel 0` (PSG1 Square/Sweep — the battle music and the blip):
+canon `--audio-channel 0` (PSG1 Square/Sweep — the battle music and the
+blip), and the same run with NO press (`aud_canon_ch0_ctl`) as a control:
+the two whole trees subtract sample-exactly — EVERY pre-press frame,
+including 12-27 where music alone reaches RMS 4234.6 / peak 8460, reads 0.0
+in the difference, so the music cancels exactly and what follows is the
+press's own measured consequence:
 
-| frame | RMS | peak |
-|---|---|---|
-| 129..135 (music alone) | 1368..1632 | 4159..4344 |
-| 136 = press+6 | 2285.5 | 8366 |
-| 137 | 2129.1 | 6745 |
-| 138 | 1967.5 | 5463 |
+| frame | RMS of difference | peak of difference | nonzero diff samples |
+|---|---|---|---|
+| 12..134 (music only, control-subtracted) | 0.0 | 0 | 0 |
+| 135 = press+5 (onset, partial frame) | 997.9 | 5381 | 486 of 3210 |
+| 136 | 2790.4 | 9179 | 3167 |
+| 137 | 2788.9 | 8140 | 3210 |
+| 138 | 2670.6 | 6934 | 3212 |
+| 140 | 2333.8 | 5723 | 3234 |
+| 142 | 2123.3 | 5234 | 3210 |
+
+The blip's own body is frames 135..142: a partial-frame onset at press+5,
+peak 9179 at 136, decaying to 2123 by 142 — about 8 frames, beside the
+ROM-data reading of a 7-tick gate. From frame 143 the difference does NOT
+go back to zero: it stays near RMS 3000 to the end of the capture. That
+sustained part is post-fire divergence between the pressed run and the
+control (the fired shot changes state the music and scene read), NOT the
+blip, and it is unattributed by this ticket. Without the control, the mix
+bump sits at 136..138 and reads as press+6; the control moves the onset to
+press+5 and shows the mix reading was a full frame late.
 
 canon `--audio-channel 4` (FIFO A — M4A's sample bus, music only here):
 RMS 393..2926 across 129..138 with no isolated onset; the 132→133 rise
-(1446→2925) is the music's own dynamics, unattributed (no no-press control
-was captured — the 8-run budget went to the pairs above).
+(1446→2925) is the music's own dynamics, unattributed (the control run was
+soloed on ch0, so it cannot clean this channel's reading).
 
 ours `--audio-channel 0` (PSG1 — our fitted sweep, nothing else on this
 channel all run: RMS 0.0 for frames 0..113 and 118..199):
@@ -120,35 +154,41 @@ channel all run: RMS 0.0 for frames 0..113 and 118..199):
 | 118.. | 0.0 | 0 |
 
 ours `--audio-channel 4` (FIFO A — the agb mixer, `assets/buster_hit.wav`):
-0.0 everywhere except frame 118 = press+10, RMS 2175.9, peak 11221.
+0.0 for frames 0..117 and from 131 on; the event spans frames 118..130 (13
+frames, the whole wav body), whose first frame is the one quoted: frame 118
+= press+10, RMS 2175.9, peak 11221.
 
 Attribution, measured:
 
-- BOTH sides' fire blip is PSG channel 0 (mgba id 0), and both land on
-  press+6 — the fire-phase-relative latencies differ (canon fire+4, ours
-  fire+2) because the fire phase itself sits at different press offsets.
+- The fire blip is PSG channel 0 (mgba id 0) on BOTH sides, at slightly
+different press latencies: canon's onset is press+5 (partial frame, first
+full frame press+6, measured against its own no-press control); ours is
+press+6 (full frame; ch0 is silent to the sample in our other 196 frames).
+One frame apart, not equal.
 - The residue is NOT one channel: ours fires a SECOND sound canon's run does
   not show — the `buster_hit.wav` through the agb mixer (FIFO A, id 4) at
   press+10, peak 11221, on a scenario with no enemy to hit. Canon's own
   `--audio-channel 4` shows no isolated event at press+10 above its music.
   This ticket names the channel, not the routine (the hit path in
   src/battle.rs is the suspect; fixing it is a src ticket this one feeds).
-- Canon's blip envelope over its 7-tick gate (its ch0 frames 136..142, the
-  gate the ROM data reads as 7 tempo ticks) is NOT separable here: the blip
-  sits under 1368..1632 RMS of music, and the 8-run budget bought no
-  no-press control to subtract. What IS measured: canon's ch0 peak rises
-  4163→8366 at 136 and decays 6745/5463 on 137/138, and the whole-tree RMS
-  bump spans at most frames 136..138. This is a measurement of canon's ch0
-  MIX on those frames, not a clean envelope and not a target; src/battle.rs's
-  `BUSTER_BLIP_ENVELOPE` (fitted, initial_volume 6, 2-frame software stop)
-  remains what its own tag says it is — now with a same-scenario measurement
-  beside it instead of only the old control-subtracted one.
+- Canon's blip envelope, now measured against the no-press control (ch0,
+  frames 135..142): partial-frame onset at press+5, peak 9179 at 136, decay
+  to 2123 by 142 — about 8 frames beside the ROM data's 7-tick gate reading.
+  This is a measurement of canon's own PSG channel, not a target;
+  src/battle.rs's `BUSTER_BLIP_ENVELOPE` (fitted, initial_volume 6, 2-frame
+  software stop) remains what its own tag says it is — now with a
+  control-subtracted same-scenario measurement beside it.
 
 ## Unverified (named limits of this ticket)
 
-- Whether the residue is driver timing or envelope mechanism: the blips'
-  press-relative onsets agree (press+6 both sides) but the blips' shapes were
-  never isolated from canon's music.
+- The envelope MECHANISM on canon's side: the control-subtracted shape
+  (partial-frame onset, 8-frame decay, software-like tail) is measured, but
+  which M4A mechanism produces it is not settled by this ticket.
+- Our ch4 event's 13-frame body (118..130) against the wav's documented
+  ~10.7-frame body (1881 samples at 10512 Hz): an open timing question on
+  the mixer-rate path, recorded here and NOT chased.
+- The sustained post-fire difference on canon's ch0 from frame 143 (RMS
+  ~3000 to capture end): post-fire divergence, unattributed.
 - Frame determinism holds for THESE runs on THIS box; step 4 is one pair of
   runs per side, not a proof over reboots/loads.
 

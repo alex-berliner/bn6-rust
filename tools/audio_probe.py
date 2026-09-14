@@ -120,10 +120,12 @@ def cmd_compare(args):
 
     total_a = total_b = 0
     diffs = 0
+    compared_pairs = 0
+    skipped_pairs = 0
+    len_defects = []
     max_dl = max_dr = 0
     max_dl_at = max_dr_at = None
     first = None
-    len_defect = None
     info_a, info_b = {}, {}
     global_index = 0
     for num in common:
@@ -133,8 +135,10 @@ def cmd_compare(args):
         info_b[num] = (rms(sb), peak(sb), nb)
         total_a += na
         total_b += nb
-        if na != nb and len_defect is None:
-            len_defect = (num, na, nb)
+        if na != nb:
+            len_defects.append((num, na, nb))
+            skipped_pairs += abs(na - nb)
+        compared_pairs += min(na, nb)
         n = min(na, nb)
         base = global_index
         for i in range(n):
@@ -160,9 +164,15 @@ def cmd_compare(args):
     print("total interleaved samples: %s %d, %s %d%s"
           % (args.label_a, total_a * 2, args.label_b, total_b * 2,
              "" if total_a == total_b else "  <-- LENGTH MISMATCH"))
-    if len_defect:
-        print("per-frame length defect at frame %d: %s %d L+R pairs vs %s %d"
-              % (len_defect[0], args.label_a, len_defect[1], args.label_b, len_defect[2]))
+    print("samples actually compared: %d interleaved s16 (both channels of every "
+          "min(na, nb) pair); %d L+R pairs skipped where per-frame lengths differ"
+          % (compared_pairs * 2, skipped_pairs))
+    if len_defects:
+        print("per-frame length defects: %d frame(s), %s"
+              % (len(len_defects),
+                 ", ".join("frame %d: %s %d vs %s %d" % (n, args.label_a, a, args.label_b, b)
+                           for n, a, b in len_defects[:10])
+                 + (" ... (%d more)" % (len(len_defects) - 10) if len(len_defects) > 10 else "")))
     if first is None:
         print("SAMPLE-EXACT: 0 differing samples")
     else:
@@ -170,15 +180,15 @@ def cmd_compare(args):
         print("first differing sample: global interleaved s16 index %d, "
               "frame %d offset %d channel %s, %s=%d %s=%d "
               % (first[5], num, i, ch, args.label_a, x, args.label_b, y))
-    print("differing samples: %d of %d (%.4f%%)"
-          % (diffs, min(total_a, total_b) * 2,
-             100.0 * diffs / (min(total_a, total_b) * 2) if min(total_a, total_b) else 0.0))
+    print("differing samples: %d of %d compared (%.4f%%)"
+          % (diffs, compared_pairs * 2,
+             100.0 * diffs / (compared_pairs * 2) if compared_pairs else 0.0))
     print("max |delta|: L %d at %s, R %d at %s"
           % (max_dl, "frame %d offset %d" % max_dl_at if max_dl_at else "-",
              max_dr, "frame %d offset %d" % max_dr_at if max_dr_at else "-"))
     if args.rms_from is not None:
         print_rms_table(info_a, info_b, args.rms_from, args.rms_to or 10**9)
-    return 0 if diffs == 0 and not len_defect else 1
+    return 0 if diffs == 0 and not len_defects else 1
 
 
 def cmd_shift(args):
