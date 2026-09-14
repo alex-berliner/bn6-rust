@@ -259,6 +259,26 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F32b. The end sequence as canon's sequencer states, from the killing blow to the results window's first slide frame  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs (the end-sequence state machine: over, BANNER_TO_RESULTS, the results hand-off), src/banner.rs, src/results.rs, tools/harness.py (the integrated rows' notes and the ZERO_ENEMY flags)
+
+**Why.** F38b measured why the resolve flag cannot work with our end sequence as it is: with the flag, our
+`over` fires at capture 8 and our results window shows near capture 110, while canon's slide starts at
+k=24..29 on warp/buster/chip-use; one constant (BANNER_TO_RESULTS, also field's) cannot sit at both, and the
+banner tail leaks into the isolated rows (warp 0 -> 5123, buster 0 -> 2286, chip-use 0 -> 4026, all reverted).
+F32 landed only the first count (35 updates from the killing blow to 0x0C). Canon's end is a sequence of
+sequencer states with their own counts: 0x0C at 47 (F27b's watch), the HUD teardown at 48, the ENEMY
+DELETED banner up 49..106 (sub_801E792 asm00_2.s:31055-31112), then the results window's driver
+(sub_802BD60 chain, F21/F34). Measure the whole sequence on canon per row (dword_203CA70 transitions, the
+banner element's mask bit, the window driver's first state frame) on the result_arrival route and on the
+three zero-enemy rows, and port the counts as canon's state machine, replacing BANNER_TO_RESULTS; field's
+fixture (which already resolves) must land on the same frames it does today.
+**Acceptance.** the frame of the results window's first slide equal on both sides on all four rows (watched);
+warp, buster, chip-use integrated 0 or their per-frame remainder against F34's chain; field integrated
+unchanged or better; every isolated row and result 0; nothing worse. Human decision (2026-09-14 05:20): a
+third ticket on this objective is allowed because F38b's finding is a measured mechanism, not a guess.
+
 ### F37d. The Mettaur's pickaxe object during the held attack pose (cursor 34902, windowclose 12538)  *(OPEN -- 2026-09-14)*
 
 **Files.** src/ai.rs, src/spr.rs, src/actor.rs (only if the object attaches through the actor), assets/ (art extracted from the canon ROM only), tools/harness.py (the two rows' notes)
