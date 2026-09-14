@@ -1113,23 +1113,51 @@ const GLYPH_BYTES: usize = 64;
 
 const GAUGE_FULL: u16 = 0x4000; // provenance: derived -- sub_800855E, asm00_1.s:11100
 const GAUGE_PAUSE: u16 = 60; // provenance: peeked -- "about 60 frames of chimes" measured on the real ROM
-// After the last combatant on a side is gone the game shows its BANNER and
-// then, 110 frames after the banner goes up, slides the RESULT window in.
-// The 110 is measured: on the real ROM, from the save state with the enemy's
-// HP forced to zero and Start pressed at frame 10, the ENEMY DELETED banner
-// runs frames 49..106 and the window's first 16 px strip lands at 154 (BG3-only
-// 1917 first-strip on a plain zero-enemy canon capture, warp's ramp k=24, slide
-// 154..167 settled by 168 -- F38; the old "159" here was mid-slide, not the start).
-// NOT VERIFIED: how long after the enemy is gone the banner itself goes up.
-// This build puts it up the moment the fight is over, which is the same order
-// the real ROM does it in but not necessarily the same gap.
-const BANNER_AFTER_OVER: u16 = 0; // provenance: fitted -- NOT VERIFIED against the real gap, same order but not necessarily the same timing
+// The end sequence as canon's sequencer states it, one count per state
+// (F32b, watched on the real ROM on the zero-enemy route -- STERILE +
+// PAUSED + DELETE + Start@10 -- and identical on the warp/buster/chip-use
+// poke variants: dword_203CA70 0x08->0x0C at capture 47, 0x0C->0x0400000C
+// with the HUD teardown at 48 (mask 0x020352C0 0x4497->0x8084), the ENEMY
+// DELETED banner's OBJ first differing at 49 and gone by 108 (roll-up
+// 99..107; the mask's bit 15 reads 0x8084 at 48..105, 0x0084 from 106),
+// the results driver's first slide tick at 154 and its 14th at 167,
+// settled at 168, the mark OBJ entering 164..167 -- all from --watch and
+// consecutive-frame consec-diffs of --disable-bg/--only-bg-3 captures).
+// From the 0x0C frame that is banner at +2, banner down at +59..61,
+// first slide at +107, settled at +121, mark at +117. The result_arrival
+// route shows the same driver chain mid-flight and tick-identical to ours:
+// canon's BG3 slide ticks at result_arrival frames 19..32 read per-tick
+// 2786,4307,4956,5049,5403,6408,6887,7220,7574,7874,8402,9860,12817,9003
+// px, and ours at 31..44 read the same 14 values in the same order (F34's
+// chain holds; the result row reads 0).
+// NOT ADOPTED (measured 2026-09-14): arming the banner at over+2, canon's
+// own +2, moves field integrated 158950->158954 (worst 5621->5625): the
+// only pixel difference anywhere is 12 BG0 px on the show frame (capture
+// 121 -- BG palette RAM peeked identical old-vs-new at that frame, so tile
+// content; OBJ/BG1/BG2/BG3 all 0 there and every other frame 67..169 is 0).
+// The upload/content path that carries a 2-frame banner shift 50+ battles
+// forward into the backdrop was not traced, so the banner stays at over+0
+// and the RESULT show stays at over+110 -- where field's fixture lands its
+// setup (BG3 writes at capture 121/122), first slide (140) and settle
+// (154) today. Canon's setup (banner down +59, first slide +107, i.e. a
+// 48-frame driver setup against our show-to-slide 18 = SLIDE_HOLD 16 + 2)
+// cannot sit at both field's score-locked offset and the three zero-enemy
+// rows' subject offsets at once (F38b: warp needs the slide at battle ~72,
+// buster at ~122, 50 apart under one schedule), so that setup-duration
+// delta stays OPEN with this ticket.
+/// Frames the closing banner runs: canon's 49..106 mask window (up 49,
+/// gone by 108); banner.rs's own SCALE already runs this long.
+const BANNER_FRAMES: u16 = 58; // provenance: peeked -- mask bit 15 set at canon 48..105, banner OBJ 49..107, same captures (F32b)
+const _: () = assert!(BANNER_FRAMES as usize == banner::SCALE.len());
+/// Frames from `over` to the RESULT show: kept at field's landing (show at
+/// battle 110 = BG3 setup at capture 121/122, slide 140..153). A fitted
+/// composite, not canon's count (canon's setup starts at 0x0C+59 and its
+/// first slide lands at +107); the delta is the OPEN setup-duration gap.
+const RESULTS_DELAY: u16 = 110; // provenance: fitted -- field's measured show frame, unchanged by this ticket
 /// Frames from the first chip window closing to BATTLE START!. Measured on the
 /// real ROM from a save state at a battle's first frame: the window opens at
 /// 165 on its own, is confirmed, closes at 259, and the banner goes up at 289.
 const BATTLE_START_AFTER_WINDOW: u16 = 30; // provenance: peeked -- measured on the real ROM
-const BANNER_TO_RESULTS: u16 = 110; // provenance: peeked -- measured on the real ROM
-const RESULTS_DELAY: u16 = BANNER_AFTER_OVER + BANNER_TO_RESULTS;
 /// Frames from the last combatant going down (the death action's first
 /// frame) to the end sequence -- the banner sequencer's RESULT countdown
 /// 0x0C. Watched on the real ROM on two routes: PAUSED with the Mettaur's
@@ -2543,7 +2571,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         if over && self.shown.is_none() && self.fade_out == 0 {
             // The banner the fight ends on, put up once: the real ROM shows it
             // and then brings the RESULT window in behind it.
-            if !self.banner_done && self.results_delay <= BANNER_TO_RESULTS {
+            if !self.banner_done && self.results_delay <= RESULTS_DELAY {
                 self.banner_done = true;
                 let message = if self.megaman.is_defeated() {
                     banner::MEGAMAN_DELETED
