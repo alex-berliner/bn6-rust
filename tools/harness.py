@@ -1256,6 +1256,56 @@ ZERO_ENEMY_ORIGIN = 8
 #     That is F32's end-sequence offset, not a HUD or backdrop defect, and it
 #     is why --only-bg N is a same-content comparison on this row only for
 #     k=0..4.
+#
+# F33c (2026-09-14): re-measured all four on main with F32's count landed.
+# The sequencer event first: dword_203CA70 -> 0x0C at canon 47 on EVERY row's
+# own canon capture (field/warp/buster/chip-use identical: 0x1c at 0..10,
+# 0x08 from 11, 0x0C at 47; tools/probe.py watch 0x0203ca70:4). Per-k shapes
+# at each row's event-locked offset, full screen:
+#   warp off 51 ..... k=0..23 all 0, k=24..29 = 1917,3837,5757,7677,9696,11744
+#                        (canon's 154..159 slide-in at 1917 px/frame, no rust
+#                        counterpart; total 40628, sharp unique minimum)
+#   buster off 103 ... k=0 reads 0, k=1..21 read 422 (the name strip above),
+#                        k=22..27 = 2458..12977 (slide + strip; 45810 of 54672)
+#   chip-use off 100 . k=0..3 read 0 (the Cannon matches), k=4..31 canon's
+#                        window ramping then saturated at 25328/frame (567780)
+#   field off 108 .... k=0,1 read 0, k=2.. avg ~4757 (the stall, below), and
+#                        the slides overlap in k (rust 140..153 <-> canon
+#                        154..167) with matching content (mid -> ~100 by k=36)
+# The flag was TRIED on warp and REVERTED: instant-resolve (over at battle 0)
+# reads 83175 integrated (was 40628) and 44767 isolated (was 0). Structural,
+# not tuning: `paused` includes `over` (battle.rs), so the scripted moves
+# never fire, and our ENEMY DELETED banner (banner.rs SCALE, 58 frames, OBJ)
+# parks its tail over k=0..9. The same wall stands on buster (B frozen, the
+# attack gone) and chip-use (A frozen, the Cannon never fires): every canon
+# side acts AFTER 0x0C (warp warps at 132/152, buster CurAction 0x11 at 132,
+# chip-use A@150 fires), i.e. canon keeps simulating inputs post-resolve
+# while our `over` freezes them -- so aligning the windows needs over before
+# frame 0 while the subjects need the fight alive past battle 50/100, which
+# one `over` event cannot do. No descriptor flag landed, and with nothing
+# landed battle.rs needed no fixture-side entry point for F32's count.
+# field's stall, decomposed by region at off 108 (canon 130+k vs rust 116+k;
+# top y0-15, mid y60-110, bot y140-160, rest the remainder):
+#   k=0,1 ......... 0 in every region (the pre-stall pairing is exact)
+#   k=2..23 ....... ~4757/frame full-screen scroll-phase mismatch: rust
+#                   117->118, 118->119 and 119->120 are all full=0, flipping
+#                   the every-other-frame scroll rhythm (pre-stall transitions
+#                   match canon at lag 14, post-stall at lag 11; canon's own
+#                   rhythm never freezes past isolated singles). Region sums
+#                   over the whole window: top=33496 mid=22633 bot=25306
+#                   rest=100128 = 158930.
+#   k=24..37 ...... the RESULT slides coincide in k with matching content:
+#                   mid collapses toward ~100 and rest falls as the window
+#                   covers the mismatched scroll, while bot carries the
+#                   slide-edge/mark delta (~1000-1450/frame). F21/F34's chain
+#                   holds; the window is not the defect.
+#   The stall's three frozen updates coincide with results_delay 3,2,1 (the
+#   show fires at battle 110 = capture 121); the freezing mechanism itself is
+#   untraced and belongs to the battle.rs owner, outside this ticket's scope.
+# Record correction: the F33 seed note's per-row minima predate F33b's seeds
+# and F32's count -- on main the field search bottoms at the band's top edge
+# (108; 158930) riding slope + stall, NOT at the event lock (81 reads
+# 566712). The offsets stay event-locked by mark/press, never by score.
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
@@ -1713,7 +1763,9 @@ PORTED_CHECKS: List[Check] = [
                  "capture ~121). The pairing is therefore by measured EVENT, not only by "
                  "static score: the banner start (canon 49 <-> rust capture 8) and the mark's "
                  "first wrapped frame (canon 163 <-> rust ~121) both give offset ~81, inside "
-                 "the unchanged band, where the search's minimum now sits; the static field "
+                 "the unchanged band; F33c measured the search minimum at the band's top "
+                 "edge (108) riding slope + stall (566712 at 81), so the offset stays "
+                 "event-locked by the mark, never by score; the static field "
                  "alone cannot discriminate offsets, the mark event can.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
