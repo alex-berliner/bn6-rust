@@ -1,5 +1,17 @@
 [
   {
+    "file": "captures/cursor-progress.gif",
+    "name": "cursor-progress",
+    "label": "F37b-F37g: camera pan for objects, held pickaxe prime, closing mark; cursor 154361->3 with k37/k97 micro-frames left\n\ncursor (isolated), before and after: canon on top; ours at 3347893 (154361 px over 170 frames, canon 15+k, rust offset 237); ours at 6e0c711 (3 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
+    "file": "captures/windowclose-f37-progress.gif",
+    "name": "windowclose-f37-progress",
+    "label": "The chip window closing, the last row to reach zero, across the F37 series. Object by object: the actors now follow the panned camera, the Mettaur holds its attack pose under the pause with its pickaxe drawn, the camera's motion rounds the way the real game's does, and the window's own mark is drawn through the slide-out. From 4943 (after the backdrop and field fixes) to 0 on all 40 frames.\n\nwindowclose (isolated), before and after: canon on top; ours at c00c288 (4943 px over 40 frames, canon 81+k, rust offset 253); ours at 4671a84 (0 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": null
+  },
+  {
     "file": "captures/chip-areagrab-f12-progress.gif",
     "name": "chip-areagrab-f12-progress",
     "label": "The AreaGrab chip across F12's orbs pass. The orbs' art is now extracted byte for byte from the canon ROM and they land at ground level as the disassembly's landing check requires, instead of the earlier approximation: 25644 to 1278 differing pixels over 77 frames. What remains is the burst bank on one frame and the dim shading of the orbs, which our build does not draw yet.\n\nchip-areagrab (isolated), before and after: canon on top; ours at b06fd6f (25644 px over 77 frames, canon 5+k, rust offset 110); ours at 68535fb (1278 px, canon 5+k, rust offset 126). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
@@ -326,7 +338,7 @@
   {
     "file": "captures/windowclose-progress.gif",
     "name": "windowclose-progress",
-    "label": "F18d: BG3 k11 carried 1596px of gauge body landing a frame late (k12 vs canon single-step redraw); blank frame now draws the empty body on time\n\nwindowclose (isolated), before and after: canon on top; ours at 9790ff1 (650544 px over 40 frames, canon 81+k, rust offset 253); ours at bb8e8f0 (648948 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "F37b-F37g: pan, pose, icon, object-Y, bracket, closing mark; windowclose 27819->0; result bottom strip needs own ticket\n\nwindowclose (isolated), before and after: canon on top; ours at 3347893 (27819 px over 40 frames, canon 81+k, rust offset 253); ours at b1f3380 (0 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-13"
   },
   {
