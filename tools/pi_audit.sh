@@ -8,6 +8,7 @@
 # usage: bash tools/pi_audit.sh [review file]      -> prints the proposal file path
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
+MODEL="$(python3 tools/roles.py model "${BN_PROVIDER:-$(python3 tools/roles.py first)}" auditor)"
 REVIEW="${1:-$(ls -t docs/reviews/*.md 2>/dev/null | head -1)}"
 STAMP="$(date +%Y%m%d-%H%M%S)"; OUT="docs/audits/$STAMP.md"; SESS="/tmp/bn-pi/audit/$STAMP"; mkdir -p docs/audits "$SESS"
 DIGEST="$(
@@ -18,7 +19,7 @@ DIGEST="$(
   echo; echo "=== config changelog ==="; cat docs/config-log.md
 )"
 timeout 900 pi -p --approve --no-session --mode json \
-  --model hyper/qwen3.8-flash --thinking high --tools read,grep,find,ls \
+  --model "$MODEL" --thinking high --tools read,grep,find,ls \
   "You are the auditor for /home/box/Code/bn, a per-pixel reimplementation of a GBA game's battle system driven by tickets that agents work in a coordinator loop. You have read-only tools; you change nothing. Your job is to look at how the work is going and propose reshapes of the AGENT SETUP (not the game code): the role files in .pi/agents/*.md, the loop in .pi/coordinator.md, the rules in AGENTS.md and AGENT_GUIDE.md, the ticket format in TODO.md, the model routing, and the tools in tools/ that agents keep re-doing by hand. Read those files. Invariants you never touch: canon never changes, verify_rows runs before every landing, no fitted constants, the spend floor.
 
 Digest:
@@ -37,6 +38,6 @@ for line in open(sys.argv[1]):
         cost += ((m.get("usage") or {}).get("cost") or {}).get("total", 0)
         t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
         if t: last = t
-open(sys.argv[2], "w").write("# Audit %s (muse contributor, $%.4f, from %s)\n\nProposal only: a human session applies at most one structural change and records it in docs/config-log.md.\n\n%s\n" % (sys.argv[3], cost, sys.argv[4], last or "(no output -- see the session's stderr)"))
+open(sys.argv[2], "w").write("# Audit %s ($MODEL, $%.4f, from %s)\n\nProposal only: a human session applies at most one structural change and records it in docs/config-log.md.\n\n%s\n" % (sys.argv[3], cost, sys.argv[4], last or "(no output -- see the session's stderr)"))
 print("%s ($%.4f)" % (sys.argv[2], cost))
 PY

@@ -1,5 +1,5 @@
 ---
-name: recon
+name: recon-hyper
 description: Finds the routine or data in reference/bn6f (or src/) that drives a named behaviour and returns file:line plus the actual code; never edits.
 tools: read, grep, find, ls, bash
 thinking: medium

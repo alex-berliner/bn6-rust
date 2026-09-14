@@ -21,8 +21,9 @@ for i, m in enumerate(heads):
     if len(body) > 6000: why.append("too long")
     (refused if why else admitted).append((tid, why, body))
 if admitted:
-    k = todo.index("## T. Trace-driven porting"); k = todo.index("\n\n", todo.index("**Common to the T tickets.**", k)) + 2
-    todo = todo[:k] + "".join(b for _, _, b in admitted) + todo[k:]
+    # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section
+    k = todo.index("## T. Trace-driven porting"); nxt = todo.find("\n## ", k + 1); k = len(todo) if nxt < 0 else nxt + 1
+    todo = todo[:k].rstrip("\n") + "\n\n" + "".join(b for _, _, b in admitted) + todo[k:]
     open(os.path.join(ROOT, "TODO.md"), "w").write(todo)
     subprocess.run(["git", "-C", ROOT, "add", "TODO.md"], check=True)
     subprocess.run(["git", "-C", ROOT, "commit", "-q", "-m", "TODO: judge-admitted %s (tools/judge_append.py)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" % ", ".join(t for t, _, _ in admitted)], check=True)

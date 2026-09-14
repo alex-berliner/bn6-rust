@@ -16,7 +16,7 @@ usage:
 Exit status: 0 when every row ran and every expectation matched; 1 on any mismatch, a BLIND
 negative, or a row that failed to run. Rows run one at a time (captures never overlap).
 """
-import argparse, os, re, subprocess, sys
+import argparse, os, re, subprocess, sys, fcntl
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 LINE = re.compile(r"^(?P<row>\S+)\s+(?P<ui>isolated|integrated)\s+(?P<status>\S+).*?total (?P<total>\d+)\s+"
@@ -58,6 +58,12 @@ def main():
     # one persistent target dir: cargo tracks the sources, so the second build of any
     # tree is warm (~20 s) instead of a cold fat-LTO build (~2 min)
     wt, target = "/tmp/bnwt/verify-%s" % sha, "/tmp/ct_verify"
+    # verifications share the target dir and the capture semaphore: one at a time, machine-wide
+    lock = open("/tmp/bn-verify.lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        print("verify_rows: waiting for another verification to finish"); fcntl.flock(lock, fcntl.LOCK_EX)
     if not os.path.exists(wt):
         subprocess.run(["git", "-C", ROOT, "worktree", "add", "--detach", wt, sha], check=True,
                        capture_output=True)

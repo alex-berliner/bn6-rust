@@ -8,17 +8,18 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 ## The loop (N workers in flight -- the instruction says how many and which roles -- one landing at a time)
 
 1. `python3 tools/or_spend.py --min <floor>` (the floor your instruction names, else 3) -- if it exits
-   non-zero, STOP. Then `python3 tools/next_ticket.py --pair N` (N = the number of workers the
-   instruction allows, default 2): it prints the first OPEN ticket and, after each `=== PAIR ===`, another
+   non-zero, STOP. Then `python3 tools/next_ticket.py --pair N --claim` (N = the number of workers the
+   instruction allows, default 2; --claim marks the printed tickets as this run's, so a parallel run on
+   another provider skips them): it prints the first OPEN ticket and, after each `=== PAIR ===`, another
    OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints "no OPEN ticket": run `bash tools/pi_judge.sh` (it prints a proposal file path), then
    `python3 tools/judge_append.py <that file>`; if it admitted a ticket, continue the loop from step 1;
    if it admitted none, STOP. Never read TODO.md whole.
 2. **Dispatch.** Start each printed ticket's worker with `async: true`, using the roles in the order the
    instruction lists them (if `docs/recon/<ID>.md` exists, append "A recon map for this ticket is at
-   docs/recon/<ID>.md: read it first; every causal link in it is unverified" to the task) (e.g. `worker, worker-hyper, worker-hyper`: the first ticket to the first role);
+   docs/recon/<ID>.md: read it first; every causal link in it is unverified" to the task) (the instruction names them per provider, e.g. `worker-hyper`; `worker`, `verifier` and `recon` alone mean the first active provider's);
    if there is a pair, start the
    second the same way at once (two children at most; captures are bounded by a machine-wide
-   semaphore). Each: `{agent: "worker", async: true, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
+   semaphore). Each: `{agent: "<the worker role named>", async: true, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
    toolBudget: {soft: 80}, task: "<that ticket's text verbatim>\n\nStart your worktree as the ticket
    says (default: bash tools/worktree.sh <short-name>). Commit per landed step on your branch; do not
    merge. Stop when done or blocked on something only the user can provide, and give the report the
@@ -38,7 +39,7 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
      re-check that would refute it; "the next ticket may want context" is never a claim. Its model
      comes from .pi/agents/verifier.md -- never pass a `model` override, never use a worker as a
      verifier. Dispatch it with the claims already extracted:
-     `{agent: "verifier", async: false, timeoutMs: 3600000, toolBudget: {soft: 20, hard: 30}, task:
+     `{agent: "<the verifier role named>", async: false, timeoutMs: 3600000, toolBudget: {soft: 20, hard: 30}, task:
      "Branch wt/<name>, commit <sha>. verify_rows output:\n<paste>\nClaims to check: (1) ... (2) ...
      (3) ... Do not re-run harness rows or re-read TODO.md."}`
 4. **Land or keep -- one landing at a time, never while another landing is in progress.** Merge only

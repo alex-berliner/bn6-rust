@@ -46,3 +46,16 @@ reshape of a working one:
 
 Rule kept: `tools/land.sh` is still the only path to main for agents; the digest commits web/blog under the
 landing lock and pushes main and gh-pages itself.
+
+## 2026-09-14 17:30 -- providers.toml: the provider map (the user's request)
+
+The user wants to swap subscription services without rewriting the directions, and to run several providers
+serially in a day or in parallel. One config file now maps provider -> role -> model and holds the schedule;
+the agent files are generated from role templates (.pi/roles/) by tools/roles.py; pi_coordinator.sh takes
+BN_PROVIDER and derives the coordinator model, the instruction (which names the roles per provider), the cap
+and the watcher from the map; run_day.sh replaces hyper_day.sh (cron every 30 min), budget_watch.sh replaces
+hyperwatch.sh, tail.sh replaces hyper_tail.sh; next_ticket.py --claim keeps two parallel runs off the same
+ticket; verify_rows.py takes a machine-wide lock. The judge, auditor and digest read their model from the map.
+tools/bench_provider.py replays a fixed F-ticket set with a provider's worker and tables it against the Muse
+originals and every other provider's replays, with credits measured by balance delta and priced at the
+subscription's rate. No model changed in this reshape; the loop text changed only in how roles are named.
