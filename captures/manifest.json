@@ -1,5 +1,11 @@
 [
   {
+    "file": "captures/result-f34-progress.gif",
+    "name": "result-f34-progress",
+    "label": "The results screen across F34. Canon's press-A prompt is drawn by its own routine with a blink on bit 3 of the toolkit's frame counter, and the row's backdrop phase is now derived from canon's scroll counters and animation state at the reference frame, which also showed that our engine's two pipeline lags are anchored to the capture marker rather than absolute. The window and backdrop layers read 0 on all 40 frames: 102547 to 93183. What remains is the field during the first ten frames, an intro fade our fixture applies where canon, thousands of frames into its battle, has none, plus MegaMan's panel and a destroyed enemy we still draw; measured together those take the row to 0 and are queued as the next ticket.\n\nresult (isolated), before and after: canon on top; ours at d2bb574 (102547 px over 40 frames, canon 21+k, rust offset 21); ours at b0aebff (93183 px, canon 21+k, rust offset 21). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
     "file": "captures/buster-integrated-f33b-progress.gif",
     "name": "buster-integrated-f33b-progress",
     "label": "The buster row in the integrated variant (whole screen, HUD included) across F33b. The fixture these rows share had never seeded the backdrop's phase, while its canon side is thousands of frames into a battle, so the backdrop layer differed on every frame; deriving each row's seed from canon's scroll counters and animation state at that row's own reference frame, with the same derivation that had already produced the cursor and window-close seeds, took the backdrop and field layers to 0 on every frame. The HUD's custom gauge and hand icon now hide when canon tears those elements down, and the queued chip's name shows as canon keeps showing it. What remains is canon's results window sliding in at the end of the window, because canon's battle resolves there and this fixture never does.\n\nbuster (integrated), before and after: canon on top; ours at 47d936e (247448 px over 28 frames, canon 132+k, rust offset 96); ours at 381cb8a (54672 px, canon 132+k, rust offset 103). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
