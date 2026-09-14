@@ -258,8 +258,9 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
-### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
+### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-14, actor.rs naming landed ffe8bac: 39 bare->0 [9 provenance consts])*
 
+**Result.** actor.rs naming landed ffe8bac: 39 bare->0 (9 provenance consts); .gba byte-identical to new main (md5 dc4892e88034319179d867a5ec623b4c, 569764B, cmp 0; worker baseline 569796B superseded by human F33d landing 208c158); full table unchanged; HEAD re-check MATCH; ticket OPEN for results.rs; worker muse-spark; no verifier per ticket
 **Result.** battle.rs naming: 110 bare lines/38 values->0/0 (~60 consts); release .text md5-identical, .gba same size 553172B cmp-l 29 rodata panic-tables only; full table all 60 rows ran non-blind + rollup PASS (3x2600f); buster 3172 pre-existing; landed 67f2a7d; ticket OPEN for actor.rs; worker muse-spark 92 turns $0.052, no verifier
 **Result.** F23 custom.rs naming landed, ticket OPEN for battle.rs. Bare literals 299->0 (~60 provenance consts, canon/unnamed tags); release .text byte-identical branch-vs-main, .gba 541272B both, cmp-l 49 (0x41669-0x826a6 rodata panic lines); spot verify_rows PASS (window 0, poisseed 247/43); landed fb51444. Worker worker-muse. No verifier (no behavior claims beyond harness lines; .text proof independent). Next: battle.rs (56 bare).
 **Files.** src/battle.rs
