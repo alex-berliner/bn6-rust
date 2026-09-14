@@ -29,6 +29,9 @@ reserve = ["openrouter", "minimax"]  # runs never started by the launcher; a hum
 # ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
 kind = "subscription"                     # a daily credit balance the user wants spent to the end
+# Also an HOURLY rate limit (429 "hourly rate limit", 2026-09-14): a coordinator plus two workers is sustainable;
+# a fourth concurrent session (a benchmark beside the run) tripped it and starved the run. Benchmarks on hyper
+# therefore run alone (tools/run_day.sh starts a queued benchmark before the day's run, never beside it).
 probe = "python3 tools/hyper_credits.py"  # prints the balance; --min N exits 1 below N and 2 on a probe error
 start_above = 10                          # work starts on it only with at least this many credits (a ticket's worth)
 stop_below = 3                            # the watcher stops a run whose coordinator or worker sits on it under this
@@ -111,6 +114,6 @@ digest = ["minimax/MiniMax-M3"]
 # [runs.hyper]                            # the surplus burner: workers = "pace" sizes its worker slots every cycle
 # workers = "pace"                        # from hyper's balance, the hours to its reset, and the coordination the
 # pace_min = 0                            # other profiles will need from hyper until then (0 slots = stop; the run
-# pace_max = 4                            # comes back when a surplus appears)
+# pace_max = 2                            # comes back when a surplus appears; 2 keeps hyper under its hourly limit)
 # coordinator = ["hyper/qwen3.8-flash"]
 # ... (the other jobs as in [runs.hyper] above)

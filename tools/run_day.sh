@@ -22,6 +22,22 @@ for name in $RUNS; do
   [ "$active" = 0 ] && [ "$name" = "${RUNS%% *}" ] && for d in $(ls -d /tmp/bn-pi/2* 2>/dev/null); do
     [ ! -f "$d/run" ] && [ ! -f "$d/exit" ] && pgrep -f "session-dir $d/session" >/dev/null && active=1; done
   if [ "$active" = 1 ]; then echo "$name: a run is active"; running=$((running + 1)); [ "$PARALLEL" = 1 ] && continue || break; fi
+  # a queued benchmark on one of this profile's providers goes first, alone on that provider (Hyper's hourly rate
+  # limit, 2026-09-14: a run plus a benchmark voided three replays and starved the run's own workers)
+  provs="$(python3 tools/roles.py providers "$name" 2>/dev/null)"
+  locked=""; for p in $provs; do [ -f "/tmp/bn-bench/$p.lock" ] && kill -0 "$(cut -d' ' -f1 "/tmp/bn-bench/$p.lock")" 2>/dev/null && locked="$p"; done
+  if [ -n "$locked" ]; then echo "$name: a benchmark holds $locked; no run this tick"; [ "$PARALLEL" = 1 ] && continue || break; fi
+  if [ -s /tmp/bn-bench/queue ]; then
+    q="$(head -1 /tmp/bn-bench/queue)"; qrun="${q%% *}"; rest="${q#* }"; qt="${rest%% *}"; qm="${rest#* }"
+    qprov="$(python3 tools/roles.py providers "$qrun" 2>/dev/null)"
+    if [ -n "$qprov" ] && python3 tools/roles.py budget "${qprov%% *}" --start >/dev/null 2>&1; then
+      sed -i '1d' /tmp/bn-bench/queue
+      margs=""; [ "$qm" != "-" ] && margs="--model $qm"
+      setsid nohup python3 tools/bench_provider.py run "$qrun" --tickets "$qt" $margs > "/tmp/bn-bench/$qrun-$(date +%H%M).log" 2>&1 < /dev/null &
+      echo "$name: started the queued benchmark ($qrun: $qt); no run this tick"; sleep 3
+      [ "$PARALLEL" = 1 ] && continue || break
+    fi
+  fi
   if python3 tools/roles.py resolve "$name" > /tmp/bn-pi/resolve_$name.txt 2>&1; then
     BN_RUN="$name" bash tools/pi_coordinator.sh > /tmp/bn-pi/last_run_dir 2>&1 && { echo "$name: started $(cat /tmp/bn-pi/last_run_dir)"; running=$((running + 1)); }
     [ "$PARALLEL" = 1 ] && continue || break

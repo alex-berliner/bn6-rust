@@ -6,6 +6,9 @@
       same ticket text, verify_rows judges the branch), measuring the provider's balance before and after
       each replay so a subscription's real cost is known in credits, and writes
       docs/benchmarks/provider-<provider>-<stamp>.md with the per-ticket table and totals.
+  bench_provider.py queue <run> [--tickets ...] [--model ...]
+      append the run to /tmp/bn-bench/queue; tools/run_day.sh starts it (alone on its provider, ahead of
+      that provider's run) at the first cron tick where the provider can start work
   bench_provider.py table [--tickets ...]
       one table over every replay file in docs/benchmarks/ plus the Muse originals from the ledger:
       per ticket and model, verdict / turns / minutes / nominal $ / real $, and per model the pass rate,
@@ -32,6 +35,21 @@ def cfg():
     return tomllib.load(open("providers.toml", "rb"))
 
 
+def rate_limited(doc):
+    """429 replies in the replay session behind a benchmark doc (its stamp names /tmp/bn-pi/replay/<stamp>)"""
+    m = re.search(r"(\d{8}-\d{6})\.md$", doc)
+    ev = "/tmp/bn-pi/replay/%s/events.jsonl" % m.group(1) if m else ""
+    if not os.path.exists(ev): return 0
+    return sum(1 for line in open(ev) if '"errorMessage":"429' in line)
+
+
+LOCKS = "/tmp/bn-bench"
+
+
+def lock_path(provider):
+    return os.path.join(LOCKS, provider + ".lock")
+
+
 def balance(provider):
     p = cfg()["providers"][provider]
     out = subprocess.run(p["probe"], shell=True, capture_output=True, text=True).stdout + ""
@@ -55,6 +73,15 @@ def run(a):
     model = a.model or c["runs"][a.run][a.role][0]; a.provider = provider_of(model); p = c["providers"][a.provider]
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     doc = "docs/benchmarks/provider-%s-%s.md" % (a.provider, stamp)
+    os.makedirs(LOCKS, exist_ok=True); open(lock_path(a.provider), "w").write("%d %s\n" % (os.getpid(), stamp))   # run_day.sh starts no run on this provider while it exists
+    try:
+        _run(a, c, p, model, stamp, doc)
+    finally:
+        try: os.remove(lock_path(a.provider))
+        except FileNotFoundError: pass
+
+
+def _run(a, c, p, model, stamp, doc):
     rows = []
     for tid in a.tickets:
         # other pi sessions on this provider (their spend would land in the balance delta); counted before our replay starts
@@ -69,6 +96,10 @@ def run(a):
         if f:
             s = open(f).read(); h = HEAD.search(s); m = COST.search(s)
             verdict = h.group(4) if h else "?"; cost, turns, mins = (float(m.group(1)), int(m.group(2)), int(m.group(3))) if m else (0.0, 0, 0)
+            n429 = rate_limited(f)
+            if n429 >= 5 and verdict != "PASS":
+                verdict = "RATE-LIMITED"
+                with open(f, "a") as fh: fh.write("\nrate-limited: %d replies of 429 from the provider; verdict void\n" % n429)
             used = (before - after) if (before is not None and after is not None and p["kind"] == "subscription") else None
             if used is not None and others not in ("", "0"):
                 with open(f, "a") as fh: fh.write("\nbalance %.1f -> %.1f but %s other pi sessions were spending: credits not attributable\n" % (before, after, others))
@@ -116,6 +147,7 @@ def table(a):
         if not h or not m or h.group(1) not in a.tickets or ":free" in h.group(2): continue
         cr = CREDITS.search(s)
         key = (h.group(2), h.group(1))
+        if "rate-limited:" in s or (rate_limited(f) >= 5 and h.group(4) != "PASS"): continue      # a void replay
         cand = (h.group(4), float(m.group(1)), int(m.group(2)), int(m.group(3)), float(cr.group(1)) if cr else None, bool(cr and cr.group(2)))
         # keep the best replay per model and ticket: PASS over others, then the cheapest
         if key not in per or (cand[0] == "PASS", -cand[1]) > (per[key][0] == "PASS", -per[key][1]): per[key] = cand
@@ -160,8 +192,13 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("run"); r.add_argument("--model"); r.add_argument("--tickets", default=",".join(DEFAULT[2:]))
     r.add_argument("--role", default="worker"); r.add_argument("--thinking", default="high")
+    q = sub.add_parser("queue"); q.add_argument("run"); q.add_argument("--model"); q.add_argument("--tickets", default=",".join(DEFAULT[2:]))
     t = sub.add_parser("table"); t.add_argument("--tickets", default=",".join(DEFAULT))
     a = ap.parse_args(); a.tickets = [x for x in a.tickets.split(",") if x]
+    if a.cmd == "queue":
+        os.makedirs(LOCKS, exist_ok=True)
+        with open(os.path.join(LOCKS, "queue"), "a") as fh: fh.write("%s %s %s\n" % (a.run, ",".join(a.tickets), a.model or "-"))
+        print("queued: %s on %s%s" % (",".join(a.tickets), a.run, " with " + a.model if a.model else "")); return
     {"run": run, "table": table}[a.cmd](a)
 
 
