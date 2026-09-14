@@ -1598,6 +1598,14 @@ RESULTMATCH_ORIGIN = 8
 #: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
 #: this row's own canon capture, mapped through the arithmetic above.
 RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0,
+                  # F34b: canon's BattleObject 0x0203a9b0+0x12 PanelX reads 2 on every
+                  # frame of this row's canon capture (BattleObject.inc:63; megaman_row 2
+                  # already right). provenance: peeked -- canon PanelX.
+                  megaman_col=2,
+                  # F34b: canon's enemy slot 0x0203aa88 sits in CUR_STATE_DESTROY 0x08
+                  # at the row's canon_ref (BattleObject.inc:38) -- the Mettaur is already
+                  # deleted when the RESULT window comes up. provenance: peeked -- canon CurState.
+                  enemies=0,
                   art_entry=24, art_timer=6, scroll_xq=692, scroll_yq=858)
 
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
@@ -2306,11 +2314,10 @@ PORTED_CHECKS: List[Check] = [
                  "inside the prompt box: the setup map's lit line replaced by byte_802C834's "
                  "flat face) and the bit-3 blink toggles 249 px at k=20/21, 28/29 and 36/37 -- "
                  "the same pixels on the same frames on both sides. THE 92760 IS THE INTRO "
-                 "FADE: RESULT_ROW carries FLAG_SKIP_INTRO, so src/battle.rs starts the battle "
-                 "with intro_fade = INTRO_SKIP_FADE and darkens the field layer and the objects "
+                 "FADE: RESULT_ROW carries FLAG_SKIP_INTRO, so src/battle.rs USED to start the battle "
+                 "with intro_fade = INTRO_SKIP_FADE and darken the field layer and the objects "
                  "for the first ten compared frames, while canon's RESULT_ARRIVAL is 8048 battle "
-                 "frames in with no fade left. PROBED, NOT LANDED (src/battle.rs is another "
-                 "worker's file, and megaman_col/enemies are not this ticket's fields): "
+                 "frames in with no fade left. LANDED (F34b -- this ticket's own three): "
                  "intro_fade = 0 when the fixture's start_state == 1 takes the row 93183 -> "
                  "7316/1878/40 and every BG layer to 0 on all 40 frames; what is left is OBJ "
                  "alone and it decomposes exactly -- canon draws MegaMan at x43..77 y70..113 "
