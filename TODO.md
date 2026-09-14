@@ -144,7 +144,7 @@ same recording. Canon never changes; provenance rules as before; cite reference/
 
 ### T8. Port the script VMs, per section 3 of the plan (map-script and chatbox text-script dispatch)  *(OPEN -- 2026-09-14)*
 
-**Files.** src/script.rs (new), src/battle.rs (only where a script is started or stepped), tools/trace.py, docs/coverage/plan-interpreters.md
+**Files.** src/script.rs (new), src/battle.rs (only where a script is started or stepped), tools/trace.py (progress notes go in this ticket's Result, not the plan file)
 
 **Why.** The third interpreter in docs/coverage/plan-interpreters.md section 3: the map-script VM and the
 chatbox text-script VM with their opcode dispatch tables (3.1, 3.2), the lowest-priority of the three
