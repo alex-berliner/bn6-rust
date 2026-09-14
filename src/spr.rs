@@ -4,11 +4,16 @@
 //! the format. Multi-byte fields are read byte-wise because the asset is
 //! embedded with `include_bytes!` and ARM7TDMI faults on unaligned word loads.
 //!
-//! `Player` is a port of the ROM animation bytecode player, steps 1-2 of
+//! `Player` is a port of the ROM animation bytecode player, steps 1-4 of
 //! docs/coverage/plan-interpreters.md §1.4: the bind path
-//! (`_sprite_loadAnimationData`, reference/bn6f/asm/asm38.s:1667-1719) and
-//! the normal-stream tick with its `Unk_05` output (`_sprite_update`,
-//! reference/bn6f/asm/asm38.s:1722-1793). The BNSP asset carries the same
+//! (`_sprite_loadAnimationData`, reference/bn6f/asm/asm38.s:1667-1721,
+//! normal and `Unk_03 & 0x80` alt arms), the tick with its `Unk_05` output
+//! (`_sprite_update`, reference/bn6f/asm/asm38.s:1722-1793, both stream
+//! arms), the `sprite_setAnimation` / `CurAnim` -> `Unk_00` write path
+//! (reference/bn6f/asm/sprite.s:1120-1137), and the `object_updateSprite`
+//! gate with its `CurAnim` / `CurAnimCopy` rebind protocol plus the
+//! timestop / `sub_801BC24` / `UpdateBattleObjectSprite` variants
+//! (reference/bn6f/asm/asm00_2.s:25045-25190). The BNSP asset carries the same
 //! tables flattened at export time: one command stream per animation, each
 //! command a (frame-select, duration, flags) triple. The exporter
 //! pre-resolved the frame-select (`cmd[0]`, which the ROM scales by 4 to
@@ -189,6 +194,55 @@ const CMD_END: u8 = 0x80; // provenance: derived -- `_sprite_update`'s `tst r0, 
 /// Loop bit: with `CMD_END` set, the stream restarts through
 /// `_sprite_loadAnimationData` (asm38.s:1770-1776) instead of holding.
 const CMD_LOOP: u8 = 0x40; // provenance: derived -- `_sprite_update`'s `tst r0, r2` with r2 = 0x40, reference/bn6f/asm/asm38.s:1770
+/// Bit 7 of the sprite flags (`Unk_03`): selects the alternate command
+/// stream. Both cores test it the same way (`ldrb Unk_03; and 0x80; bne`):
+/// the bind at asm38.s:1668-1672, the tick at asm38.s:1730-1733.
+const ALT_STREAM_BIT: u8 = 0x80; // provenance: derived -- the bind's stream-select test, reference/bn6f/asm/asm38.s:1668-1672
+/// Command durations are 1-based on both sides: the exporter already writes
+/// `f.duration or 1` (tools/spr_export.py:69), so the max only guards
+/// hand-built assets.
+const MIN_DURATION: u8 = 1; // provenance: derived -- tools/spr_export.py:69 writes `f.duration or 1`
+/// `OBJECT_FLAG_ACTIVE`: `object_updateSprite` returns early unless the
+/// object's header flags carry it (asm00_2.s:25050-25053), and
+/// `UpdateBattleObjectSprite` skips the sprite when it is clear
+/// (asm00_2.s:25147-25151).
+const FLAG_ACTIVE: u8 = 0x01; // provenance: derived -- OBJECT_FLAG_ACTIVE, reference/bn6f/include/structs/ObjectHeader.inc:8
+/// `OBJECT_FLAG_STOP_SPRITE_UPDATE`: checked next by both gates
+/// (asm00_2.s:25054-25057 and :25152-25156).
+const FLAG_STOP_SPRITE_UPDATE: u8 = 0x08; // provenance: derived -- OBJECT_FLAG_STOP_SPRITE_UPDATE, reference/bn6f/include/structs/ObjectHeader.inc:11
+/// `OBJECT_FLAG_UPDATE_DURING_TIMESTOP`: when set, the timestop gate is
+/// skipped (asm00_2.s:25058-25066 and :25157-25166).
+const FLAG_UPDATE_DURING_TIMESTOP: u8 = 0x10; // provenance: derived -- OBJECT_FLAG_UPDATE_DURING_TIMESTOP, reference/bn6f/include/structs/ObjectHeader.inc:12
+
+/// Gate inputs for `update_battle_object_sprite`: the BattleObject header
+/// flags plus the battle state the `UpdateBattleObjectSprite` dispatch
+/// reads (asm00_2.s:25144-25169). `prevent_anim` folds the two-part check
+/// (CollisionDataPtr non-null AND `PreventAnim` set); the flags byte passes
+/// its bits straight through.
+#[derive(Clone, Copy)]
+pub struct SpriteGate {
+    /// The object's header flags byte (ACTIVE / STOP_SPRITE_UPDATE /
+    /// UPDATE_DURING_TIMESTOP in the low nibble).
+    pub flags: u8,
+    /// `battle_isTimeStop()`.
+    pub timestop: bool,
+    /// Collision-gated anim hold (CollisionDataPtr + PreventAnim).
+    pub prevent_anim: bool,
+}
+
+impl SpriteGate {
+    /// The gate our battle objects always present: active, never
+    /// STOP_SPRITE_UPDATE, no timestop on our rows, no collision-gated anim
+    /// holds -- so the gate always reaches the rebind-then-tick core. The
+    /// value below is ACTIVE (`flags`) with every skip condition clear.
+    pub fn battle_object() -> Self {
+        Self {
+            flags: FLAG_ACTIVE,
+            timestop: false,
+            prevent_anim: false,
+        }
+    }
+}
 
 pub struct Player {
     assets: Assets,
@@ -206,6 +260,13 @@ pub struct Player {
     countdown: u8,
     /// `Unk_02`: the current command's flags byte (command byte 2).
     cmd_flags: u8,
+    /// `Unk_03`: sprite flags (see `ALT_STREAM_BIT`). `sprite_load` stores
+    /// the sprite category here (reference/bn6f/asm/sprite.s:86) and
+    /// `sprite_initialize` clears it (sprite.s:101); nothing in src/ sets
+    /// any bit (see `set_alt`), so the alt arms below never fire on our
+    /// rows -- they are ported against the flattened tables, where both
+    /// arms coincide (see `bind`).
+    unk03: u8,
     /// `Unk_05`: the emitted frame key -- the selected OAM list's first
     /// entry byte 4 shifted right 4, i.e. that entry's palette bank. The
     /// bind emits it (asm38.s:1717) and the tick re-emits it (asm38.s:1790).
@@ -262,6 +323,7 @@ impl Player {
             frame_in_anim: 0,
             countdown: 0,
             cmd_flags: 0,
+            unk03: 0,
             unk05: 0,
             palette_add: 0,
             done: false,
@@ -279,35 +341,189 @@ impl Player {
         p
     }
 
-    /// Bind `anim`: the port of `_sprite_loadAnimationData`'s normal path
-    /// (`Unk_03 & 0x80 == 0`, asm38.s:1667-1719). Point at the stream's first
-    /// command, load its duration into the countdown (`Unk_01`) and its
-    /// flags into `cmd_flags` (`Unk_02`); `Unk_05` is emitted in
-    /// `load_frame` (asm38.s:1717). Like the ROM bind, this does not tick:
-    /// the countdown covers the bind frame, and the next `update` -- whether
-    /// it runs later this frame (`object_updateSprite` rebinds then ticks,
-    /// asm00_2.s:25044-25100) or next frame -- decrements it first.
-    /// (`sprite_setAnimation`'s `Unk_00` write itself is step 3, T4b; the
-    /// alt-stream branch is step 3 too.)
+    /// Bind `anim`: the port of `_sprite_loadAnimationData`
+    /// (reference/bn6f/asm/asm38.s:1667-1721). The normal path
+    /// (`Unk_03 & 0x80 == 0`, asm38.s:1673-1688) indexes the dword table at
+    /// `[Unk_18]` by `Unk_00 * 4`, follows `+8` to the frame list and takes
+    /// its first entry as `Unk_20`, loading `Unk_01`/`Unk_02` from command
+    /// bytes 1/2 (asm38.s:1684-1688). The alt path (`Unk_03 & 0x80`,
+    /// asm38.s:1689-1716) indexes `[Unk_18]` by `Unk_00 * 4` directly into
+    /// `Unk_1c`, then `+8` and the first entry into `Unk_20`, loading
+    /// `Unk_01`/`Unk_02` from `[Unk_1c+0x10]`/`[Unk_1c+0x12]`
+    /// (asm38.s:1712-1716). The exporter flattens both layouts into one
+    /// per-animation command stream (plan §1.2), so both arms land on the
+    /// stream's first command here (see `load_command`); `Unk_05` is emitted
+    /// in `load_frame` (asm38.s:1717-1721). Like the ROM bind, this does not
+    /// tick: the countdown covers the bind frame, and the next `update` --
+    /// whether it runs later this frame (`object_updateSprite` rebinds then
+    /// ticks, asm00_2.s:25060-25083) or next frame -- decrements it first.
     fn bind(&mut self, anim: usize) {
-        self.anim = anim;
+        if self.unk03 & ALT_STREAM_BIT != 0 {
+            // Alt arm (asm38.s:1689-1716): `Unk_1c = [Unk_18 + Unk_00 * 4]`
+            // (ROM-relative), durations from the entry's `+0x10`/`+0x12` --
+            // the same (duration, flags) pair the flattened frame carries.
+        } else {
+            // Normal arm (asm38.s:1673-1688): `Unk_1c = [Unk_18]`,
+            // `Unk_20 = first entry past +8`, durations from command
+            // bytes 1/2 -- the same flattened pair.
+        }
+        self.set_animation(anim);
         self.frame_in_anim = 0;
         let (first, _) = self.assets.anim(anim);
-        let cmd = self.assets.frame(first);
-        // Durations are 1-based on both sides: the exporter already writes
-        // `f.duration or 1`, so this only guards hand-built assets.
-        self.countdown = cmd.duration.max(1);
-        self.cmd_flags = cmd.flags;
+        self.load_command(first);
         self.done = false;
     }
 
-    /// Restart on `anim`, even if it is already the current one, so a one-shot
-    /// animation can be replayed.
+    /// Load the countdown (`Unk_01`) and flags (`Unk_02`) from one flattened
+    /// command: the normal bind reads command bytes 1/2 at `Unk_20`
+    /// (asm38.s:1684-1688), the alt bind reads `[Unk_1c+0x10]`/`[Unk_1c+0x12]`
+    /// (asm38.s:1712-1716).
+    fn load_command(&mut self, index: usize) {
+        let cmd = self.assets.frame(index);
+        self.countdown = cmd.duration.max(MIN_DURATION);
+        self.cmd_flags = cmd.flags;
+    }
+
+    /// Advance one command in the current stream. The normal stream steps
+    /// `Unk_20 += 3` (asm38.s:1740) and reloads `Unk_01`/`Unk_02` from the
+    /// new command's bytes 1/2 (asm38.s:1742-1745); the alt stream steps
+    /// `Unk_1c += 0x14` (asm38.s:1754-1755), re-resolves `Unk_20` through
+    /// `[Unk_18] + [Unk_1c+8]` (asm38.s:1756-1760) and reloads from
+    /// `[Unk_1c+0x10]`/`[Unk_1c+0x12]` (asm38.s:1761-1765). The arm is
+    /// selected by `Unk_03 & 0x80` (asm38.s:1730-1733); flattened, both
+    /// advance one frame and reload (duration, flags) from it.
+    fn step_stream(&mut self, first: usize) {
+        if self.unk03 & ALT_STREAM_BIT != 0 {
+            // Alt advance (asm38.s:1747-1766): stride 0x14 over the entry
+            // array plus the re-resolve -- absorbed by the flattening.
+        } else {
+            // Normal advance (asm38.s:1740-1746): stride 3 over commands.
+        }
+        self.frame_in_anim += 1;
+        self.load_command(first + self.frame_in_anim);
+    }
+
+    /// Select-and-bind `anim`: the `CurAnim` write pushed through
+    /// `sprite_setAnimation`'s `Unk_00` store (sprite.s:1131), rebound at
+    /// once when it differs from the bound animation -- the direct-bind path
+    /// the spawn/init code takes (`bl sprite_loadAnimationData`, plan §1.3).
+    /// Re-selecting the bound animation rewrites `Unk_00` and does NOT
+    /// restart the stream: canon only rebinds on a `CurAnim != CurAnimCopy`
+    /// edge (asm00_2.s:25077-25081), so a same-animation replay keeps the
+    /// current frame and countdown. `Actor::select` (the AI-side `CurAnim`
+    /// write) and the battle.rs one-shot selections all flow through here.
     pub fn play(&mut self, anim: usize) {
+        if self.anim == anim {
+            // Rebind edge not taken (`beq` past setAnimation+bind): the
+            // stream keeps ticking; `Unk_00` already reads `anim`.
+            return;
+        }
         self.bind(anim);
         self.load_frame();
     }
 
+    /// Write the pending animation index (`Unk_00`): the port of
+    /// `sprite_setAnimation` (reference/bn6f/asm/sprite.s:1131 -- `strb r0,
+    /// [r3,#oObjectSprite_Unk_00]` after the header-offset shift). Its twin
+    /// `sprite_setAnimationAlt` (sprite.s:1120) is instruction-identical
+    /// (same shift, same store); only the callers differ. This does not
+    /// rebind: the per-frame gate (`rebind_if_changed`) picks the write up.
+    pub fn set_animation(&mut self, anim: usize) {
+        self.anim = anim;
+    }
+
+    /// Set the alternate-stream flag (`Unk_03 & 0x80`, see `ALT_STREAM_BIT`).
+    /// Nothing in src/ calls this (default off, as `sprite_initialize`
+    /// leaves it, sprite.s:101); it exists so the ported alt arms have
+    /// their ROM-side input.
+    pub fn set_alt(&mut self, alt: bool) {
+        if alt {
+            self.unk03 |= ALT_STREAM_BIT;
+        } else {
+            self.unk03 &= !ALT_STREAM_BIT;
+        }
+    }
+
+    /// The `CurAnim` vs `CurAnimCopy` rebind protocol shared by every
+    /// per-frame sprite gate (`object_updateSprite` asm00_2.s:25077-25083,
+    /// `object_updateSpriteTimestop` asm00_2.s:25096-25105, `sub_801BC24`
+    /// asm00_2.s:25128-25141, `UpdateBattleObjectSprite` asm00_2.s:25170-25180):
+    /// when the AI-side `CurAnim` differs from its copy, write it through
+    /// `sprite_setAnimation` (sprite.s:1131, inside `bind`), rebind with
+    /// `sprite_loadAnimationData` (inside `bind`), and advance the copy.
+    /// Returns true when it rebound.
+    pub fn rebind_if_changed(&mut self, cur_anim: usize, cur_anim_copy: &mut usize) -> bool {
+        if *cur_anim_copy == cur_anim {
+            return false;
+        }
+        self.bind(cur_anim);
+        self.load_frame();
+        *cur_anim_copy = cur_anim;
+        true
+    }
+
+    /// `object_updateSprite` (asm00_2.s:25045-25083) minus its gates: the
+    /// rebind protocol above, then `sprite_update`. The gates -- pause
+    /// (:25046-25048), ACTIVE (:25050-25053), STOP_SPRITE_UPDATE (:25054-25057),
+    /// timestop unless UPDATE_DURING_TIMESTOP (:25058-25066), and the
+    /// CollisionDataPtr/PreventAnim check (:25067-25076) -- all pass for our
+    /// battle objects; see `SpriteGate::battle_object`.
+    pub fn update_sprite(&mut self, cur_anim: usize, cur_anim_copy: &mut usize) {
+        self.rebind_if_changed(cur_anim, cur_anim_copy);
+        self.update();
+    }
+
+    /// `object_updateSpriteTimestop` (asm00_2.s:25084-25109): the same core
+    /// without the timestop gate (it runs during timestop). No caller in
+    /// src/ models timestop yet, so this shares the body; kept as the cited
+    /// variant for the port that does.
+    pub fn update_sprite_timestop(&mut self, cur_anim: usize, cur_anim_copy: &mut usize) {
+        self.rebind_if_changed(cur_anim, cur_anim_copy);
+        self.update();
+    }
+
+    /// `sub_801BC24` (asm00_2.s:25110-25143): the rebind-only variant -- on
+    /// a changed animation it rebinds and returns WITHOUT ticking
+    /// (:25128-25141, then `pop {pc}`); only the unchanged path ticks
+    /// (:25142 `bl sprite_update`). Same gates as `object_updateSprite`.
+    pub fn update_sprite_rebind_only(&mut self, cur_anim: usize, cur_anim_copy: &mut usize) {
+        if !self.rebind_if_changed(cur_anim, cur_anim_copy) {
+            self.update();
+        }
+    }
+
+    /// `UpdateBattleObjectSprite` (asm00_2.s:25144-25190): the flag-checked
+    /// wrapper battle objects actually go through (plan §1.3). Unlike
+    /// `object_updateSprite` it checks no pause flag: ACTIVE clear
+    /// (:25147-25151) or STOP_SPRITE_UPDATE set (:25152-25156) skips the
+    /// sprite; without UPDATE_DURING_TIMESTOP (:25157-25166) timestop skips
+    /// it too; then the CollisionDataPtr/PreventAnim check (:25167-25169)
+    /// before the shared rebind-then-tick core (:25170-25182).
+    pub fn update_battle_object_sprite(
+        &mut self,
+        gate: SpriteGate,
+        cur_anim: usize,
+        cur_anim_copy: &mut usize,
+    ) {
+        if gate.flags & FLAG_ACTIVE == 0 {
+            return;
+        }
+        if gate.flags & FLAG_STOP_SPRITE_UPDATE != 0 {
+            return;
+        }
+        if gate.flags & FLAG_UPDATE_DURING_TIMESTOP == 0 && gate.timestop {
+            return;
+        }
+        if gate.prevent_anim {
+            return;
+        }
+        self.update_sprite(cur_anim, cur_anim_copy);
+    }
+
+    /// The bound animation index (`Unk_00`, written by `set_animation` and
+    /// consumed by the bind). After the per-frame gate it is also what the
+    /// stream shows; mid-frame (between an AI-side select and the gate) it
+    /// is the selection, like canon's `Unk_00`.
     pub fn anim(&self) -> usize {
         self.anim
     }
@@ -402,14 +618,15 @@ impl Player {
         self.load_frame();
     }
 
-    /// Advance by one hardware frame: the port of `_sprite_update`'s normal
-    /// stream (reference/bn6f/asm/asm38.s:1722-1790; the `Unk_03 & 0x80`
-    /// alt-stream branch at asm38.s:1747-1766 is step 3, T4b). Decrement the
-    /// countdown; while it goes negative, consume commands: at
-    /// end-of-stream loop through a rebind or hold the last frame, else
-    /// step to the next command and reload. Every exit re-emits `Unk_05`
-    /// (asm38.s:1790, in `load_frame`). A one-shot holds its last frame
-    /// rather than wrapping; the caller decides what to play next.
+    /// Advance by one hardware frame: the port of `_sprite_update`
+    /// (reference/bn6f/asm/asm38.s:1722-1793), both stream arms selected by
+    /// `Unk_03 & 0x80` (asm38.s:1730-1733; the alt arm at :1747-1766, the
+    /// normal arm at :1734-1746 -- see `step_stream` for why they coincide
+    /// here). Decrement the countdown; while it goes negative, consume
+    /// commands: at end-of-stream loop through a rebind or hold the last
+    /// frame, else step to the next command and reload. Every exit re-emits
+    /// `Unk_05` (asm38.s:1790, in `load_frame`). A one-shot holds its last
+    /// frame rather than wrapping; the caller decides what to play next.
     pub fn update(&mut self) {
         if self.done {
             return;
@@ -434,13 +651,9 @@ impl Player {
             }
             let (first, count) = self.assets.anim(self.anim);
             if self.cmd_flags & CMD_END == 0 && self.frame_in_anim + 1 < count {
-                // Next command (`add r1, #3`, asm38.s:1740): reload the
-                // countdown and flags (asm38.s:1742-1745), then keep
-                // consuming (asm38.s:1746 branches back to the decrement).
-                self.frame_in_anim += 1;
-                let cmd = self.assets.frame(first + self.frame_in_anim);
-                self.countdown = cmd.duration.max(1);
-                self.cmd_flags = cmd.flags;
+                // Next command, then keep consuming (both arms branch back
+                // to the decrement: normal asm38.s:1746, alt asm38.s:1766).
+                self.step_stream(first);
                 self.load_frame();
                 continue;
             }

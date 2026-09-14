@@ -182,6 +182,54 @@ resolution, not the flat tables.
   72499/2691 and field 158950/5621. Oracle PARITY identical: wave first
   divergence enemy_anim k=24 (mm_* k=43), mettaur no divergence (70/70).
 
+### 1.7 Port log (T4b, steps 3-4 landed)
+
+- Step 3 -- alt stream + selection write (`src/spr.rs`): `set_animation()`
+  = `sprite_setAnimation`'s `Unk_00` store (sprite.s:1131; its twin
+  `sprite_setAnimationAlt` at sprite.s:1120 is instruction-identical -- same
+  shift, same store -- only the callers differ). `unk03` carries the sprite
+  flags byte (`sprite_load` stores the category there, sprite.s:86;
+  `sprite_initialize` clears it, sprite.s:101); `ALT_STREAM_BIT` = 0x80
+  selects the arm in `bind()` (normal asm38.s:1673-1688, alt :1689-1716)
+  and in `step_stream()` (normal :1740-1746, alt :1747-1766, arm selected at
+  :1730-1733). Both arms coincide on the flattened BNSP tables (each
+  command already a (frame, duration, flags) triple, plan §1.2), so the
+  branch is structural; nothing in src/ sets the bit (`set_alt` exists so
+  the ported arms have their ROM-side input).
+- `play()` is now the selection path: `Unk_00` write + bind-if-changed (the
+  direct-bind edge the spawn/init code takes), and re-selecting the bound
+  animation no longer restarts the stream -- canon rebinds only on a
+  `CurAnim != CurAnimCopy` edge (asm00_2.s:25077-25081).
+- Step 4 -- gate (`src/spr.rs` + `src/actor.rs`): `rebind_if_changed()` =
+  the protocol all four gates share (setAnimation + loadAnimationData +
+  copy advance); `update_sprite()` = `object_updateSprite` minus its gates
+  (asm00_2.s:25045-25083, gates cited :25046-25076);
+  `update_sprite_timestop()` (:25084-25109, same core minus the timestop
+  gate) and `update_sprite_rebind_only()` = `sub_801BC24` (:25110-25143,
+  the rebind path returns WITHOUT the tick at :25128-25141);
+  `update_battle_object_sprite()` + `SpriteGate` = `UpdateBattleObjectSprite`
+  (:25144-25190 -- no pause check by construction, unlike
+  `object_updateSprite`). `Actor` mirrors `CurAnim`/`CurAnimCopy`
+  (BattleObject.inc:62-66): all 16 `player.play` sites are `select` (the
+  AI-side write, e.g. `sub_8109DEC`'s `CurAnim = 1`), the update tail runs
+  the gate with the all-pass `SpriteGate::battle_object()`, and oracle
+  `anim` reads the `CurAnim` mirror (equal to `Unk_00` after the gate).
+  battle.rs one-shot selections (glow charge-state edge, areagrab burst,
+  vulcan gun 0->1->2 edges) already sit on change edges, so they flow
+  through the same bind-if-changed `play()` untouched. No `src/anim.rs`:
+  the port stays behind `Player`'s existing interface. No `tools/trace.py`
+  change: the anim fields it compares are already exported, and
+  `trace.py record` is broken pre-existing (`NameError: check`, fails
+  identically on the base tree), so §1.5's trace leg falls back to the
+  oracle (same FIELD_PAIRS by construction, trace.py:26-31).
+- Out of scope (not on battle objects' path): `object_updateSpritePaused`,
+  `sub_801BCD0`, and any timestop/pause model -- the timestop, rebind-only
+  and `set_alt` variants are kept as cited code for the port that needs
+  them (they warn unused until then, as does T4's `unk05`).
+- Verification: PENDING (tree was hard-reset mid-ticket by an outside
+  process with the first landing uncommitted; re-applied identical code,
+  re-verifying below).
+
 ---
 
 ## 2. Object dispatcher (T1/T3 tables → per-type entries → AI dispatch)
