@@ -302,8 +302,9 @@ tools/oracle.py's (or explain the difference); (5) the negative control: a one-f
 must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
 the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
 
-### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(OPEN -- 2026-09-14)*
+### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(BLOCKED -- 2026-09-14, layout lottery exhausted, branch wt/t1b-trace-land kept at b6ddf04 [worktree reverted clean]: off-first macro )*
 
+**Result.** layout lottery exhausted, branch wt/t1b-trace-land kept at b6ddf04 (worktree reverted clean): off-first macro V1/V2 +12/+12 (158952/5623), hoisted-gate V3 -5/-5 (158935/5606) vs same-env base 158940/5611; exact-zero needs different mechanism not more spins; flag-on validation never entered; options: re-scope export mechanism (human call) -- allowlist NOT widened; worker muse-spark
 **Files.** src/main.rs, src/fixture.rs, src/actor.rs, src/backdrop.rs, src/battle.rs (the export sites only), tools/trace.py, tools/states.py, AGENT_GUIDE.md
 
 **Why.** T1's harness works and is kept on wt/t1-trace (147bb0a: the versioned TRC2 64-byte export block at
