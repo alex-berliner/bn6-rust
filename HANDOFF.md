@@ -61,6 +61,11 @@ vs after -- a merge that changed nothing is not parity).
   message for the rows and numbers it claims, run `python3 tools/verify_rows.py <branch> <rows> --expect
   ROW=T/W/F/-` and land with `bash tools/land.sh <branch> <rows> "<msg>" --expect ...`; then stamp the
   ticket with tools/ticket_result.py. Follow-ups go to pi's queue as OPEN tickets, not to Claude.
+- **Charm Hyper (from 2026-09-14):** the user pays $20/month for 250 hypercredits a day and wants ALL of it used
+  every day; `python3 tools/hyper_credits.py` prints what is left. Hyper carries the verifier, recon and the
+  worker-hyper role (Qwen 3.8 Flash) and can carry the coordinator (`BN_COORD_MODEL=hyper/qwen3.8-flash`);
+  Muse on OpenRouter stays the first worker until a Hyper model passes the replay benchmark
+  (`docs/benchmarks/hyper-*.md`). Credits left at the end of a day mean too few Hyper workers.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user's floor is $0.50 in the account (2026-09-14, was $5); runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
