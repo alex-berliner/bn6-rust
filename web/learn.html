@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bn — how it works, one slide at a time</title>
+<style>
+  :root {
+    --ink: #16181d;
+    --dim: #5c6472;
+    --line: #d9dde4;
+    --paper: #fbfbf9;
+    --card: #f2f3ef;
+    --accent: #1d4ed8;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* The feed: one screen per slide, snapping as you scroll, swipe or wheel. */
+  #feed {
+    height: 100dvh;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #feed::-webkit-scrollbar { display: none; }
+
+  .slide {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    width: 100%;
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.1rem 1rem calc(2.4rem + env(safe-area-inset-bottom));
+  }
+  .slide + .slide { border-top: 1px solid var(--line); }
+
+  h2 {
+    margin: 0;
+    font-size: clamp(1.25rem, 5.2vw, 1.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+
+  /* The picture takes whatever height is left over, so a tall screen
+     shows a big one and a short screen still fits the words in. */
+  .shot {
+    flex: 1 1 auto;
+    min-height: 8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shot img {
+    max-height: 100%;
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    image-rendering: pixelated;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #fff;
+  }
+
+  .src {
+    margin: 0;
+    font: 400 0.78rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--dim);
+  }
+  pre {
+    margin: 0;
+    padding: 0.65rem 0.8rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: pre;
+    tab-size: 4;
+    font: 400 clamp(10.5px, 2.7vw, 13px)/1.42 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .text {
+    margin: 0;
+    font-size: clamp(1rem, 3.9vw, 1.12rem);
+    line-height: 1.5;
+  }
+
+  /* Fixed furniture: the counter and the dots. */
+  #counter {
+    position: fixed;
+    left: 0.9rem;
+    bottom: calc(0.7rem + env(safe-area-inset-bottom));
+    font: 600 0.8rem/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--dim);
+    background: rgba(251, 251, 249, 0.86);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.35rem 0.6rem;
+    pointer-events: none;
+  }
+  #dots {
+    position: fixed;
+    right: 0.55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  #dots button {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #c6ccd6;
+    cursor: pointer;
+  }
+  #dots button[aria-current="true"] { background: var(--accent); transform: scale(1.4); }
+
+  #home {
+    position: fixed;
+    right: 0.9rem;
+    bottom: calc(0.7rem + env(safe-area-inset-bottom));
+    font-size: 0.8rem;
+    color: var(--dim);
+    background: rgba(251, 251, 249, 0.86);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.35rem 0.6rem;
+    text-decoration: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #feed { scroll-behavior: auto; }
+  }
+  @media (min-width: 700px) {
+    .slide { padding: 1.6rem 1rem 2.6rem; gap: 0.85rem; }
+  }
+</style>
+</head>
+<body>
+
+<main id="feed" tabindex="-1"></main>
+<div id="counter">1 / 1</div>
+<nav id="dots" aria-label="slides"></nav>
+<a id="home" href="index.html">bn</a>
+
+<noscript>
+  <p style="max-width:42rem;margin:2rem auto;padding:0 1rem">
+    This page builds its slides with a small script; turn JavaScript on, or read
+    <a href="learn/slides.js">learn/slides.js</a>, which holds every slide's words and code.
+  </p>
+</noscript>
+
+<script src="learn/slides.js"></script>
+<script>
+  var feed = document.getElementById('feed');
+  var dots = document.getElementById('dots');
+  var counter = document.getElementById('counter');
+  var slides = (typeof SLIDES !== 'undefined' && SLIDES) || [];
+
+  // Build every slide from the data in learn/slides.js. Text goes in with
+  // textContent, so a snippet's < and & need no escaping in that file.
+  slides.forEach(function (s, i) {
+    var sec = document.createElement('section');
+    sec.className = 'slide';
+    sec.id = 'slide-' + (i + 1);
+
+    var h = document.createElement('h2');
+    h.textContent = s.title;
+    sec.appendChild(h);
+
+    if (s.image) {
+      var box = document.createElement('div');
+      box.className = 'shot';
+      var img = document.createElement('img');
+      img.src = s.image;
+      img.alt = s.imageAlt || '';
+      // Only the first picture is worth loading up front; the rest are
+      // large GIFs that can wait until the reader scrolls to them.
+      if (i > 0) { img.loading = 'lazy'; }
+      img.decoding = 'async';
+      box.appendChild(img);
+      sec.appendChild(box);
+    }
+
+    if (s.code) {
+      var path = document.createElement('p');
+      path.className = 'src';
+      path.textContent = s.codePath || '';
+      sec.appendChild(path);
+      var pre = document.createElement('pre');
+      var code = document.createElement('code');
+      code.textContent = s.code;
+      pre.appendChild(code);
+      sec.appendChild(pre);
+    }
+
+    var p = document.createElement('p');
+    p.className = 'text';
+    p.textContent = s.text;
+    sec.appendChild(p);
+
+    feed.appendChild(sec);
+
+    var dot = document.createElement('button');
+    dot.type = 'button';
+    dot.title = s.title;
+    dot.setAttribute('aria-label', 'slide ' + (i + 1) + ': ' + s.title);
+    dot.addEventListener('click', function () { go(i); });
+    dots.appendChild(dot);
+  });
+
+  var sections = Array.prototype.slice.call(feed.querySelectorAll('.slide'));
+  var buttons = Array.prototype.slice.call(dots.querySelectorAll('button'));
+  var current = 0;
+
+  function mark(i) {
+    current = i;
+    counter.textContent = (i + 1) + ' / ' + sections.length;
+    buttons.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
+  }
+
+  function go(i) {
+    i = Math.max(0, Math.min(sections.length - 1, i));
+    if (!sections[i]) { return; }
+    feed.scrollTo({ top: sections[i].offsetTop, behavior: 'smooth' });
+    mark(i);
+  }
+
+  // Which slide is on screen: whichever one covers the middle of the window.
+  function sync() {
+    var mid = feed.scrollTop + feed.clientHeight / 2;
+    for (var i = sections.length - 1; i >= 0; i--) {
+      if (sections[i].offsetTop <= mid) { if (i !== current) { mark(i); } return; }
+    }
+  }
+  var ticking = false;
+  feed.addEventListener('scroll', function () {
+    if (ticking) { return; }
+    ticking = true;
+    requestAnimationFrame(function () { ticking = false; sync(); });
+  }, { passive: true });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) { return; }
+    var k = e.key;
+    if (k === 'ArrowDown' || k === 'ArrowRight' || k === 'PageDown' || k === 'j' || k === ' ' || k === 'Spacebar') {
+      e.preventDefault(); go(current + 1);
+    } else if (k === 'ArrowUp' || k === 'ArrowLeft' || k === 'PageUp' || k === 'k') {
+      e.preventDefault(); go(current - 1);
+    } else if (k === 'Home') {
+      e.preventDefault(); go(0);
+    } else if (k === 'End') {
+      e.preventDefault(); go(sections.length - 1);
+    }
+  });
+
+  // Land on the slide named in the address bar (#slide-3), if there is one.
+  var want = parseInt((location.hash.match(/^#slide-(\d+)$/) || [])[1], 10);
+  mark(0);
+  if (want >= 1 && want <= sections.length) { go(want - 1); }
+</script>
+</body>
+</html>

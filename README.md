@@ -16,6 +16,9 @@ Everything is published from this repo's `gh-pages` branch by `tools/publish_sit
 
 - **Play it in the browser:** https://alex-berliner.github.io/bn6-rust/ — the current release ROM in
   an in-page emulator (EmulatorJS; needs internet for its core), plus the dev build with test aids.
+- **How it works, one slide at a time:** https://alex-berliner.github.io/bn6-rust/learn.html — a
+  scrolling feed of short slides, each one mechanism: a picture, the code that does it, and what it
+  fixed. The slides themselves are `web/learn/slides.js`.
 - **Capture gallery:** https://alex-berliner.github.io/bn6-rust/gifs.html — every harness row as a GIF,
   canon on top and this build below, with its caption and measured pixel counts; the before/after GIFs
   (`*-progress.gif`) show one ticket's effect; `full-battle-loop.gif` is a scripted full battle.
