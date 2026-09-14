@@ -1117,7 +1117,9 @@ const GAUGE_PAUSE: u16 = 60; // provenance: peeked -- "about 60 frames of chimes
 // then, 110 frames after the banner goes up, slides the RESULT window in.
 // The 110 is measured: on the real ROM, from the save state with the enemy's
 // HP forced to zero and Start pressed at frame 10, the ENEMY DELETED banner
-// runs frames 49..106 and the window starts sliding at 159.
+// runs frames 49..106 and the window's first 16 px strip lands at 154 (BG3-only
+// 1917 first-strip on a plain zero-enemy canon capture, warp's ramp k=24, slide
+// 154..167 settled by 168 -- F38; the old "159" here was mid-slide, not the start).
 // NOT VERIFIED: how long after the enemy is gone the banner itself goes up.
 // This build puts it up the moment the fight is over, which is the same order
 // the real ROM does it in but not necessarily the same gap.

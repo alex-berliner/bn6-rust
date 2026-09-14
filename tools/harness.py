@@ -924,7 +924,21 @@ CHECKS: List[Check] = [
                  "band around it finds a UNIQUE zero at offset 119 (partial band shown in the "
                  "report), the residual sub-frame timing the marker alone does not pin. Ported "
                  "from the demo-open feature to OPEN_ROW (fixture.rs's own table entry, AUDIT "
-                 "pair 17 prune ticket) -- same descriptor bytes, same numbers.",
+                 "pair 17 prune ticket) -- same descriptor bytes, same numbers. "
+                 "F38 (2026-09-14): integrated decomposed -- the search V is unique at "
+                 "119 (72499 vs 151114/155175 either side). BG-only (isolated) reads 0 "
+                 "and an OBJ-only (--disable-bg both sides) re-capture repeats the "
+                 "integrated per-k list EXACTLY (total 72499), so all of it is OBJ. "
+                 "Regions: top 0 on every frame, mid ~1080-1470, bot ~270-1230 with a "
+                 "k=32+ jump (mid ~1430, bot ~1200). OAM at k=0/33/39 (canon 120+/rust "
+                 "127+): canon 12 active -> 15 (navi pal 0 tiles 1/9/25/29 at x41-65, "
+                 "enemy pal 1 tiles 31/35/43 at x163-174, HUD pal 12 tiles 948/956 at "
+                 "y18; a second enemy cluster at x203-214 appears k=32+) while rust "
+                 "holds 11 frozen all three frames (HUD pal 4 tiles 168/176, navi pal "
+                 "2 tiles 124/132/148/152, enemy pal 0 tiles 0/8 + pal 3 tiles "
+                 "154/158/166, same positions): palette/sheet assignment differs and "
+                 "canon's enemy animates/materializes while ours holds -- an intro-hunk "
+                 "fix, out of scope.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=OPEN_ROW,
                              extra=() if ui == "integrated" else ("--disable-obj",)),
@@ -1323,6 +1337,35 @@ ZERO_ENEMY_ORIGIN = 8
 # and F32's count -- on main the field search bottoms at the band's top edge
 # (108; 158930) riding slope + stall, NOT at the event lock (81 reads
 # 566712). The offsets stay event-locked by mark/press, never by score.
+#
+# F38 (2026-09-14): warp/buster/chip-use re-measured on main with per-k,
+# regions, BG splits and sequencer watches; no src/descriptor change landed.
+# Sequencer dword_203CA70 is identical on all four canon captures (0x1c at
+# 0..10, 0x08 from 11, 0x0C at 47, 0x0400000C from 48); mask 0x020352C0 reads
+# 0x4497 -> 0x8084 at 48 -> 0x0084 at 106; subjects act after 0x0C (warp MM
+# warps at 130/150, buster CurAction 0x08->0x11 at 132, chip-use 0x08->0x14
+# at 130). Warp: k=0..23 all 0, k=24..29 = 1917,3837,5757,7677,9696,11744 =
+# canon's BG3 slide (first 16 px strip at canon 154, slide 154..167, settled
+# ~27.2k; name-strip region 0 throughout). Buster: k=0 0, k=1..21 422 (BG3
+# name strip, canon blanked after the 0x11 write, ours kept -- attack-specific,
+# still unfixed on purpose), k=22..27 ramp; sweep V unique at 103. Chip-use's
+# printed 275307 sits at the search band's left edge (94; sweep 90..112 falls
+# monotonically leftward with only a dip at the event lock -- 100: 284620,
+# 101: 281885, 102: 294404): score-ridden, not event-locked; honest lock
+# remainder 281885. BG-split at 101: BG0 0, BG2 (panels) 0, BG3 = name strip
+# 844 (k=1,2) + slide ramp 44306, BG1 (backdrop) ~17k/frame on EVERY frame --
+# canon shows magenta '10/01' rings, ours plain blue rings; art_entry 10..17
+# and art_timer 0..7 sweeps do not move it (timer exactly no effect) while the
+# peeked canon inputs re-verify (entry 26/timer 5 at 150, counters battle
+# 8042): this row's walk-back/seed does not produce canon's art, mechanism
+# untraced, no descriptor change made (warp BG1-only control reads 0, so the
+# layer mapping and the other rows' seeds are sound). Field: our visible slide
+# runs rust 140..153 (show battle ~110 + SLIDE_HOLD 16 + reveal) vs canon
+# 154..167 -- both k=24..37 at off 108, coinciding with matching content
+# (settled ~28.3k vs ~27.2k); the stall attribution keeps. Resolving
+# warp/buster/chip-use cannot coincide (our show battle ~110+ lands past
+# warp's window while the banner tail would regress k=0..7 and isolated), and
+# BANNER_TO_RESULTS is untouched (field's coincidence depends on it).
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
