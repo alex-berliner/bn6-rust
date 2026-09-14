@@ -319,8 +319,9 @@ windowclose, cursor, result, window, card, wave, opening, chip-cannon, mettaur, 
 **Acceptance.** windowclose 0/0/40 and result 0/0/40 (negatives not blind); cursor 3 or better; the other
 rows 0; nothing worse.
 
-### T3. Locate canon's interpreters in the coverage ranking and write the port plan for the animation player  *(OPEN -- 2026-09-14)*
+### T3. Locate canon's interpreters in the coverage ranking and write the port plan for the animation player  *(DONE -- 2026-09-14, interpreter port plan landed 3249c71 [docs only]: anim player cores [_sprite_update bx-r4, format], dispatcher)*
 
+**Result.** interpreter port plan landed 3249c71 (docs only): anim player cores (_sprite_update bx-r4, format), dispatcher chain to RunAIAttack, script VMs (map + chatbox), callers counted; verifier PASS (one citation error: RunAIAttack site#2 is ai_eventuallyRunsAIAttack_801AF44 not sub_801B394; OAM-slot gloss unchecked); worker muse-spark, verifier GLM
 **Files.** docs/coverage/ (the plan), tools/coverage.py (read), reference/bn6f (read)
 
 **Why.** T2's tables (docs/coverage/battle_full.md: 1140 routines, 318 uncovered by any row; mettaur.md: 517)
