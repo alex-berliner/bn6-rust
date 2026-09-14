@@ -215,8 +215,9 @@ PARTIAL with which family is done and leave it OPEN for the next family, until e
 - F35 PARTIAL -- Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art. mechanism mapped+cited, fix reverted honestly (scanline-6 wait: BG1 62->184/0->571 -- copy smear)
 - F35b BLOCKED -- Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline. fast copy 11->1 scanline works as mechanism but fixed placement fails both ways (vblank copy leaves 88, scanline-6 leaves 3007) -- canon usu
 - F36 DONE -- The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry). export placement verified frame-accurate (post-commit test strictly worse, reverted)
-### F37. `cursor` and `windowclose`: the sprite layer, object by object  *(OPEN -- 2026-09-14)*
+### F37. `cursor` and `windowclose`: the sprite layer, object by object  *(PARTIAL -- 2026-09-14, per-object tables landed 1bee9d8 [notes only, descriptors untouched]: cursor 154361/909/170 [camera-pan +15Y +)*
 
+**Result.** per-object tables landed 1bee9d8 (notes only, descriptors untouched): cursor 154361/909/170 (camera-pan +15Y + Mettaur pose 4,11-vs-4,8), windowclose 27819/1938/40 (hand-icon 256 + pose 205, k0 bracket 104); 8 canaries 0; no in-scope fix exists (ai.rs freeze no-op, hud/emotion no pan path); follow-up needs battle.rs+fixture.rs scope; HEAD re-check MATCH; worker muse-spark
 **Files.** src/ai.rs, src/hud.rs, src/emotion.rs, tools/harness.py (the cursor and windowclose rows' notes and CUSTMATCH_ROW/CURSOR_ROW/WINDOWCLOSE_ROW descriptor fields)
 
 **Why.** Both rows have every BG layer at 0 (F26b, F29, F33) and everything left is OBJ: cursor ~154k
