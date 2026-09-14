@@ -1199,6 +1199,25 @@ impl Custom<'_> {
     }
 
     /// The picks in order, for the hand.
+    /// Canon's `eStruct2035280 + 0x12` (0x02035292): the X displacement every
+    /// battle-HUD OBJECT element takes while the chip window is up, which is
+    /// this window's own slide counter measured from the OPEN position --
+    /// `SLIDE_FROM` (0x78) minus the counter this type already keeps, so it
+    /// is 0 with the window fully off screen, 0x78 with it fully open, and
+    /// canon's 0x0c-a-frame ramp in between, by construction. Verified
+    /// against the real ROM with `--watch 0x02035290:8`: 0 -> 0x78 in ten
+    /// 0x0c steps at BATTLESTART canon 187..196, and 0x78 -> 0 in ten at
+    /// CHIPSELECT + Start@50,A@80 canon 81..90. Read by `emotion.rs`'s draw
+    /// (canon's element 14, sub_801CDEC asm00_2.s:27561).
+    pub fn hud_obj_x(&self) -> i32 {
+        SLIDE_FROM
+            - match self.phase {
+                Phase::Opening { x } | Phase::Closing { x } => x,
+                Phase::Open => SCROLL_OPEN,
+                Phase::Done => SLIDE_FROM,
+            }
+    }
+
     pub fn hand(&self) -> impl Iterator<Item = Offer> + '_ {
         self.picks.iter().filter_map(|&slot| self.slots[slot])
     }
