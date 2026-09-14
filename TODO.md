@@ -303,8 +303,9 @@ tools/oracle.py's (or explain the difference); (5) the negative control: a one-f
 must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
 the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
 
-### F37g. Land F37f's window mark without the results-screen regression  *(OPEN -- 2026-09-14)*
+### F37g. Land F37f's window mark without the results-screen regression  *(PARTIAL -- 2026-09-14, window mark landed 4671a84: windowclose 1458/162/40->0/0/40, cursor 20->3/3/170)*
 
+**Result.** window mark landed 4671a84: windowclose 1458/162/40->0/0/40, cursor 20->3/3/170; result 58457 pre-exists (verifier paired-control CONFIRMED byte-identical on main; premise corrected); mark mechanism + scope CONFIRMED; HEAD re-check PASS; result bottom strip (Cannon40 chip row) needs own ticket; worker muse-spark, verifier GLM
 **Files.** src/custom.rs, tools/harness.py (the windowclose row's note)
 
 **Why.** F37f (kept on wt/f37f, 0c05e00) draws the chip window's mark during the closing slide as the real
