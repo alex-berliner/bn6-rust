@@ -24,7 +24,7 @@
 [schedule]
 runs = ["hyper"]          # run profiles to keep going, in order; serial: the first that can start; parallel: all
 parallel = false
-reserve = ["openrouter"]  # runs never started by the launcher; a human starts one by hand (BN_RUN=openrouter)
+reserve = ["openrouter", "minimax"]  # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
 
 # ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
@@ -48,15 +48,15 @@ start_above = 1.0                         # dollars above the floor that work ne
 cap_per_run_usd = 5                       # the run's cap watcher stops it past this much real spend
 tail = false
 
-# [providers.minimax]                     # the next candidate (the user, 2026-09-14): fill in after the endpoint
-# kind = "subscription"                   # and key are in pi's models.json/auth.json; the plan meters a rolling
-# probe = "python3 tools/minimax_quota.py"  # window, so the probe reports open (1) / exhausted (0) from a tiny request
-# start_above = 1
-# stop_below = 1
-# tail = false
-# reset = "rolling 5h"                    # a window, not a daily balance: no pacing on it, use it whenever open
-# price_usd_per_month = 0                 # fill in
-# daily_credits = 1
+[providers.minimax]
+kind = "subscription"                     # the $22/month coding plan: a rolling 5-hour window and a weekly cap, both
+probe = "python3 tools/minimax_quota.py"  # reported as a remaining percentage by its own endpoint; --min N is in percent
+start_above = 10                          # percent of the window a run needs to start
+stop_below = 2                            # the watcher stops a run under this percent
+tail = false                              # a window refills by itself; nothing to spend down
+reset = "rolling 5h"                      # a window, not a daily balance: never paced, used whenever open
+price_usd_per_month = 22
+daily_credits = 480                       # 100 percent points per 5-hour window, 4.8 windows a day: the price of a point
 
 # ---------------------------------------------------------------- run profiles: candidates per job, in order
 [runs.hyper]
@@ -98,6 +98,16 @@ digest = ["openrouter/meta/muse-spark-1.3-contributor"]
 # auditor = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
 # digest = ["hyper/qwen3.8-flash", "minimax/MiniMax-M3"]
 #
+[runs.minimax]                            # minimax on its own (in the reserve until its benchmark is in)
+workers = 2
+coordinator = ["minimax/MiniMax-M3"]
+worker = ["minimax/MiniMax-M3"]
+verifier = ["minimax/MiniMax-M2.7"]
+recon = ["minimax/MiniMax-M2.7"]
+judge = ["minimax/MiniMax-M3"]
+auditor = ["minimax/MiniMax-M3"]
+digest = ["minimax/MiniMax-M3"]
+
 # [runs.hyper]                            # the surplus burner: workers = "pace" sizes its worker slots every cycle
 # workers = "pace"                        # from hyper's balance, the hours to its reset, and the coordination the
 # pace_min = 0                            # other profiles will need from hyper until then (0 slots = stop; the run

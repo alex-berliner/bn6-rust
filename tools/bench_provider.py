@@ -55,9 +55,10 @@ def run(a):
     model = a.model or c["runs"][a.run][a.role][0]; a.provider = provider_of(model); p = c["providers"][a.provider]
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     doc = "docs/benchmarks/provider-%s-%s.md" % (a.provider, stamp)
-    others = subprocess.run("pgrep -fc 'pi -p --approve' || true", shell=True, capture_output=True, text=True).stdout.strip()
     rows = []
     for tid in a.tickets:
+        # other pi sessions on this provider (their spend would land in the balance delta); counted before our replay starts
+        others = subprocess.run("pgrep -fc 'pi -p .*%s/' || true" % a.provider, shell=True, capture_output=True, text=True).stdout.strip()
         before = balance(a.provider); t0 = time.time()
         r = subprocess.run(["python3", "tools/replay_bench.py", tid, "--model", model, "--thinking", a.thinking, "--role", a.role],
                            capture_output=True, text=True)
@@ -81,7 +82,7 @@ def run(a):
     price = credit_price(a.provider)
     passes = [r for r in rows if r[1] == "PASS"]
     lines = ["# Provider benchmark: %s (%s as %s), %s" % (a.provider, model, a.role, stamp), "",
-             "other pi sessions active during the run: %s (a subscription's balance delta then includes their spend)" % others, "",
+             "credits are attributed only when no other pi session on %s was running when the replay started" % a.provider, "",
              "| ticket | verdict | nominal $ | turns | min | credits | real $ |", "|---|---|---|---|---|---|---|"]
     for tid, verdict, cost, turns, mins, used in rows:
         real = (used * price) if (used is not None and price) else (cost if price is None else None)
