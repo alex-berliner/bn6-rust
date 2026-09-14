@@ -1995,7 +1995,19 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             self.close_redraw_pending = false;
         }
         let before_first_window = !self.window_closed && !self.skip_intro();
-        let gauge_up = self.shown.is_none() && self.fade_out == 0 && !before_first_window;
+        // F33b: the CUSTOM gauge is battle-HUD element 4 (mask dword_20352C0,
+        // updater sub_801C470 asm00_2.s:26292, draw sub_801C4E4 :26351) and
+        // bit 4 is one of the five (0,1,4,10,14) sub_80081A4 ->
+        // sub_801BED6(0xE4C53) clears at the RESULT countdown (asm00_1.s:
+        // 10617-10621, F27b) -- the same teardown `hud_live` already tracks
+        // for element 14. Measured on the zero-enemy rows' canon captures
+        // (--watch 0x020352C0:8): the mask reads 0x0084 on every compared
+        // frame, so canon draws no gauge there while we drew its frame and
+        // label for 1596 px a frame.
+        let gauge_up = self.hud_live
+            && self.shown.is_none()
+            && self.fade_out == 0
+            && !before_first_window;
         if let Some(hud) = self.hud_tiles.as_mut() {
             // `hud_bg` is Some whenever `hud_tiles` is (AUDIT wave 3d
             // "bg3-merge": paired 1:1 in `Battle::new`; `open_custom_window`
@@ -3896,7 +3908,20 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // the button comes UP" and that nothing could drop it sooner. The
         // button never came up.)
         if let (None, Some(palette)) = (&self.custom, self.hand_icon_palette.as_ref()) {
-            if let Some(chip) = self.hand.get(self.hand_at).filter(|_| self.chip_use_in != 1) {
+            // F33b: canon's queued-chip ICON is battle-HUD element 1
+            // (updater sub_801BFF8 asm00_2.s:25655 -> sub_801C002(0), draw
+            // sub_801C078 :25729 -> sub_801C082(0), the six slots at
+            // dword_20352E0) and is torn down with elements 0/4/10/14 by
+            // sub_80081A4 (asm00_1.s:10617-10621); its NAME is element 6
+            // (draw sub_801C6EE :26619, no updater) and is NOT. Ours tied
+            // both to the hand, so a fixture that carries canon's queued
+            // chip in order to draw the name also drew an icon canon had
+            // torn down -- measured at exactly 256 px a frame, a 16x16 OBJ.
+            if let Some(chip) = self
+                .hand
+                .get(self.hand_at)
+                .filter(|_| self.chip_use_in != 1 && self.hud_live)
+            {
                 let (mc, mr) = self.megaman.panel();
                 let (px, py) = field::panel_centre(mc, mr);
                 let sprite = DynamicSprite16::from_bytes(Size::S16x16, chip.icon_bytes())

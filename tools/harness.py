@@ -1144,8 +1144,19 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 #: measured on field integrated, ours drew "100" against canon's "60" for a
 #: steady ~30 px/frame in the box (the extra leading "1" at x19..20 y3..12
 #: plus the changed units digit). provenance: peeked.
+#: hand: Cannon, not empty -- F33b (2026-09-13). pausedwithcannon's own
+#: queued Cannon40 is still in canon's "chip to use" slot (dword_20352C8) on
+#: every compared frame of all four rows, and canon's element 6 (draw
+#: sub_801C6EE asm00_2.s:26619, BG3 map rows 0x12/0x13) keeps writing its
+#: name and damage there -- measured: canon's BG3 carries "Cannon 40" at
+#: y148..158 x1..63, 422 px on every frame, which an empty rust hand cannot
+#: draw. What is gone on the canon side by frame 130 is the ICON, because
+#: that is element 1 and the teardown at canon 48 cleared it; the earlier
+#: note here read the missing icon as a missing chip. Both now follow canon:
+#: the descriptor carries the chip, and src/battle.rs gates the icon (not the
+#: name) on `hud_live`. provenance: peeked.
 ZERO_ENEMY = dict(enemies=0, megaman_hp=60, megaman_col=2, megaman_row=2,
-                  hand=[], hand_count=0, gauge=0, flags=0x11)
+                  hand=[1], hand_count=1, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
 
 # --------------------------------------------------------------------------
@@ -1189,84 +1200,54 @@ ZERO_ENEMY_ORIGIN = 8
 # x1-63; pausedwithcannon's own queued Cannon40, whose OBJ icon is gone
 # because element 1 was torn down, while its NAME is element 6 and was not).
 #
-# PER-ELEMENT RESULT for field integrated (offset 108, canon_ref 130, 40
-# frames; "before" = this session's baseline 305263/10061):
-#   element 2, HP box .......  29 px/frame -> 0   (ZERO_ENEMY megaman_hp was
-#                                                  100, canon's navi holds 60;
-#                                                  fixed above, -1160/-870/
-#                                                  -928/-928 on the four rows)
-#   element 6, chip name .... 422 px/frame -> 0   only with the src/battle.rs
-#                                                  proposal below; NOT landed
-#   element 4, CUSTOM gauge . ~1596 px/frame on the frames before our own
-#                             RESULT window replaces it (k=0..5 here) -- canon
-#                             draws no gauge on ANY compared frame
-#   elements 0, 7 ...........   0 px (no slots active, no enemies)
-#   element 14, emotion .....   0 px (F27b already hides it)
-#   NOT the HUD ............. 261797 px of 305263 (86%) lies outside every
-#                             HUD element; see below.
-#
-# PROPOSAL (src/battle.rs, another worker's file -- measured here, reverted
-# before commit): canon's queued-chip ICON is element 1 and is torn down with
-# the rest, while its NAME (element 6) is not, so the two must be gated
-# separately. Ours ties both to the hand. With
-#     ZERO_ENEMY hand=[1], hand_count=1          (this file), AND
-#     src/battle.rs:3743
-#       -  .filter(|_| self.chip_use_in != 1)
-#       +  .filter(|_| self.chip_use_in != 1 && self.hud_live)
-# measured together: field 304103 -> 287204, warp 362788 -> 350128, buster
-# 642770 -> 629266 (exactly 422 px x 40/30/32), chip-use unchanged, and every
-# isolated variant unchanged (field 0, warp 0, buster 3172, chip-use 9514).
-# The descriptor half ALONE is a regression and is therefore not landed: with
-# hand=[1] and no gate the icon (a 16x16 OBJ canon does not draw) costs
-# exactly 256 px/frame -- warp isolated 0 -> 7680, buster isolated 3172 ->
-# 11364. A second proposal, unmeasured: gate `gauge_up` (battle.rs's
-# set_gauge call) on `hud_live` too, since the gauge is element 4 and is torn
-# down by the same routine.
-#
-# WHERE THE REST IS (field integrated, per-layer --only-bg N on BOTH sides,
-# same alignment): BG0 0, BG2 (field panels) 0, BG3 (HUD) 2047 px/frame,
-# BG1 (backdrop) 18508 px/frame -- on k=0..4. It is a PHASE error, not a
-# content one: the best rigid shift between the two BG1 images is (12,6) px
-# at k=0, which takes 18508 down to 8233 of 35112 overlapping px, and the
-# remainder is the art step (canon's BG1 changes by 7362 px with no shift
-# between canon 131 and 132 -- an art upload -- and ours steps on different
-# frames). ZERO_ENEMY seeds no backdrop phase at all (no art_entry/art_timer/
-# scroll_xq/scroll_yq, unlike HUDMATCH and FIELD_ROW) while its canon side is
-# thousands of frames into pausedwithcannon's battle. Canon's own counters,
-# peeked on the field row's canon capture (--watch 0x02009690:8,
-# eBGScrollCBCounters, ewram.s:619) fall by exactly 8 and 4 a frame (= our
-# SCROLL_X_Q=2 / SCROLL_Y_Q=1 quarter-pixels) and read
-#     canon 130: x -64176 (0xffff0550)  y -32088 (0xffff82a8)
-#     canon 150: x -64336 (0xffff04b0)  y -32168 (0xffff8258)
-# which by backdrop.rs's own register arithmetic (reg = lsr #4 of the
-# counter = -((q+3)/4) mod 256) is x_q = 684, y_q = 854 at canon 130. The
-# seed for battle frame 0 is that minus `offset` frames of scroll, so it is
-# PER ROW (each row has its own offset) and it needs the art phase
-# (eGFXAnimStates[0] at 0x020094c0) walked back the same way -- the same
-# derivation F26b is doing for cursor/windowclose. Deliberately not attempted
-# here: it is the backdrop's mechanism, not the HUD's.
-#
-# AND ONE MORE THING about the field row in particular, measured on its own
-# rust capture: our end sequence runs 30-odd frames early and then stalls.
-# The gauge goes at capture 117 (a 1596 px change), captures 117, 118, 119
-# and 120 are BYTE-IDENTICAL to each other (a three-frame stall: the backdrop
-# does not scroll, and it scrolls on every other frame before and after), and
-# from capture 121 `self.shown` is Some, so battle.rs:3594-3595 skips
-# `filler_bg` and every layer drops one hardware BG -- measured: from 121 our
-# BG0 carries the backdrop where canon's BG0 is empty, our BG1 the field
-# panels, our BG2 the HP box, our BG3 the RESULT window. Canon's RESULT
-# window does not begin its slide until canon 154. So `--only-bg N` is a
-# same-content comparison on this row only for k=0..4, and no number past
-# there is attributable by layer at all. On k=0..4: BG0 0, BG1 (backdrop)
-# 18508..17607 px/frame, BG2 (panels) 0, BG3 (HUD) 2047 px/frame.
-# The search band range(60,110) bottoms at 108, which puts k=0 one frame
-# before that stall; the row's own note documents the EVENT lock at ~81
-# (banner canon 49 <-> rust 8, mark canon 163 <-> rust 121). At 81 the row
-# reads 497776, with the residue outside the HUD region nearly halved
-# (172039 against 261797 at 108) and the RESULT-window mismatch
-# correspondingly larger. No alignment was changed by this ticket -- but no
-# HUD number from this row is worth much past the stall until the end
-# sequence lasts as long as canon's (F32).
+# PER-ELEMENT RESULT for field integrated, the F33 measurement (offset 108,
+# canon_ref 130, 40 frames), against F33's own baseline 305263/10061 --
+# EVERY line of it is now fixed or attributed; see F33b's own commits and the
+# seed note above for the after numbers:
+#   element 2, HP box .......  29 px/frame -> 0   (F33: ZERO_ENEMY megaman_hp
+#                                                  was 100, canon's navi holds
+#                                                  60)
+#   element 6, chip name .... 422 px/frame -> 0   (F33b: ZERO_ENEMY hand=[1],
+#                                                  the icon gated on hud_live)
+#   element 4, CUSTOM gauge . 1596 px/frame -> 0  (F33b: gauge_up gated on
+#                                                  hud_live)
+#   element 14, emotion .....   0 px (F27b hides it; F33 gave it the chip
+#                                     window's x displacement)
+#   elements 0, 1, 7, 10 ....   0 px (no slots active, no enemies, torn down)
+#   the BG1 backdrop phase .. 261797 px of 305263 (86%) -> 0 on every frame of
+#                             warp/buster/chip-use and on every field frame
+#                             before its own end-sequence stall (F33b's seeds)
+# What is left on these four rows is NOT the HUD and NOT the backdrop:
+#   * canon's RESULT window slides in from canon 154 on all four canon
+#     captures (the deleted-enemy battle resolves), and only `field` carries
+#     FLAG_RESOLVE_OVER, so warp k>=24, buster k>=22 and chip-use k>=4 are the
+#     window's own ramp: warp 40628 of 40628, buster 45810 of 54672, chip-use
+#     565717 of 567780, all of it on BG3.
+#   * buster additionally keeps drawing the name from k=1 where canon has
+#     stopped. Measured on buster's own canon capture (--only-bg 3): the strip
+#     holds "Cannon 40" (422 px, y148..158 x1..63) on canon 132 and is BLANK
+#     from canon 133 -- the frame after CurAction 0x11, the buster action --
+#     for the rest of the window, while the HP box beside it stays at its 704.
+#     It is NOT the ChipsHeld gate: sub_801C6EE (asm00_2.s:26619) blanks map
+#     rows 0x12/0x13 and re-renders unless sub_800ED90's r3 = 0, r3 is
+#     oBattleObject_ChipsHeld (+0x1a, asm00_2.s:15-46), and that byte reads 1
+#     on every frame of the capture (--watch 0x0203a9ca:2). What empties the
+#     strip is inside sub_800ED90's player branch, where the chip comes from
+#     getBattleHandAddr_8010018's own index byte -- i.e. entering the attack
+#     moves canon's hand past the queued chip, which our `hand_at` does not
+#     do for a buster shot. Left unfixed on purpose: `warp` (a move, not an
+#     attack) keeps the name on all 24 of its pre-RESULT frames, so the rule
+#     is attack-specific and guessing it would regress warp. 422 px/frame x 21
+#     frames = 8862 of buster's 54672.
+#   * field's own end sequence: captures 118, 119 and 120 are byte-identical
+#     to one another (a three-frame stall -- the backdrop scrolls on every
+#     other frame before and after, so BG1 is 0 only for k=0..1), and from
+#     capture 121 `self.shown` is Some, so battle.rs skips `filler_bg` and
+#     every layer drops one hardware BG (BG0 backdrop, BG1 panels, BG2 HP box,
+#     BG3 the RESULT window) while canon's own RESULT window has not started.
+#     That is F32's end-sequence offset, not a HUD or backdrop defect, and it
+#     is why --only-bg N is a same-content comparison on this row only for
+#     k=0..4.
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
@@ -1296,6 +1277,72 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 #:140/150, not just fading). So every zero-enemy check below starts its
 #: comparison at real frame >=130 -- comfortably past the dissolve, not
 #: mid-transition -- rather than trying to --zero a moving target.
+#: F33b (2026-09-13): each zero-enemy row's own backdrop phase, derived by
+#: F26b's derivation (its Result in TODO.md) from canon's own state at THAT
+#: row's canon_ref -- never shared, because each row pairs a different canon
+#: frame with a different rust frame.
+#:
+#:   BGScrollCB_BG1Diagonal3to2Scroll (asm00_0.s:3287-3303) writes
+#:   (counter-8)>>4 and (counter-4)>>4 to BG1HOFS/BG1VOFS, and the counters
+#:   eBGScrollCBCounters (ewram.s:619, 0x02009690/0x02009694) are zeroed at
+#:   battle init (sub_8080D90/sub_8080DA0, asm00_1.s:8434-8435), so at canon
+#:   battle frame f they hold -8f and -4f and canon's phase in backdrop.rs's
+#:   quarter-pixel units is x_q = 2f mod 1024, y_q = f mod 1024. The art
+#:   clock is eGFXAnimStates[0] (ewram.s:596, 0x020094c0; struct
+#:   include/structs/GFXAnimState.inc: Timer +0x2, LoopAddress +0x4,
+#:   CommandPos +0x8), entry = (CommandPos - LoopAddress) / 8, 192 ticks a
+#:   cycle (STEP_HOLD in src/backdrop.rs sums to 192). Our pipeline lags are
+#:   F26b's, measured once on windowclose and not re-tuned here: a capture
+#:   frame R shows the SCROLL of tick R-7 and the ART of tick R-5. So with
+#:   R0 = the rust capture frame this row pairs with its canon_ref (marker
+#:   origin 8 + the row's offset),
+#:       scroll_xq = (2f - 2(R0-7)) mod 1024,  scroll_yq = (f - (R0-7)) mod 1024
+#:       art       = Backdrop's own clock walked back (R0-5) ticks from
+#:                   canon's (entry, Timer), minus the seed's construction
+#:                   lead (Backdrop::seed stores timer + 1).
+#:
+#: The derivation was checked against F26b's two landed seeds before being
+#: used here and reproduces both exactly with no tuning: CHIPSELECT canon 15
+#: (counters -25368/-12684 = battle frame 3171, art entry 17 timer 4, R0 245)
+#: gives CURSOR_ROW's art 11/3 scroll 746/885, and canon 81 (-25896/-12948 =
+#: 3237, entry 25 timer 2, R0 261) gives WINDOWCLOSE_ROW's art 17/1 scroll
+#: 846/935.
+#:
+#: Peeked per row on THAT row's own canon capture (--watch 0x02009690:8 and
+#: --watch 0x020094c0:12), all provenance: peeked for the canon readings,
+#: derived for the arithmetic above:
+#:   field    canon 130: -64176/-32088 = battle frame 8022, art entry 23 timer 1; R0 = 8+108 = 116
+#:   warp     canon 130: -64176/-32088 = battle frame 8022, art entry 23 timer 1; R0 = 8+51  = 59
+#:   buster   canon 132: -64192/-32096 = battle frame 8024, art entry 24 timer 7; R0 = 8+103 = 111
+#:   chip-use canon 150: -64336/-32168 = battle frame 8042, art entry 26 timer 5; R0 = 8+100 = 108
+#: The R0s are each row's own alignment, unchanged by this ticket, and three
+#: of the four are pixel-exact on their own isolated (OBJ-only) variant --
+#: the strongest pairing evidence a row can have, since an OBJ layer that
+#: reads 0 over the whole window cannot be a coincidence of phase:
+#:   field    isolated reads 0 on all 40 frames at offset 108, a sharp unique
+#:            minimum (1139 at 107 and at 109), measured this ticket. The row
+#:            note's older "~81 by the banner and mark events" is stale: at 81
+#:            the isolated variant does NOT read 0.
+#:   warp     Align pins rust_offset=51 with no search; isolated reads 0 there.
+#:   buster   isolated reads 0 on all 28 frames at offset 103 (the row's own
+#:            note records the sweep).
+#:   chip-use the A press at battle frame 100 pairs with canon's at 150, so
+#:            offset 100; its isolated variant is not yet 0, so this one rests
+#:            on the press event alone.
+#: With the seeds in, each row's integrated search now bottoms at exactly that
+#: offset with a sharp margin (measured over each band): warp 51 (101168 vs
+#: 170394/170612 either side), buster 103 (89416 vs 146978/150053), chip-use
+#: 100 (619364 vs 645772/648094), field 108 (323855 vs 402474/389... either
+#: side). Before the seeds, chip-use's band bottomed at 105, not 100.
+FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
+                  art_entry=10, art_timer=7, scroll_xq=466, scroll_yq=745)
+WARP_ZERO = dict(ZERO_ENEMY,
+                 art_entry=17, art_timer=6, scroll_xq=580, scroll_yq=802)
+BUSTER_ZERO = dict(ZERO_ENEMY,
+                   art_entry=10, art_timer=0, scroll_xq=480, scroll_yq=752)
+CHIPUSE_ZERO = dict(ZERO_ENEMY_WITH_HAND,
+                    art_entry=13, art_timer=3, scroll_xq=522, scroll_yq=773)
+
 DELETE_ENEMY = ("0x0203ab84:0", "0x0203ab86:0")
 
 
@@ -1308,9 +1355,11 @@ def _zero_enemy_canon(script: str, pokes_at: Tuple[str, ...] = (),
     return make
 
 
-def _zero_enemy_rust(script: Optional[str] = None) -> Callable[[str], Side]:
+def _zero_enemy_rust(script: Optional[str] = None,
+                     desc: Optional[dict] = None) -> Callable[[str], Side]:
     def make(ui: str) -> Side:
-        return Side(rom=plain_rom(), fixture=ZERO_ENEMY, script=script,
+        return Side(rom=plain_rom(), fixture=ZERO_ENEMY if desc is None else desc,
+                    script=script,
                     extra=() if ui == "integrated" else ("--disable-bg",))
     return make
 
@@ -1617,7 +1666,7 @@ PORTED_CHECKS: List[Check] = [
                  "the unchanged band, where the search's minimum now sits; the static field "
                  "alone cannot discriminate offsets, the mark event can.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=ZERO_ENEMY_RESOLVED, script="Start@10",
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
                              extra=() if ui == "integrated" else ("--disable-bg",)),
         canon=_zero_enemy_canon("Start@10"),
         canon_variant="canon (sterile)",
@@ -1676,7 +1725,7 @@ PORTED_CHECKS: List[Check] = [
                  "allowed print on integrated is a stale-cap artifact (coordinator "
                  "decision 2026-09-13; tools/allowlist.py untouched).",
         ),
-        rust=_zero_enemy_rust(",".join([held("Right", 8 + 50, 3), held("Down", 8 + 70, 3),
+        rust=_zero_enemy_rust(desc=WARP_ZERO, script=",".join([held("Right", 8 + 50, 3), held("Down", 8 + 70, 3),
                                         held("Left", 8 + 90, 3), held("Up", 8 + 110, 3)])),
         canon=_zero_enemy_canon("Start@10",
                                 pokes_at=WARP_AIDATA_POKES,
@@ -1732,7 +1781,7 @@ PORTED_CHECKS: List[Check] = [
                  "or our export block is one frame behind the frame it describes; settling "
                  "that is a main.rs/oracle question, not this row's.",
         ),
-        rust=_zero_enemy_rust(held("B", 8 + 100, 2)),
+        rust=_zero_enemy_rust(held("B", 8 + 100, 2), desc=BUSTER_ZERO),
         canon=_zero_enemy_canon("Start@10", pokes_at=BUSTER_AIDATA_POKES),
         canon_variant="canon (sterile)",
     ),
@@ -1749,7 +1798,7 @@ PORTED_CHECKS: List[Check] = [
                  "(Cannon, matching PAUSED) -- ZERO_ENEMY's own empty hand would make an A "
                  "press use nothing at all, which is what the first attempt at this check did.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=ZERO_ENEMY_WITH_HAND,
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CHIPUSE_ZERO,
                              script=held("A", 8 + 100, 2),
                              extra=() if ui == "integrated" else ("--disable-bg",)),
         canon=_zero_enemy_canon("Start@10," + held("A", 150, 2)),
