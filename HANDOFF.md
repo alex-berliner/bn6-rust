@@ -66,6 +66,9 @@ vs after -- a merge that changed nothing is not parity).
   worker-hyper role (Qwen 3.8 Flash) and can carry the coordinator (`BN_COORD_MODEL=hyper/qwen3.8-flash`);
   Muse on OpenRouter stays the first worker until a Hyper model passes the replay benchmark
   (`docs/benchmarks/hyper-*.md`). Credits left at the end of a day mean too few Hyper workers.
+  **Rule (the user, 2026-09-14 11:00): the loop runs on Hyper only and shuts down fully when the day's credits
+  are gone (tools/hyperwatch.sh); OpenRouter is a RESERVE, never a fallback -- nothing dispatches to Muse
+  unless the user says so. Each day's run starts by cron at 10:35 (tools/hyper_day.sh) once >= 100 credits.**
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user's floor is $0.50 in the account (2026-09-14, was $5); runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
