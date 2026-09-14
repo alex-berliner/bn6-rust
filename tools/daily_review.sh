@@ -32,6 +32,9 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
     echo '```'; grep -E '^\S+\s+(isolated|integrated)\s+(FAILED|ALLOWED)' "$TMP/table.txt" | sed -E 's/\s+/ /g' | cut -c1-110; echo '```'
     echo
   fi
+  echo "## Milestones (docs/SCOPE.md)"
+  echo '```'; grep -E '^\| M[0-9]' docs/SCOPE.md | cut -c1-200; echo '```'
+  echo
   echo "## Hygiene"
   echo "- fitted constants in src/: $(grep -rc 'provenance: fitted' src/ | awk -F: '{s+=$2} END {print s+0}')"
   echo "- unnamed values tagged // unnamed in src/: $(grep -rc '// unnamed' src/ | awk -F: '{s+=$2} END {print s+0}')"

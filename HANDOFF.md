@@ -33,9 +33,11 @@ vs after -- a merge that changed nothing is not parity).
   F23 naming (battle.rs next). BLOCKED after two misses: F10/F10b buster. Closed tickets:
   `TODO_ARCHIVE.md`. From run 4 the coordinator runs two workers on tickets with disjoint
   `**Files.**` lines (`next_ticket.py --pair`).
-- **Order (the user, 2026-09-12):** every existing row to 0 before any new content. Scope after that:
-  5 viruses, 2 bosses, player fidelity, the custom screen, battle flow. No Navis, Navi Customizer,
-  Program Advances, audio, netbattle.
+- **Scope (the user, 2026-09-14): the whole BN6 battle engine** -- every chip, virus, Navi, Program Advance,
+  MegaMan form, the UI, the field and damage rules, battle flow -- measured by docs/SCOPE.md's milestone
+  ladder (a canon recording, ported routines with citations, trace parity, pixel parity per item). Open
+  decisions: audio, netbattle, Gregar-exclusive content (needs the Gregar ROM). The earlier order
+  (existing rows to 0 first) was met on 2026-09-14.
 - **Phase switched to porting on 2026-09-14 (the user: "move straight to that"); docs/PHASE = porting; the T tickets in TODO.md carry the plan below.**
 - **After convergence (agreed 2026-09-13):** switch from behaviour-driven porting to trace- and
   coverage-driven porting before any new content. In order: (1) widen the state oracle into a
