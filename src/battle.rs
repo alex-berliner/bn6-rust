@@ -4443,6 +4443,11 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     .show(frame);
             }
         }
+        // Every field object rides the chip window's camera pan (see
+        // Actor::show): canon holds MegaMan 15 px lower with the window
+        // up (F37's OAM watch: y141 open vs y126 closed), and
+        // `field_slide` IS that camera in half-pixels.
+        let cam_dy = (self.field_slide / 2) as i32; // provenance: derived -- FIELD_SLIDE's own camera in px (see FIELD_SLIDE/FIELD_SUBPX)
         if !self.megaman.is_defeated() {
             let bubble = self.bubble.as_ref();
             let (mc, mr) = self.megaman.panel();
@@ -4450,7 +4455,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // Two pixels forward of the origin on the real ROM.
             const CURSOR_FORWARD_PX: i32 = 2; // provenance: peeked -- two pixels forward of the origin on the real ROM
             let bx = bx + CURSOR_FORWARD_PX * self.megaman.facing_dx();
-            self.megaman.show_with_underlay(frame, |frame| {
+            self.megaman.show_with_underlay(frame, cam_dy, |frame| {
                 // The navi's underlay carries only his bubble here. A thrown
                 // object's GROUND SHADOW used to be drawn in this slot too
                 // (between his body and his own shadow, entries 14/15 on the
@@ -4467,7 +4472,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     for part in bubble.parts().iter().rev() {
                         Object::new(part.sprite.clone())
                             .set_priority(Priority::P2)
-                            .set_pos((bx + part.x, by + part.y))
+                            .set_pos((bx + part.x, by + part.y + cam_dy))
                             .set_hflip(part.hflip)
                             .set_vflip(part.vflip)
                             .show(frame);
@@ -4536,7 +4541,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             );
         }
         for enemy in self.enemies.iter().filter(|e| e.is_present()) {
-            enemy.show(frame);
+            enemy.show(frame, cam_dy);
         }
         if let Some(cursor) = self.gunner_ctl.cursor() {
             cursor.show(frame);
