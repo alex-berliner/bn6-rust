@@ -1,0 +1,3 @@
+F12 barrier: bubble spawns at attack+46 like canon (was 78); 52560 to 0
+
+chip-barrier (isolated), before and after: canon on top; ours at 4f72383 (52560 px over 80 frames, canon 5+k, rust offset 124); ours at 5e681a1 (0 px, canon 5+k, rust offset 124). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

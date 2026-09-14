@@ -1,0 +1,3 @@
+F12 energbom: Param1==2 energy blast ring (canon t3_0x11, own bytes); 19932 to 0
+
+chip-energbom (isolated), before and after: canon on top; ours at e3fd00e (19932 px over 60 frames, canon 5+k, rust offset 123); ours at 2e19e83 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
