@@ -303,8 +303,9 @@ in `battle_full` but not in any existing harness row's scenario (the uncovered s
 tables for `battle_full` and for the mettaur row's scenario; the interpreters named in HANDOFF §1 (animation
 bytecode player, object dispatcher, script VMs) located in the ranking with their symbols.
 
-### F37e. `windowclose` k=0..9: the objects and camera during the ten slide-out frames  *(OPEN -- 2026-09-14)*
+### F37e. `windowclose` k=0..9: the objects and camera during the ten slide-out frames  *(PARTIAL -- 2026-09-14, cam_dy floor-fix KEPT unmerged [branch wt/f37e 06fa98d]: windowclose 4943/1116/40->1458/162/40 [enemy+MegaMan )*
 
+**Result.** cam_dy floor-fix KEPT unmerged (branch wt/f37e 06fa98d): windowclose 4943/1116/40->1458/162/40 (enemy+MegaMan gone, 162x9 marcher for custom.rs); cursor 8->20 REGRESSION (deterministic, k37/k97 race, blocks landing); verifier CONFIRMED no-skew watch + asr floor mechanism + scope/no-op; marcher ID + race-flip attribution unchecked-consistent; worker muse-spark, verifier GLM
 **Files.** src/battle.rs (the camera pan on the slide calls and the objects' offset from it), src/actor.rs (object Y under the camera), tools/harness.py (the windowclose row's note)
 
 **Why.** F37d landed the Mettaur's pickaxe prime: cursor 34902 -> 8/6/170 (two micro frames, k=37/97, the
