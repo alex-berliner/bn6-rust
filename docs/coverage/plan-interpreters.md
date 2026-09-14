@@ -226,9 +226,24 @@ resolution, not the flat tables.
   `sub_801BCD0`, and any timestop/pause model -- the timestop, rebind-only
   and `set_alt` variants are kept as cited code for the port that needs
   them (they warn unused until then, as does T4's `unk05`).
-- Verification: PENDING (tree was hard-reset mid-ticket by an outside
-  process with the first landing uncommitted; re-applied identical code,
-  re-verifying below).
+- Verification: full harness table on the committed code (both UIs, 62
+  PASS lines): every isolated row 0/0 except cursor's single-frame tear at
+  15/15/170 (worst == total, one frame; pre-change baseline on the same
+  tree 23/22 -- the documented canon mid-frame tile transfer sampled
+  across captures, same class as T4's 3 -> 1 at k=97). The "2 check(s)
+  FAILED" are exactly the ticketed/known ones: cursor isolated (tear) and
+  opening integrated 72499/2691, byte-identical to T4's main value.
+  Integrated: tiles/gauge 0/0; field, buster, warp, chip-use all FAILED
+  (allowed: AUDIT-6) with worst 5682/12977/11744/18091 inside their caps
+  (28000/28000/19500/28000). Two notes: field integrated reads 159011/5682
+  in both full-table runs vs 158930/5601 on pristine (solo, twice) -- a
+  stable +81 on one frame, inside the cap, consistent with the intended
+  no-restart change (a recovery-exit IDLE replay now continues the loop
+  instead of restarting it); buster integrated is byte-identical
+  (54672/12977 both). Oracle PARITY identical to baseline: wave first
+  divergence enemy_anim k=24 (mm_* k=43), mettaur no divergence (70/70).
+  `trace.py record` broken pre-existing (see above), so no trace leg; the
+  oracle shares its FIELD_PAIRS by construction.
 
 ---
 
