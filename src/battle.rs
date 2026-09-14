@@ -1449,6 +1449,12 @@ pub struct Battle<'a> {
 /// `oracle_snapshot`): this project's own protocol, so the length is chosen,
 /// not read.
 const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this project's own oracle protocol (see oracle_snapshot's table)
+/// The state-trace export block's own length (see `trace_snapshot`'s
+/// table): this project's own protocol, so the length is chosen, not read.
+const TRACE_SNAPSHOT_LEN: usize = 64; // provenance: chosen -- this project's own trace protocol (see trace_snapshot's table)
+/// The state-trace block's version word (T1): bumped when the layout above
+/// changes, so tools/trace.py can refuse a stale ROM's block loudly.
+const TRACE_VERSION: u16 = 2; // provenance: chosen -- this project's own trace protocol version
 /// A fixture field left at its default: 0xFFFF means "no seed"
 /// (art_entry), "default" (gauge_tick), "unset" (banner_at,
 /// result_elapsed) throughout this project's fixture contract.
@@ -1586,6 +1592,96 @@ impl<'a> Battle<'a> {
             b[30..32].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // canon: oracle snapshot layout, see the table above
         }
         b[32..34].copy_from_slice(&self.gauge.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        b
+    }
+
+    /// The state-trace export block (T1): 64 bytes at EWRAM 0x02000080
+    /// (bytes 128..192 of main.rs's `BATTLE_MARKER`, linker-placed -- `nm`
+    /// proves the array owns 0x02000000..0x02000100, so the block can never
+    /// overlap agb's `SPRITE_LOADER`/interrupt table the way an absolute
+    /// 0x02000080 address did in R6). Versioned (`TRC2`, version 2): the
+    /// v1 ORCL block at 0x02000008 is untouched, so oracle.py keeps
+    /// reading it byte-identically. Field map (offsets in the block;
+    /// canon addresses are the trace's own `--watch` set, tools/trace.py):
+    ///
+    /// | off | field | canon | source |
+    /// |-----|-------|-------|--------|
+    /// |  0  | u32 "TRC2" magic | -- | TRACE_MAGIC (own protocol) |
+    /// |  4  | u16 version (=2), u16 len (=64) | -- | own protocol |
+    /// |  8  | u32 battle frame | -- (canon has no battle-frame word; R6) | same counter as oracle_snapshot |
+    /// | 12  | u32 primary RNG | 0x020013f0 ePrimaryRngSeed (ewram.s:262) | primary_rng.state() |
+    /// | 16  | u16 MM state\|action<<8 | 0x0203a9b8 (BattleObject+8) | oracle_fields |
+    /// | 18  | u8 MM anim, u8 panel_x, u8 panel_y, u8 mercy | +0x10/+0x12/+0x13, mercy [CollisionDataPtr]+0x24 | oracle_fields (+mercy) |
+    /// | 22  | u16 MM timer, u16 MM hp | +0x20/+0x24 | oracle_fields |
+    /// | 26  | u16 E1 state\|action<<8, u8 anim, u8 panel_x, u8 panel_y | first populated enemy slot +8... | oracle_fields of enemies.first() |
+    /// | 32  | u16 E1 timer (0), u16 E1 hp | slot +0x20/+0x24 | as above (timer unsupported, R6) |
+    /// | 36  | u16 E2 state\|action, u16 E3 state\|action | 2nd/3rd slots +8 | 0xFFFF sentinels: one-enemy model, never populated |
+    /// | 40  | u16 custom gauge | 0x020352a0 (eStruct2035280+0x20) | self.gauge |
+    /// | 42  | u16 banner phase | 0x0203ca70 dword_203CA70 (ewram.s:3040) | 0 none, 1 BATTLE START shown, 2 closing banner up, 3 done (own mapping, INFO-only) |
+    /// | 44  | u16 HUD element mask | 0x020352c0 (eStruct2035280+0x40) | hud_live ? 0x4497 : 0x0084 (peeked canon encodings of the two states, T1) |
+    /// | 46  | u16 backdrop GFX entry, u16 GFX timer | 0x020094c0 eGFXAnimStates (ewram.s:596) | backdrop.trace_state() (0s when backdrop: None) |
+    /// | 50  | u32 backdrop x_q, u32 backdrop y_q | 0x02009690 eBGScrollCBCounters (ewram.s:619) | as above (canon holds -8f/-4f there) |
+    /// | 58  | u16 field_slide (own camera) | 0x020099b4 Camera Y (eCamera+0x34, Camera.inc:26) | self.field_slide (INFO-only: different mechanisms) |
+    /// | 60  | u16 GFX (0), u16 pad | 0x020094c0+4.. | unsupported on our side: 0, never compared |
+    ///
+    /// Export-only like oracle_snapshot: nothing reads it back, so it
+    /// cannot change behaviour (the rerun rows prove that).
+    pub fn trace_snapshot(&self, battle_frame: u32) -> [u8; TRACE_SNAPSHOT_LEN] {
+        let mut b = [0u8; TRACE_SNAPSHOT_LEN];
+        b[0..4].copy_from_slice(&crate::TRACE_MAGIC.to_le_bytes()); // "TRC2", see main.rs's TRACE_MAGIC (provenance: chosen -- this project's own protocol constant)
+        b[4..6].copy_from_slice(&TRACE_VERSION.to_le_bytes()); // trace snapshot layout, see the table above
+        b[6..8].copy_from_slice(&(TRACE_SNAPSHOT_LEN as u16).to_le_bytes()); // trace snapshot layout, see the table above
+        b[8..12].copy_from_slice(&battle_frame.to_le_bytes()); // trace snapshot layout, see the table above
+        b[12..16].copy_from_slice(&self.primary_rng.state().to_le_bytes()); // trace snapshot layout, see the table above
+        let mm = self.megaman.oracle_fields(true, false);
+        b[16..18].copy_from_slice(&mm.cur_state_action.to_le_bytes()); // trace snapshot layout, see the table above
+        b[18] = mm.anim; // trace snapshot layout, see the table above
+        b[19] = mm.panel_x; // trace snapshot layout, see the table above
+        b[20] = mm.panel_y; // trace snapshot layout, see the table above
+        b[21] = mm.mercy; // trace snapshot layout, see the table above
+        b[22..24].copy_from_slice(&mm.timer.to_le_bytes()); // trace snapshot layout, see the table above
+        b[24..26].copy_from_slice(&mm.hp.to_le_bytes()); // trace snapshot layout, see the table above
+        if let Some(enemy) = self.enemies.first() {
+            let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
+            let e = enemy.oracle_fields(false, ai_wait);
+            b[26..28].copy_from_slice(&e.cur_state_action.to_le_bytes()); // trace snapshot layout, see the table above
+            b[28] = e.anim; // trace snapshot layout, see the table above
+            b[29] = e.panel_x; // trace snapshot layout, see the table above
+            b[30] = e.panel_y; // trace snapshot layout, see the table above
+            b[32..34].copy_from_slice(&e.timer.to_le_bytes()); // trace snapshot layout, see the table above (always 0: unsupported, R6)
+            b[34..36].copy_from_slice(&e.hp.to_le_bytes()); // trace snapshot layout, see the table above
+        } else {
+            b[26..28].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
+            b[34..36].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
+        }
+        // No second/third enemy in this model: sentinels, never compared
+        // against canon's live slots (same rule as oracle.py's has_enemy).
+        b[36..38].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
+        b[38..40].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
+        b[40..42].copy_from_slice(&self.gauge.to_le_bytes()); // trace snapshot layout, see the table above
+        let banner_phase: u16 = if self.banner.is_some() {
+            2 // closing banner up
+        } else if self.banner_done {
+            3 // done
+        } else if self.opened {
+            1 // BATTLE START! shown
+        } else {
+            0 // none
+        };
+        b[42..44].copy_from_slice(&banner_phase.to_le_bytes()); // trace snapshot layout, see the table above
+        let hud_mask: u16 = if self.hud_live { 0x4497 } else { 0x0084 }; // provenance: peeked -- canon's own element mask at 0x020352C0: 0x4497 live battle, 0x0084 past teardown (--watch, F27b/popup note, T1)
+        b[44..46].copy_from_slice(&hud_mask.to_le_bytes()); // trace snapshot layout, see the table above
+        let (bd_entry, bd_timer, bd_xq, bd_yq) = match &self.backdrop {
+            Some(bd) => bd.trace_state(),
+            None => (0, 0, 0, 0),
+        };
+        b[46..48].copy_from_slice(&bd_entry.to_le_bytes()); // trace snapshot layout, see the table above
+        b[48..50].copy_from_slice(&bd_timer.to_le_bytes()); // trace snapshot layout, see the table above
+        b[50..54].copy_from_slice(&bd_xq.to_le_bytes()); // trace snapshot layout, see the table above
+        b[54..58].copy_from_slice(&bd_yq.to_le_bytes()); // trace snapshot layout, see the table above
+        b[58..60].copy_from_slice(&self.field_slide.to_le_bytes()); // trace snapshot layout, see the table above
+        // +60 GFX word: unsupported on our side (no GFX-anim model) -- 0.
+        // +62 pad.
         b
     }
 

@@ -406,6 +406,12 @@ pub struct OracleFields {
     pub timer: u16,
     /// canon's HP u16 at BattleObject+0x24 (BattleObject.inc:101).
     pub hp: u16,
+    /// Post-hit invulnerability remaining: canon's mercy counter at
+    /// [CollisionDataPtr]+0x24 (CollisionDataPtr is BattleObject+0x54,
+    /// BattleObject.inc:144; measured 119..0 after a shockwave hit on the
+    /// mettaur row's own canon capture, 2026-09-14, T1) vs this actor's
+    /// own `mercy` (PLAYER_MERCY_FRAMES = 120, same scale by construction).
+    pub mercy: u8,
 }
 
 /// Invisibl hides the navi while bit 1 of its timer is set (see `show`).
@@ -716,6 +722,7 @@ impl Actor {
             panel_y: self.row as u8,
             timer,
             hp: self.hp,
+            mercy: self.mercy,
         }
     }
 
