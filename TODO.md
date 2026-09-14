@@ -669,8 +669,9 @@ every 0 row unchanged; allowlist entries removed only for rows that read 0; noth
 
 **Coordinator:** `verify_rows` on warp/buster/chip-use/field integrated plus warp/buster/chip-use/field isolated and every row the report names; the verifier on the sub_80081A4 / sub_8012DFC / sub_802BD60-chain citations and the watch traces.
 
-### F35. Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art  *(OPEN -- 2026-09-13)*
+### F35. Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art  *(PARTIAL -- 2026-09-14, mechanism mapped+cited, fix reverted honestly [scanline-6 wait: BG1 62->184/0->571 -- copy smear])*
 
+**Result.** mechanism mapped+cited, fix reverted honestly (scanline-6 wait: BG1 62->184/0->571 -- copy smear); verifier CONFIRMED tear ~scanline 0-6 (not 48), CpuFastSet 0x480B/8f live, queue chain (citation fixes: :663 not :653, table-indirect dispatch); unchecked: 1157px magnitude, k-indexing, 37-call span, FastSet src addr; seeds untouched, tree clean; worker muse-spark 80 turns $0.111, verifier GLM
 **Files.** src/backdrop.rs, src/main.rs
 
 **Why.** F26b measured two engine-timing facts on the backdrop. (1) Canon queues its backdrop tile copy
