@@ -112,6 +112,14 @@ const PROMPT_BLINK_BIT: u32 = 8; // provenance: derived -- sub_802BF0C's `mov r1
 /// any other fixture aimed at a canon capture of this window will need its
 /// own value, and a real battle's is whatever the counter happens to read.
 const PROMPT_BLINK_SEED: u32 = 0x2303_u32.wrapping_sub(PROMPT_WINDOW_FRAME_AT_K0); // provenance: peeked -- canon's own eToolkit CurFrame at this row's canon_ref (see above)
+/// CONFIRMED by a second pass (F34): watched at 0x0200a210 on this row's own
+/// canon capture, the halfword reads 0x22ef at canon frame 0 and +1 every
+/// frame after, so bit 3 flips at canon frames 41, 49 and 57; canon's OWN
+/// pixels inside the ten cells change one frame later -- 249 px at canon
+/// 42, 50 and 58 (k=21, 29, 37 of the compared window) -- and ours change on
+/// exactly those frames, with the first `sub_802C810` write (80 px, the
+/// setup map's lit line giving way to `byte_802C834`'s flat face) landing on
+/// k=14 on both sides.
 /// What this window's own `frames` reads at that same moment: the window is
 /// created on the fixture's first battle frame, which is the rust capture's
 /// marker origin, and the row pairs canon 21+k with rust origin+21+k, so at
