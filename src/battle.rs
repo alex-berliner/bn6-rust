@@ -3462,6 +3462,11 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 // sterile-nozero + 150 real-ROM afterdissolve frames, while the popup
                 // row's PAUSED-route canon shows it (frames 65..113) -- so draw it only
                 // when the flag says live.
+                // F12-cursor28 attribution (2026-09-14): this gate adds +22 cursor px
+                // (HEAD 154367/914/170 -> 154389/936/170) while a pure-layout 64B
+                // used-static pad alongside it moves cursor -28 (154389->154361/909)
+                // with no logic change: layout-jitter class (cf. F30's +-21s), not a
+                // code-path effect. Kept as-is.
                 if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
