@@ -571,7 +571,11 @@ const VULCAN_ARM: (i32, i32) = (23, -25); // provenance: derived -- byte_80B8BD4
 /// the per-frame shadow-table writer is the strh at ROM 0x0802C4CC inside the
 /// strip copier 0x0802C4B6, called from the 5-part sprite builder 0x0802C4E8,
 /// fed by a CpuFastSet ROM 0x08731DF4 -> EWRAM 0x02034B30 at capture 88).
-/// Only SuprVulc's gun lives long enough (112 frames) to reach these ages.
+/// Spawn is chip-gated (see below): Vulcan1/2/3 guns are gone by gun-ages
+/// VULCAN1_TIMING/VULCAN2_TIMING/VULCAN3_TIMING (see vulcan_timing) while
+/// SUPRVULC_TIMING's gun lives on, so only SuprVulc can reach these ages --
+/// and the age window alone would also fire for a short gun on a longer
+/// capture. The chip gate, not the age coincidence, keeps Vulcan1/2/3 clean.
 const VULCAN_FIREBALL_X0_AGE: u8 = 85; // provenance: peeked -- OAM obj0 becomes tile-512/pal-11 at capture 90 = gun-age 85
 const VULCAN_FIREBALL_X0: i32 = 285; // provenance: peeked -- OAM x at capture 90
 const VULCAN_FIREBALL_DX: i32 = 16; // provenance: peeked -- OAM x +16/frame, captures 90-104
@@ -3399,10 +3403,20 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     (mx + dx * VULCAN_ARM.0, my + VULCAN_ARM.1),
                     vulcan_gun_frames(shots),
                 ));
-                let fireball_tiles = spr::Assets::new(VULCAN_FIREBALL).gfx(0);
-                let fireball = DynamicSprite16::from_bytes(Size::S16x16, fireball_tiles)
-                    .to_vram(PaletteVramSingle::new(&VULCAN_FIREBALL_PAL));
-                self.vulcan_fireball = Some((fireball, None));
+                // Chip-gated, not age-coincidence: the render window
+                // ([VULCAN_FIREBALL_FIRST_VISIBLE, VULCAN_FIREBALL_LAST_VISIBLE])
+                // alone would also fire for a Vulcan1/2/3 gun on any capture
+                // running past VULCAN_FIREBALL_FIRST_VISIBLE, since the fireball
+                // ages on its own clock. Canon's tail fire belongs to SuprVulc
+                // only -- its gun alone outlives the window (Vulcan1/2/3 guns
+                // are gone by VULCAN1_TIMING/VULCAN2_TIMING/VULCAN3_TIMING gun-ages, see vulcan_timing) --
+                // so only SuprVulc spawns it.
+                if chip.id == CHIP_SUPRVULC {
+                    let fireball_tiles = spr::Assets::new(VULCAN_FIREBALL).gfx(0);
+                    let fireball = DynamicSprite16::from_bytes(Size::S16x16, fireball_tiles)
+                        .to_vram(PaletteVramSingle::new(&VULCAN_FIREBALL_PAL));
+                    self.vulcan_fireball = Some((fireball, None));
+                }
             }
             CHIP_AIRSHOT => {
                 self.chip_in_use = Some(chip);
