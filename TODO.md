@@ -692,8 +692,9 @@ lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor
 frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
 0 or unchanged; nothing worse. F34 (result, marker origin 13) found the lags are marker-anchored, not absolute: scroll tick = R - origin + 1, art tick = R - origin + 3 (F26b/F33b's R-7/R-5 are the origin-8 case); use that form.
 
-### F35b. Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline  *(BLOCKED -- 2026-09-14, fast copy 11->1 scanline works as mechanism but fixed placement fails both ways [vblank: 88 left)*
+### F35b. Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline  *(BLOCKED -- 2026-09-14, fast copy 11->1 scanline works as mechanism but fixed placement fails both ways [vblank copy leaves 88, scanli)*
 
+**Result.** fast copy 11->1 scanline works as mechanism but fixed placement fails both ways (vblank copy leaves 88, scanline-6 leaves 3007) -- canon usually-vblank + occasional slips, no fixed wait matches both; reverted clean, no commits, seeds untouched; slips-deterministic-in-supercycle hypothesis recorded NEEDS EVIDENCE (no F35c per two-in-a-row: F35 PARTIAL->F35b); span claim first-party only; worker muse-spark 87 turns $0.044
 **Result.** fast copy 11->1 scanline works as mechanism but fixed placement fails both ways (vblank: 88 left; scanline-6: 3007 left) -- canon drains usually-vblank + occasional slips, no fixed wait matches both; reverted clean, no commits, seeds untouched; slips-deterministic-in-supercycle hypothesis recorded for later (needs evidence); second consecutive non-DONE on backdrop objective -> no F35c per two-in-a-row; worker muse-spark
 **Files.** src/backdrop.rs, vendor/agb
 
