@@ -259,8 +259,9 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
-### F37f. `windowclose` k=0..9: the 162 px marcher on the slide frames (custom.rs)  *(OPEN -- 2026-09-14)*
+### F37f. `windowclose` k=0..9: the 162 px marcher on the slide frames (custom.rs)  *(PARTIAL -- 2026-09-14, mark-during-Closing KEPT unmerged [branch wt/f37f 0c05e00, custom.rs only]: windowclose 1458/162/40->0/0/40, c)*
 
+**Result.** mark-during-Closing KEPT unmerged (branch wt/f37f 0c05e00, custom.rs only): windowclose 1458/162/40->0/0/40, cursor 20->3/3/170; result 0->58457/1676 REGRESSION blocks landing; verifier CONFIRMED mark mechanism (sub_8029C08 0x67 ROM source) + reproduced result exactly (pixels-only, parity all-match; bottom strip x0..135 y144..158, power-digit un-gating suspect); FOLLOW-UP: restore old early-return, draw mark only inside it; worker muse-spark, verifier GLM
 **Files.** src/custom.rs, tools/harness.py (the windowclose row's note)
 
 **Why.** F37e's camera-dy floor (landed) leaves windowclose at 1458/162/40: exactly 162 px on each of nine
