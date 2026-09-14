@@ -1244,23 +1244,34 @@ impl Custom<'_> {
     /// (AUDIT wave 3d "bg3-merge"), shown once, centrally, in
     /// `Battle::draw()`.
     pub fn show(&self, frame: &mut GraphicsFrame, hud: &Hud) {
-        if !matches!(self.phase, Phase::Open) {
+        // Canon still draws the cursor bracket on the first slide-out
+        // frame (windowclose k=0 carries its 104 px; gone from the second
+        // -- the slide counter is still 0 on the first Closing draw and
+        // reads 0x0c from the second, the update running before the draw),
+        // while the mark and power go with the window contents at once.
+        let closing_first = matches!(self.phase, Phase::Closing { x } if x < SLIDE_STEP);
+        if !matches!(self.phase, Phase::Open) && !closing_first {
             return;
         }
+        let open = matches!(self.phase, Phase::Open);
         // The regular-chip mark sits above the pick stack. The real ROM's OAM
         // has it as a 32x32 object at (87,-4) whose only four non-blank tiles
         // are the ring, so the ring itself lands here.
-        Object::new(self.mark.clone())
-            .set_priority(Priority::P1)
-            .set_pos(MARK_AT)
-            .show(frame);
+        if open {
+            Object::new(self.mark.clone())
+                .set_priority(Priority::P1)
+                .set_pos(MARK_AT)
+                .show(frame);
+        }
         // The card's attack power, in the damage row's cells. The game
         // renders it into those tiles (sub_802869E draws the row); these are
         // the HUD's digit objects at the same place, and the chip name
         // beside it waits on the text font.
-        if let Some((_, power)) = self.pictured.filter(|&(_, p)| p > 0) { // unnamed: chips with no attack show no digits
-            let r = self.assets.regions[REGION_DAMAGE];
-            hud.draw_number(frame, power, ((r.x + r.w) * TILE_PX as usize) as i32, (r.y * TILE_PX as usize) as i32);
+        if open {
+            if let Some((_, power)) = self.pictured.filter(|&(_, p)| p > 0) { // unnamed: chips with no attack show no digits
+                let r = self.assets.regions[REGION_DAMAGE];
+                hud.draw_number(frame, power, ((r.x + r.w) * TILE_PX as usize) as i32, (r.y * TILE_PX as usize) as i32);
+            }
         }
         // The origin is the slot's position less 3 in each axis
         // (sub_8028894, sub_80288D0, asm03_0.s:4843-4884: a slot sits at
