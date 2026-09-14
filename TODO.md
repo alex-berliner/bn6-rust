@@ -690,6 +690,19 @@ lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor
 frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
 0 or unchanged; nothing worse. F34 (result, marker origin 13) found the lags are marker-anchored, not absolute: scroll tick = R - origin + 1, art tick = R - origin + 3 (F26b/F33b's R-7/R-5 are the origin-8 case); use that form.
 
+### F35b. Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline *(OPEN -- 2026-09-14)*
+
+**Files.** src/backdrop.rs, vendor/agb
+
+**Why.** F35's verified Result (PARTIAL, no commits): canon drains one BIOS CpuFastSet of 0x480 B into 0x06000040 every 8 frames mid-frame near scanline 0-6 (verifier CONFIRMED live: addr/size/period; queue chain main.s:17 -> ProcessGFXTransferQueue asm00_0.s:830 -> CopyByEightWords/SWI_CpuFastSet asm00_0.s:663; table-indirect dispatch via ProcessGFXAnims); ours does sequential per-slot replace_tile calls inside update() which span several scanlines, so a same-position wait smears partial-new rows (measured 62->184 / 0->571, reverted). Verifier corrections to carry: citation is :663 not :653; dispatch is table-indirect; tear sits scanline 0-6 (not 48); unchecked -- step magnitude, k-indexing, our loop span, FastSet src addr.
+**Do, in order.**
+1. Start in `bash tools/worktree.sh f35b-fastcopy`. Baseline cursor BG1-only (62 @237) + windowclose BG1 (0 @253) + canaries.
+2. Replace the per-slot step copy with one block copy sized to the step (memcpy/DMA or a minimal vendor/agb helper with doc comment -- F21d precedent; keep the manager's bookkeeping consistent) and measure its scanline span (must complete inside ~1 scanline); then place its completion at canon's drain scanline and re-measure BG1 diffs.
+3. Re-derive CURSOR_ROW/WINDOWCLOSE_ROW seeds with the single lead (marker-anchored form) and report the derivation values WITHOUT editing harness; re-run canaries + full table.
+**Rules.** src/backdrop.rs + vendor/agb only; no harness/fixture/allowlist change; no fitted constant; captures one at a time.
+**Measure and report.** Copy span before/after (scanlines), BG1 diffs before/after both rows, seed derivation values, rows before/after, full-table deltas. **Acceptance:** cursor BG1-only 0/170, windowclose BG1-only 0/40, canaries 0-or-unchanged; else measured span numbers and STOP.
+**Coordinator:** `verify_rows` on every row the report names; the verifier on the copy-span claim (it must measure sub-frame completion).
+
 ### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(OPEN -- 2026-09-13)*
 
 **Files.** src/main.rs, tools/oracle.py
