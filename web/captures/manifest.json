@@ -1,5 +1,23 @@
 [
   {
+    "file": "captures/windowclose-f29-progress.gif",
+    "name": "windowclose-f29-progress",
+    "label": "The chip window closing across F29. Decomposed by layer, the field behind the window was a 15-pixel camera pan: canon moves the camera from inside the window's own slide routine, one and a half pixels on each of the ten slide calls, rounding down; ours waited until the window was gone and then panned with the opposite rounding, ten frames late. Driving the pan from the slide calls with canon's arithmetic took the field layer to 0 on all 40 frames, and moving MegaMan to the panel canon's battle object actually holds took the sprite layer down too: 648948 to 407778. What remains is the backdrop's scroll phase, which this fixture never seeded, and the Mettaur's attack phase.\n\nwindowclose (isolated), before and after: canon on top; ours at ea8ab81 (648948 px over 40 frames, canon 81+k, rust offset 253); ours at f620086 (407778 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
+    "file": "captures/mettaur-f25d-progress.gif",
+    "name": "mettaur-f25d-progress",
+    "label": "The Mettaur row reaching zero across F25d. The last 4265 pixels sat on eight frames only, exactly the frames on which a shockwave segment changed its animation frame or vanished, one frame later on our side than canon's. Tiles and palette were byte-identical; the segment a hop spawns was created with its sprite marked fresh and skipped its first update, while canon's object dispatcher loads a sprite and updates it on the same frame. One statement after the spawn fixed it: the row reads 0 on all 70 frames and every state field of the oracle matches.\n\nmettaur (isolated), before and after: canon on top; ours at 7cb7e5f (4265 px over 70 frames, canon 140+k, rust offset 203); ours at 2a482d0 (0 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
+    "file": "captures/popup-f27b-progress.gif",
+    "name": "popup-f27b-progress",
+    "label": "The damage popup row across F27b. The 55520 pixels that remained were canon's emotion window, two sprites at the top left that our build already draws but hid the moment the last enemy died. Canon keeps the window until the HUD is torn down on the frame the RESULT countdown begins, 47 frames after the enemy's death, and drops it together with four other HUD elements; a write watch on the real ROM caught that store. Ours now shows the window from HUD init until that same event. The row went from 60614 to 5094, the window box reads 0 on all 80 frames, and what remains is the Mettaur's dissolve, which waits on its attack timing.\n\npopup (isolated), before and after: canon on top; ours at 9d07a63 (60614 px over 80 frames, canon 43+k, rust offset 122); ours at 858acb2 (5094 px, canon 43+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
     "file": "captures/mettaur-f25c-progress.gif",
     "name": "mettaur-f25c-progress",
     "label": "The Mettaur row across F25c. F25b had measured that our Mettaur's whole attack path is pixel-exact one frame away from where MegaMan's hit pairs: the shockwave reached him in 44 frames on our side and 45 in canon. Canon's wave presents its collision at init on the hop frame but MegaMan's HP drops the next frame, so ours now latches the hop and reports the hit one frame later, for the shockwave only, with no fitted constant. The row fell from 19698 to 4265 differing pixels, and the state oracle's ten fields now match on all 70 frames. What is left sits on eight frames only, the departure spray around MegaMan, which differs in content rather than timing (F25d).\n\nmettaur (isolated), before and after: canon on top; ours at 929affc (19698 px over 70 frames, canon 140+k, rust offset 202); ours at 7fe7c1d (4265 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",

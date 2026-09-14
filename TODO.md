@@ -177,8 +177,9 @@ it (fix agb, do not work around it -- see the vendor-deps rule).
 change. **Coordinator:** verify_rows on result, field and the canaries; the verifier on the
 "1 frame per step" claim (it must measure it, e.g. with the oracle or a frame-count watch).
 
-### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, vdoll family: chip-vdoll 628/564->0/0/70 PASS [neg 36375])*
+### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, suprvulc pass: LOCALIZED not fixed [tool-budget stop, no edits, branch clean removed]: residue = one 16x16 can)*
 
+**Result.** suprvulc pass: LOCALIZED not fixed (tool-budget stop, no edits, branch clean removed): residue = one 16x16 canon fireball (obj0 tile512 pal11) k99-112, parks x=37 from capture 107; canon 10 T3 shots/11f period vs ours stagger 10; hypothesis sub_80EBF6E last-shot beat / muzzle-fire / T4-pool UNVERIFIED; no verifier (no claims); worker muse-spark 76 turns $0.026
 **Result.** vdoll family: chip-vdoll 628/564->0/0/70 PASS (neg 36375); rest_snaps+rest_z(0)+rest_poisons+LANDING_LAG=1 (sub_80D47C0/loc_80D481E); bugbomb/seeds/minibomb/guards 0, cursor 620802; verifier CONFIRMED all 3 (routine, decrement-before-branch, scope) + rules clean; landed c622a81 HEAD re-check MATCH; worker muse-spark 57 turns $0.032, verifier GLM
 **Result.** bugbomb family: chip-bugbomb 8280/414->0/0/70 PASS (neg 23486); vdoll 628 unchanged (BugBomb-only gate); cursor 620802 unchanged; seeds/minibomb/guards 0; verifier CONFIRMED sub_80D9E94 snap (Z=0xa<<16), VDoll path identical, blast out-of-row, rules clean (8280-decomposition unchecked); landed 26372d1 HEAD re-check MATCH; next: vdoll 628; worker muse-spark 58 turns $0.027, verifier GLM
 **Result.** feet per-family push order: poisseed 115/43->0/0/70 PASS (neg 50708), ice/grass/minibomb 0; cursor +112 drift GONE (620802, F22 value, HEAD re-check MATCH); bugbomb 8280/vdoll 628 unchanged; verifier CONFIRMED scope+cursor-numbers+rules-clean, OAM mechanism UNCHECKED (gap, uncontradicted, 0px/70f); landed e257338; worker muse-spark 90 turns $0.042, verifier GLM
@@ -323,8 +324,9 @@ canon ROM into assets/, timing and position from the routine, never hand-drawn o
 (enemy box 6081 may remain, it is F28's); wave, window, opening, chip-cannon, field, tiles, gauge 0;
 full table nothing worse.
 
-### F28. Mettaur: its first attack starts 64 frames after canon's, relative to battle start  *(CLAUDE -- 2026-09-13)*
+### F28. Mettaur: its first attack starts 64 frames after canon's, relative to battle start  *(PARTIAL -- 2026-09-13, premise refuted as a defect, two real frames fixed, landed)*
 
+**Result.** premise refuted as a defect, two real frames fixed, landed. The 64 = 34 + 30: canon's pausedwithcannon.state resumes a Mettaur already spawned and mid-hop (slot 0x0203ab60, not 0x0203aa88 which is empty; CurAction 0x0a frames 0-27, 0x08 28-30, 0x0b from 31) while ours runs from init (0x00 to battle 61, 0x09 from 62, 0x0b at 95): 34 frames of scene difference plus canon's one-time 30-frame post-spawn wait an already-spawned Mettaur never runs; a constant the alignment absorbs. Real defects: sub_8109CBC (asm31.s:170665-170672) exits its wait when the subtract goes negative so an arming of 0x1e is 31 frames (ours 30), and sub_810A004's Param4 branch (asm31.s:171296-171305) spends its own frame arming the wait (ours was born inside it); fixed in src/ai.rs (param4 its own field, born in RowCheck, the waiter owns its last frame); our entries now battle 97/203/309. Alignment by event: mettaur offset 203 -> 205 (V 204/206 = 46297/37873 identical shape), wave 345 -> 347 (346/348 = 4800/3840); on the branch mettaur 4265/800/70 (pre-F25d base), wave 0/0/90, tiles/gauge integrated unchanged 3865/678/8 (neg 15891), isolated 0/0/8, popup unchanged, field integrated +5 (305258->305263, worst same, enemies:0 row). Why tiles/gauge integrated cannot be 0 yet: HUDMATCH clears FLAG_OPEN_WINDOW and src/battle.rs:2107-2110 re-arms gauge_pause every frame with the gauge full while only the open-window branch decrements it, so our battle freezes from battle 62 and the Mettaur never leaves CurAction 0x09; the whole 3865 is its idle sprite vs canon's swing (bbox (164,68)-(204,111), every other pixel 0); the one-line fix alone makes the row worse (16130) because by battle 427 our MegaMan has taken two shockwave hits (HP 60->50 at 177, ->40 at 389) and blinks while canon's holds 60 unhit: the fixture must seed MegaMan's HP/mercy like it seeds the backdrop and gauge (F28b). popup's rust side has no enemy at all (enemies:0) while canon's is deleted and dissolving: the enemy-box residual is 7 frames k=0..6, not the tiles/gauge phase. Claude Opus agent, 101 tool calls, 32 min, 247k tokens.
 **Files.** src/ai.rs, src/fixture.rs, tools/harness.py (the mettaur/tiles/gauge Align only, by measured event)
 
 **Why.** F25b measured the attack entries: canon at battle frames 31/137/243, ours at 95/201/307,
@@ -342,8 +344,9 @@ event-locked alignment (if the event moves, re-sweep the band and report the new
 and the event that names it); popup's enemy box reported; wave, window, opening, chip-cannon, field
 0; full table nothing worse.
 
-### F29. `windowclose`: decompose the remaining 648948 by layer and frame, fix what lives in the window  *(CLAUDE -- 2026-09-13)*
+### F29. `windowclose`: decompose the remaining 648948 by layer and frame, fix what lives in the window  *(PARTIAL -- 2026-09-13, windowclose 648948/27391/40 -> 407778/11879/40 [neg 534875 not blind], landed)*
 
+**Result.** windowclose 648948/27391/40 -> 407778/11879/40 (neg 534875 not blind), landed; cursor exactly 620802/6884/170 unchanged though it shares CUSTMATCH_ROW; full table otherwise identical, field integrated -5. Decomposition at offset 253: BG0 0, BG3 0 (F18-F18d), BG2 field 266412/18864 on k=1..19 = canon's 15-px camera pan driven from inside the window's slide routine (sub_8026BF4 adds dword_8026CC8=0x18000 to Camera+0x34 per slide-out call, asm03_0.s:1099-1104, constant :1141-1142, slide-in subtracts :964-969) with an arithmetic shift (floor), ours ten frames late with ceil -> fixed in src/battle.rs (pan on the slide calls via Custom::is_closing(), div_euclid floor; FIELD_SLIDE/FIELD_SLIDE_STEP now derived = 10 x 0x18000), BG2 0 on all 40 frames; OBJ 97644 = MegaMan's panel (CUSTMATCH_ROW megaman_col/row 3,2 -> 2,3 per canon's BattleObject PanelX/Y +0x12/+0x13, -36620) + the Mettaur's phase (14228, flat 205/frame from k=10) + HP boxes on k<10; BG1 backdrop 877602 = a constant (20,10) px scroll-phase translation on all 40 frames because the fixture seeds no backdrop phase (F26b: per-row seed from canon's counters 0xffff9ad8/0xffffcd6c and GFX entry 25 at canon frame 81; a shared seed takes cursor to 1222398) plus the odd-frame lsr-vs-floor rounding backdrop.rs:278-283 predicts. Trap recorded: -x.div_euclid(2) parses as -(x.div_euclid(2)) and reproduces the old rounding on odd frames. Remaining 407778 = BG1 phase + Mettaur phase. Claude Opus agent, 103 tool calls, 33 min, 414k tokens.
 **Files.** src/custom.rs, src/hudtiles.rs, src/field.rs, tools/harness.py (the windowclose row's note only)
 
 **Why.** windowclose 648948/27391/40 after F18-F18d fixed the close transients; the slide (k0-9) is
@@ -357,8 +360,9 @@ as a proposal with the measurement behind it.
 **Acceptance.** the decomposition table with citations; every fix verified on windowclose plus
 wave, window, opening, chip-cannon, field; full table nothing worse.
 
-### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(CLAUDE -- 2026-09-13)*
+### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(PARTIAL -- 2026-09-13, the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, th)*
 
+**Result.** the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, the battle-result mark (16x16 tile 0x200 pal 11 prio 0 sliding to (37,21)): 163 + 17x177 = 3172 = the whole row, on k=14..31; canon's scripted B at 150/151 never fires (CurState/CurAction/CurAnim/HP 04/08/00/60 and the sequencer 0x0400000c constant over canon 145..186, F10's 0x0C delivery wall re-measured) and our ZERO_ENEMY fixture never resolves so we never draw the mark; the alignment 122 is the first of an 8-wide plateau (122..129 all 3172; 90..105 all 13959; the event-locked offset 100 reads 13959/794/32); our buster pose (rust 111..129) lies entirely outside the compared window 130..161. Landed: canon's t3_0x0_80C4E58 (asm31.s:27690-27697, off_80C4E70 :27703, sub_80C4E7C sprite_load :27725-27727) shows a shot's first animation frame on its spawn frame, ours ran a frame late (fresh player's first update eaten, src/spr.rs:336-343): the pre-tick now lives once in Shot::new (removed from shockwave(), behaviour-neutral for every current row; full table byte-identical both ways, field integrated -5). The plain buster builds no Shot at all (Update::Strike charged:false is a hitscan). Measured against a canon side that fires (Start@10,B@30,B@31 in the 0x08 window): pose 25 frames = 5 fire ticks (sub_80EB450 asm31.s:108680-108691) + byte_80209CC[Rapid*6+min(free panels,5)] (sub_800FAF6 asm00_2.s:1944-1990, dat01.s:146) = 5+0x14 vs ours 19; barrel at pose+0 vs ours +2 (BUSTER_ARM_DELAY); muzzle at pose+1 vs +4 and our FX double-ticked on its spawn frame (battle.rs:2623 fx.update() plus the effects loop); both objects live until object_exitAttackState (sub_80EB502 asm31.s:108712-108722) vs our fixed 18/7 frames. Next: F31b re-cuts the row around a canon side that fires and lands those four. Claude Opus agent, 69 tool calls, 20 min, 195k tokens.
 **Files.** src/shot.rs, tools/harness.py (the buster row's note only)
 
 **Why.** buster isolated reads 3172 px over 32 frames and has been BLOCKED since F10/F10b (two
@@ -389,8 +393,9 @@ canon's driver sequences it (cite), and show the two builds' captures identical 
 on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
 chip-cannon 0.
 
-### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(CLAUDE -- 2026-09-13)*
+### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(DONE -- 2026-09-13, popup 60614/1842/80 -> 5094/1148/80 [neg 5286 not blind], the x2-45 y18-33 emotion-window box 0 on all 80 fram)*
 
+**Result.** popup 60614/1842/80 -> 5094/1148/80 (neg 5286 not blind), the x2-45 y18-33 emotion-window box 0 on all 80 frames; the residual 5094 is the Mettaur's dissolve (F28). Canon's rule implemented: the emotion window is battle-HUD element 14 (mask dword_20352C0, sub_801BEE0 asm00_2.s:25540-25563, draw sub_801CDEC :27554-27583), cleared with elements 0/1/4/10 by sub_80081A4 -> sub_801BED6(0xE4C53) (asm00_1.s:10617-10621) on the frame the banner sequencer enters the RESULT countdown 0x0C, measured on the real ROM with --watch-write (frame 47 seq 0x0C, frame 48 mask 0x4497->0x0084 at lr 0x080081B9); canon holds the window through the enemy's death and its 47-frame dissolve, ours dropped it at the death. src/battle.rs: hud_live set at HUD init, cleared where over fires (same event in this build), draw gate hud_live && no popup && no fade; src/fixture.rs FLAG_HUD_LIVE bit 6 (peeked) because popup and the 43 chip rows share one zero-enemy descriptor while their canon captures sit on opposite sides of the teardown (popup mask 0x4497 on all 125 frames, afterdissolve 0x8084 on all 47), so only the descriptor can say which; src/emotion.rs LEFT/RIGHT provenance derived from sub_801CDEC. cannon/chip-cannon/chip-invisibl/mettaur/opening/tiles/gauge/field/wave/window/card/banner/cursor/windowclose/result unchanged. Remaining: our end sequence fires over at the last enemy's defeat where canon reaches the RESULT countdown 47 frames later after the dissolve (F32); the teardown models element 14 only. Claude Opus agent, 98 tool calls, 27 min, 380k tokens.
 **Files.** src/battle.rs (the emotion-window gate and the teardown only; pi's F12 worker edits other parts of battle.rs), src/emotion.rs, src/fixture.rs (only if a fixture rule must change), tools/harness.py (the popup row only)
 
 **Why.** F27 identified popup's 55520 px: two OBJs at (0,18) 32x16 tile 0x3b4 and (32,18) 16x16 tile
@@ -446,6 +451,97 @@ blink, names, pictures, deck exact). Everything left is x>=112: the battle behin
 **Rules.** No alignment change except by measured event (offset 237 stands until a watch names a new
 event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
 row named; the verifier only if src/ changes or a canon routine is cited.
+
+### F28b. tiles/gauge integrated to 0: unfreeze the HUDMATCH battle and seed MegaMan's mid-battle state; then popup's dissolving enemy  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/battle.rs (the gauge_pause re-arm hunk at ~2107 only), src/fixture.rs, tools/harness.py (the HUDMATCH and popup descriptors and notes)
+
+**Why.** F28 measured why tiles/gauge integrated sit at 3865/678/8: HUDMATCH clears FLAG_OPEN_WINDOW and
+battle.rs re-arms gauge_pause every frame once the gauge is full, so the rust battle freezes from battle 62
+and the Mettaur never leaves its wait; the whole residue is its idle sprite against canon's swing. The
+one-line fix (`if self.gauge == GAUGE_FULL && self.open_window_allowed() { self.gauge_pause = GAUGE_PAUSE }`)
+alone makes the row worse (16130) because by battle 427 our MegaMan has taken two shockwave hits and is in
+mercy while canon's holds HP 60 unhit through frame 51: the fixture has to carry canon's mid-battle MegaMan
+(HP, mercy counter, position) the way it already carries the backdrop phase (scroll_xq/scroll_yq) and the
+gauge (gauge_tick). Measured with the throwaway unfreeze: the Mettaur's box reads exactly 0 on all 8 frames
+at the row's pinned offset 427 after F28's two frames.
+**Do.** (1) The gauge_pause fix, cited (canon's custom gauge does not pause a battle whose window cannot
+open). (2) A fixture field (peeked provenance) for MegaMan's HP and mercy state, read from canon's
+BattleObject at 0x0203a9b0 (+0x24 HP, the mercy counter field) at the row's reference frame, applied at
+battle init; HUDMATCH's descriptor carries canon's values. (3) Measure tiles/gauge integrated per half
+(left/MegaMan, right/Mettaur). (4) Then popup: its rust side has no enemy (enemies:0) while canon's Mettaur
+is deleted and dissolving for k=0..6 (5094 px after F27b); give the fixture the dissolving enemy at
+canon's phase (state DELETE, HP 0, dissolve counter peeked) or show why F19's blanking should cover it.
+**Acceptance.** tiles and gauge integrated 0/0/8 (negatives not blind) with the isolated variants still 0;
+popup 0/0/80 or its residual attributed per frame; mettaur, wave, window, opening, chip-cannon, field 0 or
+unchanged; the field integrated +5 re-measured; nothing worse.
+
+### F31b. `buster`: re-cut the row around a canon side that fires, then land the four measured buster defects  *(CLAUDE -- 2026-09-13)*
+
+**Files.** tools/harness.py (the buster row, its fixture and Align), tools/states.py (a recipe if one is needed), src/actor.rs (the BUSTER pose constants only), src/battle.rs (the buster hunks only: fx.update() at ~2623, BUSTER_ARM_DELAY, BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES)
+
+**Why.** F31 showed the buster row measures nothing about the buster: canon's press never fires in it and the
+3172 is the result mark; its offset is a plateau tie-break, not an event. Canon fires when the press lands
+in the 0x08 window (Start@10,B@30,B@31 on the STERILE+PAUSED+DELETE side: action 0x11 at f33, anim 0x0e
+f34..f58, barrel f35, muzzle f36, both gone f60). A row is honest only if both sides fire: cut the canon
+side there, lock canon_ref to the measured press event (the action write, watched), align by the same
+event on our side (rust press frame), and re-sweep the band for a unique minimum. Then land the four
+measured defects (pose length 25 = 5 + byte_80209CC lookup, derived; barrel on tick 0; the FX ticked once
+on its spawn frame; barrel and muzzle until object_exitAttackState) with citations, measuring each alone.
+**Acceptance.** a new buster row that compares two firing busters (state watches on both sides show the
+attack state on the same offset), negative not blind, alignment by event; buster as low as the four fixes
+take it; buster integrated re-measured; wave, window, opening, chip-cannon, field, mettaur, popup 0 or
+unchanged; every chip row unchanged (they share the fixture path); nothing worse. The old 3172 alignment is
+not to be "fixed" by giving our side the result mark: a row that draws nothing on either side proves nothing.
+
+### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/hud.rs, src/hudtiles.rs, src/emotion.rs, tools/harness.py (the integrated rows' notes only), tools/allowlist.py entries removed only when a row reads 0
+
+**Why.** Four integrated (full-HUD) variants are allowlisted since AUDIT-6 ("HUD vs a zero-enemy arena, not
+compared before"): field 305263/10061/40, warp, buster, chip-use, each in the hundreds of thousands. F27b
+found the HUD is driven in canon by a per-element enable mask (dword_20352C0; elements 0, 1, 4, 10 and 14
+are torn down together at the RESULT countdown by sub_80081A4, asm00_1.s:10617-10621; the dispatcher
+sub_801BEE0 asm00_2.s:25540-25563 with an updater and a draw per element, e.g. element 14 = emotion window
+sub_801CADC/sub_801CDEC) and that our build models only element 14 of it. Decompose field integrated by
+element: capture both sides, split the residue by HUD region (the HP box, the custom gauge, the emotion
+window, the hand icon, the enemy HP objects, the chip name/icon) and by layer, name each element's canon
+draw routine from the dispatcher table and its enable bit, and compare our drawing of it frame by frame.
+**Do.** Fix element by element in your files with citations; measure each; then re-check warp, buster and
+chip-use integrated (same HUD) and report their deltas. **Acceptance.** a per-element table for field
+integrated with canon routines; field integrated as low as the elements you fixed take it, the isolated
+variants and wave/window/opening/chip-cannon/popup/tiles/gauge untouched at their values; an allowlist entry
+removed only for a row that reads 0; nothing worse.
+
+### F32. End sequence: `over` fires at the last enemy's defeat, canon enters the RESULT countdown 47 frames later, after the dissolve  *(OPEN -- 2026-09-13)*
+
+**Files.** src/battle.rs (the end sequence only), src/banner.rs
+
+**Why.** F27b measured on the real ROM (PAUSED, enemy HP forced 0, Start@10): the banner sequencer enters
+the RESULT countdown 0x0C at frame 47 and the HUD teardown fires at 48, while the enemy's death is at
+frame 0 and its dissolve fills the 47 frames between; ours fires `over` (banner + RESULT) at the defeat
+itself. No row measures that offset today because the result row is aligned by event on the results
+screen, but it is a battle-flow defect that every later row through the end of a battle will hit.
+**Do.** Watch canon's sequencer (dword_203CA70) and the enemy's state from the killing hit to 0x0C on the
+result fixture's route, cite the routine that counts the dissolve and the one that enters 0x0C, and make
+ours enter the end sequence on the same event with the same count. **Acceptance.** the frame of 0x0C
+after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
+alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
+
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
+
+**Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
+(block-copied tilemap, one blit per frame, F21b's slide). F21 left "inside the window 904 on the plateau,
+outside ~2900/frame backdrop tail + slide lag"; nobody has decomposed the 102547 since F21d. Per-layer and
+per-frame first: the window's BG, the backdrop BG1 (its scroll phase is a per-row seed derived from canon's
+counters at the row's canon_ref -- F26b is deriving that mechanism for the CUSTMATCH rows; if its
+derivation lands first, apply it here, otherwise derive this row's seed the same way and cite it), OBJ.
+Then the window itself: canon's driver chain sub_802BD60 -> sub_802BE36 -> sub_802C044/sub_802C0A4 (F21),
+its slide timing and tile content frame by frame against ours.
+**Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
+(each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
 ### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(CLAUDE -- 2026-09-13)*
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py

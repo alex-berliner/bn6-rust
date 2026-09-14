@@ -222,8 +222,17 @@ const GAUGE_STEP: u16 = 0xd; // provenance: derived -- sub_800855E, asm00_1.s:11
 /// The field slides 15 px down while the chip menu is up, at 1.5 px a frame:
 /// measured on the real ROM, its top edge runs 72, 74, 75, 77, 78, 80, 81, 83,
 /// 84, 86, 87 over ten frames and holds at 87. Kept in half-pixels.
-const FIELD_SLIDE: u16 = 30; // provenance: peeked -- measured on the real ROM (kept in half-pixels)
-const FIELD_SLIDE_STEP: u16 = 3; // provenance: peeked -- measured on the real ROM (kept in half-pixels)
+///
+/// Canon does not "slide the field" at all: it pans the CAMERA, from inside
+/// the chip window's own slide routines. The slide-out (sub_8026BF4,
+/// reference/bn6f/asm/asm03_0.s:1037) adds dword_8026CC8 = 0x18000 to
+/// Camera+0x34 on each of its ten calls (asm03_0.s:1099-1104, the constant at
+/// asm03_0.s:1141-1142) and the slide-in subtracts the same value on each of
+/// its own (asm03_0.s:964-969). 0x18000 is 1.5 px in the camera's 16.16, so
+/// ten calls ARE the 15 px -- the step and the total are canon's, not a
+/// measurement of the picture.
+const FIELD_SLIDE: u16 = 30; // provenance: derived -- ten slide calls x 0x18000 (1.5 px in 16.16) on Camera+0x34, asm03_0.s:1099-1104 (kept in half-pixels)
+const FIELD_SLIDE_STEP: u16 = 3; // provenance: derived -- one slide call's 0x18000 = 1.5 px, asm03_0.s:1099-1104 (kept in half-pixels)
 // Chips, by id in ChipDataArr_8021DA8 (data/ChipDataArr.s). The swords
 // (attack family 0x13, sub_80EB776, asm31.s:108924) hold animation 5 for
 // 0x15 frames with the hit when the timer reads 0xc -- the ninth frame --
@@ -1132,6 +1141,10 @@ pub struct Battle<'a> {
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
     emotion: crate::emotion::Emotion,
+    /// Whether canon's battle-HUD element 14 (the emotion window) is still
+    /// enabled -- see `Emotion`'s own gate in `draw` for the canon rule and
+    /// the measurement.
+    hud_live: bool,
     /// Frames until a seed's sheet goes down, counted from the pod landing,
     /// and the palette it takes.
     poison_pending: u8,
@@ -1275,7 +1288,12 @@ const WINDUP_TELEGRAPH_EVERY: u8 = 8; // provenance: peeked -- measured telegrap
 /// ahead, the column ahead, two panels ahead -- see the CHIP_ doc above).
 const LONG_SWORD_FAR: i32 = 2; // provenance: derived -- byte_80EBA18's shapes (see the CHIP_ doc above)
 /// FIELD_SLIDE is kept in half-pixels (see its doc), so halving converts
-/// the slide to a screen scroll.
+/// the slide to a screen scroll -- with `div_euclid`, because canon reads its
+/// 16.16 camera with an ARITHMETIC shift, i.e. truncating toward -inf. On a
+/// scroll that runs negative that is not the same as Rust's `/`: over the ten
+/// close frames the pan's progress is floor(3n/2) = 0,1,3,4,6,7,9,10,12,13,15
+/// (canon's own top-of-field rows, measured on `windowclose`), where a divide
+/// toward zero gives ceil(3n/2) and is a pixel out on every odd step.
 const FIELD_SUBPX: u16 = 2; // provenance: derived -- FIELD_SLIDE is kept in half-pixels (see its doc)
 /// The results screen fade runs 1-16 and 16 means fully black
 /// (results::Shown::update).
@@ -1671,6 +1689,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
+            // Canon enables the emotion window with the rest of the battle
+            // HUD and never re-enables it inside a battle, so this starts
+            // set and is only ever cleared (in `update`, on the teardown).
+            // A battle with an enemy always has a live HUD in canon; only a
+            // zero-enemy arena -- which canon never fields -- has to be told,
+            // hence FLAG_HUD_LIVE (see its own doc in fixture.rs).
+            hud_live: !enemies.is_empty()
+                || fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
             hud_tiles,
             hud_bg,
@@ -1968,13 +1994,35 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // the HUD live within the frame ranges any check covers, so there
             // is nothing to measure this against yet -- flagged in the
             // ticket report rather than guessed at.
-            let want = if self.custom.is_some() { FIELD_SLIDE } else { 0 };
+            // ...and it pans back WHILE THE WINDOW IS STILL LEAVING, not
+            // after it has gone: canon's step lives inside the slide-out
+            // itself (see FIELD_SLIDE's doc), one 1.5 px per slide call, so
+            // the ten steps and the ten slide frames are the same ten frames.
+            // `Custom::is_closing()` is that predicate, asked before
+            // `Custom::update` consumes the frame. Waiting for `custom` to
+            // become None instead put the whole pan ten frames late (it turns
+            // None on the TENTH slide call): windowclose BG3 0 but BG2 266412
+            // over k=1..19, canon k=2/4/6/8/10 comparing exactly 0 against our
+            // k=12/14/16/18/20 (F29, measured at this row's offset 253).
+            let want = if self.custom.as_ref().is_some_and(|w| !w.is_closing()) {
+                FIELD_SLIDE
+            } else {
+                0
+            };
             self.field_slide = if self.field_slide < want {
                 (self.field_slide + FIELD_SLIDE_STEP).min(want)
             } else {
                 self.field_slide.saturating_sub(FIELD_SLIDE_STEP).max(want)
             };
-            self.bg.set_scroll_pos((0, -((self.field_slide / FIELD_SUBPX) as i32))); // (see FIELD_SUBPX)
+            // NOTE THE PARENTHESES: unary minus binds looser than a method
+            // call, so `-x.div_euclid(2)` is `-(x.div_euclid(2))` -- the
+            // divide-then-negate that rounds toward zero, i.e. exactly the
+            // bug this line exists to fix. Measured with the parentheses
+            // missing: BG2 back to 7320-7836 px on k=1,3,5,7,9 (the odd steps
+            // only) and 0 on the even ones, our field one pixel high.
+            let camera_half_px = -(self.field_slide as i32);
+            self.bg
+                .set_scroll_pos((0, camera_half_px.div_euclid(FIELD_SUBPX as i32))); // (see FIELD_SUBPX)
         }
         // Once either side is deleted the fight is decided: the game goes to
         // its results, which are not built yet, so here the field just holds.
@@ -2001,6 +2049,15 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
         };
+        // The battle HUD's teardown: canon drops elements 0, 1, 4, 10 and 14
+        // together on the frame the end sequence starts, one frame before the
+        // banner this same `over` arms below (sub_80081A4's
+        // sub_801BED6(0xE4C53), asm00_1.s:10617-10621; measured frame 48
+        // against the sequencer's 0x0C at 47). Only the emotion window is
+        // modelled here; it is never re-enabled inside a battle.
+        if over {
+            self.hud_live = false;
+        }
 
         // The gauge only runs while the fight does; a full gauge holds
         // everything, including itself, through the chimes and then the
@@ -3671,15 +3728,31 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha)) // canon: agb full-weight blend (16)
                 .enable_background(bg_id);
         }
-        // The emotion window is OAM objects 2 and 3 on the real ROM, so it
-        // goes in before anything the fight draws and stands over all of it.
-        // It goes with the fight, and the fight ends when the last enemy does:
-        // /tmp/noenemy2.state has no emotion window with its RESULT window up,
-        // and neither does a sterile capture, whose enemy the harness deletes
-        // on the first frame. So it is drawn only while an enemy is still
-        // standing.
-        let fighting = !self.enemies.is_empty() && !self.enemies.iter().all(|e| e.is_defeated());
-        if fighting && self.shown.is_none() && self.fade_out == 0 {
+        // The emotion window: two objects, (0,18) 32x16 tile 0x3b4 and
+        // (32,18) 16x16 tile 0x3bc, palette 12, priority 2 -- exactly the
+        // words canon's draw routine sub_801CDEC hardcodes
+        // (asm00_2.s:27554-27583). It is battle-HUD ELEMENT 14, dispatched
+        // every frame while bit 14 of the element mask dword_20352C0 is set
+        // (sub_801BEE0, asm00_2.s:25540-25563; updater sub_801CADC at
+        // asm00_2.s:25577, draw at asm00_2.s:25627).
+        //
+        // TODO F27b (2026-09-13): it does NOT go with the last enemy. Canon
+        // clears bit 14 in ONE teardown with the rest of the fight's HUD, on
+        // the frame the banner sequencer enters its RESULT countdown 0x0C:
+        // sub_80081A4 (asm00_1.s:10617-10621) calls sub_801BED6(0xE4C53),
+        // and 0xE4C53 & 0x4497 = 0x4413 -- elements 0, 1, 4, 10 and 14 at
+        // once. Measured on the real ROM (PAUSED, enemy HP forced to 0,
+        // Start@10): the sequencer dword_203CA70 goes 0x08 -> 0x0C at frame
+        // 47, the mask goes 0x4497 -> 0x0084 at frame 48 (--watch-write
+        // 0x20352C0:4 names the store: at=0x0801BEDC, lr=0x080081B9), bit 15
+        // is set back a moment later by the ENEMY DELETED banner going up
+        // (sub_801E792's sub_801BECC(1<<15), asm00_2.s:31055-31112) and the
+        // banner runs 49..106. So the window survives the enemy's death and
+        // its whole dissolve -- 47 frames of it here -- and goes with the
+        // end sequence, one frame before the banner. `over` is this build's
+        // same event (it arms that banner on the frame it fires), so the
+        // teardown hangs off it in `update`.
+        if self.hud_live && self.shown.is_none() && self.fade_out == 0 {
             self.emotion.show(frame);
         }
         // The chip at the front of the hand hangs over the navi as a 16x16

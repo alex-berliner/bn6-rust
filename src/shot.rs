@@ -152,12 +152,6 @@ impl Shot {
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
         let mut shot = Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0);
-        // PRE-TICKED. Shots are stepped before the actors, so one the enemy
-        // spawns during its own update misses this frame's tick and its
-        // animation runs a frame behind the real ROM's for the whole flight.
-        // Measured against the capture's Mettaur: with the wave shifted one
-        // frame later, three of its four differing frames go to zero.
-        shot.player.update();
         shot.lights_panel = true;
         shot
     }
@@ -176,7 +170,7 @@ impl Shot {
         delay: u8,
         anim: usize,
     ) -> Self {
-        Self {
+        let mut shot = Self {
             col,
             row,
             dx,
@@ -196,7 +190,30 @@ impl Shot {
             departure: None,
             hopped: false,
             hop_pending: false,
-        }
+        };
+        // PRE-TICKED, for EVERY shot: canon's travelling-attack dispatcher runs
+        // one `object_updateSprite` on the object's SPAWN frame. `t3_0x0_80C4E58`
+        // -- the dispatcher of the buster's and the cannon's own shot object
+        // (asm31.s:27690-27697) -- reads CurState, calls the state routine
+        // through the jump table, and then falls through to
+        // `bl object_updateSprite` before it returns; state 0 is `sub_80C4E7C`
+        // (off_80C4E70, asm31.s:27703), which is what loads the sprite and its
+        // animation data (`sprite_load`/`sprite_loadAnimationData`,
+        // asm31.s:27725-27727) and writes CurAnim (asm31.s:27732). So the shot's
+        // first animation frame is DISPLAYED on the frame it spawns and its
+        // duration counts that frame. `spr::Player::new` leaves the sprite
+        // `fresh`, and a fresh player's next `update()` is eaten (spr.rs's
+        // `update`), so without this tick every animation frame of every shot
+        // lands one frame late -- the same defect F25d measured on the
+        // shockwave's hop-spawned segment, whose dispatcher `t3_0x16_80C6B40`
+        // (asm31.s:31413-31421) has the identical dispatch-then-updateSprite
+        // shape. `shockwave()` used to do this for itself; `buster()` and
+        // `cannon()` did not, and it is one rule for the whole t3 family, so it
+        // lives here (F31: canon's buster shot object measured, asm31.s:27690).
+        // provenance: derived -- t3_0x0_80C4E58's post-dispatch
+        // object_updateSprite, asm31.s:27690-27697.
+        shot.player.update();
+        shot
     }
 
     /// True when the hitbox arrived on its panel on the previous update --
@@ -313,8 +330,8 @@ impl Shot {
                 // the new segment it spawns on the next panel.
                 let anim = self.player.anim();
                 let old = core::mem::replace(&mut self.player, spr::Player::new(self.assets, anim));
-                // PRE-TICKED, exactly as the launched segment is in
-                // `shockwave()`: the segment a hop spawns runs its own init
+                // PRE-TICKED, exactly as every shot is in `new()`: the
+                // segment a hop spawns runs its own init
                 // AND one `object_updateSprite` in the SAME frame the old one
                 // hops. `t3_0x16_80C6B40` (asm31.s:31413-31421) dispatches on
                 // CurState -- state 0 is `sub_80C6B64` (off_80C6B58,

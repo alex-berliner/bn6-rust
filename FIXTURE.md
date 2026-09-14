@@ -20,7 +20,7 @@ little-endian.
 | +12 | u8  | hand_count | 0..5 |
 | +13 | u8[5] | hand | chip ids in the game's own numbering (`byte_2004C20` index) |
 | +18 | u8  | gauge | 0 = empty, 1 = full |
-| +19 | u8  | flags | bit0 open with the chip window; bit1 blank HUD; bit2 blank backdrop; bit3 auto-fire the hand; bit4 skip the white intro; bit5 resolve (below) |
+| +19 | u8  | flags | bit0 open with the chip window; bit1 blank HUD; bit2 blank backdrop; bit3 auto-fire the hand; bit4 skip the white intro; bit5 resolve (below); bit6 HUD live: the canon capture sits before the battle-HUD teardown (mask dword_20352C0 bit 14 set), so a zero-enemy arena keeps the emotion window (F27b, peeked) |
 | +20 | u16 | art_entry | backdrop animation entry, 0xFFFF = default |
 | +22 | u16 | art_timer | backdrop animation timer, 0xFFFF = default |
 | +24 | u16 | scroll_xq | backdrop scroll, quarter-pixels, 0xFFFF = default |
