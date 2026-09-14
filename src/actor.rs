@@ -348,6 +348,15 @@ pub enum Update {
 
 pub struct Actor {
     player: spr::Player,
+    /// Canon's `CurAnim` byte at BattleObject+0x10
+    /// (reference/bn6f/include/structs/BattleObject.inc:62-66): the AI-side
+    /// animation selection. `select` writes it (like `sub_8109DEC`'s
+    /// `CurAnim = 1`, asm31.s:170830); the per-frame gate binds it.
+    cur_anim: usize,
+    /// Canon's `CurAnimCopy` at BattleObject+0x11 (same source): the last
+    /// selection the gate bound. The gate rebinds only on a mismatch
+    /// (asm00_2.s:25077-25081).
+    cur_anim_copy: usize,
     col: i32,
     row: i32,
     /// Enemies face left, which mirrors the composed frame.
@@ -429,6 +438,8 @@ impl Actor {
     ) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
+            cur_anim: anim::IDLE,
+            cur_anim_copy: anim::IDLE,
             col,
             row,
             facing_left,
@@ -603,7 +614,7 @@ impl Actor {
         if self.hp == 0 {
             // HP zero sets the death flag and the die state takes over the
             // action slot the same frame (asm00_2.s:23769, 23782-23800).
-            self.player.play(anim::DELETED);
+            self.select(anim::DELETED);
             self.action = Action::Dying {
                 ticks: self.death_frames,
             };
@@ -711,7 +722,9 @@ impl Actor {
             // canon's u16 at +0x8 is CurState | CurAction << 8 -- idle
             // reads 0x0804, i.e. state in the LOW byte.
             cur_state_action: CUR_STATE_UPDATE | ((cur_action as u16) << CUR_ACTION_SHIFT),
-            anim: self.player.anim() as u8,
+            // The `CurAnim` mirror: after the gate it equals the bound
+            // animation (`Unk_00`), which is what canon's byte indexes.
+            anim: self.cur_anim as u8,
             panel_x: self.col as u8,
             panel_y: self.row as u8,
             timer,
@@ -801,19 +814,32 @@ impl Actor {
             to: (to_col, to_row),
             ticks: HOP_FRAMES,
         };
-        self.player.play(anim::HOP);
+        self.select(anim::HOP);
         true
+    }
+
+    /// Select `anim`: the AI-side `CurAnim` write (e.g. `sub_8109DEC`'s
+    /// `CurAnim = 1`) pushed through the ported selection path --
+    /// `sprite_setAnimation`'s `Unk_00` write (sprite.s:1131) now, with the
+    /// bind following at once on a change (the spawn path binds directly)
+    /// and through the `object_updateSprite` gate below when the copy lags;
+    /// every bind is idempotent, so the double bind on a change frame is
+    /// display-identical. Re-selecting the bound animation does NOT restart
+    /// it (the gate compares first, asm00_2.s:25077-25081).
+    fn select(&mut self, anim: usize) {
+        self.cur_anim = anim;
+        self.player.play(anim);
     }
 
     /// Take the action slot and hold `anim` until `release`.
     pub fn hold(&mut self, anim: usize) {
-        self.player.play(anim);
+        self.select(anim);
         self.action = Action::Holding;
     }
 
     pub fn release(&mut self) {
         if matches!(self.action, Action::Holding) {
-            self.player.play(anim::IDLE);
+            self.select(anim::IDLE);
             self.action = Action::Idle;
         }
     }
@@ -834,7 +860,7 @@ impl Actor {
 
     fn begin(&mut self, spec: AttackSpec, charged: bool) {
         if let Some((anim, frames)) = spec.windup {
-            self.player.play(anim);
+            self.select(anim);
             self.pose_len = frames;
             self.action = Action::WindingUp {
                 ticks: frames,
@@ -845,7 +871,7 @@ impl Actor {
             };
             return;
         }
-        self.player.play(spec.anim);
+        self.select(spec.anim);
         self.pose_len = spec.frames;
         self.action = Action::Attacking {
             ticks: spec.frames,
@@ -871,7 +897,7 @@ impl Actor {
     /// 18309). Interrupts anything, a warp included -- its reserved panel is
     /// released with the Leaving state.
     pub fn flinch(&mut self) {
-        self.player.play(anim::FLINCH);
+        self.select(anim::FLINCH);
         self.hop_recovery = false;
         self.action = Action::Flinching {
             ticks: FLINCH_FRAMES,
@@ -900,7 +926,7 @@ impl Actor {
             Action::Idle => Action::Idle,
             Action::Leaving { to, ticks } if ticks > 1 => {
                 if ticks == LEAVING_FRAMES {
-                    self.player.play(anim::WARP_OUT);
+                    self.select(anim::WARP_OUT);
                 }
                 Action::Leaving {
                     to,
@@ -909,7 +935,7 @@ impl Actor {
             }
             Action::Leaving { to, .. } => {
                 (self.col, self.row) = to;
-                self.player.play(anim::WARP_IN);
+                self.select(anim::WARP_IN);
                 // The frame the panel is committed on is drawn in the
                 // sprite's SECOND palette, a washed-out copy of the first --
                 // not forced white, which is what a hit does. Read off the
@@ -932,7 +958,7 @@ impl Actor {
                 }
             }
             Action::Hopping { .. } => {
-                self.player.play(anim::IDLE);
+                self.select(anim::IDLE);
                 // Export-only shadow (TODO R6): canon keeps the hop
                 // executor's CurAction 0x0a through this cooldown.
                 self.hop_recovery = true;
@@ -942,14 +968,14 @@ impl Actor {
             }
             Action::Arriving { ticks } if ticks > 1 => Action::Arriving { ticks: ticks - 1 },
             Action::Arriving { .. } => {
-                self.player.play(anim::IDLE);
+                self.select(anim::IDLE);
                 Action::Recovering {
                     ticks: RECOVERING_FRAMES,
                 }
             }
             Action::Recovering { ticks } if ticks > 1 => Action::Recovering { ticks: ticks - 1 },
             Action::Recovering { .. } => {
-                self.player.play(anim::IDLE);
+                self.select(anim::IDLE);
                 self.hop_recovery = false;
                 Action::Idle
             }
@@ -1031,7 +1057,7 @@ impl Actor {
                 // fills the whole attack, so this arm never fires for them.
                 if ticks + pose <= self.pose_len {
                     if let Some(a) = recover_anim {
-                        self.player.play(a);
+                        self.select(a);
                     }
                 }
                 Action::Attacking {
@@ -1055,10 +1081,10 @@ impl Actor {
                 // changes nothing for them.
                 if let Some(a) = recover_anim {
                     if self.player.anim() != a {
-                        self.player.play(a);
+                        self.select(a);
                     }
                 } else if recover == 0 {
-                    self.player.play(anim::IDLE);
+                    self.select(anim::IDLE);
                 }
                 if recover > 0 {
                     update = Update::Recovering;
@@ -1069,7 +1095,7 @@ impl Actor {
             }
             Action::Flinching { ticks } if ticks > 0 => Action::Flinching { ticks: ticks - 1 },
             Action::Flinching { .. } => {
-                self.player.play(anim::IDLE);
+                self.select(anim::IDLE);
                 // Export-only shadow (TODO R6): canon's MegaMan object
                 // reads +0x20 = 0xffff on this first idle frame and 9..0
                 // over the ten after (PAUSED+Start@10 watch capture).
@@ -1096,11 +1122,20 @@ impl Actor {
             Action::Appearing { ticks } if ticks > 1 => Action::Appearing { ticks: ticks - 1 },
             Action::Appearing { .. } => Action::Idle,
         };
-        // The sprite ticks after the state machine, so an animation set this
-        // frame -- by an attack begun before the update or by a transition
-        // inside it -- is drawn on its first frame this frame and counts
-        // from the next, whichever way it was set.
-        self.player.update();
+        // The sprite ticks after the state machine through the ported
+        // `UpdateBattleObjectSprite` gate
+        // (reference/bn6f/asm/asm00_2.s:25144-25190): the rebind protocol
+        // picks up any selection this frame -- by an attack begun before the
+        // update or by a transition inside it -- binds it, and ticks, so it
+        // is drawn on its first frame this frame and counts from the next,
+        // whichever way it was set. The gate is the all-pass
+        // `SpriteGate::battle_object` (active, never STOP_SPRITE_UPDATE, no
+        // timestop or pause on our rows, no collision-gated anim holds).
+        self.player.update_battle_object_sprite(
+            spr::SpriteGate::battle_object(),
+            self.cur_anim,
+            &mut self.cur_anim_copy,
+        );
         update
     }
 
