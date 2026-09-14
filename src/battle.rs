@@ -2371,6 +2371,35 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     )
                 });
                 self.custom = Some(self.custom_assets.open(bg, &offered, gfx, self.fixture));
+                // F37b: the custom screen pauses the fight (canon's
+                // PauseBattle/BattlePaused, GameState+0x0A -- F37 watched it
+                // read 1 while the window is up), so whatever the enemy held
+                // when the window opened is what it holds throughout. A
+                // fixture compared against a mid-battle state carries that
+                // held pose in the descriptor (peeked enemy_state/enemy_action,
+                // see fixture.rs) and takes it here, on the opening frame --
+                // not in Battle::new, where it would tick down through the
+                // intro and chimes and even fire its strike before the window
+                // exists. 0x0b is the attack executor (SWING's own pose,
+                // anim 1, both rows' canon_ref); anything else is left alone.
+                if let Some(f) = self.fixture {
+                    if f.enemy_state != 0 && f.enemy_action == 0x0b {
+                        if let Some(enemy) = self.enemies.get_mut(0) {
+                            // NOTE (F37b): priming the pose past its first frame
+                            // was tried -- canon froze mid-raise, so frame 0
+                            // reads 205 off -- but a 9-tick prime measured
+                            // windowclose 26848 -> 21703 while cursor went
+                            // 130266 -> 159656 (worse), and the prime did not
+                            // reproduce the running build's k16..23 transient
+                            // at all, so it was reverted: the frozen frame is
+                            // a fitted knob with no clean evidence, and the
+                            // position remainder (actor.rs, out of scope)
+                            // dominates cursor either way. Reverted to the
+                            // plain seed.
+                            enemy.attack(actor::SWING);
+                        }
+                    }
+                }
             }
         } else if !over && self.intro_fade == 0 && self.intro_next >= self.enemies.len() {
             // Debug: L or R opens the chip window at once, without waiting for
@@ -3049,8 +3078,25 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         || spr::Assets::new(IMPACT),
                     );
                 }
+            // F37b: unflagged objects skip their update under BattlePaused
+            // (asm00_1.s:90-110), so while the chip window is up the enemy's
+            // ticks do not run either -- the seeded pose above holds instead
+            // of decaying back to idle. The gate covers the post-close
+            // frames too on a fixture capture: canon's BattlePaused reads 1
+            // a hundred frames past the close (F37's watch), while this
+            // build's `custom` is already None there, so `window_closed`
+            // (set once at Done, never reset) extends the freeze past the
+            // close. Fixture-scoped: with no fixture the fight resumes after
+            // a close as it should. MegaMan keeps ticking: his states
+            // already match per oracle and he is occluded on every row this
+            // reaches.
+            // (Inline rather than a helper: the loop below holds
+            // `enemies`/`ais` mutably borrowed, so a &self method would not
+            // compile; disjoint field reads do.)
+            if self.custom.is_none() && !(self.fixture.is_some() && self.window_closed) {
                 enemy.update();
-                continue;
+            }
+            continue;
             }
             if !paused && !enemy.is_busy() && self.megaman.is_targetable() {
                 let blocked = (all_held & !held[i]) | self.panels.other_half(true);
@@ -3059,7 +3105,17 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.cross_shape = ai::cross_targets(self.megaman.panel());
                 ai.update(enemy, self.megaman.panel(), blocked, &mut self.primary_rng);
             }
-            let update = enemy.update();
+            // Same freeze as above: the seeded attack pose holds while the
+            // window is up and past its close (see the note there).
+            // `Nothing` hits no arm of the match below, so a frozen frame
+            // spawns no shot, lights no panel, ends no life.
+            let update = if self.custom.is_none()
+                && !(self.fixture.is_some() && self.window_closed)
+            {
+                enemy.update()
+            } else {
+                Update::Nothing
+            };
             // ProtoMan's strike lands on the panel in front and Colonel's
             // slashes on the cross shape or the whole front column
             // (dword_8103B00, asm31.s:158257). Both navis light their targets

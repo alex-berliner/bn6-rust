@@ -197,6 +197,12 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # default seed" convention in force, so every descriptor that does not
     # name an rng is unchanged.
     struct.pack_into("<I", buf, 58, descriptor.get("rng", 0))
+    # +62 enemy_state / +63 enemy_action: NOT in FIXTURE.md
+    # (src/fixture.rs's own reserved-region additions -- see Fixture::enemy_state's
+    # doc there). 0 = no override, so every descriptor that does not name them
+    # is unchanged.
+    buf[62] = descriptor.get("enemy_state", 0)
+    buf[63] = descriptor.get("enemy_action", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -1573,8 +1579,10 @@ CUSTMATCH_ORIGIN = 8
 #: cursor row's note). windowclose's BG1 went 877602/22658/40 -> 0/0/40.
 #: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
 #: each row's own canon capture, mapped through the arithmetic above.
-CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885)
-WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935)
+CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885,
+                    enemy_state=4, enemy_action=0x0b)  # provenance: peeked -- canon 0x0203ab68 reads 0x0b04 at frame 15 of this row's own CHIPSELECT+cursor-walk capture (and every 10th frame 10..90: frozen under BattlePaused)
+WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935,
+                        enemy_state=4, enemy_action=0x0b)  # provenance: peeked -- canon 0x0203ab68 reads 0x0b04 at frame 81 of this row's own CHIPSELECT+Start,A capture (anim 0x0101 both rows: SWING's own pose)
 
 #: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
 #: window_cursor (0 = cursor on the first slot, showing the card's NAME
