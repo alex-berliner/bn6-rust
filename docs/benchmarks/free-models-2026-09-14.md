@@ -18,5 +18,10 @@
 - thinkingmachines/inkling:free: FAIL  $0.0000  264 turns  4 min  -> /home/box/Code/bn/docs/benchmarks/F18d-inkling:free-20260914-063958.md [264 turns, cache 95%]
 done 06:44
 
-## Full 40-minute replays of the screen survivors
+## Full 40-minute replays of the screen survivors -- INVALID: all four ran after the shared free quota was exhausted (429 free-models-per-day after ~1600 screen requests); re-run when it resets
 
+- nex-agi/nex-n2.5-mini:free: NO-OP (no commits on the branch; nothing to verify)  $0.0000  84 turns  3 min  -> /home/box/Code/bn/docs/benchmarks/F18d-nex-n2.5-mini:free-20260914-064504.md
+- inclusionai/ling-3.0-flash-fin:free: NO-OP (no commits on the branch; nothing to verify)  $0.0000  120 turns  2 min  -> /home/box/Code/bn/docs/benchmarks/F18d-ling-3.0-flash-fin:free-20260914-064738
+- nvidia/nemotron-3-super-120b-a12b:free: NO-OP (no commits on the branch; nothing to verify)  $0.0000  12 turns  0 min  -> /home/box/Code/bn/docs/benchmarks/F18d-nemotron-3-super-120b-a12b:free-20260
+- liquid/lfm-2.5-2.6b:free: NO-OP (no commits on the branch; nothing to verify)  $0.0000  12 turns  0 min  -> /home/box/Code/bn/docs/benchmarks/F18d-lfm-2.5-2.6b:free-20260914-064957.md
+full-replays done 06:50
