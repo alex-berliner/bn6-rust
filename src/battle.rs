@@ -32,7 +32,7 @@ use crate::results::{self, Results};
 use crate::script;
 use crate::shot::Shot;
 use crate::{
-    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
+    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, GUNNER, IMPACT, MEGAMAN, METTAUR,
     AREAGRAB_ORB, AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
@@ -1857,22 +1857,30 @@ impl<'a> Battle<'a> {
         // and deletion without the bosses; the release build keeps the game's
         // lineup.
         let (mut enemies, ais): (Vec<Actor>, Vec<ai::Ai>) = if let Some(f) = fixture {
-            // enemy_kind 0 = Mettaur, the only kind FIXTURE.md defines yet.
-            // Laid out on a diagonal -- (enemy_col, enemy_row), (+1, +1),
+            // Kinds are per slot (FIXTURE.md +5, two bits each); the layout
+            // is still the diagonal -- (enemy_col, enemy_row), (+1, +1),
             // (+2, +1)... -- which is the only multi-enemy shape any
-            // existing fixture needs.
-            let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
+            // existing fixture needs, and exactly record 6's own shape
+            // (T9b's slot probe: Mettaur (5,2) then Gunner (6,3)).
             let mut es = alloc::vec::Vec::new();
             let mut ai_list = alloc::vec::Vec::new();
             for i in 0..f.enemies as i32 {
+                // Art, style and the kind's own default HP come from the
+                // kind's first-version record (MettaurEnemyStruct2_8109BD8 /
+                // GunnerEnemyStruct2_8112B9C).
+                let (art, style, default_hp) = match f.kind_of(i as usize) {
+                    fixture::KIND_GUNNER => (GUNNER, ai::Style::Gunner, gunner::HP),
+                    _ => (METTAUR, ai::Style::Mettaur, METTAUR_HP),
+                };
+                let hp = if f.enemy_hp == 0 { default_hp } else { f.enemy_hp };
                 es.push(Actor::new(
-                    spr::Assets::new(METTAUR),
+                    spr::Assets::new(art),
                     f.enemy_col as i32 + i,
                     f.enemy_row as i32 + i,
                     true,
                     enemy(hp),
                 ));
-                ai_list.push(ai::Ai::new(ai::Style::Mettaur));
+                ai_list.push(ai::Ai::new(style));
             }
             (es, ai_list)
         } else {

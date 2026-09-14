@@ -135,7 +135,15 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     buf = bytearray(FIXTURE_SIZE)
     struct.pack_into("<I", buf, 0, FIXTURE_MAGIC)
     buf[4] = descriptor.get("enemies", 0)
-    buf[5] = descriptor.get("enemy_kind", 0)
+    # +5 enemy_kind: per-slot kinds packed two bits per slot (FIXTURE.md,
+    # T9c) -- slot 0 in bits 0-1, slot 1 in bits 2-3, slot 2 in bits 4-5;
+    # kind 0 = Mettaur, 1 = Gunner. A bare int is written as-is (every
+    # pre-T9c descriptor writes 0 = Mettaur in every slot, so existing rows
+    # are unchanged); a per-slot list is packed here.
+    kinds = descriptor.get("enemy_kind", 0)
+    if isinstance(kinds, (list, tuple)):
+        kinds = sum((k & 0b11) << (slot * 2) for slot, k in enumerate(kinds[:3]))
+    buf[5] = kinds
     buf[6] = descriptor.get("enemy_col", 0)
     buf[7] = descriptor.get("enemy_row", 0)
     struct.pack_into("<H", buf, 8, descriptor.get("megaman_hp", 60))
