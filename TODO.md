@@ -157,7 +157,7 @@ unchanged or later; plan notes.
 
 ### T9. The second virus as a ported per-type routine, from a real battle recording  *(OPEN -- 2026-09-14)*
 
-**Files.** tools/states.py (a recipe for a canon battle that fields the virus), tools/trace.py (scenario), src/objects.rs (the per-type entry), src/ai.rs, assets/ (its art extracted from the ROM), tools/harness.py (a new row and its fixture), docs/coverage/
+**Files.** tools/states.py (a recipe for a canon battle that fields the virus; the trace scenario is a states.py recipe, do not edit tools/trace.py), src/objects.rs (the per-type entry), src/ai.rs, assets/ (its art extracted from the ROM), tools/harness.py (a new row and its fixture), docs/coverage/
 
 **Why.** T6 made the Mettaur canon's routine under the ported dispatcher and player; the next virus is
 the test that content is now data. Pick the first virus the overworld_net route can field cheaply
