@@ -1224,11 +1224,21 @@ ZERO_ENEMY_ORIGIN = 8
 #     window's own ramp: warp 40628 of 40628, buster 45810 of 54672, chip-use
 #     565717 of 567780, all of it on BG3.
 #   * buster additionally keeps drawing the name from k=1 where canon has
-#     stopped: canon's element 6 draws only while sub_800ED90 returns a
-#     non-zero r3 = oBattleObject_ChipsHeld (asm00_2.s:15-46, the branch at
-#     sub_801C6EE :26643), and on buster's canon route MegaMan's ChipsHeld
-#     goes to 0 on canon 133, the frame after CurAction 0x11 -- ours holds the
-#     chip forever. 422 px/frame x 21 frames = 8862 of buster's 54672.
+#     stopped. Measured on buster's own canon capture (--only-bg 3): the strip
+#     holds "Cannon 40" (422 px, y148..158 x1..63) on canon 132 and is BLANK
+#     from canon 133 -- the frame after CurAction 0x11, the buster action --
+#     for the rest of the window, while the HP box beside it stays at its 704.
+#     It is NOT the ChipsHeld gate: sub_801C6EE (asm00_2.s:26619) blanks map
+#     rows 0x12/0x13 and re-renders unless sub_800ED90's r3 = 0, r3 is
+#     oBattleObject_ChipsHeld (+0x1a, asm00_2.s:15-46), and that byte reads 1
+#     on every frame of the capture (--watch 0x0203a9ca:2). What empties the
+#     strip is inside sub_800ED90's player branch, where the chip comes from
+#     getBattleHandAddr_8010018's own index byte -- i.e. entering the attack
+#     moves canon's hand past the queued chip, which our `hand_at` does not
+#     do for a buster shot. Left unfixed on purpose: `warp` (a move, not an
+#     attack) keeps the name on all 24 of its pre-RESULT frames, so the rule
+#     is attack-specific and guessing it would regress warp. 422 px/frame x 21
+#     frames = 8862 of buster's 54672.
 #   * field's own end sequence: captures 118, 119 and 120 are byte-identical
 #     to one another (a three-frame stall -- the backdrop scrolls on every
 #     other frame before and after, so BG1 is 0 only for k=0..1), and from
