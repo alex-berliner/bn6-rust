@@ -71,6 +71,14 @@ vs after -- a merge that changed nothing is not parity).
 5. When it stops: spot-check a zero yourself (`python3 tools/verify_rows.py HEAD <rows> --expect ...`),
    `python3 tools/archive_tickets.py`, `git push origin main`, `bash tools/publish_site.sh`.
 
+- **Daily review, auditor, replay benchmark (built 2026-09-13):** a user crontab line runs
+  `bash tools/daily_review.sh` at 09:15 (ledger, balance, full-table scoreboard, hygiene counts,
+  auditor triggers) into `docs/reviews/<date>.md`; `python3 tools/ticket_ledger.py --since H` is the
+  outcome x model x cost table; `bash tools/pi_audit.sh` writes a proposal-only audit to
+  `docs/audits/`; `python3 tools/replay_bench.py <ID> --model <m>` re-runs an archived ticket from
+  its base commit and judges it with verify_rows (`docs/benchmarks/`); every applied reshape goes
+  in `docs/config-log.md` with its evidence and the metric it moved.
+
 ## 3. Decisions in force
 
 - **Roles and models** (`.pi/agents/*.md`, `.pi/settings.json`, pins in `~/.pi/agent/models.json`):
