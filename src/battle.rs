@@ -4486,8 +4486,17 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // Every field object rides the chip window's camera pan (see
         // Actor::show): canon holds MegaMan 15 px lower with the window
         // up (F37's OAM watch: y141 open vs y126 closed), and
-        // `field_slide` IS that camera in half-pixels.
-        let cam_dy = (self.field_slide / 2) as i32; // provenance: derived -- FIELD_SLIDE's own camera in px (see FIELD_SLIDE/FIELD_SUBPX)
+        // `field_slide` IS that camera in half-pixels. Canon's object draw
+        // reads the SIGNED camera with an arithmetic shift (floor,
+        // asm00_2.s:25977-25984: asr then neg), so the object offset is the
+        // floor of the signed camera -- the BG scroll's own div_euclid
+        // form, negated back for objects. Plain truncating halving runs
+        // ceil(1.5k) against canon's floor(1.5k) (F37e OAM census), 1 px
+        // apart on every odd slide step; this matches canon on all ten.
+        // (Parentheses are load-bearing: `-x.div_euclid(2)` parses as
+        // `-(x.div_euclid(2))`, the divide-then-negate that rounds the
+        // wrong way -- see the scroll site's own note.)
+        let cam_dy = -((-(self.field_slide as i32)).div_euclid(FIELD_SUBPX as i32)); // provenance: derived -- canon's asr+neg object-draw shift (asm00_2.s:25977-25984) via FIELD_SLIDE/FIELD_SUBPX
         if !self.megaman.is_defeated() {
             let bubble = self.bubble.as_ref();
             let (mc, mr) = self.megaman.panel();
@@ -4569,9 +4578,11 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // every field object 15 px lower with the window up (F37's OAM
             // watch on the cursor capture: MegaMan y141 open vs y126 closed,
             // Mettaur and HP box the same 15). `field_slide` IS that camera
-            // in half-pixels (see FIELD_SLIDE), so halving tracks it through
-            // the ten slide calls both ways, settled or ramping.
-            let cam_dy = (self.field_slide / 2) as i32; // provenance: derived -- FIELD_SLIDE's own camera in px (see FIELD_SLIDE/FIELD_SUBPX)
+            // in half-pixels (see FIELD_SLIDE), so the signed-floor halving
+            // below (canon's asr+neg object-draw shift, asm00_2.s:25977-25984)
+            // tracks it through the ten slide calls both ways, settled or
+            // ramping -- truncating halving runs 1 px apart on odd steps.
+            let cam_dy = -((-(self.field_slide as i32)).div_euclid(FIELD_SUBPX as i32)); // provenance: derived -- canon's asr+neg object-draw shift (asm00_2.s:25977-25984) via FIELD_SLIDE/FIELD_SUBPX
             self.hud.draw_number_in(
                 frame,
                 hp,
