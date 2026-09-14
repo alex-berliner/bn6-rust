@@ -682,10 +682,11 @@ const fn barrier_hp(id: u16) -> u16 {
 /// bubble object's first, one-frame dot is behind the navi, so it is
 /// created a frame before the bubble shows).
 const INVISIBL_PRESENTATION: u16 = 128; // provenance: peeked -- measured on the real ROM
-const BARRIER_PRESENTATION: u16 = 77; // provenance: peeked -- measured on the real ROM
-/// AreaGrab is in the same family; its own length is not measured, so
-/// Barrier's is used.
-const AREAGRAB_PRESENTATION: u16 = BARRIER_PRESENTATION;
+const BARRIER_PRESENTATION: u16 = 45; // provenance: peeked -- canon attack entry (CurAction 0x08->0x14) at capture frame 3, bubble's first visible frame at 49 (diff k=44): attack+46; the spawn fires one frame after the countdown hits 0, so 45
+/// AreaGrab's own length is still unmeasured (its steal orbs are not drawn
+/// yet -- F12 mechanism (b)), so it keeps Barrier's old 77 rather than the
+/// new 45.
+const AREAGRAB_PRESENTATION: u16 = 77; // provenance: fitted -- held value pending the orb mechanism, not a measurement
 /// The thrown bomb (sub_80C5DBC -> t3_0x8_80C5BB0, asm31.s:29657, 29400):
 /// spawned 4 pixels ahead of the navi and 0x30 up, sprite_82F569C
 /// animation 1 with a shadow; it flies at 0x2e666 (2.9 px) a frame
@@ -1121,9 +1122,10 @@ pub struct Battle<'a> {
     /// screen and shows the chip's name before the effect lands
     /// (object_timefreezeBegin, object_dimScreen, object_drawChipName;
     /// object.s:95-287). The lengths are measured on the real ROM -- the
-    /// bubble appears 78 frames after the press for Barrier, the flicker
-    /// starts 128 after for Invisibl -- as the banner's own timing was not
-    /// traced. The dim itself is not drawn yet.
+    /// bubble appears 46 frames after the attack entry for Barrier (CurAction
+    /// 0x08->0x14 at capture frame 3, first bubble pixels at capture 49),
+    /// the flicker starts 128 after for Invisibl -- as the banner's own
+    /// timing was not traced. The dim itself is not drawn yet.
     presentation: Option<(Chip, u16)>,
     /// The chip name in the middle of the screen while a family-0x15 chip
     /// presents. It outlives the presentation for Barrier (58 frames from the
