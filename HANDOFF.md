@@ -174,3 +174,16 @@ decision log) · `AUDIT.md` the 17 rules · `FIXTURE.md` the descriptor contract
 and `WORKFLOW_AUDIT.md` why the routing and workflow are what they are · `docs_recon_teardown.md` the
 enemy-less battle investigation · `TRANSFER.md` the long journal (human reading) · `.pi/coordinator.md`
 the coordinator's loop · `~/.claude/projects/-home-box-Code-bn/memory/` the user's standing rules.
+
+## Shelved: the ROM on real hardware (2026-09-14)
+
+web/bn6-rust.gba boots to a white screen on the user's GBA through a Supercard flash cart running SuperFW,
+before and after the runtime's waitstate probe (landed d8973c2: the .iwram copy at the boot waitstates, then
+`__waitcnt_probe` in IWRAM keeps 3,1 only if a 16 KiB checksum agrees). The header is valid (logo, 0x96,
+checksum). Shelved by the user; no agent can work it (no hardware here). When it comes back, the next
+suspects in order: (1) the dev-profile build the site serves (web_rom.sh: `cargo build`, opt-level 3, no
+LTO) against the release ROM the harness measures, so first try the release build on the cart; (2) what
+SuperFW does with a homebrew ROM (its save-type detection and patcher look for SDK patterns our runtime
+does not have; try its "no patching" option if it has one, and a ROM padded to a power of two); (3) memory
+the emulator zeroes and hardware does not (our code's reads before init); (4) interrupt acknowledgement
+at 0x03007FF8 for the BIOS VBlank wait, which HLE emulators forgive. The user's report is the only test.
