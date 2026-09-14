@@ -536,8 +536,9 @@ integrated with canon routines; field integrated as low as the elements you fixe
 variants and wave/window/opening/chip-cannon/popup/tiles/gauge untouched at their values; an allowlist entry
 removed only for a row that reads 0; nothing worse.
 
-### F34b. `result` to 0: no intro fade when the fixture starts on the results screen, MegaMan's panel, no enemy  *(OPEN -- 2026-09-13)*
+### F34b. `result` to 0: no intro fade when the fixture starts on the results screen, MegaMan's panel, no enemy  *(DONE -- 2026-09-14, result 93183/14866/40->0/0/40 PASS [neg 111839]: intro_fade=0 on start_state==1 [7316] + megaman_col 2 [3330] )*
 
+**Result.** result 93183/14866/40->0/0/40 PASS (neg 111839): intro_fade=0 on start_state==1 (7316) + megaman_col 2 (3330) + enemies 0 (3986); canaries all 0, windowclose/chip-use unchanged, cursor +18 layout-churn (verifier: branch unreachable for cursor row, 16+2 decomposition); verifier CONFIRMED fade arithmetic + peek citations + rules clean (live peeks unchecked, corroborated by 0); landed 92a01a9 HEAD re-check MATCH; worker muse-spark, verifier GLM
 **Files.** src/battle.rs (the intro_fade line at ~1632 only), tools/harness.py (RESULT_ROW / RESULTMATCH_ROW descriptor fields and the result row's note)
 
 **Why.** F34 measured the result row's remaining 93183/14866/40 to 0 with three changes applied together
