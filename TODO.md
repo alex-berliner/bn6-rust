@@ -280,7 +280,9 @@ actors ("PRE-TICKED", src/shot.rs:145-147), which is the kind of ordering that c
 constant (the 45 must come from canon's routine, cited). **Coordinator:** verify_rows on every row
 named; the verifier on the canon citation and the "same offset for both" claim; one follow-up at most.
 
-### F25d. `mettaur`: the departure spray on 8 frames, 4265 px, content not timing *(CLAUDE -- 2026-09-13)*
+### F25d. `mettaur`: the departure spray on 8 frames, 4265 px, content not timing  *(DONE -- 2026-09-13, mettaur 4265/800/70 -> 0/0/70 [neg 41734 not blind], oracle 10/10 fields 70/70)*
+
+**Result.** mettaur 4265/800/70 -> 0/0/70 (neg 41734 not blind), oracle 10/10 fields 70/70; cause: hop-spawned shockwave segments were created with the sprite's fresh flag set and skipped their first update, so every animation-frame change and despawn on them ran one frame late (the eight residue frames k=0,1,6,11,17,22,63,68 were exactly those changes; tiles and palette bytes byte-identical at phase-aligned pairs); fix: one self.player.update() after the spawn in Shot::update per canon t3_0x16_80C6B40 (asm31.s:31413-31420, state 0 sub_80C6B64 loads the sprite then falls through to object_updateSprite the same frame); wave/window/opening/chip-cannon/result unchanged, field isolated 0, field integrated 305258->305263 (+5 px on one scanline y=0 of one frame, ROM-layout timing sensitivity, ticketed as F30); landed by the human session via land.sh (verify_rows PASS on 7 rows); Claude Opus agent, 73 tool calls, 16 min.
 **Files.** src/shot.rs, src/spr.rs, assets/
 
 **Assigned to a Claude agent (2026-09-13 20:20, the user's Claude quota window).** pi's loop skips any status but OPEN.
@@ -386,6 +388,31 @@ canon's driver sequences it (cite), and show the two builds' captures identical 
 **Acceptance.** field's rust side byte-identical between two ROM layouts (pad the ROM to prove it)
 on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
 chip-cannon 0.
+
+### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/battle.rs (the emotion-window gate and the teardown only; pi's F12 worker edits other parts of battle.rs), src/emotion.rs, src/fixture.rs (only if a fixture rule must change), tools/harness.py (the popup row only)
+
+**Why.** F27 identified popup's 55520 px: two OBJs at (0,18) 32x16 tile 0x3b4 and (32,18) 16x16 tile
+0x3bc, palette 12, priority 2, on all 125 canon frames -- the emotion window, which src/emotion.rs
+already draws from assets/emotion.bin with byte-identical tiles and palette. Canon draws it while
+bit 14 of the battle-HUD element mask (dword_20352C0, dispatched by sub_801BEE0 asm00_2.s:25540-25563,
+draw sub_801CDEC asm00_2.s:27554-27583) is set: 0x4497 on every popup frame (the enemy goes
+ALIVE -> DELETE_ENEMY and the window stays), 0x8084 on every frame of the afterdissolve route (HUD
+torn down, RESULT countdown). Ours drops it the frame the last enemy is defeated (battle.rs:3682's
+`fighting` predicate), which is wrong in a real battle too. F27 measured a fixture-flag workaround
+(popup 60614 -> 5094, box 0/80, cannon 0, chip rows unchanged, field integrated +5) and did not land
+it because the mechanism is the gate itself.
+**Do.** Find when canon clears bit 14 (the caller of sub_802A0F8's hide, asm03_0.s:8317-8333, on the
+transition into the RESULT countdown) and measure that frame on a canon capture where the last enemy
+dies (the result fixture); make ours hide the window at the same event, and show it from HUD init.
+If the zero-enemy popup fixture then tears down at once, fix the fixture's semantics (an empty
+enemy list is not a victory; canon never has one) rather than adding a flag; the flag from F27's
+proposal is the fallback only if the fixture cannot express canon's situation otherwise.
+**Acceptance.** popup at or below 5094 with the x2-45 y18-33 box 0 on all 80 frames (the rest is
+F28's Mettaur dissolve); cannon 0 and every chip row unchanged (their canon mask has bit 14 clear, so
+ours hides at the same frame -- measure the hide frame on both sides on one chip row); result,
+field, wave, window, opening unchanged or 0; nothing worse.
 
 ### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
 
