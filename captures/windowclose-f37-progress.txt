@@ -1,0 +1,3 @@
+The chip window closing, the last row to reach zero, across the F37 series. Object by object: the actors now follow the panned camera, the Mettaur holds its attack pose under the pause with its pickaxe drawn, the camera's motion rounds the way the real game's does, and the window's own mark is drawn through the slide-out. From 4943 (after the backdrop and field fixes) to 0 on all 40 frames.
+
+windowclose (isolated), before and after: canon on top; ours at c00c288 (4943 px over 40 frames, canon 81+k, rust offset 253); ours at 4671a84 (0 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

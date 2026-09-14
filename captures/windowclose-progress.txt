@@ -1,3 +1,3 @@
-F18d: BG3 k11 carried 1596px of gauge body landing a frame late (k12 vs canon single-step redraw); blank frame now draws the empty body on time
+F37b-F37g: pan, pose, icon, object-Y, bracket, closing mark; windowclose 27819->0; result bottom strip needs own ticket
 
-windowclose (isolated), before and after: canon on top; ours at 9790ff1 (650544 px over 40 frames, canon 81+k, rust offset 253); ours at bb8e8f0 (648948 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
+windowclose (isolated), before and after: canon on top; ours at 3347893 (27819 px over 40 frames, canon 81+k, rust offset 253); ours at b1f3380 (0 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
