@@ -166,8 +166,9 @@ note in the plan file. Steps 3 and 4 are T4b.
 - T1 PARTIAL -- The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence. trace harness works, KEPT unmerged (branch wt/t1-trace 147bb0a+1ee6705): record/diff on battle_full+3 rows, calibration agrees with oracle, 
 - F37g PARTIAL -- Land F37f's window mark without the results-screen regression. window mark landed 4671a84: windowclose 1458/162/40->0/0/40, cursor 20->3/3/170
 - T3 DONE -- Locate canon's interpreters in the coverage ranking and write the port plan for the animation player. interpreter port plan landed 3249c71 (docs only): anim player cores (_sprite_update bx-r4, format), dispatcher chain to RunAIAttack, script 
-### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(PARTIAL -- 2026-09-14, trace harness landed bd45d2a [T1's TRC2 export block + tools/trace.py record/diff + scenarios, with T1b's FLAG)*
+### T1b. Land the trace harness with a zero-cost export: the stores only when tracing is on  *(DONE -- 2026-09-14, supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class)*
 
+**Result.** supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class; trace harness on main
 **Result.** trace harness landed bd45d2a (T1's TRC2 export block + tools/trace.py record/diff + scenarios, with T1b's FLAG_TRACE gate: no export stores when the flag is off; calibration agrees with the oracle on three rows; negative control live). The off-path residue the worker called a layout lottery (field integrated +33 with any code change, the F30 timing class) is accepted on that allowed row by the human session; every isolated row verified at its value from a clean checkout (mettaur/popup/buster/result/windowclose/wave/window/field 0), post-merge windowclose and result 0. Remaining from T1: the RNG field at k=271 and the RESULT dismissal in battle_full unconfirmed.
 **Files.** src/main.rs, src/fixture.rs, src/actor.rs, src/backdrop.rs, src/battle.rs (the export sites only), tools/trace.py, tools/states.py, AGENT_GUIDE.md
 
