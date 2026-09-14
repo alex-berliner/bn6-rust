@@ -142,6 +142,38 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T4b. Port the animation bytecode player, steps 3 and 4 of the plan  *(OPEN -- 2026-09-14)*
+
+**Files.** src/spr.rs, src/anim.rs (if T4 created it), src/actor.rs and src/battle.rs (only the call sites that select or rebind an animation), tools/trace.py (fields if needed), docs/coverage/plan-interpreters.md (progress notes)
+
+**Why.** T4 landed steps 1 and 2 (bind from the ROM tables, the normal-stream tick with countdown/consume/
+loop-or-hold, 6985d56). The plan's section 1.4 continues: (3) the alternate stream (the `Unk_03 & 0x80`
+branch) and the `sprite_setAnimation` / CurAnim -> Unk_00 write path, which is how a caller switches an
+object to a new animation; (4) the `object_updateSprite` gate with the CurAnim / CurAnimCopy rebind
+protocol (asm00_2.s:25045-25100), then the timestop / sub_801BC24 / UpdateBattleObjectSprite variants.
+These are the paths every actor and chip object goes through when it changes pose, so the hand-written
+selection code in actor.rs/battle.rs becomes calls into the ported player.
+**Do.** Port (3) then (4) with citations, each behind the same interface; switch the call sites to the
+ported selection path. Verify per section 1.5 (oracle + trace on mettaur, popup, buster, result; the trace
+on battle_full). **Acceptance.** full table identical to main (every isolated row 0; cursor's single-frame
+tear may move with the ROM layout, report its value; integrated rows within their caps); the trace's first
+divergence unchanged or later; the plan file's progress notes.
+
+### T5. Port the object dispatcher, per section 2 of the plan  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs (the object update loop), src/actor.rs, src/shot.rs, src/ai.rs (only where an object's per-type entry is called), src/objects.rs (new, if the port wants its own module), tools/trace.py, docs/coverage/plan-interpreters.md
+
+**Why.** docs/coverage/plan-interpreters.md section 2: the real game keeps a table of objects and, each
+frame, dispatches every live object to its per-type entry routine (the t3_0x.. routines, then RunAIAttack
+for AI objects; the chain from the dispatcher at 0x8108F50 is listed with its callers in 2.2). Ours
+updates actors, shots and effects in hand-written loops in battle.rs, which is where the lifecycle
+differences of the F series came from (spawn-frame updates, ordering). Port the table and the dispatch in
+the order section 2.3 gives, keeping our object types as the per-type entries at first.
+**Do.** Follow 2.3 step by step, each step landed behind the existing behaviour (the full table is the
+regression test), verified per 2.4 with the trace (the object slots' CurState/CurAction per frame on
+battle_full and mettaur). **Acceptance.** the dispatcher and table ported with citations; every isolated row
+0 (cursor's tear reported); the trace's first divergence unchanged or later; the plan file's notes.
+
 - T4 PARTIAL -- Port the animation bytecode player, steps 1 and 2 of the plan. anim steps 1-2 landed 6985d56: bind+tick ported (verifier CONFIRMED all)
 - T1b DONE -- Land the trace harness with a zero-cost export: the stores only when tracing is on. supersedes BLOCKED: human landed bd45d2a accepting +33 jitter as F30 timing class
 

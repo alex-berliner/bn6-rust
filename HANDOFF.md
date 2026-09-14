@@ -19,8 +19,8 @@ vs after -- a merge that changed nothing is not parity).
 
 - **At 0 differing frames (canon vs ours), 2026-09-14 08:00:** every isolated row -- all 43 chips, wave,
   window, opening, cannon, field, banner, warp, card, tiles, gauge, mettaur, popup, buster, result and
-  windowclose -- except cursor at 3 px (one frame, the mid-frame tile-copy timing F35 mapped and could not
-  place); plus the integrated tiles/gauge variants. Not at 0: the integrated opening/field/warp/buster/
+  windowclose -- except cursor's single-frame tear (3 to 44 px depending on the ROM's layout: the mid-frame tile-copy
+  timing F35 mapped and could not place); plus the integrated tiles/gauge variants. Not at 0: the integrated opening/field/warp/buster/
   chip-use variants (canon's results window slides in on a frame our end sequence reaches differently per
   fixture; four passes say it needs the end sequence ported as one state machine, which the porting phase
   does). The harness is converged; the phase is porting (T tickets).
