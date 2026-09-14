@@ -1205,14 +1205,21 @@ RESULTMATCH_ORIGIN = 8
 #: 24 (CommandPos 0x0807fc64 against LoopAddress 0x0807fba4, 8 bytes an
 #: entry), Timer 4, Param0 0x08617488 (this build's own blob -- the same
 #: schedule); eBGScrollCBCounters reads 0x0528/0x8294 after frame 0.
-#: art_entry/art_timer carry those peeked values verbatim (the seed's own +1
-#: construction lead still applies); scroll_xq/scroll_yq are the
-#: quarter-pixel counters reproducing the peeked registers 82/41 through
-#: this build's -((q+tick+3)/4) mapping at battle 0's own one-tick lead
-#: (x exact every frame, y exact every frame -- both verified by hand over
-#: the period). result_elapsed=0 and the reward fields are untouched.
+#: F34 RE-MEASURED per layer at the row's own offset 21. The SCROLL seed is
+#: exact and stays: canon's BG1 and our BG0 take their 6000-8000 px scroll
+#: step on the SAME frames (k=11,13,15,17,19,21,23 both sides, measured
+#: frame-to-frame on each capture), and no (dx,dy) beats (0,0) on any frame.
+#: The ART clock was two frames early: the backdrop's 1360 px art step (the
+#: lit marks inside the motif) fires on canon frames k=16,20,24,... and fired
+#: on ours at k=14,18,22,... -- exactly two frames, every four. `art_timer`
+#: is `Backdrop::seed`'s own countdown (it stores timer+1 and `update`
+#: decrements once a frame), so two frames later is 4 -> 6. What a canon
+#: capture frame SHOWS is also the state as it stood BEFORE that frame's own
+#: update (canon renders at the top of its main loop and advances the clocks
+#: after, asm/main.s:15-28), which is the same +1 the peeked Timer 4 (after
+#: frame 0) vs load-time Timer 5 already carries.
 RESULT_ROW = dict(RESULTMATCH_ROW, result_elapsed=0,
-                  art_entry=24, art_timer=4, scroll_xq=692, scroll_yq=858)
+                  art_entry=24, art_timer=6, scroll_xq=692, scroll_yq=858)
 
 #: demo-banner's row. banner_at is NOT expressible yet (FIXTURE.md +46, not
 #: read -- pending_src). Marker origin 1 (measured live -- blanks HUD and
@@ -1753,7 +1760,33 @@ PORTED_CHECKS: List[Check] = [
                  "swept 0..40, no field wide enough for a number this size even if it were) "
                  "cannot represent, and item 5's own 'pre-arrival battle tail' framing (backdrop "
                  "phase / HP / gauge) named exactly this before HP and gauge were ruled out -- "
-                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/.",
+                 "backdrop phase is what is left. src/ and FIXTURE.md territory, not tools/. "
+                 "F34 DECOMPOSED THE 102547 BY LAYER AND FRAME at this row's own offset 21 "
+                 "(origin 13, canon 21+k <-> rust 34+k), identical --only-bg/--disable-obj flags "
+                 "on both sides. The two sides number their backgrounds differently: OUR BG0 is "
+                 "canon's BG1 (backdrop), our BG1 is canon's BG2 (field panels), our BG2 (the HUD "
+                 "HP box) and our BG3 (the RESULT window) are BOTH canon's BG3, and canon's BG0 "
+                 "is blank -- so the window layer is compared as our BG2+BG3 composited against "
+                 "canon's BG3. Layer totals over the 40 frames at the 102547 baseline: field "
+                 "185520 (a flat 18552 on k=0..9 and exactly 0 from k=10, most of it hidden "
+                 "behind the sliding window; 93448 of it visible), backdrop 18982, window+HUD "
+                 "4819, OBJ 72512 (entirely occluded: the composite reads 0 on k=10..13 while OBJ "
+                 "reads 1532-1982). THE WINDOW ITSELF WAS ALREADY EXACT -- 0 differing pixels on "
+                 "k=0..13, so F21b's tilemap-column slide and F21d's block copy put the window on "
+                 "canon's own column every frame; the whole 4819 was one 80x8 box at (40,128)-"
+                 "(119,135), canon's PRESS-A-BUTTON prompt (sub_802C810), fixed in src/results.rs "
+                 "and now 0 on all 40 frames. The backdrop's 18982 was the art clock two frames "
+                 "early (see RESULT_ROW's own seed comment) and is now 0 on all 40 frames. WHAT "
+                 "IS LEFT (93183) IS ENTIRELY k=0..9 AND ENTIRELY THE INTRO FADE: RESULT_ROW "
+                 "carries FLAG_SKIP_INTRO, so src/battle.rs starts the battle with intro_fade = "
+                 "INTRO_SKIP_FADE and darkens the field layer and the objects for the first ten "
+                 "compared frames (measured: our field palette runs 11/16, 12/16, ... 16/16 of "
+                 "canon's, two frames a step, exact from k=10, while canon's RESULT_ARRIVAL state "
+                 "is thousands of frames into a battle with no fade left). PROBED, NOT LANDED "
+                 "(src/battle.rs is another worker's file): making intro_fade 0 when the "
+                 "fixture's start_state == 1 takes this row 93183 -> 7316, and that 7316 is "
+                 "MegaMan's and the enemy's OBJ phase on k=0..8, visible only until the window "
+                 "covers them.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
