@@ -142,6 +142,26 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T4. Port the animation bytecode player, steps 1 and 2 of the plan  *(OPEN -- 2026-09-14)*
+
+**Files.** src/spr.rs (the player), src/anim.rs (new, if the port wants its own module), tools/trace.py (a field or two if the trace needs the player's state), tools/harness.py (row notes only), docs/coverage/plan-interpreters.md (progress notes)
+
+**Why.** docs/coverage/plan-interpreters.md section 1 is the plan: the real game's sprite animations are a
+bytecode the player interprets (`_sprite_loadAnimationData` asm38.s:1667-1719 binds a sprite blob's anim and
+frame tables; `_sprite_update` asm38.s:1722-1770 runs the normal stream: countdown, consume, loop or hold,
+with the output in Unk_05), and every sprite in battle_full passes through it (1.3 counts the callers). Our
+src/spr.rs player was written by hand to play the same extracted data; the residues of the F series were
+mostly its lifecycle differences (spawn-frame update, held frames). Porting the real player, routine by
+routine and cited line by line, makes the extracted `.bin` assets play exactly as the ROM plays them.
+**Do.** Steps 1 and 2 of section 1.4 only: (1) the bind path from the ROM sprite blob's tables (our assets
+carry the same tables; document the mapping), (2) the normal-stream update with the countdown/consume/loop
+semantics and the Unk_05 output, replacing src/spr.rs's equivalent behind the same interface so nothing
+else changes. Verification per section 1.5: the oracle and the trace (wt/t1b-trace-land, landing now) on
+mettaur, popup, buster, result, plus every row at its value (full table). **Acceptance.** the two routines
+ported with citations; full table identical to main (every isolated row 0, cursor 3, the integrated rows
+unchanged within their caps); the trace's first divergence unchanged or later on battle_full; a progress
+note in the plan file. Steps 3 and 4 are T4b.
+
 - T1 PARTIAL -- The state-trace harness: record canon's battle state per frame, replay ours, name the first divergence. trace harness works, KEPT unmerged (branch wt/t1-trace 147bb0a+1ee6705): record/diff on battle_full+3 rows, calibration agrees with oracle, 
 - F37g PARTIAL -- Land F37f's window mark without the results-screen regression. window mark landed 4671a84: windowclose 1458/162/40->0/0/40, cursor 20->3/3/170
 - T3 DONE -- Locate canon's interpreters in the coverage ranking and write the port plan for the animation player. interpreter port plan landed 3249c71 (docs only): anim player cores (_sprite_update bx-r4, format), dispatcher chain to RunAIAttack, script 
