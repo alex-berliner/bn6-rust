@@ -1,0 +1,10 @@
+# source stdout: /tmp/t9d_cust_stdout.txt
+watch-write: 1 range(s), 6 byte watchpoint(s) armed
+WP frame=154 addr=0x020364C0 write old=0x06014000 new=0x00000000 at=0x00000240 (arm) r15=0x00000248 lr=0x000000A4
+WP frame=154 addr=0x020364C4 write old=0x020364C8 new=0x00000000 at=0x00000240 (arm) r15=0x00000248 lr=0x000000A4
+WP frame=154 addr=0x020364C4 write old=0x00000000 new=0x00000001 at=0x080268F2 (thumb) r15=0x080268F6 lr=0x080136D5
+WP frame=154 addr=0x020364C5 write old=0x00000000 new=0x0000001E at=0x08026960 (thumb) r15=0x08026964 lr=0x08026961
+WP frame=154 addr=0x020364C0 write old=0x00000000 new=0x00000004 at=0x08026A66 (thumb) r15=0x08026A6A lr=0x0802FED9
+WP frame=155 addr=0x020364C2 write old=0x00000000 new=0x00000078 at=0x08026B36 (thumb) r15=0x08026B3A lr=0x0801E05B
+WP frame=164 addr=0x020364C1 write old=0x00000000 new=0x00000004 at=0x08026BE2 (thumb) r15=0x08026BE6 lr=0x0801E571
+WP frame=164 addr=0x020364C2 write old=0x00000078 new=0x00000000 at=0x08026BE6 (thumb) r15=0x08026BEA lr=0x0801E571
