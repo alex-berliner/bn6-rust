@@ -2,7 +2,7 @@
 name: worker-hyper
 description: (Charm Hyper subscription, zero marginal cost) Implements one ticket in its own worktree — baseline, change, after — and reports both numbers with the frame window.
 tools: read, bash, edit, write, grep, find, ls
-model: hyper/qwen3.8-flash
+model: hyper/glm-5.3-flash
 thinking: high
 ---
 
