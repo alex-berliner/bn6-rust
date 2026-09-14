@@ -2489,7 +2489,22 @@ PORTED_CHECKS: List[Check] = [
                  "k0..9 slide frames -- 162px HUD-strip cells (x96-110 y4-18) on even k "
                  "plus the enemy box (x160-191) on odd k (424-1116, worst k7); the "
                  "slide-phase camera rounding lives in battle.rs/custom.rs, out of this "
-                 "ticket's files.",
+                 "ticket's files."
+                 "F37g (2026-09-14), LAND F37f's mark (merge wt/f37f 0c05e00, custom.rs "
+                 "only, no new src edit): windowclose 1458/162/40 -> 0/0/40 isolated "
+                 "(negative not blind, 207166), cursor 20/19/170 -> 3/3/170. result "
+                 "58457/1676 BEFORE and AFTER (paired control: pre-F37f custom.rs "
+                 "rebuilt and recaptured on this base reads the identical 58457/1676, "
+                 "negatives 166899 both) -- no results-screen regression from this "
+                 "change on this base. Mechanism: F37f's delta vs main is exactly the "
+                 "mark object on Closing{x in 12..103}; the result row never enters "
+                 "Closing (its rust Side carries no input script, so navigate() never "
+                 "runs), hence unreachable there. The bottom-strip residue (x0..135 "
+                 "y144..158, canon shows the Cannon40 chip row, rust does not) "
+                 "pre-exists on main independent of custom.rs. UNVERIFIED: what draws "
+                 "or misses the Cannon40 row (BG content or scroll, not Custom::show "
+                 "objects); opening integrated 72499 is likewise identical pre/post "
+                 "(pre-existing, out of scope).",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
