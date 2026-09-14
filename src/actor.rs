@@ -473,6 +473,13 @@ impl Actor {
         matches!(self.action, Action::Gone)
     }
 
+    /// Mid-death-dissolve: HP already 0 and the death action running, but
+    /// `Gone` not yet reached. The end sequence counts from here (see
+    /// battle.rs's `DISSOLVE_FRAMES`), not from `is_defeated`.
+    pub fn is_dying(&self) -> bool {
+        matches!(self.action, Action::Dying { .. })
+    }
+
     /// The player's deletion fade, once it has begun: the mosaic block size
     /// and a 0-16 opacity, both from the phase-3 timer `t` counting 0 to 0x20
     /// -- mosaic `t >> 1`, alpha `0x10 - t` (asm00_2.s:18212).
