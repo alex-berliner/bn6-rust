@@ -276,13 +276,25 @@ impl Backdrop {
         // negative: measured on the real ROM, a frame's image is the previous
         // one shifted, and matching the sign the other way scrolls it the
         // wrong way by the right amount.
-        // NOTE (A7/7bl): the real register is `lsr #4` of a counter that FALLS
-        // by 8 -- a logical shift of a negative, i.e. a ceiling where this
-        // divide floors, one pixel apart on odd frames. Changing it to match
-        // is correct in isolation and measures the same on `opening` (290 at
-        // lags 6 and 7 rather than 7 and 8), so it is a real difference with
-        // no observed cost. Left alone only because nothing yet MEASURES an
-        // odd frame -- when something does, this is the first thing to try.
+        // TESTED AND CORRECT (F26b, 2026-09-13 -- the note that stood here
+        // said this was an untested difference; it is not a difference at
+        // all). canon's `BGScrollCB_BG1Diagonal3to2Scroll`
+        // (reference/bn6f/asm/asm00_0.s:3287-3303) does `sub r2,#8` /
+        // `lsr r2,r2,#4` / `strh` into RenderInfo Unk_10 (BG1HOFS), and the
+        // counter is zeroed at battle init, so at battle frame f it holds
+        // -8f and the register gets ((-8f) as u32) >> 4, whose low 9 bits are
+        // -ceil(f/2) mod 512. This line computes -((x_q+3)/4) with x_q = 2f,
+        // i.e. -ceil(2f/4) = -ceil(f/2): the SAME value, on even and odd
+        // frames alike. `lsr` of a negative IS the floor of the signed
+        // divide (2^28 higher, which the halfword store and the 9-bit
+        // register both discard), and `(q+3)/4` on an unsigned q is a
+        // ceiling, so negating it already floors. MEASURED, not argued: with
+        // the phase seeded from canon's own counters, BG1 alone (--only-bg 1
+        // on both sides) reads 0 on all 40 `windowclose` frames -- 20 of
+        // them odd -- and 0 on 169 of `cursor`'s 170 (see that row's note
+        // for the one frame, which is canon's mid-frame tile transfer, not
+        // this arithmetic). The same y line is `lsr #4` of a counter falling
+        // by 4, i.e. -ceil(f/4), which -((y_q+3)/4) with y_q = f reproduces.
         self.bg.set_scroll_pos((
             -(((self.x_q + 3) / 4) as i32),
             -(((self.y_q + 3) / 4) as i32),

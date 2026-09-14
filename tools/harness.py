@@ -1126,6 +1126,82 @@ CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_
                      window_pick_count=1, window_pick_slot=4, window_cursor=0xa)
 CUSTMATCH_ORIGIN = 8
 
+#: F26b (2026-09-13): the backdrop-phase seeds for the two CUSTMATCH_ROW rows
+#: that compare the WHOLE screen. `window`/`card` isolate BG3 and never see
+#: BG1, so CUSTMATCH_ROW itself stays unseeded; `cursor` and `windowclose`
+#: pair DIFFERENT canon frames of the same CHIPSELECT battle (canon 15 vs
+#: canon 81) with different rust frames, so one shared seed cannot serve both
+#: -- each carries its own, derived from canon's own counters at its own
+#: canon_ref, never fitted.
+#:
+#: THE SCROLL. canon's BGScrollCB_BG1Diagonal3to2Scroll
+#: (reference/bn6f/asm/asm00_0.s:3287-3303) subtracts 8 from Counter0 and 4
+#: from Counter1 (eBGScrollCBCounters, 0x02009690/0x02009694), `lsr #4` each,
+#: and strh's them into RenderInfo Unk_10/Unk_12 (BG1HOFS/BG1VOFS). Both
+#: counters are zeroed once at battle init (sub_8080D90/sub_8080DA0,
+#: asm00_1.s:8434-8435), so at battle frame f they read exactly -8f/-4f --
+#: measured on this row's own canon capture (--watch 0x02009690:4
+#: 0x02009694:4 over CHIPSELECT + this row's script): canon frame 0 reads
+#: 0xffff9d60/0xffffceb0 = -25248/-12624 = -8*3156/-4*3156, and every later
+#: frame is one more step of -8/-4, so CHIPSELECT sits at battle frame
+#: f0 = 3156 and canon frame c is battle frame 3156+c. src/backdrop.rs keeps
+#: the same phase in quarter-pixels (x_q += 2, y_q += 1 per frame) and emits
+#: -((q+3)/4), i.e. floor(-q/4) -- the same value canon's `lsr #4` of a
+#: falling counter produces -- so canon's phase in our units is
+#: x_q = 2f mod 1024, y_q = f mod 1024 (1024 = 256 px x 4).
+#:
+#: THE ART. eGFXAnimStates[0] (0x020094c0, GFXAnimState.inc: Timer +2,
+#: LoopAddress +4, CommandPos +8) walks src/backdrop.rs's STEP_ORDER/
+#: STEP_HOLD schedule (off_807FB98, dat20.s:140-172), 29 entries, 192 frames
+#: a cycle. Entry index = (CommandPos - LoopAddress)/8; position in the cycle
+#: = sum(STEP_HOLD[:entry]) + STEP_HOLD[entry] - Timer, and it advances by
+#: exactly 1 per frame on both sides. Watched on canon: frame 15 = entry 17 /
+#: Timer 4 (CommandPos 0x0807fc2c) = position 100; frame 81 = entry 25 /
+#: Timer 2 (0x0807fc6c) = position 166.
+#:
+#: THE ROW'S OWN OFFSET, AND THE TWO PIPELINE LEADS. Our Backdrop is built
+#: once, before the first `Battle::update`, and ticks once per frame from
+#: there. Watched live on this row's own rust capture (a temporary write of
+#: entry/timer/x_q/y_q to the scratch halfwords at 0x02000030, between R7's
+#: oracle block and this descriptor -- F26b, since removed) the tick count in
+#: RAM at capture frame R is n_ram = R - 6, and the marker's "BATT" first
+#: appears at capture frame 8 = the SECOND tick (main.rs's `clocks_visible`
+#: gate), which is where ORIGIN 8 comes from. What a frame SHOWS is not what
+#: its RAM holds, and the two clocks do not even agree with each other: our
+#: scroll is a register written by `commit()` at the following vblank, while
+#: our art is a `replace_tile` VRAM write inside `update()`. MEASURED on
+#: windowclose by sweeping each clock one tick at a time with the other held
+#: (BG1-only, both sides --only-bg 1, this row's own frames):
+#:   pixels at capture frame R show the scroll of tick R - 7
+#:   pixels at capture frame R show the art    of tick R - 5
+#: (with the art held, scroll_xq/yq 844/934 -- the seed the RAM tick count
+#: alone predicts -- reads 142518 nonzero on all 20 even k and 0 on all 20
+#: odd k, the exact signature of a half-pixel x error, and 846/935 reads
+#: 11153 on 7 frames; with the scroll held at 846/935, art entry 17 Timer 1
+#: reads 0 where Timer 0 and Timer 2 both read 11153 and Timer 3 reads
+#: 21150.) So with
+#: nx = ORIGIN + offset - 7 and na = ORIGIN + offset - 5, and `Backdrop::seed`
+#: applying at tick 0 while adding its own documented one-tick construction
+#: lead to the art timer (the fields therefore carry the state at tick 1):
+#:   scroll_xq = (2*(f0+canon_ref) - 2*nx) mod 1024
+#:   scroll_yq = (   f0+canon_ref  -   nx) mod 1024
+#:   art position of the (art_entry, art_timer) pair
+#:             = (canon position at canon_ref - na + 1) mod 192
+#: cursor      canon_ref 15: f=3171, x = 6342 mod 1024 = 198, y = 99;
+#:             nx = 8+237-7 = 238: 198-476 = -278 -> 746, 99-238 = -139 -> 885
+#:             na = 240: (100-240+1) mod 192 = 53 = entry 11 / Timer 3.
+#: windowclose canon_ref 81: f=3237, x = 6474 mod 1024 = 330, y = 165;
+#:             nx = 8+253-7 = 254: 330-508 = -178 -> 846, 165-254 = -89 -> 935
+#:             na = 256: (166-256+1) mod 192 = 103 = entry 17 / Timer 1.
+#: The two leads were measured ONCE, on windowclose, and then PREDICTED
+#: cursor: with no further tuning cursor's BG1 went 2214975/15746/170 -> 2/2/
+#: 170 (one frame, two pixels -- canon's own mid-frame tile transfer, see the
+#: cursor row's note). windowclose's BG1 went 877602/22658/40 -> 0/0/40.
+#: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
+#: each row's own canon capture, mapped through the arithmetic above.
+CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885)
+WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935)
+
 #: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
 #: window_cursor (0 = cursor on the first slot, showing the card's NAME
 #: rather than the OK confirmation message -- fixture.rs's own table
@@ -1499,7 +1575,7 @@ PORTED_CHECKS: List[Check] = [
                  "`window` above; AUDIT pair 17 prune ticket) -- same descriptor bytes, same "
                  "numbers.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_RUST),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
         canon_variant="canon",
     ),
@@ -1564,7 +1640,7 @@ PORTED_CHECKS: List[Check] = [
                  "artifact warp's own note records) -- a fixture-content mismatch class, not a "
                  "src/ defect: canon's own not-full gauge is what the new code now draws.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW,
+        rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script="Start@50,A@80"),
         canon_variant="canon",
