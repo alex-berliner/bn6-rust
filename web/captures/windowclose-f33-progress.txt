@@ -1,0 +1,3 @@
+The chip window closing across F33. The emotion window now follows the window's slide counter as canon's draw routine does, so during the ten slide frames it moves with the window instead of sitting at the closed position: 34707 to 27819. The rest is on the sprite layer, the Mettaur's phase and HUD details.
+
+windowclose (isolated), before and after: canon on top; ours at 4b19e3e (34707 px over 40 frames, canon 81+k, rust offset 253); ours at 870e3ef (27819 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

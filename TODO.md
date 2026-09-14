@@ -548,8 +548,7 @@ ours enter the end sequence on the same event with the same count. **Acceptance.
 after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
 alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
 
-### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(CLAUDE -- 2026-09-13)*
-
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail *(CLAUDE -- 2026-09-13)*
 **Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
 
 **Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
@@ -563,8 +562,7 @@ its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
-### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0  *(CLAUDE -- 2026-09-13)*
-
+### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0 *(CLAUDE -- 2026-09-13)*
 **Files.** tools/harness.py (the ZERO_ENEMY descriptor and the four integrated rows' notes), src/battle.rs (the two HUD gates only: the chip-name filter at ~3743 and gauge_up), src/hud.rs, src/hudtiles.rs
 
 **Why.** F33's per-element decomposition: 86% of field integrated's 304103 (and of warp/buster/chip-use
