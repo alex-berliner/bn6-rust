@@ -205,6 +205,20 @@ pub struct Fixture {
     /// +55: `cursor_at` to set when `window_pick_count` > 0, in
     /// `custom::Custom`'s own encoding (0..=9 a slot, `custom::OK` = 0xa).
     pub window_cursor: u8,
+    /// NOT IN FIXTURE.md, offset +62: the enemy's `CurState` byte
+    /// (`BattleObject` +0x08, `BattleObject.inc:40`), peeked from the canon
+    /// capture at the row's own `canon_ref`, for a fixture compared against
+    /// a mid-battle state whose virus is frozen mid-attack under the custom
+    /// screen's pause (`BattlePaused` reads 1 there, so canon's object skips
+    /// its update and holds whatever it held). 0 = no override (this
+    /// project's own fight starts every virus in its spawn animation).
+    pub enemy_state: u8,
+    /// NOT IN FIXTURE.md, offset +63: the enemy's `CurAction` byte (+0x09).
+    /// Same sentinel (0 = no override). The animation comes with the action
+    /// (`battle.rs` replays the matching `AttackSpec`, whose own `anim` is
+    /// what canon's `CurAnim` indexes), not as a third byte there was no
+    /// room for.
+    pub enemy_action: u8,
 }
 
 impl Fixture {
@@ -299,6 +313,9 @@ pub fn read() -> Option<Fixture> {
             window_pick_count: r8(53),
             window_pick_slot: r8(54),
             window_cursor: r8(55),
+            // NOT IN FIXTURE.md, offsets +62/+63: see `enemy_state`'s doc.
+            enemy_state: r8(62),
+            enemy_action: r8(63),
         })
     }
 }

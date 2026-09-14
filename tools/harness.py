@@ -197,6 +197,12 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # default seed" convention in force, so every descriptor that does not
     # name an rng is unchanged.
     struct.pack_into("<I", buf, 58, descriptor.get("rng", 0))
+    # +62 enemy_state / +63 enemy_action: NOT in FIXTURE.md
+    # (src/fixture.rs's own reserved-region additions -- see Fixture::enemy_state's
+    # doc there). 0 = no override, so every descriptor that does not name them
+    # is unchanged.
+    buf[62] = descriptor.get("enemy_state", 0)
+    buf[63] = descriptor.get("enemy_action", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -1573,8 +1579,10 @@ CUSTMATCH_ORIGIN = 8
 #: cursor row's note). windowclose's BG1 went 877602/22658/40 -> 0/0/40.
 #: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
 #: each row's own canon capture, mapped through the arithmetic above.
-CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885)
-WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935)
+CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885,
+                    enemy_state=4, enemy_action=0x0b)  # provenance: peeked -- canon 0x0203ab68 reads 0x0b04 at frame 15 of this row's own CHIPSELECT+cursor-walk capture (and every 10th frame 10..90: frozen under BattlePaused)
+WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935,
+                        enemy_state=4, enemy_action=0x0b)  # provenance: peeked -- canon 0x0203ab68 reads 0x0b04 at frame 81 of this row's own CHIPSELECT+Start,A capture (anim 0x0101 both rows: SWING's own pose)
 
 #: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
 #: window_cursor (0 = cursor on the first slot, showing the card's NAME
@@ -2163,7 +2171,23 @@ PORTED_CHECKS: List[Check] = [
                  "emotion 0, mark/power occluded 0. Both cited fixes live outside this "
                  "ticket's files (pan in actor/battle object Y; a battle-pause gate plus a "
                  "phase the Fixture has no fields for -- kind/col/row/HP already match canon "
-                 "RAM: NameID 1, (5,3), 40, mm (2,3) HP 100), so neither is widened into.",
+                 "RAM: NameID 1, (5,3), 40, mm (2,3) HP 100), so neither is widened into. "
+                 "F37b (2026-09-14), three battle.rs/fixture.rs steps, each measured alone "
+                 "(wt/f37b 674d771/d4b4bb3/69e15ac): (1) enemy HP object-text rides the "
+                 "field_slide camera (+15 px open, battle.rs show site): 154361/909 -> "
+                 "130246/783, BG layers untouched (already 0). (2) peeked enemy_state=4 / "
+                 "enemy_action=0x0b descriptor bytes (+62/+63, fixture.rs reserved-region "
+                 "pattern) applied as SWING at window-open, plus the BattlePaused freeze "
+                 "(enemy.update skipped while custom open, fixture-gated past close since "
+                 "canon holds BattlePaused=1 there): oracle enemy_state_action+enemy_anim "
+                 "170/170 (was divergent all frames), pixels 130246 -> 130266 (neutral -- "
+                 "pose right, position still 15 px off). A 9-tick pose prime (canon froze "
+                 "mid-raise) was tried and REVERTED (windowclose improved but cursor "
+                 "130266 -> 159656: at the wrong position the frame is a wash). (3) n/a "
+                 "here (no hand icon while open; 130266 -> 130221). Remainder, measured: "
+                 "actor object-Y pan (+15 while open -- actor.rs, out of scope) and the "
+                 "frozen pose frame. window/card/wave/opening/chip-cannon/mettaur/popup/" 
+                 "result/field all still 0.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
@@ -2357,7 +2381,19 @@ PORTED_CHECKS: List[Check] = [
                  "pause gate must cover the post-close frames too, not just custom-open. "
                  "Same file-scope verdict as cursor: the cited fixes (pan in object Y, icon "
                  "suppression, bracket on the first Closing frame, pause gate + phase seed) "
-                 "all live outside this ticket's files; nothing widened.",
+                 "all live outside this ticket's files; nothing widened. "
+                 "F37b (2026-09-14), same three steps (wt/f37b 674d771/d4b4bb3/69e15ac): "
+                 "(1) HP pan: 27819/1938 -> 26848/1878. (2) pose seed (4,11/SWING, same "
+                 "peeked bytes as cursor: 0x0b04+0x0101 at canon 81 too) + freeze: oracle "
+                 "40/40, k10..k15 pose 205 -> 0 range, but letting ticks run post-close "
+                 "re-fires the attack (strike + rolling wave from k24, k47 full mayhem), "
+                 "so the freeze had to extend past close (window_closed-gated, "
+                 "fixture-scoped; default build still resumes). (3) icon suppression "
+                 "(name_suppressed gate, mask bit 1 stays 0 post-OK): k10..39 461 -> 205 "
+                 "pose-only, total 26848 -> 19168/1878. Remainder, measured: k0 bracket "
+                 "104 (custom.rs, out of scope) + first-slide step, k1..k9 pan ramp + "
+                 "frozen-frame-0-vs-mid-raise pose, k10..39 the 205 pose frame. BG0/1/2/3 "
+                 "layer-local all 0; negatives not blind.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
