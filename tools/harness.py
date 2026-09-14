@@ -872,6 +872,13 @@ def _chip_checks() -> List[Check]:
         name = "chip-" + feature[len("demo-"):]
         hide_enemy = "--hide-enemy" in extra
         banner_zero = "--no-banner-zero" not in extra
+        # F12: chip-invisibl's window is provably static on BOTH sides once our
+        # popup is gone (canon draws none -- zero popup-region pixels over 210
+        # sterile-nozero + 150 real-ROM frames, so a frame shift reads 0: no timing
+        # in an idle navi). The documented case for a pixel negative (see `window`):
+        # a one-column shift tests the diff is live on real content. All others keep
+        # the frame shift.
+        neg = "pixel" if feature == "demo-invisibl" else "frame"
         out.append(Check(
             name=name,
             ui="isolated",
@@ -880,6 +887,7 @@ def _chip_checks() -> List[Check]:
             rust=_chip_rust(chip_hex),
             canon=_chip_canon_0c(chip_hex),
             canon_variant="canon (sterile)",
+            negative=neg,
         ))
     return out
 
