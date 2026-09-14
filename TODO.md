@@ -414,8 +414,9 @@ F28's Mettaur dissolve); cannon 0 and every chip row unchanged (their canon mask
 ours hides at the same frame -- measure the hide frame on both sides on one chip row); result,
 field, wave, window, opening unchanged or 0; nothing worse.
 
-### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
+### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(PARTIAL -- 2026-09-13, layer table delivered: BG0/BG2/BG3 0, BG1 scroll rates match [verifier CONFIRMED counters+zeroing+rate], BG1 a)*
 
+**Result.** layer table delivered: BG0/BG2/BG3 0, BG1 scroll rates match (verifier CONFIRMED counters+zeroing+rate), BG1 art citations CONFIRMED; verifier FLAGS OBJ arithmetic (689572>620802 total, must be redefined) and marks UNCHECKED: 2-frame art lead, Mettaur kind-byte/variant, portrait box-x, MegaMan panel; no src change, tree clean; worker muse-spark 38 turns $0.021, verifier GLM
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
 
 **Why.** F24 refuted the raster theory: canon's battle HBlank scroll callback is a no-op (nullsub_38 for
