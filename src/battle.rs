@@ -1061,6 +1061,20 @@ const BANNER_AFTER_OVER: u16 = 0; // provenance: fitted -- NOT VERIFIED against 
 const BATTLE_START_AFTER_WINDOW: u16 = 30; // provenance: peeked -- measured on the real ROM
 const BANNER_TO_RESULTS: u16 = 110; // provenance: peeked -- measured on the real ROM
 const RESULTS_DELAY: u16 = BANNER_AFTER_OVER + BANNER_TO_RESULTS;
+/// Frames from the last combatant going down (the death action's first
+/// frame) to the end sequence -- the banner sequencer's RESULT countdown
+/// 0x0C. Watched on the real ROM on two routes: PAUSED with the Mettaur's
+/// HP forced to 0 and Start@10 (death action at capture frame 12, 0x0C at
+/// 47) and a live Cannon kill on the same state (HP 0 at 61, 0x0C at 96).
+/// Both give 35: the enemy-object routine at ROM 0x08016676 counts the
+/// dissolve (timer +0x20 set 0x1f, one a frame, death entered at 0x0801B290,
+/// gone entered at 0x080166A0) and the battle main at 0x0800A09F calls into
+/// sub_80081A4, whose instruction at 0x0800811E writes 0x0C to dword_203CA70
+/// (teardown follows in the same routine, byte3 init at 0x080081CA). NOTE:
+/// F27b's prose calls this gap 47 -- that is the 0x0C CAPTURE frame on the
+/// HP-forced route, i.e. 12 paused frames (Start@10 plus the resume) plus
+/// these 35 live ones, not an event-locked count from the killing hit.
+const DISSOLVE_FRAMES: u8 = 35; // provenance: peeked -- death-action frame to sequencer 0x0C, --watch/--watch-write on 0x0203ca70/0x0203ab68/0x0203ab80, real ROM, two routes, 2026-09-14 (F32)
 
 /// Everything that belongs to one battle, so a finished battle can be
 /// dropped and the next one built from scratch.
@@ -1294,6 +1308,10 @@ pub struct Battle<'a> {
     /// front of the hand, which is the behaviour every other row measures.
     name_suppressed: bool,
     results_delay: u16,
+    /// Frames until the end sequence fires once the fight is decided, counting
+    /// down from DISSOLVE_FRAMES; None until the last combatant goes down.
+    /// The RESOLVE_OVER stand-in (death before frame 0) starts at Some(0).
+    dissolve_in: Option<u8>,
     shown: Option<results::Shown>,
     /// The regular-chip mark the RESULT window hangs at its top-left corner,
     /// held only while that window is up.
@@ -1797,6 +1815,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             gauge_pause,
             name_suppressed: false,
             results_delay,
+            dissolve_in: None,
             shown,
             results_mark,
             buster_arm_in,
@@ -2124,13 +2143,41 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // With the bit, the vacuous all-defeated counts, `over` fires on the
         // first battle frame, and the end sequence runs exactly as it would
         // had a real enemy died before frame 0.
-        let over = if self.fixture.is_some() {
+        // F32 (2026-09-14): a REAL kill does not end the sequence at the
+        // defeat -- `over` used to fire the moment the last enemy read Gone.
+        // Canon counts the dissolve first (DISSOLVE_FRAMES, 35, from the
+        // death action's first frame) and only then enters 0x0C, so the
+        // fight is decided when the last combatant goes DOWN (Dying, HP
+        // already 0) and `over` follows 35 frames later. The RESOLVE_OVER
+        // stand-in above keeps firing at once: its death is before frame 0,
+        // so there is no dissolve left to count.
+        let decided = if self.fixture.is_some() {
             let f = self.fixture.unwrap();
             (f.flag(fixture::FLAG_RESOLVE_OVER) || !self.enemies.is_empty())
-                && (self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated()))
+                && (self.megaman.is_defeated()
+                    || self.megaman.is_dying()
+                    || self.enemies.iter().all(|e| e.is_defeated() || e.is_dying()))
         } else {
-            self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
+            self.megaman.is_defeated()
+                || self.megaman.is_dying()
+                || self.enemies.iter().all(|e| e.is_defeated() || e.is_dying())
         };
+        if decided && self.dissolve_in.is_none() {
+            let instant = self.enemies.is_empty()
+                && matches!(self.fixture, Some(f) if f.flag(fixture::FLAG_RESOLVE_OVER));
+            // Seed one less than the count, and tick on the latching frame
+            // too: this block runs before the take_damage sites below each
+            // update, so the latch observes the killing blow a frame late.
+            // Together that lands `over` exactly DISSOLVE_FRAMES updates
+            // after the blow (OAM-verified: banner OAM first appears 35
+            // capture frames after the killing hit reads HP 0, matching
+            // canon's death-to-0x0C on both its routes).
+            self.dissolve_in = Some(if instant { 0 } else { DISSOLVE_FRAMES - 1 });
+        }
+        if let Some(n) = self.dissolve_in.as_mut() {
+            *n = n.saturating_sub(1);
+        }
+        let over = self.dissolve_in == Some(0);
         // The battle HUD's teardown: canon drops elements 0, 1, 4, 10 and 14
         // together on the frame the end sequence starts, one frame before the
         // banner this same `over` arms below (sub_80081A4's
