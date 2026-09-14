@@ -16,4 +16,8 @@ Each landing was reproduced from a clean checkout before merging, and each chip 
 
 The eleven F12 passes cost $1.13 of worker and verifier time on the cheap tier, about a dime a chip family. The whole run that finished the series spent $0.17 per landed ticket.
 
-See the [gallery](../gifs.html) for the before-and-after GIFs of each family (the ones named with an F12 suffix).
+Two of the families, before and after; the rest are in the [gallery](../gifs.html) under their F12 names.
+
+![PoisSeed across the seed-sheet fix](../captures/chip-poisseed-f12d-progress.gif)
+
+![AreaGrab across the orbs pass](../captures/chip-areagrab-f12-progress.gif)
