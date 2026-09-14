@@ -303,6 +303,21 @@ tools/oracle.py's (or explain the difference); (5) the negative control: a one-f
 must produce a divergence at frame 0. **Acceptance.** the two commands work on `battle_full` and three rows with
 the calibration and the negative shown; AGENT_GUIDE.md documents them in ten lines.
 
+### F37g. Land F37f's window mark without the results-screen regression  *(OPEN -- 2026-09-14)*
+
+**Files.** src/custom.rs, tools/harness.py (the windowclose row's note)
+
+**Why.** F37f (kept on wt/f37f, 0c05e00) draws the chip window's mark during the closing slide as the real
+game does (sub_8029C08, the 0x67 ROM source, verifier-confirmed) and reads windowclose 1458 -> 0/0/40 and
+cursor 20 -> 3/3/170, but result regresses 0 -> 58457/1676 (the bottom strip x0..135 y144..158: the change
+un-gates the power digits on the results screen, per the verifier's reproduction). The follow-up the report
+names: restore the old early-return and draw the mark only inside it, so the results screen's path is
+untouched.
+**Do.** Start with `bash tools/worktree.sh f37g-mark-gate` then `git merge wt/f37f`; make the change; measure
+windowclose, cursor, result, window, card, wave, opening, chip-cannon, mettaur, popup, field.
+**Acceptance.** windowclose 0/0/40 and result 0/0/40 (negatives not blind); cursor 3 or better; the other
+rows 0; nothing worse.
+
 ### T3. Locate canon's interpreters in the coverage ranking and write the port plan for the animation player  *(OPEN -- 2026-09-14)*
 
 **Files.** docs/coverage/ (the plan), tools/coverage.py (read), reference/bn6f (read)
