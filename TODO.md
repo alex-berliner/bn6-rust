@@ -160,8 +160,9 @@ on battle_full). **Acceptance.** full table identical to main (every isolated ro
 tear may move with the ROM layout, report its value; integrated rows within their caps); the trace's first
 divergence unchanged or later; the plan file's progress notes.
 
-### T5. Port the object dispatcher, per section 2 of the plan  *(OPEN -- 2026-09-14)*
+### T5. Port the object dispatcher, per section 2 of the plan  *(DONE -- 2026-09-14, T5 dispatcher landed 163293b [was wt/t5 e17d8d3]: objects.rs battle_common_path/enemy_think/enemy_act/t1_playe)*
 
+**Result.** T5 dispatcher landed 163293b (was wt/t5 e17d8d3): objects.rs battle_common_path/enemy_think/enemy_act/t1_player_entry/t3_entry. verify_rows PASS cursor 1/1/170 (was 15), isolated 0. integrated: opening 72499/2691 identical, field 158958/5629 (-53/-53, cap 28000), warp/buster/chip-use identical. oracle identical, trace divergences unchanged. trace.py record NameError fixed. GLM verifier CONFIRMED all (citation nit t3_0x12 line docs-only).
 **Files.** src/battle.rs (the object update loop), src/actor.rs, src/shot.rs, src/ai.rs (only where an object's per-type entry is called), src/objects.rs (new, if the port wants its own module), tools/trace.py, docs/coverage/plan-interpreters.md
 
 **Why.** docs/coverage/plan-interpreters.md section 2: the real game keeps a table of objects and, each
