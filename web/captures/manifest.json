@@ -3,85 +3,85 @@
     "file": "captures/chip-areagrab-progress.gif",
     "name": "chip-areagrab-progress",
     "label": "F12 popup-gate: FLAG_HUD_LIVE-gated popups (human impl, worker-verified); areagrab 43367 to 25644, orbs next\n\nchip-areagrab (isolated), before and after: canon on top; ours at 48d4447 (43367 px over 77 frames, canon 5+k, rust offset 110); ours at 6081948 (25644 px, canon 5+k, rust offset 110). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-barr100-progress.gif",
     "name": "chip-barr100-progress",
     "label": "F12 barr100: same attack+46 bubble; 52560 to 0\n\nchip-barr100 (isolated), before and after: canon on top; ours at 4f72383 (52560 px over 80 frames, canon 5+k, rust offset 125); ours at 5e681a1 (0 px, canon 5+k, rust offset 125). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-barr200-progress.gif",
     "name": "chip-barr200-progress",
     "label": "F12 barr200: same attack+46 bubble; 52560 to 0\n\nchip-barr200 (isolated), before and after: canon on top; ours at 4f72383 (52560 px over 80 frames, canon 5+k, rust offset 125); ours at 5e681a1 (0 px, canon 5+k, rust offset 125). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-barrier-progress.gif",
     "name": "chip-barrier-progress",
     "label": "F12 barrier: bubble spawns at attack+46 like canon (was 78); 52560 to 0\n\nchip-barrier (isolated), before and after: canon on top; ours at 4f72383 (52560 px over 80 frames, canon 5+k, rust offset 124); ours at 5e681a1 (0 px, canon 5+k, rust offset 124). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-bugbomb-progress.gif",
     "name": "chip-bugbomb-progress",
     "label": "F12 bugbomb: snap rest Z=10 panel-XY like canon sub_80D9E94; 8280 to 0\n\nchip-bugbomb (isolated), before and after: canon on top; ours at 536fa8f (8280 px over 70 frames, canon 5+k, rust offset 123); ours at 26372d1 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-energbom-progress.gif",
     "name": "chip-energbom-progress",
     "label": "F12 energbom: Param1==2 energy blast ring (canon t3_0x11, own bytes); 19932 to 0\n\nchip-energbom (isolated), before and after: canon on top; ours at e3fd00e (19932 px over 60 frames, canon 5+k, rust offset 123); ours at 2e19e83 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-grasseed-progress.gif",
     "name": "chip-grasseed-progress",
     "label": "F12 corners: same row-major sheet order; grasseed 132 to 0\n\nchip-grasseed (isolated), before and after: canon on top; ours at 0e6b477 (132 px over 70 frames, canon 5+k, rust offset 123); ours at 54abe87 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-iceseed-progress.gif",
     "name": "chip-iceseed-progress",
     "label": "F12 corners: sheet push row-major with canon OAM row grouping; iceseed 132 to 0\n\nchip-iceseed (isolated), before and after: canon on top; ours at 0e6b477 (132 px over 70 frames, canon 5+k, rust offset 123); ours at 54abe87 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-invisibl-progress.gif",
     "name": "chip-invisibl-progress",
     "label": "F12 invisibl: name popup gated on FLAG_HUD_LIVE (canon sub_801E95C draws none when torn down); 14740 to 0\n\nchip-invisibl (isolated), before and after: canon on top; ours at 510c666 (14740 px over 80 frames, canon 5+k, rust offset 110); ours at 25fc380 (0 px, canon 5+k, rust offset 110). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-megenbom-progress.gif",
     "name": "chip-megenbom-progress",
     "label": "F12 megenbom: same Param1==2 ring path; 19932 to 0\n\nchip-megenbom (isolated), before and after: canon on top; ours at e3fd00e (19932 px over 60 frames, canon 5+k, rust offset 123); ours at 2e19e83 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-poisseed-progress.gif",
     "name": "chip-poisseed-progress",
     "label": "F12 feet: per-family seed push order (pod above navi); poisseed 115 to 0\n\nchip-poisseed (isolated), before and after: canon on top; ours at 6ffb83e (115 px over 70 frames, canon 5+k, rust offset 123); ours at e257338 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-suprvulc-progress.gif",
     "name": "chip-suprvulc-progress",
     "label": "F12 suprvulc: canon-data muzzle-fire replica chip-gated to SuprVulc; 2464 to 0\n\nchip-suprvulc (isolated), before and after: canon on top; ours at 5cb8320 (2464 px over 113 frames, canon 5+k, rust offset 122); ours at 7b551ad (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/chip-vdoll-progress.gif",
     "name": "chip-vdoll-progress",
     "label": "F12 vdoll: snap rest Z=0 plus poison plus 1-frame landing lag (sub_80D47C0); 628 to 0\n\nchip-vdoll (isolated), before and after: canon on top; ours at ce4f73e (628 px over 70 frames, canon 5+k, rust offset 123); ours at c622a81 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/result-progress.gif",
     "name": "result-progress",
     "label": "F34b: no intro fade on results-screen start plus MegaMan panel and no-enemy descriptor; 102547 to 0\n\nresult (isolated), before and after: canon on top; ours at 1ca132f (93183 px over 40 frames, canon 21+k, rust offset 21); ours at 92a01a9 (0 px, canon 21+k, rust offset 21). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
-    "added": null
+    "added": "2026-09-14"
   },
   {
     "file": "captures/result-f34-progress.gif",
