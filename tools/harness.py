@@ -947,7 +947,7 @@ CHECKS.extend(_chip_checks())
 #: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
 HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,
                 megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=1,
-                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                flags=0x10, art_entry=23, art_timer=6, scroll_xq=36, scroll_yq=18,
                 # F20b (2026-09-13): positions peeked from this row's own canon
                 # capture (REAL + PAUSED + Start@10, canon frame 44): MegaMan
                 # PanelX/PanelY 0x0203a9c2/0x0203a9c3 (BattleObject 0x0203a9b0
@@ -970,7 +970,25 @@ HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60
                 # 50 (mod 112). With it, src/hudtiles.rs's canon-verbatim
                 # formulas align bar AND marker exactly (tiles/gauge isolated
                 # residue 538 -> the 208-px wide-screen frame only).
-                gauge_tick=50)
+                # F28b (2026-09-13): the four backdrop seeds above and this
+                # gauge counter are the SAME phases, translated 318 frames
+                # earlier so the compared frame is one our battle is actually
+                # in canon frame 44's SITUATION at. F28 measured why they had
+                # to move: at the old rust battle 427 our Mettaur matched
+                # canon exactly but our MegaMan had taken two shockwave hits
+                # (HP 40, inside the 120-frame mercy) where canon's holds 60
+                # unhit -- 13642 px, all of it on the left half. 318 = 3 x the
+                # Mettaur's own 106-frame cycle, so the enemy keeps the phase
+                # F28 proved, and 427 - 318 = 109 is before our first hit
+                # (battle 181). A translation, not a re-fit: the backdrop's
+                # clocks advanced 318 ticks of src/backdrop.rs's own update
+                # (entry 5 / timer 4 -> entry 23 / timer 6 through STEP_ORDER
+                # and STEP_HOLD, x_q 424 -> (424 + 2*318) mod 1024 = 36, y_q
+                # 724 -> (724 + 318) mod 1024 = 18), and the gauge counter the
+                # same (unseeded gt at capture 117 is 110, and 32 + 110 = 142
+                # = 30 mod 112, canon's own t_used(44) -- the identity the old
+                # seed 50 satisfied at capture 435).
+                gauge_tick=32)
 HUDMATCH_ORIGIN = 8
 
 
@@ -988,11 +1006,13 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
         frames=8,
         align=Align(
             canon_ref=44,
-            search=range(415, 440),
+            search=range(97, 122),
             note="canon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a "
                  "documented scripted landing, not searched). rust: marker origin 8 "
-                 "(demo-hudmatch's own family) plus a 25-frame band around regress.py's old "
-                 "center (435-8=427) -- %s. NOT boxed: regress.py split this same capture "
+                 "(demo-hudmatch's own family) plus a 25-frame band around 109, which is "
+                 "regress.py's old center (435-8=427) minus 318 = 3 x the Mettaur's 106-frame "
+                 "cycle (F28b, see the descriptor's own comment; the band was range(415,440) "
+                 "while the descriptor seeded the old frame) -- %s. NOT boxed: regress.py split this same capture "
                  "into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely "
                  "because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the "
                  "gauge's stripe animation) that would otherwise contaminate a background-only "
@@ -1018,7 +1038,22 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
                  "120-frame mercy, while canon holds 60 unhit through frame 51 -- the left half "
                  "goes 0 -> 13550 and the row 3865 -> 16130. So fixing the freeze ALONE makes "
                  "this row worse; 0 needs the fixture to carry canon's mid-battle MegaMan as it "
-                 "already carries canon's backdrop and gauge phase." % subject_note,
+                 "already carries canon's backdrop and gauge phase. F28b (2026-09-13) DID THAT, "
+                 "and the row READS 0 -- both variants, full screen, negatives not blind. Not "
+                 "by seeding MegaMan (his HP and mercy at battle init cannot survive 427 frames "
+                 "of our own Mettaur hitting him) but by moving the compared frame to one our "
+                 "battle is genuinely in canon frame 44's situation at: the freeze is gone "
+                 "(src/battle.rs's gauge_pause is armed only when the window may open, cited "
+                 "there), and the descriptor's four backdrop seeds and gauge_tick were "
+                 "TRANSLATED 318 frames earlier -- 3 whole Mettaur cycles, so the enemy phase "
+                 "F28 proved at 427 is the same phase at 109, while 109 is before our first "
+                 "shockwave hit (battle 181), so MegaMan is idle at HP 60 with FlashingInvisTimer "
+                 "0 exactly as canon's is (peeked: BattleObject 0x0203a9b0 +0x24 = 0x3c, +0x20 = "
+                 "0, CollisionDataPtr +0x54 -> 0x020384f0 +0x24 = 0 on canon frames 42..48). "
+                 "Per-half at the new alignment: left x<120 = 0, right x>=120 = 0, HUD strip "
+                 "y<24 = 0. The stages measured on the way: 3865 frozen at 427, 13642 unfrozen "
+                 "at 427 (all left), 3460 at 109 with the old gauge seed (all HUD strip), 0 with "
+                 "the translated one." % subject_note,
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=HUDMATCH,
                              extra=() if ui == "integrated" else ("--disable-obj",)),
@@ -1238,6 +1273,43 @@ _CURSOR_WALK_RUST = ",".join(held("Left", 250 + 30 * k, 6) for k in range(5))
 #: transfer queue, not from any OAM). Blank on canon per frame; the rust fixture
 #: has no enemy and the row's subject (BANNER_TILES 0x06016E00) is disjoint.
 ENEMY_DISSOLVE_TAIL = "0x60105A0:320"
+
+#: F28b (2026-09-13): the two blanks above stop at tile 0x36 and the dissolve's
+#: FIRST phase does not. Watching canon's OAM (0x07000000:1024, this row's own
+#: side plus --watch) over the compared window shows the corpse drawn from
+#: object tiles 0x01f, 0x023, 0x02b, 0x02d, 0x02f and 0x033 -- all inside the
+#: 768 bytes above -- AND from 0x03d, 0x041 and 0x045, whose shapes/sizes
+#: (tall 8x32 = 4 tiles, wide 32x16 = 8 tiles) reach tile 0x048: a second sheet
+#: region, above everything F9 blanked, which is the whole of popup's leftover
+#: 5094 px on canon frames 43..49 (k=0..6, bbox (149,81)-(196,126), canon
+#: colour over our black on every one of them; k>=7 was already 0). Tiles
+#: 0x37..0x48 = 0x060106E0 + 576 bytes. Nothing else uses them where it
+#: matters: over the row's whole 130-frame canon capture the only objects
+#: drawn from tiles 0x2d..0x49 inside the compared window (canon 43..122) are
+#: these, at x 149..189; the other users (x=4 at frames 0..15, x 137..185 at
+#: frames 15..36) are all before canon_ref. Popup only -- `banner` keeps F9's
+#: pair unchanged, and reads 0 with them.
+ENEMY_DISSOLVE_FIRST_PHASE = "0x60106E0:576"
+
+#: F28b (2026-09-13): and the three frames a per-frame --zero can never win,
+#: for the reason F9 already wrote down -- the queue is flushed in the frame's
+#: OWN vblank, after that frame's zero has run. Watched live on this row's own
+#: canon side (--watch 0x0200B4B0:1024, the transfer queue itself, one row per
+#: frame): the dissolve's uploads are queued in slot 3 at canon frames 44
+#: (src 0x0839A28C -> 0x060105A0, 896 bytes), 45 (the same source -> 0x060103E0)
+#: and 48 (src 0x0839A610 -> 0x060103E0, 768 -- F9's own entry), landing on 45,
+#: 46 and 49, which are exactly the k=2, k=3 and k=6 that survived the tile
+#: blanking (1148, 1148, 562). NOTE the slot: F9 measured this upload in slot
+#: 41 and ENEMY_DISSOLVE_SLOT_SIZE still pokes 0x0200B7EC for it; on this row
+#: today it is slot 3, so that poke is a no-op here (it is left alone for
+#: `banner`, which reads 0 with it). Size word of slot 3 =
+#: fiveWordArr200B4B0 + 3*0x14 + 8 = 0x0200B4F4; zeroing its low half is the
+#: whole size (896 = 0x380, 768 = 0x300), so CopyWords copies nothing.
+ENEMY_DISSOLVE_QUEUE_KILL = (
+    "45:0x0200B4F4:0x0000",
+    "46:0x0200B4F4:0x0000",
+    "49:0x0200B4F4:0x0000",
+)
 
 #: TODO F9 (2026-09-12): the per-frame --zero cannot blank canon frame 49 itself:
 #: the dissolve sheet's queue entry (queued during frame 48) is FLUSHED by
@@ -1936,8 +2008,10 @@ PORTED_CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
-                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL),
-                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
                               script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
         # No pending_src -- this is fully expressible today. Kept as its own
