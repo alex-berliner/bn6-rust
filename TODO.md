@@ -142,8 +142,9 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T6. The Mettaur as canon's per-type routine: replace the hand-written brain with the ported AI entry  *(OPEN -- 2026-09-14)*
+### T6. The Mettaur as canon's per-type routine: replace the hand-written brain with the ported AI entry  *(DONE -- 2026-09-14, Mettaur brain now canon per-type entry MettaurEntry ForMettaur_8109EF4 [objects.rs], hand-written MettaurState)*
 
+**Result.** Mettaur brain now canon per-type entry MettaurEntry ForMettaur_8109EF4 (objects.rs), hand-written MettaurState removed (ai.rs), battle.rs 1 comment line, plan notes S2.6. verify_rows: full isolated table 0 except cursor 44/43 MATCH (same k37+k97 tear, reported not chased); both-rows field/warp/buster/opening 0; negatives not blind. Trace: mettaur 70/70 clean, battle_full first divergence unchanged k=0 (4,10)/(4,0). GLM verifier CONFIRMED claims 1,2,3,5; claim 4 (opening-baseline byte identity) corroborated via opening 0/0/40 + history. Merged c31c8cb; post-merge HEAD verify PASS identical numbers. Worker muse-spark-contrib $0.0899; land.sh reused a same-sha .pass from an earlier partial row set and wrote 'skipped' -- caught, HEAD re-verified, message amended, stale .pass removed.
 **Files.** src/ai.rs, src/objects.rs (the per-type entry for the Mettaur), src/actor.rs (only the calls the entry makes), tools/trace.py, docs/coverage/plan-interpreters.md
 
 **Why.** T5 landed the object dispatcher (objects.rs: battle_common_path / enemy_think / enemy_act / the
