@@ -691,8 +691,9 @@ lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor
 frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
 0 or unchanged; nothing worse. F34 (result, marker origin 13) found the lags are marker-anchored, not absolute: scroll tick = R - origin + 1, art tick = R - origin + 3 (F26b/F33b's R-7/R-5 are the origin-8 case); use that form.
 
-### F35b. Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline *(OPEN -- 2026-09-14)*
+### F35b. Backdrop step copy: one block copy inside ~1 scanline, then place it at the drain scanline  *(BLOCKED -- 2026-09-14, fast copy 11->1 scanline works as mechanism but fixed placement fails both ways [vblank: 88 left)*
 
+**Result.** fast copy 11->1 scanline works as mechanism but fixed placement fails both ways (vblank: 88 left; scanline-6: 3007 left) -- canon drains usually-vblank + occasional slips, no fixed wait matches both; reverted clean, no commits, seeds untouched; slips-deterministic-in-supercycle hypothesis recorded for later (needs evidence); second consecutive non-DONE on backdrop objective -> no F35c per two-in-a-row; worker muse-spark
 **Files.** src/backdrop.rs, vendor/agb
 
 **Why.** F35's verified Result (PARTIAL, no commits): canon drains one BIOS CpuFastSet of 0x480 B into 0x06000040 every 8 frames mid-frame near scanline 0-6 (verifier CONFIRMED live: addr/size/period; queue chain main.s:17 -> ProcessGFXTransferQueue asm00_0.s:830 -> CopyByEightWords/SWI_CpuFastSet asm00_0.s:663; table-indirect dispatch via ProcessGFXAnims); ours does sequential per-slot replace_tile calls inside update() which span several scanlines, so a same-position wait smears partial-new rows (measured 62->184 / 0->571, reverted). Verifier corrections to carry: citation is :663 not :653; dispatch is table-indirect; tear sits scanline 0-6 (not 48); unchecked -- step magnitude, k-indexing, our loop span, FastSet src addr.
