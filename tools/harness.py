@@ -1377,6 +1377,16 @@ ZERO_ENEMY_ORIGIN = 8
 #: carries the bit: warp/buster's own windows end before canon's mark enters
 #: (their tickets F11/F10), and chip-use must keep the fight alive to fire
 #: its chip at all.
+#: F38b (2026-09-14): FLAG_RESOLVE_OVER retried on warp/buster/chip-use now that `over`
+#: no longer freezes inputs/objects (F33d) -- measured worse-or-flat, reverted: warp
+#: integrated 40628->45751 (isolated 0->5123, banner tail k=0..7), buster 54672->81083
+#: (isolated 0->2286, our show/mark entering a window whose canon side has neither),
+#: chip-use 275307->269172 (isolated 0->4026; only row straddling our show, partial
+#: slide overlap). Sequencer re-watched: 0x0C at canon 47; our `over` at capture 8
+#: with show at battle ~110 cannot sit at canon's k=24..29 under event-locked subject
+#: offsets -- one BANNER_TO_RESULTS cannot serve both, left untouched for field.
+#: Driver chain (sub_802BD60->sub_802BE36, 16 px/frame) holds: result isolated 0,
+#: warp ramp 1917..11744, field k=24..37 matching content.
 ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | FLAG_RESOLVE_OVER (bit5)
 
 #: `chip-use` alone: an A press with an empty hand uses nothing, so this
@@ -1887,7 +1897,15 @@ PORTED_CHECKS: List[Check] = [
                  "was the band edge riding the slope, and the AUDIT-6 cap 19500 was "
                  "calibrated on that sloped alignment, so the harness's WORSE-than- "
                  "allowed print on integrated is a stale-cap artifact (coordinator "
-                 "decision 2026-09-13; tools/allowlist.py untouched).",
+                 "decision 2026-09-13; tools/allowlist.py untouched). "
+                 "F38b (2026-09-14): resolve retried now that `over` no longer freezes "
+                 "inputs/objects (F33d) -- warp integrated 40628->45751, isolated 0->5123 "
+                 "(worst 1622; negatives not blind), reverted. Sequencer re-watched: 0x0C at "
+                 "canon 47; our `over` at capture 8 with show at battle ~110 puts our banner "
+                 "tail over rust 59..66 (k=0..7) and our slide past window end (rust 59..88), "
+                 "while the k=24..29 ramp (1917..11744) stays canon's BG3 slide at 16 px/frame "
+                 "with no rust counterpart (F34 driver chain holds -- result isolated 0). Flag "
+                 "stays off; allowlist kept.",
         ),
         rust=_zero_enemy_rust(desc=WARP_ZERO, script=",".join([held("Right", 8 + 50, 3), held("Down", 8 + 70, 3),
                                         held("Left", 8 + 90, 3), held("Up", 8 + 110, 3)])),
@@ -1943,7 +1961,15 @@ PORTED_CHECKS: List[Check] = [
                  "k=2. Our windup draws the same pixels as canon's two pre-pose idle frames, "
                  "so the row cannot tell whether our attack state is entered one frame late "
                  "or our export block is one frame behind the frame it describes; settling "
-                 "that is a main.rs/oracle question, not this row's.",
+                 "that is a main.rs/oracle question, not this row's. F38b (2026-09-14): resolve "
+                 "retried now that `over` no longer freezes inputs/objects (F33d) -- buster "
+                 "integrated 54672->81083, isolated 0->2286 (worst 617; negatives not blind), "
+                 "reverted. Sequencer 0x0C at canon 47 (re-watched); our `over` at capture 8 "
+                 "with show at battle ~110 puts our show (capture ~118, k=7) and mark (~121) "
+                 "inside this window (rust 111..138) while canon's slide sits at k=22..27 and "
+                 "its mark from 164 sits outside. The k=1..21 name strip (422 px/frame, "
+                 "attack-specific, still unfixed on purpose) and the k=22..27 slide ramp keep "
+                 "their F38 attribution; flag stays off.",
         ),
         rust=_zero_enemy_rust(held("B", 8 + 100, 2), desc=BUSTER_ZERO),
         canon=_zero_enemy_canon("Start@10", pokes_at=BUSTER_AIDATA_POKES),
@@ -1984,7 +2010,15 @@ PORTED_CHECKS: List[Check] = [
                  "result mark from 164 (an OBJ the rust side never draws without "
                  "FLAG_RESOLVE_OVER) -- the same stop buster uses. Canon's 4-frame-longer "
                  "tail (attack through 163 vs ours through 131) sits outside the window "
-                 "and stays OPEN with this ticket.",
+                 "and stays OPEN with this ticket. F38b (2026-09-14): resolve retried now that "
+                 "`over` no longer freezes inputs/objects (F33d) -- chip-use integrated "
+                 "275307->269172, isolated 0->4026 (worst 808; negatives not blind), reverted. "
+                 "Honest lock stays 101 (remainder 281885 there, F38); the printed search minimum "
+                 "sits at the band's left edge and is score-ridden, not event-locked. Sequencer "
+                 "0x0C at canon 47 (re-watched); our `over` at capture 8 with show at battle ~110 "
+                 "straddles this window (rust ~108..137), giving partial slide overlap (hence the "
+                 "small drop) while the BG1 art mismatch (~17k/frame) dominates untraced with no "
+                 "descriptor change. Flag stays off.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CHIPUSE_ZERO,
                              script=held("A", 8 + 100, 2),
