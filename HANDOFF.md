@@ -41,6 +41,14 @@ vs after -- a merge that changed nothing is not parity).
   viruses and maps become data; (4) then port remaining functions in coverage order, cited line by
   line, each verified by the trace. The 5 viruses / 2 bosses come from data after (3), and are its
   first test. Existing rows stay as free regression tests.
+- **Continuous improvement protocol (agreed 2026-09-13, to build after the Claude-agent batch lands):**
+  a daily review script (machine cron) that joins ticket outcome to role/model/cost and reports cost
+  per landed verified ticket, rows at 0, NEGATIVE/BLOCKED rate, no-pair rate and Claude tokens per
+  landed ticket into docs/reviews/; a replay benchmark (re-run archived tickets with known answers
+  from their base commit) that gates any model switch; and an event-triggered auditor that reads a
+  digest and PROPOSES reshapes of roles, loop, AGENTS.md and tools into docs/audits/ with a
+  docs/config-log.md changelog, one structural change per cycle, never touching the invariants
+  (canon never changes, verify_rows always, no fitted constants, the spend floor).
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user keeps $5 in the account; runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
