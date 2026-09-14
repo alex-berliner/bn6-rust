@@ -19,7 +19,7 @@ vs after -- a merge that changed nothing is not parity).
 
 - **At 0 differing frames (canon vs ours):** wave, window, opening, cannon, field, banner, warp, card,
   tiles, gauge, mettaur, popup, buster and 35 of the 43 chip rows -- 48 rows -- plus the integrated
-  tiles/gauge variants. Not yet: cursor 154386, windowclose 27819, result 102547 (F34 in flight), eight
+  tiles/gauge variants. Not yet: cursor 154386, windowclose 27819, result 93183 (F34b in pi's queue takes it to 0, measured), eight
   chip rows (energbom/megenbom, areagrab, barrier/barr100/barr200, chip-use, ...), and the integrated
   opening 72499 / field 158938 / warp 40628 / buster 54672 / chip-use 567780 variants, whose remainder
   is canon's RESULT window sliding in while the zero-enemy fixture never resolves (F32).
@@ -54,8 +54,8 @@ vs after -- a merge that changed nothing is not parity).
   docs/config-log.md changelog, one structural change per cycle, never touching the invariants
   (canon never changes, verify_rows always, no fitted constants, the spend floor).
 - **In flight at the Claude-quota cutoff (2026-09-13 ~21:00):** Claude agents were working branches
-  wt/f34-result-layers (result) only; F25d, F27b, F28, F28b, F29, F26b, F31, F31b, F33, F33b landed.
-  The user's rule from 23:00: no new Claude agents; everything else runs through pi. If a branch exists and is not on main, it was not landed: read its last commit
+  none: F25d, F27b, F28, F28b, F29, F26b, F31, F31b, F33, F33b, F34 all landed. The user's rule from
+  23:00: no new Claude agents; everything runs through pi. If a branch exists and is not on main, it was not landed: read its last commit
   message for the rows and numbers it claims, run `python3 tools/verify_rows.py <branch> <rows> --expect
   ROW=T/W/F/-` and land with `bash tools/land.sh <branch> <rows> "<msg>" --expect ...`; then stamp the
   ticket with tools/ticket_result.py. Follow-ups go to pi's queue as OPEN tickets, not to Claude.
