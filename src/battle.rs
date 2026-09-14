@@ -4456,11 +4456,19 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // Level with the panel's centre, not six below it: measured
             // against the capture, whose Mettaur's readout occupies rows
             // 112-119 where this build's sat at 118-125.
+            // The readout is a field object, so it rides the chip window's
+            // own camera pan with everything else on the field: canon holds
+            // every field object 15 px lower with the window up (F37's OAM
+            // watch on the cursor capture: MegaMan y141 open vs y126 closed,
+            // Mettaur and HP box the same 15). `field_slide` IS that camera
+            // in half-pixels (see FIELD_SLIDE), so halving tracks it through
+            // the ten slide calls both ways, settled or ramping.
+            let cam_dy = (self.field_slide / 2) as i32; // provenance: derived -- FIELD_SLIDE's own camera in px (see FIELD_SLIDE/FIELD_SUBPX)
             self.hud.draw_number_in(
                 frame,
                 hp,
                 px + self.hud.width(hp) / 2, // unnamed: half the readout width, to centre it
-                py,
+                py + cam_dy,
                 counter.set(),
             );
         }
