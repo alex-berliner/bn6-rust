@@ -6,6 +6,7 @@
 use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::AffineMatrix;
+use agb::display::{Palette16, Rgb15};
 use agb::display::object::{
     AffineMatrixObject, AffineMode, DynamicSprite16, Object, ObjectAffine,
     PaletteVramSingle, Size, SpriteVram,
@@ -34,7 +35,7 @@ use crate::{
     AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
-    SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_GUN, WAVE,
+    SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
 };
 use crate::{ai, gunner, spr};
 use crate::fixture::{self, Fixture};
@@ -71,7 +72,6 @@ const BUSTER_DAMAGE: u16 = 2; // provenance: derived -- sub_801265A, asm00_2.s:7
 /// The muzzle flash's origin above the front panel's centre, and how long its
 /// animation runs (durations 2,1,1,2,1).
 const BUSTER_FX_UP: i32 = 26; // provenance: peeked -- measured off the real ROM's OAM
-const BUSTER_FX_FRAMES: u8 = 7; // provenance: peeked -- measured off the real ROM's OAM
 // SOUND_BUSTER_6A (id 0x6A, reference/bn6f/constants/enums/SoundOffsets.inc:50), played the
 // instant the fire phase starts by sub_80BCF7A (asm31.s:10516-10528). It is a PSG channel-1
 // (square/sweep) blip, not a DirectSound sample: its song header (dat37.s:41516-41519,
@@ -152,12 +152,24 @@ const BUSTER_BLIP_FREQ: u16 = 2023; // provenance: peeked -- the measured onset 
 // agb's mixer double-buffers, so a channel started in `play_sound` is not in
 // the buffer the DMA is draining until the following `Mixer::frame()`.
 const BUSTER_HIT_DELAY: u8 = 4; // provenance: fitted -- swept to a clean residual-RMS minimum against the captured onset, not derived from a cited mechanism
-/// Where the barrel rides on the navi's arm, from byte_82F6ECC.spr's own OAM
-/// offsets, and how long its four frames last (1,2,2,3).
-const BUSTER_ARM_FRAMES: u8 = 18; // provenance: derived -- byte_82F6ECC.spr's own OAM offsets
-/// Frames after the button before the barrel appears, which is the same
-/// windup the pose waits out.
-const BUSTER_ARM_DELAY: u8 = 2; // provenance: peeked -- measured off the real ROM
+// F31b: the barrel and the muzzle have no length of their own. canon holds
+// both in pointers -- the barrel in oAIData_Unk_68 (sub_80EB562/sub_80EB572,
+// asm31.s:108743-108750, spawned on the fire phase's FIRST tick, which is why
+// the barrel is in OAM on the pose's first frame) and the muzzle in
+// oBattleObject_RelatedObject1Ptr (sub_800FAAC -> sub_80C4FFE,
+// asm00_2.s:1903-1916, spawned on the second tick) -- and `sub_80EB502` ends
+// the attack by clearing BOTH pointers and calling object_exitAttackState
+// (asm31.s:108712-108722). Measured on the real ROM: pose+barrel enter OAM at
+// canon 134, the muzzle at 135, and both vanish together at 159, the frame the
+// 25-frame pose ends. So each one's lifetime is read from the pose the navi is
+// actually holding (actor::Actor::buster_spec), never from a constant of its
+// own; the old BUSTER_ARM_FRAMES=18 and BUSTER_FX_FRAMES=7 outlived the pose
+// on one side and died inside it on the other.
+// The barrel comes with the POSE, not with the button, so its delay IS the
+// pose's own lead-in: canon spawns it on the fire phase's first tick, the same
+// tick that calls object_setAnimation(0xe) (asm31.s:108614-108625), and it is
+// drawn on the pose's first frame.
+const BUSTER_ARM_DELAY: u8 = actor::BUSTER_WINDUP; // provenance: derived -- sub_80EB450 tick 0, asm31.s:108614-108625
 /// Frames between the chip button going down and the chip being used.
 const CHIP_USE_DELAY: u8 = 3; // provenance: peeked -- measured off the real ROM
 const CHARGED_DAMAGE: u16 = 20;
@@ -550,6 +562,60 @@ const fn vulcan_gun_frames(shots: u8) -> u8 {
     VULCAN_WINDUP_TICKS + firing + recover
 }
 const VULCAN_ARM: (i32, i32) = (23, -25); // provenance: derived -- byte_80B8BD4 row 0xd, byte_80188C0[28..30]
+/// SuprVulc's detached muzzle-fire ball. Canon spawns a live 16x16 object
+/// (OAM obj0, tile 512, pal 11) that slides in from the left edge and parks
+/// above the gun tip for the volley's tail: OAM x 285 +16/frame from gun-age
+/// 85 (capture 90), wrapping past 512 to 13/29, pinned at 37 from gun-age
+/// 102 (capture 107) through the gun's last frame, y 21 throughout -- all
+/// peeked off the sterile-row capture (watch 0x02034b80/0x02034c00/0x07000000;
+/// the per-frame shadow-table writer is the strh at ROM 0x0802C4CC inside the
+/// strip copier 0x0802C4B6, called from the 5-part sprite builder 0x0802C4E8,
+/// fed by a CpuFastSet ROM 0x08731DF4 -> EWRAM 0x02034B30 at capture 88).
+/// Spawn is chip-gated (see below): Vulcan1/2/3 guns are gone by gun-ages
+/// VULCAN1_TIMING/VULCAN2_TIMING/VULCAN3_TIMING (see vulcan_timing) while
+/// SUPRVULC_TIMING's gun lives on, so only SuprVulc can reach these ages --
+/// and the age window alone would also fire for a short gun on a longer
+/// capture. The chip gate, not the age coincidence, keeps Vulcan1/2/3 clean.
+const VULCAN_FIREBALL_X0_AGE: u8 = 85; // provenance: peeked -- OAM obj0 becomes tile-512/pal-11 at capture 90 = gun-age 85
+const VULCAN_FIREBALL_X0: i32 = 285; // provenance: peeked -- OAM x at capture 90
+const VULCAN_FIREBALL_DX: i32 = 16; // provenance: peeked -- OAM x +16/frame, captures 90-104
+const VULCAN_FIREBALL_PARK_AGE: u8 = 102; // provenance: peeked -- OAM x pinned from capture 107 = gun-age 102
+const VULCAN_FIREBALL_PARK_X: i32 = 37; // provenance: peeked -- parked OAM x (gun tip)
+const VULCAN_FIREBALL_Y: i32 = 21; // provenance: peeked -- OAM y, constant captures 90-129
+const VULCAN_FIREBALL_FIRST_VISIBLE: u8 = 99; // provenance: peeked -- x wraps on-screen (509 -> -3) at capture 104 = gun-age 99
+const VULCAN_FIREBALL_LAST_VISIBLE: u8 = 112; // provenance: peeked -- still parked past the row's end (capture 117+)
+/// Canon's object palette bank 11 on the fireball's frames (dumped off OBJ
+/// pal RAM at capture 110): baked as a `&'static` so the sprite takes the
+/// static loader path (`PaletteVramSingle::new`) rather than a runtime
+/// colour-keyed bank -- the runtime path's extra bank turned the navi gray
+/// on every frame of this row (mechanism not traced, see the ticket report).
+// provenance: derived -- canon OBJ palette RAM bank 11, dumped at capture 110 (/tmp/f12dump/objpal.bin)
+static VULCAN_FIREBALL_PAL: Palette16 = Palette16::new([
+    Rgb15::new(0x0000),
+    Rgb15::new(0x7fff),
+    Rgb15::new(0x5294),
+    Rgb15::new(0x163c),
+    Rgb15::new(0x1536),
+    Rgb15::new(0x7c1f),
+    Rgb15::new(0x53be),
+    Rgb15::new(0x6b5a),
+    Rgb15::new(0x7c1f),
+    Rgb15::new(0x14a5),
+    Rgb15::new(0x0e5e),
+    Rgb15::new(0x013d),
+    Rgb15::new(0x175f),
+    Rgb15::new(0x1f9f),
+    Rgb15::new(0x10df),
+    Rgb15::new(0x24d7),
+]);
+fn vulcan_fireball_x(age: u8) -> i32 {
+    if age >= VULCAN_FIREBALL_PARK_AGE {
+        VULCAN_FIREBALL_PARK_X
+    } else {
+        (VULCAN_FIREBALL_X0 + VULCAN_FIREBALL_DX * (age as i32 - VULCAN_FIREBALL_X0_AGE as i32))
+            & 0x1FF
+    }
+}
 /// AirShot (attack family 0x21, sub_80EC884): animation 9 and the arm
 /// object from the first frame, sound 0xaf; the hit goes out on the frame
 /// the counter reads 5 -- the sixth -- as an instant one-panel hitbox one
@@ -1022,6 +1088,10 @@ pub struct Battle<'a> {
     /// real ROM's gun follows the navi's states this way; how the game
     /// passes the state to the object was not traced.
     vulcan_gun: Option<(spr::Player, (i32, i32), u8)>,
+    /// SuprVulc's detached muzzle-fire ball: a prebuilt 16x16 VRAM sprite
+    /// (canon's tile-512 art, palette above) plus its age in gun-ages (None
+    /// on its spawn frame, then 0, 1, ...).
+    vulcan_fireball: Option<(SpriteVram, Option<u8>)>,
     /// A family-0x15 chip mid-presentation: the game freezes time, dims the
     /// screen and shows the chip's name before the effect lands
     /// (object_timefreezeBegin, object_dimScreen, object_drawChipName;
@@ -1674,6 +1744,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             hit_in: 0,
             bubble: None,
             vulcan_gun: None,
+            vulcan_fireball: None,
             bombs: Vec::new(),
             panels,
             filler_bg,
@@ -1766,13 +1837,12 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         let (mc, mr) = self.megaman.panel();
         // Its ONE part is the barrel itself, not a ground shadow, so the
         // no-shadow flag must be off or nothing is drawn at all.
-        self.effects.push((
-            arm,
-            field::panel_centre(mc, mr),
-            BUSTER_ARM_FRAMES - 1,
-            false,
-            false,
-        ));
+        // As long as the pose, and not one frame more: see the comment on
+        // BUSTER_ARM_DELAY's neighbours above for canon's two pointers and the
+        // object_exitAttackState that clears them.
+        let pose = self.megaman.buster_spec().frames;
+        self.effects
+            .push((arm, field::panel_centre(mc, mr), pose, false, false));
     }
 
     /// Put the results window up, taking its palette banks back first. The
@@ -2162,7 +2232,24 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.gauge_pause = 1;
             } else {
                 self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
-                if self.gauge == GAUGE_FULL {
+                // F28/F28b: a full gauge on its own pauses NOTHING in canon.
+                // The fight state's own frame (`sub_800855E`, asm00_1.s:11125)
+                // opens with `UnpauseBattle` (:11132) and only ever pauses by
+                // LEAVING for another state: `sub_800A21C` (asm00_1.s:15203-
+                // 15218) answers "is the custom gauge 0x4000, with no time
+                // stop and the battle not over", and its caller pairs the
+                // answer with `PauseBattle` and battle state 0x14 in one
+                // breath (asm00_1.s:11188-11195). `gauge_pause` is this
+                // project's model of the chimes BEFORE that transition, so a
+                // fixture whose window may not open (FLAG_OPEN_WINDOW clear,
+                // `demo-hudmatch`'s own case) has no transition to wait for
+                // and must keep running. It did not: the branch below that
+                // counts `gauge_pause` down is itself gated on
+                // `open_window_allowed()`, so a full gauge re-armed it every
+                // frame and froze the whole battle from the frame the gauge
+                // filled -- F28 measured tiles/gauge's Mettaur idling in its
+                // post-spawn wait for a 470-frame capture because of it.
+                if self.gauge == GAUGE_FULL && self.open_window_allowed() {
                     self.gauge_pause = GAUGE_PAUSE;
                 }
             }
@@ -2346,7 +2433,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 if self.charge >= CHARGE_FRAMES {
                     self.megaman.attack_charged();
                 } else if self.charge > 0 && !self.megaman.is_busy() {
-                    self.megaman.attack(actor::BUSTER);
+                    let spec = self.megaman.buster_spec();
+                    self.megaman.attack(spec);
                     // The barrel comes with the POSE, not with the button:
                     // the real navi stands in his idle first.
                     self.buster_arm_in = BUSTER_ARM_DELAY;
@@ -2677,15 +2765,20 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         }
                     }
                     let (px, py) = field::panel_centre(col, row);
-                    let mut fx = spr::Player::new(spr::Assets::new(BUSTER_FX), 0);
-                    fx.update();
-                    self.effects.push((
-                        fx,
-                        (px, py - BUSTER_FX_UP),
-                        BUSTER_FX_FRAMES - 1,
-                        false,
-                        false,
-                    ));
+                    // NOT pre-ticked. The effects loop already ticks every
+                    // effect on the frame it was pushed, so the extra tick here
+                    // ate the first cell of assets/buster_fx.bin's animation
+                    // (frame 0, duration 2) down to one frame and ran the whole
+                    // muzzle one frame early. canon's cells are 2/1/1/2 and then
+                    // the last frame is HELD (flags 0x80) until the attack state
+                    // exits -- measured: 8x8 at canon 135-136, 32x16 at 137-138,
+                    // 16x8 at 139-140, the last (blank) 8x8 at 141-158.
+                    let fx = spr::Player::new(spr::Assets::new(BUSTER_FX), 0);
+                    // Spawned one frame into the pose (the fire phase's second
+                    // tick), so it outlives the pose's remaining frames.
+                    let pose_left = self.megaman.buster_spec().frames.saturating_sub(1);
+                    self.effects
+                        .push((fx, (px, py - BUSTER_FX_UP), pose_left, false, false));
                 }
             }
             Update::Died => {
@@ -2843,6 +2936,15 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             } else {
                 *ticks -= 1;
             }
+        }
+        // The fireball ages on its own clock (None = spawned this frame, so
+        // the spawn frame ends at age 0 and ages match canon's gun-ages).
+        if let Some((_, age)) = self.vulcan_fireball.as_mut() {
+            *age = Some(age.map_or(0, |a| a.saturating_add(1)));
+        }
+        if matches!(self.vulcan_fireball, Some((_, Some(age))) if age > VULCAN_FIREBALL_LAST_VISIBLE)
+        {
+            self.vulcan_fireball = None;
         }
         for (counter, hp) in self.hp_shown.iter_mut().zip(
             core::iter::once(self.megaman.hp()).chain(self.enemies.iter().map(|e| e.hp())),
@@ -3301,6 +3403,20 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     (mx + dx * VULCAN_ARM.0, my + VULCAN_ARM.1),
                     vulcan_gun_frames(shots),
                 ));
+                // Chip-gated, not age-coincidence: the render window
+                // ([VULCAN_FIREBALL_FIRST_VISIBLE, VULCAN_FIREBALL_LAST_VISIBLE])
+                // alone would also fire for a Vulcan1/2/3 gun on any capture
+                // running past VULCAN_FIREBALL_FIRST_VISIBLE, since the fireball
+                // ages on its own clock. Canon's tail fire belongs to SuprVulc
+                // only -- its gun alone outlives the window (Vulcan1/2/3 guns
+                // are gone by VULCAN1_TIMING/VULCAN2_TIMING/VULCAN3_TIMING gun-ages, see vulcan_timing) --
+                // so only SuprVulc spawns it.
+                if chip.id == CHIP_SUPRVULC {
+                    let fireball_tiles = spr::Assets::new(VULCAN_FIREBALL).gfx(0);
+                    let fireball = DynamicSprite16::from_bytes(Size::S16x16, fireball_tiles)
+                        .to_vram(PaletteVramSingle::new(&VULCAN_FIREBALL_PAL));
+                    self.vulcan_fireball = Some((fireball, None));
+                }
             }
             CHIP_AIRSHOT => {
                 self.chip_in_use = Some(chip);
@@ -3753,7 +3869,11 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // same event (it arms that banner on the frame it fires), so the
         // teardown hangs off it in `update`.
         if self.hud_live && self.shown.is_none() && self.fade_out == 0 {
-            self.emotion.show(frame);
+            // Canon's element-14 draw adds the HUD's shared object X
+            // displacement (eStruct2035280+0x12) to its two OAM words; see
+            // `Emotion::show` and `Custom::hud_obj_x` for the measurement.
+            self.emotion
+                .show(frame, self.custom.as_ref().map_or(0, |c| c.hud_obj_x()));
         }
         // The chip at the front of the hand hangs over the navi as a 16x16
         // object: read out of a live battle's OAM at (59,52) with the navi on
@@ -3818,6 +3938,17 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     .set_pos((x + part.x, y + part.y))
                     .set_hflip(part.hflip)
                     .set_vflip(part.vflip)
+                    .show(frame);
+            }
+        }
+        // SuprVulc's parked muzzle fire, over the gun that shed it.
+        if let Some((sprite, Some(age))) = &self.vulcan_fireball {
+            if (*age >= VULCAN_FIREBALL_FIRST_VISIBLE
+                && *age <= VULCAN_FIREBALL_LAST_VISIBLE)
+            {
+                Object::new(sprite.clone())
+                    .set_priority(Priority::P2)
+                    .set_pos((vulcan_fireball_x(*age), VULCAN_FIREBALL_Y))
                     .show(frame);
             }
         }

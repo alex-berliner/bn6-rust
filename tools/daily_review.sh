@@ -39,6 +39,9 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo "- coordinator dispatches with no pair available (last ${SINCE}h): $NOPAIR"
   echo "- allowlist entries: $(grep -cE '^\s+"[a-z-]+(:integrated|:isolated)?":' tools/allowlist.py)"
   echo
+  echo "## Replay benchmarks (docs/benchmarks/, newest first)"
+  echo '```'; for f in $(ls -t docs/benchmarks/*.md 2>/dev/null | head -12); do head -1 "$f" | sed 's/^# //'; grep -oE 'cost \$[0-9.]+, [0-9]+ turns, [0-9]+ min' "$f" | head -1; done; echo '```'
+  echo
   echo "## Switch rule (docs/config-log.md)"
   echo "A role's model changes only if, over at least 10 tickets, its cost per landed ticket is twice an alternative's on the replay benchmark (tools/replay_bench.py), and never on one day's numbers."
   echo

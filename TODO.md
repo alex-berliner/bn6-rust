@@ -177,8 +177,10 @@ it (fix agb, do not work around it -- see the vendor-deps rule).
 change. **Coordinator:** verify_rows on result, field and the canaries; the verifier on the
 "1 frame per step" claim (it must measure it, e.g. with the oracle or a frame-count watch).
 
-### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, suprvulc pass: LOCALIZED not fixed [tool-budget stop, no edits, branch clean removed]: residue = one 16x16 can)*
+### F12. The chip rows' own residues, family by family -- multi-pass, stays OPEN until every chip row is 0  *(OPEN -- 2026-09-13, suprvulc family: 2464/177/113->0/0/113 PASS [neg 28047] via canon-data muzzle-fire replica [tile512+pal11 byte)*
 
+**Result.** suprvulc family: 2464/177/113->0/0/113 PASS (neg 28047) via canon-data muzzle-fire replica (tile512+pal11 bytes verified) chip-gated to SuprVulc (gate cec8c48 fixes verifier-refuted guarantee); vulcans/seeds/bugbomb/minibomb/wave 0, cursor 272341 (total/worst better than HEAD 272362); verifier CONFIRMED asset+trajectory+scope; landed 7b551ad HEAD re-check MATCH; worker muse-spark + gate-micro 22 turns $0.008, verifier GLM
+**Result.** suprvulc: still 2464/177/113, no fix (budget stop, no edits); verifier CONFIRMED all 3 exclusions (T4 const 0x40000000 f0-134; gun slot static state4 to c115 + linkage confirmed, siblings static; volley 0xa-tick + 10 shots + FAN bytes match ours -- citation offset: mov/strh at ~109977); ball is LIVE object (shadow writes to c125), driver still unknown (spawn_t1_0x5 spawns nothing); next: tile-streaming lead 0x02034b80/c86-89 or replication fix; worker muse-spark 80 turns $0.032, verifier GLM
 **Result.** suprvulc pass: LOCALIZED not fixed (tool-budget stop, no edits, branch clean removed): residue = one 16x16 canon fireball (obj0 tile512 pal11) k99-112, parks x=37 from capture 107; canon 10 T3 shots/11f period vs ours stagger 10; hypothesis sub_80EBF6E last-shot beat / muzzle-fire / T4-pool UNVERIFIED; no verifier (no claims); worker muse-spark 76 turns $0.026
 **Result.** vdoll family: chip-vdoll 628/564->0/0/70 PASS (neg 36375); rest_snaps+rest_z(0)+rest_poisons+LANDING_LAG=1 (sub_80D47C0/loc_80D481E); bugbomb/seeds/minibomb/guards 0, cursor 620802; verifier CONFIRMED all 3 (routine, decrement-before-branch, scope) + rules clean; landed c622a81 HEAD re-check MATCH; worker muse-spark 57 turns $0.032, verifier GLM
 **Result.** bugbomb family: chip-bugbomb 8280/414->0/0/70 PASS (neg 23486); vdoll 628 unchanged (BugBomb-only gate); cursor 620802 unchanged; seeds/minibomb/guards 0; verifier CONFIRMED sub_80D9E94 snap (Z=0xa<<16), VDoll path identical, blast out-of-row, rules clean (8280-decomposition unchecked); landed 26372d1 HEAD re-check MATCH; next: vdoll 628; worker muse-spark 58 turns $0.027, verifier GLM
@@ -360,8 +362,9 @@ as a proposal with the measurement behind it.
 **Acceptance.** the decomposition table with citations; every fix verified on windowclose plus
 wave, window, opening, chip-cannon, field; full table nothing worse.
 
-### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(CLAUDE -- 2026-09-13)*
+### F31. `buster`: 3172 px over 32 frames, blocked twice, a fresh measurement  *(PARTIAL -- 2026-09-13, the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, th)*
 
+**Result.** the row is vacuous: canon's OAM over the window holds four idle-MegaMan objects plus, from canon frame 164, the battle-result mark (16x16 tile 0x200 pal 11 prio 0 sliding to (37,21)): 163 + 17x177 = 3172 = the whole row, on k=14..31; canon's scripted B at 150/151 never fires (CurState/CurAction/CurAnim/HP 04/08/00/60 and the sequencer 0x0400000c constant over canon 145..186, F10's 0x0C delivery wall re-measured) and our ZERO_ENEMY fixture never resolves so we never draw the mark; the alignment 122 is the first of an 8-wide plateau (122..129 all 3172; 90..105 all 13959; the event-locked offset 100 reads 13959/794/32); our buster pose (rust 111..129) lies entirely outside the compared window 130..161. Landed: canon's t3_0x0_80C4E58 (asm31.s:27690-27697, off_80C4E70 :27703, sub_80C4E7C sprite_load :27725-27727) shows a shot's first animation frame on its spawn frame, ours ran a frame late (fresh player's first update eaten, src/spr.rs:336-343): the pre-tick now lives once in Shot::new (removed from shockwave(), behaviour-neutral for every current row; full table byte-identical both ways, field integrated -5). The plain buster builds no Shot at all (Update::Strike charged:false is a hitscan). Measured against a canon side that fires (Start@10,B@30,B@31 in the 0x08 window): pose 25 frames = 5 fire ticks (sub_80EB450 asm31.s:108680-108691) + byte_80209CC[Rapid*6+min(free panels,5)] (sub_800FAF6 asm00_2.s:1944-1990, dat01.s:146) = 5+0x14 vs ours 19; barrel at pose+0 vs ours +2 (BUSTER_ARM_DELAY); muzzle at pose+1 vs +4 and our FX double-ticked on its spawn frame (battle.rs:2623 fx.update() plus the effects loop); both objects live until object_exitAttackState (sub_80EB502 asm31.s:108712-108722) vs our fixed 18/7 frames. Next: F31b re-cuts the row around a canon side that fires and lands those four. Claude Opus agent, 69 tool calls, 20 min, 195k tokens.
 **Files.** src/shot.rs, tools/harness.py (the buster row's note only)
 
 **Why.** buster isolated reads 3172 px over 32 frames and has been BLOCKED since F10/F10b (two
@@ -376,8 +379,9 @@ cite canon's buster object routine and MegaMan's shooting state in reference/bn6
 event; wave, window, opening, chip-cannon, field, mettaur 0; full table nothing worse. src/actor.rs
 is held by other workers: a change needed there is reported as an exact proposal, not made.
 
-### F30. `field` integrated: a one-scanline write lands on either side of a VBlank boundary depending on ROM layout  *(OPEN -- 2026-09-13)*
+### F30. `field` integrated: a one-scanline write lands on either side of a VBlank boundary depending on ROM layout  *(PARTIAL -- 2026-09-13, layout race 10585px [[8,10585]] -> 0 over 200 frames across ROM layouts [worker])*
 
+**Result.** layout race 10585px [(8,10585)] -> 0 over 200 frames across ROM layouts (worker); verifier CONFIRMED root cause sources (Blend::commit BLDCNT/BLDY, agb early-return wait, canon main.s frame-sync + ProcessGFXTransferQueue) and fix faithful (54 lines, no-op on fitting frames); combination: field/wave/window/opening/chip-cannon/result/mettaur0/popup5094/windowclose407778/buster3172 preserved, cursor 620802->620914 (+112); verifier: one-frame scanline-band diff CONFIRMED, x<112-locality REFUTED, spin-only-cause YES, better-vs-canon UNMEASURED; branch wt/f30-scanline c64b68a KEPT unmerged; worker muse-spark 97 turns $0.078, verifier GLM
 **Files.** src/main.rs, src/field.rs
 
 **Why.** F25d measured that two builds differing only in ROM layout (545824 vs 553900 bytes, a
@@ -391,6 +395,20 @@ canon's driver sequences it (cite), and show the two builds' captures identical 
 **Acceptance.** field's rust side byte-identical between two ROM layouts (pad the ROM to prove it)
 on all 170 captured frames; field isolated 0; field integrated not worse; wave, window, opening,
 chip-cannon 0.
+
+### F30b. VBlank re-sync spin: is cursor frame 0 better or worse, and gate the spin accordingly  *(BLOCKED -- 2026-09-13, spin proven no-op on cursor [6 reps 620802 bit-identical, F30 +112 = layout jitter])*
+
+**Result.** spin proven no-op on cursor (6 reps 620802 bit-identical, F30 +112 = layout jitter); gate KEEP ungated; layout race NOT 0: with spin 6704px@capture8 (frame-121 fixed 85->0, battle-frame-0 remains; masked-VBlank hypothesis UNCONFIRMED, new-mechanism work out of scope); field-int +12 = layout jitter (spin on/off bit-identical 3x); verify_rows PASS 10/10 MATCH on e858b42; no verifier (no follow-up per two-in-a-row: F30 PARTIAL->F30b); branches kept unmerged; worker muse-spark
+**Files.** src/main.rs
+
+**Why.** F30's verified Result (PARTIAL, branch wt/f30-scanline c64b68a kept unmerged): the layout race is fixed (10585px -> 0 over 200 frames across ROM layouts; root cause and fix-faithfulness both verifier-CONFIRMED), but the combination moves cursor 620802 -> 620914 (+112). The verifier measured the diff as ONE compared frame (frame 0), a full-width scanline band at y~=40 -- the artifact class the spin targets -- and confirmed the 54-line spin is the only code delta, but better-vs-canon was UNMEASURED (one run per side; emulator nondeterminism not excluded) and the x<112-locality story was REFUTED.
+**Do, in order.**
+1. Start with `bash tools/worktree.sh f30b-spin-gate`, then `git merge wt/f30-scanline` (the verified fix, kept unmerged). Baseline cursor (620802/6884/170/728447 on main) and field isolated/integrated there.
+2. Measure cursor frame 0 against CANON with and without the spin (same-index rust-vs-canon diff on frame 0, repeated runs for nondeterminism): if the spin makes frame 0 better-or-equal vs canon, say so with numbers and keep it; if worse, gate the spin (e.g. only where a layout-divergence is possible, or fix the overrun source on cursor's frame 0) and re-measure.
+3. Re-run cursor, field, wave, window, opening, chip-cannon, result, mettaur, popup, windowclose -- nothing worse than main; re-prove the layout-race 0-over-200-frames with the gate in place.
+**Rules.** src/main.rs only; no allowlist/alignment/fixture change; no fitted constant; captures one at a time.
+**Measure and report.** Cursor frame-0 vs canon with/without spin (repeated), gate decision with numbers, layout-race proof, rows before/after, full-table deltas. **Acceptance:** layout race still 0 AND cursor at or below 620802 with the spin in place; else a measured better-vs-worse verdict and STOP.
+**Coordinator:** `verify_rows` on every row the report names; the verifier on the better-vs-worse claim (it must measure it).
 
 ### F27b. Emotion window: show it on canon's rule (HUD element mask bit 14, from HUD init to HUD teardown), not "while an enemy is alive"  *(DONE -- 2026-09-13, popup 60614/1842/80 -> 5094/1148/80 [neg 5286 not blind], the x2-45 y18-33 emotion-window box 0 on all 80 fram)*
 
@@ -451,8 +469,9 @@ blink, names, pictures, deck exact). Everything left is x>=112: the battle behin
 event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
 row named; the verifier only if src/ changes or a canon routine is cited.
 
-### F28b. tiles/gauge integrated to 0: unfreeze the HUDMATCH battle and seed MegaMan's mid-battle state; then popup's dissolving enemy  *(CLAUDE -- 2026-09-13)*
+### F28b. tiles/gauge integrated to 0: unfreeze the HUDMATCH battle and seed MegaMan's mid-battle state; then popup's dissolving enemy  *(DONE -- 2026-09-13, tiles/gauge integrated 3865/678/8 -> 0/0/8 [neg 12843 not blind], isolated 0/0/8 unchanged)*
 
+**Result.** tiles/gauge integrated 3865/678/8 -> 0/0/8 (neg 12843 not blind), isolated 0/0/8 unchanged; popup 5094/1148/80 -> 0/0/80 (neg 1288 not blind); mettaur 0/0/70, wave/window/card/banner/opening-iso/cannon/warp-iso/field-iso 0 unchanged, field integrated 305263->305251 (worst same, F30), everything else byte-identical; full table rollup PASS. (1) src/battle.rs: gauge_pause re-armed only when open_window_allowed(): canon's fight state opens every frame with UnpauseBattle (sub_800855E asm00_1.s:11125/11132) and pauses only by leaving for the custom screen (sub_800A21C :15203-15218 paired with PauseBattle and state 0x14 at :11188-11195); HUDMATCH (window flag clear) froze its whole battle from the gauge filling. (2) Canon's MegaMan at frames 42..48: HP 0x3c, Timer 0, FlashingInvisTimer (CollisionDataPtr 0x020384f0 +0x24) 0; seeding cannot survive 427 frames of our own battle (two shockwave hits by then), so the HUDMATCH descriptor's phases were translated 318 frames earlier = 3 x 106 (enemy phase preserved): art_entry 5->23, art_timer 4->6 by 318 STEP_ORDER/STEP_HOLD ticks, scroll_xq 424->36, scroll_yq 724->18 (mod 1024), gauge_tick 50->32 by the mod-112 identity, Align band 415..440 -> 97..122, offset 109; left/right halves, HUD strip, both boxes all 0. (3) popup: the corpse draws from tiles up to 0x048, above F9's 768-byte blank -- ENEMY_DISSOLVE_FIRST_PHASE 0x60106E0:576 (5094->2858); the dissolve's transfer queue entries sit in slot 3 (0x0200B4F4 size word) at canon 44/45/48, not F9's slot 41 (a no-op on this row): three one-shot pokes (2858->0); banner 0/0/58 unchanged. Remaining: allowlist AUDIT-6 tiles/gauge entry now dead (removed by the human session after landing). Claude Opus agent, 62 tool calls, 20 min, 346k tokens.
 **Files.** src/battle.rs (the gauge_pause re-arm hunk at ~2107 only), src/fixture.rs, tools/harness.py (the HUDMATCH and popup descriptors and notes)
 
 **Why.** F28 measured why tiles/gauge integrated sit at 3865/678/8: HUDMATCH clears FLAG_OPEN_WINDOW and
@@ -474,6 +493,25 @@ canon's phase (state DELETE, HP 0, dissolve counter peeked) or show why F19's bl
 **Acceptance.** tiles and gauge integrated 0/0/8 (negatives not blind) with the isolated variants still 0;
 popup 0/0/80 or its residual attributed per frame; mettaur, wave, window, opening, chip-cannon, field 0 or
 unchanged; the field integrated +5 re-measured; nothing worse.
+
+### F31b. `buster`: re-cut the row around a canon side that fires, then land the four measured buster defects  *(DONE -- 2026-09-13, buster re-cut and closed: old row [canon idle, 3172 flat over an 8-wide plateau] replaced by one where both si)*
+
+**Result.** buster re-cut and closed: old row (canon idle, 3172 flat over an 8-wide plateau) replaced by one where both sides fire; the press is poked into canon's AIData like F11's warp (the plain buster fires on the RELEASE: JoypadPressed 0x0002, Held, then Released -> CurAction 0x08 -> 0x11; Held alone does nothing for 24 frames; idle Held word 0xfc00), canon_ref = the watched CurAction write 0x11 at canon 132 (0x0203a9b9), anim 0x0e 133..157, barrel in OAM from 134, muzzle 135, both gone 159; 28 frames; band range(96,113) unique minimum 0 at offset 103 (2911 at 102 and 104). Pre-fix 4936/617/28 (neg 6869) -> 0/0/28 (neg 3167 not blind): (1) 4936->736 pose length derived = 5 fire ticks (sub_80EB450 asm31.s:108680-108691) + byte_80209CC[Rapid*6 + min(free panels ahead,5)] (sub_800FAAC/sub_800FAF6 asm00_2.s:1903-1990, dat01.s:146-149), measured at three columns (29/25/21 frames at col 1/2/3, three exact predictions, Rapid row 0), Actor::buster_spec computes it from the navi's column; (2) 736->0 barrel and muzzle live exactly as long as the pose (oAIData_Unk_68 / oBattleObject_RelatedObject1Ptr cleared by sub_80EB502 with object_exitAttackState, asm31.s:108712-108722), BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES gone; (3)(4) strike_at 3->2 (muzzle and damage on the fire phase's second tick, asm31.s:108632-108676) and the extra fx.update() at spawn removed: pixel-neutral here because the two errors cancelled on blank muzzle cells. buster integrated 643698/27225/32 -> 248260/17668/28 (allowed). Full table 48 PASS, every failing row equal to main. Open, pixel-invisible: canon's CurAction 0x11 lands on k=0 while our ORCL export flips to 0x0b on k=1 though both draw the windup on k=0..1 (F36). Claude Opus agent, 32 tool calls, 20 min, 299k tokens.
+**Files.** tools/harness.py (the buster row, its fixture and Align), tools/states.py (a recipe if one is needed), src/actor.rs (the BUSTER pose constants only), src/battle.rs (the buster hunks only: fx.update() at ~2623, BUSTER_ARM_DELAY, BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES)
+
+**Why.** F31 showed the buster row measures nothing about the buster: canon's press never fires in it and the
+3172 is the result mark; its offset is a plateau tie-break, not an event. Canon fires when the press lands
+in the 0x08 window (Start@10,B@30,B@31 on the STERILE+PAUSED+DELETE side: action 0x11 at f33, anim 0x0e
+f34..f58, barrel f35, muzzle f36, both gone f60). A row is honest only if both sides fire: cut the canon
+side there, lock canon_ref to the measured press event (the action write, watched), align by the same
+event on our side (rust press frame), and re-sweep the band for a unique minimum. Then land the four
+measured defects (pose length 25 = 5 + byte_80209CC lookup, derived; barrel on tick 0; the FX ticked once
+on its spawn frame; barrel and muzzle until object_exitAttackState) with citations, measuring each alone.
+**Acceptance.** a new buster row that compares two firing busters (state watches on both sides show the
+attack state on the same offset), negative not blind, alignment by event; buster as low as the four fixes
+take it; buster integrated re-measured; wave, window, opening, chip-cannon, field, mettaur, popup 0 or
+unchanged; every chip row unchanged (they share the fixture path); nothing worse. The old 3172 alignment is
+not to be "fixed" by giving our side the result mark: a row that draws nothing on either side proves nothing.
 
 ### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
 
@@ -524,7 +562,9 @@ its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
-### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(CLAUDE -- 2026-09-13)*
+### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions  *(PARTIAL -- 2026-09-13, cursor 620802/6884/170 -> 272341/1603/170 [neg 458619 not blind] at the event offset 237 [the unseeded band's )*
+
+**Result.** cursor 620802/6884/170 -> 272341/1603/170 (neg 458619 not blind) at the event offset 237 (the unseeded band's minimum had sat at 226, 11 frames off the event, with 237 reading 779920); windowclose 407778 -> 34707/2652/40 (neg 221819 not blind) at 253; BG1 alone 0 on all 40 windowclose frames and 2 px on 1 of 170 cursor frames. Derivation: BGScrollCB_BG1Diagonal3to2Scroll (asm00_0.s:3287-3303) writes (counter-8)>>4 and (counter-4)>>4 to BG1HOFS/VOFS, counters zeroed at battle init (sub_8080D90/DA0 asm00_1.s:8434-8435) so they hold -8f/-4f at battle frame f (watched: CHIPSELECT sits at battle frame 3156); canon's phase in our units x_q=2f mod 1024, y_q=f mod 1024; art from eGFXAnimStates[0] (0x020094c0) entry=(CommandPos-LoopAddress)/8 and Timer, 192/cycle; our pipeline lags measured once on windowclose (a capture frame R shows the scroll of tick R-7 and the art of tick R-5) and predicted cursor with no tuning (2214975 -> 2). Seeds: CURSOR_ROW art 11/3 scroll 746/885, WINDOWCLOSE_ROW 17/1 846/935; CUSTMATCH_ROW untouched (window/card 0). The odd-frame lsr-vs-floor note retired with a proof (lsr #4 of -8f = -ceil(f/2) = -((x_q+3)/4)), comment-only, .text/.rodata byte-identical to main. Layer table repaired (layer-local vs attributed): cursor 272341 = OBJ 272340 + BG1 1; windowclose 34707 = OBJ only. F26's UNCHECKED: (a) '2-frame art lead' refuted (an unseeded clock), (b) no Kind field exists (enemy NameID 1 constant), (c) the y18..33 HUD block is a pure 120 px x displacement: ours x2..45, canon x122..165, identical content, 117980 px-frames of cursor (the emotion window's custom-screen position; F33), (d) MegaMan panel (2,3) confirmed, landed by F29. Remaining: cursor's 1 px at k=97 is sub-frame (canon's tile copy is queued by QueueEightWordAlignedGFXTransfer/sub_8001C94 asm00_0.s:3752 and drained part-way down the frame, ours lands before scanline 0) and the 2-frame relative skew of our scroll and art clocks is absorbed per row by seeds rather than fixed in src (F35); the rest is OBJ (cursor: HUD block 117980 + y107..159 154360; windowclose 34707). Claude Opus agent, 92 tool calls, 32 min, 207k tokens. Post-merge on main with F28b's gauge_pause change (landed in between): cursor reads 272378/1639/170 (+37 px, sprite layer), windowclose 34707 unchanged; the interaction belongs to the cursor sprite-layer follow-up.
 **Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
 
 **Assigned to a Claude agent (2026-09-13 21:00) together with the backdrop-phase findings of F29.** F29 measured on windowclose (fixture CUSTMATCH_ROW, shared with cursor): the backdrop layer BG1 is a constant (20,10) px translation on all 40 frames (scroll rates SCROLL_X_Q=2/SCROLL_Y_Q=1 per frame are right; 40 frames of the phase gap is exactly (20,10)) because the fixture seeds no backdrop phase (art_entry etc. 0xFFFF, a fresh Backdrop::new at x_q=y_q=0) while /tmp/chipselect.state is thousands of frames into a battle. Canon at windowclose's reference frame 81: eBGScrollCBCounters (ewram.s:619, 0x02009690/0x02009694) = 0xffff9ad8 / 0xffffcd6c; eGFXAnimStates[0] (ewram.s:596, 0x020094c0) LoopAddress 0x0807fba4, CommandPos 0x0807fc6c = entry 25, first halfwords 0x0001 0x0002. An empirical seed scroll_xq=80/scroll_yq=40 took BG1 877602 -> 228662 and windowclose 648948 -> 392992, but the same seed takes cursor 620802 -> 1222398: cursor pairs rust 237 with canon 15 where windowclose pairs 253 with 81, so the seed must be derived per row from canon's counters at that row's own canon_ref, never shared. After the seed, BG1's residual alternates +1 px on odd multiples of 3 (k=3,9,15,...) and 0 on even multiples of 6: the lsr-of-a-falling-counter vs floor-divide difference src/backdrop.rs:278-283 already documents as untested; this row measures odd frames. Acceptance for this pass: BG1 0 on all 40 windowclose frames and on cursor's 170 frames, both with seeds derived from canon's counters (cite the derivation), cursor and windowclose totals reported per layer, wave/window/opening/chip-cannon/field/result 0 or unchanged.
@@ -537,6 +577,42 @@ its slide timing and tile content frame by frame against ours.
 **Rules.** Same files as F26; no alignment/allowlist/seed/scroll change except by measured event; captures one at a time.
 **Measure and report.** Repaired layer table (definition stated, arithmetic closed), (a)-(d) confirmed or refuted each with the watch traces, rows before/after, full-table deltas. **Acceptance:** the table adds up and every attribution the next cursor ticket needs is measured, not inferred.
 **Coordinator:** `verify_rows` on every row the report names; the verifier on the repaired table and any canon citation.
+
+### F35. Backdrop engine timing: tile copies drained mid-frame like canon's queue, and one clock for scroll and art  *(OPEN -- 2026-09-13)*
+
+**Files.** src/backdrop.rs, src/main.rs
+
+**Why.** F26b measured two engine-timing facts on the backdrop. (1) Canon queues its backdrop tile copy
+(QueueEightWordAlignedGFXTransfer, sub_8001C94, asm00_0.s:3752) and the queue drains part-way down the
+frame, so on the frame of an art step canon shows the previous step in rows 0..5 and the new one below;
+ours lands before scanline 0. Visible as 2 px on cursor's frame k=97 (the same texel twice, 128 apart).
+(2) Our scroll register is written by commit() and the art by replace_tile() inside update(), so a
+capture frame R shows the scroll of tick R-7 and the art of tick R-5: a 2-frame relative skew between two
+clocks that canon does not have (one counter pair, one queue). The per-row seeds in the harness absorb
+it today; the mechanism should not need absorbing.
+**Do.** Watch canon's queue drain (the transfer's VRAM write frame and scanline via --watch-write on the
+tile region) and ours; make ours copy at the same point of the frame canon's queue does (cite the queue
+flush routine and its place in the frame loop), and drive scroll and art from one tick so both lead by the
+same amount; then re-derive the CURSOR_ROW/WINDOWCLOSE_ROW seeds by F26b's derivation with the new single
+lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor's BG1-only diff 0 on all 170
+frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
+0 or unchanged; nothing worse.
+
+### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(OPEN -- 2026-09-13)*
+
+**Files.** src/main.rs, tools/oracle.py
+
+**Why.** F31b's re-cut buster row reads 0 px, but on its lock canon's CurAction becomes 0x11 on k=0 while
+our ORCL export's CurAction byte flips to 0x0b on k=1, though both sides draw the windup on k=0..1 and the
+pose from k=2. Either our attack state is entered a frame late (and its first frame draws the same pixels as
+idle), or the export block is written a frame away from the frame it describes (it is written between
+battle.update() and gfx.frame()). Every oracle comparison inherits that ambiguity.
+**Do.** Watch the ORCL block against a state whose drawing is unambiguous on the same frame (a warp or a
+flinch: the pixel changes on the frame the state changes on canon), on both sides, and say which side of the
+pair is off; fix it (the export's placement in the frame loop, or the state entry), cite canon's order of
+state update vs draw (the object dispatcher then object_updateSprite), and show the oracle's first
+divergence unchanged or improved on mettaur, buster, warp and card. **Acceptance.** the export's fields
+describe the frame captured (shown on two rows with a state change), no pixel row changes.
 
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 

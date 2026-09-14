@@ -722,6 +722,58 @@ def _aidata_held_pokes(key_bits: int, first: int, n: int = 3) -> Tuple[str, ...]
     return tuple(pokes)
 
 
+#: F31b (2026-09-13): the buster row's press, delivered the same way as the
+#: warp row's directions, because the same wall is in the way. The buster's
+#: arena is the zero-enemy one, which means the enemy is DELETED, which means
+#: the battle is over and the banner sequencer sits in 0x0C from frame 47 --
+#: and in 0x0C nothing refreshes AIData from the joypad mirror, so a scripted
+#: B press never reaches MegaMan (F10 measured that, F31 re-measured it: CurState
+#: 0x04 / CurAction 0x08 / CurAnim 0x00 unchanged on every frame of the old
+#: row). Pressing INSIDE the 0x08 window is not an option either: 0x08 ends at
+#: 46 and the DELETE dissolve still has objects on screen through 52, so a
+#: buster fired there is compared against a rust side that has no enemy to
+#: dissolve.
+#:
+#: So the press is poked into AIData directly. Measured (this ticket) that the
+#: plain buster fires on the RELEASE, not the press: with a scripted
+#: B@30,B@31 in the 0x08 window, AIData reads JoypadPressed 0x0002 at 31,
+#: JoypadHeld 0x0002 at 31-32 and JoypadReleased 0x0002 at 33 -- and CurAction
+#: goes 0x08 -> 0x11 on 33, the RELEASE frame. Poking held alone therefore does
+#: nothing (measured: 24 frames of nothing); held then RELEASED fires. The idle
+#: value of the held word is 0xfc00, not 0, so the press ORs B into it and the
+#: release restores it rather than zeroing it. Measured on the row's own canon
+#: side: CurAction 0x11 at 132, CurAnim 0x0e 133..157, pose+barrel in OAM from
+#: 134, muzzle from 135, both gone at 159.
+JOYPAD_B = 0x0002  # provenance: derived -- include/structs/Joypad.inc, active high
+#: What the held word reads when nothing is pressed on this save state
+#: (watched 0x020340a2 over the whole capture). // unnamed: the non-key upper
+#: bits of oAIData_JoypadHeld
+AIDATA_HELD_IDLE = 0xfc00  # provenance: peeked -- watched on the row's own canon side
+AIDATA_RELEASED = "0x020340a6"  # canon: oAIData +0x26, the released-this-frame word
+#: The press event this row's canon_ref names: CurAction is written 0x11 on
+#: the release frame, so the poke frame + 2 IS the event.
+BUSTER_PRESS_POKE = 130
+BUSTER_ACTION_FRAME = BUSTER_PRESS_POKE + 2  # measured: CurAction 0x11 at 132
+
+
+def _aidata_tap_pokes(key_bits: int, first: int) -> Tuple[str, ...]:
+    """A one-frame tap delivered to AIData: pressed+held on `first`, held on
+    `first+1`, released on `first+2`, cleared on `first+3`."""
+    held = AIDATA_HELD_IDLE | key_bits
+    return (
+        "%d:%s:0x%04x" % (first, AIDATA_PRESSED, key_bits),
+        "%d:0x020340a2:0x%04x" % (first, held),
+        "%d:%s:0x0000" % (first + 1, AIDATA_PRESSED),
+        "%d:0x020340a2:0x%04x" % (first + 1, held),
+        "%d:0x020340a2:0x%04x" % (first + 2, AIDATA_HELD_IDLE),
+        "%d:%s:0x%04x" % (first + 2, AIDATA_RELEASED, key_bits),
+        "%d:%s:0x0000" % (first + 3, AIDATA_RELEASED),
+    )
+
+
+BUSTER_AIDATA_POKES = _aidata_tap_pokes(JOYPAD_B, BUSTER_PRESS_POKE)
+
+
 WARP_AIDATA_POKES = (_aidata_held_pokes(JOYPAD_RIGHT, 130)
                      + _aidata_held_pokes(JOYPAD_DOWN, 150))
 
@@ -947,7 +999,7 @@ CHECKS.extend(_chip_checks())
 #: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
 HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,
                 megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=1,
-                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                flags=0x10, art_entry=23, art_timer=6, scroll_xq=36, scroll_yq=18,
                 # F20b (2026-09-13): positions peeked from this row's own canon
                 # capture (REAL + PAUSED + Start@10, canon frame 44): MegaMan
                 # PanelX/PanelY 0x0203a9c2/0x0203a9c3 (BattleObject 0x0203a9b0
@@ -970,7 +1022,25 @@ HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60
                 # 50 (mod 112). With it, src/hudtiles.rs's canon-verbatim
                 # formulas align bar AND marker exactly (tiles/gauge isolated
                 # residue 538 -> the 208-px wide-screen frame only).
-                gauge_tick=50)
+                # F28b (2026-09-13): the four backdrop seeds above and this
+                # gauge counter are the SAME phases, translated 318 frames
+                # earlier so the compared frame is one our battle is actually
+                # in canon frame 44's SITUATION at. F28 measured why they had
+                # to move: at the old rust battle 427 our Mettaur matched
+                # canon exactly but our MegaMan had taken two shockwave hits
+                # (HP 40, inside the 120-frame mercy) where canon's holds 60
+                # unhit -- 13642 px, all of it on the left half. 318 = 3 x the
+                # Mettaur's own 106-frame cycle, so the enemy keeps the phase
+                # F28 proved, and 427 - 318 = 109 is before our first hit
+                # (battle 181). A translation, not a re-fit: the backdrop's
+                # clocks advanced 318 ticks of src/backdrop.rs's own update
+                # (entry 5 / timer 4 -> entry 23 / timer 6 through STEP_ORDER
+                # and STEP_HOLD, x_q 424 -> (424 + 2*318) mod 1024 = 36, y_q
+                # 724 -> (724 + 318) mod 1024 = 18), and the gauge counter the
+                # same (unseeded gt at capture 117 is 110, and 32 + 110 = 142
+                # = 30 mod 112, canon's own t_used(44) -- the identity the old
+                # seed 50 satisfied at capture 435).
+                gauge_tick=32)
 HUDMATCH_ORIGIN = 8
 
 
@@ -988,11 +1058,13 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
         frames=8,
         align=Align(
             canon_ref=44,
-            search=range(415, 440),
+            search=range(97, 122),
             note="canon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a "
                  "documented scripted landing, not searched). rust: marker origin 8 "
-                 "(demo-hudmatch's own family) plus a 25-frame band around regress.py's old "
-                 "center (435-8=427) -- %s. NOT boxed: regress.py split this same capture "
+                 "(demo-hudmatch's own family) plus a 25-frame band around 109, which is "
+                 "regress.py's old center (435-8=427) minus 318 = 3 x the Mettaur's 106-frame "
+                 "cycle (F28b, see the descriptor's own comment; the band was range(415,440) "
+                 "while the descriptor seeded the old frame) -- %s. NOT boxed: regress.py split this same capture "
                  "into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely "
                  "because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the "
                  "gauge's stripe animation) that would otherwise contaminate a background-only "
@@ -1018,7 +1090,22 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
                  "120-frame mercy, while canon holds 60 unhit through frame 51 -- the left half "
                  "goes 0 -> 13550 and the row 3865 -> 16130. So fixing the freeze ALONE makes "
                  "this row worse; 0 needs the fixture to carry canon's mid-battle MegaMan as it "
-                 "already carries canon's backdrop and gauge phase." % subject_note,
+                 "already carries canon's backdrop and gauge phase. F28b (2026-09-13) DID THAT, "
+                 "and the row READS 0 -- both variants, full screen, negatives not blind. Not "
+                 "by seeding MegaMan (his HP and mercy at battle init cannot survive 427 frames "
+                 "of our own Mettaur hitting him) but by moving the compared frame to one our "
+                 "battle is genuinely in canon frame 44's situation at: the freeze is gone "
+                 "(src/battle.rs's gauge_pause is armed only when the window may open, cited "
+                 "there), and the descriptor's four backdrop seeds and gauge_tick were "
+                 "TRANSLATED 318 frames earlier -- 3 whole Mettaur cycles, so the enemy phase "
+                 "F28 proved at 427 is the same phase at 109, while 109 is before our first "
+                 "shockwave hit (battle 181), so MegaMan is idle at HP 60 with FlashingInvisTimer "
+                 "0 exactly as canon's is (peeked: BattleObject 0x0203a9b0 +0x24 = 0x3c, +0x20 = "
+                 "0, CollisionDataPtr +0x54 -> 0x020384f0 +0x24 = 0 on canon frames 42..48). "
+                 "Per-half at the new alignment: left x<120 = 0, right x>=120 = 0, HUD strip "
+                 "y<24 = 0. The stages measured on the way: 3865 frozen at 427, 13642 unfrozen "
+                 "at 427 (all left), 3460 at 109 with the old gauge seed (all HUD strip), 0 with "
+                 "the translated one." % subject_note,
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=HUDMATCH,
                              extra=() if ui == "integrated" else ("--disable-obj",)),
@@ -1045,9 +1132,141 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
 #: canon side, so an empty rust hand is the match, not hand=[1] (tried
 #: first, against the pre-dissolve-wait frame 90 -- wrong once the compare
 #: window moved).
-ZERO_ENEMY = dict(enemies=0, megaman_hp=100, megaman_col=2, megaman_row=2,
+#: megaman_hp: 60, not 100 -- F33 (2026-09-13). All four zero-enemy rows
+#: compare against the SAME canon state these fields describe (STERILE +
+#: pausedwithcannon + DELETE_ENEMY), whose navi holds 0x003c at 0x0203a9d4
+#: (BattleObject 0x0203a9b0 + 0x24) -- the value FIELD_ROW's own comment
+#: already records as peeked from PAUSED. The HUD's HP box is battle-HUD
+#: element 2 (mask dword_20352C0, updater sub_801C168 asm00_2.s:25854, draw
+#: sub_801C202 asm00_2.s:25952; bit 2 is set in canon's mask on every frame
+#: of all four rows' compared windows, measured with --watch 0x020352C0:8),
+#: so it is drawn on both sides and a wrong HP is a live pixel difference:
+#: measured on field integrated, ours drew "100" against canon's "60" for a
+#: steady ~30 px/frame in the box (the extra leading "1" at x19..20 y3..12
+#: plus the changed units digit). provenance: peeked.
+ZERO_ENEMY = dict(enemies=0, megaman_hp=60, megaman_col=2, megaman_row=2,
                   hand=[], hand_count=0, gauge=0, flags=0x11)
 ZERO_ENEMY_ORIGIN = 8
+
+# --------------------------------------------------------------------------
+# F33 (2026-09-13): what the four integrated (full-HUD) variants of these
+# rows actually differ by, decomposed by HUD element and by layer. Measured
+# in tools/worktree.sh f33-hud-elements; every number below is a full-screen
+# count on the row's own alignment, with the row's own negative confirmed
+# not blind.
+#
+# CANON'S HUD ELEMENT MASK, measured on each row's OWN canon capture with
+# --watch 0x020352C0:8 (update mask dword_20352C0, draw mask dword_20352C4;
+# dispatchers sub_801BEE0 asm00_2.s:25540-25563 and sub_801BF64 :25564-25599,
+# one updater/draw pair per bit):
+#
+#   canon frames   0- 47   update 0x4497   draw 0x44d7   (full battle HUD)
+#   canon frames  48-105   update 0x8084   draw 0x80c5   (teardown + bit 15,
+#                                                         the ENEMY DELETED
+#                                                         banner)
+#   canon frames 106-...   update 0x0084   draw 0x00c5
+#
+# The teardown at canon 48 is F27b's sub_80081A4 -> sub_801BED6(0xE4C53)
+# (asm00_1.s:10617-10621), clearing bits 0,1,4,10,14 from the update mask and
+# 1,4,10,14 from the draw mask. EVERY compared frame of all four rows (field
+# and warp from canon 130, buster and chip-use from canon 150) therefore sits
+# in the LAST state: canon updates elements 2 and 7 and draws 0, 2, 6 and 7 --
+# no gauge, no hand icon, no emotion window.
+#
+# The elements, with the dispatcher table's own entries:
+#   bit  updater (off_801BF04)            draw (off_801BF88)              what
+#    0   sub_801BFEE :25647 ->801C002(1)  sub_801C06E :25721 ->801C082(1)  ready-chip bubble, class 1 (6 slots at dword_20352E0)
+#    1   sub_801BFF8 :25655 ->801C002(0)  sub_801C078 :25729 ->801C082(0)  ready-chip bubble, class 0 = the queued-chip ICON; TORN DOWN at canon 48
+#    2   sub_801C168 :25854               sub_801C202 :25952               MegaMan's HP box (BG3 map rows 0-1, screen y0-15 x2-45, 704 px)
+#    4   sub_801C470 :26292               sub_801C4E4 :26351               the CUSTOM gauge; TORN DOWN at canon 48
+#    6   nullsub_58 (draw only)           sub_801C6EE :26619               the queued chip's NAME + damage, BG3 map rows 0x12/0x13 (screen y144-159 x0-63); reads dword_20352C8, renderTextGfx_8045F8C to 0x0600cb00
+#   10   sub_801C984 :26969               sub_801C9A4 :26989               TORN DOWN at canon 48
+#   14   sub_801CADC :27186               sub_801CDEC :27554               the emotion window (F27b); TORN DOWN at canon 48
+#
+# WHAT CANON ACTUALLY PAINTS on those frames (canon side, --only-bg 3, field
+# row, canon 130): 1126 px, and only two things -- the HP box (704 px, y0-15
+# x2-45) and the chip name strip, which reads "Cannon 40" (422 px, y148-158
+# x1-63; pausedwithcannon's own queued Cannon40, whose OBJ icon is gone
+# because element 1 was torn down, while its NAME is element 6 and was not).
+#
+# PER-ELEMENT RESULT for field integrated (offset 108, canon_ref 130, 40
+# frames; "before" = this session's baseline 305263/10061):
+#   element 2, HP box .......  29 px/frame -> 0   (ZERO_ENEMY megaman_hp was
+#                                                  100, canon's navi holds 60;
+#                                                  fixed above, -1160/-870/
+#                                                  -928/-928 on the four rows)
+#   element 6, chip name .... 422 px/frame -> 0   only with the src/battle.rs
+#                                                  proposal below; NOT landed
+#   element 4, CUSTOM gauge . ~1596 px/frame on the frames before our own
+#                             RESULT window replaces it (k=0..5 here) -- canon
+#                             draws no gauge on ANY compared frame
+#   elements 0, 7 ...........   0 px (no slots active, no enemies)
+#   element 14, emotion .....   0 px (F27b already hides it)
+#   NOT the HUD ............. 261797 px of 305263 (86%) lies outside every
+#                             HUD element; see below.
+#
+# PROPOSAL (src/battle.rs, another worker's file -- measured here, reverted
+# before commit): canon's queued-chip ICON is element 1 and is torn down with
+# the rest, while its NAME (element 6) is not, so the two must be gated
+# separately. Ours ties both to the hand. With
+#     ZERO_ENEMY hand=[1], hand_count=1          (this file), AND
+#     src/battle.rs:3743
+#       -  .filter(|_| self.chip_use_in != 1)
+#       +  .filter(|_| self.chip_use_in != 1 && self.hud_live)
+# measured together: field 304103 -> 287204, warp 362788 -> 350128, buster
+# 642770 -> 629266 (exactly 422 px x 40/30/32), chip-use unchanged, and every
+# isolated variant unchanged (field 0, warp 0, buster 3172, chip-use 9514).
+# The descriptor half ALONE is a regression and is therefore not landed: with
+# hand=[1] and no gate the icon (a 16x16 OBJ canon does not draw) costs
+# exactly 256 px/frame -- warp isolated 0 -> 7680, buster isolated 3172 ->
+# 11364. A second proposal, unmeasured: gate `gauge_up` (battle.rs's
+# set_gauge call) on `hud_live` too, since the gauge is element 4 and is torn
+# down by the same routine.
+#
+# WHERE THE REST IS (field integrated, per-layer --only-bg N on BOTH sides,
+# same alignment): BG0 0, BG2 (field panels) 0, BG3 (HUD) 2047 px/frame,
+# BG1 (backdrop) 18508 px/frame -- on k=0..4. It is a PHASE error, not a
+# content one: the best rigid shift between the two BG1 images is (12,6) px
+# at k=0, which takes 18508 down to 8233 of 35112 overlapping px, and the
+# remainder is the art step (canon's BG1 changes by 7362 px with no shift
+# between canon 131 and 132 -- an art upload -- and ours steps on different
+# frames). ZERO_ENEMY seeds no backdrop phase at all (no art_entry/art_timer/
+# scroll_xq/scroll_yq, unlike HUDMATCH and FIELD_ROW) while its canon side is
+# thousands of frames into pausedwithcannon's battle. Canon's own counters,
+# peeked on the field row's canon capture (--watch 0x02009690:8,
+# eBGScrollCBCounters, ewram.s:619) fall by exactly 8 and 4 a frame (= our
+# SCROLL_X_Q=2 / SCROLL_Y_Q=1 quarter-pixels) and read
+#     canon 130: x -64176 (0xffff0550)  y -32088 (0xffff82a8)
+#     canon 150: x -64336 (0xffff04b0)  y -32168 (0xffff8258)
+# which by backdrop.rs's own register arithmetic (reg = lsr #4 of the
+# counter = -((q+3)/4) mod 256) is x_q = 684, y_q = 854 at canon 130. The
+# seed for battle frame 0 is that minus `offset` frames of scroll, so it is
+# PER ROW (each row has its own offset) and it needs the art phase
+# (eGFXAnimStates[0] at 0x020094c0) walked back the same way -- the same
+# derivation F26b is doing for cursor/windowclose. Deliberately not attempted
+# here: it is the backdrop's mechanism, not the HUD's.
+#
+# AND ONE MORE THING about the field row in particular, measured on its own
+# rust capture: our end sequence runs 30-odd frames early and then stalls.
+# The gauge goes at capture 117 (a 1596 px change), captures 117, 118, 119
+# and 120 are BYTE-IDENTICAL to each other (a three-frame stall: the backdrop
+# does not scroll, and it scrolls on every other frame before and after), and
+# from capture 121 `self.shown` is Some, so battle.rs:3594-3595 skips
+# `filler_bg` and every layer drops one hardware BG -- measured: from 121 our
+# BG0 carries the backdrop where canon's BG0 is empty, our BG1 the field
+# panels, our BG2 the HP box, our BG3 the RESULT window. Canon's RESULT
+# window does not begin its slide until canon 154. So `--only-bg N` is a
+# same-content comparison on this row only for k=0..4, and no number past
+# there is attributable by layer at all. On k=0..4: BG0 0, BG1 (backdrop)
+# 18508..17607 px/frame, BG2 (panels) 0, BG3 (HUD) 2047 px/frame.
+# The search band range(60,110) bottoms at 108, which puts k=0 one frame
+# before that stall; the row's own note documents the EVENT lock at ~81
+# (banner canon 49 <-> rust 8, mark canon 163 <-> rust 121). At 81 the row
+# reads 497776, with the residue outside the HUD region nearly halved
+# (172039 against 261797 at 108) and the RESULT-window mismatch
+# correspondingly larger. No alignment was changed by this ticket -- but no
+# HUD number from this row is worth much past the stall until the end
+# sequence lasts as long as canon's (F32).
 
 #: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
@@ -1163,6 +1382,82 @@ CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_
                      window_pick_count=1, window_pick_slot=4, window_cursor=0xa)
 CUSTMATCH_ORIGIN = 8
 
+#: F26b (2026-09-13): the backdrop-phase seeds for the two CUSTMATCH_ROW rows
+#: that compare the WHOLE screen. `window`/`card` isolate BG3 and never see
+#: BG1, so CUSTMATCH_ROW itself stays unseeded; `cursor` and `windowclose`
+#: pair DIFFERENT canon frames of the same CHIPSELECT battle (canon 15 vs
+#: canon 81) with different rust frames, so one shared seed cannot serve both
+#: -- each carries its own, derived from canon's own counters at its own
+#: canon_ref, never fitted.
+#:
+#: THE SCROLL. canon's BGScrollCB_BG1Diagonal3to2Scroll
+#: (reference/bn6f/asm/asm00_0.s:3287-3303) subtracts 8 from Counter0 and 4
+#: from Counter1 (eBGScrollCBCounters, 0x02009690/0x02009694), `lsr #4` each,
+#: and strh's them into RenderInfo Unk_10/Unk_12 (BG1HOFS/BG1VOFS). Both
+#: counters are zeroed once at battle init (sub_8080D90/sub_8080DA0,
+#: asm00_1.s:8434-8435), so at battle frame f they read exactly -8f/-4f --
+#: measured on this row's own canon capture (--watch 0x02009690:4
+#: 0x02009694:4 over CHIPSELECT + this row's script): canon frame 0 reads
+#: 0xffff9d60/0xffffceb0 = -25248/-12624 = -8*3156/-4*3156, and every later
+#: frame is one more step of -8/-4, so CHIPSELECT sits at battle frame
+#: f0 = 3156 and canon frame c is battle frame 3156+c. src/backdrop.rs keeps
+#: the same phase in quarter-pixels (x_q += 2, y_q += 1 per frame) and emits
+#: -((q+3)/4), i.e. floor(-q/4) -- the same value canon's `lsr #4` of a
+#: falling counter produces -- so canon's phase in our units is
+#: x_q = 2f mod 1024, y_q = f mod 1024 (1024 = 256 px x 4).
+#:
+#: THE ART. eGFXAnimStates[0] (0x020094c0, GFXAnimState.inc: Timer +2,
+#: LoopAddress +4, CommandPos +8) walks src/backdrop.rs's STEP_ORDER/
+#: STEP_HOLD schedule (off_807FB98, dat20.s:140-172), 29 entries, 192 frames
+#: a cycle. Entry index = (CommandPos - LoopAddress)/8; position in the cycle
+#: = sum(STEP_HOLD[:entry]) + STEP_HOLD[entry] - Timer, and it advances by
+#: exactly 1 per frame on both sides. Watched on canon: frame 15 = entry 17 /
+#: Timer 4 (CommandPos 0x0807fc2c) = position 100; frame 81 = entry 25 /
+#: Timer 2 (0x0807fc6c) = position 166.
+#:
+#: THE ROW'S OWN OFFSET, AND THE TWO PIPELINE LEADS. Our Backdrop is built
+#: once, before the first `Battle::update`, and ticks once per frame from
+#: there. Watched live on this row's own rust capture (a temporary write of
+#: entry/timer/x_q/y_q to the scratch halfwords at 0x02000030, between R7's
+#: oracle block and this descriptor -- F26b, since removed) the tick count in
+#: RAM at capture frame R is n_ram = R - 6, and the marker's "BATT" first
+#: appears at capture frame 8 = the SECOND tick (main.rs's `clocks_visible`
+#: gate), which is where ORIGIN 8 comes from. What a frame SHOWS is not what
+#: its RAM holds, and the two clocks do not even agree with each other: our
+#: scroll is a register written by `commit()` at the following vblank, while
+#: our art is a `replace_tile` VRAM write inside `update()`. MEASURED on
+#: windowclose by sweeping each clock one tick at a time with the other held
+#: (BG1-only, both sides --only-bg 1, this row's own frames):
+#:   pixels at capture frame R show the scroll of tick R - 7
+#:   pixels at capture frame R show the art    of tick R - 5
+#: (with the art held, scroll_xq/yq 844/934 -- the seed the RAM tick count
+#: alone predicts -- reads 142518 nonzero on all 20 even k and 0 on all 20
+#: odd k, the exact signature of a half-pixel x error, and 846/935 reads
+#: 11153 on 7 frames; with the scroll held at 846/935, art entry 17 Timer 1
+#: reads 0 where Timer 0 and Timer 2 both read 11153 and Timer 3 reads
+#: 21150.) So with
+#: nx = ORIGIN + offset - 7 and na = ORIGIN + offset - 5, and `Backdrop::seed`
+#: applying at tick 0 while adding its own documented one-tick construction
+#: lead to the art timer (the fields therefore carry the state at tick 1):
+#:   scroll_xq = (2*(f0+canon_ref) - 2*nx) mod 1024
+#:   scroll_yq = (   f0+canon_ref  -   nx) mod 1024
+#:   art position of the (art_entry, art_timer) pair
+#:             = (canon position at canon_ref - na + 1) mod 192
+#: cursor      canon_ref 15: f=3171, x = 6342 mod 1024 = 198, y = 99;
+#:             nx = 8+237-7 = 238: 198-476 = -278 -> 746, 99-238 = -139 -> 885
+#:             na = 240: (100-240+1) mod 192 = 53 = entry 11 / Timer 3.
+#: windowclose canon_ref 81: f=3237, x = 6474 mod 1024 = 330, y = 165;
+#:             nx = 8+253-7 = 254: 330-508 = -178 -> 846, 165-254 = -89 -> 935
+#:             na = 256: (166-256+1) mod 192 = 103 = entry 17 / Timer 1.
+#: The two leads were measured ONCE, on windowclose, and then PREDICTED
+#: cursor: with no further tuning cursor's BG1 went 2214975/15746/170 -> 2/2/
+#: 170 (one frame, two pixels -- canon's own mid-frame tile transfer, see the
+#: cursor row's note). windowclose's BG1 went 877602/22658/40 -> 0/0/40.
+#: provenance: peeked -- canon's own eBGScrollCBCounters/eGFXAnimStates[0] on
+#: each row's own canon capture, mapped through the arithmetic above.
+CURSOR_ROW = dict(CUSTMATCH_ROW, art_entry=11, art_timer=3, scroll_xq=746, scroll_yq=885)
+WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, scroll_yq=935)
+
 #: demo-cardname's row -- IDENTICAL to CUSTMATCH_ROW in every column except
 #: window_cursor (0 = cursor on the first slot, showing the card's NAME
 #: rather than the OK confirmation message -- fixture.rs's own table
@@ -1245,6 +1540,43 @@ _CURSOR_WALK_RUST = ",".join(held("Left", 250 + 30 * k, 6) for k in range(5))
 #: transfer queue, not from any OAM). Blank on canon per frame; the rust fixture
 #: has no enemy and the row's subject (BANNER_TILES 0x06016E00) is disjoint.
 ENEMY_DISSOLVE_TAIL = "0x60105A0:320"
+
+#: F28b (2026-09-13): the two blanks above stop at tile 0x36 and the dissolve's
+#: FIRST phase does not. Watching canon's OAM (0x07000000:1024, this row's own
+#: side plus --watch) over the compared window shows the corpse drawn from
+#: object tiles 0x01f, 0x023, 0x02b, 0x02d, 0x02f and 0x033 -- all inside the
+#: 768 bytes above -- AND from 0x03d, 0x041 and 0x045, whose shapes/sizes
+#: (tall 8x32 = 4 tiles, wide 32x16 = 8 tiles) reach tile 0x048: a second sheet
+#: region, above everything F9 blanked, which is the whole of popup's leftover
+#: 5094 px on canon frames 43..49 (k=0..6, bbox (149,81)-(196,126), canon
+#: colour over our black on every one of them; k>=7 was already 0). Tiles
+#: 0x37..0x48 = 0x060106E0 + 576 bytes. Nothing else uses them where it
+#: matters: over the row's whole 130-frame canon capture the only objects
+#: drawn from tiles 0x2d..0x49 inside the compared window (canon 43..122) are
+#: these, at x 149..189; the other users (x=4 at frames 0..15, x 137..185 at
+#: frames 15..36) are all before canon_ref. Popup only -- `banner` keeps F9's
+#: pair unchanged, and reads 0 with them.
+ENEMY_DISSOLVE_FIRST_PHASE = "0x60106E0:576"
+
+#: F28b (2026-09-13): and the three frames a per-frame --zero can never win,
+#: for the reason F9 already wrote down -- the queue is flushed in the frame's
+#: OWN vblank, after that frame's zero has run. Watched live on this row's own
+#: canon side (--watch 0x0200B4B0:1024, the transfer queue itself, one row per
+#: frame): the dissolve's uploads are queued in slot 3 at canon frames 44
+#: (src 0x0839A28C -> 0x060105A0, 896 bytes), 45 (the same source -> 0x060103E0)
+#: and 48 (src 0x0839A610 -> 0x060103E0, 768 -- F9's own entry), landing on 45,
+#: 46 and 49, which are exactly the k=2, k=3 and k=6 that survived the tile
+#: blanking (1148, 1148, 562). NOTE the slot: F9 measured this upload in slot
+#: 41 and ENEMY_DISSOLVE_SLOT_SIZE still pokes 0x0200B7EC for it; on this row
+#: today it is slot 3, so that poke is a no-op here (it is left alone for
+#: `banner`, which reads 0 with it). Size word of slot 3 =
+#: fiveWordArr200B4B0 + 3*0x14 + 8 = 0x0200B4F4; zeroing its low half is the
+#: whole size (896 = 0x380, 768 = 0x300), so CopyWords copies nothing.
+ENEMY_DISSOLVE_QUEUE_KILL = (
+    "45:0x0200B4F4:0x0000",
+    "46:0x0200B4F4:0x0000",
+    "49:0x0200B4F4:0x0000",
+)
 
 #: TODO F9 (2026-09-12): the per-frame --zero cannot blank canon frame 49 itself:
 #: the dissolve sheet's queue entry (queued during frame 48) is FLUSHED by
@@ -1361,21 +1693,54 @@ PORTED_CHECKS: List[Check] = [
     Check(
         name="buster",
         ui="both",
-        frames=32,
+        frames=28,
         align=Align(
-            canon_ref=150,
-            search=range(90, 130),
-            note="canon: regress.py's check_buster's press (STERILE+PAUSED+DELETE, "
-                 "Start@10,B@150,B@151) shifted from the old real 60/61 to past the DELETE "
-                 "dissolve (see `field`'s note) -- canon_ref=150 = the press. rust: B held at "
-                 "battle-frame 100/101 (marker origin 8 + 100/101), not the first tried "
-                 "(origin+22) -- verified live that a press that early is BEFORE the navi is "
-                 "free to act at all (the diff at that offset was the SAME idle-pose-settling "
-                 "transition `field` has, not a shot); battle-frame 100 is well past it, in the "
-                 "same order as fire_frame's own 90-frame gap (battle.rs's AUTO_FIRE_GAP).",
+            canon_ref=BUSTER_ACTION_FRAME,
+            search=range(96, 113),
+            note="F31b re-cut: BOTH sides fire. canon: the zero-enemy arena (STERILE+PAUSED+"
+                 "DELETE, Start@10) with the B tap poked into AIData -- see "
+                 "BUSTER_AIDATA_POKES above for why a scripted press cannot reach MegaMan "
+                 "here and why the tap has to end in a RELEASE. canon_ref is the MEASURED "
+                 "EVENT, not a script frame: CurAction 0x0203a9b9 is written 0x11 on canon "
+                 "132 (watched), CurAnim 0x0e runs 133..157, the pose and the barrel enter "
+                 "OAM at 134, the muzzle at 135, and both objects vanish at 159 when the "
+                 "attack state exits. rust: B held at battle-frame 100/101 (marker origin 8 "
+                 "+ 100/101, unchanged from the old row) and the same event watched on our "
+                 "side -- the ORCL export block's CurAction byte (0x02000008+13) goes 0x08 "
+                 "-> 0x0b at rust capture 112, so the event lock is offset 104 and the band "
+                 "range(96,113) is +-8 around it, wide enough to show the minimum is unique "
+                 "and not a plateau. 28 frames = the attack from its state write to the "
+                 "first idle frame after it (canon 132..159); the window STOPS at 159 on "
+                 "purpose, because canon puts a 16x16 tile 0x350 palette 10 object at "
+                 "(59,52) from 160 (present only when the buster fired; not yet identified, "
+                 "// unnamed: a post-shot indicator above the navi) and the result mark "
+                 "(16x16 tile 0x200 palette 11 at (37,21), F31's 3172) from 164. The OLD row "
+                 "-- canon_ref=150, 32 frames, a scripted press -- compared two idle navis "
+                 "and 18 frames of that result mark, and its offset was the first of an "
+                 "8-wide plateau (122..129 all read 3172) that began exactly where our "
+                 "buster left the window: F31's measurement, and the reason this row was "
+                 "re-cut rather than re-aligned. The new alignment is a SHARP unique "
+                 "minimum, not a plateau: swept over range(96,113) the totals read 0 at "
+                 "offset 103 and 2911 at both 102 and 104, rising monotonically to either "
+                 "band edge. What the four fixes were worth, measured one at a time on this "
+                 "row: 4936 -> 736 for the pose length (17 -> the byte_80209CC lookup, "
+                 "actor.rs), 736 -> 0 for the barrel and muzzle living exactly as long as "
+                 "the pose (battle.rs), and 0 -> 0 for strike_at 3 -> 2 plus dropping the "
+                 "double tick on the muzzle's spawn frame -- that pair is a model fix with "
+                 "no pixels in it here, because assets/buster_fx.bin's first and last cells "
+                 "are both blank (canon's OAM carries an 8x8 object at (96,78) that draws "
+                 "nothing from canon 141 to 158), which is also why the row still read 0 "
+                 "with the pair reverted. STILL OPEN, pixel-invisible: the two sides' state "
+                 "watches sit one frame apart at this lock -- canon writes CurAction 0x11 on "
+                 "132 = k=0, our ORCL export block flips its CurAction byte to 0x0b on rust "
+                 "112 = k=1 -- while both sides DRAW the windup on k=0..1 and the pose from "
+                 "k=2. Our windup draws the same pixels as canon's two pre-pose idle frames, "
+                 "so the row cannot tell whether our attack state is entered one frame late "
+                 "or our export block is one frame behind the frame it describes; settling "
+                 "that is a main.rs/oracle question, not this row's.",
         ),
         rust=_zero_enemy_rust(held("B", 8 + 100, 2)),
-        canon=_zero_enemy_canon("Start@10," + held("B", 150, 2)),
+        canon=_zero_enemy_canon("Start@10", pokes_at=BUSTER_AIDATA_POKES),
         canon_variant="canon (sterile)",
     ),
     Check(
@@ -1541,9 +1906,66 @@ PORTED_CHECKS: List[Check] = [
                  "box removed, full screen, all 170 frames. Ported from the demo-custmatch "
                  "feature to CUSTMATCH_ROW (fixture.rs's own table entry, already used by "
                  "`window` above; AUDIT pair 17 prune ticket) -- same descriptor bytes, same "
-                 "numbers.",
+                 "numbers.\n"
+                 "F26b (2026-09-13), THE BACKDROP PHASE AND THE REPAIRED LAYER TABLE. This row "
+                 "now uses CURSOR_ROW, not bare CUSTMATCH_ROW: it pairs canon frame 15 where "
+                 "`windowclose` pairs canon 81, so the two need different backdrop seeds (the "
+                 "derivation sits above the descriptors). BG1 alone (--only-bg 1 --disable-obj, "
+                 "identical flags both sides) 2214975/15746/170 -> 2/2/170 (1/1 on the merged "
+                 "tree). Full screen 620802 -> 272341/1603/170. THE OLD 620802 WAS NOT AT THIS "
+                 "ROW'S OWN OFFSET: measured this ticket, the unseeded band's minimum sat at "
+                 "226 (620802) and the event-derived 237 read 779920 -- the backdrop's whole-"
+                 "screen phase error was big enough to drag the search 11 frames off the event, "
+                 "exactly what F2's rule warns about. With the seed the minimum is back at 237 "
+                 "(272341, against 459077 at 236 and 458617 at 238). "
+                 "LAYER TABLE, ARITHMETIC CLOSED. F26's table summed layer-local totals and got "
+                 "689572 > the 620802 full frame; the fix is to state two different quantities "
+                 "rather than one. LAYER-LOCAL |Li| = that layer captured alone on both sides "
+                 "and diffed: it ignores occlusion, so it can exceed the composite. ATTRIBUTED "
+                 "|C and Li| = the composite's differing pixels that the layer-local mask also "
+                 "calls differing, and those partition the composite exactly. Merged tree, 170 "
+                 "frames: composite 272341 = OBJ-only 272340 + BG1-only 1, no pixel in both and "
+                 "none UNEXPLAINED (every composite pixel is reproduced by some single-layer "
+                 "capture). OBJ layer-local is 612811, and the gap to its 272340 attribution is "
+                 "occlusion, measured: on the merged tree the OBJ diff falls in exactly two x "
+                 "bands -- 2..77 (y18..152, 340471 px-frames) and 122..189 (y18..159, 272340) "
+                 "-- and only the second is outside the chip window (BG3 covers x<112); "
+                 "340471 + 272340 = 612811, the layer-local total, and the visible half is "
+                 "the attribution to the pixel. (Before F29 landed there was a third band at "
+                 "x83..117 y70..113, 129687 px-frames: MegaMan at the wrong panel, hidden "
+                 "behind the window and so invisible in the composite either way.) THE FOUR UNCHECKED "
+                 "ATTRIBUTIONS OF F26, each now measured. (a) 'BG1 art phase, ours leads by 2' "
+                 "-- REFUTED as stated: it was not a 2-frame lead but an unseeded clock. "
+                 "Watched, canon eGFXAnimStates[0] is entry 17/Timer 4 at canon frame 15 and "
+                 "entry 25/Timer 2 at 81, while our unseeded build was entry 10/Timer 2 at the "
+                 "paired rust frame 245; with the derived seed the art matches on every frame. "
+                 "(b) 'the enemy is a Mettaur variant other than kind 0' -- there IS no Kind "
+                 "field (BattleObject.inc has none); the enemy at 0x0203ab60 reads NameID "
+                 "(+0x28) 0x0001, header word 0x02910037, Params 0x1e000000, CurState/CurAction "
+                 "0x04/0x0b, HP 40, panel (5,3), every one of them constant over 90 canon "
+                 "frames -- so the row's enemy_col/enemy_row/enemy HP already match and the "
+                 "open question is only what NameID 1 means, which no pixel here depends on. "
+                 "(c) 'enemy-HP portrait content identical, box-x canon 122-165 vs ours 2-45' "
+                 "-- CONFIRMED and sharpened to a pure 120 px x displacement: in the OBJ-only "
+                 "capture the 44x16 block at y18..33 holds 694 non-background pixels on OUR "
+                 "side at x2..45 (canon has none there) and 694 on CANON's at x122..165 (we "
+                 "have none there), and the two are identical on all 704 pixels when shifted by "
+                 "120, against 10/704 compared at the same x. It is worth 117980 of the visible "
+                 "OBJ residue's 272340 px-frames (the other 154360 are y107..159). Not fixed "
+                 "here: the HUD OBJ is another worker's file. (d) 'MegaMan at canon panel (2,3) "
+                 "vs fixture (3,2)' -- CONFIRMED by watch, canon PanelX/PanelY (0x0203a9c2/"
+                 "0x0203a9c3) read (2,3) on every frame of this capture; F29 has since landed "
+                 "megaman_col=2/megaman_row=3 in CUSTMATCH_ROW, which this row inherits.\n"
+                 "The one BG1 pixel left is not a phase error: 2 px (1 after the merge) at y=5, "
+                 "x=55 and x=183 -- the same texel twice, 128 apart, the map's own x+128 "
+                 "repeat -- on k=97 alone. Holding our art one frame later makes that frame "
+                 "read 1157 px over rows 5..156, so canon's frame carries the PREVIOUS step in "
+                 "rows 0..5 and the new one below it: canon's tile copy is queued "
+                 "(QueueEightWordAlignedGFXTransfer, sub_8001C94, asm00_0.s:3752) and drained "
+                 "part-way down the frame, while our replace_tile lands before scanline 0. A "
+                 "sub-frame difference, not a clock difference.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW, script=_CURSOR_WALK_RUST),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
         canon_variant="canon",
     ),
@@ -1699,9 +2121,25 @@ PORTED_CHECKS: List[Check] = [
                  "the PIXEL negative on this row is not blind, but tools/oracle.py windowclose "
                  "reports its own STATE-field negative as BLIND (a +1-frame canon shift moves "
                  "no first-divergence) -- the state oracle proves nothing on this row until "
-                 "that is fixed.",
+                 "that is fixed.\n"
+                 "F26b (2026-09-13): the backdrop phase is SEEDED now (WINDOWCLOSE_ROW, see "
+                 "its derivation above the descriptor) and BG1 is gone: BG1 alone (--only-bg 1 "
+                 "--disable-obj on BOTH sides, identical flags) 877602/22658/40 -> 0/0/40, all "
+                 "forty frames, the twenty odd ones included -- so the 'odd-frame rounding' the "
+                 "previous paragraph left open is not a defect at all (src/backdrop.rs's scroll "
+                 "write carries the proof). Full screen 648948/27391/40 -> 34707/2652/40 on the "
+                 "merged tree (F29 had taken it to 407778 on its own). Offset still 253 and now "
+                 "sharply so: 34707 against 222040 at 252 and 225712 at 254, where before the "
+                 "seed the same band read 648948/659965/673915 -- the event-derived alignment "
+                 "and the score minimum now agree by a factor of six. LAYER TABLE, arithmetic "
+                 "closed by partitioning the composite instead of summing layer-local totals "
+                 "(those double-count: a layer-local diff counts pixels the composite hides "
+                 "behind a layer above). Composite 34707 = OBJ-only 34707; BG0/BG1/BG2/BG3 "
+                 "layer-local all 0/40 frames, OBJ layer-local 46803 of which 12096 px-frames "
+                 "are occluded by the window. Nothing left on this row lives in a background "
+                 "layer.",
         ),
-        rust=lambda ui: Side(rom=plain_rom(), fixture=CUSTMATCH_ROW,
+        rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script="Start@50,A@80"),
         canon_variant="canon",
@@ -1920,8 +2358,10 @@ PORTED_CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
-                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL),
-                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
                               script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
         # No pending_src -- this is fully expressible today. Kept as its own

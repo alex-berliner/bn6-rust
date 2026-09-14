@@ -44,8 +44,6 @@ ALLOWLIST = {
     # on, over regress.py's old demo-hudmatch capture. tiles and gauge are
     # the SAME full-screen capture (see _tiles_gauge()'s own note) so they
     # share one ticket.
-    "tiles:integrated": (3600, "AUDIT-6: TODO A8 gauge stripe-flow + sprites, full screen", "2026-09-08"),
-    "gauge:integrated": (3600, "AUDIT-6: TODO A8 gauge stripe-flow + sprites, full screen", "2026-09-08"),
     # field/warp/buster/chip-use integrated (worst up to 30674): the HUD
     # (HP box, gauge) this ui variant turns back on has never been compared
     # against a genuinely empty (zero-enemy) arena before -- `tiles`/`gauge`

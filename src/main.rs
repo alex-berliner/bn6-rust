@@ -61,6 +61,11 @@ static POISAREA: &[u8] = &Aligned(*include_bytes!("../assets/poisarea.bin")).0;
 static VDOLL: &[u8] = &Aligned(*include_bytes!("../assets/vdoll.bin")).0;
 static BOMB_BLAST: &[u8] = &Aligned(*include_bytes!("../assets/bomb_blast.bin")).0;
 static VULCAN_GUN: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_gun.bin")).0;
+/// SuprVulc's detached muzzle-fire ball: canon OBJ-VRAM tile 512 + object
+/// palette 11, dumped off the sterile-row capture (see battle.rs's
+/// VULCAN_FIREBALL_X0), packed as a one-frame BNSP asset by hand -- the
+/// bytes are canon's own, not drawn.
+static VULCAN_FIREBALL: &[u8] = &Aligned(*include_bytes!("../assets/vulcan_fireball.bin")).0;
 static BARRIER: &[u8] = &Aligned(*include_bytes!("../assets/barrier.bin")).0;
 static CHARGE: &[u8] = &Aligned(*include_bytes!("../assets/charge.bin")).0;
 static DELETE: &[u8] = &Aligned(*include_bytes!("../assets/delete.bin")).0;
