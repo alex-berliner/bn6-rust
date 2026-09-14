@@ -277,8 +277,9 @@ canon_ref (peeked).
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind) or the per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
-### F38. The integrated rows after F33d: the results window's slide on warp/buster/chip-use, and opening integrated decomposed  *(OPEN -- 2026-09-14)*
+### F38. The integrated rows after F33d: the results window's slide on warp/buster/chip-use, and opening integrated decomposed  *(PARTIAL -- 2026-09-14, decomposition landed 07ad4e3 [notes+comment only, zero pixel effect]: warp 40628/buster 54672/chip-use 275307 )*
 
+**Result.** decomposition landed 07ad4e3 (notes+comment only, zero pixel effect): warp 40628/buster 54672/chip-use 275307 = canon RESULT slide w/o rust counterpart; opening 72499 decomposed; field 158949 stall kept; verifier CONFIRMED warp traces/pins, scope, chip-use lock numbers (honest lock-101 remainder 281885); UNPROVEN per verifier: exact OAM census counts, show-frame region numbers, buster/chip-use traces, BG1 mechanism; HEAD result re-check MATCH; worker muse-spark, verifier GLM
 **Files.** src/results.rs, src/battle.rs (the end-sequence and results hand-off hunks only), tools/harness.py (the integrated rows' notes and descriptor fields)
 
 **Why.** With every BG layer 0 until the ramp (F33b) and inputs/objects running after the countdown (F33d),
