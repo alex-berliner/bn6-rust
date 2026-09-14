@@ -1387,6 +1387,15 @@ ZERO_ENEMY_ORIGIN = 8
 #: offsets -- one BANNER_TO_RESULTS cannot serve both, left untouched for field.
 #: Driver chain (sub_802BD60->sub_802BE36, 16 px/frame) holds: result isolated 0,
 #: warp ramp 1917..11744, field k=24..37 matching content.
+#: T7 (2026-09-14): the hand-written `over` flag is now canon's sequencer
+#: table (src/battle.rs `Sequencer`: 0x08 the fight, 0x0C/0x10 the end counts,
+#: transition edge at dissolve expiry; the real word rides the TRC2 block,
+#: judged in tools/trace.py). Per-state counts/handlers stay the old composite:
+#: factoring the 110 as the table's 94-count + 16-frame setup read +12 on field
+#: integrated (one frame) and was reverted. battle_full sequencer: 0x08 on both
+#: sides to each side's kill+35, then 0x0C on both (8 frames apart in k -- the
+#: known kill-offset of the rust recipe); the custom-screen states (0x20/0x24/
+#: 0x04) and the kill->slide gap (canon +107, ours +132) stay OPEN.
 ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | FLAG_RESOLVE_OVER (bit5)
 
 #: `chip-use` alone: an A press with an empty hand uses nothing, so this

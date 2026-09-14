@@ -1145,15 +1145,66 @@ const GAUGE_PAUSE: u16 = 60; // provenance: peeked -- "about 60 frames of chimes
 // rows' subject offsets at once (F38b: warp needs the slide at battle ~72,
 // buster at ~122, 50 apart under one schedule), so that setup-duration
 // delta stays OPEN with this ticket.
+// T7 (2026-09-14): the hand-written `over` flag below is now the table
+// (Sequencer: 0x08 the fight, 0x0C/0x10 the end counts, transition edge at
+// dissolve expiry) with the same frames and the real word exported to the
+// trace. What the table does NOT do: per-state counts and handlers (the
+// 94-count plus 16-frame setup factored the 110 composite with the same
+// show frame by construction, but regressed field +12 on one frame and was
+// reverted -- see RESULTS_DELAY), the entry timing (teardown/banner stay on
+// the transition update; canon runs them the update after, moving them
+// regressed field +4, measured above), the opening states (0x00/0x04), the
+// 0x14/0x18+ edges, and the driver setup (canon slides at 0x0C+107).
 /// Frames the closing banner runs: canon's 49..106 mask window (up 49,
 /// gone by 108); banner.rs's own SCALE already runs this long.
 const BANNER_FRAMES: u16 = 58; // provenance: peeked -- mask bit 15 set at canon 48..105, banner OBJ 49..107, same captures (F32b)
 const _: () = assert!(BANNER_FRAMES as usize == banner::SCALE.len());
+/// Canon's banner-sequencer states: the low byte of dword_203CA70, which is
+/// what sub_800801C dispatches on (asm00_1.s:10422, table off_8008038).
+/// 0x00/0x04 run the opening banners, 0x08 is the fight itself (sub_80080D2),
+/// 0x0C/0x10 count the end (sub_80081A4 win, sub_800825A lose), 0x14 is
+/// sub_80082DC's message count; 0x18-0x24 are the sibling branch that only
+/// runs where sub_800A152 returns 7.
+const SEQ_08: u32 = 0x08; // provenance: derived -- off_8008038 entry 2 (sub_80080D2, the fight)
+const SEQ_0C: u32 = 0x0C; // provenance: derived -- off_8008038 entry 3 (sub_80081A4, the win count)
+const SEQ_10: u32 = 0x10; // provenance: derived -- off_8008038 entry 4 (sub_800825A, the lose count)
 /// Frames from `over` to the RESULT show: kept at field's landing (show at
 /// battle 110 = BG3 setup at capture 121/122, slide 140..153). A fitted
 /// composite, not canon's count (canon's setup starts at 0x0C+59 and its
 /// first slide lands at +107); the delta is the OPEN setup-duration gap.
+/// T7 tried factoring it as the table's own 94-count plus a 16-frame driver
+/// setup (94+16 = 110, same show frame by construction) and reverted the
+/// factoring on a measured +12 regression (field integrated 158950->158962,
+/// one frame, capture 121's y14-30 band; mechanism untraced, not chased
+/// further within this ticket): the countdown/show below is byte-for-byte
+/// the old sequence, and only the state dispatch above it is the table's.
 const RESULTS_DELAY: u16 = 110; // provenance: fitted -- field's measured show frame, unchanged by this ticket
+/// Canon's banner sequencer as its state table (T7): `state` is dword_203CA70's
+/// low byte (0x08 the fight, 0x0C/0x10 the end counts), dispatched where the
+/// old hand-written `over` flag was read. The per-state counts and handlers
+/// (94-count, handoff, driver setup) stay the old composite (see RESULTS_DELAY):
+/// what the table owns is the state dispatch, the transition edge and the
+/// word the trace exports -- the frames are the old ones by construction.
+struct Sequencer {
+    state: u32,
+}
+impl Sequencer {
+    /// A live fight: canon enters battle reading 0x08 (battle_full's watch:
+    /// 0x1c->0x08 at capture 11).
+    fn battle() -> Self {
+        Self { state: SEQ_08 }
+    }
+    /// The watched word's low half, which is what the TRC2 block exports:
+    /// the state byte (byte 1 reads 0 on both sides).
+    fn word_lo(&self) -> u16 {
+        self.state as u16
+    }
+    /// The 0x08 -> end edge: the transition write itself (sub_80080D2's
+    /// `str r0,[r5]`), which also clears the entry byte.
+    fn transition(&mut self, state: u32) {
+        self.state = state;
+    }
+}
 /// Frames from the first chip window closing to BATTLE START!. Measured on the
 /// real ROM from a save state at a battle's first frame: the window opens at
 /// 165 on its own, is confirmed, closes at 259, and the banner goes up at 289.
@@ -1416,7 +1467,12 @@ pub struct Battle<'a> {
     /// the window-close site below). Until it is set the strip follows the
     /// front of the hand, which is the behaviour every other row measures.
     name_suppressed: bool,
+    /// Frames from `over` to the RESULT show, counting down from RESULTS_DELAY;
+    /// the table owns the state, this owns the composite count (see the const).
     results_delay: u16,
+    /// Canon's banner sequencer as its state table (T7): the 0x08 fight
+    /// state, the 0x0C/0x10 end counts, the handoff. See `Sequencer`.
+    seq: Sequencer,
     /// Frames until the end sequence fires once the fight is decided, counting
     /// down from DISSOLVE_FRAMES; None until the last combatant goes down.
     /// The RESOLVE_OVER stand-in (death before frame 0) starts at Some(0).
@@ -1454,7 +1510,7 @@ const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this project's o
 const TRACE_SNAPSHOT_LEN: usize = 64; // provenance: chosen -- this project's own trace protocol (see trace_snapshot's table)
 /// The state-trace block's version word (T1): bumped when the layout above
 /// changes, so tools/trace.py can refuse a stale ROM's block loudly.
-const TRACE_VERSION: u16 = 2; // provenance: chosen -- this project's own trace protocol version
+const TRACE_VERSION: u16 = 3; // provenance: chosen -- this project's own trace protocol version (v3: offset-42 exports the sequencer word's low half, T7; was the 0..3 banner-phase mapping)
 /// A fixture field left at its default: 0xFFFF means "no seed"
 /// (art_entry), "default" (gauge_tick), "unset" (banner_at,
 /// result_elapsed) throughout this project's fixture contract.
@@ -1617,7 +1673,7 @@ impl<'a> Battle<'a> {
     /// | 32  | u16 E1 timer (0), u16 E1 hp | slot +0x20/+0x24 | as above (timer unsupported, R6) |
     /// | 36  | u16 E2 state\|action, u16 E3 state\|action | 2nd/3rd slots +8 | 0xFFFF sentinels: one-enemy model, never populated |
     /// | 40  | u16 custom gauge | 0x020352a0 (eStruct2035280+0x20) | self.gauge |
-    /// | 42  | u16 banner phase | 0x0203ca70 dword_203CA70 (ewram.s:3040) | 0 none, 1 BATTLE START shown, 2 closing banner up, 3 done (own mapping, INFO-only) |
+    /// | 42  | u16 sequencer low | 0x0203ca70 dword_203CA70 (ewram.s:3040) | low half of the watched word: the state byte (0x08 fight, 0x0C win count, 0x10 lose; byte 1 reads 0 both sides), judged in tools/trace.py (T7) |
     /// | 44  | u16 HUD element mask | 0x020352c0 (eStruct2035280+0x40) | hud_live ? 0x4497 : 0x0084 (peeked canon encodings of the two states, T1) |
     /// | 46  | u16 backdrop GFX entry, u16 GFX timer | 0x020094c0 eGFXAnimStates (ewram.s:596) | backdrop.trace_state() (0s when backdrop: None) |
     /// | 50  | u32 backdrop x_q, u32 backdrop y_q | 0x02009690 eBGScrollCBCounters (ewram.s:619) | as above (canon holds -8f/-4f there) |
@@ -1659,16 +1715,7 @@ impl<'a> Battle<'a> {
         b[36..38].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
         b[38..40].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // trace snapshot layout, see the table above
         b[40..42].copy_from_slice(&self.gauge.to_le_bytes()); // trace snapshot layout, see the table above
-        let banner_phase: u16 = if self.banner.is_some() {
-            2 // closing banner up
-        } else if self.banner_done {
-            3 // done
-        } else if self.opened {
-            1 // BATTLE START! shown
-        } else {
-            0 // none
-        };
-        b[42..44].copy_from_slice(&banner_phase.to_le_bytes()); // trace snapshot layout, see the table above
+        b[42..44].copy_from_slice(&self.seq.word_lo().to_le_bytes()); // trace snapshot layout, see the table above
         let hud_mask: u16 = if self.hud_live { 0x4497 } else { 0x0084 }; // provenance: peeked -- canon's own element mask at 0x020352C0: 0x4497 live battle, 0x0084 past teardown (--watch, F27b/popup note, T1)
         b[44..46].copy_from_slice(&hud_mask.to_le_bytes()); // trace snapshot layout, see the table above
         let (bd_entry, bd_timer, bd_xq, bd_yq) = match &self.backdrop {
@@ -2032,6 +2079,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             name_suppressed: false,
             results_delay,
             dissolve_in: None,
+            seq: Sequencer::battle(),
             shown,
             results_mark,
             buster_arm_in,
@@ -2393,7 +2441,17 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         if let Some(n) = self.dissolve_in.as_mut() {
             *n = n.saturating_sub(1);
         }
-        let over = self.dissolve_in == Some(0);
+        // The 0x08 -> end edge of the banner sequencer (sub_80080D2's
+        // transition write): the fight is decided when the last combatant
+        // goes down and the dissolve runs out -- exactly the old `over`
+        // latch, now as the table's own state. Lose when the navi is already
+        // down, win otherwise (canon reads the outcome the same way through
+        // sub_800A152; the message follows the state).
+        if self.dissolve_in == Some(0) && self.seq.state == SEQ_08 {
+            self.seq
+                .transition(if self.megaman.is_defeated() { SEQ_10 } else { SEQ_0C });
+        }
+        let over = self.seq.state != SEQ_08;
         // The battle HUD's teardown: canon drops elements 0, 1, 4, 10 and 14
         // together on the frame the end sequence starts, one frame before the
         // banner this same `over` arms below (sub_80081A4's
