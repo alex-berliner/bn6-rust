@@ -2,114 +2,136 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>bn — play in the browser</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bn — Mega Man Battle Network 6 rebuilt in Rust</title>
 <style>
-  body { margin: 0; background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
-  header { padding: 10px 16px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
-  header h1 { font-size: 16px; margin: 0; }
-  header a { color: #8cf; }
-  #game { width: 100vw; height: calc(100vh - 44px); }
-  kbd { background: #333; border-radius: 3px; padding: 0 5px; }
+  :root {
+    --ink: #17191d;
+    --dim: #5b6472;
+    --line: #dcdfe5;
+    --paper: #fbfbf9;
+    --accent: #1d4ed8;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1.6rem 1rem calc(3rem + env(safe-area-inset-bottom));
+  }
+  h1 { font-size: 1.4rem; line-height: 1.25; margin: 0 0 0.4rem; letter-spacing: -0.01em; }
+  .lede { margin: 0 0 1.6rem; color: var(--dim); }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { border-top: 1px solid var(--line); }
+  li:last-child { border-bottom: 1px solid var(--line); }
+  li a.entry {
+    display: block;
+    padding: 0.85rem 0.1rem;
+    color: inherit;
+    text-decoration: none;
+  }
+  li a.entry:hover .name, li a.entry:focus-visible .name { color: var(--accent); }
+  .name { font-weight: 650; }
+  .name .ext { font-weight: 400; color: var(--dim); font-size: 0.85em; }
+  .what { display: block; margin-top: 0.15rem; color: var(--dim); }
+  .sub { padding: 0 0.1rem 0.85rem; margin: -0.5rem 0 0; color: var(--dim); font-size: 0.92rem; }
+  .sub a { color: var(--accent); }
+  #build { font-variant-numeric: tabular-nums; }
+  footer { margin-top: 1.8rem; color: var(--dim); font-size: 0.9rem; }
 </style>
 </head>
 <body>
-<p><a href="blog/index.html">Project blog: milestones</a> · <a href="learn.html">How it works, one slide at a time</a></p>
-<header>
-  <h1>bn</h1>
-  <span>d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) · start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open chip window</span>
-  <label>demo <select id="rom"></select></label>
-  <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
-  <span id="build"></span>
-</header>
-<div id="game"></div>
+<main>
+
+<h1>bn — Mega Man Battle Network 6, rebuilt in Rust</h1>
+<p class="lede">A Game Boy Advance ROM that re-creates the game's battle system and is compared
+against the real cartridge frame by frame, pixel for pixel. Everything this project publishes is
+listed below.</p>
+
+<ul>
+  <li><a class="entry" href="play.html">
+    <span class="name">Play it in the browser</span>
+    <span class="what">The current build running in an emulator on this page, with touch controls
+    on a phone and the keyboard on a desktop.</span>
+  </a></li>
+
+  <li><a class="entry" href="learn.html">
+    <span class="name">How it works, one slide at a time</span>
+    <span class="what">A scrolling feed of short slides, one part of the code per slide: what it
+    does, the lines that do it, and plain words for both.</span>
+  </a></li>
+
+  <li><a class="entry" href="blog/index.html">
+    <span class="name">Project blog</span>
+    <span class="what">Longer posts, newest first, on the milestones: what was built, what it
+    broke, and what was learned pulling the original game apart.</span>
+  </a></li>
+
+  <li><a class="entry" href="gifs.html">
+    <span class="name">Before and after gallery</span>
+    <span class="what">Every comparison as an animation: the real game on top and this build
+    below, with the caption for what changed and how far off it was.</span>
+  </a></li>
+
+  <li><a class="entry" href="log.html">
+    <span class="name">Screenshot log</span>
+    <span class="what">A dated record of how the screen has looked along the way, from the first
+    blank field to a full battle.</span>
+  </a></li>
+
+  <li><a class="entry" href="bn6-rust.gba" download>
+    <span class="name">Download the ROM <span class="ext">bn6-rust.gba</span></span>
+    <span class="what">The full build as a .gba file, to run in any emulator or on hardware.</span>
+  </a>
+  <p class="sub">Packed <span id="build">—</span>. Smaller single-purpose demo builds are in
+     <a href="roms/">roms/</a>.</p></li>
+
+  <li><a class="entry" href="https://github.com/alex-berliner/bn6-rust">
+    <span class="name">Source code on GitHub</span>
+    <span class="what">The Rust for the ROM, the tools that pull the art out of the original, and
+    the test that does the pixel comparison.</span>
+  </a></li>
+
+  <li><a class="entry" href="https://github.com/alex-berliner/bn6f/tree/bn-notes">
+    <span class="name">Disassembly notes</span>
+    <span class="what">A fork of the community disassembly of the original game, on the branch
+    bn-notes, where what this project works out about a routine is written down.</span>
+  </a></li>
+</ul>
+
+<footer>Not affiliated with Capcom. The original game's ROM is not distributed here.</footer>
+
+</main>
 <script>
-  // EmulatorJS runs mGBA compiled to WebAssembly; its loader and core come
-  // from its CDN, so a client needs internet for those, while the ROM is
-  // served from here. A cache-busting query keeps a rebuilt ROM fresh.
-  const stamp = Date.now();
-  const params = new URLSearchParams(location.search);
-  let romParam = params.get('rom') || 'bn6-rust.gba';
-  // A demo ROM may be given as ?rom=roms/sword.gba (from the dropdown) or
-  // ?rom=sword.gba (a bare name); demos live under roms/, so resolve a bare
-  // name there. The full game and the canon ROM live at the web root.
-  if (romParam !== 'bn6-rust.gba' && romParam !== 'real-bn6f.gba' && !romParam.includes('/')) {
-    romParam = 'roms/' + romParam;
-  }
-  EJS_player = '#game';
-  EJS_core = 'gba';
-  // The name is used for the emulator's save/state files: a bare name,
-  // no directory, no extension.
-  EJS_gameName = romParam.split('/').pop().replace(/\.gba$/, '');
-  EJS_gameUrl = romParam + '?' + stamp;
-  EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
-  EJS_startOnLoaded = true;
-  EJS_backgroundColor = '#111';
-  EJS_defaultControls = {
-    0: {
-      0: { value: 'x', value2: 'BUTTON_2' },       // B  = buster
-      8: { value: 'z', value2: 'BUTTON_1' },       // A  = chip
-      2: { value: 'shift', value2: 'SELECT' },
-      3: { value: 'enter', value2: 'START' },
-      4: { value: 'up arrow', value2: 'DPAD_UP' },
-      5: { value: 'down arrow', value2: 'DPAD_DOWN' },
-      6: { value: 'left arrow', value2: 'DPAD_LEFT' },
-      7: { value: 'right arrow', value2: 'DPAD_RIGHT' },
-      10: { value: 'a', value2: 'LEFT_TOP_SHOULDER' },
-      11: { value: 's', value2: 'RIGHT_TOP_SHOULDER' },
-    },
-    1: {},
-    2: {},
-    3: {},
-  };
-  // Every ROM's label starts with the moment it was packed
-  // ("2026-09-08 03:14 — <label>"), written by the build script itself
-  // (tools/build_roms.sh for web/roms/manifest.json, tools/web_rom.sh for
-  // web/build.txt) rather than derived from a file's mtime here -- see
-  // AUDIT.md pair 8. A label with no parseable timestamp is left OUT of the
-  // dropdown entirely, because there is no way to tell a fresh build from a
-  // stale one without it.
-  const TS_RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+—\s+(.*)$/;
-  // The demo dropdown: the canon reference first (it is never rebuilt, so it
-  // carries no pack timestamp and sits outside the sort below), then the
-  // full game and every demo ROM from web/roms/manifest.json, newest first.
-  // Picking one reloads with ?rom=... so the emulator restarts on the
-  // selected build.
-  Promise.all([
-    fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : ''),
-    fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []),
-  ]).then(([buildTxt, roms]) => {
-    buildTxt = buildTxt.trim();
-    document.getElementById('build').textContent = buildTxt ? 'build ' + buildTxt : '';
-
-    const sel = document.getElementById('rom');
-    const add = (file, label) => {
-      const o = document.createElement('option');
-      o.value = file;
-      o.textContent = label;
-      if (file === romParam) o.selected = true;
-      sel.appendChild(o);
-    };
-    add('real-bn6f.gba', 'MMBN6F Falzar (canon ROM)');
-
-    const timestamped = [];
-    const game = TS_RE.exec(buildTxt);
-    if (game) timestamped.push({ file: 'bn6-rust.gba', ts: game[1],
-                                  label: game[1] + ' — Full game (Rust port)' });
-    for (const r of roms) {
-      const m = TS_RE.exec(r.label || '');
-      if (m) timestamped.push({ file: r.file, ts: m[1], label: r.label });
+  // The player used to live at this address, so an old link with ?rom=... on
+  // it still means "play this build": send those on to the player page,
+  // query string and all.
+  (function () {
+    if (/(^|[?&])rom=/.test(location.search)) {
+      location.replace('play.html' + location.search + location.hash);
     }
-    timestamped.sort((a, b) => b.ts.localeCompare(a.ts));
-    for (const e of timestamped) add(e.file, e.label);
+  })();
 
-    sel.addEventListener('change', () => {
-      location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);
-    });
-    // Keep the download link in sync with the selection.
-    document.getElementById('dl').href = romParam;
-  }).catch(() => {});
+  // The pack date comes from build.txt, written by the build script when the
+  // ROM is packed (a file's own date would only say when it was copied).
+  // No build.txt (a checkout that has never run the build) simply leaves the
+  // dash in place.
+  fetch('build.txt?' + Date.now())
+    .then(function (r) { return r.ok ? r.text() : ''; })
+    .then(function (t) {
+      t = t.trim();
+      var stamp = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})/.exec(t);
+      if (stamp) { document.getElementById('build').textContent = stamp[1]; }
+    })
+    .catch(function () {});
 </script>
-<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
 </body>
 </html>

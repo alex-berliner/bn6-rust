@@ -14,8 +14,12 @@ against the routine that implements it, with the `file:line` cited in the code.
 
 Everything is published from this repo's `gh-pages` branch by `tools/publish_site.sh`:
 
-- **Play it in the browser:** https://alex-berliner.github.io/bn6-rust/ — the current release ROM in
-  an in-page emulator (EmulatorJS; needs internet for its core), plus the dev build with test aids.
+- **Everything, in one list:** https://alex-berliner.github.io/bn6-rust/ — the site's front page is a
+  directory of the pages below, with a sentence on each.
+- **Play it in the browser:** https://alex-berliner.github.io/bn6-rust/play.html — the current release
+  ROM in an in-page emulator (EmulatorJS; needs internet for its core), plus the dev build with test
+  aids. Mobile-first: emulator and touch controls in one screenful. An old `/?rom=...` link still
+  works, it redirects here.
 - **How it works, one slide at a time:** https://alex-berliner.github.io/bn6-rust/learn.html — a
   scrolling feed of short slides, one system per slide: how the frame loop, the field, the actors,
   the shots, the enemy AI, the sprite player, the custom screen and the HUD actually work, each with

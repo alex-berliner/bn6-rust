@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>bn — play in the browser</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #111; }
+  body { color: #ddd; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+  /* THE EMULATOR IS THE FIRST THING IN THE PAGE AND IT IS EXACTLY ONE
+     SCREENFUL. Nothing above it: the old page put a paragraph and a header
+     first and gave the emulator nearly a full viewport of its own, so the
+     virtual gamepad EmulatorJS hangs at the bottom of its own container
+     ended up below the fold on a phone. Everything else on this page now
+     lives BELOW this box, one scroll away.
+
+     EmulatorJS fits its canvas inside this container at the GBA's 240x160
+     and puts its touch controls in the leftover room, so sizing the
+     container to the viewport is what keeps screen and buttons together.
+     100dvh, not 100vh: on mobile browsers 100vh is the tallest the viewport
+     ever gets, which is taller than what you can see while the address bar
+     is showing. */
+  #game {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    background: #111;
+    overflow: hidden;
+  }
+
+  /* Progressive nudges to EmulatorJS's own layout, by its own class names.
+     If a future build of the CDN renames them these rules simply do not
+     apply and the canvas stays centred in the container -- which still fits
+     entirely on screen, so nothing breaks either way.
+     Portrait: pull the screen to the top so all the room underneath belongs
+     to the buttons. Landscape: pull it to the left so the room is beside it. */
+  @media (orientation: portrait) {
+    #game .ejs_canvas_parent, #game .ejs_game { align-items: flex-start; }
+    #game canvas.ejs_canvas { align-self: flex-start; }
+  }
+  @media (orientation: landscape) {
+    #game .ejs_canvas_parent, #game .ejs_game { justify-content: flex-start; }
+    #game canvas.ejs_canvas { justify-self: start; margin-left: 0; margin-right: auto; }
+  }
+
+  /* A small control that sits over the top-right corner of the emulator.
+     It is the only thing allowed to overlap the screen. */
+  #keystoggle {
+    position: fixed;
+    top: calc(6px + env(safe-area-inset-top));
+    right: calc(6px + env(safe-area-inset-right));
+    z-index: 5;
+    padding: 4px 9px;
+    border: 1px solid #444;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.72);
+    color: #9cf;
+    font: 600 12px/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+  #keys {
+    position: fixed;
+    top: calc(34px + env(safe-area-inset-top));
+    right: calc(6px + env(safe-area-inset-right));
+    left: auto;
+    z-index: 5;
+    max-width: min(22rem, calc(100vw - 12px));
+    padding: 10px 12px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background: rgba(17, 17, 17, 0.94);
+    font-size: 13px;
+  }
+  #keys p { margin: 0 0 6px; }
+  #keys p:last-child { margin-bottom: 0; }
+  kbd {
+    background: #333;
+    border: 1px solid #4a4a4a;
+    border-radius: 3px;
+    padding: 0 5px;
+    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  /* Everything that is not the emulator, below the fold. */
+  #about {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 18px 16px calc(28px + env(safe-area-inset-bottom));
+  }
+  #about h1 { font-size: 17px; margin: 0 0 8px; }
+  #about p { margin: 0 0 10px; }
+  #about a { color: #8cf; }
+  .row { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+  select { font: inherit; background: #1c1c1c; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 2px 4px; }
+  #build { color: #999; }
+</style>
+</head>
+<body>
+
+<div id="game"></div>
+<button id="keystoggle" type="button" aria-expanded="false" aria-controls="keys">keys</button>
+<div id="keys" hidden>
+  <p>On a phone, use the buttons EmulatorJS draws on screen.</p>
+  <p>On a keyboard: d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) ·
+     start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open the chip window.</p>
+</div>
+
+<section id="about">
+  <h1>bn — Mega Man Battle Network 6 rebuilt in Rust</h1>
+  <p>This is a real Game Boy Advance ROM running in an emulator in the page. The emulator
+     (EmulatorJS, mGBA compiled to WebAssembly) is fetched from its own CDN, so this page needs
+     internet for that; the ROM itself is served from here.</p>
+  <div class="row">
+    <label>build <select id="rom"></select></label>
+    <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
+    <span id="build"></span>
+  </div>
+  <p><a href="index.html">← everything else on this site</a></p>
+</section>
+
+<script>
+  // The keys panel: a small toggle rather than a block of text above the
+  // screen, so on a phone the first thing in the page is the game.
+  (function () {
+    var toggle = document.getElementById('keystoggle');
+    var panel = document.getElementById('keys');
+    toggle.addEventListener('click', function () {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    });
+  })();
+</script>
+
+<script>
+  // EmulatorJS runs mGBA compiled to WebAssembly; its loader and core come
+  // from its CDN, so a client needs internet for those, while the ROM is
+  // served from here. A cache-busting query keeps a rebuilt ROM fresh.
+  const stamp = Date.now();
+  const params = new URLSearchParams(location.search);
+  let romParam = params.get('rom') || 'bn6-rust.gba';
+  // A demo ROM may be given as ?rom=roms/sword.gba (from the dropdown) or
+  // ?rom=sword.gba (a bare name); demos live under roms/, so resolve a bare
+  // name there. The full game and the canon ROM live at the web root.
+  if (romParam !== 'bn6-rust.gba' && romParam !== 'real-bn6f.gba' && !romParam.includes('/')) {
+    romParam = 'roms/' + romParam;
+  }
+  EJS_player = '#game';
+  EJS_core = 'gba';
+  // The name is used for the emulator's save/state files: a bare name,
+  // no directory, no extension.
+  EJS_gameName = romParam.split('/').pop().replace(/\.gba$/, '');
+  EJS_gameUrl = romParam + '?' + stamp;
+  EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+  EJS_startOnLoaded = true;
+  EJS_backgroundColor = '#111';
+  EJS_defaultControls = {
+    0: {
+      0: { value: 'x', value2: 'BUTTON_2' },       // B  = buster
+      8: { value: 'z', value2: 'BUTTON_1' },       // A  = chip
+      2: { value: 'shift', value2: 'SELECT' },
+      3: { value: 'enter', value2: 'START' },
+      4: { value: 'up arrow', value2: 'DPAD_UP' },
+      5: { value: 'down arrow', value2: 'DPAD_DOWN' },
+      6: { value: 'left arrow', value2: 'DPAD_LEFT' },
+      7: { value: 'right arrow', value2: 'DPAD_RIGHT' },
+      10: { value: 'a', value2: 'LEFT_TOP_SHOULDER' },
+      11: { value: 's', value2: 'RIGHT_TOP_SHOULDER' },
+    },
+    1: {},
+    2: {},
+    3: {},
+  };
+  // The touch controls are EmulatorJS's own: it draws its virtual gamepad
+  // for the selected core inside the player element on a touch device, which
+  // is why that element is sized to the whole viewport above. No custom
+  // layout is declared here on purpose -- the shipped GBA pad already has
+  // the d-pad, A/B, L/R, start and select in the right places.
+  // Start the button bar at the top of the container so it never lands
+  // under the virtual pad.
+  EJS_alignStartButton = 'top';
+
+  // Every ROM's label starts with the moment it was packed
+  // ("2026-09-08 03:14 — <label>"), written by the build script itself
+  // (tools/build_roms.sh for web/roms/manifest.json, tools/web_rom.sh for
+  // web/build.txt) rather than derived from a file's mtime here -- see
+  // AUDIT.md pair 8. A label with no parseable timestamp is left OUT of the
+  // dropdown entirely, because there is no way to tell a fresh build from a
+  // stale one without it.
+  const TS_RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+—\s+(.*)$/;
+  // The demo dropdown: the canon reference first (it is never rebuilt, so it
+  // carries no pack timestamp and sits outside the sort below), then the
+  // full game and every demo ROM from web/roms/manifest.json, newest first.
+  // Picking one reloads with ?rom=... so the emulator restarts on the
+  // selected build.
+  Promise.all([
+    fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : ''),
+    fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []),
+  ]).then(([buildTxt, roms]) => {
+    buildTxt = buildTxt.trim();
+    document.getElementById('build').textContent = buildTxt ? 'build ' + buildTxt : '';
+
+    const sel = document.getElementById('rom');
+    const add = (file, label) => {
+      const o = document.createElement('option');
+      o.value = file;
+      o.textContent = label;
+      if (file === romParam) o.selected = true;
+      sel.appendChild(o);
+    };
+    add('real-bn6f.gba', 'MMBN6F Falzar (canon ROM)');
+
+    const timestamped = [];
+    const game = TS_RE.exec(buildTxt);
+    if (game) timestamped.push({ file: 'bn6-rust.gba', ts: game[1],
+                                  label: game[1] + ' — Full game (Rust port)' });
+    for (const r of roms) {
+      const m = TS_RE.exec(r.label || '');
+      if (m) timestamped.push({ file: r.file, ts: m[1], label: r.label });
+    }
+    timestamped.sort((a, b) => b.ts.localeCompare(a.ts));
+    for (const e of timestamped) add(e.file, e.label);
+
+    sel.addEventListener('change', () => {
+      location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);
+    });
+    // Keep the download link in sync with the selection.
+    document.getElementById('dl').href = romParam;
+  }).catch(() => {});
+</script>
+<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
