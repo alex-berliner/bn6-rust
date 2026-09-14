@@ -1404,6 +1404,15 @@ ZERO_ENEMY_ORIGIN = 8
 #: sides to each side's kill+35, then 0x0C on both (8 frames apart in k -- the
 #: known kill-offset of the rust recipe); the custom-screen states (0x20/0x24/
 #: 0x04) and the kill->slide gap (canon +107, ours +132) stay OPEN.
+#: T7e (2026-09-14): the two T7c citations in src/battle.rs are corrected
+#: (asm00_1.s:10527-10537 -> :10609-10611, the sub_80080D2 `str r0,[r5]` that
+#: writes 0x20 after PauseBattle; :10841 -> :10958 in sub_800840C + :11022 in
+#: sub_8008492, the sub_801483C call sites, not sub_800834A's jump table).
+#: battle_full sequencer remains 173/540: 165 frames k=31..195 (window setup --
+#: the fixture never opens the window), 8 frames k=297..304 (auto-fire kill 8
+#: aligned frames early). warp/buster/chip-use/opening byte-identical to the
+#: T7c battery; field's allowed row 158979 unchanged; cursor 10/9/170/186276
+#: (T7c left it at 3/2/170/186277 -- the binary moved the tear, not chased).
 ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | FLAG_RESOLVE_OVER (bit5)
 
 #: `chip-use` alone: an A press with an empty hand uses nothing, so this
