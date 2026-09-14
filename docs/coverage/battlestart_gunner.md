@@ -1,4 +1,4 @@
-# Scenario `battlestart_gunner` (T9c) -- measured, NO harness row
+# Scenario `battlestart_gunner` (T9c, corrected by T9d) -- measured, NO harness row
 
 The canon recipe exists (`tools/states.py` `battlestart_gunner`, T9b's
 frame-60 iCurrFrame lever) and the fixture can field its enemies
@@ -50,8 +50,7 @@ button presses. T9d replaced it with watch-write measurements (logs in
    T9's ticket wrongly called "working") and on `battlestart_gunner`
    (record 6) logs ZERO hits in 200 frames -- not even state 0's own
    setup stores. The two scenarios are indistinguishable at the
-   sequencer; the roll outcome is not the difference. (`docs/trace/t9d/
-battlestart_watchwrite.log` vs `battlestart_gunner_watchwrite.log`: both
+   sequencer; the roll outcome is not the difference. (`docs/trace/t9d/battlestart_watchwrite.log` vs `battlestart_gunner_watchwrite.log`: both
    only show the frozen custom-gauge writes at `0x020352A2` = 0x20,
    `0x0801BE7E` frame 0 and `0x0801DF8E` frame 69.) The only route in the
    repo where the sequencer moves is the hand-played PAUSED root
@@ -61,7 +60,7 @@ battlestart_watchwrite.log` vs `battlestart_gunner_watchwrite.log`: both
 2. **The chain, measured top-down.** The banner task `sub_800801C`
    (`asm/asm00_1.s:10422`, dispatch table `off_8008038` indexed by the
    byte `dword_203CA70` holds) is only ever called from `sub_800938A`
-   (`asm/asm00_1.s:13135`), the `oBattleState.Index_01 = 0x0C` handler of
+   (`asm/asm00_1.s:13126`, call at `13135`), the `oBattleState.Index_01 = 0x0C` handler of
    the battle-FSM dispatcher `sub_8009158` (`asm/asm00_1.s:12760`, table
    `off_80091BC` entry `0x0C` at `asm00_1.s:12818`). `eBattleState` is at
    `0x02034880` (`ewram.s:2572`), so `Index_01` is byte `0x02034881`.
@@ -73,9 +72,9 @@ battlestart_watchwrite.log` vs `battlestart_gunner_watchwrite.log`: both
    0x08** (the earlier "the state-0 handler polls every frame" claim was
    wrong; the handler never runs at all).
 3. **The branch that never falls through.** State 0x08's handler
-   `sub_8009338` (`asm/asm00_1.s:13047`) gates on
+   `sub_8009338` (`asm/asm00_1.s:13054`) gates on
    `bl sub_8026A28; cmp r0,#0; beq locret_8009388`
-   (`asm/asm00_1.s:13056-13058`). That `beq` is taken every frame, so
+   (`asm/asm00_1.s:13065-13067`). That `beq` is taken every frame, so
    `Index_01` never reaches `0x0C` and `sub_800801C` never dispatches.
 4. **Why the gate never opens.** `sub_8026A28` (`asm/asm03_0.s:761`)
    dispatches on `eS20364C0`'s top FSM byte `JumpOffset00`
