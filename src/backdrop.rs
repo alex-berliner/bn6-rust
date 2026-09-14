@@ -235,6 +235,15 @@ impl Backdrop {
         self.y_q = y_q;
     }
 
+    /// The state-trace export (T1): the backdrop's GFX-anim position and
+    /// scroll phase in one call -- `entry`/`timer` mirror canon's
+    /// eGFXAnimStates[0] CommandPos/Timer walk (see the row-note on
+    /// F26b's seeds), `x_q`/`y_q` the quarter-pixel scroll phase canon's
+    /// eBGScrollCBCounters hold as -8f/-4f (same note). Read-only.
+    pub fn trace_state(&self) -> (u16, u16, u32, u32) {
+        (self.entry as u16, self.timer, self.x_q, self.y_q)
+    }
+
     /// Draw the step the clocks are already on. It deliberately does NOT set
     /// the timer: `new` establishes it and `seed` may have overridden it, and
     /// an earlier version of this wrote it here and silently discarded every
