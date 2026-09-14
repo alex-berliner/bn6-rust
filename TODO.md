@@ -142,8 +142,9 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
-### T4. Port the animation bytecode player, steps 1 and 2 of the plan  *(OPEN -- 2026-09-14)*
+### T4. Port the animation bytecode player, steps 1 and 2 of the plan  *(PARTIAL -- 2026-09-14, anim steps 1-2 landed 6985d56: bind+tick ported [verifier CONFIRMED all])*
 
+**Result.** anim steps 1-2 landed 6985d56: bind+tick ported (verifier CONFIRMED all); main moved during run (human T1b landing bd45d2a): cursor base 3->44, result 58457->0 via layout shift; post-merge cursor 44->23 (port helps, single-frame tear class, frame unverified), result stays 0; T4b (steps 3-4) remains; worker muse-spark, verifier GLM
 **Files.** src/spr.rs (the player), src/anim.rs (new, if the port wants its own module), tools/trace.py (a field or two if the trace needs the player's state), tools/harness.py (row notes only), docs/coverage/plan-interpreters.md (progress notes)
 
 **Why.** docs/coverage/plan-interpreters.md section 1 is the plan: the real game's sprite animations are a
