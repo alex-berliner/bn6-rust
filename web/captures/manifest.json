@@ -1,5 +1,11 @@
 [
   {
+    "file": "captures/windowclose-f29-progress.gif",
+    "name": "windowclose-f29-progress",
+    "label": "The chip window closing across F29. Decomposed by layer, the field behind the window was a 15-pixel camera pan: canon moves the camera from inside the window's own slide routine, one and a half pixels on each of the ten slide calls, rounding down; ours waited until the window was gone and then panned with the opposite rounding, ten frames late. Driving the pan from the slide calls with canon's arithmetic took the field layer to 0 on all 40 frames, and moving MegaMan to the panel canon's battle object actually holds took the sprite layer down too: 648948 to 407778. What remains is the backdrop's scroll phase, which this fixture never seeded, and the Mettaur's attack phase.\n\nwindowclose (isolated), before and after: canon on top; ours at ea8ab81 (648948 px over 40 frames, canon 81+k, rust offset 253); ours at f620086 (407778 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-13"
+  },
+  {
     "file": "captures/mettaur-f25d-progress.gif",
     "name": "mettaur-f25d-progress",
     "label": "The Mettaur row reaching zero across F25d. The last 4265 pixels sat on eight frames only, exactly the frames on which a shockwave segment changed its animation frame or vanished, one frame later on our side than canon's. Tiles and palette were byte-identical; the segment a hop spawns was created with its sprite marked fresh and skipped its first update, while canon's object dispatcher loads a sprite and updates it on the same frame. One statement after the spawn fixed it: the row reads 0 on all 70 frames and every state field of the oracle matches.\n\nmettaur (isolated), before and after: canon on top; ours at 7cb7e5f (4265 px over 70 frames, canon 140+k, rust offset 203); ours at 2a482d0 (0 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",

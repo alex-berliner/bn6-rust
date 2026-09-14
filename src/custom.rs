@@ -1082,6 +1082,23 @@ impl Custom<'_> {
     /// Advance a frame. Returns true once the window has slid back out.
     /// `bg` is the SAME shared `RegularBackground` `open()` was given
     /// (`Battle::hud_bg`) -- AUDIT wave 3d "bg3-merge".
+    /// True on exactly the frames whose [`Custom::update`] will run a
+    /// slide-OUT step -- the ten calls canon makes from `sub_8026BF4`
+    /// (reference/bn6f/asm/asm03_0.s:1037) while its slide counter climbs
+    /// 0xc..0x78.
+    ///
+    /// Canon pans the battle camera back up FROM INSIDE that routine: every
+    /// slide-out call adds `dword_8026CC8` = 0x18000 to the camera's y at
+    /// Camera+0x34 (asm03_0.s:1099-1104), and the slide-IN routine subtracts
+    /// the same value on each of its own calls (asm03_0.s:964-969). 0x18000
+    /// is 1.5 px in the camera's 16.16 fixed point, so ten calls are the
+    /// 15-px pan -- and it runs WITH the window, not after it. Callers that
+    /// drive the field's scroll need to know the slide is running before
+    /// [`Custom::update`] consumes the frame, which is what this answers.
+    pub fn is_closing(&self) -> bool {
+        matches!(self.phase, Phase::Closing { x } if x < SLIDE_FROM)
+    }
+
     pub fn update(&mut self, bg: &mut RegularBackground, input: &ButtonController, gfx: &Graphics) -> bool {
         // Last frame's card palettes, now that its tiles have landed.
         for (bank, palette) in self.pending_palettes.drain(..) {

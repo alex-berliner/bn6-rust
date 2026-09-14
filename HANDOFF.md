@@ -49,6 +49,13 @@ vs after -- a merge that changed nothing is not parity).
   digest and PROPOSES reshapes of roles, loop, AGENTS.md and tools into docs/audits/ with a
   docs/config-log.md changelog, one structural change per cycle, never touching the invariants
   (canon never changes, verify_rows always, no fitted constants, the spend floor).
+- **In flight at the Claude-quota cutoff (2026-09-13 ~21:00):** Claude agents were working branches
+  wt/f26b-backdrop-phase (cursor/windowclose backdrop seed), wt/f28b-hudmatch (tiles/gauge integrated,
+  popup), wt/f33-hud-elements (integrated HUD), wt/f34-result-layers (result), wt/f31b-buster-recut
+  (buster row re-cut). If a branch exists and is not on main, it was not landed: read its last commit
+  message for the rows and numbers it claims, run `python3 tools/verify_rows.py <branch> <rows> --expect
+  ROW=T/W/F/-` and land with `bash tools/land.sh <branch> <rows> "<msg>" --expect ...`; then stamp the
+  ticket with tools/ticket_result.py. Follow-ups go to pi's queue as OPEN tickets, not to Claude.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user keeps $5 in the account; runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.
