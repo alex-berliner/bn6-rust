@@ -29,6 +29,7 @@ use crate::deck::{Deck, Rng, FOLDER_SIZE};
 use crate::field::{self, Field, Panels};
 use crate::hud::{Counter, Hud};
 use crate::results::{self, Results};
+use crate::script;
 use crate::shot::Shot;
 use crate::{
     BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
@@ -1227,6 +1228,11 @@ pub struct Battle<'a> {
     /// Whether the fight's closing banner has been asked for, so it is asked
     /// for once.
     banner_done: bool,
+    /// T8 (docs/coverage/plan-interpreters.md §3): both script interpreters --
+    /// the map VM and the chatbox text VM -- with the state each walks from.
+    /// Nothing in this build installs a script, so both stop at canon's own
+    /// "nothing installed" gates and never fetch; see the hook in `update`.
+    scripts: script::Scripts<'a>,
     /// Whether BATTLE START! has been put up, likewise once.
     opened: bool,
     /// Whether the FIRST chip window has closed yet, in every build.
@@ -1945,6 +1951,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             hud,
             custom_assets,
             custom: None,
+            scripts: script::Scripts::new(),
             chips,
             deck,
             hand,
@@ -2164,6 +2171,16 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // point in the sequence the real ROM would have reached by the time
         // its own equivalent runs.
         self.primary_rng.next();
+        // T8 (docs/coverage/plan-interpreters.md §3): canon reaches the two
+        // script VMs once per frame before the battle object walk --
+        // `RunContinuousMapScript` from the map main loop
+        // (reference/bn6f/asm/asm03_1_0.s:1920) and the chatbox text interpreter
+        // from its own update (reference/bn6f/asm/chatbox.s:331). Both live in
+        // script.rs now; this fixture ROM has no map section and no harness row
+        // raises a chatbox, so `eMapScriptState.ContinuousMapScriptPtr` is 0 and
+        // `oChatbox_Visible` is 0 and neither loop reads a byte -- which is why
+        // the full harness table is the regression test for this hook.
+        self.scripts.step_frame(input);
         if self.buster_arm_in > 0 {
             self.buster_arm_in -= 1;
             if self.buster_arm_in == 0 {

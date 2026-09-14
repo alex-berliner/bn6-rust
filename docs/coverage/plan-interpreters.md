@@ -467,6 +467,90 @@ Coverage: step body executed in `battle_full` (anchor `off_803FEB0`,
   queue (`battle_full.md:1171+`: `npc_dispatch_809E570`,
   `checkOWObjectInteractionAreasOverlap_8003894`, …).
 
+### 3.5 Port log (T8, §3 steps 1–3 landed: both tables, the loops, named traps)
+
+Landed: `src/script.rs` (both dispatch tables slot for slot, both fetch loops,
+the implemented handlers, `Trap` for the rest) and the one-frame hook in
+`Battle::update` (src/battle.rs:2183, right after the primary-RNG tick) where
+canon reaches `RunContinuousMapScript` from the map main loop
+(`asm03_1_0.s:1920`) and the chatbox interpreter from its own update
+(`chatbox.s:331`). `mod script;` in src/main.rs.
+
+The tables, as disassembled:
+
+- `MapScriptCommandJumptable` (`map_script_cutscene.s:3-74`) is **71** words, so
+  `MAP_SCRIPT_JUMPTABLE` has 71 variants; the dispatcher's own bound is
+  `mov r4, #70` (:1371), which makes slot 0x46 `MapScriptCmd_start_on_next_frame`
+  unreachable and `MapCmd::at` returns `None` for opcode ≥ 0x46, as canon's
+  `bne` does.
+- `TextScriptBytecodeJumptable` (`chatbox.s:2392-2420`) is 27 words indexed
+  `byte - 0xE5` (`TS_COMMANDS_START`, `text_script.inc:12`), tested in the loop
+  at `chatbox.s:391`.
+
+Implemented (map): `end`, `jump`, `jump_if_progress_in_range`,
+`jump_if_flag_set`/`_clear`, `jump_if_flag_range_set`/`_clear`,
+`jump_if_mem_equals` (all three widths), `jump_if_battle_result_equals`/`_not_equal`,
+`set`/`clear_event_flag`, the two range writers, the two list writers,
+`run_or_end_secondary_continuous_map_script`; `call_native_function` traps as
+`Trap::NativeFunction` with the script's own function address. Implemented
+(text): the one-byte and 0xE4 two-byte character paths behind the
+`CharInPrint`/`TextScriptPrintSpeed` countdown, `ts_nop`, `ts_end` (both arms),
+`ts_key_wait`, `ts_newline`, `ts_textspeed`, `ts_jump` arms 1 and 2. Everything
+else is `Trap::Unimplemented` naming canon's symbol; slots 0x37/0x3f are
+`Trap::NullTableEntry`, since canon's table itself is NULL there.
+
+Operand geometry came from the handlers' own cursor arithmetic, not from guesses:
+opcode 0x02 advances 7 when not taken (:122), 0x03/0x05 and 0x04/0x06 advance 8
+(:155, :217), 0x07 advances 11/12/14 by sub-command (:298-311), 0x0a/0x0b
+advance 6 (:4209), the flag writers 4 (:897), the list writers 5 (:990), and
+0x25 advances 9 (:1030).
+
+Live-pointer evidence for what `battle_full` walks (the §3.4 probe): under
+`--loadstate overworld_net.state`, `eMapScriptState` (0x02011E60) holds
+`OnInitMapScriptPtr` = 0x08071f18 and `ContinuousMapScriptPtr` = 0x08072221, and
+the continuous pointer **does not move across the 60 watched frames** — the loop
+keeps the cursor in `r7` and never stores it back (:1365-1385), so every frame
+re-enters at the stored pointer. `MAP_SCRIPT_WALK_UP` is those 42 bytes, dumped
+from 0x08072218; decoded with the sizes above it is `ms_jump_if_progress_in_range`
+gates, then `ms_jump`, more gates, and the first non-gate opcode is
+`ms_start_cutscene` (0x26) — trapped here by name — whose stream jumps to
+0x08072373, outside the dumped window. So §3.3's ordering (jump-if family first)
+is confirmed against the only stream this scenario walks.
+
+Measurements (`tools/harness.py --ui isolated`, whole table;
+`tools/trace.py record rust battle_full` + `diff … --align row:battle_full`):
+
+- Baseline table: every row `PASS total 0` except
+  `cursor isolated FAILED total 44 worst 43 frames 170`.
+- After: **not identical.** `cursor … total 7 worst 6 frames 170` — that row
+  improved by 37 of its 44, and no other row moved at all (all still
+  `PASS total 0`, `frames` and the `negative: not blind` totals unchanged).
+  The audit line also moved as expected for newly tagged constants:
+  `derived 373 → 414`, `peeked 142 → 145`, `fitted constants: 19` unchanged.
+- Cause of the `cursor` movement, measured rather than assumed: with the
+  interpreters present but the per-frame call disabled at compile time
+  (`if false { self.scripts.step_frame(input) }`, tree otherwise identical),
+  that row reads `total 6`. So the VMs fetching nothing is not what moved it —
+  adding ~1.5 KB of code and a 0x250-byte `ChatboxState` to `Battle` moved it,
+  i.e. this row is sensitive to binary layout/allocation order, as AUDIT pair 1
+  and the `bg3-merge` note at src/battle.rs:1306 already say it can be. The
+  6-vs-7 difference is the same sensitivity at 1-pixel resolution. Flagged
+  rather than chased: the ticket's own claim was pixel-neutrality, and this is
+  the one row that has never been stable enough to show it.
+- Trace first divergence **unchanged**: `enemy_state_action at k=0 (canon frame
+  11) canon=(4, 10) rust=(4, 0)`, with the same per-field verdicts on all 540
+  compared frames (101/86/302/409/10-frame divergences on
+  `mm_state_action`/`mm_anim`/`mm_timer`/`enemy_anim`/`rng_cadence`).
+
+Verification gap that stands: no harness row starts either VM, so nothing here
+is confirmed by a row's pixels — only by §3.5's disassembly citations and the
+pointer watch. The first row that can confirm the map VM is the overworld
+walk-up (§3.4), still blocked on the uncovered-set queue; the first that can
+confirm the text VM is any row that shows a chatbox (chip description window),
+which needs `ts_msgbox`/`ts_print`/`ts_mugshot` ported from `chatbox.s:2598`,
+`:4847`, `:4495` and a `DrawTarget` wired to the box's tile buffer
+(`sub_3006F8C`, `chatbox.s:443`).
+
 ---
 
 ## Appendix: verifier cross-check list

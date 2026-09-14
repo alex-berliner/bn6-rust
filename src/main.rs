@@ -22,6 +22,7 @@ mod hud;
 mod hudtiles;
 mod objects;
 mod results;
+mod script;
 mod shot;
 mod spr;
 
