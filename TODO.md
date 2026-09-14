@@ -235,6 +235,29 @@ RAM at canon_ref says (peeked provenance).
 **Acceptance.** a per-object table for both rows; cursor and windowclose as low as the fixes take them,
 each fix measured alone; window, card, wave, opening, chip-cannon, mettaur, popup, result 0; nothing worse.
 
+### F37b. `cursor` and `windowclose` to 0: the camera pan while the chip window is open, the Mettaur's held pose, the hand icon and bracket  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs (the camera pan / custom-screen state hunks only), src/fixture.rs (peeked enemy-state fields), tools/harness.py (CUSTMATCH_ROW / CURSOR_ROW / WINDOWCLOSE_ROW descriptor fields and the two rows' notes)
+
+**Why.** F37's per-object tables (landed as notes, 1bee9d8): cursor 154361/909/170 is (a) the field and
+its objects sitting 15 px higher on canon while the chip window is open -- the same camera pan F29 ported
+for the close (sub_8026BF4 adds 0x18000 = 1.5 px to Camera+0x34 on each of the ten slide-out calls,
+asm03_0.s:1099-1104; the slide-in subtracts it, :964-969), so a row that starts with the window open must
+start with the camera at the panned position -- and (b) the Mettaur's pose: canon holds CurState/CurAction
+4/11 (its attack pose, frozen under the custom-screen pause) where ours idles at 4/8; windowclose
+27819/1938/40 is the hand icon (256 px/frame), the same held pose (205 px/frame from k=10) and the k=0
+bracket (104). F37 found no fix inside ai.rs/hud.rs/emotion.rs (the freeze is a no-op there, no pan path),
+so this is the battle.rs + fixture.rs follow-up it asked for.
+**Do.** (1) The pan: make the camera's position follow the window's state on open as it does on close
+(the slide-in routine's per-call subtract, cited), and check a row that opens the window (window, card,
+cursor from CHIPSELECT) sits 15 px up on both sides on every open frame, measured per layer. (2) The
+pose: seed the enemy's CurState/CurAction/animation frame from canon's RAM at the row's canon_ref through
+the descriptor (peeked, F28b's pattern for MegaMan), applied at battle init, so the frozen Mettaur holds
+the same pose; measure its box alone. (3) The hand icon and the k=0 bracket on windowclose against canon's
+HUD element mask on that capture (F27b/F33's dispatcher tables). Each change measured alone.
+**Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
+window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
+
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 
 **Result.** battle.rs naming: 110 bare lines/38 values->0/0 (~60 consts); release .text md5-identical, .gba same size 553172B cmp-l 29 rodata panic-tables only; full table all 60 rows ran non-blind + rollup PASS (3x2600f); buster 3172 pre-existing; landed 67f2a7d; ticket OPEN for actor.rs; worker muse-spark 92 turns $0.052, no verifier
