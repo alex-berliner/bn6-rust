@@ -47,6 +47,8 @@
     padding: 1.1rem 1rem calc(2.4rem + env(safe-area-inset-bottom));
   }
   .slide + .slide { border-top: 1px solid var(--line); }
+  /* No picture: nothing flexes, so centre the words rather than leave a hole. */
+  .slide.nopic { justify-content: center; gap: 0.85rem; }
 
   h2 {
     margin: 0;
@@ -179,7 +181,7 @@
   // textContent, so a snippet's < and & need no escaping in that file.
   slides.forEach(function (s, i) {
     var sec = document.createElement('section');
-    sec.className = 'slide';
+    sec.className = s.image ? 'slide' : 'slide nopic';
     sec.id = 'slide-' + (i + 1);
 
     var h = document.createElement('h2');
