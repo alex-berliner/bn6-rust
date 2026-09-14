@@ -1689,10 +1689,49 @@ PORTED_CHECKS: List[Check] = [
         # box to the early dissolve (6081 px, worst k=0, flat 694 HUD-only
         # from k=10). banner_zero=False stands: the popup glyph tiles live at
         # 0x06016E00 (BANNER_TILES) -- zeroing it kills the subject (measured
-        # +29888 center-band). Residual is the canon-only OBJ HUD HP bar
-        # (x2-45 y18-33, 55520 px, static all 80) -- rust BLANK_HUD blanks it,
-        # canon draws it; not a BANNER_TILES/ENEMY_TILES resident (zeroing
-        # those grows or keeps the diff) -- belongs to F20's OBJ-HUD work.
+        # +29888 center-band).
+        # TODO F27 (2026-09-13): the residual 55520 (x2-45 y18-33, flat 694 px
+        # on every one of the 80 frames) is NOT an "OBJ HUD HP bar" and is NOT
+        # content we lack -- it is the EMOTION WINDOW, the navi's face at the
+        # top left, which src/emotion.rs already draws pixel-exactly and which
+        # this row gates off. The earlier note here ("rust BLANK_HUD blanks
+        # it") is REFUTED: FLAG_BLANK_HUD only drops hud_tiles/hud_bg; the
+        # emotion window is dropped by src/battle.rs's `fighting` gate, and
+        # this row's fixture has enemies=0.
+        # Identified by OAM, per frame (--watch 0x7000000:0x400 over the whole
+        # canon capture): two objects present on all 125 frames, only the slot
+        # moving (2/3 -> 0/1 at f12 -> 8/9 at f61 -> 0/1 at f119) -- (0,18)
+        # 32x16 tile 0x3b4 and (32,18) 16x16 tile 0x3bc, OBJ palette 12,
+        # priority 2. Exactly what canon's draw routine hardcodes: sub_801CDEC
+        # (asm00_2.s:27554-27583) passes 0x80004012/0xCBB4 and
+        # 0x40200012/0xCBBC (y=18 x=0 32x16 and y=18 x=32 16x16, tiles
+        # 0x3b4/0x3bc, pal 12, prio 2). Its art is the first entry of the
+        # per-emotion bank off_801CD08 (asm00_2.s:27488 -> dword_872D814,
+        # data/dat38_86.s:26158) + dword_872D914 (:26173), uploaded to
+        # 0x06017680 (dword_801CD68, asm00_2.s:27514) by sub_801CB38
+        # (asm00_2.s:27240) -- the same bytes assets/emotion.bin already
+        # carries (tools/emotion_export.py).
+        # Canon's gate is the battle-HUD element enable mask dword_20352C0
+        # (eStruct2035280+0x40), dispatched every frame by sub_801BEE0
+        # (asm00_2.s:25540-25563); element 14 is the emotion window (updater
+        # sub_801CADC at asm00_2.s:25577, draw sub_801CDEC at
+        # asm00_2.s:25627), so its bit is 1<<14 = 0x4000 -- the literal
+        # sub_802A0F8 passes to hide it (asm03_0.s:8317-8333). MEASURED
+        # (--watch 0x20352C0:4): 0x4497, bit14=1, on all 125 frames of THIS
+        # row's canon capture; 0x8084, bit14=0, on all 47 frames of the
+        # `cannon`/43-chip route (afterdissolve_0x0c, a battle already in its
+        # RESULT countdown, whose HUD is torn down). So canon draws it here
+        # and genuinely does not draw it there.
+        # A throwaway `fighting = true` in src/battle.rs measured both halves:
+        # popup 60614 -> 5094 with this box 0 on all 80 frames (our tiles,
+        # palette, position and priority are byte-identical to canon's), and
+        # cannon 0 -> 27760 (694 x 40). The gate therefore has to come from
+        # the row, not be deleted. NOT FIXED HERE -- src/battle.rs and
+        # src/fixture.rs belong to other tickets; the proposal is a fixture
+        # flag carrying canon's own mask bit 14, peeked per row, OR-ed into
+        # that gate: this row sets it, every chip row leaves it 0 and is
+        # unchanged. The remaining 5094 (x149-196 y81-126) is the enemy's
+        # dissolve, F28's Mettaur phase.
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
