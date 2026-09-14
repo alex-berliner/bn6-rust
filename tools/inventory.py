@@ -29,8 +29,29 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REF = os.path.join(REPO, "reference", "bn6f")
+# reference/bn6f is a gitlink (mode 160000): in a fresh worktree it is an
+# EMPTY directory. Resolve the disassembly root explicitly -- BN6F_REF env
+# var, else the repo path -- and fail with instructions instead of a
+# FileNotFoundError deep in a parse. The tool never creates the symlink and
+# never touches reference/.
+REF = os.environ.get("BN6F_REF") or os.path.join(REPO, "reference", "bn6f")
 INV = os.path.join(REPO, "docs", "inventory")
+
+
+def ensure_ref():
+    probe = os.path.join(REF, "constants", "constants.inc")
+    if not os.path.exists(probe):
+        sys.exit(
+            f"bn6f disassembly not found at {REF}\n"
+            "  reference/bn6f is a gitlink and is EMPTY in a fresh worktree.\n"
+            "  Either symlink it from a checkout that has it, e.g.\n"
+            f"    ln -s /home/box/Code/bn/reference/bn6f {os.path.join(REPO, 'reference', 'bn6f')}\n"
+            "  or point BN6F_REF at the disassembly root:\n"
+            "    BN6F_REF=/home/box/Code/bn/reference/bn6f python3 tools/inventory.py")
+
+
+# fail before the module-level enum/table parsing below touches the fs
+ensure_ref()
 
 # canon: data labels use two colons, code/local labels one
 LABEL_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):{1,2}\s*(?://.*)?$")
@@ -245,12 +266,16 @@ def parse_program_advances():
             continue
         tline = s + 1
         nptr = 0
+        words_seen = 0
+        terminator = None
         for i in range(s + 1, e):
             m = WORD_RE.match(strip_comment(lines[i]))
             if not m:
                 continue
             tok = m.group(1).strip()
+            words_seen += 1
             if tok in ("0xFF", "0x0", "NULL"):
+                terminator = f".word {tok} ({PA_FILE}:{i + 1})"
                 break
             rec_label = tok
             rec = region_bytes(PA_FILE, rec_label)
@@ -281,7 +306,9 @@ def parse_program_advances():
                 "status": "unrecorded",
             })
             nptr += 1
-        table["count"] = nptr
+        table["pointer_words"] = words_seen
+        table["records"] = nptr
+        table["terminator"] = terminator
     return rows
 
 
@@ -542,6 +569,8 @@ def parse_formations():
             "enemy_ids": [f"{q[2]:02x}" for q in entries],
             "cite": f"data/BattleSettings.s:{ln}",
             "status": "unrecorded",
+            # audit note: 4-byte entries, 0xF0-terminated (see the section
+            # note emitted by regenerate_scope)
         })
     return lists, form_rows
 
@@ -578,6 +607,9 @@ def parse_backdrops(formation_lists):
     rows = [{
         "background_byte": f"0x{v:02x}",
         "records_using_it": c,
+        # 0xff is the UNSET sentinel on the majority of records, not a
+        # backdrop id (see the section note emitted by regenerate_scope)
+        "role": "unset-sentinel" if v == 0xFF else "set-value",
         "cite": "data/BattleSettings.s (BattleSettings.Background, +0x4)",
         "status": "unrecorded",
     } for v, c in sorted(values.items())]
@@ -647,7 +679,47 @@ def status_summary(rows):
     return ver, total
 
 
-def regenerate_scope(sections):
+# audit/caveat notes emitted into the generated section text (not source
+# comments) so a reader of docs/SCOPE.md alone sees them
+SECTION_NOTES = {
+    "program advances (M4)":
+        lambda pa_meta: (
+            f"Pointer-word audit: the two tables hold {pa_meta['pointer_words']}"
+            f" .word entries = {pa_meta['records']} recipe records + "
+            + ("terminator " + "; ".join(pa_meta['terminators'])
+               if pa_meta['terminators']
+               else "no terminator (the second list runs into the next label)")
+            + ", so the denominator 63 counts records, not pointer words."),
+    "viruses (M5)":
+        lambda meta: (
+            "elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH"
+            " nibble is the ELEMENT and the HP is the low 12 bits (the"
+            " disassembly's own `.hword 0xXYYY` comment, asm/asm00_2.s:683),"
+            " and offset 0 is the FIRST ROW of a row-per-level struct --"
+            " Mettaur's rows read 0x0028/0x0050/0x0078/0x00A0. Never read"
+            " 0x003C as 'the Gunner's HP constant': it is element 0, hp 60,"
+            " row 0 of Gunner's rows."),
+    "formations (M8)":
+        lambda meta: (
+            "Audit note (provisional, this tool's own arithmetic, not"
+            " independently divided out): record count = number of .word"
+            " pointers before the terminator per list, assuming the 0x10-byte"
+            " record stride of include/rom_structs/BattleSettings.inc (Size"
+            " 0x10, getBattleSettingsFromList0 x0x10 indexing); check by"
+            " stride x count vs each list's byte span. Formation arrays: 4-byte"
+            " entries up to the 0xF0 stop consumed by"
+            " SpawnBattleObjectUsingBattleEntityConfig_8007368."),
+    "backdrops (M8)":
+        lambda meta: (
+            "Sentinel note: Background 0xff on 268 of 461 records is counted as"
+            " an UNSET sentinel, not backdrop id 255. What this section counts"
+            " after excluding 0xff: 2 set values (0x07 on 192 records, 0x08 on"
+            " 1 record); the distinct-value denominator 3 includes the"
+            " sentinel row so the sentinel itself stays auditable."),
+}
+
+
+def regenerate_scope(sections, pa_meta=None):
     scope_path = os.path.join(REPO, "docs", "SCOPE.md")
     with open(scope_path) as f:
         old = f.read()
@@ -676,7 +748,12 @@ def regenerate_scope(sections):
             continue
         out.append(f"### {name} ({state})")
         out.append("")
-        if name == "viruses":
+        note = SECTION_NOTES.get(name)
+        if note:
+            arg = pa_meta if name == "program advances (M4)" else None
+            out.append(f"Note: {note(arg)}")
+            out.append("")
+        if name == "viruses (M5)":
             # one line per family rank (deduped by version byte)
             out.append("| ai_index | family routine | version byte | spawn enemy_idxs | hp (low 12 bits of Struct2 row) | cite | status |")
             out.append("|---|---|---|---|---|---|---|")
@@ -710,6 +787,7 @@ COLUMN_SETS = {
 
 
 def main():
+    ensure_ref()
     chips = parse_chips()
     pas = parse_program_advances()
     viruses, enemy_meta = parse_viruses()
@@ -771,7 +849,11 @@ def main():
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (no backdrop table named; search trail: 'backdrop', 'arena' in data/, asm/)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "GAP (program-id table) + DERIVED-FROM-HEADERS (NaviStats slots): search trail 'NaviCust' in data/, asm/, constants/enums/", navicust)),
     ]
-    regenerate_scope(sections)
+    regenerate_scope(sections, pa_meta={
+        "pointer_words": sum(t["pointer_words"] for t in PA_TABLES),
+        "records": sum(t["records"] for t in PA_TABLES),
+        "terminators": [t["terminator"] for t in PA_TABLES if t["terminator"]],
+    })
 
     for m, (name, state, rows) in sections:
         ver, total = status_summary(rows)

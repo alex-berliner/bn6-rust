@@ -467,6 +467,8 @@ ported or listed out of scope with a reason).
 
 ### program advances (M4) (FOUND: asm/asm03_0.s off_802BCB0 + off_802BC60 recipe-pointer tables (records [count][matcher][result u16][chip,code]*n))
 
+Note: Pointer-word audit: the two tables hold 64 .word entries = 63 recipe records + terminator .word NULL (asm/asm03_0.s:11546), so the denominator 63 counts records, not pointer words.
+
 | list | result_name | result_chip | ingredients | cite | status |
 |---|---|---|---|---|---|
 | off_802BCB0 |  | 339 | ['47/00', '48/00', '49/0 | asm/asm03_0.s:11502 + byte_802BA60 asm/asm03_0.s | unrecorded |
@@ -535,40 +537,197 @@ ported or listed out of scope with a reason).
 
 ### viruses (M5) (FOUND via T12: byte_80182C4 identity rows + off_8109150 Struct2 (tools/rom_enemy_tables.py))
 
-| ai_index | family routine | cite | status |
-|---|---|---|---|
-| 0 |  |  |  |
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
-| 6 |  |  |  |
-| 7 |  |  |  |
-| 8 |  |  |  |
-| 9 |  |  |  |
-| 10 |  |  |  |
-| 11 |  |  |  |
-| 12 |  |  |  |
-| 13 |  |  |  |
-| 14 |  |  |  |
-| 15 |  |  |  |
-| 16 |  |  |  |
-| 17 |  |  |  |
-| 18 |  |  |  |
-| 19 |  |  |  |
-| 20 |  |  |  |
-| 21 |  |  |  |
-| 22 |  |  |  |
-| 23 |  |  |  |
-| 24 |  |  |  |
-| 25 |  |  |  |
-| 26 |  |  |  |
-| 27 |  |  |  |
-| 28 |  |  |  |
-| 29 |  |  |  |
-| 30 |  |  |  |
-| 31 |  |  |  |
+Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble is the ELEMENT and the HP is the low 12 bits (the disassembly's own `.hword 0xXYYY` comment, asm/asm00_2.s:683), and offset 0 is the FIRST ROW of a row-per-level struct -- Mettaur's rows read 0x0028/0x0050/0x0078/0x00A0. Never read 0x003C as 'the Gunner's HP constant': it is element 0, hp 60, row 0 of Gunner's rows.
+
+| ai_index | family routine | version byte | spawn enemy_idxs | hp (low 12 bits of Struct2 row) | cite | status |
+|---|---|---|---|---|---|---|
+| 0x0 | off_8109B74 | 0 | 0 |  | asm/asm00_2.s:19975 byte_80182C4 row 0 | unrecorded |
+| 0x1 | ForMettaur_8109EF4 | 0 | 1,187,193,199,205,211,217,223,229,235,241,247,253,254,255 | 0x0028 | asm/asm00_2.s:19975 byte_80182C4 row 1 | verified |
+| 0x1 | ForMettaur_8109EF4 | 1 | 2,188,194,200,206,212,218,224,230,236,242,248 | 0x0050 | asm/asm00_2.s:19975 byte_80182C4 row 2 | unrecorded |
+| 0x1 | ForMettaur_8109EF4 | 2 | 3,189,195,201,207,213,219,225,231,237,243,249 | 0x0078 | asm/asm00_2.s:19975 byte_80182C4 row 3 | unrecorded |
+| 0x1 | ForMettaur_8109EF4 | 3 | 4,190,196,202,208,214,220,226,232,238,244,250 | 0x00a0 | asm/asm00_2.s:19975 byte_80182C4 row 4 | unrecorded |
+| 0x1 | ForMettaur_8109EF4 | 4 | 5,191,197,203,209,215,221,227,233,239,245,251 | 0x0078 | asm/asm00_2.s:19975 byte_80182C4 row 5 | unrecorded |
+| 0x1 | ForMettaur_8109EF4 | 5 | 6,192,198,204,210,216,222,228,234,240,246,252 | 0x00b4 | asm/asm00_2.s:19975 byte_80182C4 row 6 | unrecorded |
+| 0x2 | off_810A550 | 0 | 7 |  | asm/asm00_2.s:19975 byte_80182C4 row 7 | unrecorded |
+| 0x2 | off_810A550 | 1 | 8 |  | asm/asm00_2.s:19975 byte_80182C4 row 8 | unrecorded |
+| 0x2 | off_810A550 | 2 | 9 |  | asm/asm00_2.s:19975 byte_80182C4 row 9 | unrecorded |
+| 0x2 | off_810A550 | 3 | 10 |  | asm/asm00_2.s:19975 byte_80182C4 row 10 | unrecorded |
+| 0x2 | off_810A550 | 4 | 11 |  | asm/asm00_2.s:19975 byte_80182C4 row 11 | unrecorded |
+| 0x2 | off_810A550 | 5 | 12 |  | asm/asm00_2.s:19975 byte_80182C4 row 12 | unrecorded |
+| 0x3 | off_810A9EC | 0 | 13 |  | asm/asm00_2.s:19975 byte_80182C4 row 13 | unrecorded |
+| 0x3 | off_810A9EC | 1 | 14 |  | asm/asm00_2.s:19975 byte_80182C4 row 14 | unrecorded |
+| 0x3 | off_810A9EC | 2 | 15 |  | asm/asm00_2.s:19975 byte_80182C4 row 15 | unrecorded |
+| 0x3 | off_810A9EC | 3 | 16 |  | asm/asm00_2.s:19975 byte_80182C4 row 16 | unrecorded |
+| 0x3 | off_810A9EC | 4 | 17 |  | asm/asm00_2.s:19975 byte_80182C4 row 17 | unrecorded |
+| 0x3 | off_810A9EC | 5 | 18,274 |  | asm/asm00_2.s:19975 byte_80182C4 row 18 | unrecorded |
+| 0x4 | off_810B2D0 | 0 | 19 |  | asm/asm00_2.s:19975 byte_80182C4 row 19 | unrecorded |
+| 0x4 | off_810B2D0 | 1 | 20 |  | asm/asm00_2.s:19975 byte_80182C4 row 20 | unrecorded |
+| 0x4 | off_810B2D0 | 2 | 21 |  | asm/asm00_2.s:19975 byte_80182C4 row 21 | unrecorded |
+| 0x4 | off_810B2D0 | 3 | 22 |  | asm/asm00_2.s:19975 byte_80182C4 row 22 | unrecorded |
+| 0x4 | off_810B2D0 | 4 | 23 |  | asm/asm00_2.s:19975 byte_80182C4 row 23 | unrecorded |
+| 0x4 | off_810B2D0 | 5 | 24 |  | asm/asm00_2.s:19975 byte_80182C4 row 24 | unrecorded |
+| 0x5 | off_810BB94 | 0 | 25 |  | asm/asm00_2.s:19975 byte_80182C4 row 25 | unrecorded |
+| 0x5 | off_810BB94 | 1 | 26 |  | asm/asm00_2.s:19975 byte_80182C4 row 26 | unrecorded |
+| 0x5 | off_810BB94 | 2 | 27 |  | asm/asm00_2.s:19975 byte_80182C4 row 27 | unrecorded |
+| 0x5 | off_810BB94 | 3 | 28 |  | asm/asm00_2.s:19975 byte_80182C4 row 28 | unrecorded |
+| 0x5 | off_810BB94 | 4 | 29 |  | asm/asm00_2.s:19975 byte_80182C4 row 29 | unrecorded |
+| 0x5 | off_810BB94 | 5 | 30 |  | asm/asm00_2.s:19975 byte_80182C4 row 30 | unrecorded |
+| 0x6 | off_810C170 | 0 | 31 |  | asm/asm00_2.s:19975 byte_80182C4 row 31 | unrecorded |
+| 0x6 | off_810C170 | 1 | 32 |  | asm/asm00_2.s:19975 byte_80182C4 row 32 | unrecorded |
+| 0x6 | off_810C170 | 2 | 33 |  | asm/asm00_2.s:19975 byte_80182C4 row 33 | unrecorded |
+| 0x6 | off_810C170 | 3 | 34 |  | asm/asm00_2.s:19975 byte_80182C4 row 34 | unrecorded |
+| 0x6 | off_810C170 | 4 | 35 |  | asm/asm00_2.s:19975 byte_80182C4 row 35 | unrecorded |
+| 0x6 | off_810C170 | 5 | 36 |  | asm/asm00_2.s:19975 byte_80182C4 row 36 | unrecorded |
+| 0x7 | off_810C6F0 | 0 | 37 |  | asm/asm00_2.s:19975 byte_80182C4 row 37 | unrecorded |
+| 0x7 | off_810C6F0 | 1 | 38 |  | asm/asm00_2.s:19975 byte_80182C4 row 38 | unrecorded |
+| 0x7 | off_810C6F0 | 2 | 39 |  | asm/asm00_2.s:19975 byte_80182C4 row 39 | unrecorded |
+| 0x7 | off_810C6F0 | 3 | 40 |  | asm/asm00_2.s:19975 byte_80182C4 row 40 | unrecorded |
+| 0x7 | off_810C6F0 | 4 | 41 |  | asm/asm00_2.s:19975 byte_80182C4 row 41 | unrecorded |
+| 0x7 | off_810C6F0 | 5 | 42 |  | asm/asm00_2.s:19975 byte_80182C4 row 42 | unrecorded |
+| 0x8 | off_810CD60 | 0 | 43 |  | asm/asm00_2.s:19975 byte_80182C4 row 43 | unrecorded |
+| 0x8 | off_810CD60 | 1 | 44 |  | asm/asm00_2.s:19975 byte_80182C4 row 44 | unrecorded |
+| 0x8 | off_810CD60 | 2 | 45 |  | asm/asm00_2.s:19975 byte_80182C4 row 45 | unrecorded |
+| 0x8 | off_810CD60 | 3 | 46 |  | asm/asm00_2.s:19975 byte_80182C4 row 46 | unrecorded |
+| 0x8 | off_810CD60 | 4 | 47 |  | asm/asm00_2.s:19975 byte_80182C4 row 47 | unrecorded |
+| 0x8 | off_810CD60 | 5 | 48 |  | asm/asm00_2.s:19975 byte_80182C4 row 48 | unrecorded |
+| 0x9 | off_810D0F4 | 0 | 49 |  | asm/asm00_2.s:19975 byte_80182C4 row 49 | unrecorded |
+| 0x9 | off_810D0F4 | 1 | 50 |  | asm/asm00_2.s:19975 byte_80182C4 row 50 | unrecorded |
+| 0x9 | off_810D0F4 | 2 | 51 |  | asm/asm00_2.s:19975 byte_80182C4 row 51 | unrecorded |
+| 0x9 | off_810D0F4 | 3 | 52 |  | asm/asm00_2.s:19975 byte_80182C4 row 52 | unrecorded |
+| 0x9 | off_810D0F4 | 4 | 53 |  | asm/asm00_2.s:19975 byte_80182C4 row 53 | unrecorded |
+| 0x9 | off_810D0F4 | 5 | 54 |  | asm/asm00_2.s:19975 byte_80182C4 row 54 | unrecorded |
+| 0xa | off_810D554 | 0 | 55 |  | asm/asm00_2.s:19975 byte_80182C4 row 55 | unrecorded |
+| 0xa | off_810D554 | 1 | 56 |  | asm/asm00_2.s:19975 byte_80182C4 row 56 | unrecorded |
+| 0xa | off_810D554 | 2 | 57 |  | asm/asm00_2.s:19975 byte_80182C4 row 57 | unrecorded |
+| 0xa | off_810D554 | 3 | 58 |  | asm/asm00_2.s:19975 byte_80182C4 row 58 | unrecorded |
+| 0xa | off_810D554 | 4 | 59 |  | asm/asm00_2.s:19975 byte_80182C4 row 59 | unrecorded |
+| 0xa | off_810D554 | 5 | 60 |  | asm/asm00_2.s:19975 byte_80182C4 row 60 | unrecorded |
+| 0xb | off_810D910 | 0 | 61 |  | asm/asm00_2.s:19975 byte_80182C4 row 61 | unrecorded |
+| 0xb | off_810D910 | 1 | 62 |  | asm/asm00_2.s:19975 byte_80182C4 row 62 | unrecorded |
+| 0xb | off_810D910 | 2 | 63 |  | asm/asm00_2.s:19975 byte_80182C4 row 63 | unrecorded |
+| 0xb | off_810D910 | 3 | 64 |  | asm/asm00_2.s:19975 byte_80182C4 row 64 | unrecorded |
+| 0xb | off_810D910 | 4 | 65 |  | asm/asm00_2.s:19975 byte_80182C4 row 65 | unrecorded |
+| 0xb | off_810D910 | 5 | 66 |  | asm/asm00_2.s:19975 byte_80182C4 row 66 | unrecorded |
+| 0xc | off_810E120 | 0 | 67 |  | asm/asm00_2.s:19975 byte_80182C4 row 67 | unrecorded |
+| 0xc | off_810E120 | 1 | 68 |  | asm/asm00_2.s:19975 byte_80182C4 row 68 | unrecorded |
+| 0xc | off_810E120 | 2 | 69 |  | asm/asm00_2.s:19975 byte_80182C4 row 69 | unrecorded |
+| 0xc | off_810E120 | 3 | 70 |  | asm/asm00_2.s:19975 byte_80182C4 row 70 | unrecorded |
+| 0xc | off_810E120 | 4 | 71 |  | asm/asm00_2.s:19975 byte_80182C4 row 71 | unrecorded |
+| 0xc | off_810E120 | 5 | 72 |  | asm/asm00_2.s:19975 byte_80182C4 row 72 | unrecorded |
+| 0xd | off_810E7B0 | 0 | 73 |  | asm/asm00_2.s:19975 byte_80182C4 row 73 | unrecorded |
+| 0xd | off_810E7B0 | 1 | 74 |  | asm/asm00_2.s:19975 byte_80182C4 row 74 | unrecorded |
+| 0xd | off_810E7B0 | 2 | 75 |  | asm/asm00_2.s:19975 byte_80182C4 row 75 | unrecorded |
+| 0xd | off_810E7B0 | 3 | 76 |  | asm/asm00_2.s:19975 byte_80182C4 row 76 | unrecorded |
+| 0xd | off_810E7B0 | 4 | 77 |  | asm/asm00_2.s:19975 byte_80182C4 row 77 | unrecorded |
+| 0xd | off_810E7B0 | 5 | 78 |  | asm/asm00_2.s:19975 byte_80182C4 row 78 | unrecorded |
+| 0xe | off_810F010 | 0 | 79 |  | asm/asm00_2.s:19975 byte_80182C4 row 79 | unrecorded |
+| 0xe | off_810F010 | 1 | 80 |  | asm/asm00_2.s:19975 byte_80182C4 row 80 | unrecorded |
+| 0xe | off_810F010 | 2 | 81 |  | asm/asm00_2.s:19975 byte_80182C4 row 81 | unrecorded |
+| 0xe | off_810F010 | 3 | 82 |  | asm/asm00_2.s:19975 byte_80182C4 row 82 | unrecorded |
+| 0xe | off_810F010 | 4 | 83 |  | asm/asm00_2.s:19975 byte_80182C4 row 83 | unrecorded |
+| 0xe | off_810F010 | 5 | 84 |  | asm/asm00_2.s:19975 byte_80182C4 row 84 | unrecorded |
+| 0xf | off_810F39C | 0 | 85 |  | asm/asm00_2.s:19975 byte_80182C4 row 85 | unrecorded |
+| 0xf | off_810F39C | 1 | 86 |  | asm/asm00_2.s:19975 byte_80182C4 row 86 | unrecorded |
+| 0xf | off_810F39C | 2 | 87 |  | asm/asm00_2.s:19975 byte_80182C4 row 87 | unrecorded |
+| 0xf | off_810F39C | 3 | 88 |  | asm/asm00_2.s:19975 byte_80182C4 row 88 | unrecorded |
+| 0xf | off_810F39C | 4 | 89 |  | asm/asm00_2.s:19975 byte_80182C4 row 89 | unrecorded |
+| 0xf | off_810F39C | 5 | 90 |  | asm/asm00_2.s:19975 byte_80182C4 row 90 | unrecorded |
+| 0x10 | off_810FCE0 | 0 | 91 |  | asm/asm00_2.s:19975 byte_80182C4 row 91 | unrecorded |
+| 0x10 | off_810FCE0 | 1 | 92 |  | asm/asm00_2.s:19975 byte_80182C4 row 92 | unrecorded |
+| 0x10 | off_810FCE0 | 2 | 93 |  | asm/asm00_2.s:19975 byte_80182C4 row 93 | unrecorded |
+| 0x10 | off_810FCE0 | 3 | 94 |  | asm/asm00_2.s:19975 byte_80182C4 row 94 | unrecorded |
+| 0x10 | off_810FCE0 | 4 | 95 |  | asm/asm00_2.s:19975 byte_80182C4 row 95 | unrecorded |
+| 0x10 | off_810FCE0 | 5 | 96 |  | asm/asm00_2.s:19975 byte_80182C4 row 96 | unrecorded |
+| 0x11 | off_81104D4 | 0 | 97 |  | asm/asm00_2.s:19975 byte_80182C4 row 97 | unrecorded |
+| 0x11 | off_81104D4 | 1 | 98 |  | asm/asm00_2.s:19975 byte_80182C4 row 98 | unrecorded |
+| 0x11 | off_81104D4 | 2 | 99 |  | asm/asm00_2.s:19975 byte_80182C4 row 99 | unrecorded |
+| 0x11 | off_81104D4 | 3 | 100 |  | asm/asm00_2.s:19975 byte_80182C4 row 100 | unrecorded |
+| 0x11 | off_81104D4 | 4 | 101 |  | asm/asm00_2.s:19975 byte_80182C4 row 101 | unrecorded |
+| 0x11 | off_81104D4 | 5 | 102 |  | asm/asm00_2.s:19975 byte_80182C4 row 102 | unrecorded |
+| 0x12 | off_8110DC0 | 0 | 103 |  | asm/asm00_2.s:19975 byte_80182C4 row 103 | unrecorded |
+| 0x12 | off_8110DC0 | 1 | 104 |  | asm/asm00_2.s:19975 byte_80182C4 row 104 | unrecorded |
+| 0x12 | off_8110DC0 | 2 | 105 |  | asm/asm00_2.s:19975 byte_80182C4 row 105 | unrecorded |
+| 0x12 | off_8110DC0 | 3 | 106 |  | asm/asm00_2.s:19975 byte_80182C4 row 106 | unrecorded |
+| 0x12 | off_8110DC0 | 4 | 107 |  | asm/asm00_2.s:19975 byte_80182C4 row 107 | unrecorded |
+| 0x12 | off_8110DC0 | 5 | 108 |  | asm/asm00_2.s:19975 byte_80182C4 row 108 | unrecorded |
+| 0x13 | off_8111330 | 0 | 109 |  | asm/asm00_2.s:19975 byte_80182C4 row 109 | unrecorded |
+| 0x13 | off_8111330 | 1 | 110 |  | asm/asm00_2.s:19975 byte_80182C4 row 110 | unrecorded |
+| 0x13 | off_8111330 | 2 | 111 |  | asm/asm00_2.s:19975 byte_80182C4 row 111 | unrecorded |
+| 0x13 | off_8111330 | 3 | 112 |  | asm/asm00_2.s:19975 byte_80182C4 row 112 | unrecorded |
+| 0x13 | off_8111330 | 4 | 113 |  | asm/asm00_2.s:19975 byte_80182C4 row 113 | unrecorded |
+| 0x13 | off_8111330 | 5 | 114 |  | asm/asm00_2.s:19975 byte_80182C4 row 114 | unrecorded |
+| 0x14 | off_8111DC0 | 0 | 115 |  | asm/asm00_2.s:19975 byte_80182C4 row 115 | unrecorded |
+| 0x14 | off_8111DC0 | 1 | 116 |  | asm/asm00_2.s:19975 byte_80182C4 row 116 | unrecorded |
+| 0x14 | off_8111DC0 | 2 | 117 |  | asm/asm00_2.s:19975 byte_80182C4 row 117 | unrecorded |
+| 0x14 | off_8111DC0 | 3 | 118 |  | asm/asm00_2.s:19975 byte_80182C4 row 118 | unrecorded |
+| 0x14 | off_8111DC0 | 4 | 119 |  | asm/asm00_2.s:19975 byte_80182C4 row 119 | unrecorded |
+| 0x14 | off_8111DC0 | 5 | 120 |  | asm/asm00_2.s:19975 byte_80182C4 row 120 | unrecorded |
+| 0x15 | off_81121F0 | 0 | 121 |  | asm/asm00_2.s:19975 byte_80182C4 row 121 | unrecorded |
+| 0x15 | off_81121F0 | 1 | 122 |  | asm/asm00_2.s:19975 byte_80182C4 row 122 | unrecorded |
+| 0x15 | off_81121F0 | 2 | 123 |  | asm/asm00_2.s:19975 byte_80182C4 row 123 | unrecorded |
+| 0x15 | off_81121F0 | 3 | 124 |  | asm/asm00_2.s:19975 byte_80182C4 row 124 | unrecorded |
+| 0x15 | off_81121F0 | 4 | 125 |  | asm/asm00_2.s:19975 byte_80182C4 row 125 | unrecorded |
+| 0x15 | off_81121F0 | 5 | 126 |  | asm/asm00_2.s:19975 byte_80182C4 row 126 | unrecorded |
+| 0x16 | off_81129A0 | 0 | 127 |  | asm/asm00_2.s:19975 byte_80182C4 row 127 | unrecorded |
+| 0x16 | off_81129A0 | 1 | 128 |  | asm/asm00_2.s:19975 byte_80182C4 row 128 | unrecorded |
+| 0x16 | off_81129A0 | 2 | 129 |  | asm/asm00_2.s:19975 byte_80182C4 row 129 | unrecorded |
+| 0x16 | off_81129A0 | 3 | 130 |  | asm/asm00_2.s:19975 byte_80182C4 row 130 | unrecorded |
+| 0x16 | off_81129A0 | 4 | 131 |  | asm/asm00_2.s:19975 byte_80182C4 row 131 | unrecorded |
+| 0x16 | off_81129A0 | 5 | 132 |  | asm/asm00_2.s:19975 byte_80182C4 row 132 | unrecorded |
+| 0x17 | ForGunner_8113078 | 0 | 133 |  | asm/asm00_2.s:19975 byte_80182C4 row 133 | unrecorded |
+| 0x17 | ForGunner_8113078 | 1 | 134 |  | asm/asm00_2.s:19975 byte_80182C4 row 134 | unrecorded |
+| 0x17 | ForGunner_8113078 | 2 | 135 |  | asm/asm00_2.s:19975 byte_80182C4 row 135 | unrecorded |
+| 0x17 | ForGunner_8113078 | 3 | 136 |  | asm/asm00_2.s:19975 byte_80182C4 row 136 | unrecorded |
+| 0x17 | ForGunner_8113078 | 4 | 137 |  | asm/asm00_2.s:19975 byte_80182C4 row 137 | unrecorded |
+| 0x17 | ForGunner_8113078 | 5 | 138 |  | asm/asm00_2.s:19975 byte_80182C4 row 138 | unrecorded |
+| 0x18 | off_81135CC | 0 | 139 |  | asm/asm00_2.s:19975 byte_80182C4 row 139 | unrecorded |
+| 0x18 | off_81135CC | 1 | 140 |  | asm/asm00_2.s:19975 byte_80182C4 row 140 | unrecorded |
+| 0x18 | off_81135CC | 2 | 141 |  | asm/asm00_2.s:19975 byte_80182C4 row 141 | unrecorded |
+| 0x18 | off_81135CC | 3 | 142 |  | asm/asm00_2.s:19975 byte_80182C4 row 142 | unrecorded |
+| 0x18 | off_81135CC | 4 | 143 |  | asm/asm00_2.s:19975 byte_80182C4 row 143 | unrecorded |
+| 0x18 | off_81135CC | 5 | 144 |  | asm/asm00_2.s:19975 byte_80182C4 row 144 | unrecorded |
+| 0x19 | off_8113D50 | 0 | 145 |  | asm/asm00_2.s:19975 byte_80182C4 row 145 | unrecorded |
+| 0x19 | off_8113D50 | 1 | 146 |  | asm/asm00_2.s:19975 byte_80182C4 row 146 | unrecorded |
+| 0x19 | off_8113D50 | 2 | 147 |  | asm/asm00_2.s:19975 byte_80182C4 row 147 | unrecorded |
+| 0x19 | off_8113D50 | 3 | 148 |  | asm/asm00_2.s:19975 byte_80182C4 row 148 | unrecorded |
+| 0x19 | off_8113D50 | 4 | 149 |  | asm/asm00_2.s:19975 byte_80182C4 row 149 | unrecorded |
+| 0x19 | off_8113D50 | 5 | 150 |  | asm/asm00_2.s:19975 byte_80182C4 row 150 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 0 | 151 |  | asm/asm00_2.s:19975 byte_80182C4 row 151 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 1 | 152 |  | asm/asm00_2.s:19975 byte_80182C4 row 152 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 2 | 153 |  | asm/asm00_2.s:19975 byte_80182C4 row 153 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 3 | 154 |  | asm/asm00_2.s:19975 byte_80182C4 row 154 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 4 | 155 |  | asm/asm00_2.s:19975 byte_80182C4 row 155 | unrecorded |
+| 0x1a | snakearmAttackTable_8114710 | 5 | 156 |  | asm/asm00_2.s:19975 byte_80182C4 row 156 | unrecorded |
+| 0x1b | off_81154F0 | 0 | 157 |  | asm/asm00_2.s:19975 byte_80182C4 row 157 | unrecorded |
+| 0x1b | off_81154F0 | 1 | 158 |  | asm/asm00_2.s:19975 byte_80182C4 row 158 | unrecorded |
+| 0x1b | off_81154F0 | 2 | 159 |  | asm/asm00_2.s:19975 byte_80182C4 row 159 | unrecorded |
+| 0x1b | off_81154F0 | 3 | 160 |  | asm/asm00_2.s:19975 byte_80182C4 row 160 | unrecorded |
+| 0x1b | off_81154F0 | 4 | 161 |  | asm/asm00_2.s:19975 byte_80182C4 row 161 | unrecorded |
+| 0x1b | off_81154F0 | 5 | 162 |  | asm/asm00_2.s:19975 byte_80182C4 row 162 | unrecorded |
+| 0x1c | off_8115950 | 0 | 163 |  | asm/asm00_2.s:19975 byte_80182C4 row 163 | unrecorded |
+| 0x1c | off_8115950 | 1 | 164 |  | asm/asm00_2.s:19975 byte_80182C4 row 164 | unrecorded |
+| 0x1c | off_8115950 | 2 | 165 |  | asm/asm00_2.s:19975 byte_80182C4 row 165 | unrecorded |
+| 0x1c | off_8115950 | 3 | 166 |  | asm/asm00_2.s:19975 byte_80182C4 row 166 | unrecorded |
+| 0x1c | off_8115950 | 4 | 167 |  | asm/asm00_2.s:19975 byte_80182C4 row 167 | unrecorded |
+| 0x1c | off_8115950 | 5 | 168 |  | asm/asm00_2.s:19975 byte_80182C4 row 168 | unrecorded |
+| 0x1d | off_8115DE0 | 0 | 169 |  | asm/asm00_2.s:19975 byte_80182C4 row 169 | unrecorded |
+| 0x1d | off_8115DE0 | 1 | 170 |  | asm/asm00_2.s:19975 byte_80182C4 row 170 | unrecorded |
+| 0x1d | off_8115DE0 | 2 | 171 |  | asm/asm00_2.s:19975 byte_80182C4 row 171 | unrecorded |
+| 0x1d | off_8115DE0 | 3 | 172 |  | asm/asm00_2.s:19975 byte_80182C4 row 172 | unrecorded |
+| 0x1d | off_8115DE0 | 4 | 173 |  | asm/asm00_2.s:19975 byte_80182C4 row 173 | unrecorded |
+| 0x1d | off_8115DE0 | 5 | 174 |  | asm/asm00_2.s:19975 byte_80182C4 row 174 | unrecorded |
+| 0x1e | off_81163F0 | 0 | 175 |  | asm/asm00_2.s:19975 byte_80182C4 row 175 | unrecorded |
+| 0x1e | off_81163F0 | 1 | 176 |  | asm/asm00_2.s:19975 byte_80182C4 row 176 | unrecorded |
+| 0x1e | off_81163F0 | 2 | 177 |  | asm/asm00_2.s:19975 byte_80182C4 row 177 | unrecorded |
+| 0x1e | off_81163F0 | 3 | 178 |  | asm/asm00_2.s:19975 byte_80182C4 row 178 | unrecorded |
+| 0x1e | off_81163F0 | 4 | 179 |  | asm/asm00_2.s:19975 byte_80182C4 row 179 | unrecorded |
+| 0x1e | off_81163F0 | 5 | 180 |  | asm/asm00_2.s:19975 byte_80182C4 row 180 | unrecorded |
+| 0x1f | off_81166B0 | 0 | 181 |  | asm/asm00_2.s:19975 byte_80182C4 row 181 | unrecorded |
+| 0x1f | off_81166B0 | 1 | 182 |  | asm/asm00_2.s:19975 byte_80182C4 row 182 | unrecorded |
+| 0x1f | off_81166B0 | 2 | 183 |  | asm/asm00_2.s:19975 byte_80182C4 row 183 | unrecorded |
+| 0x1f | off_81166B0 | 3 | 184 |  | asm/asm00_2.s:19975 byte_80182C4 row 184 | unrecorded |
+| 0x1f | off_81166B0 | 4 | 185 |  | asm/asm00_2.s:19975 byte_80182C4 row 185 | unrecorded |
+| 0x1f | off_81166B0 | 5 | 186 |  | asm/asm00_2.s:19975 byte_80182C4 row 186 | unrecorded |
 
 ### navis + cybeasts (M6) (FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0)
 
@@ -742,6 +901,8 @@ ported or listed out of scope with a reason).
 | DAMAGE_NOTHING | 0x0800 | include/structs/BattleObject.inc:123 | unrecorded |
 
 ### formations (M8) (FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays)
+
+Note: Audit note (provisional, this tool's own arithmetic, not independently divided out): record count = number of .word pointers before the terminator per list, assuming the 0x10-byte record stride of include/rom_structs/BattleSettings.inc (Size 0x10, getBattleSettingsFromList0 x0x10 indexing); check by stride x count vs each list's byte span. Formation arrays: 4-byte entries up to the 0xF0 stop consumed by SpawnBattleObjectUsingBattleEntityConfig_8007368.
 
 | formation | entries | enemy_ids | cite | status |
 |---|---|---|---|---|
@@ -1044,6 +1205,8 @@ ported or listed out of scope with a reason).
 | byte_80B1B46 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:2056 | unrecorded |
 
 ### backdrops (M8) (DERIVED-FROM-RECORDS: BattleSettings.Background byte values (no backdrop table named; search trail: 'backdrop', 'arena' in data/, asm/))
+
+Note: Sentinel note: Background 0xff on 268 of 461 records is counted as an UNSET sentinel, not backdrop id 255. What this section counts after excluding 0xff: 2 set values (0x07 on 192 records, 0x08 on 1 record); the distinct-value denominator 3 includes the sentinel row so the sentinel itself stays auditable.
 
 | background_byte | records_using_it | cite | status |
 |---|---|---|---|
