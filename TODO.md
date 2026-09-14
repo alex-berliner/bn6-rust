@@ -166,8 +166,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 - T13 DONE -- Audio parity, first measurement: both sides dumped and compared sample-exact. LANDED as 9d52135
 - T9d DONE -- Why the poked Gunner battle never goes live: write-watch the sequencer on the working scenario and name the difference. no writer for dword_203CA70 on either battlestart route (200f watch-write, both empty)
-### T13b. The two audio defects T13 measured: the ungated hit sample, and the 6.6 ms onset offset  *(OPEN -- 2026-09-14)*
+### T13b. The two audio defects T13 measured: the ungated hit sample, and the 6.6 ms onset offset  *(DONE -- 2026-09-14, src/battle.rs: hit_in now armed only when the strike's take_damage[] landed)*
 
+**Result.** src/battle.rs: hit_in now armed only when the strike's take_damage() landed; zero-enemy ch4 tree peak 0 (0 nonzero of 640170 samples), enemy-present peak 11273 at frames 118..130 (was 11221 pre-fix whole-tree peak); onset residual 635 pairs = 6.62ms canon / 6.64ms ours (NOT one frame; a frame shift overshoots 10.1ms); frame 0 234-pair silence = harness priming (mgba_capture.c:631-641,947-967). Full table: only cursor isolated 13->10 (the reported tear) and field integrated allowed 158934->158993 moved; all other isolated rows 0. verifier-hyper CONFIRMS claims 2-5, refines 1 (SOUND_HIT_6B has 5 ROM sites; our gate is stronger than cited on unreachable barrier/mercy axes) -- corrections in 3963c8b. 12 capture runs vs an 8 cap, disclosed. landed 8456a2c, re-verified on HEAD
 **Files.** src/battle.rs, docs/audio/baseline-buster.md (three wording fixes), docs/coverage/audio-buster.md (new)
 
 **Why.** T13 landed (`9d52135`) the first sample-exact audio comparison and its verifier confirmed, from the trees
