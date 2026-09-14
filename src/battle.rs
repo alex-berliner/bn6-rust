@@ -1132,6 +1132,10 @@ pub struct Battle<'a> {
     /// How far the field has slid out of the chip menu's way, in half-pixels.
     field_slide: u16,
     emotion: crate::emotion::Emotion,
+    /// Whether canon's battle-HUD element 14 (the emotion window) is still
+    /// enabled -- see `Emotion`'s own gate in `draw` for the canon rule and
+    /// the measurement.
+    hud_live: bool,
     /// Frames until a seed's sheet goes down, counted from the pod landing,
     /// and the palette it takes.
     poison_pending: u8,
@@ -1671,6 +1675,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
             emotion: crate::emotion::Emotion::new(crate::EMOTION),
+            // Canon enables the emotion window with the rest of the battle
+            // HUD and never re-enables it inside a battle, so this starts
+            // set and is only ever cleared (in `update`, on the teardown).
+            // A battle with an enemy always has a live HUD in canon; only a
+            // zero-enemy arena -- which canon never fields -- has to be told,
+            // hence FLAG_HUD_LIVE (see its own doc in fixture.rs).
+            hud_live: !enemies.is_empty()
+                || fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
             hud_tiles,
             hud_bg,
@@ -2001,6 +2013,15 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         } else {
             self.megaman.is_defeated() || self.enemies.iter().all(|e| e.is_defeated())
         };
+        // The battle HUD's teardown: canon drops elements 0, 1, 4, 10 and 14
+        // together on the frame the end sequence starts, one frame before the
+        // banner this same `over` arms below (sub_80081A4's
+        // sub_801BED6(0xE4C53), asm00_1.s:10617-10621; measured frame 48
+        // against the sequencer's 0x0C at 47). Only the emotion window is
+        // modelled here; it is never re-enabled inside a battle.
+        if over {
+            self.hud_live = false;
+        }
 
         // The gauge only runs while the fight does; a full gauge holds
         // everything, including itself, through the chimes and then the
@@ -3671,15 +3692,31 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 .object_transparency(Num::from_raw(alpha), Num::from_raw(16 - alpha)) // canon: agb full-weight blend (16)
                 .enable_background(bg_id);
         }
-        // The emotion window is OAM objects 2 and 3 on the real ROM, so it
-        // goes in before anything the fight draws and stands over all of it.
-        // It goes with the fight, and the fight ends when the last enemy does:
-        // /tmp/noenemy2.state has no emotion window with its RESULT window up,
-        // and neither does a sterile capture, whose enemy the harness deletes
-        // on the first frame. So it is drawn only while an enemy is still
-        // standing.
-        let fighting = !self.enemies.is_empty() && !self.enemies.iter().all(|e| e.is_defeated());
-        if fighting && self.shown.is_none() && self.fade_out == 0 {
+        // The emotion window: two objects, (0,18) 32x16 tile 0x3b4 and
+        // (32,18) 16x16 tile 0x3bc, palette 12, priority 2 -- exactly the
+        // words canon's draw routine sub_801CDEC hardcodes
+        // (asm00_2.s:27554-27583). It is battle-HUD ELEMENT 14, dispatched
+        // every frame while bit 14 of the element mask dword_20352C0 is set
+        // (sub_801BEE0, asm00_2.s:25540-25563; updater sub_801CADC at
+        // asm00_2.s:25577, draw at asm00_2.s:25627).
+        //
+        // TODO F27b (2026-09-13): it does NOT go with the last enemy. Canon
+        // clears bit 14 in ONE teardown with the rest of the fight's HUD, on
+        // the frame the banner sequencer enters its RESULT countdown 0x0C:
+        // sub_80081A4 (asm00_1.s:10617-10621) calls sub_801BED6(0xE4C53),
+        // and 0xE4C53 & 0x4497 = 0x4413 -- elements 0, 1, 4, 10 and 14 at
+        // once. Measured on the real ROM (PAUSED, enemy HP forced to 0,
+        // Start@10): the sequencer dword_203CA70 goes 0x08 -> 0x0C at frame
+        // 47, the mask goes 0x4497 -> 0x0084 at frame 48 (--watch-write
+        // 0x20352C0:4 names the store: at=0x0801BEDC, lr=0x080081B9), bit 15
+        // is set back a moment later by the ENEMY DELETED banner going up
+        // (sub_801E792's sub_801BECC(1<<15), asm00_2.s:31055-31112) and the
+        // banner runs 49..106. So the window survives the enemy's death and
+        // its whole dissolve -- 47 frames of it here -- and goes with the
+        // end sequence, one frame before the banner. `over` is this build's
+        // same event (it arms that banner on the frame it fires), so the
+        // teardown hangs off it in `update`.
+        if self.hud_live && self.shown.is_none() && self.fade_out == 0 {
             self.emotion.show(frame);
         }
         // The chip at the front of the hand hangs over the navi as a 16x16

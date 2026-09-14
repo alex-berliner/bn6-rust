@@ -80,6 +80,21 @@ pub const FLAG_SKIP_INTRO: u8 = 1 << 4; // provenance: derived -- this project's
 /// still holds the fight open forever (the chip-window fixtures depend on
 /// that: see battle.rs's own comment on `over`).
 pub const FLAG_RESOLVE_OVER: u8 = 1 << 5; // provenance: peeked -- canon's own deleted-enemy battle resolves (sequencer 0x08->0x0C at canon 47, watched on the field row's own canon capture, 2026-09-12, TODO F8); the bit assignment itself is this project's protocol
+/// bit6: the battle HUD is LIVE on this row's canon side at frame 0 -- canon's
+/// battle-HUD element mask `dword_20352C0` (eStruct2035280+0x40, dispatched
+/// every frame by sub_801BEE0, asm00_2.s:25540-25563) still has element 14,
+/// the emotion window (updater sub_801CADC asm00_2.s:25577, draw sub_801CDEC
+/// asm00_2.s:25627), enabled. Needed ONLY because a zero-enemy arena has no
+/// counterpart in canon (canon never fields an empty enemy list), so nothing
+/// in such a fixture says which side of the HUD teardown its canon capture
+/// sits on: the `popup` row's canon side is a live battle whose enemy was
+/// deleted on a ROM patched never to conclude (mask 0x4497 on all 125 frames,
+/// bit14=1), and the 43 chip rows' canon side is `afterdissolve_0x0c`, a
+/// battle already past the teardown (mask 0x8084 on all 47 frames, bit14=0) --
+/// two different canon states behind byte-identical descriptors. A fixture
+/// that fields an enemy needs no bit: canon's HUD is live whenever a battle
+/// has one, so `enemies` non-empty implies it (see battle.rs's `hud_live`).
+pub const FLAG_HUD_LIVE: u8 = 1 << 6; // provenance: peeked -- canon's own element mask at 0x020352C0 (--watch 0x20352C0:4, F27b): 0x4497 on every frame of the popup row's canon capture, 0x8084 on every frame of the chip rows'; the bit assignment itself is this project's protocol
 
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's

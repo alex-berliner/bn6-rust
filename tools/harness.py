@@ -630,11 +630,13 @@ def plain_rom() -> str:
     return build_feature_rom("")
 
 
-def _chip_rust(chip_hex: str) -> Callable[[str], Side]:
+#: TODO F27b: `flags` defaults to every chip row's own 0x1F and only the
+#: `popup` row passes anything else -- see that row's own note.
+def _chip_rust(chip_hex: str, flags: int = 0x1F) -> Callable[[str], Side]:
     desc = {
         "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
         "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
-        "flags": 0x1F, "fire_frame": 90,
+        "flags": flags, "fire_frame": 90,
     }
     return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
 
@@ -1679,7 +1681,14 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=80,
         align=ALIGN_CHIP,
-        rust=_chip_rust("b1"),
+        # F27b: 0x1F | FLAG_HUD_LIVE (FIXTURE.md +19 bit6) -- the ONE thing
+        # this row's rust side needs that the other 43 chip rows do not:
+        # its canon side is a LIVE battle HUD (element mask 0x020352C0 =
+        # 0x4497, bit14 set, on all 125 frames), theirs is a battle already
+        # past the HUD teardown (afterdissolve_0x0c, 0x8084, bit14 clear on
+        # all 47). Both descriptors are otherwise identical, so the bit is
+        # the only place that difference can live -- see the note below.
+        rust=_chip_rust("b1", flags=0x5F),
         # F19: was _chip_canon("b1", hide_enemy=True, banner_zero=False) -- the
         # ALIVE enemy acted on canon AI all window (sprite + ticking HP digits,
         # 51991 px in x160-210 y60-125). DELETE (HP 0/0) + the banner row's own
@@ -1689,10 +1698,64 @@ PORTED_CHECKS: List[Check] = [
         # box to the early dissolve (6081 px, worst k=0, flat 694 HUD-only
         # from k=10). banner_zero=False stands: the popup glyph tiles live at
         # 0x06016E00 (BANNER_TILES) -- zeroing it kills the subject (measured
-        # +29888 center-band). Residual is the canon-only OBJ HUD HP bar
-        # (x2-45 y18-33, 55520 px, static all 80) -- rust BLANK_HUD blanks it,
-        # canon draws it; not a BANNER_TILES/ENEMY_TILES resident (zeroing
-        # those grows or keeps the diff) -- belongs to F20's OBJ-HUD work.
+        # +29888 center-band).
+        # TODO F27 (2026-09-13): the residual 55520 (x2-45 y18-33, flat 694 px
+        # on every one of the 80 frames) is NOT an "OBJ HUD HP bar" and is NOT
+        # content we lack -- it is the EMOTION WINDOW, the navi's face at the
+        # top left, which src/emotion.rs already draws pixel-exactly and which
+        # this row gates off. The earlier note here ("rust BLANK_HUD blanks
+        # it") is REFUTED: FLAG_BLANK_HUD only drops hud_tiles/hud_bg; the
+        # emotion window is dropped by src/battle.rs's `fighting` gate, and
+        # this row's fixture has enemies=0.
+        # Identified by OAM, per frame (--watch 0x7000000:0x400 over the whole
+        # canon capture): two objects present on all 125 frames, only the slot
+        # moving (2/3 -> 0/1 at f12 -> 8/9 at f61 -> 0/1 at f119) -- (0,18)
+        # 32x16 tile 0x3b4 and (32,18) 16x16 tile 0x3bc, OBJ palette 12,
+        # priority 2. Exactly what canon's draw routine hardcodes: sub_801CDEC
+        # (asm00_2.s:27554-27583) passes 0x80004012/0xCBB4 and
+        # 0x40200012/0xCBBC (y=18 x=0 32x16 and y=18 x=32 16x16, tiles
+        # 0x3b4/0x3bc, pal 12, prio 2). Its art is the first entry of the
+        # per-emotion bank off_801CD08 (asm00_2.s:27488 -> dword_872D814,
+        # data/dat38_86.s:26158) + dword_872D914 (:26173), uploaded to
+        # 0x06017680 (dword_801CD68, asm00_2.s:27514) by sub_801CB38
+        # (asm00_2.s:27240) -- the same bytes assets/emotion.bin already
+        # carries (tools/emotion_export.py).
+        # Canon's gate is the battle-HUD element enable mask dword_20352C0
+        # (eStruct2035280+0x40), dispatched every frame by sub_801BEE0
+        # (asm00_2.s:25540-25563); element 14 is the emotion window (updater
+        # sub_801CADC at asm00_2.s:25577, draw sub_801CDEC at
+        # asm00_2.s:25627), so its bit is 1<<14 = 0x4000 -- the literal
+        # sub_802A0F8 passes to hide it (asm03_0.s:8317-8333). MEASURED
+        # (--watch 0x20352C0:4): 0x4497, bit14=1, on all 125 frames of THIS
+        # row's canon capture; 0x8084, bit14=0, on all 47 frames of the
+        # `cannon`/43-chip route (afterdissolve_0x0c, a battle already in its
+        # RESULT countdown, whose HUD is torn down). So canon draws it here
+        # and genuinely does not draw it there.
+        # FIXED F27b (2026-09-13): 60614 -> 5094, this box 0 on all 80 frames
+        # (our tiles, palette, position and priority are byte-identical to
+        # canon's over 80 consecutive frames). src/battle.rs now follows
+        # canon's rule -- the window goes with the HUD TEARDOWN, not with the
+        # last enemy: sub_80081A4 (asm00_1.s:10617-10621) clears elements 0,
+        # 1, 4, 10 and 14 in one sub_801BED6(0xE4C53) on the frame the banner
+        # sequencer enters its RESULT countdown 0x0C. Measured on the REAL rom
+        # under this row's own recipe (PAUSED, enemy HP forced to 0, Start@10,
+        # --disable-bg): dword_203CA70 goes 0x08 -> 0x0C at frame 47, the mask
+        # goes 0x4497 -> 0x0084 at frame 48 (--watch-write 0x20352C0:4:
+        # at=0x0801BEDC lr=0x080081B9), bit15 goes back up for the ENEMY
+        # DELETED banner (sub_801E792, asm00_2.s:31055-31112) which runs
+        # 49..106. So canon holds the window through the enemy's whole
+        # dissolve -- 47 frames of it -- where ours used to drop it at the
+        # death, and the STERILE rom this row uses never concludes, so canon
+        # holds it for all 125 frames here.
+        # The flags bit above is not a rendering switch, it is which canon
+        # STATE this row's canon capture sits in: this row and the 43 chip
+        # rows share one descriptor (_chip_rust, enemies=0, flags=0x1F) and
+        # their canon sides are on opposite sides of that teardown, so no rule
+        # computed from our own state can tell them apart. A zero-enemy arena
+        # has no canon counterpart at all; a fixture that fields an enemy
+        # needs no bit (see src/fixture.rs's FLAG_HUD_LIVE).
+        # The remaining 5094 (x149-196 y81-126) is the enemy's dissolve,
+        # F28's Mettaur phase.
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
