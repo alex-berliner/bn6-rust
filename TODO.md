@@ -377,8 +377,9 @@ cite canon's buster object routine and MegaMan's shooting state in reference/bn6
 event; wave, window, opening, chip-cannon, field, mettaur 0; full table nothing worse. src/actor.rs
 is held by other workers: a change needed there is reported as an exact proposal, not made.
 
-### F30. `field` integrated: a one-scanline write lands on either side of a VBlank boundary depending on ROM layout  *(OPEN -- 2026-09-13)*
+### F30. `field` integrated: a one-scanline write lands on either side of a VBlank boundary depending on ROM layout  *(PARTIAL -- 2026-09-13, layout race 10585px [[8,10585]] -> 0 over 200 frames across ROM layouts [worker])*
 
+**Result.** layout race 10585px [(8,10585)] -> 0 over 200 frames across ROM layouts (worker); verifier CONFIRMED root cause sources (Blend::commit BLDCNT/BLDY, agb early-return wait, canon main.s frame-sync + ProcessGFXTransferQueue) and fix faithful (54 lines, no-op on fitting frames); combination: field/wave/window/opening/chip-cannon/result/mettaur0/popup5094/windowclose407778/buster3172 preserved, cursor 620802->620914 (+112); verifier: one-frame scanline-band diff CONFIRMED, x<112-locality REFUTED, spin-only-cause YES, better-vs-canon UNMEASURED; branch wt/f30-scanline c64b68a KEPT unmerged; worker muse-spark 97 turns $0.078, verifier GLM
 **Files.** src/main.rs, src/field.rs
 
 **Why.** F25d measured that two builds differing only in ROM layout (545824 vs 553900 bytes, a
