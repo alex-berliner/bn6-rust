@@ -705,8 +705,9 @@ frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, f
 **Measure and report.** Copy span before/after (scanlines), BG1 diffs before/after both rows, seed derivation values, rows before/after, full-table deltas. **Acceptance:** cursor BG1-only 0/170, windowclose BG1-only 0/40, canaries 0-or-unchanged; else measured span numbers and STOP.
 **Coordinator:** `verify_rows` on every row the report names; the verifier on the copy-span claim (it must measure sub-frame completion).
 
-### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(OPEN -- 2026-09-13)*
+### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(DONE -- 2026-09-14, export placement verified frame-accurate [post-commit test strictly worse, reverted])*
 
+**Result.** export placement verified frame-accurate (post-commit test strictly worse, reverted); canon contract state-leads-pixels-by-1; buster 1f-late entry + warp 0x10-mapping are state-side (battle/actor owners); comment-only +9 main.rs; verifier CONFIRMED all 3 + rules clean; landed 464e275; worker muse-spark 61 turns $0.038, verifier GLM
 **Files.** src/main.rs, tools/oracle.py
 
 **Why.** F31b's re-cut buster row reads 0 px, but on its lock canon's CurAction becomes 0x11 on k=0 while
