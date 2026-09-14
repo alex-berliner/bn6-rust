@@ -32,8 +32,9 @@ def ticket_section(tid):
     m = re.search(r"^### %s\. .*?(?=^### |\Z)" % re.escape(tid), text, re.M | re.S)
     if not m: sys.exit("ticket %s not found in TODO.md/TODO_ARCHIVE.md" % tid)
     sec = m.group(0)
-    i = sec.find("**Result.**")
-    return (sec if i < 0 else sec[:i]).strip(), ("" if i < 0 else sec[i:])
+    results = "\n".join(re.findall(r"^\*\*Result\.\*\*.*?(?=\n\n|\Z)", sec, re.M | re.S))
+    ticket = re.sub(r"^\*\*(Result|Next pass[^*]*)\.?\*\*.*?(?=\n\n|\Z)", "", sec, flags=re.M | re.S)
+    return re.sub(r"\n{3,}", "\n\n", ticket).strip(), results
 
 
 def expectations(result, extra):
@@ -73,7 +74,9 @@ def main():
     a = ap.parse_args()
     ticket, result = ticket_section(a.ticket)
     exp = expectations(result, a.expect)
-    if not exp: sys.exit("no expectations parsed from the Result; pass --expect ROW=T/W/F")
+    named = set(re.findall(r"`([a-z][a-z0-9-]*)`", ticket)) | set(re.findall(r"\b([a-z][a-z0-9-]*)\b", ticket.split("\n")[0]))
+    exp = {r: v for r, v in exp.items() if r in named or any(r == e.split("=")[0] for e in a.expect or [])}
+    if not exp: sys.exit("no expectations for rows the ticket names; pass --expect ROW=T/W/F")
     base, subject = (a.base, "(given)") if a.base else base_commit(a.ticket)
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     name = "replay-%s-%s" % (a.ticket, stamp); wt = "/tmp/bnwt/" + name; branch = "wt/" + name
