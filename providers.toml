@@ -79,8 +79,10 @@ judge = ["openrouter/meta/muse-spark-1.3-contributor"]
 auditor = ["openrouter/meta/muse-spark-1.3-contributor"]
 digest = ["openrouter/meta/muse-spark-1.3-contributor"]
 
-# The joint plan the user described (2026-09-14): coordinate minimax's workers from hyper while minimax's window is
-# open, and burn whatever hyper credit that leaves with hyper's own workers before hyper's daily reset.
+# A joint plan the user sketched (2026-09-14), NOT a rule: nothing decides it until minimax is benchmarked on the
+# same seven tickets (tools/bench_provider.py) and its pass rate, minutes and quota per pass are on the table
+# next to hyper's. If adopted: coordinate minimax's workers from hyper while minimax's window is open, and burn
+# whatever hyper credit that leaves with hyper's own workers before hyper's daily reset.
 #
 # [schedule]
 # runs = ["joint", "hyper"]
