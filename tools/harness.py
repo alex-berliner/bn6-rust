@@ -2267,7 +2267,10 @@ PORTED_CHECKS: List[Check] = [
                  "canon_ref: the Mettaur is already deleted when the RESULT window comes up). "
                  "MEASURED, all three on top of each other: megaman_col 3->2 alone 7316 -> "
                  "3330, enemies 1->0 alone 7316 -> 3986, both 7316 -> 0, and with all three the "
-                 "row reads PASS total 0 worst 0 frames 40, negative NOT blind (111839).",
+                 "row reads PASS total 0 worst 0 frames 40, negative NOT blind (111839). ORDER "
+                 "MATTERS: the two descriptor fields WITHOUT the fade change are worth 56 px "
+                 "(93183 -> 93127) -- the fade darkens the sprites and the window hides them "
+                 "from k=9, so the fade change is what makes the other two visible.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=RESULT_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=RESULT_ARRIVAL),
