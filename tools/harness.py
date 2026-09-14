@@ -2142,7 +2142,28 @@ PORTED_CHECKS: List[Check] = [
                  "rows 0..5 and the new one below it: canon's tile copy is queued "
                  "(QueueEightWordAlignedGFXTransfer, sub_8001C94, asm00_0.s:3752) and drained "
                  "part-way down the frame, while our replace_tile lands before scanline 0. A "
-                 "sub-frame difference, not a clock difference.",
+                 "sub-frame difference, not a clock difference.\n"
+                 "F37 (2026-09-14), PER-OBJECT TABLE, OAM both sides (--watch 0x07000000:1024; "
+                 "canon 15..184 <-> rust 245..414). Composite 154361 = 908 x 169 + 909, and "
+                 "every frame's diff sits inside canon's Mettaur/HP boxes: o07 HP box "
+                 "(156,147,32x16,198px), o08 (166,131,8x16,69), o09 (174,127,16x32,462), o10 "
+                 "(172,123,8x16,126), o11 (164,107,32x16,252), o15 (163,143,32x8,155). Two "
+                 "stacked causes. (a) CAMERA PAN, +15 Y while the window is open: canon holds "
+                 "every field object 15 px lower with the window up (MegaMan y141/141/109/139 "
+                 "open vs 126/126/94/124 closed; Mettaur and HP box the same 15), while this "
+                 "build's field_slide drives the BG scroll only and its objects sit at the "
+                 "closed positions (ours == canon's closed set); the emotion window does not "
+                 "move (y18 both) and the cursor bracket needs no shift (positions match, 0 "
+                 "px). (b) POSE: canon's Mettaur sits frozen in the attack executor (4,11) "
+                 "anim 1 timer 2 all 170 frames -- BattlePaused (GameState+0x0A, "
+                 "GameState.inc:34) reads 1, PauseBattle asm00_1.s:14878, unflagged objects "
+                 "skip their update (asm00_1.s:90-110) -- while ours idles in the decision "
+                 "dispatch (4,8) anim 0 (oracle first divergence k=0, all frames). MegaMan 0 "
+                 "in the composite (occluded x<112; states match per oracle), bracket 0, "
+                 "emotion 0, mark/power occluded 0. Both cited fixes live outside this "
+                 "ticket's files (pan in actor/battle object Y; a battle-pause gate plus a "
+                 "phase the Fixture has no fields for -- kind/col/row/HP already match canon "
+                 "RAM: NameID 1, (5,3), 40, mm (2,3) HP 100), so neither is widened into.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=CURSOR_ROW, script=_CURSOR_WALK_RUST),
         canon=lambda ui: Side(rom=REAL, loadstate=CHIPSELECT, script=_CURSOR_WALK_REAL),
@@ -2316,7 +2337,27 @@ PORTED_CHECKS: List[Check] = [
                  "behind a layer above). Composite 34707 = OBJ-only 34707; BG0/BG1/BG2/BG3 "
                  "layer-local all 0/40 frames, OBJ layer-local 46803 of which 12096 px-frames "
                  "are occluded by the window. Nothing left on this row lives in a background "
-                 "layer.",
+                 "layer.\n"
+                 "F37 (2026-09-14), PER-OBJECT TABLE, same OAM method (canon 81..120 <-> rust "
+                 "261..300). k10..39 read a flat 461 = hand icon 256 + Mettaur pose 205, "
+                 "partitioned exactly (icon bbox x59..75 y76..92: 256; Mettaur bbox: 205; "
+                 "MegaMan bbox: 0): the icon is this build's pick-in-hand chip at panel "
+                 "(2,3)+(-1,-56), drawn once custom is None, while canon draws none (HUD "
+                 "draw-mask bit 1 stays 0: 0x4085 open, 0x4495 after close; the OK press "
+                 "commits picks to sent-chip data, sub_8029110 -- F18's note). k0 (1174) adds "
+                 "the cursor bracket (104 px: canon still draws it on the first slide-out "
+                 "frame f81, gone f82+; this build hides it for the whole Closing) and the "
+                 "first slide step; k1..k9 (1069..1938) are the 15-px pan ramping down over "
+                 "the ten slide calls plus pose. Mask watch (0x020352C0:8): update 0x4487 / "
+                 "draw 0x4085 while open (bits 0,1,2,7,10,14 / 0,2,7,14 -- icons 0 on, 1 off "
+                 "per sub_801C06E/sub_801C078, HP 2 per sub_801C168, gauge 4, time 7 BCD per "
+                 "sub_801C840/sub_801C906, predicate 10, emotion 14 per sub_801CDEC), then "
+                 "0x4497/0x4495 from f91 (+update 4, +draw 4/8/10; draw 8 is nullsub). "
+                 "BattlePaused reads 1 on all 200 watched frames, 110 past the close, so a "
+                 "pause gate must cover the post-close frames too, not just custom-open. "
+                 "Same file-scope verdict as cursor: the cited fixes (pan in object Y, icon "
+                 "suppression, bracket on the first Closing frame, pause gate + phase seed) "
+                 "all live outside this ticket's files; nothing widened.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=WINDOWCLOSE_ROW,
                              script="Start@230,A@260"),
