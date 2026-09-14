@@ -391,3 +391,45 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** dispatch third. It is the only M9 entry point that needs no src and no harness edit, and it is the ticket that turns an existing `provenance: fitted` constant into a measured one — the cross-cutting invariant "no fitted constants" is already violated in battle.rs's buster envelope and today's harness cannot see it. Costs 4-8 captures, so schedule it when T9c is between rows, never alongside T11 (both are capture-side and only two workers run at once). If step 4 shows non-determinism, stop and report: sample-exact parity would then need a decision from the user, not a tolerance from us.
 
+
+### T9d. Why the poked Gunner battle never goes live: write-watch the sequencer on the working scenario and name the difference  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/states.py (only if a poke fixes it), docs/coverage/battlestart_gunner.md (corrected), docs/trace/t9d/ (new)
+
+**Why.** T9c landed (`1f7efc9`) the `battlestart_gunner` recipe and per-slot `enemy_kind`, and the verifier CONFIRMED
+both: record 6 (`0x080b4bd8`) holds for all 900 frames, slot0 Mettaur panel `0x0205`/NameID `0x0001`/HP `0x0028`,
+slot1 NameID `0x0085`/HP `0x003C`, slot2 empty, MegaMan (2,2) HP 100, rng low half `0x0f46`. What it could not do is
+produce the row: the banner sequencer `dword_203CA70` (ewram.s:3040) **reads 0 for all 900 frames with no logged
+write at all**, the gauge is frozen at `0x00200000`, and the viruses park at state/action `0x0104`. The verifier
+REFUTED the causal chain this branch's coverage doc asserts (state 0 gated by `sub_801483C`, state 4 gated by
+`sub_801E754` ⇔ `dword_20352C0` bit `0x8000`): that bit is **already clear** in the poked battle, and the proposed
+unstick (sequencer=4 plus `0x02036848:4`/`0x02036840:4`) makes 4 stick for 338 frames, never writes 8, and produces
+no damage across 5 button presses. So "no attack event is reachable" is NOT established -- what is established is
+that nobody has found who writes `dword_203CA70`. The cheap experiment nobody has run is the comparison against a
+scenario that DOES go live: the `mettaur` row's canon side is a live battle off `battlestart`, 70 frames, its
+negatives non-blind. Same base state, same pokes, one different roll outcome.
+**Do.**
+1. `--watch-write 0x0203ca70` (and the gauge `0x020352A0`, and `0x02036848`) on the WORKING `battlestart`
+   scenario for ~200 frames → *report the writer PC(s) that first put non-zero into the sequencer, the values and
+   the frame, and what state the scenario was in when it happened.*
+2. The same watch on `battlestart_gunner` for the same frame count → *report the diff: which of those writes is
+   absent, and at which PC the chain stops (a write that never fires, or a branch that never taken -- cite the
+   instruction line for whichever it is).*
+3. Name the one thing the poked battle is missing → *report whether it is a value the roll poke left wrong (then
+   add the poke in `tools/states.py`, with the address/width from ewram.s or the ROM label, and re-run 1 capture to
+   show the sequencer moving and an attack event happening), or a structural property of state 6's setup bytes
+   (`byte_80B5347`: 00 22 00 00 | 11 25 01 00 | 11 36 85 00 | F0), in which case say which byte and cite the ROM
+   routine that reads it.*
+4. Correct `docs/coverage/battlestart_gunner.md` → *the verifier said its gate-chain narrative must be fixed before
+   it is copied forward: replace the `sub_801483C`/`sub_801E754` causal claim with what was actually measured (bit
+   already clear, poke sticks 4 for 338 frames, no 8, no damage), and state the finding of step 3 in its place.*
+
+**Rules.** No `src/*`, no `tools/harness.py` (this ticket adds NO row -- the row is the next one if the lever is
+found), no `tools/mgba_capture.c`, no `tools/trace.py`, no `FIXTURE.md`, no `assets/`, `reference/bn6f` read-only.
+≤5 capture runs. Every address named with its `ewram.s` line or ROM label. A precise negative is the good outcome:
+if the sequencer's writer cannot be localized within the budget, report which watch produced which empty log rather
+than inventing a gate.
+**Acceptance.** `docs/trace/t9d/` holds both watch logs; the coverage doc no longer asserts the refuted chain; and
+either `tools/states.py` gains a poke that makes `dword_203CA70` advance (with a capture showing it, plus the frame
+of the first attack event, which is what the row will align on), or the report names the exact PC/byte where the
+poked battle's chain stops. Either way a follow-up row ticket becomes writable.
