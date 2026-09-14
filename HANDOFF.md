@@ -17,12 +17,11 @@ vs after -- a merge that changed nothing is not parity).
 
 ## 1. Where things stand
 
-- **At 0 differing frames (canon vs ours):** wave, window, opening, cannon, field, banner, warp, card,
-  tiles, gauge, mettaur, popup, buster and 35 of the 43 chip rows -- 48 rows -- plus the integrated
-  tiles/gauge variants. Not yet: cursor 154386, windowclose 27819, result 93183 (F34b in pi's queue takes it to 0, measured), eight
-  chip rows (energbom/megenbom, areagrab, barrier/barr100/barr200, chip-use, ...), and the integrated
-  opening 72499 / field 158938 / warp 40628 / buster 54672 / chip-use 567780 variants, whose remainder
-  is canon's RESULT window sliding in while the zero-enemy fixture never resolves (F32).
+- **At 0 differing frames (canon vs ours):** every isolated row except cursor (~154k), windowclose
+  (~28k), chip-areagrab (1278 after its landed partial) and chip-use (9514): 57 of 61 rows, including
+  result, mettaur, popup, buster and all three barrier rows since 2026-09-13/14; plus the integrated
+  tiles/gauge variants. The integrated opening/field/warp/buster/chip-use variants wait on F33d
+  (canon keeps acting after the RESULT countdown starts; ours freezes in `over`).
   `python3 tools/harness.py --list` names every row; `web/captures/` holds each row's GIF and caption
   plus a before/after GIF per landed ticket (the gallery page).
 - **Open queue (`python3 tools/next_ticket.py --list`):** F18d windowclose (650544), F21d result
