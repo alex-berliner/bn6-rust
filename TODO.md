@@ -280,9 +280,10 @@ actors ("PRE-TICKED", src/shot.rs:145-147), which is the kind of ordering that c
 constant (the 45 must come from canon's routine, cited). **Coordinator:** verify_rows on every row
 named; the verifier on the canon citation and the "same offset for both" claim; one follow-up at most.
 
-### F25d. `mettaur`: the departure spray on 8 frames, 4265 px, content not timing  *(OPEN -- 2026-09-13)*
-
+### F25d. `mettaur`: the departure spray on 8 frames, 4265 px, content not timing *(CLAUDE -- 2026-09-13)*
 **Files.** src/shot.rs, src/spr.rs, assets/
+
+**Assigned to a Claude agent (2026-09-13 20:20, the user's Claude quota window).** pi's loop skips any status but OPEN.
 
 **Why.** F25c fixed the one-frame hit (shockwave flight 44 -> 45 per canon sub_80C6B64) and landed on
 main as a verified partial: mettaur 19698/1245 -> 4265/800 at offset 203, the oracle's ten state
@@ -304,6 +305,55 @@ mettaur row and 0.
 
 **Rules.** No alignment or allowlist change; src/shot.rs, src/spr.rs and assets/ only.
 **Coordinator:** verify_rows on every row named; the verifier on the canon citation; one follow-up.
+
+### F27. `popup`: the OBJ-layer element canon draws over the enemy and ours does not (55520 px)  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/hud.rs, src/hudtiles.rs, assets/ (new files only), tools/harness.py (the popup row's note only)
+
+**Why.** popup 60614/1842/80 (negative 60806 not blind). F19 left it at: subject band 0, enemy box 6081,
+and 55520 px in the region it called the HUD bar that is canon-only OBJ (capturing both sides with
+`--disable-obj` removes it). F20 showed the integrated tiles/gauge OBJ residue was object positions;
+this one is an object we do not draw at all. Identify it by OAM first: canon's object slot, tiles,
+palette, position and visibility per frame over the 80 frames, and the routine that spawns and
+drives it (cite file:line). Then implement it in ours from canon's data: tiles extracted from the
+canon ROM into assets/, timing and position from the routine, never hand-drawn or fitted.
+**Acceptance.** the popup row's HUD-bar region 0 on all 80 frames and the popup total reported
+(enemy box 6081 may remain, it is F28's); wave, window, opening, chip-cannon, field, tiles, gauge 0;
+full table nothing worse.
+
+### F28. Mettaur: its first attack starts 64 frames after canon's, relative to battle start  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/ai.rs, src/fixture.rs, tools/harness.py (the mettaur/tiles/gauge Align only, by measured event)
+
+**Why.** F25b measured the attack entries: canon at battle frames 31/137/243, ours at 95/201/307,
+the same 106-frame period on both sides and exactly 64 later on ours all three times. The mettaur
+row hides it by pairing attack indices (offset 203); the gauge-aligned integrated rows do not:
+tiles/gauge integrated 3865/678/8 (negative 15891 not blind) is canon's Mettaur mid-attack
+(CurState/CurAction 0x04/0x0b) against ours idle, and it is part of popup's enemy box (6081) and of
+windowclose's remainder. Find where the 64 comes from by measurement, not by guess: canon's Mettaur
+AI timer from battle init (enemy slot 0x0203aa88, its AI data and timer fields; the routine that
+seeds the first attack delay; whether the intro banner gates it) against ours, on the same battle
+frame numbering; or a fixture difference in when our battle starts relative to the gauge. Fix at the
+source with the citation.
+**Acceptance.** tiles/gauge integrated 0/0/8 (negative not blind); mettaur at or below 4265 on its
+event-locked alignment (if the event moves, re-sweep the band and report the new unique minimum
+and the event that names it); popup's enemy box reported; wave, window, opening, chip-cannon, field
+0; full table nothing worse.
+
+### F29. `windowclose`: decompose the remaining 648948 by layer and frame, fix what lives in the window  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/custom.rs, src/hudtiles.rs, src/field.rs, tools/harness.py (the windowclose row's note only)
+
+**Why.** windowclose 648948/27391/40 after F18-F18d fixed the close transients; the slide (k0-9) is
+0 and the rest is the forty frames as the battle resumes behind the closing window, which nobody has
+decomposed. Capture both sides per layer (`--only-bg N`, `--disable-obj`, identical on both sides)
+and produce a per-frame table layer x px x bbox; name the mechanism for each non-zero layer with a
+canon citation: the Mettaur's phase (F28's 64 frames), the backdrop's scroll and art phase, the HUD,
+the window's own tiles and scroll. Fix what lives in your files; for causes in files other workers
+hold (src/backdrop.rs, src/actor.rs, src/battle.rs, src/shot.rs, src/ai.rs) report the exact change
+as a proposal with the measurement behind it.
+**Acceptance.** the decomposition table with citations; every fix verified on windowclose plus
+wave, window, opening, chip-cannon, field; full table nothing worse.
 
 ### F26. `cursor`: decompose the x>=112 residue by layer and name each layer's mechanism  *(OPEN -- 2026-09-13)*
 

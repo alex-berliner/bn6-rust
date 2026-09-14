@@ -17,6 +17,8 @@ while [ $# -gt 0 ]; do
   esac; shift
 done
 cd "$ROOT"
+# landings are serialized machine-wide: two concurrent merges into the same checkout would corrupt it
+exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
 git diff --quiet && git diff --cached --quiet || { echo "main checkout is dirty; refusing" >&2; exit 1; }
 sha="$(git rev-parse --short "$branch")"
 if [ "$verify" = 1 ] && [ -f "/tmp/land_verify_$sha.pass" ] && [ -z "$(find "/tmp/land_verify_$sha.pass" -mmin +30)" ]; then
