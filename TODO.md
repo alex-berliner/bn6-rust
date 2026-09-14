@@ -324,8 +324,9 @@ canon ROM into assets/, timing and position from the routine, never hand-drawn o
 (enemy box 6081 may remain, it is F28's); wave, window, opening, chip-cannon, field, tiles, gauge 0;
 full table nothing worse.
 
-### F28. Mettaur: its first attack starts 64 frames after canon's, relative to battle start  *(CLAUDE -- 2026-09-13)*
+### F28. Mettaur: its first attack starts 64 frames after canon's, relative to battle start  *(PARTIAL -- 2026-09-13, premise refuted as a defect, two real frames fixed, landed)*
 
+**Result.** premise refuted as a defect, two real frames fixed, landed. The 64 = 34 + 30: canon's pausedwithcannon.state resumes a Mettaur already spawned and mid-hop (slot 0x0203ab60, not 0x0203aa88 which is empty; CurAction 0x0a frames 0-27, 0x08 28-30, 0x0b from 31) while ours runs from init (0x00 to battle 61, 0x09 from 62, 0x0b at 95): 34 frames of scene difference plus canon's one-time 30-frame post-spawn wait an already-spawned Mettaur never runs; a constant the alignment absorbs. Real defects: sub_8109CBC (asm31.s:170665-170672) exits its wait when the subtract goes negative so an arming of 0x1e is 31 frames (ours 30), and sub_810A004's Param4 branch (asm31.s:171296-171305) spends its own frame arming the wait (ours was born inside it); fixed in src/ai.rs (param4 its own field, born in RowCheck, the waiter owns its last frame); our entries now battle 97/203/309. Alignment by event: mettaur offset 203 -> 205 (V 204/206 = 46297/37873 identical shape), wave 345 -> 347 (346/348 = 4800/3840); on the branch mettaur 4265/800/70 (pre-F25d base), wave 0/0/90, tiles/gauge integrated unchanged 3865/678/8 (neg 15891), isolated 0/0/8, popup unchanged, field integrated +5 (305258->305263, worst same, enemies:0 row). Why tiles/gauge integrated cannot be 0 yet: HUDMATCH clears FLAG_OPEN_WINDOW and src/battle.rs:2107-2110 re-arms gauge_pause every frame with the gauge full while only the open-window branch decrements it, so our battle freezes from battle 62 and the Mettaur never leaves CurAction 0x09; the whole 3865 is its idle sprite vs canon's swing (bbox (164,68)-(204,111), every other pixel 0); the one-line fix alone makes the row worse (16130) because by battle 427 our MegaMan has taken two shockwave hits (HP 60->50 at 177, ->40 at 389) and blinks while canon's holds 60 unhit: the fixture must seed MegaMan's HP/mercy like it seeds the backdrop and gauge (F28b). popup's rust side has no enemy at all (enemies:0) while canon's is deleted and dissolving: the enemy-box residual is 7 frames k=0..6, not the tiles/gauge phase. Claude Opus agent, 101 tool calls, 32 min, 247k tokens.
 **Files.** src/ai.rs, src/fixture.rs, tools/harness.py (the mettaur/tiles/gauge Align only, by measured event)
 
 **Why.** F25b measured the attack entries: canon at battle frames 31/137/243, ours at 95/201/307,
@@ -448,6 +449,30 @@ blink, names, pictures, deck exact). Everything left is x>=112: the battle behin
 **Rules.** No alignment change except by measured event (offset 237 stands until a watch names a new
 event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
 row named; the verifier only if src/ changes or a canon routine is cited.
+
+### F28b. tiles/gauge integrated to 0: unfreeze the HUDMATCH battle and seed MegaMan's mid-battle state; then popup's dissolving enemy  *(CLAUDE -- 2026-09-13)*
+
+**Files.** src/battle.rs (the gauge_pause re-arm hunk at ~2107 only), src/fixture.rs, tools/harness.py (the HUDMATCH and popup descriptors and notes)
+
+**Why.** F28 measured why tiles/gauge integrated sit at 3865/678/8: HUDMATCH clears FLAG_OPEN_WINDOW and
+battle.rs re-arms gauge_pause every frame once the gauge is full, so the rust battle freezes from battle 62
+and the Mettaur never leaves its wait; the whole residue is its idle sprite against canon's swing. The
+one-line fix (`if self.gauge == GAUGE_FULL && self.open_window_allowed() { self.gauge_pause = GAUGE_PAUSE }`)
+alone makes the row worse (16130) because by battle 427 our MegaMan has taken two shockwave hits and is in
+mercy while canon's holds HP 60 unhit through frame 51: the fixture has to carry canon's mid-battle MegaMan
+(HP, mercy counter, position) the way it already carries the backdrop phase (scroll_xq/scroll_yq) and the
+gauge (gauge_tick). Measured with the throwaway unfreeze: the Mettaur's box reads exactly 0 on all 8 frames
+at the row's pinned offset 427 after F28's two frames.
+**Do.** (1) The gauge_pause fix, cited (canon's custom gauge does not pause a battle whose window cannot
+open). (2) A fixture field (peeked provenance) for MegaMan's HP and mercy state, read from canon's
+BattleObject at 0x0203a9b0 (+0x24 HP, the mercy counter field) at the row's reference frame, applied at
+battle init; HUDMATCH's descriptor carries canon's values. (3) Measure tiles/gauge integrated per half
+(left/MegaMan, right/Mettaur). (4) Then popup: its rust side has no enemy (enemies:0) while canon's Mettaur
+is deleted and dissolving for k=0..6 (5094 px after F27b); give the fixture the dissolving enemy at
+canon's phase (state DELETE, HP 0, dissolve counter peeked) or show why F19's blanking should cover it.
+**Acceptance.** tiles and gauge integrated 0/0/8 (negatives not blind) with the isolated variants still 0;
+popup 0/0/80 or its residual attributed per frame; mettaur, wave, window, opening, chip-cannon, field 0 or
+unchanged; the field integrated +5 re-measured; nothing worse.
 
 ### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
 
