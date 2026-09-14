@@ -719,6 +719,20 @@ impl Actor {
         }
     }
 
+    /// Post-hit invulnerability remaining for the state-trace export
+    /// only (T1b): canon's mercy counter at [CollisionDataPtr]+0x24
+    /// (CollisionDataPtr is BattleObject+0x54, BattleObject.inc:144;
+    /// measured 119..0 after a shockwave hit on the mettaur row's own
+    /// canon capture, 2026-09-14, T1) vs this actor's own `mercy`
+    /// (PLAYER_MERCY_FRAMES = 120, same scale by construction). A
+    /// separate accessor -- NOT a field of `OracleFields` -- so the
+    /// oracle path's per-frame struct stays the exact bytes main builds
+    /// (a wider return-by-value copy costs cycles every frame, T1b
+    /// measured +6 on field integrated); read only while tracing.
+    pub fn mercy(&self) -> u8 {
+        self.mercy
+    }
+
     /// The panel the actor currently stands on, 1-based. During a warp this is
     /// the panel being left until the move commits at the midpoint.
     pub fn panel(&self) -> (i32, i32) {

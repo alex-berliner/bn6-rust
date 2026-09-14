@@ -96,6 +96,21 @@ pub const FLAG_RESOLVE_OVER: u8 = 1 << 5; // provenance: peeked -- canon's own d
 /// has one, so `enemies` non-empty implies it (see battle.rs's `hud_live`).
 pub const FLAG_HUD_LIVE: u8 = 1 << 6; // provenance: peeked -- canon's own element mask at 0x020352C0 (--watch 0x20352C0:4, F27b): 0x4497 on every frame of the popup row's canon capture, 0x8084 on every frame of the chip rows'; the bit assignment itself is this project's protocol
 
+/// State-trace export enable (T1b): when set, the main loop writes the
+/// TRC2 block at 0x02000080 every frame; when clear, no trace store
+/// executes on any path, so pixel rows run byte-identical to a build
+/// without the export (field integrated back at 158950). Delivered
+/// per-frame by the harness's own descriptor cheats like every other
+/// flag, so it survives boot; tools/trace.py sets it on recordings only.
+/// Bit 7 is the last free bit of the flags byte (bits 0..6 taken above).
+/// NOT IN FIXTURE.md: a record-time knob, not battle setup -- pixel-row
+/// descriptors leave it clear and never mention it.
+/// Read live once per battle via `trace_enabled`, never via `Fixture`:
+/// `read()` runs once at startup and the bit is stable after that, while
+/// a per-frame re-read would put a load on the timed path every frame.
+/// Provenance of the bit assignment is this project's own protocol.
+pub const FLAG_TRACE: u8 = 1 << 7; // provenance: derived -- this project's own protocol bit assignment (the last free flags bit; see FLAG_TRACE's doc), not a ROM fact
+
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's
 /// own reserved region) -- see `window_pick_count`'s doc for why they live
@@ -250,6 +265,21 @@ unsafe fn r16(off: usize) -> u16 {
 }
 unsafe fn r32(off: usize) -> u32 {
     unsafe { core::ptr::read_volatile((base() + off) as *const u32) }
+}
+
+/// Byte offset of the flags byte inside the descriptor (the same byte
+/// `read()` parses as `flags` with its own `r8(19)`): the one address
+/// `trace_enabled` reads.
+const FLAGS_OFFSET: usize = 19; // provenance: derived -- this project's own descriptor layout (FIXTURE.md +19 flags; the offset read() already reads)
+
+/// Live read of the trace-enable bit (T1b): one volatile byte load of
+/// the harness-poked descriptor's flags, called ONCE per battle by main
+/// (the descriptor is stable across frames) -- never read via the
+/// startup `Fixture`. Clear (every pixel-row descriptor, every boot
+/// with no descriptor) means the frame loop takes the off branch and no
+/// trace store executes anywhere.
+pub fn trace_enabled() -> bool {
+    unsafe { r8(FLAGS_OFFSET) & FLAG_TRACE != 0 }
 }
 
 /// Read the descriptor at `ADDR`. `None` when the magic is absent, which is

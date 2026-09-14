@@ -125,10 +125,11 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 /// with `nm <elf> | grep BATTLE_MARKER`; read it live with
 /// `mgba_capture <rom> <out> <N> --dump 0x02000000:8:<file>`.
 ///
-/// AUDIT pairs 6/14/17, FIXTURE.md: 32 `u32`s, not 2 -- the extra 120 bytes
-/// (indices 2..32) are the fixture descriptor's own reservation: 14 words
-/// of padding so the descriptor proper starts at byte 64 (FIXTURE.md's own
-/// 0x02000000 + 0x40), then 16 words (64 bytes) for the descriptor itself.
+/// AUDIT pairs 6/14/17, FIXTURE.md: 64 `u32`s, not 2 -- the extra 248 bytes
+/// (indices 2..64) are reservations: 14 words of padding so the descriptor
+/// proper starts at byte 64 (FIXTURE.md's own 0x02000000 + 0x40), then 16
+/// words (64 bytes) for the descriptor itself, then the state-trace block's
+/// own 16 words (64 bytes at byte 128, 0x02000080 -- see `TRACE_OFFSET`).
 /// `write_battle_marker` below only ever touches indices 0 and 1, so this
 /// is not a behaviour change to the marker -- same address, same first 8
 /// bytes, same meaning.
@@ -166,7 +167,7 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 /// dumping `0x02000040:8` reads it back unchanged on both.
 #[unsafe(no_mangle)]
 #[unsafe(link_section = ".ewram.marker")]
-pub static mut BATTLE_MARKER: [u32; 32] = [0; 32];
+pub static mut BATTLE_MARKER: [u32; 64] = [0; 64];
 
 const BATTLE_MAGIC: u32 = 0x4241_5454; // provenance: derived -- this project's own protocol choice (AUDIT pair 1), not a ROM fact; "BATT" read big-endian, chosen freely
 
@@ -192,6 +193,32 @@ fn write_battle_marker(magic: u32, frame: u32) {
 const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layout constant (where in the marker's padding to put the block); the padding is demonstrably free (nm: BATTLE_MARKER owns 0x02000000..0x02000080, SPRITE_LOADER starts at 0x02000080), see the array doc
 
 const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
+
+/// Byte offset of the state-trace export block inside `BATTLE_MARKER`
+/// (T1): 0x02000000 + 128 = 0x02000080, i.e. past the fixture descriptor.
+/// Linker-placed, NOT an absolute address: growing the array pushes agb's
+/// own EWRAM data (`INTERRUPT_TABLE`, `SPRITE_LOADER`) forward instead of
+/// overlapping it -- verify with `nm <elf> | grep -A1 BATTLE_MARKER` that
+/// this static owns 0x02000000..0x02000100. The R6 cut that wrote an
+/// absolute 0x02000080 collided with the sprite loader (see the array doc).
+const TRACE_OFFSET: usize = 128; // provenance: chosen -- this project's own layout constant (first 64-byte slot past the descriptor that nm proves free); the freeness is re-measured, not assumed, see the array doc
+
+/// Magic of the state-trace block (T1): "TRC2" read big-endian.
+const TRACE_MAGIC: u32 = 0x5452_4332; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC)
+
+/// Export-only like `write_oracle_block`: nothing in this crate reads the
+/// block back, so the volatile byte stores are what keep it from being
+/// optimised away.
+fn write_trace_block(bytes: &[u8; 64]) {
+    unsafe {
+        let p = core::ptr::addr_of_mut!(BATTLE_MARKER)
+            .cast::<u8>()
+            .add(TRACE_OFFSET);
+        for (i, b) in bytes.iter().enumerate() {
+            core::ptr::write_volatile(p.add(i), *b);
+        }
+    }
+}
 
 /// Export-only: nothing in this crate reads the block back, so the volatile
 /// byte stores are what keep it from being optimised away.
@@ -287,6 +314,14 @@ fn main(mut gba: agb::Gba) -> ! {
         // the backdrop's art step (see its doc comment), it does not tick.
         write_battle_marker(0, 0);
         let mut battle_frame: u32 = 0;
+        // T1b gate: FLAG_TRACE (src/fixture.rs) read once per battle --
+        // the descriptor is stable (the harness pokes identical bytes
+        // every frame, which is what the startup `fixture::read()`
+        // already relies on). The frame path below keeps one taken-never
+        // branch when clear: no snapshot computation, none of the 64
+        // stores. Set only by tools/trace.py recordings; clear on every
+        // pixel-row descriptor and every boot with no descriptor.
+        let trace_on = fixture::trace_enabled();
         // The very first `commit()` this program ever calls does not
         // actually reach the screen. `VBlank::get()` records the vblank
         // count once, early, inside `gba.graphics.get()` above; by the time
@@ -330,6 +365,12 @@ fn main(mut gba: agb::Gba) -> ! {
             // the same-block anim/panel bytes flipping on the same k as
             // canon's CurAnim/PanelX/Y with identical per-k pixel seqs.
             write_oracle_block(&battle.oracle_snapshot(battle_frame));
+            // T1b gate (see `trace_on` above): off skips the snapshot
+            // computation and all 64 stores; on writes the block every
+            // frame like the oracle's.
+            if trace_on {
+                write_trace_block(&battle.trace_snapshot(battle_frame));
+            }
             if clocks_visible {
                 write_battle_marker(BATTLE_MAGIC, battle_frame);
                 battle_frame += 1;
