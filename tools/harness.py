@@ -1118,8 +1118,16 @@ FIELD_ORIGIN = 8
 #: in the card-picture region, not from the deck/window fields themselves;
 #: zero-src's own ticket). window_cursor=0xa (OK) matches demo-custmatch's
 #: own capture. Marker origin 8 (measured live).
+#: megaman_col/row are canon's own, peeked from /tmp/chipselect.state's
+#: MegaMan BattleObject (0x0203a9b0, PanelX/PanelY at +0x12/+0x13 =
+#: 0x0203a9c2/0x0203a9c3) via tools/oracle.py windowclose, which read
+#: mm_panel_x canon 2 / rust 3 and mm_panel_y canon 3 / rust 2 diverging on
+#: all 40 compared frames -- the same class F20b fixed for HUDMATCH. Measured
+#: (F29): windowclose 648948/27391/40 -> 612328/26551/40, its OBJ layer
+#: 97644 -> 46803, and `cursor` EXACTLY unchanged at 620802/6884/170 (the
+#: window covers him for all 170 of its frames), `window`/`card` still 0.
 CUSTMATCH_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=3, megaman_hp=100,
-                     megaman_col=3, megaman_row=2, hand=[], hand_count=0, gauge=1,
+                     megaman_col=2, megaman_row=3, hand=[], hand_count=0, gauge=1,
                      flags=0x11,
                      deck_count=5, deck=[5, 4, 71, 54, 1],
                      deck_codes=[3, 0xFF, 18, 0xFF, 0xFF],
@@ -1587,16 +1595,16 @@ PORTED_CHECKS: List[Check] = [
                  "progress floor(3n/2) rather than ceil. src/battle.rs:1971-1977 instead waits "
                  "for `self.custom` to become None (which happens on the tenth slide call, so "
                  "the first step lands ten frames late) and divides a magnitude, which rounds "
-                 "the other way. PROPOSAL for whoever holds src/battle.rs (Custom::is_closing() "
-                 "is already in src/custom.rs for it): make `want` 0 while "
-                 "`self.custom.as_ref().is_some_and(|w| !w.is_closing())` is false, and write "
-                 "`-(self.field_slide as i32) >> 1` instead of `-((field_slide / FIELD_SUBPX) "
-                 "as i32)`. MEASURED on this row: windowclose 648948/27391/40 -> 450770/12529/"
-                 "40 (negative 577321, not blind), BG2 266412 -> 0 on all 40 frames; wave/"
-                 "window/opening/chip-cannon/field isolated all still 0, opening integrated "
-                 "72499 and field integrated 305263 both unchanged. FIELD_SLIDE=30/"
-                 "FIELD_SLIDE_STEP=3 (battle.rs:225-226, currently tagged peeked) are that "
-                 "0x18000 x 10 and can carry a derived provenance. "
+                 "the other way. FIXED (F29, coordinator-approved hunk in src/battle.rs): "
+                 "`want` is 0 while `self.custom.as_ref().is_some_and(|w| !w.is_closing())` is "
+                 "false, so the pan steps on the ten slide calls themselves, and the halving is "
+                 "div_euclid so it floors the way canon's arithmetic shift does. MEASURED on "
+                 "this row: windowclose 648948/27391/40 -> 450770/12529/40 (negative 577321, "
+                 "not blind), BG2 266412 -> 0 on all 40 frames; wave/window/opening/chip-cannon/"
+                 "field isolated all still 0, opening integrated 72499 unchanged, field "
+                 "integrated 305258 -> 305253 (-5 px; that row moves by about 5 px between "
+                 "builds at this scale, well inside its 28000 cap). FIELD_SLIDE=30/FIELD_SLIDE_STEP=3 (battle.rs) now carry a derived "
+                 "provenance: they are that 0x18000 x 10. "
                  "(2) BG1 IS THE BACKDROP\'S SCROLL PHASE, and the rate is right: the whole "
                  "layer is a CONSTANT translation of (20,10) px on every one of the 40 frames "
                  "(best-shift search, cropped and cyclic both), art identical, so nothing is "
@@ -1638,12 +1646,20 @@ PORTED_CHECKS: List[Check] = [
                  "megaman_row=3 takes windowclose 648948 -> 612328/26551/40 and OBJ 97644 -> "
                  "46803, and leaves cursor at EXACTLY 620802/6884/170 (unchanged -- the window "
                  "covers him for all 170 of its frames), so unlike the backdrop seed this one "
-                 "is safe to share; NOT APPLIED here only because this ticket\'s harness scope "
-                 "is this note. The enemy is F28\'s: the oracle reads enemy_state_action canon "
+                 "is safe to share: APPLIED (F29, see CUSTMATCH_ROW's own comment). The enemy is F28\'s: the oracle reads enemy_state_action canon "
                  "(4,11) vs ours (4,9) and enemy_anim canon 1 vs ours 0 from k=0 -- the "
                  "Mettaur\'s attack phase, attributed, not fixed here. ALL THREE TOGETHER, "
                  "measured on one build: windowclose 648948/27391/40 -> 132255/5698/40 "
-                 "(negative 208890, not blind), window and card still 0. Also worth recording: "
+                 "(negative 208890, not blind), window and card still 0; the TWO THAT LANDED "
+                 "here (the camera pan and MegaMan's panel, no backdrop seed) read "
+                 "407778/11879/40 (negative 534875, not blind), with BG2 0 on all 40 frames "
+                 "and BG3 0 -- what is left is BG1 (the backdrop seed, its own odd-frame "
+                 "rounding and its art phase) and the Mettaur. A trap worth the line it costs: "
+                 "written as `-x.div_euclid(2)` the fix silently does NOTHING, because unary "
+                 "minus binds looser than a method call, so it is `-(x.div_euclid(2))` -- the "
+                 "divide-then-negate that rounds toward zero. Measured in that state: BG2 back "
+                 "to 7320-7836 px on k=1,3,5,7,9 and 0 on every even frame, the row 433618 "
+                 "instead of 407778. Also worth recording: "
                  "the PIXEL negative on this row is not blind, but tools/oracle.py windowclose "
                  "reports its own STATE-field negative as BLIND (a +1-frame canon shift moves "
                  "no first-divergence) -- the state oracle proves nothing on this row until "
