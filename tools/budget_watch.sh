@@ -24,10 +24,12 @@ while true; do
   [ -n "$hit" ] || { strikes=0; continue; }
   strikes=$((strikes + 1)); [ "$strikes" -ge 2 ] || continue
   echo "$(date +%H:%M) $hit EXHAUSTED: stopping run $NAME" >> "$RUN/status.log"
-  for q in $(ps -eo pid,args | grep "session-dir $RUN/session" | grep -v grep | awk '{print $1}'); do kill "$q" 2>/dev/null; done
+  # this run only: the coordinator's process group (its children inherit it; timeout(1) gave pi its own group) and
+  # run.sh's group. Never by role name: on 2026-09-14 18:51 a name pattern killed another provider's coordinator whose
+  # instruction text mentioned "worker".
+  for q in $(ps -eo pid,args | grep "session-dir $RUN/session" | grep -v grep | awk '{print $1}'); do kill -TERM -- "-$(ps -o pgid= "$q" | tr -d ' ')" 2>/dev/null; kill -TERM "$q" 2>/dev/null; done
+  for q in $(ps -eo pid,args | grep "$RUN/run.sh" | grep -v grep | awk '{print $1}'); do kill -TERM -- "-$(ps -o pgid= "$q" | tr -d ' ')" 2>/dev/null; done
   sleep 5
   for q in $(ps -eo pid,args | grep "session-dir $RUN/session" | grep -v grep | awk '{print $1}'); do kill -9 "$q" 2>/dev/null; done
-  # this run's children carry its role names (worker-<run>, verifier-<run>, recon-<run>; bare names for the first run)
-  for q in $(ps -eo pid,args | grep -E "pi -p .*(worker|verifier|recon)(-$NAME)?\b" | grep -v grep | awk '{print $1}'); do kill "$q" 2>/dev/null; done
   echo "$hit exhausted $(date +%H:%M)" > "$RUN/exit"; exit 0
 done
