@@ -107,7 +107,10 @@ def main():
     rows = ",".join(exp)
     v = sh(["python3", os.path.join(ROOT, "tools", "verify_rows.py"), branch, rows] +
            sum((["--expect", "%s=%s/%s/%s/-" % (r, t, w, f)] for r, (t, w, f) in exp.items()), []))
+    ncommits = sh(["git", "-C", ROOT, "rev-list", "--count", base + ".." + branch]).stdout.strip()
     verdict = "PASS" if "verify_rows: PASS" in v.stdout else "FAIL"
+    if ncommits in ("", "0"):
+        verdict = "NO-OP (no commits on the branch; rows unchanged prove nothing)"
     lines = "\n".join(l for l in v.stdout.splitlines() if l.startswith("  ") or l.startswith("verify_rows"))
     os.makedirs(os.path.join(ROOT, "docs", "benchmarks"), exist_ok=True)
     short = a.model.split("/")[-1]
