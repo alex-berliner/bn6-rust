@@ -893,7 +893,14 @@ CHECKS: List[Check] = [
                  "-- the departure spray's shape around MegaMan at the same post-hit phase on "
                  "both sides, i.e. spray content not timing, left for a follow-up. Ported from the demo-field feature to FIELD_ROW (fixture.rs's "
                  "own table entry, already used by `wave` below; AUDIT pair 17 prune "
-                 "ticket) -- same descriptor bytes.",
+                 "ticket) -- same descriptor bytes. F28 (2026-09-13) moved the event-locked "
+                 "offset 203 -> 205 BY THE EVENT, not by score: src/ai.rs now spends canon's own "
+                 "arming frame and the 31st frame of the 0x1e post-spawn wait (sub_810A004 "
+                 "asm31.s:171296-171305 / sub_8109CBC asm31.s:170665-170672), so our attack "
+                 "entries moved +2 (oracle enemy CurAction 0x0b at 0x0200001e, battle "
+                 "95/201/307 -> 97/203/309, canon's 31/137/243 unchanged) and the band re-swept "
+                 "reproduces the identical V two frames along (204: 46297, 205: 4265, 206: "
+                 "37873) with the same 4265 on the same 8 frames.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-bg",)),
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
@@ -991,7 +998,27 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
                  "gauge's stripe animation) that would otherwise contaminate a background-only "
                  "reading -- full screen (pair 6) can no longer keep them apart by cropping, so "
                  "both rows now read the SAME whole-screen number and the HUD defect is "
-                 "reported (and allowlisted, not hidden) on both." % subject_note,
+                 "reported (and allowlisted, not hidden) on both. F28 (2026-09-13) measured "
+                 "what the 3865 IS, and it is not the HUD: (a) the rust side's battle FREEZES "
+                 "at battle frame 62 -- HUDMATCH clears FLAG_OPEN_WINDOW, so battle.rs's "
+                 "gauge-fill branch re-arms gauge_pause = GAUGE_PAUSE every frame while the "
+                 "branch that decrements it is gated on open_window_allowed(), leaving `paused` "
+                 "true for good; the Mettaur never leaves its post-spawn wait (oracle enemy "
+                 "CurAction 0x09 at 0x0200001e for the whole 470-frame capture) and the whole "
+                 "3865 is its idle sprite against canon's swing, bbox (164,68)-(204,111), with "
+                 "every other pixel on the screen 0. (b) With that freeze lifted as a throwaway "
+                 "patch, the rust Mettaur runs FIELD_ROW's own 106-frame cycle here too and, "
+                 "captured OBJ-only, its box (150,55)-(215,125) reads EXACTLY 0 over all 8 "
+                 "frames -- at offset 425 before F28's +2 in src/ai.rs, at THIS row's own 427 "
+                 "after it. That 2-frame gap against a pin the Mettaur has no say in (the "
+                 "backdrop scroll makes 426/428 whole-screen diffs, and gauge_tick seeds the "
+                 "gauge to 427) is where F28's +2 was measured. (c) What still blocks 0 is "
+                 "MegaMan, not the enemy: unfrozen, he has taken two shockwave hits by battle "
+                 "427 (oracle HP 0x3c -> 0x32 at battle 177, -> 0x28 at 389) and is inside the "
+                 "120-frame mercy, while canon holds 60 unhit through frame 51 -- the left half "
+                 "goes 0 -> 13550 and the row 3865 -> 16130. So fixing the freeze ALONE makes "
+                 "this row worse; 0 needs the fixture to carry canon's mid-battle MegaMan as it "
+                 "already carries canon's backdrop and gauge phase." % subject_note,
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=HUDMATCH,
                              extra=() if ui == "integrated" else ("--disable-obj",)),
