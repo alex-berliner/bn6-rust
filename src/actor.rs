@@ -1090,8 +1090,15 @@ impl Actor {
         update
     }
 
-    pub fn show(&self, frame: &mut GraphicsFrame) {
-        self.show_with_underlay(frame, |_| {});
+    /// `dy` is the battle camera's Y pan in pixels, added to every part:
+    /// canon offsets every field object by the camera (its object draw
+    /// subtracts Camera_Y>>16 from the OAM Y, asm00_2.s:25977-25984) and
+    /// the chip window's own slide routines drive that camera (Camera+0x34
+    /// +-0x18000 a call, asm03_0.s:964-969/1099-1104 -- the `field_slide`
+    /// this `dy` comes from). Callers pass 0 when the camera is home; the
+    /// underlay closure pans its own contents itself.
+    pub fn show(&self, frame: &mut GraphicsFrame, dy: i32) {
+        self.show_with_underlay(frame, dy, |_| {});
     }
 
     /// Draw the navi with `underlay` drawn between its body and its shadow:
@@ -1101,6 +1108,7 @@ impl Actor {
     pub fn show_with_underlay(
         &self,
         frame: &mut GraphicsFrame,
+        dy: i32,
         underlay: impl FnOnce(&mut GraphicsFrame),
     ) {
         let mut underlay = Some(underlay);
@@ -1156,7 +1164,7 @@ impl Actor {
             // priority 1 (sub_801DA24, asm00_2.s:29038: BG3CNT 0x1f09).
             object
                 .set_priority(Priority::P2)
-                .set_pos((px + x, py + part.y))
+                .set_pos((px + x, py + part.y + dy))
                 .set_hflip(part.hflip ^ self.facing_left)
                 .set_vflip(part.vflip);
             if self.fade().is_some() {
