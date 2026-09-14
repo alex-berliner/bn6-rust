@@ -1304,9 +1304,11 @@ pub struct Battle<'a> {
     blip_in: u8,
     /// Frames until it is silenced again; see BUSTER_BLIP_FRAMES.
     blip_off: u8,
-    /// Frames until the buster's hit sample plays; see BUSTER_HIT_DELAY. No
-    /// off-timer needed: unlike the PSG blip, the DirectSound sample is
-    /// fire-and-forget and stops itself when it runs out of data.
+    /// Frames until the buster's hit sample plays; see BUSTER_HIT_DELAY.
+    /// Armed only when the strike actually landed on an enemy (the Strike
+    /// arm's gate, cited there); no off-timer needed: unlike the PSG blip,
+    /// the DirectSound sample is fire-and-forget and stops itself when it
+    /// runs out of data.
     hit_in: u8,
     /// Barrier's bubble: type-4 object 7 (t4_0x7_80E0AD4, asm31.s:85805;
     /// byte_80E0A14 -> effect list 0xC index 0x3d = sprite_832F8C8),
@@ -3232,7 +3234,6 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     ));
                 } else {
                     self.blip_in = BUSTER_BLIP_DELAY;
-                    self.hit_in = BUSTER_HIT_DELAY;
                     // THE PLAIN BUSTER IS A HITSCAN. Its shot never crosses
                     // the field: OAM on the firing frame has a 32x16 flash
                     // still at the gun while the enemy's HP is already down.
@@ -3241,12 +3242,30 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     // panel's centre -- (100,82) in the capture, whose navi
                     // stands on the panel centred at (60,108).
                     let (mc, mr) = self.megaman.panel();
+                    let mut landed = false;
                     for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                         let (ec, er) = enemy.panel();
                         if er == mr && (ec - mc) * self.megaman.facing_dx() > 0 {
-                            enemy.take_damage(BUSTER_DAMAGE);
+                            landed = enemy.take_damage(BUSTER_DAMAGE);
                             break;
                         }
+                    }
+                    // THE HIT SAMPLE IS GATED ON A LANDED HIT, the way the
+                    // ROM gates it: canon plays SOUND_HIT_6B only from the
+                    // shot-impact handler sub_80F2180 (asm/asm31.s:123097),
+                    // on the path where sprite_getFrameParameters
+                    // (asm/sprite.s:1192) reports the sprite's impact frame
+                    // (bit 0x80, asm/asm31.s:123061-123064) AND the enemy's
+                    // HP is actually decremented on the same path
+                    // (asm/asm31.s:123087-123093) -- no overlapping enemy,
+                    // no sample. Ours used to arm hit_in unconditionally,
+                    // so the zero-enemy buster row played
+                    // assets/buster_hit.wav at press+10 (frames 118..130,
+                    // peak 11221 -- the whole-tree peak) where canon's same
+                    // scenario shows no onset (its frame 140 = 2181.5 sits
+                    // below 136-139 = 2466/2519/2593/2782).
+                    if landed {
+                        self.hit_in = BUSTER_HIT_DELAY;
                     }
                     let (px, py) = field::panel_centre(col, row);
                     // NOT pre-ticked. The effects loop already ticks every
