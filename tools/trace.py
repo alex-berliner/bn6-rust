@@ -29,7 +29,9 @@ so the first divergence agrees with the oracle by construction -- and the
 runs below verify it instead of asserting it. Everything else in the field
 set is INFO (recorded, printed, never judged): fixtures disagree by design
 (HP, gauge, rng_abs), our model has no counterpart (GFX word), or the
-mechanisms differ (banner phase mapping, camera, backdrop phase).
+mechanisms differ (camera, backdrop phase). The banner sequencer (T7) is
+judged separately below: canon's watched word low half against our exported
+state byte (both 0x08 in battle, 0x0C/0x10 past the end count).
 """
 
 import argparse
@@ -52,7 +54,7 @@ ORCL_LEN = 40
 TRC2_ADDR = 0x02000080
 TRC2_LEN = 64
 TRC2_MAGIC = 0x54524332
-TRC2_VERSION = 2
+TRC2_VERSION = 3
 
 #: Canon watch set: name -> (addr, len). 13 watches (mgba_capture takes 16).
 CANON_WATCHES = {
@@ -132,7 +134,7 @@ def parse_trc2_row(row: bytes) -> dict:
         e1_anim=row[28], e1_panel_x=row[29], e1_panel_y=row[30],
         e1_timer=u16(32), e1_hp=u16(34),
         e2_state_action=u16(36), e3_state_action=u16(38),
-        gauge=u16(40), banner_phase=u16(42), hud_mask=u16(44),
+        gauge=u16(40), sequencer=u16(42), hud_mask=u16(44),
         backdrop_entry=u16(46), backdrop_timer=u16(48),
         backdrop_xq=u32(50), backdrop_yq=u32(54),
         field_slide=u16(58),
@@ -149,7 +151,7 @@ E1_SLOT = {"mettaur": "e2", "popup": None, "result": None, "battle_full": "e2"}
 
 #: Info fields: recorded and printed, never judged.
 INFO_RUST = ["mercy", "mm_hp", "e1_hp", "gauge", "rng",
-             "banner_phase", "hud_mask", "backdrop_entry", "backdrop_timer",
+             "sequencer", "hud_mask", "backdrop_entry", "backdrop_timer",
              "backdrop_xq", "backdrop_yq", "field_slide"]
 INFO_CANON = ["mercy", "mm_hp", "e1_hp", "gauge", "rng",
               "banner", "hud_update", "hud_draw",
@@ -279,15 +281,13 @@ def cmd_diff(args) -> None:
     elif align.startswith("sequencer"):
         val = int(align.split("=", 1)[1], 0) if "=" in align else 0x08
         c0 = next(i for i, fr in enumerate(ctab) if fr["banner"] == val) + args.shift
-        r0 = None
-        # Rust banner_phase is our own mapping (0 none, 1 BATTLE START shown,
-        # 2 closing banner, 3 done); there is no 0x08. Sequencer alignment
-        # pairs canon's first 0x08 with rust's export-frame counter equal to
-        # the scenario's rust_base at that canon frame -- i.e. row mode.
-        raise SystemExit("sequencer align is canon-only information: the rust "
-                         "side has no 0x08 sequencer (its banner_phase is our "
-                         "own 0..3 mapping). Use --align row:<scenario>. "
-                         "Canon's first %#x is its frame %d." % (val, c0))
+        # T7: the rust side exports the sequencer word's low half (TRC2 v3),
+        # so both sides align on the event itself -- e.g. =0x0C pairs the two
+        # end counts whatever each side's killing-blow frame is.
+        r0 = next(fr["frame"] for fr in rtab if fr.get("sequencer") == (val & 0xFFFF))
+        frames = min(len(ctab) - c0,
+                     sum(1 for fr in rtab if fr.get("frame", -1) >= r0))
+        how = "sequencer %#x: canon frame %d+k <-> rust export frame %d+k" % (val, c0, r0)
     elif align == "frame":
         c0, r0 = 0 + args.shift, 0
         frames = min(len(ctab) - c0, len(rtab))
@@ -346,6 +346,23 @@ def cmd_diff(args) -> None:
         prev_rrng, prev_crng = r["rng"], crng
     print("trace diff %s vs %s -- %s, %d compared frames (shift %d)"
           % (args.canon_dir, args.rust_dir, how, frames, args.shift))
+    # T7 acceptance field: the sequencer word's low half on both sides.
+    # Judged and printed like a parity field, but NOT folded into FIRST
+    # DIVERGENCE below, which stays parity-defined (oracle.py FIELD_PAIRS).
+    seq = dict(first=None, count=0, canon=None, rust=None)
+    for k in range(frames):
+        cval = ctab[c0 + k]["banner"] & 0xFFFF
+        rval = rtab[rbase + k].get("sequencer")
+        if rval is not None and rval != cval:
+            if seq["first"] is None:
+                seq["first"], seq["canon"], seq["rust"] = k, hex(cval), hex(rval)
+            seq["count"] += 1
+    if seq["first"] is None:
+        print("  %-18s match          %d/%d frames" % ("sequencer", frames, frames))
+    else:
+        print("  %-18s DIVERGES       first k=%d (canon frame %d) canon=%s rust=%s; %d/%d frames"
+              % ("sequencer", seq["first"], c0 + seq["first"],
+                 seq["canon"], seq["rust"], seq["count"], frames))
     for name in [p[0] for p in PARITY if not (p[0].startswith("enemy_") and not has_enemy)] + ["rng_cadence"]:
         f = out[name]
         if f["first"] is None:
