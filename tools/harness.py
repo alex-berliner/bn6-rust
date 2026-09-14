@@ -1266,6 +1266,43 @@ _CURSOR_WALK_RUST = ",".join(held("Left", 250 + 30 * k, 6) for k in range(5))
 #: has no enemy and the row's subject (BANNER_TILES 0x06016E00) is disjoint.
 ENEMY_DISSOLVE_TAIL = "0x60105A0:320"
 
+#: F28b (2026-09-13): the two blanks above stop at tile 0x36 and the dissolve's
+#: FIRST phase does not. Watching canon's OAM (0x07000000:1024, this row's own
+#: side plus --watch) over the compared window shows the corpse drawn from
+#: object tiles 0x01f, 0x023, 0x02b, 0x02d, 0x02f and 0x033 -- all inside the
+#: 768 bytes above -- AND from 0x03d, 0x041 and 0x045, whose shapes/sizes
+#: (tall 8x32 = 4 tiles, wide 32x16 = 8 tiles) reach tile 0x048: a second sheet
+#: region, above everything F9 blanked, which is the whole of popup's leftover
+#: 5094 px on canon frames 43..49 (k=0..6, bbox (149,81)-(196,126), canon
+#: colour over our black on every one of them; k>=7 was already 0). Tiles
+#: 0x37..0x48 = 0x060106E0 + 576 bytes. Nothing else uses them where it
+#: matters: over the row's whole 130-frame canon capture the only objects
+#: drawn from tiles 0x2d..0x49 inside the compared window (canon 43..122) are
+#: these, at x 149..189; the other users (x=4 at frames 0..15, x 137..185 at
+#: frames 15..36) are all before canon_ref. Popup only -- `banner` keeps F9's
+#: pair unchanged, and reads 0 with them.
+ENEMY_DISSOLVE_FIRST_PHASE = "0x60106E0:576"
+
+#: F28b (2026-09-13): and the three frames a per-frame --zero can never win,
+#: for the reason F9 already wrote down -- the queue is flushed in the frame's
+#: OWN vblank, after that frame's zero has run. Watched live on this row's own
+#: canon side (--watch 0x0200B4B0:1024, the transfer queue itself, one row per
+#: frame): the dissolve's uploads are queued in slot 3 at canon frames 44
+#: (src 0x0839A28C -> 0x060105A0, 896 bytes), 45 (the same source -> 0x060103E0)
+#: and 48 (src 0x0839A610 -> 0x060103E0, 768 -- F9's own entry), landing on 45,
+#: 46 and 49, which are exactly the k=2, k=3 and k=6 that survived the tile
+#: blanking (1148, 1148, 562). NOTE the slot: F9 measured this upload in slot
+#: 41 and ENEMY_DISSOLVE_SLOT_SIZE still pokes 0x0200B7EC for it; on this row
+#: today it is slot 3, so that poke is a no-op here (it is left alone for
+#: `banner`, which reads 0 with it). Size word of slot 3 =
+#: fiveWordArr200B4B0 + 3*0x14 + 8 = 0x0200B4F4; zeroing its low half is the
+#: whole size (896 = 0x380, 768 = 0x300), so CopyWords copies nothing.
+ENEMY_DISSOLVE_QUEUE_KILL = (
+    "45:0x0200B4F4:0x0000",
+    "46:0x0200B4F4:0x0000",
+    "49:0x0200B4F4:0x0000",
+)
+
 #: TODO F9 (2026-09-12): the per-frame --zero cannot blank canon frame 49 itself:
 #: the dissolve sheet's queue entry (queued during frame 48) is FLUSHED by
 #: ProcessGFXTransferQueue during frame 49's own vblank -- after that frame's zero
@@ -1821,8 +1858,10 @@ PORTED_CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1"),
-                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL),
-                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
                               script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
         # No pending_src -- this is fully expressible today. Kept as its own
