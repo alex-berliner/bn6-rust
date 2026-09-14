@@ -142,6 +142,34 @@ wave, window, mettaur, popup, buster, result, field and the row a ticket names).
 stated as state parity: "first divergence at frame N or later on scenario S", with pixels as the gate on the
 same recording. Canon never changes; provenance rules as before; cite reference/bn6f file:line.
 
+### T8. Port the script VMs, per section 3 of the plan (map-script and chatbox text-script dispatch)  *(OPEN -- 2026-09-14)*
+
+**Files.** src/script.rs (new), src/battle.rs (only where a script is started or stepped), tools/trace.py, docs/coverage/plan-interpreters.md
+
+**Why.** The third interpreter in docs/coverage/plan-interpreters.md section 3: the map-script VM and the
+chatbox text-script VM with their opcode dispatch tables (3.1, 3.2), the lowest-priority of the three
+because battle_full barely touches them, but the battle's chip descriptions, the results screen's text and
+every later screen run on them. Port the opcode dispatch and the handful of opcodes battle_full and the
+result row exercise, in the order 3.3 gives, verified per 3.4.
+**Acceptance.** the dispatch tables ported with citations; the opcodes battle_full/result exercise
+implemented and the rest stubbed with a named trap; full table identical; the trace's first divergence
+unchanged or later; plan notes.
+
+### T9. The second virus as a ported per-type routine, from a real battle recording  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/states.py (a recipe for a canon battle that fields the virus), tools/trace.py (scenario), src/objects.rs (the per-type entry), src/ai.rs, assets/ (its art extracted from the ROM), tools/harness.py (a new row and its fixture), docs/coverage/
+
+**Why.** T6 made the Mettaur canon's routine under the ported dispatcher and player; the next virus is
+the test that content is now data. Pick the first virus the overworld_net route can field cheaply
+(read the fork's enemy tables; the encounter roll's orbit trap is in reference/bn6f's notes: F-series
+recipes force the roll at battle frame 60), build the recipe and a scenario, record canon's trace
+(the enemy slot's state/action/timers from spawn), locate its per-type routine in the coverage
+ranking for that scenario (tools/coverage.py), port it under enemy_think/enemy_act with its art
+extracted byte for byte, and add one harness row for it (aligned by its first attack event).
+**Acceptance.** the new row 0 (negative not blind); the trace's enemy slot matching canon from spawn
+through its second attack; every existing row unchanged; the coverage table for the scenario in
+docs/coverage/.
+
 ### T6. The Mettaur as canon's per-type routine: replace the hand-written brain with the ported AI entry  *(DONE -- 2026-09-14, Mettaur brain now canon per-type entry MettaurEntry ForMettaur_8109EF4 [objects.rs], hand-written MettaurState)*
 
 **Result.** Mettaur brain now canon per-type entry MettaurEntry ForMettaur_8109EF4 (objects.rs), hand-written MettaurState removed (ai.rs), battle.rs 1 comment line, plan notes S2.6. verify_rows: full isolated table 0 except cursor 44/43 MATCH (same k37+k97 tear, reported not chased); both-rows field/warp/buster/opening 0; negatives not blind. Trace: mettaur 70/70 clean, battle_full first divergence unchanged k=0 (4,10)/(4,0). GLM verifier CONFIRMED claims 1,2,3,5; claim 4 (opening-baseline byte identity) corroborated via opening 0/0/40 + history. Merged c31c8cb; post-merge HEAD verify PASS identical numbers. Worker muse-spark-contrib $0.0899; land.sh reused a same-sha .pass from an earlier partial row set and wrote 'skipped' -- caught, HEAD re-verified, message amended, stale .pass removed.
