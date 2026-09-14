@@ -447,6 +447,19 @@ blink, names, pictures, deck exact). Everything left is x>=112: the battle behin
 event frame); no allowlist change; no seed or scroll refit. **Coordinator:** verify_rows on every
 row named; the verifier only if src/ changes or a canon routine is cited.
 
+### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions *(OPEN -- 2026-09-13)*
+
+**Files.** src/backdrop.rs, src/actor.rs, tools/diffmask.py, tools/probe.py
+
+**Why.** F26's verified Result (PARTIAL): BG0/BG2/BG3 clean and BG1 scroll rates match (both verifier-CONFIRMED), but the verifier FLAGGED the OBJ-layer arithmetic (OBJ-total 689572 exceeds the full-frame 620802, so as stated it must count occluded/overdrawn pixels -- the table must say which) and marked four attributions UNCHECKED: (a) BG1 art phase ours-leads-by-2 (canon entry 17->18 at k=4 vs ours at k=2; citations LoadGFXAnim/ProcessGFXAnims/sub_8001C94/schedule off_807FB98 CONFIRMED, entry-size-8 and the lead itself not measured); (b) chipselect's enemy is a Mettaur variant other than kind 0 (04/0b stability not re-measured; no oBattleObject_Kind field found -- variant may ride NameID); (c) enemy-HP portrait content byte-identical 871px with box-x canon 122-165 vs ours 2-45; (d) MegaMan at canon panel (2,3) vs fixture (3,2). No F-next may build on the table until the arithmetic closes.
+**Do, in order.**
+1. Start in `bash tools/worktree.sh f26b-layers2`. Baseline cursor at offset 237 (620802/6884/170/728447, negative not blind).
+2. Redefine the OBJ-layer measurement so the arithmetic closes (visible-composite diff pixels vs layer-local diffs, stated per layer), re-measure the per-layer totals at offset 237, and check (a)-(d) with watches on this row's own captures (GFXAnim state at 0x020094C0 both sides; enemy CurState/CurAction + NameID/variant field; portrait bbox both sides; MegaMan panel both sides).
+3. Fix in src/ only what has a canon citation and a measured before/after on cursor; otherwise stop with the repaired table. Re-run cursor, wave, window, opening, chip-cannon, result, field -- nothing worse.
+**Rules.** Same files as F26; no alignment/allowlist/seed/scroll change except by measured event; captures one at a time.
+**Measure and report.** Repaired layer table (definition stated, arithmetic closed), (a)-(d) confirmed or refuted each with the watch traces, rows before/after, full-table deltas. **Acceptance:** the table adds up and every attribution the next cursor ticket needs is measured, not inferred.
+**Coordinator:** `verify_rows` on every row the report names; the verifier on the repaired table and any canon citation.
+
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 
 **Result.** battle.rs naming: 110 bare lines/38 values->0/0 (~60 consts); release .text md5-identical, .gba same size 553172B cmp-l 29 rodata panic-tables only; full table all 60 rows ran non-blind + rollup PASS (3x2600f); buster 3172 pre-existing; landed 67f2a7d; ticket OPEN for actor.rs; worker muse-spark 92 turns $0.052, no verifier
