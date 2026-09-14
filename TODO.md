@@ -277,8 +277,9 @@ against F34's driver chain (sub_802BD60 -> sub_802BE36 at 16 px/frame). chip-use
 both sides' sequencer and window-state traces; every isolated row and result unchanged at 0; an
 allowlist entry removed only for a row that reads 0; nothing worse.
 
-### F37c. `cursor` and `windowclose` remainders: the objects' Y under the camera pan, the k=0 bracket, the pose frame  *(OPEN -- 2026-09-14)*
+### F37c. `cursor` and `windowclose` remainders: the objects' Y under the camera pan, the k=0 bracket, the pose frame  *(PARTIAL -- 2026-09-14, object-Y pan + k0 bracket landed 2ecb799: cursor 130221/767/170->34902/232/170, windowclose 19168/1878/40->125)*
 
+**Result.** object-Y pan + k0 bracket landed 2ecb799: cursor 130221/767/170->34902/232/170, windowclose 19168/1878/40->12538/1200/40; pose-frame refuted (canon Unk_02=0 = our frame 0); remainder = missing pickaxe object ~205/f needs spawn/variant ticket; verifier CONFIRMED pan/bracket/refutation + rules clean; HEAD 11-row re-verify PASS (windowclose neg 50px fixture variance); 9 canaries 0; worker muse-spark, verifier GLM
 **Files.** src/actor.rs (object Y under the camera pan), src/custom.rs (the k=0 bracket), src/ai.rs (the held pose's frame)
 
 **Why.** F37b landed the camera pan on open, the Mettaur's held pose and the hand icon: cursor 154361 ->
