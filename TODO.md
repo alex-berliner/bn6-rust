@@ -235,8 +235,9 @@ RAM at canon_ref says (peeked provenance).
 **Acceptance.** a per-object table for both rows; cursor and windowclose as low as the fixes take them,
 each fix measured alone; window, card, wave, opening, chip-cannon, mettaur, popup, result 0; nothing worse.
 
-### F37b. `cursor` and `windowclose` to 0: the camera pan while the chip window is open, the Mettaur's held pose, the hand icon and bracket  *(OPEN -- 2026-09-14)*
+### F37b. `cursor` and `windowclose` to 0: the camera pan while the chip window is open, the Mettaur's held pose, the hand icon and bracket  *(PARTIAL -- 2026-09-14, pan+pose+icon landed a6bf21c: cursor 154361/909/170->130221/767/170, windowclose 27819/1938/40->19168/1878/40 )*
 
+**Result.** pan+pose+icon landed a6bf21c: cursor 154361/909/170->130221/767/170, windowclose 27819/1938/40->19168/1878/40 (neg 316499/214890 not blind); 9 canaries 0; verifier CONFIRMED pan/pose/icon mechanisms + scope (mask values/remainder split consistent-unchecked); remainders: actor object-Y pan (~765/f), custom.rs k0 bracket 104, pose frame (prime reverted); HEAD re-check MATCH; worker muse-spark, verifier GLM
 **Files.** src/battle.rs (the camera pan / custom-screen state hunks only), src/fixture.rs (peeked enemy-state fields), tools/harness.py (CUSTMATCH_ROW / CURSOR_ROW / WINDOWCLOSE_ROW descriptor fields and the two rows' notes)
 
 **Why.** F37's per-object tables (landed as notes, 1bee9d8): cursor 154361/909/170 is (a) the field and
