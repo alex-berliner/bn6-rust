@@ -491,8 +491,9 @@ canon's phase (state DELETE, HP 0, dissolve counter peeked) or show why F19's bl
 popup 0/0/80 or its residual attributed per frame; mettaur, wave, window, opening, chip-cannon, field 0 or
 unchanged; the field integrated +5 re-measured; nothing worse.
 
-### F31b. `buster`: re-cut the row around a canon side that fires, then land the four measured buster defects  *(CLAUDE -- 2026-09-13)*
+### F31b. `buster`: re-cut the row around a canon side that fires, then land the four measured buster defects  *(DONE -- 2026-09-13, buster re-cut and closed: old row [canon idle, 3172 flat over an 8-wide plateau] replaced by one where both si)*
 
+**Result.** buster re-cut and closed: old row (canon idle, 3172 flat over an 8-wide plateau) replaced by one where both sides fire; the press is poked into canon's AIData like F11's warp (the plain buster fires on the RELEASE: JoypadPressed 0x0002, Held, then Released -> CurAction 0x08 -> 0x11; Held alone does nothing for 24 frames; idle Held word 0xfc00), canon_ref = the watched CurAction write 0x11 at canon 132 (0x0203a9b9), anim 0x0e 133..157, barrel in OAM from 134, muzzle 135, both gone 159; 28 frames; band range(96,113) unique minimum 0 at offset 103 (2911 at 102 and 104). Pre-fix 4936/617/28 (neg 6869) -> 0/0/28 (neg 3167 not blind): (1) 4936->736 pose length derived = 5 fire ticks (sub_80EB450 asm31.s:108680-108691) + byte_80209CC[Rapid*6 + min(free panels ahead,5)] (sub_800FAAC/sub_800FAF6 asm00_2.s:1903-1990, dat01.s:146-149), measured at three columns (29/25/21 frames at col 1/2/3, three exact predictions, Rapid row 0), Actor::buster_spec computes it from the navi's column; (2) 736->0 barrel and muzzle live exactly as long as the pose (oAIData_Unk_68 / oBattleObject_RelatedObject1Ptr cleared by sub_80EB502 with object_exitAttackState, asm31.s:108712-108722), BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES gone; (3)(4) strike_at 3->2 (muzzle and damage on the fire phase's second tick, asm31.s:108632-108676) and the extra fx.update() at spawn removed: pixel-neutral here because the two errors cancelled on blank muzzle cells. buster integrated 643698/27225/32 -> 248260/17668/28 (allowed). Full table 48 PASS, every failing row equal to main. Open, pixel-invisible: canon's CurAction 0x11 lands on k=0 while our ORCL export flips to 0x0b on k=1 though both draw the windup on k=0..1 (F36). Claude Opus agent, 32 tool calls, 20 min, 299k tokens.
 **Files.** tools/harness.py (the buster row, its fixture and Align), tools/states.py (a recipe if one is needed), src/actor.rs (the BUSTER pose constants only), src/battle.rs (the buster hunks only: fx.update() at ~2623, BUSTER_ARM_DELAY, BUSTER_ARM_FRAMES/BUSTER_FX_FRAMES)
 
 **Why.** F31 showed the buster row measures nothing about the buster: canon's press never fires in it and the
@@ -593,6 +594,22 @@ same amount; then re-derive the CURSOR_ROW/WINDOWCLOSE_ROW seeds by F26b's deriv
 lead and show BG1 0 on all cursor and windowclose frames. **Acceptance.** cursor's BG1-only diff 0 on all 170
 frames; windowclose BG1 0 on all 40; wave, window, card, opening, chip-cannon, field, result, tiles, gauge
 0 or unchanged; nothing worse.
+
+### F36. The oracle export block trails or leads the frame it describes by one frame (buster's attack-state entry)  *(OPEN -- 2026-09-13)*
+
+**Files.** src/main.rs, tools/oracle.py
+
+**Why.** F31b's re-cut buster row reads 0 px, but on its lock canon's CurAction becomes 0x11 on k=0 while
+our ORCL export's CurAction byte flips to 0x0b on k=1, though both sides draw the windup on k=0..1 and the
+pose from k=2. Either our attack state is entered a frame late (and its first frame draws the same pixels as
+idle), or the export block is written a frame away from the frame it describes (it is written between
+battle.update() and gfx.frame()). Every oracle comparison inherits that ambiguity.
+**Do.** Watch the ORCL block against a state whose drawing is unambiguous on the same frame (a warp or a
+flinch: the pixel changes on the frame the state changes on canon), on both sides, and say which side of the
+pair is off; fix it (the export's placement in the frame loop, or the state entry), cite canon's order of
+state update vs draw (the object dispatcher then object_updateSprite), and show the oracle's first
+divergence unchanged or improved on mettaur, buster, warp and card. **Acceptance.** the export's fields
+describe the frame captured (shown on two rows with a state change), no pixel row changes.
 
 ### F23. Naming pass: the bare numbers in src/custom.rs and src/battle.rs  *(OPEN -- 2026-09-13, battle.rs naming: 110 bare lines/38 values->0/0 [~60 consts])*
 
