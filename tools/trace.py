@@ -31,7 +31,11 @@ set is INFO (recorded, printed, never judged): fixtures disagree by design
 (HP, gauge, rng_abs), our model has no counterpart (GFX word), or the
 mechanisms differ (camera, backdrop phase). The banner sequencer (T7) is
 judged separately below: canon's watched word low half against our exported
-state byte (both 0x08 in battle, 0x0C/0x10 past the end count).
+state byte (both 0x08 in battle, 0x0C/0x10 past the end count). A record that
+carries no sequencer field on either side is a HARD failure, never a match, and
+divergence is reported as contiguous k-ranges (T7b: T7's judge skipped frames
+whose rust row lacked the field, so every retained TRC2 v2 record read
+"match 540/540", and `--align sequencer=` died with StopIteration).
 """
 
 import argparse
@@ -267,6 +271,84 @@ def load_table(d: str) -> tuple:
     return meta, table
 
 
+#: The sequencer field's own name on each side (T7b). Canon's is the watched
+#: dword_203CA70 (`banner`); ours is the TRC2 v3 export's `sequencer` (offset
+#: 42, the word's low half -- src/battle.rs `trace_snapshot`).
+SEQ_CANON_KEY = "banner"
+SEQ_RUST_KEY = "sequencer"
+#: `--align sequencer` with no value: the fight state, canon's own first one
+#: (states.TRACE_SCENARIOS battle_full canon_ref 11 is `the first sequencer
+#: 0x08`, T1 probe).
+SEQ_DEFAULT = 0x08
+#: The mask both sides are compared under: the state is the watched word's LOW
+#: HALF (byte 1 reads 0 on every recorded frame of every scenario here, and the
+#: TRC2 export is a u16), so canon's 0x0400000C and our 0x0C are the same state.
+SEQ_MASK = 0xFFFF
+
+
+def require_seq(table: list, side: str, d: str, key: str) -> None:
+    """Fail loudly when a record cannot judge the sequencer at all (T7b).
+
+    T7's judge read the rust side with `.get(SEQ_RUST_KEY)` and skipped the
+    frame whenever the key was absent, so a TRC2 v2 record -- every record
+    retained before this ticket -- printed `sequencer match N/N frames` for
+    every frame. A missing field is a broken measurement, not a match: name
+    the side, the directory, the key and what that side does carry."""
+    if not table:
+        raise SystemExit("%s side (%s): empty table -- re-record "
+                         "(python3 tools/trace.py record %s <scenario> --out %s)"
+                         % (side, d, side, d))
+    have = sorted(table[0].keys())
+    missing = [i for i, fr in enumerate(table) if key not in fr]
+    if len(missing) == len(table):
+        raise SystemExit(
+            "%s side (%s) has no %r field in any of its %d rows -- the "
+            "sequencer cannot be judged, and this tool will not report a "
+            "match for a field that is not there. Re-record it against the "
+            "TRC2 v3 export (tools/trace.py record %s <scenario> --out %s); "
+            "that record's rows carry: %s"
+            % (side, d, key, len(table), side, d, ", ".join(have)))
+    if missing:
+        raise SystemExit(
+            "%s side (%s): %d of %d rows have no %r field (first at index %d) "
+            "-- a half-written record cannot judge the sequencer; re-record it"
+            % (side, d, len(missing), len(table), key, missing[0]))
+
+
+def first_event(table: list, pred, side: str, d: str, val: int,
+                key: str = None) -> int:
+    """The first row index (or its export frame, with key=) matching pred, or
+    a loud failure naming the values the side actually read.
+
+    T7 used bare next(...), so `--align sequencer=0x10` on a win run raised
+    StopIteration out of argparse and looked like a crash rather than the
+    ordinary "that event never happened in this recording"."""
+    for i, fr in enumerate(table):
+        if pred(fr):
+            return fr[key] if key else i
+    seen = sorted({(fr.get(SEQ_CANON_KEY) if key is None else fr.get(SEQ_RUST_KEY))
+                   for fr in table if (fr.get(SEQ_CANON_KEY) if key is None
+                                       else fr.get(SEQ_RUST_KEY)) is not None})
+    raise SystemExit(
+        "--align sequencer=%#x: the %s side (%s) never reads %#x -- its %d "
+        "recorded rows read %s. Align on a state that happens, or re-record."
+        % (val, side, d, val, len(table),
+           ", ".join(hex(v & SEQ_MASK) for v in seen)))
+
+
+def divergent_runs(pairs: list) -> list:
+    """Group [(k, canon, rust), ...] into contiguous runs of the same value
+    pair: [(k0, k1, canon, rust), ...]. The report names the remainder by
+    k-range, which is what 'k-ranges with the remainder named' asks for."""
+    runs = []
+    for k, cval, rval in pairs:
+        if runs and runs[-1][1] == k - 1 and runs[-1][2] == cval and runs[-1][3] == rval:
+            runs[-1][1] = k
+        else:
+            runs.append([k, k, cval, rval])
+    return runs
+
+
 def cmd_diff(args) -> None:
     cmeta, ctab = load_table(args.canon_dir)
     rmeta, rtab = load_table(args.rust_dir)
@@ -279,12 +361,20 @@ def cmd_diff(args) -> None:
         frames = sc["frames"]
         how = "row %s: canon frame %d+k <-> rust export frame %d+k" % (name, c0, r0)
     elif align.startswith("sequencer"):
-        val = int(align.split("=", 1)[1], 0) if "=" in align else 0x08
-        c0 = next(i for i, fr in enumerate(ctab) if fr["banner"] == val) + args.shift
+        val = int(align.split("=", 1)[1], 0) if "=" in align else SEQ_DEFAULT
+        # T7b: the sequencer is an alignment EVENT, so it has to exist on both
+        # sides; require_seq names the record that cannot serve, and
+        # first_event names the values a side did read. Both replace T7's bare
+        # next() (StopIteration) and its `.get()` (false-green judge).
+        require_seq(ctab, "canon", args.canon_dir, SEQ_CANON_KEY)
+        require_seq(rtab, "rust", args.rust_dir, SEQ_RUST_KEY)
+        c0 = first_event(ctab, lambda fr: (fr[SEQ_CANON_KEY] & SEQ_MASK) == val,
+                         "canon", args.canon_dir, val) + args.shift
         # T7: the rust side exports the sequencer word's low half (TRC2 v3),
         # so both sides align on the event itself -- e.g. =0x0C pairs the two
         # end counts whatever each side's killing-blow frame is.
-        r0 = next(fr["frame"] for fr in rtab if fr.get("sequencer") == (val & 0xFFFF))
+        r0 = first_event(rtab, lambda fr: (fr[SEQ_RUST_KEY] & SEQ_MASK) == val,
+                         "rust", args.rust_dir, val, key="frame")
         frames = min(len(ctab) - c0,
                      sum(1 for fr in rtab if fr.get("frame", -1) >= r0))
         how = "sequencer %#x: canon frame %d+k <-> rust export frame %d+k" % (val, c0, r0)
@@ -296,7 +386,22 @@ def cmd_diff(args) -> None:
         raise SystemExit("unknown --align %r (row:<scenario> | frame)" % align)
     # Rust rows are keyed by capture index; rust_base is an export-frame
     # counter, so find the capture row whose TRC2 frame == rust_base.
+    if not (r0 <= max(fr.get("frame", -1) for fr in rtab)):
+        raise SystemExit("the rust side (%s) has no row at export frame %d "
+                         "(its counters run %d..%d) -- re-record or align on "
+                         "a frame inside the recording"
+                         % (args.rust_dir, r0,
+                            min(fr.get("frame", 0) for fr in rtab), r0))
     rbase = next(i for i, fr in enumerate(rtab) if fr.get("frame", i) == r0)
+    if frames > len(ctab) - c0 or frames > len(rtab) - rbase:
+        raise SystemExit("align %r wants %d compared frames but the records "
+                         "only reach canon %d..%d / rust row %d..%d"
+                         % (align, frames, c0, c0 + len(ctab) - 1 - c0,
+                            rbase, rbase + len(rtab) - 1 - rbase))
+    # The sequencer is judged on every align, so require it here too (T7b):
+    # row-mode diffs used to print `match` off a v2 record that had no field.
+    require_seq(ctab, "canon", args.canon_dir, SEQ_CANON_KEY)
+    require_seq(rtab, "rust", args.rust_dir, SEQ_RUST_KEY)
     e1slot = E1_SLOT.get(cmeta["scenario"], "e2")
     has_enemy = e1slot is not None
     out = {}
@@ -350,19 +455,27 @@ def cmd_diff(args) -> None:
     # Judged and printed like a parity field, but NOT folded into FIRST
     # DIVERGENCE below, which stays parity-defined (oracle.py FIELD_PAIRS).
     seq = dict(first=None, count=0, canon=None, rust=None)
+    seq_runs = []
     for k in range(frames):
-        cval = ctab[c0 + k]["banner"] & 0xFFFF
-        rval = rtab[rbase + k].get("sequencer")
-        if rval is not None and rval != cval:
+        cval = ctab[c0 + k][SEQ_CANON_KEY] & SEQ_MASK
+        rval = rtab[rbase + k][SEQ_RUST_KEY] & SEQ_MASK
+        if rval != cval:
             if seq["first"] is None:
                 seq["first"], seq["canon"], seq["rust"] = k, hex(cval), hex(rval)
             seq["count"] += 1
+            seq_runs.append((k, cval, rval))
     if seq["first"] is None:
         print("  %-18s match          %d/%d frames" % ("sequencer", frames, frames))
     else:
         print("  %-18s DIVERGES       first k=%d (canon frame %d) canon=%s rust=%s; %d/%d frames"
               % ("sequencer", seq["first"], c0 + seq["first"],
                  seq["canon"], seq["rust"], seq["count"], frames))
+        # The remainder, named frame by frame as contiguous k-ranges: which
+        # canon state is on screen while ours says something else.
+        for k0, k1, cval, rval in divergent_runs(seq_runs):
+            print("  %-18s   k=%-4d..%-4d (canon frame %d..%d) canon=%s rust=%s  %d frames"
+                  % ("", k0, k1, c0 + k0, c0 + k1,
+                     hex(cval), hex(rval), k1 - k0 + 1))
     for name in [p[0] for p in PARITY if not (p[0].startswith("enemy_") and not has_enemy)] + ["rng_cadence"]:
         f = out[name]
         if f["first"] is None:
