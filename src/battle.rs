@@ -4258,11 +4258,16 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // both to the hand, so a fixture that carries canon's queued
             // chip in order to draw the name also drew an icon canon had
             // torn down -- measured at exactly 256 px a frame, a 16x16 OBJ.
-            if let Some(chip) = self
-                .hand
-                .get(self.hand_at)
-                .filter(|_| self.chip_use_in != 1 && self.hud_live)
-            {
+            // F33b (icon is element 1, torn down with 0/4/10/14) plus F37b:
+            // canon's draw-mask bit 1 stays 0 after the OK press commits the
+            // picks to the sent-chip data (0x4085 open, 0x4495 after close),
+            // so no icon ever comes back for the picked chip -- while this
+            // build moved the picks into the hand and drew one. Suppressed
+            // once a window has closed (`name_suppressed` rides the same
+            // close); rows that never close (buster/chip-use) are untouched.
+            if let Some(chip) = self.hand.get(self.hand_at).filter(|_| {
+                self.chip_use_in != 1 && self.hud_live && !self.name_suppressed
+            }) {
                 let (mc, mr) = self.megaman.panel();
                 let (px, py) = field::panel_centre(mc, mr);
                 let sprite = DynamicSprite16::from_bytes(Size::S16x16, chip.icon_bytes())
