@@ -259,6 +259,24 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F38b. The integrated rows' results window: resolve the zero-enemy battle where canon does, now that `over` no longer freezes  *(OPEN -- 2026-09-14)*
+
+**Files.** tools/harness.py (ZERO_ENEMY's flags and the warp/buster/chip-use integrated rows' Align notes), src/battle.rs (the end-sequence / results hand-off hunk only), src/results.rs
+
+**Why.** F38's decomposition (07ad4e3): warp integrated 40628, buster 54672 and chip-use 275307 are canon's
+RESULT window sliding in with no counterpart on our side, because the zero-enemy fixture never resolves.
+F33c had tried FLAG_RESOLVE_OVER and measured it worse (warp 40628 -> 83175) because our `over` state then
+froze inputs and parked the banner tail; F33d removed that freeze (inputs and objects keep running after
+the countdown, canon's 0x0C handler cited). So the flag may now do what it should: retry it on the rows
+whose canon side resolves (the sequencer reaches 0x0C at canon 47 on all four; the RESULT slide starts at
+canon 154 on warp), lock our slide's first frame to the same sequencer event (dword_203CA70 -> 0x0C, then
+the window driver's first state, watched on both sides), and compare the window's slide frame by frame
+against F34's driver chain (sub_802BD60 -> sub_802BE36 at 16 px/frame). chip-use's honest lock is 101
+(remainder 281885 there). field integrated 158949 keeps its stall attribution (F33b/F33c/F38).
+**Acceptance.** warp, buster, chip-use integrated 0 (negatives not blind) or their per-frame remainder with
+both sides' sequencer and window-state traces; every isolated row and result unchanged at 0; an
+allowlist entry removed only for a row that reads 0; nothing worse.
+
 ### F37c. `cursor` and `windowclose` remainders: the objects' Y under the camera pan, the k=0 bracket, the pose frame  *(OPEN -- 2026-09-14)*
 
 **Files.** src/actor.rs (object Y under the camera pan), src/custom.rs (the k=0 bracket), src/ai.rs (the held pose's frame)
