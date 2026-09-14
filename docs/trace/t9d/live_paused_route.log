@@ -1,0 +1,3 @@
+# source stdout: /tmp/t9d_live_stdout.txt
+watch-write: 3 range(s), 12 byte watchpoint(s) armed
+WP frame=11 addr=0x0203CA70 write old=0x0000001C new=0x00000008 at=0x080083F8 (thumb) r15=0x080083FC lr=0x0800062B

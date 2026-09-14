@@ -1,0 +1,7 @@
+# source stdout: /tmp/t9d_fsm_stdout.txt
+watch-write: 2 range(s), 6 byte watchpoint(s) armed
+WP frame=0 addr=0x02034881 write old=0x00000000 new=0x00000004 at=0x08007974 (thumb) r15=0x08007978 lr=0x0800095D
+WP frame=66 addr=0x02034881 write old=0x00000004 new=0x00000008 at=0x08007A04 (thumb) r15=0x08007A08 lr=0x08000937
+WP frame=68 addr=0x02034880 write old=0x00000800 new=0x00000004 at=0x08007A3C (thumb) r15=0x08007A40 lr=0x080008F7
+WP frame=152 addr=0x02034881 write old=0x00000000 new=0x00000004 at=0x08009270 (thumb) r15=0x08009274 lr=0x0800926D
+WP frame=153 addr=0x02034881 write old=0x00000004 new=0x00000008 at=0x080092E8 (thumb) r15=0x080092EC lr=0x080092AC
