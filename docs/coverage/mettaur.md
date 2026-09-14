@@ -9,9 +9,19 @@ Executed: 517 routines, 16988713 instructions profiled (BIOS bucket 1052129, 6.2
 
 ## Interpreters in this ranking (HANDOFF.md porting plan)
 
-- animation bytecode player: TBD (rank/symbol from the table above)
-- object dispatcher: TBD
-- script VMs: TBD
+- object dispatcher: `battleObject_dispatch_8108F50` (asm31.s:169291), rank
+  68 battle_full / 114 mettaur -- the BattleObject update dispatch. Also on
+  the path: `sub_800FB54` (asm00_2.s:1995), rank 579/351 (object_setAttack2's
+  caller per the F5b trace) and `dispatch_801DACC` (asm00_2.s:29123), rank
+  658/462.
+- script VMs: map-script side observed as `MapScriptCmd_cmd_8035cf8`
+  (map_script_cutscene.s:750), whose entry has no address suffix so its
+  executed code displays under the interior anchor `off_8036090`
+  (map_script_cutscene.s:1415). The VM dispatch loop itself is not yet
+  symbol-pinned (suffix-less entry -- see the funcmap note above).
+- animation bytecode player: CANDIDATE `sub_80028C0` (sprite.s:359), rank
+  25 battle_full / 27 mettaur from frame 0 -- the hottest sprite-path routine;
+  the bytecode player entry itself is not yet symbol-pinned.
 
 ## All routines executed, ranked by calls
 
