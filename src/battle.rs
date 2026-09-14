@@ -3451,7 +3451,20 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             }
             CHIP_INVISIBL => {
                 self.presentation = Some((chip, INVISIBL_PRESENTATION));
-                self.popup = Some(NamePopup::new(chip.name()));
+                // The name popup is a live-HUD presentation element (canon's builder
+                // sub_801E95C, reference/bn6f asm/asm00_2.s:31328, sharing the banner's
+                // 0x6016E00 tile region per the NOTE at asm00_2.s:31152): it shows while
+                // the battle HUD is up and not past its teardown. The descriptor's
+                // FLAG_HUD_LIVE (fixture.rs: canon mask 0x4497 = live vs 0x8084 = torn
+                // down) is the only thing that says which canon state sits behind a
+                // zero-enemy fixture -- the `popup` row (live) against the 43 chip rows
+                // (afterdissolve_0x0c). Measured: zero popup-region pixels over 210
+                // sterile-nozero + 150 real-ROM afterdissolve frames, while the popup
+                // row's PAUSED-route canon shows it (frames 65..113) -- so draw it only
+                // when the flag says live.
+                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                    self.popup = Some(NamePopup::new(chip.name()));
+                }
             }
             CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
                 self.presentation = Some((chip, BARRIER_PRESENTATION));
