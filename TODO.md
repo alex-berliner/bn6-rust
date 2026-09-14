@@ -513,8 +513,9 @@ take it; buster integrated re-measured; wave, window, opening, chip-cannon, fiel
 unchanged; every chip row unchanged (they share the fixture path); nothing worse. The old 3172 alignment is
 not to be "fixed" by giving our side the result mark: a row that draws nothing on either side proves nothing.
 
-### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(CLAUDE -- 2026-09-13)*
+### F33. The integrated variants (field 305263, warp, buster, chip-use): decompose by HUD element with canon's element mask, fix in hud.rs/hudtiles.rs  *(PARTIAL -- 2026-09-13, field integrated 305263/10061/40 -> 304103/10032/40, warp integrated 363658 -> 362788, buster integrated 64369)*
 
+**Result.** field integrated 305263/10061/40 -> 304103/10032/40, warp integrated 363658 -> 362788, buster integrated 643698 -> 642770, chip-use integrated 644119 -> 643191 (all allowed rows; -29 px/frame: ZERO_ENEMY said megaman_hp=100 while every canon side holds 0x3c at 0x0203a9d4, element 2 the HP box); cursor 620802 -> 502822 on the branch and 154367/914/170 on main after F26b (the emotion window's OAM x takes the chip window's slide counter eStruct2035280+0x12 = SLIDE_FROM - x, added by sub_801CDEC asm00_2.s:27561-27572; Custom::hud_obj_x() -> Emotion::show; -117980 exactly as predicted); windowclose 648948 -> 642133 on the branch, 27819/1938/40 on main. Per-element table for field integrated from canon's dispatcher tables (update sub_801BEE0 asm00_2.s:25540-25563 / off_801BF04, draw sub_801BF64 :25564-25599 / off_801BF88; masks on every compared frame 0x0084 update / 0x00c5 draw: elements 2 and 7 updated, 0/2/6/7 drawn, gauge/icon/emotion torn down at canon 48): element 2 HP box 29 px/frame fixed; element 6 chip name + damage (sub_801C6EE :26619) 422 px/frame on field/warp/buster still drawn by canon and not by ours because ours ties the name to the hand with the icon (element 1, torn down) -- measured proposal: ZERO_ENEMY hand=[1] plus battle.rs:3743 filter '&& self.hud_live' gives field 287204 / warp 350128 / buster 629266, neither half alone; gauge_up should also require hud_live (element 4, unmeasured); and 86% of the four rows' residue is the BG1 backdrop phase: ZERO_ENEMY seeds none (canon 130: x -64176 / y -32088 -> x_q 684, y_q 854 by backdrop.rs's arithmetic, art phase to walk back) -- F33b. Landed 870e3ef; post-merge cursor 154367, windowclose 27819, popup/buster/tiles 0. Claude Opus agent, 103 tool calls, 35 min, 255k tokens.
 **Files.** src/hud.rs, src/hudtiles.rs, src/emotion.rs, tools/harness.py (the integrated rows' notes only), tools/allowlist.py entries removed only when a row reads 0
 
 **Why.** Four integrated (full-HUD) variants are allowlisted since AUDIT-6 ("HUD vs a zero-enemy arena, not
@@ -561,6 +562,31 @@ Then the window itself: canon's driver chain sub_802BD60 -> sub_802BE36 -> sub_8
 its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
+
+### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0  *(CLAUDE -- 2026-09-13)*
+
+**Files.** tools/harness.py (the ZERO_ENEMY descriptor and the four integrated rows' notes), src/battle.rs (the two HUD gates only: the chip-name filter at ~3743 and gauge_up), src/hud.rs, src/hudtiles.rs
+
+**Why.** F33's per-element decomposition: 86% of field integrated's 304103 (and of warp/buster/chip-use
+integrated) is the BG1 backdrop phase, because ZERO_ENEMY seeds no backdrop phase while its canon side is
+thousands of frames into pausedwithcannon; canon's counters at canon 130 read x -64176 / y -32088
+(-8f/-4f from battle init, F26b) and at 150 x -64336 / y -32168, so by backdrop.rs's arithmetic x_q=684,
+y_q=854 at canon 130 with the art phase to walk back the same way; the seed is per row (each row's
+canon_ref differs) and our pipeline lags are the ones F26b measured (scroll R-7, art R-5). The rest of the
+HUD: element 6 (chip name + damage, sub_801C6EE asm00_2.s:26619) is drawn by canon on every compared frame
+and not by ours because we tie the name to the hand together with the icon (element 1, torn down at 48):
+measured, ZERO_ENEMY hand=[1] plus `.filter(|_| self.chip_use_in != 1 && self.hud_live)` at battle.rs:3743
+gives field 304103 -> 287204, warp 362788 -> 350128, buster 642770 -> 629266 (422 px/frame), and neither
+half alone (the descriptor half alone regresses warp/buster isolated); gauge_up should also require
+hud_live (element 4). chip-use additionally keeps the name after the chip is used (canon reads
+dword_20352C8), ~444 px/frame.
+**Do.** (1) Derive and set each of the four rows' backdrop seed (art_entry/art_timer/scroll_xq/scroll_yq)
+from canon's counters and GFX state at that row's canon_ref, citing the derivation; measure BG1 alone
+per row. (2) The two gates with citations, with the hand descriptor, measured together; check windowclose
+and cursor (both enemies=0 rows) do not regress. (3) chip-use's name after use. **Acceptance.** BG1 0 on
+all frames of the four rows; each row's remaining residue decomposed by element and layer; the isolated
+variants, cursor, windowclose, popup, buster, tiles, gauge, wave, window, opening, chip-cannon unchanged
+or better; an allowlist entry removed only for a row that reads 0; nothing worse.
 
 ### F26b. `cursor` layer table: repair the OBJ arithmetic and check the four UNCHECKED attributions  *(PARTIAL -- 2026-09-13, cursor 620802/6884/170 -> 272341/1603/170 [neg 458619 not blind] at the event offset 237 [the unseeded band's )*
 
