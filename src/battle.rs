@@ -37,7 +37,7 @@ use crate::{
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
 };
-use crate::{ai, gunner, spr};
+use crate::{ai, gunner, objects, spr};
 use crate::fixture::{self, Fixture};
 use agb::display::Graphics;
 
@@ -2843,7 +2843,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // canon's (BG2 pairs at 0), yet the flinch started at k=44
             // against canon's k=43.
             let spawn_arrival = self.shots[i].just_arrived();
-            let off_field = !self.shots[i].update();
+            let off_field = !objects::t3_entry(&mut self.shots[i]);
             let mut spent = off_field;
             let arrived = spawn_arrival || self.shots[i].just_hopped();
             if !spent && arrived {
@@ -3101,7 +3101,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.bubble = None;
             }
         }
-        let navi_update = self.megaman.update();
+        let navi_update = objects::t1_player_entry(&mut self.megaman);
         if let Some((gun, _, _)) = self.vulcan_gun.as_mut() {
             match navi_update {
                 // The firing state's first frame is also its first shot.
@@ -3232,7 +3232,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // `enemies`/`ais` mutably borrowed, so a &self method would not
             // compile; disjoint field reads do.)
             if self.custom.is_none() && !(self.fixture.is_some() && self.window_closed) {
-                enemy.update();
+                objects::enemy_act(enemy);
             }
             continue;
             }
@@ -3241,7 +3241,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
                 self.cross_shape = ai::cross_targets(self.megaman.panel());
-                ai.update(enemy, self.megaman.panel(), blocked, &mut self.primary_rng);
+                objects::enemy_think(ai, enemy, self.megaman.panel(), blocked, &mut self.primary_rng);
             }
             // Same freeze as above: the seeded attack pose holds while the
             // window is up and past its close (see the note there).
@@ -3250,7 +3250,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             let update = if self.custom.is_none()
                 && !(self.fixture.is_some() && self.window_closed)
             {
-                enemy.update()
+                objects::enemy_act(enemy)
             } else {
                 Update::Nothing
             };

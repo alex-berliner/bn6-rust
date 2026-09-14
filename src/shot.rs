@@ -13,6 +13,7 @@ use agb::display::Priority;
 use agb::display::object::Object;
 
 use crate::field;
+use crate::objects::T3Kind;
 use crate::spr;
 
 /// Frames per hop for the buster: the timer is seeded from `Timer2 = 1` on
@@ -87,6 +88,9 @@ pub struct Shot {
     /// shots are released one after another (Vulcan fires every 0xa frames,
     /// sub_80EBF6E, so shot 1 goes at t=0, shot 2 at 0xa, shot 3 at 0x14).
     delay: u8,
+    /// Which T3 table entry ticks this shot (`objects::t3_entry`): set by
+    /// the constructor, read by the dispatch. See `objects::T3Kind`.
+    kind: T3Kind,
     player: spr::Player,
     assets: spr::Assets,
     /// The segment left behind at the last hop, still playing out its own
@@ -115,7 +119,7 @@ pub struct Shot {
 
 impl Shot {
     pub fn buster(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, ANIM)
+        Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, ANIM, T3Kind::BusterCannon)
     }
 
     /// The Cannon/HiCannon projectile: the big yellow-outlined white orb
@@ -123,7 +127,7 @@ impl Shot {
     /// hops one panel a time like the buster. It is *not* the buster's small
     /// bolt; the Cannon chip fires this large orb.
     pub fn cannon(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        let mut shot = Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, 0);
+        let mut shot = Self::new(assets, col, row, dx, damage, BUSTER_HOP, false, true, 0, 0, 0, T3Kind::BusterCannon);
         shot.hidden = true;
         shot
     }
@@ -145,13 +149,13 @@ impl Shot {
     ) -> Self {
         // Invisible in flight: t3_0x12 loads no sprite; only its hit spark
         // shows (sub_80C6A50, asm31.s:31253).
-        let mut shot = Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay, ANIM);
+        let mut shot = Self::new(assets, col, row, dx, damage, 1, false, true, y_offset, delay, ANIM, T3Kind::VulcanSeed);
         shot.hidden = true;
         shot
     }
 
     pub fn shockwave(assets: spr::Assets, col: i32, row: i32, dx: i32, damage: u16) -> Self {
-        let mut shot = Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0);
+        let mut shot = Self::new(assets, col, row, dx, damage, WAVE_HOP, true, false, 0, 0, 0, T3Kind::Shockwave);
         shot.lights_panel = true;
         shot
     }
@@ -169,6 +173,7 @@ impl Shot {
         y_offset: i32,
         delay: u8,
         anim: usize,
+        kind: T3Kind,
     ) -> Self {
         let mut shot = Self {
             col,
@@ -190,6 +195,7 @@ impl Shot {
             departure: None,
             hopped: false,
             hop_pending: false,
+            kind,
         };
         // PRE-TICKED, for EVERY shot: canon's travelling-attack dispatcher runs
         // one `object_updateSprite` on the object's SPAWN frame. `t3_0x0_80C4E58`
@@ -223,6 +229,13 @@ impl Shot {
     /// the frame after the arrival: F25c probe, arrival 113, HP drop 114).
     /// A shot waiting out its release delay never reports a hop, so a
     /// delayed shot's first hit frame is unchanged.
+    /// Which T3 table entry ticks this shot -- the `T3BattleObjectJumptable`
+    /// index (`objects::t3_entry` matches on it). Buster/cannon take `t3_0x0`,
+    /// Vulcan's seed `t3_0x12`, the shockwave `t3_0x16` (plan §2.3 step 3).
+    pub fn kind(&self) -> T3Kind {
+        self.kind
+    }
+
     pub fn just_hopped(&self) -> bool {
         self.hopped
     }
