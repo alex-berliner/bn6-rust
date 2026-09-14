@@ -947,7 +947,7 @@ CHECKS.extend(_chip_checks())
 #: demo-open/demo-field (no HUD/backdrop blanking to shortcut the boot).
 HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60,
                 megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=1,
-                flags=0x10, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                flags=0x10, art_entry=23, art_timer=6, scroll_xq=36, scroll_yq=18,
                 # F20b (2026-09-13): positions peeked from this row's own canon
                 # capture (REAL + PAUSED + Start@10, canon frame 44): MegaMan
                 # PanelX/PanelY 0x0203a9c2/0x0203a9c3 (BattleObject 0x0203a9b0
@@ -970,7 +970,25 @@ HUDMATCH = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=60
                 # 50 (mod 112). With it, src/hudtiles.rs's canon-verbatim
                 # formulas align bar AND marker exactly (tiles/gauge isolated
                 # residue 538 -> the 208-px wide-screen frame only).
-                gauge_tick=50)
+                # F28b (2026-09-13): the four backdrop seeds above and this
+                # gauge counter are the SAME phases, translated 318 frames
+                # earlier so the compared frame is one our battle is actually
+                # in canon frame 44's SITUATION at. F28 measured why they had
+                # to move: at the old rust battle 427 our Mettaur matched
+                # canon exactly but our MegaMan had taken two shockwave hits
+                # (HP 40, inside the 120-frame mercy) where canon's holds 60
+                # unhit -- 13642 px, all of it on the left half. 318 = 3 x the
+                # Mettaur's own 106-frame cycle, so the enemy keeps the phase
+                # F28 proved, and 427 - 318 = 109 is before our first hit
+                # (battle 181). A translation, not a re-fit: the backdrop's
+                # clocks advanced 318 ticks of src/backdrop.rs's own update
+                # (entry 5 / timer 4 -> entry 23 / timer 6 through STEP_ORDER
+                # and STEP_HOLD, x_q 424 -> (424 + 2*318) mod 1024 = 36, y_q
+                # 724 -> (724 + 318) mod 1024 = 18), and the gauge counter the
+                # same (unseeded gt at capture 117 is 110, and 32 + 110 = 142
+                # = 30 mod 112, canon's own t_used(44) -- the identity the old
+                # seed 50 satisfied at capture 435).
+                gauge_tick=32)
 HUDMATCH_ORIGIN = 8
 
 
@@ -988,11 +1006,13 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
         frames=8,
         align=Align(
             canon_ref=44,
-            search=range(415, 440),
+            search=range(97, 122),
             note="canon: regress.py's TILES_REAL_FRAME=44, fixed (PAUSED+Start@10 is a "
                  "documented scripted landing, not searched). rust: marker origin 8 "
-                 "(demo-hudmatch's own family) plus a 25-frame band around regress.py's old "
-                 "center (435-8=427) -- %s. NOT boxed: regress.py split this same capture "
+                 "(demo-hudmatch's own family) plus a 25-frame band around 109, which is "
+                 "regress.py's old center (435-8=427) minus 318 = 3 x the Mettaur's 106-frame "
+                 "cycle (F28b, see the descriptor's own comment; the band was range(415,440) "
+                 "while the descriptor seeded the old frame) -- %s. NOT boxed: regress.py split this same capture "
                  "into `tiles` (y>=24, backgrounds) and `gauge` (y<24, HUD strip) precisely "
                  "because the HUD strip carries a KNOWN, unresolved defect (TODO A8, the "
                  "gauge's stripe animation) that would otherwise contaminate a background-only "
@@ -1018,7 +1038,22 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
                  "120-frame mercy, while canon holds 60 unhit through frame 51 -- the left half "
                  "goes 0 -> 13550 and the row 3865 -> 16130. So fixing the freeze ALONE makes "
                  "this row worse; 0 needs the fixture to carry canon's mid-battle MegaMan as it "
-                 "already carries canon's backdrop and gauge phase." % subject_note,
+                 "already carries canon's backdrop and gauge phase. F28b (2026-09-13) DID THAT, "
+                 "and the row READS 0 -- both variants, full screen, negatives not blind. Not "
+                 "by seeding MegaMan (his HP and mercy at battle init cannot survive 427 frames "
+                 "of our own Mettaur hitting him) but by moving the compared frame to one our "
+                 "battle is genuinely in canon frame 44's situation at: the freeze is gone "
+                 "(src/battle.rs's gauge_pause is armed only when the window may open, cited "
+                 "there), and the descriptor's four backdrop seeds and gauge_tick were "
+                 "TRANSLATED 318 frames earlier -- 3 whole Mettaur cycles, so the enemy phase "
+                 "F28 proved at 427 is the same phase at 109, while 109 is before our first "
+                 "shockwave hit (battle 181), so MegaMan is idle at HP 60 with FlashingInvisTimer "
+                 "0 exactly as canon's is (peeked: BattleObject 0x0203a9b0 +0x24 = 0x3c, +0x20 = "
+                 "0, CollisionDataPtr +0x54 -> 0x020384f0 +0x24 = 0 on canon frames 42..48). "
+                 "Per-half at the new alignment: left x<120 = 0, right x>=120 = 0, HUD strip "
+                 "y<24 = 0. The stages measured on the way: 3865 frozen at 427, 13642 unfrozen "
+                 "at 427 (all left), 3460 at 109 with the old gauge seed (all HUD strip), 0 with "
+                 "the translated one." % subject_note,
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=HUDMATCH,
                              extra=() if ui == "integrated" else ("--disable-obj",)),

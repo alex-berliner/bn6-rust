@@ -2126,7 +2126,24 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.gauge_pause = 1;
             } else {
                 self.gauge = (self.gauge + GAUGE_STEP).min(GAUGE_FULL);
-                if self.gauge == GAUGE_FULL {
+                // F28/F28b: a full gauge on its own pauses NOTHING in canon.
+                // The fight state's own frame (`sub_800855E`, asm00_1.s:11125)
+                // opens with `UnpauseBattle` (:11132) and only ever pauses by
+                // LEAVING for another state: `sub_800A21C` (asm00_1.s:15203-
+                // 15218) answers "is the custom gauge 0x4000, with no time
+                // stop and the battle not over", and its caller pairs the
+                // answer with `PauseBattle` and battle state 0x14 in one
+                // breath (asm00_1.s:11188-11195). `gauge_pause` is this
+                // project's model of the chimes BEFORE that transition, so a
+                // fixture whose window may not open (FLAG_OPEN_WINDOW clear,
+                // `demo-hudmatch`'s own case) has no transition to wait for
+                // and must keep running. It did not: the branch below that
+                // counts `gauge_pause` down is itself gated on
+                // `open_window_allowed()`, so a full gauge re-armed it every
+                // frame and froze the whole battle from the frame the gauge
+                // filled -- F28 measured tiles/gauge's Mettaur idling in its
+                // post-spawn wait for a 470-frame capture because of it.
+                if self.gauge == GAUGE_FULL && self.open_window_allowed() {
                     self.gauge_pause = GAUGE_PAUSE;
                 }
             }
