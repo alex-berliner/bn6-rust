@@ -548,9 +548,10 @@ ours enter the end sequence on the same event with the same count. **Acceptance.
 after the killing hit equal on both sides (watch on both), result 102547 or better on its event-locked
 alignment, banner/popup/wave/window/opening/chip-cannon unchanged or 0.
 
-### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail  *(CLAUDE -- 2026-09-13)*
-
+### F34. `result` 102547: decompose by layer and frame; the window's inside (904), the slide lag, the backdrop tail *(OPEN -- 2026-09-13)*
 **Files.** src/results.rs, tools/harness.py (the result row's note and its descriptor's backdrop seed fields only)
+
+**Handed to pi (2026-09-13 23:00).** A Claude agent started this and was stopped; its partial work, if any, is committed on branch `wt/f34-result-layers` (worktree /tmp/bnwt/f34-result-layers may still exist). Start with `bash tools/worktree.sh f34-result-layers-pi` and, if `git branch --list wt/f34-result-layers` shows the branch, `git merge wt/f34-result-layers` first and read its commit messages: they are the only record of what was measured. Then continue the Do list.
 
 **Why.** result reads 102547/14866/40 (negative 195579 not blind) after F21 (reward reveal chain) and F21d
 (block-copied tilemap, one blit per frame, F21b's slide). F21 left "inside the window 904 on the plateau,
@@ -563,9 +564,10 @@ its slide timing and tile content frame by frame against ours.
 **Acceptance.** a layer x frame table with canon citations; result as low as the mechanisms you fix take it
 (each fix measured alone); field, wave, window, opening, chip-cannon, popup 0 or unchanged; nothing worse.
 
-### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0  *(CLAUDE -- 2026-09-13)*
-
+### F33b. The ZERO_ENEMY rows' backdrop seed and the two HUD gates: field/warp/buster/chip-use integrated toward 0 *(OPEN -- 2026-09-13)*
 **Files.** tools/harness.py (the ZERO_ENEMY descriptor and the four integrated rows' notes), src/battle.rs (the two HUD gates only: the chip-name filter at ~3743 and gauge_up), src/hud.rs, src/hudtiles.rs
+
+**Handed to pi (2026-09-13 23:00).** A Claude agent started this and was stopped; its partial work, if any, is committed on branch `wt/f33b-zero-enemy-seed` (worktree /tmp/bnwt/f33b-zero-enemy-seed may still exist). Start with `bash tools/worktree.sh f33b-zero-enemy-seed-pi` and, if `git branch --list wt/f33b-zero-enemy-seed` shows the branch, `git merge wt/f33b-zero-enemy-seed` first and read its commit messages: they are the only record of what was measured. Then continue the Do list.
 
 **Why.** F33's per-element decomposition: 86% of field integrated's 304103 (and of warp/buster/chip-use
 integrated) is the BG1 backdrop phase, because ZERO_ENEMY seeds no backdrop phase while its canon side is
