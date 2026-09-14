@@ -259,6 +259,21 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F37e. `windowclose` k=0..9: the objects and camera during the ten slide-out frames  *(OPEN -- 2026-09-14)*
+
+**Files.** src/battle.rs (the camera pan on the slide calls and the objects' offset from it), src/actor.rs (object Y under the camera), tools/harness.py (the windowclose row's note)
+
+**Why.** F37d landed the Mettaur's pickaxe prime: cursor 34902 -> 8/6/170 (two micro frames, k=37/97, the
+sub-frame queue-drain class F35 mapped) and windowclose 12538 -> 4943/1116/40 with k=10..39 all 0. The whole
+4943 is on the ten slide-out frames k=0..9: F29 drives the field's camera pan from the slide calls (1.5 px
+per call, floor) and F37c made the objects follow the camera once the window is open, but during the slide
+itself the objects and the camera are one step apart on some frames (which side leads is what to measure).
+Watch canon's Camera+0x34 and MegaMan's OAM Y per frame across the slide (asm03_0.s:1099-1104 and the
+object draw's camera subtract), the same on ours, and make the objects read the camera value canon's draw
+reads on that frame (before or after the slide call's add).
+**Acceptance.** windowclose 0/0/40 (negative not blind); cursor 8 or better; window, card, wave, opening,
+chip-cannon, mettaur, popup, result, field 0; nothing worse.
+
 ### F32b. The end sequence as canon's sequencer states, from the killing blow to the results window's first slide frame  *(OPEN -- 2026-09-14)*
 
 **Files.** src/battle.rs (the end-sequence state machine: over, BANNER_TO_RESULTS, the results hand-off), src/banner.rs, src/results.rs, tools/harness.py (the integrated rows' notes and the ZERO_ENEMY flags)
