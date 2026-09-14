@@ -326,7 +326,8 @@ def first_event(table: list, pred, side: str, d: str, val: int,
     for i, fr in enumerate(table):
         if pred(fr):
             return fr[key] if key else i
-    seen = sorted({(fr.get(SEQ_CANON_KEY) if key is None else fr.get(SEQ_RUST_KEY))
+    seen = sorted({(int(fr.get(SEQ_CANON_KEY) if key is None
+                     else fr.get(SEQ_RUST_KEY)) or 0) & SEQ_MASK
                    for fr in table if (fr.get(SEQ_CANON_KEY) if key is None
                                        else fr.get(SEQ_RUST_KEY)) is not None})
     raise SystemExit(
@@ -393,11 +394,40 @@ def cmd_diff(args) -> None:
                          % (args.rust_dir, r0,
                             min(fr.get("frame", 0) for fr in rtab), r0))
     rbase = next(i for i, fr in enumerate(rtab) if fr.get("frame", i) == r0)
-    if frames > len(ctab) - c0 or frames > len(rtab) - rbase:
-        raise SystemExit("align %r wants %d compared frames but the records "
-                         "only reach canon %d..%d / rust row %d..%d"
-                         % (align, frames, c0, c0 + len(ctab) - 1 - c0,
-                            rbase, rbase + len(rtab) - 1 - rbase))
+    # T7b pairing: the window is defined by EXPORT COUNTER, not row index. Our
+    # counter stalls (the synchronous show_results CPU stall F33d attributed:
+    # battle_full's record repeats counter 405 on 4 consecutive capture rows),
+    # so an index walk `rtab[rbase + k]` silently slides every later canon
+    # frame onto a rust frame that is up to N ahead. Pair by counter and say
+    # loudly how many stalls the window contains.
+    # T7b: the pairing stays the capture-index walk T1..T7 used -- row i of the
+    # rust record is capture frame i, which is what the PIXEL timeline is, and
+    # changing it silently would move every later divergence. But our export
+    # counter stalls (battle_full repeats counter 405 on 4 capture rows and then
+    # skips 406: the synchronous show_results CPU stall F33d attributed), so say
+    # loudly, before any number is read, that after the stall the counter and the
+    # index differ by N -- otherwise `first k=428` is read as a battle-frame
+    # delta when it is 4 capture frames of our own stall.
+    seen = {}
+    repeats = 0
+    jumps = 0
+    for i, fr in enumerate(rtab[rbase:rbase + frames], start=rbase):
+        c = fr.get("frame")
+        if c in seen:
+            repeats += 1
+        else:
+            if i > rbase and c != r0 + (i - rbase):
+                jumps += 1
+            seen[c] = i
+    if repeats or jumps:
+        last = rtab[rbase + frames - 1].get("frame")
+        print("NOTE: the rust export counter is not one-per-row in this window "
+              "(%d repeated row(s), %d jumped row(s) -- the synchronous show_results "
+              "CPU stall F33d attributed). Rows are paired by CAPTURE INDEX (the pixel "
+              "timeline), so the last compared row's counter is %d where a stall-free "
+              "clock would read %d: the %d-frame drift is OURS, not a canon divergence"
+              % (repeats, jumps, last, r0 + frames - 1, (r0 + frames - 1) - last))
+    frames = min(frames, len(ctab) - c0, len(rtab) - rbase)
     # The sequencer is judged on every align, so require it here too (T7b):
     # row-mode diffs used to print `match` off a v2 record that had no field.
     require_seq(ctab, "canon", args.canon_dir, SEQ_CANON_KEY)

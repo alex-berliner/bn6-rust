@@ -1,0 +1,8 @@
+{
+ "scenario": "battle_full",
+ "side": "rust",
+ "frames": 540,
+ "canon_ref": 11,
+ "rust_base": 0,
+ "mercy_addr": 33785108
+}

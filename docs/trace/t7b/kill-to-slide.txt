@@ -1,0 +1,22 @@
+T7b kill-to-slide measurement, BG3 isolated (--only-bg 3), battle_full recipe,
+same sides/same frame window as docs/trace/t7b/*.diff.txt. Capture frames are the
+presentation timeline; our export counter is given where it differs (the 4-row
+show_results stall of F33d).
+
+CANON  (dir /tmp/t7b/bg3_canon, watch 0x0203ca70:4)
+  killing blow          capture 281   (e2 HP 40->0, CurState/CurAction (4,2))
+  0x08 -> 0x0C          capture 316   (+35 from the blow)
+  +2 post-edge write    capture 318   1596 px, bbox (48,0)-(191,15)
+  first slide tick      capture 423   2090 px, bbox (0,24)-(15,154)   => +107 after 0x0C
+  slide ramp            423..436: 2090 3652 4310 4437 4721 5716 6196 6529 6883 7183 7711 9168 11386 8283
+
+OURS   (dir /tmp/t7b/bg3_rust, TRC2 v3 sequencer)
+  killing blow          export 262 = capture 270   (e1 HP 40->0, (4,2), anim 2)
+  0x08 -> 0x0C          export 296 = capture 304   (+34 from the blow; canon +35)
+  +2 post-edge write    capture 306   1596 px, bbox (48,0)-(191,15)   -- matches canon's +2
+  first slide tick      capture 437 (export 426)   2090 px, bbox (0,24)-(15,154)
+  slide ramp            437..450: 2090 3643 4295 4387 4674 5669 6149 6482 6836 7136 7664 9121 11339 8272
+  two extra BG3 rows before the slide: capture 418 (422 px, bbox (1,148)-(63,158)), 419 (704 px)
+
+GAP transition -> first slide:  canon +107, ours +133 capture frames (+130 battle
+updates).  Gap killing blow -> first slide: canon +142, ours +167.

@@ -500,3 +500,80 @@ coverage-table evidence behind it:
   `off_8036090` :1415, 14457 instr), `chatbox_runScript` (chatbox.s:942),
   `chatbox_runScript_803FE10` (chatbox.s:178, body anchor `off_803FEB0`
   :266, 3689 instr).
+
+## T7b — the Sequencer evidence, re-recorded (2026-09-14, wt/t7b-sequencer-evidence)
+
+Three defects in the judge were blocking any of this from being believed:
+
+- **False green.** A rust record whose TRC2 predates the `sequencer` field (v2) made
+  `tools/trace.py diff` print `sequencer match 540/540` for battle_full, because the
+  judge skipped a field when either table lacked it. Every T1..T6 "Sequencer 0x08
+  held on all four rows" line came off those records. The judge now calls
+  `require_seq` up front and dies naming the side, the record directory, the key it
+  wanted (`banner` on the canon side, `sequencer` on the ours side) and the keys the
+  record does have (`trc2_version=2` records list `banner_phase`). Same loud
+  behaviour for row aligns, which previously skipped the sequencer entirely.
+- **`--align sequencer=` was unrunnable.** It read `int(align.split("=")[1], 0)`
+  without ever passing the value into `cmd_diff`'s loop, then did a bare `next()`
+  over frames, so `--align sequencer=0x0C` died with `StopIteration` (the exception
+  was a traceback; the real cause is that a v2 record has no rows to scan). The
+  value is threaded through now, a state neither side reads fails with the list of
+  states the record does read, and comparison is masked to the low half — the canon
+  dword carries flags in the high half (frame 440 reads `0x0400000C`), which T7
+  already recorded and which used to make `--align sequencer=0x0C` look for a state
+  that never appears.
+- **Counter stalls were invisible.** Our export counter repeats a value for four
+  capture rows around `show_results` (F33d's attributed CPU stall), so an
+  index-walked window quietly drifts. The judge prints the drift before any number
+  (`the last compared row's counter is 531 where a stall-free clock would read 534`)
+  so `first k=428` is not read as a battle-frame delta.
+
+Fresh TRC2 **v3** records on this branch's build (`meta.json` per scenario and the
+gzip'd `table.json` for both sides are retained in `docs/trace/t7b/`; the raw
+`trc2.bin`/`frame.*.rgb` streams stay on disk under `/tmp/t7b/base/<r|c>_{bf,met,pop,res}`,
+the `.bin` alone being the whole state record). `sequencer` present in all four,
+`trc2_version=3`:
+
+| row | sequencer verdict (fresh v3) | k-ranges / first divergence |
+|---|---|---|
+| mettaur | **match 70/70** | both sides read `0x08` throughout the 70-frame window |
+| popup | **match 80/80** | both read `0x08`; `mm_state_action` diverges at k=0 (canon `(4,21)` vs ours `(4,8)`) — F30's pre-window `act=21` |
+| result | **DIVERGES 40/40**, structural | k=0..39 canon=`0x0C` ours=`0x08`: canon's window opens at its own frame 21, already past the end edge, while ours is mid-dissolve. This is F36's "structurally different arrival", now shown on the sequencer, not just on pixels (the row keeps its 226234 total / worst 7002) |
+| battle_full | **DIVERGES 174/540** | k=31..32 `0x20`/`0x08`, k=33..132 `0x24`/`0x08`, k=133..135 `0x00`/`0x08`, k=136..195 `0x04`/`0x08`, k=296..304 `0x08`/`0x0C` |
+
+The remainder is named frame by frame: the four `0x20`/`0x24`/`0x00`/`0x04` runs
+(k=31..195) are canon's **chip/custom-screen** states — our side never reads them,
+so the fixture's chip fire at k=180 has no sequencer counterpart at all — and the
+last run, k=296..304, is the 9-frame **end-edge offset**: our kill lands at k=262
+against canon's k=270 (the recipes' kill timing, F26), and our dissolve counts 34
+updates to canon's 35, so we enter `0x0C` one frame early on top of eight. With the
+edge itself aligned (`--align sequencer=0x0C`, canon 316 ↔ ours 296) the sequencer
+is **239/239 equal to the end of the recording**, which is T7's claim restated on
+v3 evidence — and the same window's `mm_timer`/`enemy_*` divergences at k=0 of that
+align are canon's enemy going `[8,0]`/anim 0 while ours stays `[4,2]`/anim 2
+(the death-action convention, not the Sequencer).
+
+**Kill-to-slide gap, both sides** (BG3-only captures of the same recipe, in
+`/tmp/t7b/bg3_{canon,rust}`; ours also in `docs/trace/t7b/kill-to-slide.txt`):
+
+| | killing blow | `0x08→0x0C` | first slide tick | gap transition→slide |
+|---|---|---|---|---|
+| canon | capture 281 | capture 316 (+35) | capture 423 | **+107** |
+| ours | capture 270 (export 262) | capture 304 (export 296, +34) | capture 437 | **+133** capture frames / **+130** battle updates |
+
+Both sides write the same `+2` top-strip BG3 event after the edge (1596 changed px
+at bbox 48,0–191,15) and the same 14-tick ramp (ours 2090,3643,4295,… vs canon
+2090,3652,4310,…), so the slide itself is F34-confirmed identical; the entire
+26-frame difference is setup duration — our `RESULTS_DELAY` 110 plus
+`SLIDE_HOLD` 18 against canon's 59-to-banner-down plus a 48-frame driver setup,
+which is F38/F38b's OPEN note, now measured. **Nothing here indicts the Sequencer
+transition itself**, so `src/battle.rs` is unchanged by this ticket; the one-frame
+dissolve shortfall (34 vs 35 from the death-action frame) is recorded as a
+measurement, not patched, because every pixel row downstream is fitted to the
+current `over` frame and shifting it would regress `field`.
+
+Nothing else got worse with the judge fixed: the four isolated rows still score 0
+with negatives live (`result` 157791→0, `popup` 29292→0, `banner` 16438→0,
+`field` 158944→0), and the integrated rows that fail reproduce T7's totals exactly
+(`warp` 40628/worst 11744, `buster` 54672/worst 12977, `chip-use` 275307/worst
+18091) — the branch's only source change is `tools/trace.py`.

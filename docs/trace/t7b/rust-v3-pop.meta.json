@@ -1,0 +1,8 @@
+{
+ "scenario": "popup",
+ "side": "rust",
+ "frames": 80,
+ "canon_ref": 43,
+ "rust_base": 122,
+ "mercy_addr": 33785108
+}

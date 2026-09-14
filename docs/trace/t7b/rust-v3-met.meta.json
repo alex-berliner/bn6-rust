@@ -1,0 +1,8 @@
+{
+ "scenario": "mettaur",
+ "side": "rust",
+ "frames": 70,
+ "canon_ref": 140,
+ "rust_base": 205,
+ "mercy_addr": 33785108
+}
