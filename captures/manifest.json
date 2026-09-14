@@ -1,5 +1,11 @@
 [
   {
+    "file": "captures/chip-areagrab-f12-progress.gif",
+    "name": "chip-areagrab-f12-progress",
+    "label": "The AreaGrab chip across F12's orbs pass. The orbs' art is now extracted byte for byte from the canon ROM and they land at ground level as the disassembly's landing check requires, instead of the earlier approximation: 25644 to 1278 differing pixels over 77 frames. What remains is the burst bank on one frame and the dim shading of the orbs, which our build does not draw yet.\n\nchip-areagrab (isolated), before and after: canon on top; ours at b06fd6f (25644 px over 77 frames, canon 5+k, rust offset 110); ours at 68535fb (1278 px, canon 5+k, rust offset 126). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "added": "2026-09-14"
+  },
+  {
     "file": "captures/chip-areagrab-progress.gif",
     "name": "chip-areagrab-progress",
     "label": "F12 popup-gate: FLAG_HUD_LIVE-gated popups (human impl, worker-verified); areagrab 43367 to 25644, orbs next\n\nchip-areagrab (isolated), before and after: canon on top; ours at 48d4447 (43367 px over 77 frames, canon 5+k, rust offset 110); ours at 6081948 (25644 px, canon 5+k, rust offset 110). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
