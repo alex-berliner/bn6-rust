@@ -259,6 +259,18 @@ HUD element mask on that capture (F27b/F33's dispatcher tables). Each change mea
 **Acceptance.** cursor 0/0/170 and windowclose 0/0/40 (negatives not blind), or their per-object remainder;
 window, card, wave, opening, chip-cannon, mettaur, popup, result, field 0; nothing worse.
 
+### F37f. `windowclose` k=0..9: the 162 px marcher on the slide frames (custom.rs)  *(OPEN -- 2026-09-14)*
+
+**Files.** src/custom.rs, tools/harness.py (the windowclose row's note)
+
+**Why.** F37e's camera-dy floor (landed) leaves windowclose at 1458/162/40: exactly 162 px on each of nine
+slide frames, the same shape marching with the slide -- a window-layer element (custom.rs) drawn one step
+off during the slide-out. Identify it by OAM/tilemap on both sides on k=0..9 (which object or tile row,
+its x per frame vs the slide position), find canon's draw for it in the slide routine's per-call work
+(sub_8026BF4, asm03_0.s:1037-1125) and make ours draw it at the same step.
+**Acceptance.** windowclose 0/0/40 (negative not blind); cursor 20 or better; window, card, wave, opening,
+chip-cannon, mettaur, popup, result, field 0; nothing worse.
+
 ## T. Trace-driven porting (phase "porting", 2026-09-14; the plan in HANDOFF §1)
 
 **Common to the T tickets.** The harness rows stay as free regression tests (every landing runs verify_rows on
@@ -305,7 +317,7 @@ bytecode player, object dispatcher, script VMs) located in the ranking with thei
 
 ### F37e. `windowclose` k=0..9: the objects and camera during the ten slide-out frames  *(PARTIAL -- 2026-09-14, cam_dy floor-fix KEPT unmerged [branch wt/f37e 06fa98d]: windowclose 4943/1116/40->1458/162/40 [enemy+MegaMan )*
 
-**Result.** cam_dy floor-fix KEPT unmerged (branch wt/f37e 06fa98d): windowclose 4943/1116/40->1458/162/40 (enemy+MegaMan gone, 162x9 marcher for custom.rs); cursor 8->20 REGRESSION (deterministic, k37/k97 race, blocks landing); verifier CONFIRMED no-skew watch + asr floor mechanism + scope/no-op; marcher ID + race-flip attribution unchecked-consistent; worker muse-spark, verifier GLM
+**Result.** cam_dy floor-fix KEPT unmerged (branch wt/f37e 06fa98d): windowclose 4943/1116/40->1458/162/40 (enemy+MegaMan gone, 162x9 marcher for custom.rs); cursor 8->20 REGRESSION (deterministic, k37/k97 race, blocks landing); verifier CONFIRMED no-skew watch + asr floor mechanism + scope/no-op; marcher ID + race-flip attribution unchecked-consistent; worker muse-spark, verifier GLM Human decision (2026-09-14 06:30): landed anyway -- the camera-dy floor is canon's mechanism (asr) and takes windowclose 4943 -> 1458; the cursor 8 -> 20 is the F35 sub-frame race flipping on the same two frames (k=37/97), a class already blocked on its own ticket (archived), recorded there; the 162x9 marcher is F37f.
 **Files.** src/battle.rs (the camera pan on the slide calls and the objects' offset from it), src/actor.rs (object Y under the camera), tools/harness.py (the windowclose row's note)
 
 **Why.** F37d landed the Mettaur's pickaxe prime: cursor 34902 -> 8/6/170 (two micro frames, k=37/97, the
