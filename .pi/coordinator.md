@@ -14,7 +14,8 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    `python3 tools/judge_append.py <that file>`; if it admitted a ticket, continue the loop from step 1;
    if it admitted none, STOP. Never read TODO.md whole.
 2. **Dispatch.** Start each printed ticket's worker with `async: true`, using the roles in the order the
-   instruction lists them (e.g. `worker, worker-hyper, worker-hyper`: the first ticket to the first role);
+   instruction lists them (if `docs/recon/<ID>.md` exists, append "A recon map for this ticket is at
+   docs/recon/<ID>.md: read it first; every causal link in it is unverified" to the task) (e.g. `worker, worker-hyper, worker-hyper`: the first ticket to the first role);
    if there is a pair, start the
    second the same way at once (two children at most; captures are bounded by a machine-wide
    semaphore). Each: `{agent: "worker", async: true, timeoutMs: 10800000, cwd: "/home/box/Code/bn",
