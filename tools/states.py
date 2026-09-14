@@ -514,3 +514,72 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+#: The state-trace scenarios (T1, tools/trace.py): each maps a scenario name
+#: to how to record it on both sides plus the alignment pairing. Row
+#: scenarios reuse harness.py's own Sides verbatim (same ROM, state, script,
+#: cheats) and the pairing oracle.py compares (canon_ref + rust_base, both
+#: measured there, not here). battle_full is the whole arc from battle start
+#: on both sides: resume, open the custom screen, pick/confirm Cannon, fire,
+#: take the Mettaur's shockwave, win, dismiss RESULT.
+#:
+#: WHY battle_full starts from PAUSED, not BATTLESTART (measured 2026-09-14,
+#: T1): a fresh BATTLESTART battle never fills the custom gauge (word
+#: 0x020352A0 reads 0 for 800 frames, HUD mask never reaches the live
+#: 0x4497, banner sequencer stays 0) with or without input, so the custom
+#: screen cannot open there on canon; PAUSED is a live battle with a full
+#: gauge (0x4000). "From BATTLE START" is the sequencer's own event: both
+#: sides align on entering battle (canon sequencer 0x1c->0x08 at capture 11,
+#: rust export-frame counter 0). Canon recipe (REAL rom -- STERILE never
+#: concludes, so no win there): Start@10 resumes; L@40 opens custom (~48);
+#: Start@70 goes to OK and A@80 confirms WITHOUT picking, so the hand keeps
+#: its Cannon (A@70 picks Vulcan out of slot 0 -- measured); A@260 fires
+#: after the close (~207); Cannon kills the 40HP Mettaur at 281 while its
+#: shockwave lands at 280; sequencer enters 0x0C at 316 (DISSOLVE 35);
+#: RESULT prompt blinks from ~417; A@440/A@470 dismisses. Rust recipe: a
+#: 1-Mettaur fixture (killable default 40HP) with Cannon in hand and
+#: FLAG_AUTO_FIRE at fire_frame 180, killing at table frame 262 -- 8 frames
+#: off canon's ref-relative 270, the closest of the swept 90/180.
+TRACE_SCENARIOS = {
+    "mettaur": {
+        "harness_row": "mettaur",
+        "canon_ref": 140,  # provenance: peeked -- oracle.py mettaur's own compared canon frames 140..209
+        "rust_base": 205,  # provenance: peeked -- oracle.py mettaur's own compared rust export frames 205..274
+        "frames": 70,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- [0x0203a9b0+0x54]+0x24 on the PAUSED battle, T1 probe (119 on the hit frame)
+    },
+    "popup": {
+        "harness_row": "popup",
+        "canon_ref": 43,  # provenance: peeked -- oracle.py popup's own compared canon frames 43..122
+        "rust_base": 122,  # provenance: peeked -- oracle.py popup's own compared rust export frame base 122
+        "frames": 80,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur, T1 probe
+    },
+    "result": {
+        "harness_row": "result",
+        "canon_ref": 21,  # provenance: peeked -- oracle.py result's own compared canon frames 21..60
+        "rust_base": 21,  # provenance: peeked -- oracle.py result's own compared rust export frame base 21
+        "frames": 40,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle family (RESULT_ARRIVAL), T1 probe
+    },
+    "battle_full": {
+        "frames": 540,
+        "canon_ref": 11,  # provenance: peeked -- first sequencer 0x08 on the recipe's own capture (0x1c->0x08 at 11), T1 probe
+        "rust_base": 0,  # provenance: peeked -- rust export-frame counter at its battle start (counter = capture - 8, T1 probe)
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle, T1 probe
+        "canon": {
+            "rom": REAL,
+            "loadstate": PAUSED,
+            "cheats": ("0x020349c2:0x01",),
+            "script": "Start@10,L@40,Start@70,A@80,A@260,A@440,A@470",
+        },
+        "rust": {
+            "fixture": {
+                "enemies": 1, "enemy_kind": 0, "enemy_col": 5, "enemy_row": 2,
+                "megaman_hp": 60, "megaman_col": 2, "megaman_row": 2,
+                "hand": [1], "hand_count": 1, "gauge": 0, "flags": 0x19,
+                "fire_frame": 180, "enemy_hp": 0,
+            },
+        },
+    },
+}

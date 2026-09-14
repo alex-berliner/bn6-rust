@@ -77,3 +77,11 @@ one-shot poke here delivers a press -- F5b/F11) · joypad mirror 0x02036822 · s
   into one command or a script per stretch: every turn re-sends your whole context.
 - Wall time: a row's captures run in parallel (3 machine-wide slots); a fat-LTO release build is the slow
   step (~1 min cold, seconds warm), so keep one target dir and do not `cargo clean`.
+
+## State trace (T1): record canon's battle state per frame, replay ours
+```
+python3 tools/trace.py record canon battle_full --out /tmp/tr_c   # canon side: 13 --watch streams -> table.json
+python3 tools/trace.py record rust battle_full --out /tmp/tr_r    # rust side: TRC2 block (0x02000080, v2) -> table.json
+python3 tools/trace.py diff /tmp/tr_c /tmp/tr_r --align row:battle_full  # first divergent field+frame, then the list
+```
+`--align row:<scenario>` reuses the scenario's own canon_ref/rust_base pairing (states.TRACE_SCENARIOS: battle_full + mettaur/popup/result); `--shift 1` is the negative (table must move). Parity = oracle.py's FIELD_PAIRS + rng_cadence, so the first divergence agrees with the oracle on mettaur/popup/result; the rest (HP/gauge/mercy/banner/HUD/camera/backdrop/GFX) is INFO-only. TRC2 layout: src/battle.rs `trace_snapshot` (grown BATTLE_MARKER owns 0x02000000..0x02000100 per nm -- never absolute 0x02000080, which collides per R6).
