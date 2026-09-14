@@ -3593,7 +3593,12 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             }
             CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
                 self.presentation = Some((chip, BARRIER_PRESENTATION));
-                self.popup = Some(NamePopup::new(chip.name()));
+                // Same live-HUD gate as CHIP_INVISIBL above: the name popup
+                // shows only while the battle HUD is up (canon mask 0x4497
+                // live vs 0x8084 torn-down; builder sub_801E95C).
+                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                    self.popup = Some(NamePopup::new(chip.name()));
+                }
             }
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
@@ -3602,7 +3607,12 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // set); it is a presentation chip, so the fight holds first.
             CHIP_AREAGRAB => {
                 self.presentation = Some((chip, AREAGRAB_PRESENTATION));
-                self.popup = Some(NamePopup::new(chip.name()));
+                // Same live-HUD gate as CHIP_INVISIBL above: the name popup
+                // shows only while the battle HUD is up (canon mask 0x4497
+                // live vs 0x8084 torn-down; builder sub_801E95C).
+                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                    self.popup = Some(NamePopup::new(chip.name()));
+                }
             }
             _ => {
                 self.chip_in_use = Some(chip);
