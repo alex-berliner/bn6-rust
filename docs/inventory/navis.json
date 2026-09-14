@@ -1,0 +1,255 @@
+{
+ "generator": "tools/inventory.py",
+ "rows": [
+  {
+   "index": 0,
+   "navi": "NAVI_MEGAMAN",
+   "struct1": "byte_80F28C4 (asm/asm31.s:123441)",
+   "struct2": "byte_80F28CC (asm/asm31.s:123492)",
+   "act": "sub_80F2A1E (asm/asm31.s:123542)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123441,123492,123542",
+   "status": "unrecorded"
+  },
+  {
+   "index": 1,
+   "navi": "NAVI_HEATMAN",
+   "struct1": "byte_80F2A28 (asm/asm31.s:123443)",
+   "struct2": "byte_80F2A30 (asm/asm31.s:123494)",
+   "act": "nullsub_106 (asm/asm31.s:123543)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123443,123494,123543",
+   "status": "unrecorded"
+  },
+  {
+   "index": 2,
+   "navi": "NAVI_ELECMAN",
+   "struct1": "byte_80F38E0 (asm/asm31.s:123445)",
+   "struct2": "byte_80F38E8 (asm/asm31.s:123496)",
+   "act": "nullsub_106 (asm/asm31.s:123544)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123445,123496,123544",
+   "status": "unrecorded"
+  },
+  {
+   "index": 3,
+   "navi": "NAVI_SLASHMAN",
+   "struct1": "byte_80F47A8 (asm/asm31.s:123447)",
+   "struct2": "byte_80F47B0 (asm/asm31.s:123498)",
+   "act": "nullsub_106 (asm/asm31.s:123545)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123447,123498,123545",
+   "status": "unrecorded"
+  },
+  {
+   "index": 4,
+   "navi": "NAVI_ERASEMAN",
+   "struct1": "byte_80F580C (asm/asm31.s:123449)",
+   "struct2": "byte_80F5814 (asm/asm31.s:123500)",
+   "act": "nullsub_106 (asm/asm31.s:123546)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123449,123500,123546",
+   "status": "unrecorded"
+  },
+  {
+   "index": 5,
+   "navi": "NAVI_CHARGEMAN",
+   "struct1": "byte_80F6368 (asm/asm31.s:123451)",
+   "struct2": "byte_80F6370 (asm/asm31.s:123502)",
+   "act": "sub_80F650A (asm/asm31.s:123547)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123451,123502,123547",
+   "status": "unrecorded"
+  },
+  {
+   "index": 6,
+   "navi": "NAVI_SPOUTMAN",
+   "struct1": "byte_80F7550 (asm/asm31.s:123453)",
+   "struct2": "byte_80F7558 (asm/asm31.s:123504)",
+   "act": "nullsub_106 (asm/asm31.s:123548)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123453,123504,123548",
+   "status": "unrecorded"
+  },
+  {
+   "index": 7,
+   "navi": "NAVI_TOMAHAWKMAN",
+   "struct1": "byte_80F8308 (asm/asm31.s:123455)",
+   "struct2": "byte_80F8310 (asm/asm31.s:123506)",
+   "act": "nullsub_106 (asm/asm31.s:123549)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123455,123506,123549",
+   "status": "unrecorded"
+  },
+  {
+   "index": 8,
+   "navi": "NAVI_TENGUMAN",
+   "struct1": "byte_80F8EC0 (asm/asm31.s:123457)",
+   "struct2": "byte_80F8EC8 (asm/asm31.s:123508)",
+   "act": "nullsub_106 (asm/asm31.s:123550)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123457,123508,123550",
+   "status": "unrecorded"
+  },
+  {
+   "index": 9,
+   "navi": "NAVI_GROUNDMAN",
+   "struct1": "byte_80F9C54 (asm/asm31.s:123459)",
+   "struct2": "byte_80F9C5C (asm/asm31.s:123510)",
+   "act": "nullsub_106 (asm/asm31.s:123551)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123459,123510,123551",
+   "status": "unrecorded"
+  },
+  {
+   "index": 10,
+   "navi": "NAVI_DUSTMAN",
+   "struct1": "byte_80FACB0 (asm/asm31.s:123461)",
+   "struct2": "byte_80FACB8 (asm/asm31.s:123512)",
+   "act": "nullsub_106 (asm/asm31.s:123552)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123461,123512,123552",
+   "status": "unrecorded"
+  },
+  {
+   "index": 11,
+   "navi": "NAVI_PROTOMAN",
+   "struct1": "byte_80FB8B4 (asm/asm31.s:123463)",
+   "struct2": "byte_80FB8BC (asm/asm31.s:123514)",
+   "act": "nullsub_106 (asm/asm31.s:123553)",
+   "struct2_row0_raw": "0x0708",
+   "cite": "asm/asm31.s:123463,123514,123553",
+   "status": "unrecorded"
+  },
+  {
+   "index": 12,
+   "navi": "// unnamed: navi-table index 12",
+   "struct1": "byte_80FD018 (asm/asm31.s:123465)",
+   "struct2": "byte_80FD020 (asm/asm31.s:123516)",
+   "act": "nullsub_106 (asm/asm31.s:123554)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123465,123516,123554",
+   "status": "unrecorded"
+  },
+  {
+   "index": 13,
+   "navi": "// unnamed: navi-table index 13",
+   "struct1": "byte_80FDCC4 (asm/asm31.s:123467)",
+   "struct2": "byte_80FDCCC (asm/asm31.s:123518)",
+   "act": "sub_80FDEFC (asm/asm31.s:123555)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123467,123518,123555",
+   "status": "unrecorded"
+  },
+  {
+   "index": 14,
+   "navi": "// unnamed: navi-table index 14",
+   "struct1": "byte_80FE7A4 (asm/asm31.s:123469)",
+   "struct2": "byte_80FE7AC (asm/asm31.s:123520)",
+   "act": "nullsub_106 (asm/asm31.s:123556)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123469,123520,123556",
+   "status": "unrecorded"
+  },
+  {
+   "index": 15,
+   "navi": "// unnamed: navi-table index 15",
+   "struct1": "byte_80FF7C4 (asm/asm31.s:123471)",
+   "struct2": "byte_80FF7CC (asm/asm31.s:123522)",
+   "act": "nullsub_106 (asm/asm31.s:123557)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123471,123522,123557",
+   "status": "unrecorded"
+  },
+  {
+   "index": 16,
+   "navi": "// unnamed: navi-table index 16",
+   "struct1": "byte_81001BC (asm/asm31.s:123473)",
+   "struct2": "byte_81001C4 (asm/asm31.s:123524)",
+   "act": "nullsub_106 (asm/asm31.s:123558)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123473,123524,123558",
+   "status": "unrecorded"
+  },
+  {
+   "index": 17,
+   "navi": "// unnamed: navi-table index 17",
+   "struct1": "byte_80F28C4 (asm/asm31.s:123475)",
+   "struct2": "byte_80F28CC (asm/asm31.s:123526)",
+   "act": "nullsub_106 (asm/asm31.s:123559)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123475,123526,123559",
+   "status": "unrecorded"
+  },
+  {
+   "index": 18,
+   "navi": "// unnamed: navi-table index 18",
+   "struct1": "byte_810123C (asm/asm31.s:123477)",
+   "struct2": "byte_8101244 (asm/asm31.s:123528)",
+   "act": "nullsub_106 (asm/asm31.s:123560)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123477,123528,123560",
+   "status": "unrecorded"
+  },
+  {
+   "index": 19,
+   "navi": "// unnamed: navi-table index 19",
+   "struct1": "byte_8101854 (asm/asm31.s:123479)",
+   "struct2": "byte_810185C (asm/asm31.s:123530)",
+   "act": "nullsub_106 (asm/asm31.s:123561)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123479,123530,123561",
+   "status": "unrecorded"
+  },
+  {
+   "index": 20,
+   "navi": "// unnamed: navi-table index 20",
+   "struct1": "byte_8103B88 (asm/asm31.s:123481)",
+   "struct2": "byte_8103B90 (asm/asm31.s:123532)",
+   "act": "nullsub_106 (asm/asm31.s:123562)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123481,123532,123562",
+   "status": "unrecorded"
+  },
+  {
+   "index": 21,
+   "navi": "// unnamed: navi-table index 21",
+   "struct1": "byte_8105390 (asm/asm31.s:123483)",
+   "struct2": "byte_8105398 (asm/asm31.s:123534)",
+   "act": "nullsub_106 (asm/asm31.s:123563)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123483,123534,123563",
+   "status": "unrecorded"
+  },
+  {
+   "index": 22,
+   "navi": "// unnamed: navi-table index 22",
+   "struct1": "byte_80F28C4 (asm/asm31.s:123485)",
+   "struct2": "byte_80F28CC (asm/asm31.s:123536)",
+   "act": "nullsub_106 (asm/asm31.s:123564)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123485,123536,123564",
+   "status": "unrecorded"
+  },
+  {
+   "index": 23,
+   "navi": "// unnamed: navi-table index 23",
+   "struct1": "byte_81067FC (asm/asm31.s:123487)",
+   "struct2": "byte_8106804 (asm/asm31.s:123538)",
+   "act": "nullsub_106 (asm/asm31.s:123565)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123487,123538,123565",
+   "status": "unrecorded"
+  },
+  {
+   "index": 24,
+   "navi": "// unnamed: navi-table index 24",
+   "struct1": "byte_8107B24 (asm/asm31.s:123489)",
+   "struct2": "byte_8107B2C (asm/asm31.s:123540)",
+   "act": "nullsub_106 (asm/asm31.s:123566)",
+   "struct2_row0_raw": "",
+   "cite": "asm/asm31.s:123489,123540,123566",
+   "status": "unrecorded"
+  }
+ ]
+}

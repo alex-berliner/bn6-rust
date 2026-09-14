@@ -1,0 +1,3339 @@
+{
+ "generator": "tools/inventory.py",
+ "battle_settings_lists": {
+  "battleSettingsList0": {
+   "records": 269,
+   "cite": "data/BattleSettings.s:2"
+  },
+  "BattleSettingsList1": {
+   "records": 192,
+   "cite": "data/BattleSettings.s:1505"
+  }
+ },
+ "rows": [
+  {
+   "formation": "byte_80AFF44",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "7f"
+   ],
+   "cite": "data/BattleSettings.s:797",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF4D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "44",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:799",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF5E",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4a"
+   ],
+   "cite": "data/BattleSettings.s:802",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF67",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:804",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF70",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "56"
+   ],
+   "cite": "data/BattleSettings.s:806",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF79",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5c"
+   ],
+   "cite": "data/BattleSettings.s:808",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF82",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "68"
+   ],
+   "cite": "data/BattleSettings.s:810",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF8B",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "62"
+   ],
+   "cite": "data/BattleSettings.s:812",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF94",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "1f"
+   ],
+   "cite": "data/BattleSettings.s:814",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFF9D",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "20"
+   ],
+   "cite": "data/BattleSettings.s:816",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFA6",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "21"
+   ],
+   "cite": "data/BattleSettings.s:818",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFAF",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "31"
+   ],
+   "cite": "data/BattleSettings.s:820",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFB8",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "32"
+   ],
+   "cite": "data/BattleSettings.s:822",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFC1",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "33"
+   ],
+   "cite": "data/BattleSettings.s:824",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFCA",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "2b"
+   ],
+   "cite": "data/BattleSettings.s:826",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFD3",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "2c"
+   ],
+   "cite": "data/BattleSettings.s:828",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFDC",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "2d"
+   ],
+   "cite": "data/BattleSettings.s:830",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFE5",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:832",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFEE",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "26"
+   ],
+   "cite": "data/BattleSettings.s:834",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80AFFF7",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "27"
+   ],
+   "cite": "data/BattleSettings.s:836",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0000",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "37"
+   ],
+   "cite": "data/BattleSettings.s:838",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0009",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "38"
+   ],
+   "cite": "data/BattleSettings.s:840",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0012",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "39"
+   ],
+   "cite": "data/BattleSettings.s:842",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B001B",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "3d"
+   ],
+   "cite": "data/BattleSettings.s:844",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0024",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "3f"
+   ],
+   "cite": "data/BattleSettings.s:846",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B002D",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "40"
+   ],
+   "cite": "data/BattleSettings.s:848",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0036",
+   "entries": 2,
+   "enemy_ids": [
+    "01",
+    "85"
+   ],
+   "cite": "data/BattleSettings.s:850",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B003F",
+   "entries": 2,
+   "enemy_ids": [
+    "3d",
+    "2b"
+   ],
+   "cite": "data/BattleSettings.s:852",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0048",
+   "entries": 2,
+   "enemy_ids": [
+    "01",
+    "3d"
+   ],
+   "cite": "data/BattleSettings.s:854",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0051",
+   "entries": 2,
+   "enemy_ids": [
+    "07",
+    "07"
+   ],
+   "cite": "data/BattleSettings.s:856",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B005A",
+   "entries": 2,
+   "enemy_ids": [
+    "1f",
+    "4f"
+   ],
+   "cite": "data/BattleSettings.s:858",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0063",
+   "entries": 2,
+   "enemy_ids": [
+    "4f",
+    "55"
+   ],
+   "cite": "data/BattleSettings.s:860",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B006C",
+   "entries": 2,
+   "enemy_ids": [
+    "07",
+    "1f"
+   ],
+   "cite": "data/BattleSettings.s:862",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0075",
+   "entries": 2,
+   "enemy_ids": [
+    "4f",
+    "55"
+   ],
+   "cite": "data/BattleSettings.s:864",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B007E",
+   "entries": 2,
+   "enemy_ids": [
+    "9d",
+    "7f"
+   ],
+   "cite": "data/BattleSettings.s:866",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0087",
+   "entries": 4,
+   "enemy_ids": [
+    "7f",
+    "79",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:868",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0098",
+   "entries": 4,
+   "enemy_ids": [
+    "73",
+    "73",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:871",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00A9",
+   "entries": 2,
+   "enemy_ids": [
+    "73",
+    "7f"
+   ],
+   "cite": "data/BattleSettings.s:874",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00B2",
+   "entries": 2,
+   "enemy_ids": [
+    "9d",
+    "73"
+   ],
+   "cite": "data/BattleSettings.s:876",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00BB",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:878",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00C4",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:880",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00CD",
+   "entries": 2,
+   "enemy_ids": [
+    "25",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:882",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00D6",
+   "entries": 2,
+   "enemy_ids": [
+    "8b",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:884",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00DF",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "67"
+   ],
+   "cite": "data/BattleSettings.s:886",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00E8",
+   "entries": 2,
+   "enemy_ids": [
+    "25",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:888",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00F1",
+   "entries": 2,
+   "enemy_ids": [
+    "8b",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:890",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B00FA",
+   "entries": 2,
+   "enemy_ids": [
+    "8b",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:892",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0103",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:894",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B010C",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "67"
+   ],
+   "cite": "data/BattleSettings.s:896",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0115",
+   "entries": 2,
+   "enemy_ids": [
+    "13",
+    "97"
+   ],
+   "cite": "data/BattleSettings.s:898",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B011E",
+   "entries": 2,
+   "enemy_ids": [
+    "01",
+    "a9"
+   ],
+   "cite": "data/BattleSettings.s:900",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0127",
+   "entries": 2,
+   "enemy_ids": [
+    "91",
+    "19"
+   ],
+   "cite": "data/BattleSettings.s:902",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0130",
+   "entries": 2,
+   "enemy_ids": [
+    "25",
+    "5b"
+   ],
+   "cite": "data/BattleSettings.s:904",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0139",
+   "entries": 2,
+   "enemy_ids": [
+    "67",
+    "7f"
+   ],
+   "cite": "data/BattleSettings.s:906",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0142",
+   "entries": 2,
+   "enemy_ids": [
+    "9d",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:908",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B014B",
+   "entries": 2,
+   "enemy_ids": [
+    "43",
+    "3d"
+   ],
+   "cite": "data/BattleSettings.s:910",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0154",
+   "entries": 2,
+   "enemy_ids": [
+    "6d",
+    "1f"
+   ],
+   "cite": "data/BattleSettings.s:912",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B015D",
+   "entries": 2,
+   "enemy_ids": [
+    "2b",
+    "07"
+   ],
+   "cite": "data/BattleSettings.s:914",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0166",
+   "entries": 2,
+   "enemy_ids": [
+    "01",
+    "43"
+   ],
+   "cite": "data/BattleSettings.s:916",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B016F",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:918",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B017C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:921",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B018D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:924",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B019E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "86",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:927",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01AF",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "02",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:930",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01C0",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "3d",
+    "3d"
+   ],
+   "cite": "data/BattleSettings.s:933",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01CD",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "43",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:936",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01DE",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "02",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:939",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01EF",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:942",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B01F8",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "03",
+    "1f",
+    "87"
+   ],
+   "cite": "data/BattleSettings.s:944",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0209",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4f"
+   ],
+   "cite": "data/BattleSettings.s:947",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0212",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "07",
+    "4f",
+    "55"
+   ],
+   "cite": "data/BattleSettings.s:949",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0223",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:952",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B022C",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "1f"
+   ],
+   "cite": "data/BattleSettings.s:954",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0235",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "49",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:956",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0246",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2b",
+    "2b",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:959",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0257",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "49",
+    "49",
+    "3d"
+   ],
+   "cite": "data/BattleSettings.s:962",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0268",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "49",
+    "49",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:965",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0279",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "07",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:968",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B028A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "4f",
+    "07",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:971",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B029B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "03",
+    "03",
+    "4f"
+   ],
+   "cite": "data/BattleSettings.s:974",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02AC",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "19",
+    "74"
+   ],
+   "cite": "data/BattleSettings.s:977",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02BD",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "55"
+   ],
+   "cite": "data/BattleSettings.s:980",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02C6",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "0d"
+   ],
+   "cite": "data/BattleSettings.s:982",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02CF",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "2b"
+   ],
+   "cite": "data/BattleSettings.s:984",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02D8",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "3f"
+   ],
+   "cite": "data/BattleSettings.s:986",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02E5",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "08",
+    "09"
+   ],
+   "cite": "data/BattleSettings.s:989",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02F2",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "74",
+    "75"
+   ],
+   "cite": "data/BattleSettings.s:992",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B02FF",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "2d"
+   ],
+   "cite": "data/BattleSettings.s:995",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B030C",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "20",
+    "51"
+   ],
+   "cite": "data/BattleSettings.s:998",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0319",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "80",
+    "7b"
+   ],
+   "cite": "data/BattleSettings.s:1001",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0326",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "67",
+    "69"
+   ],
+   "cite": "data/BattleSettings.s:1004",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0333",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "81"
+   ],
+   "cite": "data/BattleSettings.s:1007",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0340",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "04",
+    "88"
+   ],
+   "cite": "data/BattleSettings.s:1010",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B034D",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "22",
+    "21"
+   ],
+   "cite": "data/BattleSettings.s:1013",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B035A",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "81",
+    "a6"
+   ],
+   "cite": "data/BattleSettings.s:1016",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0367",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "8d",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1019",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0374",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "9f",
+    "56"
+   ],
+   "cite": "data/BattleSettings.s:1022",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0381",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "04",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1025",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B038E",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:1028",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B039B",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "56",
+    "20"
+   ],
+   "cite": "data/BattleSettings.s:1031",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03A8",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "20",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:1034",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03B5",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "7b",
+    "a6"
+   ],
+   "cite": "data/BattleSettings.s:1037",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03C2",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "64",
+    "69"
+   ],
+   "cite": "data/BattleSettings.s:1040",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03CF",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "2e",
+    "04"
+   ],
+   "cite": "data/BattleSettings.s:1043",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03DC",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "08",
+    "52"
+   ],
+   "cite": "data/BattleSettings.s:1046",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03E9",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "a4",
+    "74"
+   ],
+   "cite": "data/BattleSettings.s:1049",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B03F6",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "62",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1052",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0403",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "7b",
+    "82"
+   ],
+   "cite": "data/BattleSettings.s:1055",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0410",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "8b",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1058",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B041D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "57",
+    "09",
+    "31"
+   ],
+   "cite": "data/BattleSettings.s:1061",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B042E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "3f",
+    "40"
+   ],
+   "cite": "data/BattleSettings.s:1064",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B043F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "50",
+    "51",
+    "52"
+   ],
+   "cite": "data/BattleSettings.s:1067",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0450",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5b"
+   ],
+   "cite": "data/BattleSettings.s:1070",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0459",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "07"
+   ],
+   "cite": "data/BattleSettings.s:1072",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0462",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "25"
+   ],
+   "cite": "data/BattleSettings.s:1074",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B046B",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b5"
+   ],
+   "cite": "data/BattleSettings.s:1076",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0474",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b6"
+   ],
+   "cite": "data/BattleSettings.s:1078",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B047D",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b7"
+   ],
+   "cite": "data/BattleSettings.s:1080",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0486",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b8"
+   ],
+   "cite": "data/BattleSettings.s:1082",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B048F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "44",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1084",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04A0",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4a"
+   ],
+   "cite": "data/BattleSettings.s:1087",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04A9",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "85"
+   ],
+   "cite": "data/BattleSettings.s:1089",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04B2",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "8b"
+   ],
+   "cite": "data/BattleSettings.s:1091",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04BB",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "67"
+   ],
+   "cite": "data/BattleSettings.s:1093",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04C4",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "13"
+   ],
+   "cite": "data/BattleSettings.s:1095",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04CD",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "37"
+   ],
+   "cite": "data/BattleSettings.s:1097",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04D6",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "af"
+   ],
+   "cite": "data/BattleSettings.s:1099",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04DF",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b0"
+   ],
+   "cite": "data/BattleSettings.s:1101",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04E8",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "b1"
+   ],
+   "cite": "data/BattleSettings.s:1103",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04F1",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "56"
+   ],
+   "cite": "data/BattleSettings.s:1105",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B04FA",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5c"
+   ],
+   "cite": "data/BattleSettings.s:1107",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0503",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:1109",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B050C",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "79"
+   ],
+   "cite": "data/BattleSettings.s:1111",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0515",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "7b"
+   ],
+   "cite": "data/BattleSettings.s:1113",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B051E",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "31"
+   ],
+   "cite": "data/BattleSettings.s:1115",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0527",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "19"
+   ],
+   "cite": "data/BattleSettings.s:1117",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0530",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "6d"
+   ],
+   "cite": "data/BattleSettings.s:1119",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0539",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "70"
+   ],
+   "cite": "data/BattleSettings.s:1121",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0542",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "61"
+   ],
+   "cite": "data/BattleSettings.s:1123",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B054B",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "61"
+   ],
+   "cite": "data/BattleSettings.s:1125",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0554",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "8d"
+   ],
+   "cite": "data/BattleSettings.s:1127",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B055D",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "6e"
+   ],
+   "cite": "data/BattleSettings.s:1129",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0566",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "46",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1131",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0577",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4c"
+   ],
+   "cite": "data/BattleSettings.s:1134",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0580",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "52"
+   ],
+   "cite": "data/BattleSettings.s:1136",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0589",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "58"
+   ],
+   "cite": "data/BattleSettings.s:1138",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0592",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5e"
+   ],
+   "cite": "data/BattleSettings.s:1140",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B059B",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "6a"
+   ],
+   "cite": "data/BattleSettings.s:1142",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05A4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2e",
+    "40",
+    "40"
+   ],
+   "cite": "data/BattleSettings.s:1144",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05B5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0a",
+    "0a",
+    "0a"
+   ],
+   "cite": "data/BattleSettings.s:1147",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05C6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "6a",
+    "8e",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1150",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05D7",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "82",
+    "7c",
+    "7c"
+   ],
+   "cite": "data/BattleSettings.s:1153",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05E8",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "46",
+    "52",
+    "22"
+   ],
+   "cite": "data/BattleSettings.s:1156",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B05F9",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "76",
+    "64",
+    "76"
+   ],
+   "cite": "data/BattleSettings.s:1159",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B060A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "94",
+    "94",
+    "2e"
+   ],
+   "cite": "data/BattleSettings.s:1162",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B061B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0a",
+    "58",
+    "0a"
+   ],
+   "cite": "data/BattleSettings.s:1165",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B062C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "58",
+    "8e",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1168",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B063D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "4c",
+    "4c"
+   ],
+   "cite": "data/BattleSettings.s:1171",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B064E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "4c",
+    "9a",
+    "9a"
+   ],
+   "cite": "data/BattleSettings.s:1174",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B065F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "0f",
+    "10"
+   ],
+   "cite": "data/BattleSettings.s:1177",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0670",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "ac",
+    "a6",
+    "58"
+   ],
+   "cite": "data/BattleSettings.s:1180",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0681",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "28",
+    "28",
+    "70"
+   ],
+   "cite": "data/BattleSettings.s:1183",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0692",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "46",
+    "46",
+    "22"
+   ],
+   "cite": "data/BattleSettings.s:1186",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06A3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "88",
+    "88",
+    "16"
+   ],
+   "cite": "data/BattleSettings.s:1189",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06B4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "04"
+   ],
+   "cite": "data/BattleSettings.s:1192",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06C5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "a0",
+    "1c"
+   ],
+   "cite": "data/BattleSettings.s:1195",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06D6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "52",
+    "52",
+    "6a"
+   ],
+   "cite": "data/BattleSettings.s:1198",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06E7",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "82",
+    "4c",
+    "82"
+   ],
+   "cite": "data/BattleSettings.s:1201",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B06F8",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "40",
+    "22",
+    "40"
+   ],
+   "cite": "data/BattleSettings.s:1204",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0709",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2e",
+    "40",
+    "40"
+   ],
+   "cite": "data/BattleSettings.s:1207",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B071A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0a",
+    "0a",
+    "0a"
+   ],
+   "cite": "data/BattleSettings.s:1210",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B072B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "6a",
+    "8e",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1213",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B073C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "82",
+    "7c",
+    "7c"
+   ],
+   "cite": "data/BattleSettings.s:1216",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B074D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "46",
+    "52",
+    "22"
+   ],
+   "cite": "data/BattleSettings.s:1219",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B075E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "94",
+    "94",
+    "2e"
+   ],
+   "cite": "data/BattleSettings.s:1222",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B076F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0a",
+    "58",
+    "0a"
+   ],
+   "cite": "data/BattleSettings.s:1225",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0780",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "58",
+    "8e",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1228",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0791",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "4c",
+    "4c"
+   ],
+   "cite": "data/BattleSettings.s:1231",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07A2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "4c",
+    "9a",
+    "9a"
+   ],
+   "cite": "data/BattleSettings.s:1234",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07B3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "0f",
+    "10"
+   ],
+   "cite": "data/BattleSettings.s:1237",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07C4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "ac",
+    "a6",
+    "58"
+   ],
+   "cite": "data/BattleSettings.s:1240",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07D5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "28",
+    "28",
+    "70"
+   ],
+   "cite": "data/BattleSettings.s:1243",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07E6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "46",
+    "22",
+    "22"
+   ],
+   "cite": "data/BattleSettings.s:1246",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B07F7",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "88",
+    "88",
+    "16"
+   ],
+   "cite": "data/BattleSettings.s:1249",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0808",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "04"
+   ],
+   "cite": "data/BattleSettings.s:1252",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0819",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "a0",
+    "1c"
+   ],
+   "cite": "data/BattleSettings.s:1255",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B082A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "52",
+    "52",
+    "6a"
+   ],
+   "cite": "data/BattleSettings.s:1258",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B083F",
+   "entries": 3,
+   "enemy_ids": [
+    "82",
+    "4c",
+    "82"
+   ],
+   "cite": "data/BattleSettings.s:1263",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B084C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "40",
+    "22",
+    "22"
+   ],
+   "cite": "data/BattleSettings.s:1266",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B085D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1269",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B086E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "1a",
+    "91",
+    "a9"
+   ],
+   "cite": "data/BattleSettings.s:1272",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B087F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "87"
+   ],
+   "cite": "data/BattleSettings.s:1275",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0890",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "91",
+    "97",
+    "97"
+   ],
+   "cite": "data/BattleSettings.s:1278",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08A1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "5b",
+    "04",
+    "04"
+   ],
+   "cite": "data/BattleSettings.s:1281",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08B2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "14",
+    "04",
+    "46"
+   ],
+   "cite": "data/BattleSettings.s:1284",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08C3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "6d"
+   ],
+   "cite": "data/BattleSettings.s:1287",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08D4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:1290",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08E5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "6a"
+   ],
+   "cite": "data/BattleSettings.s:1293",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08F6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "52",
+    "8e"
+   ],
+   "cite": "data/BattleSettings.s:1296",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0907",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "64"
+   ],
+   "cite": "data/BattleSettings.s:1299",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0918",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "75",
+    "69"
+   ],
+   "cite": "data/BattleSettings.s:1302",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0929",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "94"
+   ],
+   "cite": "data/BattleSettings.s:1305",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B093A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9d",
+    "9e",
+    "9d"
+   ],
+   "cite": "data/BattleSettings.s:1308",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B094B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "a0",
+    "9e"
+   ],
+   "cite": "data/BattleSettings.s:1311",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B095C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "6f",
+    "57",
+    "3b"
+   ],
+   "cite": "data/BattleSettings.s:1314",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B096D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a3",
+    "2c",
+    "52"
+   ],
+   "cite": "data/BattleSettings.s:1317",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B097E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "91",
+    "87",
+    "3c"
+   ],
+   "cite": "data/BattleSettings.s:1320",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B098F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "43",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1323",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09A0",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:1326",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09A9",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4f"
+   ],
+   "cite": "data/BattleSettings.s:1328",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09B2",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "55"
+   ],
+   "cite": "data/BattleSettings.s:1330",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09BB",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5b"
+   ],
+   "cite": "data/BattleSettings.s:1332",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09C4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "6d"
+   ],
+   "cite": "data/BattleSettings.s:1334",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09D5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "a0",
+    "6d"
+   ],
+   "cite": "data/BattleSettings.s:1337",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09E6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "52",
+    "58",
+    "6e"
+   ],
+   "cite": "data/BattleSettings.s:1340",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09F7",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a6",
+    "92",
+    "6e"
+   ],
+   "cite": "data/BattleSettings.s:1343",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A08",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "10",
+    "10",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1346",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A19",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "16",
+    "16",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1349",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A2A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "5b",
+    "5c",
+    "70"
+   ],
+   "cite": "data/BattleSettings.s:1352",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A3B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "86",
+    "86",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1355",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A4C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "87",
+    "70"
+   ],
+   "cite": "data/BattleSettings.s:1358",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A5D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "20",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:1361",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A6E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "08",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:1364",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A7F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "50",
+    "56"
+   ],
+   "cite": "data/BattleSettings.s:1367",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A90",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "68",
+    "62",
+    "8c"
+   ],
+   "cite": "data/BattleSettings.s:1370",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AA1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "10",
+    "1c",
+    "4d"
+   ],
+   "cite": "data/BattleSettings.s:1373",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AB2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1376",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AC3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1379",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AD4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1382",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AE5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1385",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AF6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:1388",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B07",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "3e",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:1391",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B18",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2c",
+    "3e",
+    "49"
+   ],
+   "cite": "data/BattleSettings.s:1394",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B29",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "76"
+   ],
+   "cite": "data/BattleSettings.s:1397",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B3A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:1400",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B4B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "a4"
+   ],
+   "cite": "data/BattleSettings.s:1403",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B5C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "15"
+   ],
+   "cite": "data/BattleSettings.s:1406",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B6D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "75"
+   ],
+   "cite": "data/BattleSettings.s:1409",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B7E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "0f",
+    "aa"
+   ],
+   "cite": "data/BattleSettings.s:1412",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B8F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "44",
+    "a4",
+    "93"
+   ],
+   "cite": "data/BattleSettings.s:1415",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BA0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "50",
+    "56",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1418",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BB1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "20",
+    "88"
+   ],
+   "cite": "data/BattleSettings.s:1421",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BC2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "80",
+    "4b",
+    "9a"
+   ],
+   "cite": "data/BattleSettings.s:1424",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BD3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "92",
+    "6f"
+   ],
+   "cite": "data/BattleSettings.s:1427",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BE4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:1430",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BF5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "85",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:1433",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C06",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2b",
+    "3d",
+    "2c"
+   ],
+   "cite": "data/BattleSettings.s:1436",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C17",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "13",
+    "4f",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:1439",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C28",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "07",
+    "14"
+   ],
+   "cite": "data/BattleSettings.s:1442",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C39",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "56",
+    "20",
+    "1f"
+   ],
+   "cite": "data/BattleSettings.s:1445",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C4A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "80"
+   ],
+   "cite": "data/BattleSettings.s:1448",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C5B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "9e"
+   ],
+   "cite": "data/BattleSettings.s:1451",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C6C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9f",
+    "a4",
+    "02"
+   ],
+   "cite": "data/BattleSettings.s:1454",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C7D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "51",
+    "8c",
+    "62"
+   ],
+   "cite": "data/BattleSettings.s:1457",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C8E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "15",
+    "63",
+    "62"
+   ],
+   "cite": "data/BattleSettings.s:1460",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C9F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "27",
+    "86"
+   ],
+   "cite": "data/BattleSettings.s:1463",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CB0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "6f",
+    "87"
+   ],
+   "cite": "data/BattleSettings.s:1466",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CC1",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "1b",
+    "1b"
+   ],
+   "cite": "data/BattleSettings.s:1469",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CCE",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "93",
+    "76"
+   ],
+   "cite": "data/BattleSettings.s:1472",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CDB",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0f",
+    "10",
+    "0f"
+   ],
+   "cite": "data/BattleSettings.s:1475",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CEC",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0f",
+    "1c",
+    "46"
+   ],
+   "cite": "data/BattleSettings.s:1478",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CFD",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "99",
+    "04",
+    "5e"
+   ],
+   "cite": "data/BattleSettings.s:1481",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D0E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "94"
+   ],
+   "cite": "data/BattleSettings.s:1484",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D1F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "4b",
+    "4c",
+    "4d"
+   ],
+   "cite": "data/BattleSettings.s:1487",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D30",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "86",
+    "3e"
+   ],
+   "cite": "data/BattleSettings.s:1490",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D41",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "20",
+    "50"
+   ],
+   "cite": "data/BattleSettings.s:1493",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D52",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "2c",
+    "2c"
+   ],
+   "cite": "data/BattleSettings.s:1496",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D63",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "08",
+    "56"
+   ],
+   "cite": "data/BattleSettings.s:1499",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D74",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "86",
+    "3e"
+   ],
+   "cite": "data/BattleSettings.s:1502",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1989",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1977",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1992",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1979",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19AD",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1983",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19B6",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1985",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19BF",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1987",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19D0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1990",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19E1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1993",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19F2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1996",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A03",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:1999",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A14",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:2002",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A25",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2005",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A36",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2008",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A47",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2011",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A58",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2014",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A69",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2017",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A7A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "data/BattleSettings.s:2020",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A8B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2023",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A9C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2026",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AAD",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2029",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1ABE",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2032",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1ACF",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2035",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AE0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2038",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AF1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2041",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B02",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2044",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B13",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2047",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B24",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "data/BattleSettings.s:2050",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B35",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:2053",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B46",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "data/BattleSettings.s:2056",
+   "status": "unrecorded"
+  }
+ ]
+}

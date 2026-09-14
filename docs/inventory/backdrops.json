@@ -1,0 +1,23 @@
+{
+ "generator": "tools/inventory.py",
+ "rows": [
+  {
+   "background_byte": "0x07",
+   "records_using_it": 192,
+   "cite": "data/BattleSettings.s (BattleSettings.Background, +0x4)",
+   "status": "unrecorded"
+  },
+  {
+   "background_byte": "0x08",
+   "records_using_it": 1,
+   "cite": "data/BattleSettings.s (BattleSettings.Background, +0x4)",
+   "status": "unrecorded"
+  },
+  {
+   "background_byte": "0xff",
+   "records_using_it": 268,
+   "cite": "data/BattleSettings.s (BattleSettings.Background, +0x4)",
+   "status": "unrecorded"
+  }
+ ]
+}

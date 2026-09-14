@@ -1,0 +1,2574 @@
+{
+ "generator": "tools/inventory.py (enemy rows: tools/rom_enemy_tables.py)",
+ "identity_meta": {
+  "generator": "tools/rom_enemy_tables.py",
+  "rom": "bn6f_real.gba",
+  "rom_sha1": "0676ecd4d58a976af3346caebb44b9b6489ad099",
+  "regenerate": "python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json",
+  "identity_table": {
+   "symbol": "byte_80182C4",
+   "address": "0x080182C4",
+   "row_bytes": 3,
+   "rows": 452,
+   "bound": "bound inferred from getBattleArmPositionMaybe_8018810 (asm00_2.s:20449)",
+   "accessor": "GetVerActorTyAndAIIdx_80182B4 (asm/asm00_2.s:19965-19974)",
+   "actor_type_enum_cite": "include/structs/AIData.inc:6-8"
+  },
+  "think_table": {
+   "symbol": "off_8109050",
+   "address": "0x08109050",
+   "words": 32,
+   "bound": "bound inferred from off_81090D0 (asm31.s:169485)",
+   "cite": "asm/asm31.s:169420",
+   "semantics": "NOT a called routine: the word is passed as an argument to battle_801B1C4 (jump-table store, asm31.s:169395-169402); each entry is a CurAction-indexed state-handler TABLE pointer ('// indexed by CurAction * 4', asm31.s:170981-170984 and asm32.s:10122-10125)",
+   "note": "ticket predicted 96 words for off_8109050->off_81091D0 (0x180 bytes); the real span holds THREE parallel 0x80-byte tables: off_8109050 think, off_81090D0 per-AIIndex Struct1 pointers (enemy_getStruct1, asm00_2.s:669-674), off_8109150 per-AIIndex Struct2 pointers (enemy_getStruct2, asm00_2.s:713). The act table off_81091D0 starts exactly at the span's end"
+  },
+  "struct1_table": {
+   "symbol": "off_81090D0",
+   "address": "0x081090D0",
+   "words": 32,
+   "bound": "bound inferred from off_8109150 (asm31.s:169550)",
+   "cite": "asm/asm31.s:169485, selected for virus by enemy_getStruct1 (asm00_2.s:669-674)"
+  },
+  "struct2_table": {
+   "symbol": "off_8109150",
+   "address": "0x08109150",
+   "words": 32,
+   "bound": "bound inferred from off_81091D0 (asm31.s:169615)",
+   "cite": "asm/asm31.s:169550, selected for virus by enemy_getStruct2 (asm00_2.s:713)",
+   "struct": "{elem_hp: u16 @0x00, unk_02: u8 @0x02, unk_flags: u8 @0x03, elem_damage: u16 @0x04} (asm00_2.s:677-681)"
+  },
+  "act_table": {
+   "symbol": "off_81091D0",
+   "address": "0x081091D0",
+   "words": 32,
+   "bound": "bound inferred from off_8109250 (asm31.s:169680)",
+   "cite": "asm/asm31.s:169615"
+  },
+  "counts": {
+   "identity_rows": 452,
+   "think_words": 32,
+   "act_words": 32,
+   "think_handler_table_named_For": 2,
+   "think_handler_table_sub_nullsub": 0,
+   "think_handler_table_other_label": 30,
+   "think_unresolved": 0,
+   "act_named_routines": 0,
+   "act_routine_unnamed": 32,
+   "act_data_or_other": 0,
+   "act_unresolved": 0,
+   "think_handler_table_count": 32
+  },
+  "rom_disasm_crosscheck": {
+   "think_checked": "32/32",
+   "act_checked": "11/32",
+   "note": "only entries whose label carries an address suffix can be checked; suffix-less labels (nullsub_13) have no address to check against"
+  },
+  "max_ai_index_by_actor_type": {
+   "ACTOR_TYPE_NAVI": "0x18",
+   "ACTOR_TYPE_PLAYER": "0x30",
+   "ACTOR_TYPE_VIRUS": "0x1F"
+  },
+  "hp_pointer": {
+   "table": "off_8109150 (per-AIIndex Struct2 pointers)",
+   "field": "elem_hp u16 @0x00",
+   "cite": "asm/asm31.s:169550; struct layout asm00_2.s:677-681",
+   "spot_checks": [
+    {
+     "family": "Mettaur",
+     "ai_index": 1,
+     "struct2_symbol": "MettaurEnemyStruct2_8109BD8",
+     "struct2_cite": "asm/asm31.s:170628",
+     "elem_hp": "0x0028",
+     "expected": "0x28",
+     "pass": true
+    },
+    {
+     "family": "Gunner",
+     "ai_index": 23,
+     "struct2_symbol": "GunnerEnemyStruct2_8112B9C",
+     "struct2_cite": "asm/asm32.s:9538",
+     "elem_hp": "0x003C",
+     "expected": "0x3C",
+     "pass": true
+    }
+   ]
+  },
+  "known_answer_checks": [
+   {
+    "check": "idx 0x01..0x04 -> AIIndex 0x01 -> ForMettaur_8109EF4",
+    "pass": true,
+    "cite": "asm/asm31.s:170982 (T6)"
+   },
+   {
+    "check": "idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078",
+    "pass": true,
+    "cite": "asm/asm32.s:10123 (definition; table slot asm31.s:169468) (T9b)"
+   }
+  ],
+  "rom_disasm_mismatches": [],
+  "ai_index_without_think_entry": [
+   "0x20",
+   "0x21",
+   "0x22",
+   "0x23",
+   "0x24",
+   "0x25",
+   "0x26",
+   "0x27",
+   "0x28",
+   "0x29",
+   "0x2A",
+   "0x2B",
+   "0x2C",
+   "0x2D",
+   "0x2E",
+   "0x2F",
+   "0x30"
+  ],
+  "ai_index_without_act_entry": [
+   "0x20",
+   "0x21",
+   "0x22",
+   "0x23",
+   "0x24",
+   "0x25",
+   "0x26",
+   "0x27",
+   "0x28",
+   "0x29",
+   "0x2A",
+   "0x2B",
+   "0x2C",
+   "0x2D",
+   "0x2E",
+   "0x2F",
+   "0x30"
+  ],
+  "ai_index_think_act_existence_disagreement": [],
+  "not_supplied_by_these_tables": [
+   "NameID per enemy_idx (enemy name table not supplied by these index tables)",
+   "sprite pointer per enemy_idx",
+   "per-version parameter tables (the six per-version tables T9b cited for the Gunner)",
+   "Navi bosses (whether boss Navis share these tables at all is unverified)",
+   "formations / BattleSettings records (which enemy_idx set a battle spawns)"
+  ]
+ },
+ "rows": [
+  {
+   "ai_index": 0,
+   "think": "off_8109B74",
+   "think_cite": "asm/asm31.s:170576",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      0
+     ],
+     "enemy_idx": 0,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 0",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 1,
+   "think": "ForMettaur_8109EF4",
+   "think_cite": "asm/asm31.s:170982",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      1,
+      187,
+      193,
+      199,
+      205,
+      211,
+      217,
+      223,
+      229,
+      235,
+      241,
+      247,
+      253,
+      254,
+      255
+     ],
+     "enemy_idx": 1,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "0x0028",
+     "hp_low12": 40,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 1",
+     "status": "verified"
+    },
+    {
+     "spawn_enemy_idxs": [
+      2,
+      188,
+      194,
+      200,
+      206,
+      212,
+      218,
+      224,
+      230,
+      236,
+      242,
+      248
+     ],
+     "enemy_idx": 2,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "0x0050",
+     "hp_low12": 80,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 2",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      3,
+      189,
+      195,
+      201,
+      207,
+      213,
+      219,
+      225,
+      231,
+      237,
+      243,
+      249
+     ],
+     "enemy_idx": 3,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "0x0078",
+     "hp_low12": 120,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 3",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      4,
+      190,
+      196,
+      202,
+      208,
+      214,
+      220,
+      226,
+      232,
+      238,
+      244,
+      250
+     ],
+     "enemy_idx": 4,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "0x00a0",
+     "hp_low12": 160,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 4",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      5,
+      191,
+      197,
+      203,
+      209,
+      215,
+      221,
+      227,
+      233,
+      239,
+      245,
+      251
+     ],
+     "enemy_idx": 5,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "0x0078",
+     "hp_low12": 120,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 5",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      6,
+      192,
+      198,
+      204,
+      210,
+      216,
+      222,
+      228,
+      234,
+      240,
+      246,
+      252
+     ],
+     "enemy_idx": 6,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "0x00b4",
+     "hp_low12": 180,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 6",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 2,
+   "think": "off_810A550",
+   "think_cite": "asm/asm31.s:171935",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      7
+     ],
+     "enemy_idx": 7,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 7",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      8
+     ],
+     "enemy_idx": 8,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 8",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      9
+     ],
+     "enemy_idx": 9,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 9",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      10
+     ],
+     "enemy_idx": 10,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 10",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      11
+     ],
+     "enemy_idx": 11,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 11",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      12
+     ],
+     "enemy_idx": 12,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 12",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 3,
+   "think": "off_810A9EC",
+   "think_cite": "asm/asm31.s:172426",
+   "act": "sub_810ABD0",
+   "act_cite": "asm/asm31.s:172647",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      13
+     ],
+     "enemy_idx": 13,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 13",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      14
+     ],
+     "enemy_idx": 14,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 14",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      15
+     ],
+     "enemy_idx": 15,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 15",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      16
+     ],
+     "enemy_idx": 16,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 16",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      17
+     ],
+     "enemy_idx": 17,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 17",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      18,
+      274
+     ],
+     "enemy_idx": 18,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 18",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 4,
+   "think": "off_810B2D0",
+   "think_cite": "asm/asm31.s:173531",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      19
+     ],
+     "enemy_idx": 19,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 19",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      20
+     ],
+     "enemy_idx": 20,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 20",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      21
+     ],
+     "enemy_idx": 21,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 21",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      22
+     ],
+     "enemy_idx": 22,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 22",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      23
+     ],
+     "enemy_idx": 23,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 23",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      24
+     ],
+     "enemy_idx": 24,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 24",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 5,
+   "think": "off_810BB94",
+   "think_cite": "asm/asm31.s:174575",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      25
+     ],
+     "enemy_idx": 25,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 25",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      26
+     ],
+     "enemy_idx": 26,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 26",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      27
+     ],
+     "enemy_idx": 27,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 27",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      28
+     ],
+     "enemy_idx": 28,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 28",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      29
+     ],
+     "enemy_idx": 29,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 29",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      30
+     ],
+     "enemy_idx": 30,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 30",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 6,
+   "think": "off_810C170",
+   "think_cite": "asm/asm31.s:175255",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      31
+     ],
+     "enemy_idx": 31,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 31",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      32
+     ],
+     "enemy_idx": 32,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 32",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      33
+     ],
+     "enemy_idx": 33,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 33",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      34
+     ],
+     "enemy_idx": 34,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 34",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      35
+     ],
+     "enemy_idx": 35,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 35",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      36
+     ],
+     "enemy_idx": 36,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 36",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 7,
+   "think": "off_810C6F0",
+   "think_cite": "data/dat31.s:377",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      37
+     ],
+     "enemy_idx": 37,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 37",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      38
+     ],
+     "enemy_idx": 38,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 38",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      39
+     ],
+     "enemy_idx": 39,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 39",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      40
+     ],
+     "enemy_idx": 40,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 40",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      41
+     ],
+     "enemy_idx": 41,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 41",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      42
+     ],
+     "enemy_idx": 42,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 42",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 8,
+   "think": "off_810CD60",
+   "think_cite": "data/dat31.s:1123",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      43
+     ],
+     "enemy_idx": 43,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 43",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      44
+     ],
+     "enemy_idx": 44,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 44",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      45
+     ],
+     "enemy_idx": 45,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 45",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      46
+     ],
+     "enemy_idx": 46,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 46",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      47
+     ],
+     "enemy_idx": 47,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 47",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      48
+     ],
+     "enemy_idx": 48,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 48",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 9,
+   "think": "off_810D0F4",
+   "think_cite": "data/dat31.s:1450",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      49
+     ],
+     "enemy_idx": 49,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 49",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      50
+     ],
+     "enemy_idx": 50,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 50",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      51
+     ],
+     "enemy_idx": 51,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 51",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      52
+     ],
+     "enemy_idx": 52,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 52",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      53
+     ],
+     "enemy_idx": 53,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 53",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      54
+     ],
+     "enemy_idx": 54,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 54",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 10,
+   "think": "off_810D554",
+   "think_cite": "data/dat31.s:1960",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      55
+     ],
+     "enemy_idx": 55,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 55",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      56
+     ],
+     "enemy_idx": 56,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 56",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      57
+     ],
+     "enemy_idx": 57,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 57",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      58
+     ],
+     "enemy_idx": 58,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 58",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      59
+     ],
+     "enemy_idx": 59,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 59",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      60
+     ],
+     "enemy_idx": 60,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 60",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 11,
+   "think": "off_810D910",
+   "think_cite": "data/dat31.s:2362",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      61
+     ],
+     "enemy_idx": 61,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 61",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      62
+     ],
+     "enemy_idx": 62,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 62",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      63
+     ],
+     "enemy_idx": 63,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 63",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      64
+     ],
+     "enemy_idx": 64,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 64",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      65
+     ],
+     "enemy_idx": 65,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 65",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      66
+     ],
+     "enemy_idx": 66,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 66",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 12,
+   "think": "off_810E120",
+   "think_cite": "asm/asm32.s:914",
+   "act": "sub_810E2A6",
+   "act_cite": "asm/asm32.s:1107",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      67
+     ],
+     "enemy_idx": 67,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 67",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      68
+     ],
+     "enemy_idx": 68,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 68",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      69
+     ],
+     "enemy_idx": 69,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 69",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      70
+     ],
+     "enemy_idx": 70,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 70",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      71
+     ],
+     "enemy_idx": 71,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 71",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      72
+     ],
+     "enemy_idx": 72,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 72",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 13,
+   "think": "off_810E7B0",
+   "think_cite": "asm/asm32.s:1701",
+   "act": "sub_810E854",
+   "act_cite": "asm/asm32.s:1757",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      73
+     ],
+     "enemy_idx": 73,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 73",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      74
+     ],
+     "enemy_idx": 74,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 74",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      75
+     ],
+     "enemy_idx": 75,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 75",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      76
+     ],
+     "enemy_idx": 76,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 76",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      77
+     ],
+     "enemy_idx": 77,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 77",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      78
+     ],
+     "enemy_idx": 78,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 78",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 14,
+   "think": "off_810F010",
+   "think_cite": "asm/asm32.s:2647",
+   "act": "sub_810F090",
+   "act_cite": "asm/asm32.s:2709",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      79
+     ],
+     "enemy_idx": 79,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 79",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      80
+     ],
+     "enemy_idx": 80,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 80",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      81
+     ],
+     "enemy_idx": 81,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 81",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      82
+     ],
+     "enemy_idx": 82,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 82",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      83
+     ],
+     "enemy_idx": 83,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 83",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      84
+     ],
+     "enemy_idx": 84,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 84",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 15,
+   "think": "off_810F39C",
+   "think_cite": "asm/asm32.s:3025",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      85
+     ],
+     "enemy_idx": 85,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 85",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      86
+     ],
+     "enemy_idx": 86,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 86",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      87
+     ],
+     "enemy_idx": 87,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 87",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      88
+     ],
+     "enemy_idx": 88,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 88",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      89
+     ],
+     "enemy_idx": 89,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 89",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      90
+     ],
+     "enemy_idx": 90,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 90",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 16,
+   "think": "off_810FCE0",
+   "think_cite": "asm/asm32.s:4068",
+   "act": "sub_81100E2",
+   "act_cite": "asm/asm32.s:4576",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      91
+     ],
+     "enemy_idx": 91,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 91",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      92
+     ],
+     "enemy_idx": 92,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 92",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      93
+     ],
+     "enemy_idx": 93,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 93",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      94
+     ],
+     "enemy_idx": 94,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 94",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      95
+     ],
+     "enemy_idx": 95,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 95",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      96
+     ],
+     "enemy_idx": 96,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 96",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 17,
+   "think": "off_81104D4",
+   "think_cite": "asm/asm32.s:4997",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      97
+     ],
+     "enemy_idx": 97,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 97",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      98
+     ],
+     "enemy_idx": 98,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 98",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      99
+     ],
+     "enemy_idx": 99,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 99",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      100
+     ],
+     "enemy_idx": 100,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 100",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      101
+     ],
+     "enemy_idx": 101,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 101",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      102
+     ],
+     "enemy_idx": 102,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 102",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 18,
+   "think": "off_8110DC0",
+   "think_cite": "asm/asm32.s:6089",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      103
+     ],
+     "enemy_idx": 103,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 103",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      104
+     ],
+     "enemy_idx": 104,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 104",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      105
+     ],
+     "enemy_idx": 105,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 105",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      106
+     ],
+     "enemy_idx": 106,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 106",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      107
+     ],
+     "enemy_idx": 107,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 107",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      108
+     ],
+     "enemy_idx": 108,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 108",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 19,
+   "think": "off_8111330",
+   "think_cite": "asm/asm32.s:6666",
+   "act": "sub_8111846",
+   "act_cite": "asm/asm32.s:7318",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      109
+     ],
+     "enemy_idx": 109,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 109",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      110
+     ],
+     "enemy_idx": 110,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 110",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      111
+     ],
+     "enemy_idx": 111,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 111",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      112
+     ],
+     "enemy_idx": 112,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 112",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      113
+     ],
+     "enemy_idx": 113,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 113",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      114
+     ],
+     "enemy_idx": 114,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 114",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 20,
+   "think": "off_8111DC0",
+   "think_cite": "asm/asm32.s:7952",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      115
+     ],
+     "enemy_idx": 115,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 115",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      116
+     ],
+     "enemy_idx": 116,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 116",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      117
+     ],
+     "enemy_idx": 117,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 117",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      118
+     ],
+     "enemy_idx": 118,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 118",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      119
+     ],
+     "enemy_idx": 119,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 119",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      120
+     ],
+     "enemy_idx": 120,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 120",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 21,
+   "think": "off_81121F0",
+   "think_cite": "asm/asm32.s:8405",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      121
+     ],
+     "enemy_idx": 121,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 121",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      122
+     ],
+     "enemy_idx": 122,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 122",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      123
+     ],
+     "enemy_idx": 123,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 123",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      124
+     ],
+     "enemy_idx": 124,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 124",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      125
+     ],
+     "enemy_idx": 125,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 125",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      126
+     ],
+     "enemy_idx": 126,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 126",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 22,
+   "think": "off_81129A0",
+   "think_cite": "asm/asm32.s:9292",
+   "act": "sub_81129EE",
+   "act_cite": "asm/asm32.s:9318",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      127
+     ],
+     "enemy_idx": 127,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 127",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      128
+     ],
+     "enemy_idx": 128,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 128",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      129
+     ],
+     "enemy_idx": 129,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 129",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      130
+     ],
+     "enemy_idx": 130,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 130",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      131
+     ],
+     "enemy_idx": 131,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 131",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      132
+     ],
+     "enemy_idx": 132,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 132",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 23,
+   "think": "ForGunner_8113078",
+   "think_cite": "asm/asm32.s:10123",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      133
+     ],
+     "enemy_idx": 133,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 133",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      134
+     ],
+     "enemy_idx": 134,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 134",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      135
+     ],
+     "enemy_idx": 135,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 135",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      136
+     ],
+     "enemy_idx": 136,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 136",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      137
+     ],
+     "enemy_idx": 137,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 137",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      138
+     ],
+     "enemy_idx": 138,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 138",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 24,
+   "think": "off_81135CC",
+   "think_cite": "asm/asm32.s:10736",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      139
+     ],
+     "enemy_idx": 139,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 139",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      140
+     ],
+     "enemy_idx": 140,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 140",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      141
+     ],
+     "enemy_idx": 141,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 141",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      142
+     ],
+     "enemy_idx": 142,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 142",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      143
+     ],
+     "enemy_idx": 143,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 143",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      144
+     ],
+     "enemy_idx": 144,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 144",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 25,
+   "think": "off_8113D50",
+   "think_cite": "asm/asm32.s:11633",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      145
+     ],
+     "enemy_idx": 145,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 145",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      146
+     ],
+     "enemy_idx": 146,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 146",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      147
+     ],
+     "enemy_idx": 147,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 147",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      148
+     ],
+     "enemy_idx": 148,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 148",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      149
+     ],
+     "enemy_idx": 149,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 149",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      150
+     ],
+     "enemy_idx": 150,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 150",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 26,
+   "think": "snakearmAttackTable_8114710",
+   "think_cite": "asm/asm32.s:12791",
+   "act": "sub_8115098",
+   "act_cite": "asm/asm32.s:13929",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      151
+     ],
+     "enemy_idx": 151,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 151",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      152
+     ],
+     "enemy_idx": 152,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 152",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      153
+     ],
+     "enemy_idx": 153,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 153",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      154
+     ],
+     "enemy_idx": 154,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 154",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      155
+     ],
+     "enemy_idx": 155,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 155",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      156
+     ],
+     "enemy_idx": 156,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 156",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 27,
+   "think": "off_81154F0",
+   "think_cite": "asm/asm32.s:14393",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      157
+     ],
+     "enemy_idx": 157,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 157",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      158
+     ],
+     "enemy_idx": 158,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 158",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      159
+     ],
+     "enemy_idx": 159,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 159",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      160
+     ],
+     "enemy_idx": 160,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 160",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      161
+     ],
+     "enemy_idx": 161,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 161",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      162
+     ],
+     "enemy_idx": 162,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 162",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 28,
+   "think": "off_8115950",
+   "think_cite": "asm/asm32.s:14872",
+   "act": "sub_81159DC",
+   "act_cite": "asm/asm32.s:14925",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      163
+     ],
+     "enemy_idx": 163,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 163",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      164
+     ],
+     "enemy_idx": 164,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 164",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      165
+     ],
+     "enemy_idx": 165,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 165",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      166
+     ],
+     "enemy_idx": 166,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 166",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      167
+     ],
+     "enemy_idx": 167,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 167",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      168
+     ],
+     "enemy_idx": 168,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 168",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 29,
+   "think": "off_8115DE0",
+   "think_cite": "asm/asm32.s:15371",
+   "act": "sub_81162AA",
+   "act_cite": "asm/asm32.s:15938",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      169
+     ],
+     "enemy_idx": 169,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 169",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      170
+     ],
+     "enemy_idx": 170,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 170",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      171
+     ],
+     "enemy_idx": 171,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 171",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      172
+     ],
+     "enemy_idx": 172,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 172",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      173
+     ],
+     "enemy_idx": 173,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 173",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      174
+     ],
+     "enemy_idx": 174,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 174",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 30,
+   "think": "off_81163F0",
+   "think_cite": "asm/asm32.s:15999",
+   "act": "sub_81165A4",
+   "act_cite": "asm/asm32.s:16200",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      175
+     ],
+     "enemy_idx": 175,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 175",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      176
+     ],
+     "enemy_idx": 176,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 176",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      177
+     ],
+     "enemy_idx": 177,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 177",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      178
+     ],
+     "enemy_idx": 178,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 178",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      179
+     ],
+     "enemy_idx": 179,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 179",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      180
+     ],
+     "enemy_idx": 180,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 180",
+     "status": "unrecorded"
+    }
+   ]
+  },
+  {
+   "ai_index": 31,
+   "think": "off_81166B0",
+   "think_cite": "asm/asm32.s:16238",
+   "act": "nullsub_13",
+   "act_cite": "asm/asm31.s:169906",
+   "ranks": [
+    {
+     "spawn_enemy_idxs": [
+      181
+     ],
+     "enemy_idx": 181,
+     "version_byte": 0,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 181",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      182
+     ],
+     "enemy_idx": 182,
+     "version_byte": 1,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 182",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      183
+     ],
+     "enemy_idx": 183,
+     "version_byte": 2,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 183",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      184
+     ],
+     "enemy_idx": 184,
+     "version_byte": 3,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 184",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      185
+     ],
+     "enemy_idx": 185,
+     "version_byte": 4,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 185",
+     "status": "unrecorded"
+    },
+    {
+     "spawn_enemy_idxs": [
+      186
+     ],
+     "enemy_idx": 186,
+     "version_byte": 5,
+     "elem_hp_row0_raw": "",
+     "hp_low12": null,
+     "cite": "asm/asm00_2.s:19975 byte_80182C4 row 186",
+     "status": "unrecorded"
+    }
+   ]
+  }
+ ]
+}
