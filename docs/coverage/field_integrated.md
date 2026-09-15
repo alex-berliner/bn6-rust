@@ -1,6 +1,15 @@
 # `field` integrated residue — per-layer attribution (F45, 2026-09-16)
 
 Row: `field` integrated = **158935 total / 5606 worst / 40 frames**, negative not blind
+<!-- Superseded by ROM version, 2026-09-15 (F48's rule: a non-zero total carries its build identity).
+     The figure above was the F45-era reading on built ROM sha256 ab80121e..., and F48 showed it was
+     never machine-gated at landing (verify_rows' old matcher could only match the isolated line).
+     On today's tree -- ROM 1997be3b..., produced by T17/T19's chip-asset change -- the row reads
+     158930 / 5601 / 40, negative 261029, and that value IS machine-gated (verify_rows HEAD
+     --expect field=158930/5601/40/261029 -> MATCH (integrated line); a deliberately wrong expect
+     returns MISMATCH, so the gate is live). The -23 step is deterministic and explained; the +18
+     between F45's 158935 and F46's 158953 is NOT, since both trees build ab80121e -- see
+     docs/measurement-drift.md. Cite 158935 only as a historical quote, never as the current row. -->
 (261034). Re-measured on this branch before any edit; the row's own entry is unchanged.
 `field` isolated = 0/0/40 (neg 1139): the subject is OBJ and OBJ matches, so the residue is a
 BG/window/blend story. Fitted constants: **19** (derived 430, peeked 147).
