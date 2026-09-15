@@ -66,8 +66,8 @@ def plain(text):
 
 
 def numbers(s):
-    """the numbers a text states: hex values and digit runs (with inner separators; trailing punctuation is not a digit)"""
-    return set(re.findall(r"0x[0-9a-fA-F]+|\d+(?:[.,]\d+)*", s))
+    """the numbers a text states: hex values and digit runs; thousands separators are dropped so 2,850,534 equals 2850534"""
+    return set(re.sub(r"(?<=\d),(?=\d{3}\b)", "", x).lower() for x in re.findall(r"0x[0-9a-fA-F]+|\d+(?:[.,]\d+)*", s))
 
 
 ORIENTATION = ("This project rebuilds the battle engine of Mega Man Battle Network 6, a Game Boy Advance game, as new code in Rust. "
@@ -106,12 +106,13 @@ def newcomer_digest(results, facts):
               "sentence; put ids in parentheses at the end of the sentence they belong to, like (T7e). Explain every term the first time; never "
               "use a term from the glossary bare. Use only numbers that appear in the ticket results below, and explain what each number counts "
               "in the same sentence; never add a file path, branch name or commit hash. No bullet lists. No preamble, no closing summary.\n\n"
+              "Write the report directly as your reply, without planning it at length first; do not read any file.\n\n"
               "The day's tickets and their results:\n%s" % (ORIENTATION, GLOSSARY, items))
     for attempt in range(3):
         out = ""
         try:
-            out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", DIGEST_MODEL, "--thinking", "medium",
-                                  "--tools", "read", prompt], capture_output=True, text=True, timeout=900, stdin=subprocess.DEVNULL).stdout
+            out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", DIGEST_MODEL, "--thinking", "low",
+                                  "--tools", "read", prompt], capture_output=True, text=True, timeout=1200, stdin=subprocess.DEVNULL).stdout
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return ""
         last = ""; kinds = {}
