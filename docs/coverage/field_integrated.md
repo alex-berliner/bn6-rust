@@ -257,3 +257,32 @@ existing `field` row is unchanged: this session it reads 158935/5606/40 integrat
 budget (6) is exactly the three post rows, and its numbers are derived above from F42's kept
 `--only-bg 1` capture; a follow-up can land it with the same recipe if verification wants it
 harness-run.
+
+## T22 — F47's open (c) ART CONTENT settled: ART FAITHFUL (0 captures used)
+
+F47's naive `s*37+k` art test failed on LAYOUT, not content. Rebuilt on the ROM's own upload
+list — `BattleBackdropGFXAnimScript_807FB98` (dat20.s:148; initial
+`gfx_anim_4bit_tile_copy gfx_dest=unk_6000040 num_tiles=0x24` :149, then 29
+`gfx_anim_data_ptr` entries :150-178) scheduling `BattleBackdropTiles0-6` (dat20.s:181-225,
+36 halfwords each, blob indices into GFXAnimTileBlob_8617488) — on F47's kept tile dumps
+(`/tmp/bn-f47/{canon,rust}_tiles.bin`), analysis in `/tmp/bn-t22-backdrop-content/`:
+
+- Transcription: `backdrop_export.py`'s `FRAMES[s]` == `[0] + table` byte-exact, 36/36 slots
+  x 7 tables (tables index VRAM slots 2..37; slot 1 = the blank filler the map's empty cells
+  point at).
+- Canon resident set (slots 1..37 of the 0x06000000:0x800 window): **37/37 vs
+  `asset[FRAMES[step]]` for ALL 7 steps** (F47's named captures 140/148/156/164/172 → steps
+  5/6/0/1/2 each 37/37; step 3 resident at caps 16-19 and 68-69).
+- Rust: slot-ordered 1/37 — the port uploads in map-scan order vs canon's table order (the
+  bijection canon-slot ↔ rust-slot was verified exhaustively; the map compensates) — but
+  **order-insensitive set 37/37 for ALL 7 steps**.
+- Naive control at F47's own capture (canon k=39 = cap 174): best 3/37 (`{1:3}`) — the
+  2-3/37 was a 1-based-VRAM-slot vs 0-based-FRAMES-row off-by-one.
+
+So the ROM holds no tile the asset lacks at any step, on either side; `field`'s integrated
+residue stays timing-only, exactly the F42/F45/F46/F47 circle's conclusion. No row moved,
+no src/ edit; built ROM byte-identical to main's (`cmp` = 0 differing bytes, sha256
+1997be3b4e8f463ac328aede2d5a027d7f73fcb8adcab5834592d71a7a419fed).
+
+Unverified: palette bank 0 (no palette watch in the kept dumps — rests on the exporter's
+record); byte→art mapping stays a GAP as a table (T15's per-scene compare chain trail).
