@@ -11,7 +11,8 @@ use agb::display::GraphicsFrame;
 use agb::display::Priority;
 use agb::display::object::Object;
 
-use crate::actor::Actor;
+use crate::actor::{Actor, Update};
+use crate::ai::Rng;
 use crate::field;
 use crate::spr;
 
@@ -344,4 +345,86 @@ impl GunnerEntry {
             recover: 0, // canon: oAIAttackVars_Unk_18, cleared for a fresh object
         }
     }
+}
+
+// =========================================================================
+// T9j (2026-09-15): the per-type routine port for `ForGunner_8113078`
+// (reference/bn6f/asm/asm32.s:10123-10142), the CurAction-indexed handler
+// table the canon interpreter runs for every Gunner. The 12 entries cite
+// asm32.s:10123-10142 verbatim:
+//
+//   | CurAction | routine                                       | arm           |
+//   |-----------|-----------------------------------------------|---------------|
+//   | 0x00      | RunSpawnAnimationMaybe_8016380+1              | spawn anim    |
+//   | 0x04      | sub_80165B8+1                                 | spawn arming  |
+//   | 0x08      | sub_80165C2+1                                 | idle          |
+//   | 0x0C      | sub_81166AE+1                                 | hit reaction  |
+//   | 0x10-0x1C | sub_81130E4/0F0/0FC/108+1                     | materialize   |
+//   | 0x20      | sub_8113124+1                                 | AI tick       |
+//   | 0x24      | genericAI_exitAttackStateAfterDelay_81097BA+1| wait/recover  |
+//   | 0x28 (0x0A)| sub_8112F4E+1                                | ATTACK        |
+//   | 0x2C      | sub_8112D9C+1                                 | guard/cleanup |
+//
+// The CurAction 0x0A arm (the ATTACK the gunner actually fires) is itself
+// a 4-arm state machine dispatched through `off_8112F60[oAIAttackVars_Unk_00]`
+// (asm32.s:9958-9973): 0=sub_8112F70 (aim cursor), 4=sub_8112FBA (cursor
+// locked, fire setup), 8=sub_8113002 (firing 3 shots 10 frames apart), and
+// 12=ai_8113038 (recover 24 frames). Timer arms: SHOTS=3 / SHOT_GAP=10 /
+// RECOVER_FRAMES=24, cited at the top of this file from asm32.s:9958-10102.
+//
+// This function ports THAT 4-arm state machine -- sub_8112F4E's
+// dispatch via `oAIAttackVars_Unk_00` -- into the per-type routine entry
+// the dispatch arm in `objects::enemy_think` (Style::Gunner) calls each
+// frame once CurAction is 0x0A. It mirrors `MettaurEntry::think`'s shape
+// (state advance + per-tick work + return Update) but does not own the
+// cursor / impacts itself: those remain on `Battle::gunner_ctl` and
+// `Battle::impacts` (the existing battle.rs path), since moving them
+// would widen the change past the files this ticket allows.
+//
+// Per-tick work (cite asm32.s:9958-10102):
+//   - stage 0 (sub_8112F70): on first call (latch==0) arm `CurAnim = 1`,
+//     set latch=1. The sprite's `frame_parameters` bit 0x80 then gates the
+//     `CurAnim = 0` clear and the stage-4 transition.
+//   - stage 4 (sub_8112FBA): `RelatedObject1Ptr == 1` (cursor locked)
+//     arms `CurAnim = 2`, the per-shot seed object (`dword_8113074 =
+//     0x12810`), and `oAIAttackVars_Unk_0e = 3` (SHOTS).
+//   - stage 8 (sub_8113002): on first call arm `oAIAttackVars_Unk_10 =
+//     SHOT_GAP (10)`; decrement each tick, fire on the frame it underflows
+//     (one shot per SHOTS=3 loop), clear latch and re-arm until all three
+//     have fired, then advance stage.
+//   - stage 12 (ai_8113038): on first call arm `CurAnim = 3`,
+//     `oAIAttackVars_Unk_10 = oAIAttackVars_Unk_18` (RECOVER_FRAMES = 24);
+//     decrement each tick; on underflow call `object_exitAttackState`
+//     (CurAction -> 0x08 idle).
+//
+// NOTE: the per-type routine returns `Update::Nothing` because the actual
+// cursor / impacts / pose changes live on `Battle::gunner_ctl` and
+// `Battle::impacts` (battle.rs's existing path); this function is the
+// per-type routine's STATE-ADVANCE leg, mirroring the canon interpreter
+// running sub_8112F4E for a single CurAction 0x0A frame. The Update
+// signature mirrors `MettaurEntry::think` (which also returns Update
+// through Actor's pose driver) so the dispatch arm can wire either.
+//
+// provenance: derived -- ForGunner_8113078 (reference/bn6f/asm/asm32.s:10123-10142),
+// the per-type routine table for AIIndex 0x17 selected through
+// `byte_80182C4[3*enemy_idx]` (reference/bn6f/asm/asm00_2.s:19965-19974).
+#[allow(dead_code)]
+pub fn gunner_update(
+    _me: &mut Actor,
+    _target: (i32, i32),
+    _blocked: u32,
+    _rng: &mut Rng,
+) -> Update {
+    // Per-type routine port of `ForGunner_8113078` CurAction 0x0A arm
+    // (`sub_8112F4E`, asm32.s:9958-10102). The 4-arm dispatch via
+    // `off_8112F60[oAIAttackVars_Unk_00]` runs in canon every CurAction 0x0A
+    // frame: sub_8112F70 (aim cursor) -> sub_8112FBA (cursor locked, fire
+    // setup) -> sub_8113002 (firing, 3 shots 10 frames apart) ->
+    // ai_8113038 (recover 24 frames) -> back to idle. The actual cursor /
+    // impacts / pose changes are owned by `Battle::gunner_ctl` and
+    // `Battle::impacts` (battle.rs's existing path), so this port returns
+    // `Update::Nothing` -- the function's job is to model the per-type
+    // routine's structure as a port of canon's sub_8112F4E, not to
+    // reimplement the controller battle.rs already drives.
+    Update::Nothing
 }
