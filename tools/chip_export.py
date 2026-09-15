@@ -38,7 +38,7 @@ family there is Spreadr1..3).
 
 Format (little-endian):
   0x00  magic "BNCH"
-  0x04  u32 version (1)
+  0x04  u32 version (2; v2 appends a behavioural tail, below)
   0x08  u32 chip count, then a table of count * 36-byte records:
           u16 chip id; u8 element (chip_element); u8 mb; u16 attack_power;
           u8[4] codes; char[9] name ('@' stripped, NUL padded);
@@ -47,6 +47,13 @@ Format (little-endian):
           u32 image_len; u32 -> palette (32 bytes, 16 BGR555)
   then the blobs, each 4-aligned after the table; shared image blobs are
   stored once and referenced by several records
+  then the v2 behavioural tail, count * 8 bytes appended after the blobs
+  (v2 is byte-append-only: every v1 byte, including each record's pointer
+  fields, is unchanged; the tail's record stride is 8):
+          u8 effect_flags; u8 attack_family; u8 attack_subfamily;
+          u8 attack_param_1..4; u8 lockout_frames
+          (ChipDataArr_8021DA8 offsets +0x9, +0xb, +0xc, +0x10..+0x13,
+          +0x14; include/rom_structs/ChipData.inc)
 """
 
 import os
@@ -99,12 +106,18 @@ def chip_data():
         m = FIELD.match(line)
         if m and m.group(1) in (
             "codes", "chip_element", "mb", "attack_power",
+            "effect_flags", "attack_family", "attack_subfamily",
+            "attack_param_1", "attack_param_2", "attack_param_3",
+            "attack_param_4", "lockout_frames",
             "chip_icon_ptr", "chip_image_ptr", "chip_palette_ptr",
         ):
             cur[m.group(1)] = m.group(2)
     assert len(chips) == 411, len(chips)
     for c in chips:
         for k in ("codes", "chip_element", "mb", "attack_power",
+                  "effect_flags", "attack_family", "attack_subfamily",
+                  "attack_param_1", "attack_param_2", "attack_param_3",
+                  "attack_param_4", "lockout_frames",
                   "chip_icon_ptr", "chip_image_ptr", "chip_palette_ptr"):
             assert k in c, (chips.index(c), k)
     return chips
@@ -211,12 +224,18 @@ def main():
         recs.append(dict(
             id=cid, name=name, element=int(c["chip_element"], 0), mb=int(c["mb"], 0),
             power=int(c["attack_power"], 0), codes=codes,
+            effect_flags=int(c["effect_flags"], 0),
+            family=int(c["attack_family"], 0), subfamily=int(c["attack_subfamily"], 0),
+            params=[int(c["attack_param_%d" % n], 0) for n in (1, 2, 3, 4)],
+            lockout=int(c["lockout_frames"], 0),
             icon=(icon, icon_blob[:0x80]), pal=(pal, pal_blob[:0x20]),
             img=(img, img_blob, img_len)))
 
-    # 36-byte records: u16 id, u8 element, u8 mb, u16 power, u8[4] codes,
-    # char[9] name, u8 reserved, then u32 icon, image, image_len, palette.
-    out = bytearray(struct.pack("<4sII", b"BNCH", 1, len(recs)))
+    # 36-byte records as in v1 (append-only: the v2 behavioural tail is a
+    # separate section after the blobs, so every v1 byte and every stored
+    # blob offset is unchanged), then the tail: per record u8 effect_flags,
+    # attack_family, attack_subfamily, attack_param_1..4, lockout_frames.
+    out = bytearray(struct.pack("<4sII", b"BNCH", 2, len(recs)))
     for r in recs:
         out += (struct.pack("<HBBH4s", r["id"], r["element"], r["mb"], r["power"], r["codes"])
                 + r["name"].encode() + b"\0" * (9 - len(r["name"])) + b"\0" + b"\0" * 16)
@@ -239,6 +258,12 @@ def main():
             out += r["img"][1]
         struct.pack_into("<II", out, base + 24, blobs[key], len(r["img"][1]))
 
+    # The v2 behavioural tail, after every blob: 8 bytes per record in
+    # record order.
+    for r in recs:
+        out += bytes([r["effect_flags"], r["family"], r["subfamily"]]
+                     + r["params"] + [r["lockout"]])
+
     with open(out_path, "wb") as f:
         f.write(out)
 
@@ -257,6 +282,8 @@ def main():
     for r in recs:
         print(f"  {r['id']:3d} {r['name']:<10} el={r['element']:02x} mb={r['mb']:2d} "
               f"pw={r['power']:3d} codes={' '.join('%02x' % b for b in r['codes'])} "
+              f"eff={r['effect_flags']:02x} fam={r['family']:02x} sub={r['subfamily']:02x} "
+              f"p={r['params']} lo={r['lockout']} "
               f"icon={r['icon'][0]} img={r['img'][0]}({len(r['img'][1])}) pal={r['pal'][0]}")
     if skipped:
         print("SKIPPED (not in TextScriptChipNames0): " + ", ".join(skipped))

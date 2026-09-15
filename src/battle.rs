@@ -1616,6 +1616,27 @@ const FIELD_SUBPX: u16 = 2; // provenance: derived -- FIELD_SLIDE is kept in hal
 /// The results screen fade runs 1-16 and 16 means fully black
 /// (results::Shown::update).
 const RESULTS_FADE_BLACK: u8 = 16; // provenance: derived -- results::Shown::update: 16 means the screen is fully black
+/// Every sword/blade row of ChipDataArr_8021DA8 (ids 71-79, 81, 85) carries
+/// attack_family 0x13; the ROM dispatches the strike on it, not the chip id.
+const SWORD_FAMILY: u8 = 0x13; // canon: ChipDataArr_8021DA8 AttackFamily +0xb of the sword/blade rows (include/rom_structs/ChipData.inc)
+/// The hit shape per sword subfamily: the ROM loads this table word-indexed
+/// (asm31.s:109241-109243, `lsl r3,#2; ldr r4,[r4,r3]` -- the instruction that
+/// holds the read is 109243; 109246 there is the AttackBoost reload; the
+/// same read at the earlier site is 109177), so each subfamily's byte is
+/// the first of its 4-byte entry.
+const SWORD_HIT_SHAPE: [u8; 16] = [ // canon: SwordHitShapeBySubfamily_80EBA18 (asm31.s:109334)
+    1, 4, 2, 4, 2, 0x11, 0x11, 0x11, 2, 6, 0xB, 0x11, 4, 4, 4, 4,
+];
+/// SwordHitShapeBySubfamily_80EBA18's shape codes (asm31.s:109243): 1 the
+/// panel ahead, 2 two panels ahead, 4 the column ahead (0x11/6/0xB are other
+/// subfamilies' shapes, none in this asset).
+const SHAPE_COLUMN: u8 = 4; // canon: SwordHitShapeBySubfamily_80EBA18's column-ahead shape
+const SHAPE_TWO_AHEAD: u8 = 2; // canon: SwordHitShapeBySubfamily_80EBA18's two-panels-ahead shape
+/// The slash arc's effect-table row per sword subfamily, byte-indexed
+/// (asm31.s:109269: `ldrb r0, [r2,r3]`; 109264 is the loc_80EB992 label).
+const SWORD_ARC_ROW: [u8; 16] = [ // canon: SwordArcBySubfamily_80EBAD8 (asm31.s:109352)
+    0x18, 0x16, 0x17, 0x19, 0x1A, 0x1B, 0x1C, 0x28, 0x2D, 0x25, 0x5F, 0x1B, 0x16, 0x16, 0x16, 0x16,
+];
 /// The slash arc rides above the front panel's centre; the offset is this
 /// build's own, tuned to the panel art.
 const SWORD_ARC_UP: i32 = 0x10; // provenance: fitted -- this build's own arc height, tuned to the panel art
@@ -4303,70 +4324,67 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
     fn chip_strike(&mut self, chip: Chip) {
         let (col, row) = self.megaman.panel();
         let dx = self.megaman.facing_dx();
-        match chip.id {
-            CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
-            | CHIP_MURAMASA | CHIP_STEPSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
-            | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
-                let mut panels: Vec<(i32, i32)> = Vec::new();
-                // The hit shape is byte_80EBA18's first byte per subfamily
-                // (asm31.s:109246): 1 the panel ahead, 4 the column ahead,
-                // 2 two panels ahead; the elemental swords are all 4.
-                match chip.id {
-                    CHIP_WIDESWRD | CHIP_WIDEBLDE | CHIP_STEPSWRD | CHIP_FIRESWRD
-                    | CHIP_AQUASWRD
-                    | CHIP_ELECSWRD | CHIP_BAMBSWRD => {
-                        panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
-                    }
-                    CHIP_LONGSWRD | CHIP_LONGBLDE | CHIP_MURAMASA => {
-                        panels.extend([(col + dx, row), (col + LONG_SWORD_FAR * dx, row)])
-                    }
-                    _ => panels.push((col + dx, row)),
+        // The sword/blade family is the first driven from the chip record
+        // itself: every sword row of ChipDataArr_8021DA8 carries
+        // attack_family 0x13, and the per-subfamily behaviour below reads
+        // the record's AttackSubFamily through the ROM's own tables. No
+        // sword chip id is named here.
+        if chip.family == SWORD_FAMILY {
+            let sub = chip.subfamily as usize;
+            let mut panels: Vec<(i32, i32)> = Vec::new();
+            // The hit shape is SwordHitShapeBySubfamily_80EBA18's first byte
+            // per subfamily (asm31.s:109241-109243, the read is 109243's
+            // `ldr r4,[r4,r3]`): 1 the panel ahead, 4 the
+            // column ahead, 2 two panels ahead; the elemental swords are
+            // all 4.
+            match SWORD_HIT_SHAPE[sub] {
+                SHAPE_COLUMN => {
+                    panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
                 }
-                // With the hit region the strike spawns the slash arc: a
-                // type-4 effect object at the front panel's coordinates,
-                // 0x10 up, table row byte_80EBAD8[subfamily] of byte_80E0398
-                // (asm31.s:109180-109200) -- effect list entry 0x14
-                // (sprite_830F144), its animation 2 for Sword, 0 for WideSwrd,
-                // 1 for LongSwrd -- gone when the animation ends.
-                // The arc's animation is byte_80EBAD8 per subfamily
-                // (asm31.s:109264): 0x18 for Sword, 0x16 for WideSwrd and
-                // every elemental sword, 0x17 for LongSwrd.
-                // byte_80EBAD8's row per subfamily indexes byte_80E0398:
-                // rows 0x16/0x17/0x18 are the arc's animations 0/1/2 in
-                // palette 0, and the blades' rows 0x19/0x1a are animations
-                // 0 and 1 in palette 5 (asm31.s:85787).
-                let (arc_anim, blade_palette) = match chip.id {
-                    CHIP_LONGSWRD => (1, 0), // canon: byte_80EBAD8 arc row per subfamily (see above)
-                    CHIP_SWORD => (2, 0), // canon: byte_80EBAD8 arc row per subfamily (see above)
-                    CHIP_WIDEBLDE => (0, 5), // canon: byte_80EBAD8 arc row per subfamily (see above)
-                    CHIP_LONGBLDE => (1, 5), // canon: byte_80EBAD8 arc row per subfamily (see above)
-                    // Muramasa's row 0x2d: the same animation as LongBlde's
-                    // in palette 6.
-                    CHIP_MURAMASA => (1, 6), // canon: byte_80EBAD8 arc row per subfamily (see above)
-                    _ => (0, 0),
-                };
-                let (fx, fy) = field::panel_centre(col + dx, row);
-                // The elemental swords add their palette: the strike ORs
-                // (subfamily - 0xb) into the spawn's Param3, which the
-                // effect object adds to the sprite's palette
-                // (asm31.s:109198-109206; sub_80E0568, asm31.s:85852).
-                let arc_palette = match chip.id {
-                    CHIP_FIRESWRD => 1, // canon: subfamily - 0xb ORed into Param3 (see above)
-                    CHIP_AQUASWRD => 2, // canon: subfamily - 0xb ORed into Param3 (see above)
-                    CHIP_ELECSWRD => 3, // canon: subfamily - 0xb ORed into Param3 (see above)
-                    CHIP_BAMBSWRD => 4, // canon: subfamily - 0xb ORed into Param3 (see above)
-                    _ => blade_palette,
-                };
-                let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
-                arc.set_palette_add(arc_palette);
-                self.effects
-                    .push((arc, (fx, fy - SWORD_ARC_UP), SWORD_ARC_FRAMES[arc_anim], true, false));
-                for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
-                    if panels.contains(&enemy.panel()) {
-                        enemy.take_damage(chip.power);
-                    }
+                SHAPE_TWO_AHEAD => {
+                    panels.extend([(col + dx, row), (col + LONG_SWORD_FAR * dx, row)])
+                }
+                _ => panels.push((col + dx, row)),
+            }
+            // With the hit region the strike spawns the slash arc: a
+            // type-4 effect object at the front panel's coordinates,
+            // 0x10 up, table row SwordArcBySubfamily_80EBAD8[subfamily] of
+            // EffectObjectRows_80E0398 -- effect list entry 0x14
+            // (sprite_830F144) -- gone when the animation ends.
+            // Row->(animation, palette) from EffectObjectRows_80E0398's
+            // rows (asm31.s:85181), read by sub_80E0568 (asm31.s:85239)
+            // which loads [row+2] into CurAnim (asm31.s:85251) and
+            // [row+3] + Param3 into the palette (asm31.s:85257-85260).
+            let (arc_anim, mut arc_palette) = match SWORD_ARC_ROW[sub] {
+                0x16 => (0, 0), // canon: EffectObjectRows_80E0398 row (arc anim 0, palette 0)
+                0x17 => (1, 0), // canon: EffectObjectRows_80E0398 row (arc anim 1, palette 0)
+                0x18 => (2, 0), // canon: EffectObjectRows_80E0398 row (arc anim 2, palette 0)
+                0x19 => (0, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
+                0x1a => (1, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
+                0x2d => (1, 6), // canon: EffectObjectRows_80E0398 row (Muramasa, palette 6)
+                _ => (0, 0),
+            };
+            // The elemental swords add their palette: the strike ORs
+            // (subfamily - 0xb) into the spawn's Param3, which the effect
+            // object adds to the sprite's palette; the elemental
+            // palette-add (subfamily - 0xb, subfamily 0xc..0xf) is
+            // asm31.s:109271-109276.
+            if (0xc..=0xf).contains(&chip.subfamily) { // canon: asm31.s:109271-109273 (sub 0xc..0xf test)
+                arc_palette = (chip.subfamily - 0xb) as usize; // canon: asm31.s:109275 (sub - 0xb)
+            }
+            let (fx, fy) = field::panel_centre(col + dx, row);
+            let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
+            arc.set_palette_add(arc_palette);
+            self.effects
+                .push((arc, (fx, fy - SWORD_ARC_UP), SWORD_ARC_FRAMES[arc_anim], true, false));
+            for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                if panels.contains(&enemy.panel()) {
+                    enemy.take_damage(chip.power);
                 }
             }
+            return;
+        }
+        match chip.id {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
             | CHIP_FLSHBOM1 | CHIP_FLSHBOM2 | CHIP_FLSHBOM3
