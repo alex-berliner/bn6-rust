@@ -1895,36 +1895,17 @@ impl<'a> Battle<'a> {
         // lineup.
         let (mut enemies, ais): (Vec<Actor>, Vec<ai::Ai>) = if let Some(f) = fixture {
             // enemy_kind 0 = Mettaur, the only kind FIXTURE.md defines yet.
-            // Per-enemy spawn cell from the fixture's `enemy_panel` byte
-            // (FIXTURE.md +64, ROM 0x080b5354): the encode is
-            // `spawnEnemy_80073E2`'s byte 1 of an `EnemySetup` structure
-            // (asm00_1.s:8695), low 3 bits = panel column, bits 4-6 =
-            // panel row. A slot's byte of 0 falls back to the descriptor's
-            // own `enemy_col`/`enemy_row`, which keeps every pre-F38f
-            // descriptor (single-Mettaur, METTAUR_HP, byte 0 in all three
-            // slots) reproducing its old diagonal at the single-enemy
-            // position -- the F38e analysis named this a port from the
-            // canon spawnEnemy routine, never a fitted triple.
+            // Laid out on a diagonal -- (enemy_col, enemy_row), (+1, +1),
+            // (+2, +1)... -- which is the only multi-enemy shape any
+            // existing fixture needs.
             let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
             let mut es = alloc::vec::Vec::new();
             let mut ai_list = alloc::vec::Vec::new();
             for i in 0..f.enemies as i32 {
-                let (col, row) = match f.enemy_panel.get(i as usize).copied().unwrap_or(0) {
-                    // provenance: ROM 0x080b5354, spawnEnemy_80073E2 -- the
-                    // encoding above (low 3 bits = panel_x, bits 4-6 =
-                    // panel_y) is the one the disassembly reads at byte 1
-                    // of every EnemySetup; the 3 known values are
-                    // 0x15/0x35/0x26 = (col,row) (5,1)/(5,3)/(6,2).
-                    0 => (f.enemy_col as i32 + i, f.enemy_row as i32 + i),
-                    panel_byte => (
-                        (panel_byte & 0x07) as i32, // canon: panel_x = bits 0-2 (spawnEnemy_80073E2, asm00_1.s:8695)
-                        ((panel_byte >> 4) & 0x07) as i32, // canon: panel_y = bits 4-6 (spawnEnemy_80073E2).
-                    ),
-                };
                 es.push(Actor::new(
                     spr::Assets::new(METTAUR),
-                    col,
-                    row,
+                    f.enemy_col as i32 + i,
+                    f.enemy_row as i32 + i,
                     true,
                     enemy(hp),
                 ));

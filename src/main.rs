@@ -197,15 +197,13 @@ const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layo
 const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
 
 /// Byte offset of the state-trace export block inside `BATTLE_MARKER`
-/// (T1): 0x02000000 + 132 = 0x02000084, i.e. past the fixture descriptor
-/// (which grew to 67 bytes for the per-enemy panel data in F38f -- see
-/// FIXTURE.md and src/fixture.rs's `enemy_panel` field). Linker-placed,
-/// NOT an absolute address: growing the array pushes agb's own EWRAM data
-/// (`INTERRUPT_TABLE`, `SPRITE_LOADER`) forward instead of overlapping it
-/// -- verify with `nm <elf> | grep -A1 BATTLE_MARKER` that this static owns
-/// 0x02000000..0x02000100. The R6 cut that wrote an absolute 0x02000080
-/// collided with the sprite loader (see the array doc).
-const TRACE_OFFSET: usize = 132; // provenance: chosen -- this project's own layout constant (first 64-byte slot past the 67-byte descriptor that nm proves free); the freeness is re-measured, not assumed, see the array doc
+/// (T1): 0x02000000 + 128 = 0x02000080, i.e. past the fixture descriptor.
+/// Linker-placed, NOT an absolute address: growing the array pushes agb's
+/// own EWRAM data (`INTERRUPT_TABLE`, `SPRITE_LOADER`) forward instead of
+/// overlapping it -- verify with `nm <elf> | grep -A1 BATTLE_MARKER` that
+/// this static owns 0x02000000..0x02000100. The R6 cut that wrote an
+/// absolute 0x02000080 collided with the sprite loader (see the array doc).
+const TRACE_OFFSET: usize = 128; // provenance: chosen -- this project's own layout constant (first 64-byte slot past the descriptor that nm proves free); the freeness is re-measured, not assumed, see the array doc
 
 /// Magic of the state-trace block (T1): "TRC2" read big-endian.
 const TRACE_MAGIC: u32 = 0x5452_4332; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC)

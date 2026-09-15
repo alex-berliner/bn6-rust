@@ -243,17 +243,6 @@ pub struct Fixture {
     /// what canon's `CurAnim` indexes), not as a third byte there was no
     /// room for.
     pub enemy_action: u8,
-    /// Per-enemy panel cell bytes, one byte per slot 0..3 -- the encoding
-    /// `spawnEnemy_80073E2` reads at byte 1 of its `EnemySetup` structure
-    /// (asm00_1.s:8695): low 3 bits = panel column (0..7), bits 4-6 = panel
-    /// row (0..7). For the integrated opening row (3 Mettaurs) the canon
-    /// ROM bytes at 0x080b5354 hold `[0x15, 0x35, 0x26]` =
-    /// `((1<<4)|5, (3<<4)|5, (2<<4)|6)` = panels `(5,1)/(5,3)/(6,2)` -- the
-    /// spawn cells the per-step introduce animation `sub_801641A`
-    /// (asm00_2.s:16101) then materializes from. 0 in any slot = fall back
-    /// to `enemy_col`/`enemy_row` for backward compat with single-enemy
-    /// rows (every existing descriptor before F38f leaves all three at 0).
-    pub enemy_panel: [u8; 3],
 }
 
 /// Kind values for the packed `enemy_kind` byte (two bits per slot, see the
@@ -379,12 +368,6 @@ pub fn read() -> Option<Fixture> {
             // NOT IN FIXTURE.md, offsets +62/+63: see `enemy_state`'s doc.
             enemy_state: r8(62),
             enemy_action: r8(63),
-            // Per-enemy panel cell bytes (F38f, FIXTURE.md +64): see the
-            // field's doc for the encode/decode and the cite chain. ROM
-            // 0x080b5354 = [0x15, 0x35, 0x26] for the 3-Mettaur opening row;
-            // every pre-F38f descriptor leaves all three at 0 and falls
-            // back to (enemy_col, enemy_row).
-            enemy_panel: [r8(64), r8(65), r8(66)],
         })
     }
 }
