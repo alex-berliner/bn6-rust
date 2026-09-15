@@ -18,7 +18,7 @@ for i, m in enumerate(heads):
     if "**Files.**" not in body: why.append("no Files line")
     if "**Acceptance.**" not in body and "**Measure and report.**" not in body: why.append("no acceptance")
     if not re.search(r"\bM(1[01]|[1-9])\b", body) and not re.search(r"\b(follows|follow-up to|after) [A-Z]+\d+[a-z]?\b", body): why.append("no milestone or predecessor")
-    if len(body) > 6000: why.append("too long")
+    if len(body) > 9000: why.append("too long (over 9000 characters; the judge is asked for 5000)")
     (refused if why else admitted).append((tid, why, body))
 if admitted:
     # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section

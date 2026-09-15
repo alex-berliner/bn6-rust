@@ -9,6 +9,8 @@ try:
     d = json.load(urllib.request.urlopen(req, timeout=60))
 except Exception as e:  # a transport or rate-limit error is NOT exhaustion: exit 2 so watchdogs can tell
     body = getattr(e, "read", lambda: b"")()
+    if getattr(e, "code", None) == 402:   # "You're out of credits": that IS exhaustion, a balance of 0
+        print("hyper: remaining 0.0 of 250 hypercredits (out of credits: HTTP 402)"); sys.exit(1 if "--min" in sys.argv else 0)
     print("hyper: probe failed: %s %s" % (e, body[:160])); sys.exit(2)
 rem = (d.get("usage", {}).get("remaining") or {}).get("hypercredits")
 print("hyper: remaining %.1f of 250 hypercredits (%.1f used today, %.0f%%)" % (rem, 250 - rem, 100 * (250 - rem) / 250) if rem is not None else "hyper: %s" % d)
