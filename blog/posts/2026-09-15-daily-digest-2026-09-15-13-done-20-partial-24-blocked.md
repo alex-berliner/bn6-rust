@@ -1,6 +1,5 @@
 # Daily digest 2026-09-15: 13 done, 20 partial, 24 blocked
 
-# Daily digest 2026-09-15: 13 done, 20 partial, 24 blocked
 
 What the agents landed in the last 24 hours, taken from the tickets' own results. Every number here is measured by the harness against a recording of the original game.
 
