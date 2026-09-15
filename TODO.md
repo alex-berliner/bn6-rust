@@ -249,8 +249,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### F36b. warp integrated ~40628: per-region decomposition, then port the canon mechanism for each non-zero region  *(OPEN -- 2026-09-15)*
+### F36b. warp integrated ~40628: per-region decomposition, then port the canon mechanism for each non-zero region  *(BLOCKED -- 2026-09-15, no code change, tool budget soft-cap hit at 80 before port)*
 
+**Result.** no code change, tool budget soft-cap hit at 80 before port; decomposition finding: 99.2% BG1 backdrop (40302 px, y=24..143), HUD 326 px, BG3/OBJ clean — same class as field integrated 158935/5606 and buster integrated 45810/27225 BG1 phase (sub_8001C94 / BGScrollCB_BG1Diagonal3to2Scroll src/backdrop.rs:5,29); warp isolated 0/0/30; cursor 1/1/170; mettaur/wc/result 0/0; cost $0.288 model=minimax/MiniMax-M3:high
 **Why.** F36a PARTIAL gave the actual warp integrated baseline: 40628/11744/30 (NOT 363658 headline — F38b event-lock pin rust_offset=5 changed the count). Warp isolated is 0/0/30 PASS per F11 DONE. The integrated variant leaves the HUD strip + BG1 backdrop + OBJ warp line on, where F11 isolated only the OBJ warp line (sub_8009C1C cite). M2 acceptance is "integrated-row pixel parity"; closing warp integrated is one of the four large integrated remnants alongside opening 72499/2691 and buster 54672/12977/28. F36a did no code change — only baseline + decomposition from F33c notes. Warp's baseline is the smallest of the four (40628 vs 54672 vs 72499).
 
 **Files.** tools/harness.py (only the warp-integrated fixture descriptor — confirm demo-* flag and alignment), src/battle.rs (only the warp path if a per-tick write is needed), src/objects.rs (only the warp's per-state behavior in full-HUD context), src/fixture.rs (only if a new descriptor field is needed), tools/allowlist.py (only the warp:integrated entry if the row reads 0/0/30), tools/diffmask.py (only for region split), docs/coverage/warp_integrated.md (notes)
