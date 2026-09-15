@@ -62,3 +62,9 @@ added by wave 3's `src/` agent: the offered deck alone does not reproduce `demo-
 
 Every existing `demo-*` fixture must be expressible as one descriptor. The flags stay until
 wave 3 confirms the new harness reproduces every check at zero through descriptors; then they go.
+
+The state-oracle block at 0x02000008 (ORCL, 40 bytes, inside the marker's own padding) has its
+field table in src/battle.rs's `ORACLE_LAYOUT`; docs/oracle_layout.json is generated from it and
+is what tools/oracle.py reads. src/battle.rs is authoritative; tools/harness.py's startup
+self-check re-parses the Rust table and refuses a stale JSON, which is how a reader knows the
+two agree (Q4).
