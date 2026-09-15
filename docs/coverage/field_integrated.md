@@ -180,11 +180,30 @@ attribution of the 139125 is an elimination inference, not a measurement. Reject
 
 ## One line of mechanism
 
-Content-vs-timing UNRESOLVED — F42's (0,0)-unique shift test says the scroll is phase-exact
-and points at tile art (docs/worklog/F42.md:37-38: "the scroll is phase-EXACT; the residue
-is art CONTENT"), while the `field` row's own harness note at tools/harness.py:1368
-attributes only the k=5 transition frame to F32's end-sequence offset; no capture in this
-ticket distinguishes art from layout.
+ART-CLOCK PHASE, 3 frames — measured at tile level, F47 (kept dirs `/tmp/bn-f47/`, this
+session; scroll registers are NOT readable on mgba, see below). Canon's resident backdrop
+tile set steps at k=5,13,21,29,37 (tiles changed per edge: 36,34,8,5,9; from
+`/tmp/bn-f47/canon_tiles.bin`, slots 1..37 watched per frame); ours steps at k=8,16,24,32
+(36,34,8,5 — the same schedule sequence; `/tmp/bn-f47/rust_tiles.bin`, slots 512..548).
+The scroll is NOT the carrier: a <=2 px integer shift zeroes the bg1 mask exactly on 20/34
+frames k=6..39 (base 300946 -> best 39580, dirs `/tmp/bn-f47/{canon,rust}_bg1`), and the
+residual after shift is nonzero ONLY on the 2-3 frames where canon has already stepped and
+we have not yet (k=6-7, 13-15, 21-23, 29-31, 37-39). So F42's "residue is art CONTENT" and
+the end-sequence attribution are both wrong, and the live defect is: our art clock's edges
+fall 3 frames after canon's on an otherwise identical period-8 schedule. The latency is in
+the CLOCK, not the upload — `src/backdrop.rs:255-266` writes the step same-frame
+(replace_tile + commit, <=1 frame of pipeline), so the 3 frames must come from the art
+timer's seed/creation phase (the seed path is `src/battle.rs:2385-2403`, unused under
+FIELD_ZERO). Register-level confirmation is structurally unavailable: both sides' entire
+write-only IO block reads back one shared latch value (canon: every halfword of
+0x04000010..1E and 0x40..4C identical within a frame, cycling 0x4211/0xD0FC/0xFFFE/0x4805;
+rust: constant 0x30b8), while the readable BGxCNT block shows true per-register values —
+so `--watch` (mgba_capture.c:968-974, busRead8 after every frame) cannot read ANY side's
+HOFS/VOFS. Canon's scroll ramp is instead taken from its own counters
+(`eBGScrollCBCounters` 0x02009690, `/tmp/bn-f47/canon_scrollcnt.bin`): 82/41 -> 63/31 over
+k=0..39, and ours tracks it within the <=2 px shift dither. (0x040000D0..DE, the F46
+verifier's "scroll registers", is DMA2/DMA3 territory and holds no scroll on either side;
+0x04000010..1E is the standard BG scroll block.)
 
 What IS established here: the positive controls that validate the N/N-1 pairing are
 `field-bg2`'s 0 on 39/40 frames and `field-bg3`'s 0 on post k=1..18; `field-bg1` (never 0,
