@@ -190,7 +190,7 @@ def main():
 
     # --- step 1: identity rows, bound inferred from next label in asm00_2.s ---
     l00 = read_lines(ASM00_2)
-    s, next_label, e = find_table_lines(l00, "byte_80182C4")
+    s, next_label, e = find_table_lines(l00, "VerActorTyAIIdxTable_80182C4")  # T14: was byte_80182C4, renamed in reference (renames.md:241)
     n_ident = count_row_lines(l00, s, e)
     ident_off = IDENT_ADDR - ROM_BASE
     ident_bytes = rom[ident_off : ident_off + 3 * n_ident]
@@ -223,13 +223,13 @@ def main():
     # ("// indexed by CurAction * 4", asm31.s:170981-170984). The ACT word IS
     # called (mov lr,pc; bx r0).
     l31 = read_lines(ASM31)
-    s_t, next_t, e_t = find_table_lines(l31, "off_8109050")
+    s_t, next_t, e_t = find_table_lines(l31, "AIThinkTables_8109050")  # T14: was off_8109050, renamed (renames.md:242)
     n_think = count_row_lines(l31, s_t, e_t)
-    s_s1, next_s1, e_s1 = find_table_lines(l31, "off_81090D0")
+    s_s1, next_s1, e_s1 = find_table_lines(l31, "AIEnemyStruct1Ptrs_81090D0")  # T14: was off_81090D0, renamed (renames.md:243)
     n_struct1 = count_row_lines(l31, s_s1, e_s1)
-    s_s2, next_s2, e_s2 = find_table_lines(l31, "off_8109150")
+    s_s2, next_s2, e_s2 = find_table_lines(l31, "AIEnemyStruct2Ptrs_8109150")  # T14: was off_8109150, renamed (renames.md:244)
     n_struct2 = count_row_lines(l31, s_s2, e_s2)
-    s_a, next_a, e_a = find_table_lines(l31, "off_81091D0")
+    s_a, next_a, e_a = find_table_lines(l31, "AIActHandlers_81091D0")  # T14: was off_81091D0, renamed (renames.md:245)
     n_act = count_row_lines(l31, s_a, e_a)
     say(f"think  off_8109050: {n_think} words (bound inferred from {next_t}, asm31.s:{e_t})")
     say(f"struct1 off_81090D0: {n_struct1} words (bound inferred from {next_s1}, asm31.s:{e_s1})")

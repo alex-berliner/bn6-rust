@@ -251,9 +251,10 @@ def verified_chip_ids():
 PA_FILE = "asm/asm03_0.s"
 PA_TABLES = [
     # canon: off_802BCB0 (walked by sub_8029520, asm03_0.s:6631)
-    {"symbol": "off_802BCB0", "line_hint": "off_802BCB0:", "list": "recognition list (sub_8029520)"},
-    # canon: off_802BC60
-    {"symbol": "off_802BC60", "line_hint": "off_802BC60:", "list": "second list"},
+    # T14: renamed from off_802BCB0 (renames.md:214)
+    {"symbol": "PARecipePtrsA_802BCB0", "line_hint": "PARecipePtrsA_802BCB0:", "list": "recognition list (sub_8029520)"},
+    # canon: off_802BC60 -- T14: renamed (renames.md:214)
+    {"symbol": "PARecipePtrsB_802BC60", "line_hint": "PARecipePtrsB_802BC60:", "list": "second list"},
 ]
 
 
@@ -381,7 +382,7 @@ def virus_rank_hp(ai_index, version):
     Struct2 pointer table off_8109150 (asm/asm31.s:169550)."""
     if not hasattr(virus_rank_hp, "cache"):
         lines = read_lines("asm/asm31.s")
-        s, e = label_bounds(lines, "off_8109150")
+        s, e = label_bounds(lines, "AIEnemyStruct2Ptrs_8109150")  # T14: was off_8109150, renamed (renames.md:244)
         ptrs = []
         for i in range(s + 1, e):
             m = WORD_RE.match(strip_comment(lines[i]))
@@ -403,9 +404,9 @@ def virus_rank_hp(ai_index, version):
 
 # ------------------------------------------------------------------- navis
 
-NAVI_STRUCT1 = "off_80F24D8"  # asm/asm31.s:123439
-NAVI_STRUCT2 = "off_80F253C"  # asm/asm31.s:123490
-NAVI_ACT = "off_80F25A0"      # asm/asm31.s:123540
+NAVI_STRUCT1 = "NaviEnemyStruct1Ptrs_80F24D8"  # asm/asm31.s:123445 (T14: renamed, renames.md:404)
+NAVI_STRUCT2 = "NaviEnemyStruct2Ptrs_80F253C"  # asm/asm31.s:123496 (T14: renamed)
+NAVI_ACT = "NaviActHandlers_80F25A0"           # asm/asm31.s:123547 (T14: renamed)
 
 
 def parse_navis():
@@ -455,7 +456,7 @@ def parse_forms():
     # kept in 'charge_shot_table_extra', unclaimed); the ladder rows are the
     # TF enum values.
     lines = read_lines("asm/asm00_2.s")
-    s, e = label_bounds(lines, "off_80117D4")
+    s, e = label_bounds(lines, "ChargeShotHandlersByTransformation_80117D4")  # T14: was off_80117D4, renamed in reference
     charges = {}
     for i in range(s + 1, e):
         m = WORD_RE.match(strip_comment(lines[i]))
@@ -486,25 +487,93 @@ def parse_forms():
 
 # ------------------------------------------------------------------ panels
 
-# DERIVED-FROM-CODE: the ROM's panel mutations are named object_* routines
-# (asm/object.s); the code has no type->routine table (recon T10 §6).
-PANEL_ROUTINES = [
-    "panel_800BFC4", "object_getPanelParameters", "object_crackPanel",
-    "object_breakPanel", "object_breakPanelLoud", "object_panel_setPoison",
-    "object_highlightPanel", "object_setPanelType", "object_setPanelAlliance",
-    "object_setPanelAllianceTimerLong", "object_setPanelAllianceTimerShort",
-    "object_setPanelTypeBlink", "object_checkPanelParameters",
+# canon: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249). ROM original:
+# IWRAMRoutinesROMLocation + 0x1E24 = 0x081D7E24 (bn6f.map:34342 = 0x081d6000,
+# copied to 0x3005B00 len 0x1ed4 by start.s:57-63 start_copyMemory; byte match
+# verified in the ROM at 0x081D7E24). _object_updatePanelParameters reads
+# oPanelData_Type, copies it to oPanelData_Animation, lsls it by 2 and ORs the
+# word into oPanelData_Flags (asm/asm38.s:4213-4219). 13 words, stride 4,
+# one per panel type 0x0..0xC.
+PANEL_TYPE_FLAG_WORDS = {
+    0x0: "0x18000", 0x1: "0x14000", 0x2: "0x10010", 0x3: "0x10050",
+    0x4: "0x10110", 0x5: "0x12010", 0x6: "0x10410", 0x7: "0x10810",
+    0x8: "0x11010", 0x9: "0x10210", 0xA: "0x10210", 0xB: "0x10210",
+    0xC: "0x10210",
+}
+
+# provenance: derived -- meanings from writer/reader names and comments in the
+# reference disassembly; rows whose meaning is not named by any site carry
+# "unnamed:". Regens: tickPanels_800C380 turns broken(1) -> 2 and
+# cracked(3) -> 1 (asm/object.s:1471-1472/1503-1504), so 2 = normal and the
+# numbering matches src/field.rs (PANEL_HOLE=0 .. PANEL_POISON=4).
+PANEL_TYPE_ROWS = [
+    # (type, meaning, writer cite, reader cite)
+    (0x0, "hole (skipped by every reader; flag word is the only one with bit 0x8000)",
+     "unnamed: no direct strb of 0 to oPanelData_Type found",
+     "asm/asm38.s:4315-4317 (_object_setPanelType tst->skip) + asm/object.s:1426-1428 (tickPanels skip)"),
+    (0x1, "broken",
+     "asm/object.s:2323 (object_breakPanel); also object_crackPanel 2nd arm asm/object.s:2235; cracked regen asm/object.s:1503-1504",
+     "asm/asm00_2.s:11130 (sub_8013CC4 cmp #1) + asm/object.s:1430-1434 (tickPanels regen 0x708)"),
+    (0x2, "normal (regen target of broken)",
+     "asm/object.s:1471-1472 (tickPanels regen); also asm/asm00_2.s:8300-8301 (sub_8012792 stage chip), asm/asm31.s:38397-38398 (t3_0x31_80C9F78), fire melts type 7 -> 2 asm/asm38.s:3575-3582 (sub_3007460)",
+     "asm/object.s:1460 (tickPanels default arm regen)"),
+    (0x3, "cracked",
+     "asm/object.s:2218-2222 (object_crackPanel 1st arm: Flags = (Flags & ~0x3f0f)+3, Type=3)",
+     "asm/object.s:1436-1442 (tickPanels: regen then -> 1)"),
+    (0x4, "poison",
+     "asm/asm31.s:6146-6147 (sub_80BAE16 local arm)",
+     "asm/asm00_2.s:21674-21689 (sub_801A186 ticks oCollisionData_PoisonPanelTimer)"),
+    (0x5, "holy",
+     "unnamed: no writer found in bn6f disassembly (chip-side write not located)",
+     "asm/object.s:4831-4833 (object_calculateFinalDamage1 'cmp r1,#5 // holy panel?') + asm/asm00_2.s:22788-22791 (sub_801A7F4 halves the damage sum)"),
+    (0x6, "grass",
+     "asm/asm31.s:6168-6169 (sub_80BAE16 local arm) + asm/asm31.s:30843-30844 (cornfiestaRelatedObject_80C6580)",
+     "asm/asm38.s:3855-3862 (applyHeatOnGrassDamage_300766c 'cmp r0,#6 // grass')"),
+    (0x7, "unnamed: stage terrain melted to normal(2) by fire (sub_3007460); ice candidate",
+     "asm/asm31.s:6104-6105 (sub_80BAE16 local arm)",
+     "asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> setPanelType 2); readers asm/asm00_2.s:16573/17376/18848/19321/19552"),
+    (0x8, "unnamed: regen like broken, no writer located",
+     "unnamed: no writer found",
+     "asm/object.s:1444-1450 (tickPanels regen 0x258/0x708)"),
+    (0x9, "unnamed: 9..0xC share flag word 0x10210; regen without the 0x708 blink timer",
+     "unnamed: no writer found for 9 itself",
+     "asm/asm38.s:4318-4326 (_object_setPanelType: 9..0xC get Unk_12=0x708) + asm/object.s:1452-1458 + asm/asm00_2.s:21953-21960"),
+    (0xA, "unnamed: same regen group as 9",
+     "unnamed: no writer found",
+     "asm/asm38.s:4318-4326 + asm/object.s:1452-1458 (9..0xC range)"),
+    (0xB, "unnamed: stage type written from the hit object's CurState (alliance arm)",
+     "asm/asm31.s:27871-27872 (t3_0x0_80C4E58, alliance != 0 arm)",
+     "asm/asm38.s:4318-4326 (_object_setPanelType 9..0xC)"),
+    (0xC, "unnamed: stage type written from the hit object's CurState (alliance arm)",
+     "asm/asm31.s:27855-27856 (t3_0x0_80C4E58, alliance == 0 arm)",
+     "asm/asm38.s:4318-4326 (_object_setPanelType 9..0xC)"),
+]
+
+# Second type-shaped table, unparsed in the recon. 46 .word entries (stride 4)
+# at 0x08019B78 pointing to signed (x,y) byte-pair lists 0x7F-terminated
+# (byte_80198E8..byte_8019C7C); readers scale the pairs by the alliance
+# direction. Index provenance per reader:
+PANEL_OFFSET_LIST_READERS = [
+    "asm/asm38.s:3703-3706 (_object_removeCollisionData: idx = oCollisionData_Region)",
+    "asm/asm38.s:4010-4013 (sub_300777C: idx = oCollisionData_Region)",
+    "asm/asm38.s:4100-4104 (sub_3007828: idx = byte [r0+1] of an effect object)",
+    "asm/asm00_2.s:15553-15556 (GetRandomRelativePanelFiltered: idx = r4, caller-supplied 'which list of relative panel offsets')",
+    "asm/asm00_2.s:25340 (sub_801BD3C: idx = arg >> 0x17)",
 ]
 
 
 def parse_panels():
     rows = []
-    for sym in PANEL_ROUTINES:
-        ln = find_symbol_line("asm/object.s", sym)
+    for ty, meaning, writer, reader in PANEL_TYPE_ROWS:
+        verified = not writer.startswith("unnamed:")
         rows.append({
-            "routine": sym,
-            "cite": f"asm/object.s:{ln}" if ln else "// unnamed: line not resolved",
-            "status": "unrecorded",
+            "type": f"0x{ty:X}",
+            "meaning": meaning,
+            "flag_word": PANEL_TYPE_FLAG_WORDS[ty],
+            "writer": writer,
+            "reader": reader,
+            "status": "verified" if verified
+                      else "unverified: reader-only (no writer cite)",
         })
     return rows
 
@@ -778,7 +847,7 @@ COLUMN_SETS = {
     "program advances (M4)": [("list", 12), ("result_name", 10), ("result_chip", 6), ("ingredients", 24), ("cite", 48), "status"],
     "navis + cybeasts (M6)": [("index", 6), ("navi", 24), ("struct2_row0_raw", 8), ("act", 22), ("cite", 46), "status"],
     "forms (M7)": [("tf_value", 8), ("form", 22), ("charge_shot", 34), ("charge_cite", 24), "status"],
-    "panels (M3)": [("routine", 36), ("cite", 24), "status"],
+    "panels (M3)": [("type", 6), ("meaning", 24), ("flag_word", 10), ("writer", 42), ("reader", 44), "status"],
     "statuses (M3)": [("bit", 36), ("value", 12), ("cite", 40), "status"],
     "formations (M8)": [("formation", 14), ("entries", 8), ("enemy_ids", 24), ("cite", 30), "status"],
     "backdrops (M8)": [("background_byte", 12), ("records_using_it", 10), ("cite", 52), "status"],
@@ -843,7 +912,7 @@ def main():
         ("M1", ("navis + cybeasts (M6)", "FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0", navis)),
         ("M1", ("cybeasts (M6)", "FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18)", cybeasts)),
         ("M1", ("forms (M7)", "FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789)", forms)),
-        ("M1", ("panels (M3)", "DERIVED-FROM-CODE: asm/object.s routines; no type->routine table located", panels)),
+        ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
         ("M1", ("statuses (M3)", "DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits", statuses)),
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (no backdrop table named; search trail: 'backdrop', 'arena' in data/, asm/)", backdrops)),

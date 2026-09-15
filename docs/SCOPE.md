@@ -43,7 +43,7 @@ ported or listed out of scope with a reason).
 | M1 | navis + cybeasts (M6) | FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0 | 0 / 25 |
 | M1 | cybeasts (M6) | FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18) | 0 / 14 |
 | M1 | forms (M7) | FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789) | 0 / 25 |
-| M1 | panels (M3) | DERIVED-FROM-CODE: asm/object.s routines; no type->routine table located | 0 / 13 |
+| M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 8 / 13 |
 | M1 | statuses (M3) | DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits | 0 / 69 |
 | M1 | formations (M8) | FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays | 0 / 297 |
 | M1 | backdrops (M8) | DERIVED-FROM-RECORDS: BattleSettings.Background byte values (no backdrop table named; search trail: 'backdrop', 'arena' in data/, asm/) | 0 / 3 |
@@ -467,73 +467,73 @@ ported or listed out of scope with a reason).
 
 ### program advances (M4) (FOUND: asm/asm03_0.s off_802BCB0 + off_802BC60 recipe-pointer tables (records [count][matcher][result u16][chip,code]*n))
 
-Note: Pointer-word audit: the two tables hold 64 .word entries = 63 recipe records + terminator .word NULL (asm/asm03_0.s:11546), so the denominator 63 counts records, not pointer words.
+Note: Pointer-word audit: the two tables hold 64 .word entries = 63 recipe records + terminator .word NULL (asm/asm03_0.s:11563), so the denominator 63 counts records, not pointer words.
 
 | list | result_name | result_chip | ingredients | cite | status |
 |---|---|---|---|---|---|
-| off_802BCB0 |  | 339 | ['47/00', '48/00', '49/0 | asm/asm03_0.s:11502 + byte_802BA60 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 339 | ['47/00', '4a/00', '4b/0 | asm/asm03_0.s:11502 + byte_802BA6A asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 342 | ['46/00', '46/00', '98/0 | asm/asm03_0.s:11502 + byte_802BA74 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 343 | ['ba/00', 'bc/00', 'bb/0 | asm/asm03_0.s:11502 + byte_802BA7E asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 334 | ['22/00', '23/00', '24/0 | asm/asm03_0.s:11502 + byte_802BA88 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 344 | ['4a/00', '4b/00', 'e2/0 | asm/asm03_0.s:11502 + byte_802BA92 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 345 | ['96/00', '96/00', '2d/0 | asm/asm03_0.s:11502 + byte_802BA9C asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 345 | ['96/00', '96/00', '32/0 | asm/asm03_0.s:11502 + byte_802BAA6 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 347 | ['8b/00', 'c3/00', 'b9/0 | asm/asm03_0.s:11502 + byte_802BAB0 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 348 | ['e2/00', 'ba/00', '10/0 | asm/asm03_0.s:11502 + byte_802BABA asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 348 | ['12/01', 'ba/00', 'e0/0 | asm/asm03_0.s:11502 + byte_802BAC4 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 349 | ['16/01', '17/01', '18/0 | asm/asm03_0.s:11502 + byte_802BACE asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 346 | ['6d/00', '3f/00', '24/0 | asm/asm03_0.s:11502 + byte_802BAD8 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 320 | [] | asm/asm03_0.s:11502 + byte_802BAE4 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 321 | [] | asm/asm03_0.s:11502 + byte_802BAEA asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 322 | [] | asm/asm03_0.s:11502 + byte_802BAF0 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 337 | [] | asm/asm03_0.s:11502 + byte_802BAF6 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 323 | [] | asm/asm03_0.s:11502 + byte_802BAFC asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 324 | [] | asm/asm03_0.s:11502 + byte_802BB02 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 325 | [] | asm/asm03_0.s:11502 + byte_802BB08 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 326 | [] | asm/asm03_0.s:11502 + byte_802BB0E asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 327 | [] | asm/asm03_0.s:11502 + byte_802BB14 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 328 | [] | asm/asm03_0.s:11502 + byte_802BB1A asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 338 | [] | asm/asm03_0.s:11502 + byte_802BB20 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 338 | [] | asm/asm03_0.s:11502 + byte_802BB26 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 338 | [] | asm/asm03_0.s:11502 + byte_802BB2C asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 341 | [] | asm/asm03_0.s:11502 + byte_802BB32 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 340 | [] | asm/asm03_0.s:11502 + byte_802BB38 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 335 | [] | asm/asm03_0.s:11502 + byte_802BB3E asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 335 | [] | asm/asm03_0.s:11502 + byte_802BB44 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 335 | [] | asm/asm03_0.s:11502 + byte_802BB4A asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 329 | [] | asm/asm03_0.s:11502 + byte_802BB50 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 330 | [] | asm/asm03_0.s:11502 + byte_802BB56 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 331 | [] | asm/asm03_0.s:11502 + byte_802BB5C asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 332 | [] | asm/asm03_0.s:11502 + byte_802BB62 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 332 | [] | asm/asm03_0.s:11502 + byte_802BB68 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 332 | [] | asm/asm03_0.s:11502 + byte_802BB6E asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 333 | [] | asm/asm03_0.s:11502 + byte_802BB74 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 333 | [] | asm/asm03_0.s:11502 + byte_802BB7A asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 333 | [] | asm/asm03_0.s:11502 + byte_802BB80 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 336 | [] | asm/asm03_0.s:11502 + byte_802BB86 asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 336 | [] | asm/asm03_0.s:11502 + byte_802BB8C asm/asm03_0.s | unrecorded |
-| off_802BCB0 |  | 336 | [] | asm/asm03_0.s:11502 + byte_802BB92 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 320 | ['01/00', '01/00', '0c/0 | asm/asm03_0.s:11481 + byte_802BB98 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 321 | ['02/00', '02/00', '0d/0 | asm/asm03_0.s:11481 + byte_802BBA2 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 322 | ['03/00', '03/00', '0e/0 | asm/asm03_0.s:11481 + byte_802BBAC asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 323 | ['14/00', '14/00', '6e/0 | asm/asm03_0.s:11481 + byte_802BBB6 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 324 | ['15/00', '15/00', '6f/0 | asm/asm03_0.s:11481 + byte_802BBC0 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 325 | ['16/00', '16/00', '70/0 | asm/asm03_0.s:11481 + byte_802BBCA asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 326 | ['6b/00', '6b/00', '2e/0 | asm/asm03_0.s:11481 + byte_802BBD4 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 327 | ['6c/00', '6c/00', '2e/0 | asm/asm03_0.s:11481 + byte_802BBDE asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 328 | ['6d/00', '6d/00', '2e/0 | asm/asm03_0.s:11481 + byte_802BBE8 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 329 | ['5c/00', '5c/00', '05/0 | asm/asm03_0.s:11481 + byte_802BBF2 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 330 | ['5d/00', '5d/00', '06/0 | asm/asm03_0.s:11481 + byte_802BBFC asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 331 | ['5e/00', '5e/00', '07/0 | asm/asm03_0.s:11481 + byte_802BC06 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 332 | ['40/00', '41/00', '42/0 | asm/asm03_0.s:11481 + byte_802BC10 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 333 | ['7b/00', '7c/00', '7d/0 | asm/asm03_0.s:11481 + byte_802BC1A asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 335 | ['90/00', 'c8/00', 'c9/0 | asm/asm03_0.s:11481 + byte_802BC24 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 336 | ['5f/00', '60/00', '61/0 | asm/asm03_0.s:11481 + byte_802BC2E asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 337 | ['17/00', '17/00', '30/0 | asm/asm03_0.s:11481 + byte_802BC38 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 338 | ['09/00', '0a/00', '0b/0 | asm/asm03_0.s:11481 + byte_802BC42 asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 341 | ['32/00', '32/00', '33/0 | asm/asm03_0.s:11481 + byte_802BC4C asm/asm03_0.s | unrecorded |
-| off_802BC60 |  | 340 | ['13/00', '13/00', '4a/0 | asm/asm03_0.s:11481 + byte_802BC56 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 339 | ['47/00', '48/00', '49/0 | asm/asm03_0.s:11514 + byte_802BA60 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 339 | ['47/00', '4a/00', '4b/0 | asm/asm03_0.s:11514 + byte_802BA6A asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 342 | ['46/00', '46/00', '98/0 | asm/asm03_0.s:11514 + byte_802BA74 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 343 | ['ba/00', 'bc/00', 'bb/0 | asm/asm03_0.s:11514 + byte_802BA7E asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 334 | ['22/00', '23/00', '24/0 | asm/asm03_0.s:11514 + byte_802BA88 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 344 | ['4a/00', '4b/00', 'e2/0 | asm/asm03_0.s:11514 + byte_802BA92 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 345 | ['96/00', '96/00', '2d/0 | asm/asm03_0.s:11514 + byte_802BA9C asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 345 | ['96/00', '96/00', '32/0 | asm/asm03_0.s:11514 + byte_802BAA6 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 347 | ['8b/00', 'c3/00', 'b9/0 | asm/asm03_0.s:11514 + byte_802BAB0 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 348 | ['e2/00', 'ba/00', '10/0 | asm/asm03_0.s:11514 + byte_802BABA asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 348 | ['12/01', 'ba/00', 'e0/0 | asm/asm03_0.s:11514 + byte_802BAC4 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 349 | ['16/01', '17/01', '18/0 | asm/asm03_0.s:11514 + byte_802BACE asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 346 | ['6d/00', '3f/00', '24/0 | asm/asm03_0.s:11514 + byte_802BAD8 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 320 | [] | asm/asm03_0.s:11514 + byte_802BAE4 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 321 | [] | asm/asm03_0.s:11514 + byte_802BAEA asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 322 | [] | asm/asm03_0.s:11514 + byte_802BAF0 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 337 | [] | asm/asm03_0.s:11514 + byte_802BAF6 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 323 | [] | asm/asm03_0.s:11514 + byte_802BAFC asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 324 | [] | asm/asm03_0.s:11514 + byte_802BB02 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 325 | [] | asm/asm03_0.s:11514 + byte_802BB08 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 326 | [] | asm/asm03_0.s:11514 + byte_802BB0E asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 327 | [] | asm/asm03_0.s:11514 + byte_802BB14 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 328 | [] | asm/asm03_0.s:11514 + byte_802BB1A asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 338 | [] | asm/asm03_0.s:11514 + byte_802BB20 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 338 | [] | asm/asm03_0.s:11514 + byte_802BB26 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 338 | [] | asm/asm03_0.s:11514 + byte_802BB2C asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 341 | [] | asm/asm03_0.s:11514 + byte_802BB32 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 340 | [] | asm/asm03_0.s:11514 + byte_802BB38 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 335 | [] | asm/asm03_0.s:11514 + byte_802BB3E asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 335 | [] | asm/asm03_0.s:11514 + byte_802BB44 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 335 | [] | asm/asm03_0.s:11514 + byte_802BB4A asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 329 | [] | asm/asm03_0.s:11514 + byte_802BB50 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 330 | [] | asm/asm03_0.s:11514 + byte_802BB56 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 331 | [] | asm/asm03_0.s:11514 + byte_802BB5C asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 332 | [] | asm/asm03_0.s:11514 + byte_802BB62 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 332 | [] | asm/asm03_0.s:11514 + byte_802BB68 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 332 | [] | asm/asm03_0.s:11514 + byte_802BB6E asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 333 | [] | asm/asm03_0.s:11514 + byte_802BB74 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 333 | [] | asm/asm03_0.s:11514 + byte_802BB7A asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 333 | [] | asm/asm03_0.s:11514 + byte_802BB80 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 336 | [] | asm/asm03_0.s:11514 + byte_802BB86 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 336 | [] | asm/asm03_0.s:11514 + byte_802BB8C asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 336 | [] | asm/asm03_0.s:11514 + byte_802BB92 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 320 | ['01/00', '01/00', '0c/0 | asm/asm03_0.s:11493 + byte_802BB98 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 321 | ['02/00', '02/00', '0d/0 | asm/asm03_0.s:11493 + byte_802BBA2 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 322 | ['03/00', '03/00', '0e/0 | asm/asm03_0.s:11493 + byte_802BBAC asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 323 | ['14/00', '14/00', '6e/0 | asm/asm03_0.s:11493 + byte_802BBB6 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 324 | ['15/00', '15/00', '6f/0 | asm/asm03_0.s:11493 + byte_802BBC0 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 325 | ['16/00', '16/00', '70/0 | asm/asm03_0.s:11493 + byte_802BBCA asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 326 | ['6b/00', '6b/00', '2e/0 | asm/asm03_0.s:11493 + byte_802BBD4 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 327 | ['6c/00', '6c/00', '2e/0 | asm/asm03_0.s:11493 + byte_802BBDE asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 328 | ['6d/00', '6d/00', '2e/0 | asm/asm03_0.s:11493 + byte_802BBE8 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 329 | ['5c/00', '5c/00', '05/0 | asm/asm03_0.s:11493 + byte_802BBF2 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 330 | ['5d/00', '5d/00', '06/0 | asm/asm03_0.s:11493 + byte_802BBFC asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 331 | ['5e/00', '5e/00', '07/0 | asm/asm03_0.s:11493 + byte_802BC06 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 332 | ['40/00', '41/00', '42/0 | asm/asm03_0.s:11493 + byte_802BC10 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 333 | ['7b/00', '7c/00', '7d/0 | asm/asm03_0.s:11493 + byte_802BC1A asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 335 | ['90/00', 'c8/00', 'c9/0 | asm/asm03_0.s:11493 + byte_802BC24 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 336 | ['5f/00', '60/00', '61/0 | asm/asm03_0.s:11493 + byte_802BC2E asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 337 | ['17/00', '17/00', '30/0 | asm/asm03_0.s:11493 + byte_802BC38 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 338 | ['09/00', '0a/00', '0b/0 | asm/asm03_0.s:11493 + byte_802BC42 asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 341 | ['32/00', '32/00', '33/0 | asm/asm03_0.s:11493 + byte_802BC4C asm/asm03_0.s | unrecorded |
+| PARecipePtrs |  | 340 | ['13/00', '13/00', '4a/0 | asm/asm03_0.s:11493 + byte_802BC56 asm/asm03_0.s | unrecorded |
 
 ### viruses (M5) (FOUND via T12: byte_80182C4 identity rows + off_8109150 Struct2 (tools/rom_enemy_tables.py))
 
@@ -733,31 +733,31 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | index | navi | struct2_row0_raw | act | cite | status |
 |---|---|---|---|---|---|
-| 0 | NAVI_MEGAMAN |  | sub_80F2A1E (asm/asm31 | asm/asm31.s:123441,123492,123542 | unrecorded |
-| 1 | NAVI_HEATMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123443,123494,123543 | unrecorded |
-| 2 | NAVI_ELECMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123445,123496,123544 | unrecorded |
-| 3 | NAVI_SLASHMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123447,123498,123545 | unrecorded |
-| 4 | NAVI_ERASEMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123546 | unrecorded |
-| 5 | NAVI_CHARGEMAN |  | sub_80F650A (asm/asm31 | asm/asm31.s:123451,123502,123547 | unrecorded |
-| 6 | NAVI_SPOUTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123548 | unrecorded |
-| 7 | NAVI_TOMAHAWKMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123549 | unrecorded |
-| 8 | NAVI_TENGUMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123457,123508,123550 | unrecorded |
-| 9 | NAVI_GROUNDMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123551 | unrecorded |
-| 10 | NAVI_DUSTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123552 | unrecorded |
-| 11 | NAVI_PROTOMAN | 0x0708 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123553 | unrecorded |
-| 12 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123554 | unrecorded |
-| 13 | // unnamed: navi-table i |  | sub_80FDEFC (asm/asm31 | asm/asm31.s:123467,123518,123555 | unrecorded |
-| 14 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123556 | unrecorded |
-| 15 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123557 | unrecorded |
-| 16 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123473,123524,123558 | unrecorded |
-| 17 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123559 | unrecorded |
-| 18 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123560 | unrecorded |
-| 19 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123561 | unrecorded |
-| 20 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123562 | unrecorded |
-| 21 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123563 | unrecorded |
-| 22 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123564 | unrecorded |
-| 23 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123565 | unrecorded |
-| 24 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123566 | unrecorded |
+| 0 | NAVI_MEGAMAN |  | sub_80F2A1E (asm/asm31 | asm/asm31.s:123447,123498,123548 | unrecorded |
+| 1 | NAVI_HEATMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123549 | unrecorded |
+| 2 | NAVI_ELECMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123451,123502,123550 | unrecorded |
+| 3 | NAVI_SLASHMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123551 | unrecorded |
+| 4 | NAVI_ERASEMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123552 | unrecorded |
+| 5 | NAVI_CHARGEMAN |  | sub_80F650A (asm/asm31 | asm/asm31.s:123457,123508,123553 | unrecorded |
+| 6 | NAVI_SPOUTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123554 | unrecorded |
+| 7 | NAVI_TOMAHAWKMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123555 | unrecorded |
+| 8 | NAVI_TENGUMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123556 | unrecorded |
+| 9 | NAVI_GROUNDMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123557 | unrecorded |
+| 10 | NAVI_DUSTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123558 | unrecorded |
+| 11 | NAVI_PROTOMAN | 0x0708 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123559 | unrecorded |
+| 12 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123560 | unrecorded |
+| 13 | // unnamed: navi-table i |  | sub_80FDEFC (asm/asm31 | asm/asm31.s:123473,123524,123561 | unrecorded |
+| 14 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123562 | unrecorded |
+| 15 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123563 | unrecorded |
+| 16 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123564 | unrecorded |
+| 17 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123565 | unrecorded |
+| 18 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123566 | unrecorded |
+| 19 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123567 | unrecorded |
+| 20 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123568 | unrecorded |
+| 21 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123569 | unrecorded |
+| 22 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123570 | unrecorded |
+| 23 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123571 | unrecorded |
+| 24 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123572 | unrecorded |
 
 ### cybeasts (M6) (FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18))
 
@@ -782,49 +782,49 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | tf_value | form | charge_shot | charge_cite | status |
 |---|---|---|---|---|
-| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5789 | unrecorded |
-| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5790 | unrecorded |
-| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5791 | unrecorded |
-| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5792 | unrecorded |
-| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5793 | unrecorded |
-| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5794 | unrecorded |
-| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5795 | unrecorded |
-| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5796 | unrecorded |
-| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5797 | unrecorded |
-| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5798 | unrecorded |
-| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5799 | unrecorded |
-| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5800 | unrecorded |
-| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5801 | unrecorded |
-| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5802 | unrecorded |
-| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5803 | unrecorded |
-| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5804 | unrecorded |
-| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5805 | unrecorded |
-| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5806 | unrecorded |
-| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5807 | unrecorded |
-| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5808 | unrecorded |
-| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5809 | unrecorded |
-| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5810 | unrecorded |
-| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5811 | unrecorded |
-| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5812 | unrecorded |
-| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5813 | unrecorded |
+| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5805 | unrecorded |
+| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5806 | unrecorded |
+| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5807 | unrecorded |
+| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5808 | unrecorded |
+| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5809 | unrecorded |
+| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5810 | unrecorded |
+| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5811 | unrecorded |
+| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5812 | unrecorded |
+| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5813 | unrecorded |
+| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5814 | unrecorded |
+| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5815 | unrecorded |
+| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5816 | unrecorded |
+| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5817 | unrecorded |
+| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5818 | unrecorded |
+| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5819 | unrecorded |
+| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5820 | unrecorded |
+| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5821 | unrecorded |
+| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5822 | unrecorded |
+| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5823 | unrecorded |
+| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5824 | unrecorded |
+| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5825 | unrecorded |
+| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5826 | unrecorded |
+| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5827 | unrecorded |
+| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5828 | unrecorded |
+| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5829 | unrecorded |
 
-### panels (M3) (DERIVED-FROM-CODE: asm/object.s routines; no type->routine table located)
+### panels (M3) (FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219))
 
-| routine | cite | status |
-|---|---|---|
-| panel_800BFC4 | asm/object.s:1018 | unrecorded |
-| object_getPanelParameters | asm/object.s:2153 | unrecorded |
-| object_crackPanel | asm/object.s:2201 | unrecorded |
-| object_breakPanel | asm/object.s:2305 | unrecorded |
-| object_breakPanelLoud | asm/object.s:2487 | unrecorded |
-| object_panel_setPoison | asm/object.s:2537 | unrecorded |
-| object_highlightPanel | asm/object.s:2569 | unrecorded |
-| object_setPanelType | asm/object.s:2600 | unrecorded |
-| object_setPanelAlliance | asm/object.s:2609 | unrecorded |
-| object_setPanelAllianceTimerLong | asm/object.s:2629 | unrecorded |
-| object_setPanelAllianceTimerShort | asm/object.s:2640 | unrecorded |
-| object_setPanelTypeBlink | asm/object.s:2651 | unrecorded |
-| object_checkPanelParameters | asm/object.s:2688 | unrecorded |
+| type | meaning | flag_word | writer | reader | status |
+|---|---|---|---|---|---|
+| 0x0 | hole (skipped by every r | 0x18000 | unnamed: no direct strb of 0 to oPanelData | asm/asm38.s:4315-4317 (_object_setPanelType  | unverified: reader-only (no writer cite) |
+| 0x1 | broken | 0x14000 | asm/object.s:2323 (object_breakPanel); als | asm/asm00_2.s:11130 (sub_8013CC4 cmp #1) + a | verified |
+| 0x2 | normal (regen target of  | 0x10010 | asm/object.s:1471-1472 (tickPanels regen); | asm/object.s:1460 (tickPanels default arm re | verified |
+| 0x3 | cracked | 0x10050 | asm/object.s:2218-2222 (object_crackPanel  | asm/object.s:1436-1442 (tickPanels: regen th | verified |
+| 0x4 | poison | 0x10110 | asm/asm31.s:6146-6147 (sub_80BAE16 local a | asm/asm00_2.s:21674-21689 (sub_801A186 ticks | verified |
+| 0x5 | holy | 0x12010 | unnamed: no writer found in bn6f disassemb | asm/object.s:4831-4833 (object_calculateFina | unverified: reader-only (no writer cite) |
+| 0x6 | grass | 0x10410 | asm/asm31.s:6168-6169 (sub_80BAE16 local a | asm/asm38.s:3855-3862 (applyHeatOnGrassDamag | verified |
+| 0x7 | unnamed: stage terrain m | 0x10810 | asm/asm31.s:6104-6105 (sub_80BAE16 local a | asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> | verified |
+| 0x8 | unnamed: regen like brok | 0x11010 | unnamed: no writer found | asm/object.s:1444-1450 (tickPanels regen 0x2 | unverified: reader-only (no writer cite) |
+| 0x9 | unnamed: 9..0xC share fl | 0x10210 | unnamed: no writer found for 9 itself | asm/asm38.s:4318-4326 (_object_setPanelType: | unverified: reader-only (no writer cite) |
+| 0xA | unnamed: same regen grou | 0x10210 | unnamed: no writer found | asm/asm38.s:4318-4326 + asm/object.s:1452-14 | unverified: reader-only (no writer cite) |
+| 0xB | unnamed: stage type writ | 0x10210 | asm/asm31.s:27871-27872 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
+| 0xC | unnamed: stage type writ | 0x10210 | asm/asm31.s:27855-27856 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 
 ### statuses (M3) (DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits)
 
