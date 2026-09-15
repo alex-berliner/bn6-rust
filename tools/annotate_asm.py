@@ -48,17 +48,19 @@ def pick_model(explicit):
 
 
 def comment_only_diff():
-    """True if the submodule's working-tree diff adds only // comment lines to *.s files and removes nothing"""
-    d = sh("git -C %s diff --numstat" % SUB)
-    for line in d.splitlines():
+    """Keep each changed file whose diff adds only // comment lines and removes nothing; revert every other file.
+    True if anything was kept."""
+    kept = []
+    for line in sh("git -C %s diff --numstat" % SUB).splitlines():
         add, rem, f = line.split("\t")
-        if not f.endswith(".s") or rem != "0": return False
-    raw = sh("git -C %s diff" % SUB)
-    for line in raw.splitlines():
-        if line.startswith("+++") or line.startswith("---"): continue
-        if line.startswith("-"): return False
-        if line.startswith("+") and not re.match(r"^\+\s*//", line) and line.strip() != "+": return False
-    return bool(d.strip())
+        ok = f.endswith(".s") and rem == "0" and int(add) > 0
+        if ok:
+            for l in sh("git -C %s diff -- %s" % (SUB, f)).splitlines():
+                if l.startswith("+++") or l.startswith("---"): continue
+                if l.startswith("-") or (l.startswith("+") and not re.match(r"^\+\s*//", l) and l.strip() != "+"): ok = False; break
+        if ok: kept.append(f)
+        else: print("annotate_asm: reverting %s (not comment-only: +%s -%s)" % (f, add, rem)); sh("git -C %s checkout -- %s" % (SUB, f))
+    return bool(kept)
 
 
 def main():
@@ -85,7 +87,7 @@ def main():
     p = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", model, "--thinking", "medium",
                         "--tools", "read,grep,find,ls,edit", prompt], capture_output=True, text=True, timeout=1800, stdin=subprocess.DEVNULL)
     if not comment_only_diff():
-        print("annotate_asm: the diff was not comment-only (or empty); reverting"); print(sh("git -C %s diff --stat" % SUB)); sh("git -C %s checkout -- ." % SUB); return
+        print("annotate_asm: nothing comment-only to keep"); sh("git -C %s checkout -- ." % SUB); return
     print(sh("git -C %s diff --stat" % SUB))
     if not a.post: return
     ids = ", ".join(t for t, _, _, _ in found)

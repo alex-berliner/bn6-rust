@@ -49,25 +49,37 @@ def ask(model, prompt):
     for line in p.stdout.splitlines():
         try: e = json.loads(line)
         except ValueError: continue
-        if e.get("type") != "turn_end": continue
+        if e.get("type") not in ("turn_end", "message_end"): continue
         m = e.get("message") or {}
         if m.get("role") != "assistant": continue
-        cost += ((m.get("usage") or {}).get("cost") or {}).get("total", 0) or 0
+        if e.get("type") == "turn_end": cost += ((m.get("usage") or {}).get("cost") or {}).get("total", 0) or 0
         t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
         if t: last = t
     os.makedirs("/tmp/bn-learn", exist_ok=True)
     open("/tmp/bn-learn/reply-%s.txt" % re.sub(r"\W", "_", prompt[-40:]), "w").write(last)
-    arr = []
-    for line in last.splitlines():                       # one JSON object per line; a fenced array also accepted
-        line = line.strip().rstrip(",")
-        if line.startswith("{"):
-            try: arr.append(json.loads(line))
-            except ValueError: pass
-    if not arr:
-        m = re.search(r"\[.*\]", last, re.S)
-        try: arr = json.loads(m.group(0)) if m else []
-        except ValueError: arr = []
-    return [x for x in arr if isinstance(x, dict)], cost
+    return [x for x in json_objects(last) if isinstance(x, dict) and "title" in x], cost
+
+
+def json_objects(text):
+    """every top-level {...} in a reply, by brace matching (string-aware), whatever surrounds them"""
+    out, depth, start, in_str, esc = [], 0, None, False, False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc: esc = False
+            elif ch == "\\": esc = True
+            elif ch == '"': in_str = False
+            continue
+        if ch == '"': in_str = True
+        elif ch == "{":
+            if depth == 0: start = i
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0 and start is not None:
+                try: out.append(json.loads(text[start:i + 1]))
+                except ValueError: pass
+                start = None
+    return out
 
 
 NUM = re.compile(r"0x[0-9a-fA-F]+|\d{2,}")

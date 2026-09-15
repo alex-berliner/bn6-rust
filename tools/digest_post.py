@@ -17,8 +17,17 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
 RESULT_COMMIT = re.compile(r"^TODO ([A-Z]+\d+[a-z]?) (DONE|PARTIAL|BLOCKED|NEGATIVE)\b:? ?(.*)")
 HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. (.*?)\s*\*\((\w+)\b", re.M)
-DIGEST_MODEL = subprocess.run("python3 tools/roles.py model ${BN_RUN:-${BN_PROVIDER:-$(python3 tools/roles.py first)}} digest --tail", shell=True,
-                              capture_output=True, text=True).stdout.strip() or "hyper/qwen3.8-flash"
+def _digest_model():
+    """the first scheduled run profile whose digest job has one-shot budget right now; None when none has"""
+    import tomllib
+    runs = [os.environ["BN_RUN"]] if os.environ.get("BN_RUN") else tomllib.load(open("providers.toml", "rb"))["schedule"]["runs"]
+    for run in runs:
+        r = subprocess.run(["python3", "tools/roles.py", "model", run, "digest", "--tail"], capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip(): return r.stdout.strip()
+    return None
+
+
+DIGEST_MODEL = _digest_model()
 
 
 def sh(cmd, **kw):
@@ -59,6 +68,70 @@ def plain(text):
 def numbers(s):
     """the numbers a text states: hex values and digit runs (with inner separators; trailing punctuation is not a digit)"""
     return set(re.findall(r"0x[0-9a-fA-F]+|\d+(?:[.,]\d+)*", s))
+
+
+ORIENTATION = ("This project rebuilds the battle engine of Mega Man Battle Network 6, a Game Boy Advance game, as new code in Rust. "
+               "The rule is exact: a scene played by our version must match a recording of the original game pixel for pixel, frame by frame. "
+               "Small AI agents do the work in tickets, each a bounded task; a ticket ends finished, half-done, blocked, or as a dead end that "
+               "taught us something.")
+
+GLOSSARY = """Terms the results use, with the plain meaning to write instead (never use the term bare):
+- row / scene / fixture: one recorded situation the game is compared in (e.g. the first seconds of a fight, a chip being used); a row "at 0" means our version matches the original in every pixel of every frame there
+- isolated vs integrated: a scene compared on its own vs the same scene inside a full fight
+- canon: the original game (its recording or its code)
+- harness / verify_rows: the automatic comparison that rebuilds our game and counts differing pixels
+- the trace: a frame-by-frame record of the game's internal state, used to find WHERE two runs first differ
+- k=N: frame number N of a scene (60 frames per second)
+- sequencer: the part of the game that steps a fight through its phases (the chip-selection window, the countdown, the results screen)
+- custom screen / chip window: the menu where the player picks battle chips
+- Mettaur, Gunner: two enemy types (viruses); each has its own behaviour routine in the original game
+- PARTIAL: half-done and kept; BLOCKED: could not proceed; NEGATIVE: an idea tested and found wrong; DONE: finished
+- landed / merged: the change went into the main code; kept unmerged: it did not
+- verifier: a second agent that checked the claims; worker: the agent that did the work; cursor tear: a known one-frame glitch that moves around and is tolerated for now
+- routine / sub_XXXX / asmNN.s:LINE: a function in the original game's disassembly, and where it is
+"""
+
+
+def newcomer_digest(results, facts):
+    """one plain-language account of the day for a reader who has never seen the project; '' when unusable"""
+    items = "\n".join("- %s (%s): %s. RESULT: %s" % (tid, status, ttl, res) for tid, ttl, status, res in results)
+    prompt = ("Write the day's progress report for a project blog whose reader has NEVER looked at the project and knows nothing about it. "
+              "Here is what the project is: %s\n\n%s\nRules: 500 to 900 words. Group the day's tickets by the part of the game they concern "
+              "(an enemy, the fight's phases, the opening of a fight, the results screen, sound, the inventory of game data, the tooling), one "
+              "section each with a ## heading in plain words. In every section first say what that part of the game is and why it matters, then "
+              "what was tried today, what happened, and what is left, as a story in plain English. Never make a ticket id the subject of a "
+              "sentence; put ids in parentheses at the end of the sentence they belong to, like (T7e). Explain every term the first time; never "
+              "use a term from the glossary bare. Use only numbers that appear in the ticket results below, and explain what each number counts "
+              "in the same sentence; never add a file path, branch name or commit hash. No bullet lists. No preamble, no closing summary.\n\n"
+              "The day's tickets and their results:\n%s" % (ORIENTATION, GLOSSARY, items))
+    for attempt in range(3):
+        out = ""
+        try:
+            out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", DIGEST_MODEL, "--thinking", "medium",
+                                  "--tools", "read", prompt], capture_output=True, text=True, timeout=900, stdin=subprocess.DEVNULL).stdout
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            return ""
+        last = ""; kinds = {}
+        for line in out.splitlines():
+            try: e = json.loads(line)
+            except ValueError: continue
+            kinds[e.get("type")] = kinds.get(e.get("type"), 0) + 1
+            if e.get("type") not in ("turn_end", "message_end"): continue
+            m = e.get("message") or {}
+            if m.get("role") == "assistant":
+                t = " ".join(c.get("text", "") for c in m.get("content", []) if c.get("type") == "text").strip()
+                if t: last = t
+                if m.get("errorMessage"): print("digest: model error: %s" % str(m["errorMessage"])[:200], file=sys.stderr)
+        os.makedirs("/tmp/bn-learn", exist_ok=True); open("/tmp/bn-learn/digest-raw-%d.txt" % attempt, "w").write(last or ("(empty; events: %r)" % kinds))
+        words = len(last.split())
+        allowed = facts + " " + " ".join(t + " " + ttl for t, ttl, _, _ in results) + " 60 24 %d %d %d %d" % (
+            len(results), sum(1 for r in results if r[2] == "DONE"), sum(1 for r in results if r[2] == "PARTIAL"), sum(1 for r in results if r[2] in ("BLOCKED", "NEGATIVE")))
+        extra = numbers(last) - numbers(allowed)
+        bad = re.search(r"/tmp/|wt/|worktree|\bbranch\b|verify_rows|\b(?=[0-9a-f]*[a-f])[0-9a-f]{7,}\b", last)
+        why = ("%d words" % words) if not (350 <= words <= 1300) else ("numbers not in the facts: %s" % sorted(extra)[:8]) if extra else ("forbidden token %r" % bad.group(0)) if bad else ""
+        if why: print("digest: model account rejected (attempt %d): %s" % (attempt + 1, why), file=sys.stderr); continue
+        return last
+    return ""
 
 
 def model_paragraph(tid, title, status, result, facts):
@@ -130,42 +203,51 @@ def main():
     # 3. the post
     done = [r for r in results if r[2] == "DONE"]; part = [r for r in results if r[2] == "PARTIAL"]
     stuck = [r for r in results if r[2] in ("BLOCKED", "NEGATIVE")]
-    title = ("Daily digest %s: %d done, %d partial, %d blocked" % (today, len(done), len(part), len(stuck))) if results else "Daily digest %s" % today
+    title = "Daily digest, %s" % datetime.date.today().strftime("%-d %B %Y")
     facts = "\n".join(r[3] for r in results) + "\n" + score + "\n" + "\n".join(failing) + "\n" + ledger + "\n" + "\n".join(hyper)
     out = []                                     # blog.py writes the title itself; the body must not repeat it
-    out.append("What the agents landed in the last %d hours, taken from the tickets' own results. Every number here is "
-               "measured by the harness against a recording of the original game." % int(a.since)); out.append("")
-    for name, group in (("Done", done), ("Partial", part), ("Blocked or negative", stuck)):
-        if not group: continue
-        out.append("## " + name); out.append("")
-        if not a.no_model and name == "Done":
-            out.append("Each paragraph is a model's plain-language rewrite of the ticket's own result, checked so that every number in it "
-                       "comes from that result; the results themselves are in the repository's TODO_ARCHIVE.md."); out.append("")
-        for tid, ttl, status, res in group:
-            para = "" if a.no_model else model_paragraph(tid, ttl, status, res, facts)
-            out.append("**%s, %s.** %s" % (tid, ttl, para or short(res))); out.append("")
+    out.append(ORIENTATION); out.append("")
+    out.append("In the last %d hours the agents closed %d tickets: %d finished, %d half-done and kept, %d blocked or dead ends. "
+               "Every number below was measured by the automatic comparison against a recording of the original game."
+               % (int(a.since), len(results), len(done), len(part), len(stuck))); out.append("")
+    body = "" if (a.no_model or not DIGEST_MODEL) else newcomer_digest(results, facts)
+    if body:
+        out.append(body); out.append("")
+    else:
+        out.append("(The plain-language account could not be written today; the tickets' own results follow, with each ticket's goal first.)"); out.append("")
+        for name, group in (("Finished", done), ("Half-done, kept", part), ("Blocked or dead ends", stuck)):
+            if not group: continue
+            out.append("## " + name); out.append("")
+            for tid, ttl, status, res in group:
+                out.append("**%s.** %s (%s)" % (ttl, short(res), tid)); out.append("")
     if gifs:
         out.append("## New recordings"); out.append("")
         for g in gifs:
             cap = os.path.splitext(g)[0] + ".txt"; cap = open(cap).read().strip().splitlines()[0] if os.path.exists(cap) else os.path.basename(g)
             out.append("![%s](../captures/%s)" % (cap.replace("]", ")"), os.path.basename(g))); out.append("")
     if score:
-        out.append("## Scoreboard"); out.append(""); out.append(score + ".")
-        if failing: out.append("Rows still off zero: " + "; ".join(l.split()[0] + " " + l.split()[1] for l in failing) + ".")
+        m = re.search(r"(\d+) of (\d+)", score)
+        out.append("## Where the whole thing stands"); out.append("")
+        if m:
+            out.append("The game is compared against the original in %s recorded scenes. %s of them now match pixel for pixel in every frame."
+                       % (m.group(2), m.group(1)))
+        if failing:
+            names = "; ".join(l.split()[0] + (" (inside a full fight)" if l.split()[1] == "integrated" else " (on its own)") for l in failing)
+            out.append("The scenes that still differ: %s. Each is a known, measured gap with a ticket behind it." % names)
         out.append("")
     if proposals:
-        out.append("## Setup proposals waiting for a decision"); out.append("")
-        out.append("The auditor proposed these changes to how the agents are run; a human applies at most one per cycle.")
+        out.append("## Suggested changes to how the agents work"); out.append("")
+        out.append("An automatic reviewer reads each day's results and suggests changes to the agents' setup. These wait for a human to accept or reject them:")
         for f, h in proposals: out.append("- %s (%s)" % (h, f))
         out.append("")
-    out.append("## Spend"); out.append("")
-    if hyper: out.append(hyper[0].replace("hyper: ", "Charm Hyper: ") + ".")
+    out.append("## What it cost"); out.append("")
+    if hyper: out.append("The agents run on prepaid subscriptions. " + hyper[0].replace("hyper: remaining", "Charm Hyper: ").replace("hypercredits", "credits") + ".")
     for l in totals: out.append(l + ".")
     out.append("")
     md = "\n".join(out)
     if not a.post:
         print(md); return
-    slug_exists = glob.glob("web/blog/posts/%s-daily-digest-*.md" % today)
+    slug_exists = glob.glob("web/blog/posts/%s-daily-digest*.md" % today)
     if slug_exists:
         print("digest: already posted today (%s)" % slug_exists[0]); return
     subprocess.run(["python3", "tools/blog.py", "new", title], input=md, text=True, check=True)
