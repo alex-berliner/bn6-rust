@@ -198,7 +198,25 @@ the same bit layout `spawnEnemy_80073E2` uses at byte 1 of its `EnemySetup` stru
 - tools/harness.py: `FIXTURE_SIZE` 64 -> 67, fixture_cheats writes a trailing 1-byte
   cheat for the odd length, `OPEN_ROW` gets `enemy_panel=[0x15, 0x35, 0x26]`.
 
-**Measurement.** opening integrated 72499/2691/40 -> **25829/931/40** (64% drop).
+**Measurement.** opening integrated 72499/2691/40 -> **25829/931/40** -> **18740/647/40**
+(F44, negative 105749 -> 98649, still not blind; fitted constants still 19). The second
+step's gate keys on `fight_latch` (src/battle.rs): set at the last-enemy-materialised
+handover in the intro machine, and at Battle::new for a SKIP_INTRO descriptor.
+
+**FORWARD-BLOCKING CAVEAT (F44).** The SKIP_INTRO arm's premise -- that a state-loaded
+row's canon `oBattleState_Index_00` is already 4 -- is NOT a ROM fact. There is exactly
+one write of 4 in the whole tree, asm00_1.s:9717-9718 at the tail of sub_8007A0C, and
+the only route into it is the `Index_00 == 0` intro machine via the table entry
+`.word sub_8007A0C+1` at asm00_1.s:9567, so a battle that never entered state 0 cannot
+have executed it. SKIP_INTRO is declared at src/fixture.rs:79 as "not a ROM fact",
+cursor's canon side loads /tmp/chipselect.state, which tools/states.py documents as a
+hand-made ROOT, and no tool has ever read the byte at 0x02034880 (`eBattleState_Index_00`,
+resolved from reference/bn6f/bn6f.map:7093 with offset 0x0 per
+include/structs/BattleState.inc). Opening is the arm the asm proves; cursor is the arm
+the fixture bit asserts. It is acceptable for now because cursor's row reads 1/1/170 on
+main WITHOUT any gate, so this branch is gate-neutral on that row -- it restored a
+number, it did not buy one.
+
 Not yet 0/0/40; the residual is the PAL_OBJ slot-allocation order defect named in
 F38e's analysis (src/spr.rs:701-761), now the obvious next ticket.
 

@@ -1506,9 +1506,9 @@ pub struct Battle<'a> {
     /// Canon's `oBattleState_Index_00 == 4` handover latch (F44): true once
     /// our battle has reached the state canon writes 4 into
     /// `oBattleState_Index_00` -- sub_8007A0C's `mov r0,#4 / str` handover
-    /// (asm00_1.s:9716-9721), which runs only after the last enemy has
+    /// (asm00_1.s:9716-9718), which runs only after the last enemy has
     /// materialised. That is the only state whose handler
-    /// (battle_update_8007A44, asm00_1.s:9729) reaches the battle HUD chain
+    /// (battle_update_8007A44, asm00_1.s:9727) reaches the battle HUD chain
     /// that emits the enemy HP readout (updateBattleHudElements_801BEE0,
     /// single call site asm00_1.s:9790). Set at `Battle::new` when the
     /// descriptor's SKIP_INTRO declares the pairing against a mid-fight
@@ -2897,7 +2897,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.intro_next += 1;
                 // The last one has finished materialising: canon's handover
                 // writes 4 into oBattleState_Index_00 exactly here
-                // (sub_8007A0C, asm00_1.s:9716-9721) -- latch the fight
+                // (sub_8007A0C, asm00_1.s:9716-9718) -- latch the fight
                 // state on (see fight_latch's doc).
                 if self.intro_next >= self.enemies.len() {
                     self.fight_latch = true;
@@ -4562,9 +4562,9 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
     /// the whole per-frame chain (RunBattleObjectLogic, camera, panel,
     /// setChipsForPlayerObjects, updateBattleHudElements_801BEE0,
     /// asm00_1.s:9764-9790) lives inside battle_update_8007A44
-    /// (asm00_1.s:9729), the state machine's fight handler. The intro's own
+    /// (asm00_1.s:9727), the state machine's fight handler. The intro's own
     /// states hand over through sub_8007A0C only after the last enemy has
-    /// materialised (the `mov r0,#4 / str` at asm00_1.s:9716-9721), so the
+    /// materialised (the `mov r0,#4 / str` at asm00_1.s:9716-9718), so the
     /// latch is update()'s own intro machine, not our fixture plumbing:
     /// F43's first cut stood in for this predicate with `intro_fade`/
     /// `intro_next` (our fade counter and our materialise walk), which
