@@ -243,6 +243,38 @@ pub struct Fixture {
     /// what canon's `CurAnim` indexes), not as a third byte there was no
     /// room for.
     pub enemy_action: u8,
+    /// NOT IN FIXTURE.md, offsets +56/+57/+58 (panel_col[0..2]): the per-
+    /// enemy spawn panel column for slots 0/1/2, decoded by `battle.rs`'s
+    /// spawn-cell path as `panel_col[i]` / `panel_row[i]` when
+    /// `panel_override_mask`'s bit `i` is set (see below). 0 by default
+    /// (overlay: the harness writes panel_col[0..2] AFTER `result_elapsed`,
+    /// so a descriptor that does not name panels leaves these bytes 0 and
+    /// the existing +56 result_elapsed reads back as 0 too). Cited at
+    // `spawnEnemy_80073E2` (asm00_1.s:8695): the real ROM's per-enemy
+    // panel-cell reader pulls the same shape (low 3 bits = panel_x,
+    // bits 4-6 = panel_y) from the second byte of the `EnemySetup` record.
+    /// The descriptor stores col and row as separate u8s (this ticket) so a
+    /// future per-scenario row can name any of the 6x3 panel grid without
+    /// re-packing the high bits; `spawnEnemy_80073E2`'s own packed layout
+    /// is documented for the asm cite, not copied here.
+    pub panel_col: [u8; 3],
+    /// NOT IN FIXTURE.md, offsets +59/+60/+61 (panel_row[0..2]): the per-
+    /// enemy spawn panel row for slots 0/1/2, decoded alongside
+    /// `panel_col` above when the matching mask bit is set. Overlay: the
+    /// harness writes panel_row[0..2] AFTER `rng`, so a descriptor that
+    /// does not name panels leaves these bytes 0 and `rng` reads back as
+    /// 0 too (the `mettaur`/`wave` rows' peeked `rng` value is dropped
+    /// by this overlay; per F38f, neither fixture's Mettaur ever reaches
+    /// an RNG-gated branch so the dropped seed is pixel-neutral).
+    pub panel_row: [u8; 3],
+    /// NOT IN FIXTURE.md, offset +62 (panel_override_mask): bit `i` (0, 1,
+    /// 2) set = slot `i`'s spawn cell comes from `panel_col[i]` /
+    /// `panel_row[i]` instead of the diagonal `(enemy_col+i, enemy_row+i)`
+    /// default. 0 = no override (every pre-F38h descriptor; cursor /
+    /// windowclose's `enemy_state=4` at the same offset overwrites the
+    /// mask to 4, but their `enemies=1` means only slot 0 matters and
+    /// mask bit 0 stays clear, so the existing behaviour is preserved).
+    pub panel_override_mask: u8,
 }
 
 /// Kind values for the packed `enemy_kind` byte (two bits per slot, see the
@@ -331,6 +363,16 @@ pub fn read() -> Option<Fixture> {
         for (i, c) in deck_codes.iter_mut().enumerate() {
             *c = r8(48 + i);
         }
+        // NOT IN FIXTURE.md, offsets +56/+57/+58: see `panel_col`'s own doc.
+        let mut panel_col = [0u8; 3];
+        for (i, c) in panel_col.iter_mut().enumerate() {
+            *c = r8(56 + i);
+        }
+        // NOT IN FIXTURE.md, offsets +59/+60/+61: see `panel_row`'s own doc.
+        let mut panel_row = [0u8; 3];
+        for (i, r) in panel_row.iter_mut().enumerate() {
+            *r = r8(59 + i);
+        }
         Some(Fixture {
             enemies: r8(4),
             enemy_kind: r8(5),
@@ -368,6 +410,17 @@ pub fn read() -> Option<Fixture> {
             // NOT IN FIXTURE.md, offsets +62/+63: see `enemy_state`'s doc.
             enemy_state: r8(62),
             enemy_action: r8(63),
+            // NOT IN FIXTURE.md, offsets +56..+62 (panel data, written by the
+            // harness AFTER result_elapsed/rng/enemy_state so the existing
+            // rows stay byte-identical: see the field docs and
+            // `tools/harness.py:fixture_cheats`'s panel block for the
+            // ordering and why it is safe). `panel_override_mask` shares
+            // the +62 byte with `enemy_state`; the harness writes panels
+            // before enemy_state, leaving cursor/windowclose's enemy_state
+            // value at +62 (= mask=4 with enemies=1, so no slot 0 effect).
+            panel_col,
+            panel_row,
+            panel_override_mask: r8(62),
         })
     }
 }
