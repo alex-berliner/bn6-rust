@@ -1660,11 +1660,23 @@ FIELD_ORIGIN = 8
 #: enemy_kind byte pack: 0x05 = slot0 Mettaur | slot1 Gunner (kinds 0,1).
 #: enemy_hp 0xFFFF = use src/fixture.rs's per-kind default (KIND_METTAUR=40,
 #: KIND_GUNNER=60, the values the poked record carries live at slot init).
-#: art_entry/art_timer/scroll_xq/scroll_yq are FIELD_ROW's seeds; the
-#: backdrop's phase matches `mettaur` at the same battle frame.
+#: art_entry/art_timer/scroll_xq/scroll_yq are this row's own, derived (T9l,
+#: 2026-09-15) from canon's own counters on this row's canon capture
+#: (probe.py watch, REAL + battlestart_gunner.state, the row's own Side):
+#: at canon_ref=80 eBGScrollCBCounters read -640/-320 = -8*80/-4*80, so the
+#: battle frame f = 80 (capture frame 0 reads -8/-4, i.e. f0 = 1, and the
+#: counters freeze for one capture frame at 67/68 -- net f = 80 at canon
+#: frame 80); eGFXAnimStates[0] reads entry 15 / Timer 7 (LoopAddress
+#: 0x0807fba4, CommandPos 0x0807fc1c) = schedule position 80+8-7 = 81.
+#: With the row's offset 25 and ORIGIN 8: nx = 8+25-7 = 26, na = 8+25-5 = 28,
+#: scroll_xq = (2*80 - 2*26) mod 1024 = 108, scroll_yq = (80 - 26) mod 1024
+#: = 54, art position (81 - 28 + 1) mod 192 = 54 = entry 11 / Timer 2
+#: (S(11) = 48, STEP_HOLD[11] = 8, Timer = 48+8-54 = 2). The old values here
+#: were FIELD_ROW's borrowed seeds (5/4/424/724, "the backdrop's phase
+#: matches mettaur at the same battle frame") -- never derived for this row.
 GUNNER_ROW = dict(enemies=2, enemy_kind=0x05, enemy_col=5, enemy_row=2, megaman_hp=60,
                   megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=0,
-                  flags=0x11, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                  flags=0x11, art_entry=11, art_timer=2, scroll_xq=108, scroll_yq=54,  # provenance: peeked -- canon's own counters at this row's canon_ref
                   enemy_hp=0xFFFF)
 GUNNER_ORIGIN = 8
 
@@ -2228,7 +2240,27 @@ PORTED_CHECKS: List[Check] = [
                  "at src/objects.rs:Style::Gunner and src/gunner.rs:GunnerEntry. The "
                  "negative fixture (frame-shift) MUST be non-blind -- the cursor's own "
                  "panels at x2..37 / y18..152 are the live content a shifted diff would "
-                 "break (open question until this row is measured).",
+                 "break (open question until this row is measured). T9l (2026-09-15) "
+                 "measured it: the negative is NOT blind (2852957 at the borrowed seeds). "
+                 "T9l also derived this row's own backdrop seeds (see GUNNER_ROW above): "
+                 "2850534/38237/130 -> 2105613/38237/130, BG1-only 1524416 -> 230400 (the "
+                 "230400 is exactly six full-screen frames, k=0..5; BG1 is 0 for k>=6). "
+                 "Remaining residue, named: (1) k=0..5, all layers full-screen -- canon "
+                 "fades from bright (OBJ mean 93,77,60,44,28,12) where rust is dark: the "
+                 "tail of a fade this row starts 10 frames later than the doc's white "
+                 "0..70 claim; (2) k=6..75, BG3 -- the two enemy HP boxes (y0..15, "
+                 "x100..190, two enemies vs mettaur's one) and the bottom-left custom "
+                 "gauge bar (y152, x12..60): canon's bar reads full from k=0 while "
+                 "GUNNER_ROW's borrowed gauge=0 never fills; (3) k>=77 -- canon's "
+                 "gauge-full pause opens the chip window on BG3 (slide from canon frame "
+                 "~156, the documented 'window comes up on its own at frame 165', "
+                 "src/battle.rs:1998) and pauses canon's battle, so BG3 carries a "
+                 "left-half window (x0..117, full height) rust never draws and the OBJ "
+                 "plateau (~5.8k/frame) is downstream of that pause; the k=45..76 OBJ "
+                 "growth (dense y90..120, x to 239) precedes it and is the shot region, "
+                 "not the aim cursor -- no 3 px/frame walk shows in the diff bboxes. "
+                 "The gauge register this state fights with is NOT 0x020352a0 (reads 0 "
+                 "all 170 frames peeked) -- the full-bar evidence is visual.",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=GUNNER_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=BATTLESTART_GUNNER),
