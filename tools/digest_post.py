@@ -35,6 +35,10 @@ def ticket_text(tid):
             r = re.search(r"\*\*Result\.\*\*\s*(.*?)(?=\n\n|\*\*Files\.\*\*|\Z)", body, re.S)
             res = re.sub(r"\s+", " ", r.group(1)).replace("**Result.**", "").strip() if r else ""
             return m.group(2), m.group(3), res[:700]
+    for f in ("TODO.md", "TODO_ARCHIVE.md"):
+        s = open(f).read() if os.path.exists(f) else ""
+        m = re.search(r"^- %s (\w+) -- (.*?)\. (.*)$" % re.escape(tid), s, re.M)
+        if m: return m.group(2), m.group(1), m.group(3)[:700]
     return tid, "", ""
 
 
@@ -128,7 +132,7 @@ def main():
     stuck = [r for r in results if r[2] in ("BLOCKED", "NEGATIVE")]
     title = ("Daily digest %s: %d done, %d partial, %d blocked" % (today, len(done), len(part), len(stuck))) if results else "Daily digest %s" % today
     facts = "\n".join(r[3] for r in results) + "\n" + score + "\n" + "\n".join(failing) + "\n" + ledger + "\n" + "\n".join(hyper)
-    out = ["# " + title, ""]
+    out = []                                     # blog.py writes the title itself; the body must not repeat it
     out.append("What the agents landed in the last %d hours, taken from the tickets' own results. Every number here is "
                "measured by the harness against a recording of the original game." % int(a.since)); out.append("")
     for name, group in (("Done", done), ("Partial", part), ("Blocked or negative", stuck)):
