@@ -580,20 +580,353 @@ def parse_panels():
 
 # ---------------------------------------------------------------- statuses
 
-# DERIVED-FROM-HEADERS: the status bits are the named struct_const bits of
-# CollisionData.inc / BattleObject.inc (ROM struct headers, not wiki).
+# T18: DERIVED-FROM-CODE. The 69 named bits are walked to their canonical
+# sites: every bl object_setFlag1/2 + object_clearFlag(2) + inline
+# orr/str-to-flags-field (setters/clearers), every bl object_getFlag(2) +
+# direct flags-field load followed by a tst/and/lsr mask test (readers).
+# Masks are resolved from `ldr rX, lbl // =0xVAL`, `mov rX, #CONST` (named
+# struct_const or .equiv), and the `mov rX, #1; lsl rX, rX, #BITCONST`
+# idiom; a multi-bit mask attributes a hit to EVERY named bit it covers
+# (e.g. the 0xa000 BLIND|CONFUSED gate in MettaurDecideCheckStatusAndRow).
+STATUS_ASM_DIR = "asm"
+STATUS_HELPER_SET = {"object_setFlag1": 1, "object_setFlag2": 2}
+STATUS_HELPER_CLR = {"object_clearFlag": 1, "object_clearFlag2": 2}
+STATUS_HELPER_GET = {"object_getFlag": 1, "object_getFlag2": 2}
+STATUS_FIELD_LOADS = {1: "#oCollisionData_ObjectFlags1",
+                      2: "#oCollisionData_ObjectFlags2"}
+
+
+def _status_consts():
+    consts = {}
+    for rel in ("include/structs/CollisionData.inc",
+                "include/structs/BattleObject.inc"):
+        for i, ln in enumerate(read_lines(rel), 1):
+            m = re.match(r"\s*struct_const (\w+),\s*(0x[0-9a-fA-F]+|\d+)", ln)
+            if m:
+                consts[m.group(1)] = int(m.group(2), 0)
+    for ln in read_lines(f"{STATUS_ASM_DIR}/asm31.s"):
+        m = re.match(r"\s*\.equiv (\w+),\s*(0x[0-9a-fA-F]+|\d+)", ln)
+        if m and m.group(1) not in consts:
+            consts[m.group(1)] = int(m.group(2), 0)
+    return consts
+
+
+def _tok_val(tok, consts):
+    if tok in consts:
+        return consts[tok]
+    try:
+        return int(tok, 0)
+    except ValueError:
+        return None
+
+
+def _resolve_reg(lines, idx, reg, consts, depth=18):
+    """value last assigned to reg before line idx (backward, stops on labels
+    and on any bl -- a helper call clobbers the caller-saved argument)"""
+    for j in range(idx - 1, max(-1, idx - depth), -1):
+        ln = lines[j].strip()
+        if re.match(r"\w+:\s*$", ln):
+            return None
+        if ln.startswith("bl ") or ln.startswith("blx "):
+            return None
+        m = re.match(rf"ldr\s+{reg},\s*\w+\s*//\s*=(0x[0-9a-fA-F]+|\d+)", ln)
+        if m:
+            return int(m.group(1), 0)
+        m = re.match(rf"movs?w?\s+{reg},\s*#(\w+)", ln)
+        if m:
+            v = _tok_val(m.group(1), consts)
+            if v is None:
+                return None
+            for k in range(j + 1, idx):
+                m2 = re.match(rf"lsls?\s+{reg},\s*{reg},\s*#(\w+)",
+                              lines[k].strip())
+                if m2:
+                    b = _tok_val(m2.group(1), consts)
+                    if b is not None:
+                        return (1 << b) & 0xFFFFFFFF
+            return v
+        m = re.match(rf"movs?\s+{reg},\s*(r\d+)", ln)
+        if m and m.group(1) != reg:
+            v = _resolve_reg(lines, j, m.group(1), consts, depth)
+            if v is None:
+                return None
+            for k in range(j + 1, idx):
+                m2 = re.match(rf"lsls?\s+{reg},\s*{reg},\s*#(\w+)",
+                              lines[k].strip())
+                if m2:
+                    b = _tok_val(m2.group(1), consts)
+                    if b is not None:
+                        return (1 << b) & 0xFFFFFFFF
+            return v
+    return None
+
+
+def _resolve_fwd_mask(lines, idx, reg, consts, depth=14):
+    """mask held in reg at line idx (resolved backward, incl. mov #1 + lsl;
+    stops on labels and on any bl -- a helper call clobbers caller-saved r)"""
+    for j in range(idx - 1, max(0, idx - depth), -1):
+        ln = lines[j].strip()
+        if re.match(r"\w+:\s*$", ln):
+            return None
+        if ln.startswith("bl ") or ln.startswith("blx "):
+            return None
+        m = re.match(rf"ldr\s+{reg},\s*\w+\s*//\s*=(0x[0-9a-fA-F]+|\d+)", ln)
+        if m:
+            return int(m.group(1), 0)
+        m = re.match(rf"movs?\s+{reg},\s*#(\w+)", ln)
+        if m:
+            v = _tok_val(m.group(1), consts)
+            if v is None:
+                return None
+            for k in range(j + 1, idx):
+                m2 = re.match(rf"lsls?\s+{reg},\s*{reg},\s*#(\w+)",
+                              lines[k].strip())
+                if m2:
+                    b = _tok_val(m2.group(1), consts)
+                    if b is not None:
+                        return (1 << b) & 0xFFFFFFFF
+            return v
+    return None
+
+
+def _bits_hit(mask, consts):
+    """every named 32-bit flag value covered by mask (combined masks count
+    for each bit they carry -- T18 rule, verified on the 0xa000 gate)"""
+    out = set()
+    for n, v in consts.items():
+        if (n.startswith("OBJECT_FLAGS_") and not n.endswith("_BIT")
+                and not n.startswith("OBJECT_FLAGS_2_UNK")
+                and v and (mask & v) == v):
+            out.add(n)
+        if (n.startswith("OBJECT_FLAGS_2_") and v
+                and (mask & v) == v):
+            out.add(n)
+    return out
+
+
+def _status_field_sites(consts):
+    """walk every asm file: setter/clearer/reader sites per flags field"""
+    files = sorted(f for f in os.listdir(os.path.join(REF, STATUS_ASM_DIR))
+                   if f.endswith(".s"))
+    src = {f: read_lines(f"{STATUS_ASM_DIR}/{f}") for f in files}
+    setters = {1: {}, 2: {}}   # bitname -> ["file:line", ...]
+    clearers = {1: {}, 2: {}}
+    readers = {1: {}, 2: {}}
+
+    def add(d, fld, mask, cite):
+        for bit in _bits_hit(mask, consts):
+            d[fld].setdefault(bit, []).append(cite)
+
+    for f in files:
+        lines = src[f]
+        for i, ln in enumerate(lines):
+            s = ln.strip()
+            for fld in (1, 2):
+                fldc = STATUS_FIELD_LOADS[fld]
+                if re.search(rf"(ldr|str|ldrh|strh)\s+\w+,\s*\[\w+,\s*" + fldc,
+                             s):
+                    for k in range(max(0, i - 5), min(len(lines), i + 6)):
+                        s2 = lines[k].strip()
+                        mo = re.match(r"orrs?\s+\w+,\s*(r\d+)", s2)
+                        mb = re.match(r"bics?\s+\w+,\s*(r\d+)", s2)
+                        if not (mo or mb):
+                            continue
+                        reg = (mo or mb).group(1)
+                        v = _resolve_reg(lines, k, reg, consts, 15)
+                        if v:
+                            add(setters if mo else clearers, fld, v,
+                                f"{STATUS_ASM_DIR}/{f}:{i + 1}")
+                        break
+            m = re.match(r"bl\s+(object_(?:setFlag\d|clearFlag\d?|getFlag\d?))",
+                         s)
+            if m:
+                name = m.group(1)
+                cite = f"{STATUS_ASM_DIR}/{f}:{i + 1}"
+                if name in STATUS_HELPER_SET:
+                    v = _resolve_reg(lines, i, "r0", consts)
+                    if v:
+                        add(setters, STATUS_HELPER_SET[name], v, cite)
+                elif name in STATUS_HELPER_CLR:
+                    v = _resolve_reg(lines, i, "r0", consts)
+                    if v:
+                        add(clearers, STATUS_HELPER_CLR[name], v, cite)
+                elif name in STATUS_HELPER_GET:
+                    fld = STATUS_HELPER_GET[name]
+                    for k in range(i + 1, min(len(lines), i + 14)):
+                        s2 = lines[k].strip()
+                        if k > i and re.match(r"\w+:", s2):
+                            break
+                        mt = re.match(r"tsts?\s+r0,\s*(r\d+)", s2)
+                        ma = re.match(r"ands?\s+r0,\s*r0,\s*(r\d+)", s2)
+                        if mt or ma:
+                            reg = (mt or ma).group(1)
+                            if reg != "r0":
+                                v = _resolve_fwd_mask(lines, k, reg, consts)
+                                if v:
+                                    add(readers, fld, v, cite)
+                            break
+                        ml2 = re.match(rf"lsrs?\s+r0,\s*r0,\s*#(\w+)", s2)
+                        if ml2:
+                            b = _tok_val(ml2.group(1), consts)
+                            if b is not None:
+                                add(readers, fld, 1 << b, cite)
+                            break
+                        if re.match(r"str\b", s2) and k > i + 2:
+                            break
+                continue
+            for fld in (1, 2):
+                m = re.match(r"(ldr|ldrh)\s+(\w+),\s*\[\w+,\s*"
+                             + STATUS_FIELD_LOADS[fld], s)
+                if m:
+                    reg = m.group(2)
+                    for k in range(i + 1, min(len(lines), i + 10)):
+                        s2 = lines[k].strip()
+                        if re.match(r"str", s2):
+                            break
+                        mt = re.match(rf"tsts?\s+{reg},\s*(r\d+)", s2)
+                        if mt:
+                            r2 = mt.group(1)
+                            if r2 != reg:
+                                v = _resolve_fwd_mask(lines, k, r2, consts)
+                                if v:
+                                    add(readers, fld, v,
+                                        f"{STATUS_ASM_DIR}/{f}:{i + 1}")
+                            break
+                        ml2 = re.match(rf"lsrs?\s+{reg},\s*{reg},\s*#(\w+)",
+                                       s2)
+                        if ml2:
+                            b = _tok_val(ml2.group(1), consts)
+                            if b is not None:
+                                add(readers, fld, 1 << b,
+                                    f"{STATUS_ASM_DIR}/{f}:{i + 1}")
+                            break
+    return setters, clearers, readers
+
+
+def _status_table_families():
+    """off_80209EC (data/dat01.s): 6 pointers, families of stride-8 records
+    [0] flag2 mask u32, [4] hword, [6] CollisionData timer offset; consumed
+    by sub_801A554 (asm/asm00_2.s:22211-22230), index
+    (oCollisionData_StatusEffectFinal>>4)-1 + (val&7)<<3."""
+    dat = read_lines("data/dat01.s")
+    lab = {}
+    for i, ln in enumerate(dat):
+        m = re.match(r"(\w+)::", ln)
+        if m:
+            lab[m.group(1)] = i
+    start = lab["off_80209EC"]
+    ptrs = [re.match(r"\s*\.word (\w+)", l).group(1)
+            for l in dat[start + 1:start + 7]]
+    fams = []
+    for pl in ptrs:
+        vals = []
+        for l in dat[lab[pl] + 1:]:
+            if re.match(r"\w+::", l):
+                break
+            wm = re.search(r"\.word (0x[0-9a-fA-F]+)", l)
+            if wm:
+                v = int(wm.group(1), 16)
+                vals += [v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF,
+                         (v >> 24) & 0xFF]
+            else:
+                vals += [int(m.group(0), 16)
+                         for m in re.finditer(r"0x[0-9a-fA-F]+", l)]
+        recs = [(int.from_bytes(bytes(vals[j:j + 4]), "little"),
+                 int.from_bytes(bytes(vals[j + 4:j + 6]), "little"),
+                 vals[j + 6])
+                for j in range(0, len(vals) - 7, 8)]
+        fams.append({"label": pl, "records": recs})
+    return fams
+
+
 def parse_statuses():
+    consts = _status_consts()
+    fams = _status_table_families()
+    setters, clearers, readers = _status_field_sites(consts)
+    # family -> flag2 mask reached by every record's [+0] word (measured:
+    # one mask per family); family n = StatusEffectFinal high nibble n
+    fam_masks = {}
+    for fi, fam in enumerate(fams, 1):
+        masks = sorted({r[0] for r in fam["records"]})
+        assert len(masks) == 1, f"family {fi} has mixed masks {masks}"
+        fam_masks[fi] = masks[0]
+    table_mask_set = set(fam_masks.values())
+    # flags2 bits written directly by named code (outside the table path)
+    direct_f2 = {v for n, v in consts.items()
+                 if n.startswith("OBJECT_FLAGS_2_")
+                 and setters[2].get(n)}
     rows = []
     for rel, prefix in (("include/structs/CollisionData.inc", "OBJECT_FLAGS_"),
                         ("include/structs/BattleObject.inc", "DAMAGE_")):
         for i, ln in enumerate(read_lines(rel), 1):
-            m = re.match(rf"\s*struct_const ({prefix}\w+),\s*(0x[0-9a-fA-F]+)", ln)
-            if m:
-                rows.append({
-                    "bit": m.group(1), "value": m.group(2),
-                    "cite": f"{rel}:{i}", "status": "unrecorded",
-                })
-    return rows
+            m = re.match(rf"\s*struct_const ({prefix}\w+),\s*(0x[0-9a-fA-F]+)",
+                         ln)
+            if not m:
+                continue
+            name, val = m.group(1), m.group(2)
+            v = int(val, 16)
+            is_f2 = name.startswith("OBJECT_FLAGS_2_")
+            fld = 2 if is_f2 else (1 if name.startswith("OBJECT_FLAGS_")
+                                   else 0)
+            st = setters[fld].get(name, []) if fld else []
+            cl = clearers[fld].get(name, []) if fld else []
+            rd = readers[fld].get(name, []) if fld else []
+            fams_hit = sorted(fi for fi, fm in fam_masks.items()
+                              if fm & v == v and v) if is_f2 else []
+            in_table = bool(fams_hit)
+            setter_txt = (st[0] + (f" (+{len(st) - 1})" if len(st) > 1 else "")
+                          if st else "NONE")
+            reader_txt = (rd[0] + (f" (+{len(rd) - 1})" if len(rd) > 1 else "")
+                          if rd else "none")
+            rows.append({
+                "bit": name, "value": val,
+                "setter": setter_txt,
+                "reader": reader_txt,
+                "battle_visible": "yes" if rd else "no",
+                "via_table": (",".join(str(x) for x in fams_hit)
+                              if in_table else "-"),
+                "cite": f"{rel}:{i}", "status": "unrecorded",
+                "_counts": (len(st), len(cl), len(rd)),
+                "_in_direct_f2": is_f2 and bool(st),
+            })
+    n_set = sum(1 for r in rows if r["_counts"][0] > 0)
+    n_rd = sum(1 for r in rows if r["_counts"][2] > 0)
+    meta = {
+        "families": fams,
+        "fam_masks": fam_masks,
+        "n_bits": len(rows),
+        "n_written": n_set,
+        "n_read": n_rd,
+        "n_unread": len(rows) - n_rd,
+        "n_written_read": sum(1 for r in rows
+                              if r["_counts"][0] > 0 and r["_counts"][2] > 0),
+        "table_records": sum(len(f["records"]) for f in fams),
+        "table_sizes": [len(f["records"]) for f in fams],
+        "table_masks": sorted(hex(m) for m in table_mask_set),
+        # both set differences, on distinct flag2 masks
+        "table_only_masks": sorted(
+            hex(m) for m in table_mask_set - direct_f2),
+        "direct_only_masks": sorted(
+            hex(m) for m in direct_f2 - table_mask_set),
+        "table_records_only": sum(len(f["records"]) for f in fams
+                                  if f["records"][0][0] not in direct_f2),
+        "fam_sizes": [len(f["records"]) for f in fams],
+    }
+    return rows, meta
+
+
+STATUS_M3_CANDIDATES = [
+    # (status, reader cite, inflicting path -- what a chip must write)
+    ("CONFUSED", "asm/asm31.s:171395-171397",
+     "StatusEffectFinal 0x2X -> sub_801A554 family 2 -> flag2 0x80 + timer"
+     " oCollisionData_Unk_1e -> flags1 0x8000 (tick object.s:5438-5452)"),
+    ("BLIND", "asm/asm00_2.s:16861",
+     "StatusEffectFinal 0x3X -> family 3 -> flag2 0x20 + BlindTimer"
+     " (inflicter measured: asm/asm00_2.s:11366-11368, timer 0x12c=300)"),
+    ("IMMOBILIZED", "asm/asm31.s:171385-171394",
+     "StatusEffectFinal 0x4X -> family 4 (7 recs) -> flag2 0x40 + timer"
+     " oCollisionData_Unk_22 -> flags1 0x4000 (tick object.s:5500-5508)"),
+]
 
 
 # -------------------------------------------------------------- formations
@@ -795,18 +1128,37 @@ SECTION_NOTES = {
             " SpawnBattleObjectUsingBattleEntityConfig_8007368."),
     "statuses (M3)":
         lambda meta: (
-            "T15 verdict: the 69 bits are set/cleared DIRECTLY by code"
-            " (object_setFlag/object_setFlag2, strh to BattleObject.Damage) --"
-            " no bit-indexed table exists. Walked:"
-            " object_setCollisionStatusEffect1/2 (asm/asm00_2.s:21768/21776)"
-            " store oCollisionData_StatusEffectBase/Final; sub_801A554"
-            " (asm/asm00_2.s:22211-22230) indexes the nearest per-status data"
-            " table off_80209EC (data/dat01.s:155, 6 pointers, pointer stride"
-            " 4, index (StatusEffectFinal>>4)-1, record stride 8: [0] flag2"
-            " mask word, [4] hword value, [6] CollisionData byte offset, 6-7"
-            " records per family). That table enumerates 6 status-effect"
-            " families (x timing variants), NOT the 69 flag bits -- so the"
-            " rows stay header-derived."),
+            "T18 verdict (DERIVED-FROM-CODE, measured -- counts are from the"
+            " site walk in this tool, not from header bit names): every bl"
+            " object_setFlag1/2 + object_clearFlag(2) + inline orr/str to"
+            " oCollisionData_ObjectFlags1/2 is a setter/clearer; every bl"
+            " object_getFlag(2) + direct flags-field load followed by a"
+            " tst/and/lsr mask test is a reader; multi-bit masks credit every"
+            " named bit they carry (e.g. the 0xa000 BLIND|CONFUSED gate in"
+            " MettaurDecideCheckStatusAndRow_810A004, asm/asm31.s:171395-171397;"
+            " the bit-14 lsl/tst IMMOBILIZED gate at asm/asm31.s:171385-171394"
+            " is found only through the mov #1 + lsl idiom). DAMAGE_*"
+            " (BattleObject.inc:119-123) have ZERO named sites in asm/ -- they"
+            " are carried in the damage word by the damage pipeline, not by"
+            " named constants, so all five stay header-derived here. Table"
+            " reconciliation: off_80209EC (data/dat01.s:155) decodes to"
+            " {table_records} records ({fam_sizes}) across 6 families, one"
+            " flag2 mask each: {table_masks}. Families only reachable THROUGH"
+            " sub_801A554 (no direct named setter): {table_only_masks} ="
+            " {table_records_only} of {table_records} records; flag2 masks"
+            " written by named code but NOT in the table: {direct_only_masks}."
+            " No table flag2 mask has a direct reader -- the observable read is"
+            " on the flags1 status bit the object.s per-frame status tick"
+            " propagates (e.g. object.s:5438-5452 clears flags1 0x8000 + flag2"
+            " 0x80 when the Confused timer Unk_1e expires), so per-bit"
+            " battle-visibility is judged on the flags1 bit. M3 scenario"
+            " candidates (reader + table-reachable): "
+            + "; ".join(f"{s} reader {r} ({p})" for s, r, p in STATUS_M3_CANDIDATES)
+            + ". Chip-id caveat: the fixture hand (FIXTURE.md +13) can carry"
+            " any chip id, but the cannon/wave rows' fired chips inflict no"
+            " status; which chip id writes which StatusEffectFinal value is"
+            " NOT pinned here (the setCollisionStatusEffect callers are the"
+            " asm31.s per-attack effect routines) -- that pinning is M4 work."),
     "backdrops (M8)":
         lambda meta: (
             "Sentinel note: Background 0xff on 268 of 461 records is counted as"
@@ -863,7 +1215,7 @@ SECTION_NOTES = {
 }
 
 
-def regenerate_scope(sections, pa_meta=None):
+def regenerate_scope(sections, pa_meta=None, status_meta=None):
     scope_path = os.path.join(REPO, "docs", "SCOPE.md")
     with open(scope_path) as f:
         old = f.read()
@@ -894,7 +1246,8 @@ def regenerate_scope(sections, pa_meta=None):
         out.append("")
         note = SECTION_NOTES.get(name)
         if note:
-            arg = pa_meta if name == "program advances (M4)" else None
+            arg = pa_meta if name == "program advances (M4)" else (
+                status_meta if name == "statuses (M3)" else None)
             out.append(f"Note: {note(arg)}")
             out.append("")
         if name == "viruses (M5)":
@@ -923,7 +1276,7 @@ COLUMN_SETS = {
     "navis + cybeasts (M6)": [("index", 6), ("navi", 24), ("struct2_row0_raw", 8), ("act", 22), ("cite", 46), "status"],
     "forms (M7)": [("tf_value", 8), ("form", 22), ("charge_shot", 34), ("charge_cite", 24), "status"],
     "panels (M3)": [("type", 6), ("meaning", 24), ("flag_word", 10), ("writer", 42), ("reader", 44), "status"],
-    "statuses (M3)": [("bit", 36), ("value", 12), ("cite", 40), "status"],
+    "statuses (M3)": [("bit", 36), ("value", 12), ("setter", 40), ("reader", 40), ("battle_visible", 14), ("via_table", 10), ("cite", 40), "status"],
     "formations (M8)": [("formation", 14), ("entries", 8), ("enemy_ids", 24), ("cite", 30), "status"],
     "backdrops (M8)": [("background_byte", 12), ("records_using_it", 10), ("cite", 52), "status"],
     "navicust battle effects (M7)": [("slot", 16), ("offset", 10), ("cite", 40), "status"],
@@ -938,7 +1291,7 @@ def main():
     navis = parse_navis()
     forms, charge_extra = parse_forms()
     panels = parse_panels()
-    statuses = parse_statuses()
+    statuses, status_meta = parse_statuses()
     lists, form_rows = parse_formations()
     backdrops = parse_backdrops(lists)
     navicust = parse_navicust()
@@ -973,7 +1326,11 @@ def main():
                             "charge_shot_table_extra": charge_extra,
                             "charge_shot_table_cite": "asm/asm00_2.s:5789 off_80117D4"})
     write_section("panels", {"generator": "tools/inventory.py", "rows": panels})
-    write_section("statuses", {"generator": "tools/inventory.py", "rows": statuses})
+    write_section("statuses", {"generator": "tools/inventory.py",
+                               "table_meta": {
+                                   k: v for k, v in status_meta.items()
+                                   if k != "families"},
+                               "rows": statuses})
     write_section("formations", {"generator": "tools/inventory.py",
                                  "battle_settings_lists": lists, "rows": form_rows})
     write_section("backdrops", {"generator": "tools/inventory.py", "rows": backdrops})
@@ -988,7 +1345,22 @@ def main():
         ("M1", ("cybeasts (M6)", "FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18)", cybeasts)),
         ("M1", ("forms (M7)", "FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789)", forms)),
         ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
-        ("M1", ("statuses (M3)", "DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits, set/cleared directly by code (object_setFlag/object_setFlag2, strh Damage); nearest per-status data table off_80209EC (data/dat01.s:155, 6 families x 6-7 records, record stride 8, via sub_801A554 asm/asm00_2.s:22211) enumerates 6 status-effect families, not the 69 bits", statuses)),
+        ("M1", ("statuses (M3)",
+                "DERIVED-FROM-CODE: per-bit canonical sites measured by walking every"
+                f" object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in"
+                f" reference/bn6f/asm -- {status_meta['n_written']}/{status_meta['n_bits']} named bits written"
+                f" (flags1 {sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_') and not r['bit'].startswith('OBJECT_FLAGS_2_') and r['setter'] != 'NONE')}/32,"
+                f" flags2 {sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_2_') and r['setter'] != 'NONE')}/32,"
+                f" DAMAGE {sum(1 for r in statuses if r['bit'].startswith('DAMAGE_') and r['setter'] != 'NONE')}/5),"
+                f" {status_meta['n_read']} with >=1 reader,"
+                f" {status_meta['n_unread']} with none, {status_meta['n_written_read']} both written and read;"
+                f" nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211)"
+                f" holds {status_meta['table_records']} records ({','.join(map(str, status_meta['fam_sizes']))}) whose [+0] flag2 masks"
+                f" {','.join(status_meta['table_masks'])} reach 6 bits: reachable only via the table"
+                f" {','.join(status_meta['table_only_masks'])} = {status_meta['table_records_only']} records, directly-written masks outside the table"
+                f" {','.join(status_meta['direct_only_masks'])}; M3 candidates: "
+                + " / ".join(f"{s} (reader {r})" for s, r, _p in STATUS_M3_CANDIDATES),
+                statuses)),
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
@@ -997,7 +1369,7 @@ def main():
         "pointer_words": sum(t["pointer_words"] for t in PA_TABLES),
         "records": sum(t["records"] for t in PA_TABLES),
         "terminators": [t["terminator"] for t in PA_TABLES if t["terminator"]],
-    })
+    }, status_meta=status_meta)
 
     for m, (name, state, rows) in sections:
         ver, total = status_summary(rows)

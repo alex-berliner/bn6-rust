@@ -44,7 +44,7 @@ ported or listed out of scope with a reason).
 | M1 | cybeasts (M6) | FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18) | 0 / 14 |
 | M1 | forms (M7) | FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789) | 0 / 25 |
 | M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 8 / 13 |
-| M1 | statuses (M3) | DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits, set/cleared directly by code (object_setFlag/object_setFlag2, strh Damage); nearest per-status data table off_80209EC (data/dat01.s:155, 6 families x 6-7 records, record stride 8, via sub_801A554 asm/asm00_2.s:22211) enumerates 6 status-effect families, not the 69 bits | 0 / 69 |
+| M1 | statuses (M3) | DERIVED-FROM-CODE: per-bit canonical sites measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in reference/bn6f/asm -- 40/69 named bits written (flags1 27/32, flags2 13/32, DAMAGE 0/5), 43 with >=1 reader, 26 with none, 33 both written and read; nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211) holds 37 records (6,6,6,7,6,6) whose [+0] flag2 masks 0x10000,0x20,0x20000,0x40,0x8,0x80 reach 6 bits: reachable only via the table 0x10000,0x20000,0x40,0x80 = 25 records, directly-written masks outside the table 0x1,0x10,0x100,0x100000,0x2,0x200,0x4,0x4000,0x40000,0x8000,0x80000; M3 candidates: CONFUSED (reader asm/asm31.s:171395-171397) / BLIND (reader asm/asm00_2.s:16861) / IMMOBILIZED (reader asm/asm31.s:171385-171394) | 0 / 69 |
 | M1 | formations (M8) | FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays | 0 / 297 |
 | M1 | backdrops (M8) | DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note) | 0 / 3 |
 | M1 | navicust battle effects (M7) | FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc) | 0 / 19 |
@@ -826,81 +826,81 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 | 0xB | unnamed: stage type writ | 0x10210 | asm/asm31.s:27871-27872 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 | 0xC | unnamed: stage type writ | 0x10210 | asm/asm31.s:27855-27856 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 
-### statuses (M3) (DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits, set/cleared directly by code (object_setFlag/object_setFlag2, strh Damage); nearest per-status data table off_80209EC (data/dat01.s:155, 6 families x 6-7 records, record stride 8, via sub_801A554 asm/asm00_2.s:22211) enumerates 6 status-effect families, not the 69 bits)
+### statuses (M3) (DERIVED-FROM-CODE: per-bit canonical sites measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in reference/bn6f/asm -- 40/69 named bits written (flags1 27/32, flags2 13/32, DAMAGE 0/5), 43 with >=1 reader, 26 with none, 33 both written and read; nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211) holds 37 records (6,6,6,7,6,6) whose [+0] flag2 masks 0x10000,0x20,0x20000,0x40,0x8,0x80 reach 6 bits: reachable only via the table 0x10000,0x20000,0x40,0x80 = 25 records, directly-written masks outside the table 0x1,0x10,0x100,0x100000,0x2,0x200,0x4,0x4000,0x40000,0x8000,0x80000; M3 candidates: CONFUSED (reader asm/asm31.s:171395-171397) / BLIND (reader asm/asm00_2.s:16861) / IMMOBILIZED (reader asm/asm31.s:171385-171394))
 
-Note: T15 verdict: the 69 bits are set/cleared DIRECTLY by code (object_setFlag/object_setFlag2, strh to BattleObject.Damage) -- no bit-indexed table exists. Walked: object_setCollisionStatusEffect1/2 (asm/asm00_2.s:21768/21776) store oCollisionData_StatusEffectBase/Final; sub_801A554 (asm/asm00_2.s:22211-22230) indexes the nearest per-status data table off_80209EC (data/dat01.s:155, 6 pointers, pointer stride 4, index (StatusEffectFinal>>4)-1, record stride 8: [0] flag2 mask word, [4] hword value, [6] CollisionData byte offset, 6-7 records per family). That table enumerates 6 status-effect families (x timing variants), NOT the 69 flag bits -- so the rows stay header-derived.
+Note: T18 verdict (DERIVED-FROM-CODE, measured -- counts are from the site walk in this tool, not from header bit names): every bl object_setFlag1/2 + object_clearFlag(2) + inline orr/str to oCollisionData_ObjectFlags1/2 is a setter/clearer; every bl object_getFlag(2) + direct flags-field load followed by a tst/and/lsr mask test is a reader; multi-bit masks credit every named bit they carry (e.g. the 0xa000 BLIND|CONFUSED gate in MettaurDecideCheckStatusAndRow_810A004, asm/asm31.s:171395-171397; the bit-14 lsl/tst IMMOBILIZED gate at asm/asm31.s:171385-171394 is found only through the mov #1 + lsl idiom). DAMAGE_* (BattleObject.inc:119-123) have ZERO named sites in asm/ -- they are carried in the damage word by the damage pipeline, not by named constants, so all five stay header-derived here. Table reconciliation: off_80209EC (data/dat01.s:155) decodes to {table_records} records ({fam_sizes}) across 6 families, one flag2 mask each: {table_masks}. Families only reachable THROUGH sub_801A554 (no direct named setter): {table_only_masks} = {table_records_only} of {table_records} records; flag2 masks written by named code but NOT in the table: {direct_only_masks}. No table flag2 mask has a direct reader -- the observable read is on the flags1 status bit the object.s per-frame status tick propagates (e.g. object.s:5438-5452 clears flags1 0x8000 + flag2 0x80 when the Confused timer Unk_1e expires), so per-bit battle-visibility is judged on the flags1 bit. M3 scenario candidates (reader + table-reachable): CONFUSED reader asm/asm31.s:171395-171397 (StatusEffectFinal 0x2X -> sub_801A554 family 2 -> flag2 0x80 + timer oCollisionData_Unk_1e -> flags1 0x8000 (tick object.s:5438-5452)); BLIND reader asm/asm00_2.s:16861 (StatusEffectFinal 0x3X -> family 3 -> flag2 0x20 + BlindTimer (inflicter measured: asm/asm00_2.s:11366-11368, timer 0x12c=300)); IMMOBILIZED reader asm/asm31.s:171385-171394 (StatusEffectFinal 0x4X -> family 4 (7 recs) -> flag2 0x40 + timer oCollisionData_Unk_22 -> flags1 0x4000 (tick object.s:5500-5508)). Chip-id caveat: the fixture hand (FIXTURE.md +13) can carry any chip id, but the cannon/wave rows' fired chips inflict no status; which chip id writes which StatusEffectFinal value is NOT pinned here (the setCollisionStatusEffect callers are the asm31.s per-attack effect routines) -- that pinning is M4 work.
 
-| bit | value | cite | status |
-|---|---|---|---|
-| OBJECT_FLAGS_GUARD | 0x00000001 | include/structs/CollisionData.inc:3 | unrecorded |
-| OBJECT_FLAGS_INVIS | 0x00000002 | include/structs/CollisionData.inc:4 | unrecorded |
-| OBJECT_FLAGS_UNK_4 | 0x00000004 | include/structs/CollisionData.inc:5 | unrecorded |
-| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | include/structs/CollisionData.inc:6 | unrecorded |
-| OBJECT_FLAGS_AIRSHOE | 0x00000010 | include/structs/CollisionData.inc:7 | unrecorded |
-| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | include/structs/CollisionData.inc:8 | unrecorded |
-| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | include/structs/CollisionData.inc:9 | unrecorded |
-| OBJECT_FLAGS_UNK_8 | 0x00000080 | include/structs/CollisionData.inc:10 | unrecorded |
-| OBJECT_FLAGS_DEAD | 0x00000100 | include/structs/CollisionData.inc:11 | unrecorded |
-| OBJECT_FLAGS_FLASHING | 0x00000200 | include/structs/CollisionData.inc:12 | unrecorded |
-| OBJECT_FLAGS_FLINCHING | 0x00000400 | include/structs/CollisionData.inc:13 | unrecorded |
-| OBJECT_FLAGS_PARALYZED | 0x00000800 | include/structs/CollisionData.inc:14 | unrecorded |
-| OBJECT_FLAGS_SLIDING | 0x00001000 | include/structs/CollisionData.inc:15 | unrecorded |
-| OBJECT_FLAGS_BLIND | 0x00002000 | include/structs/CollisionData.inc:16 | unrecorded |
-| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | include/structs/CollisionData.inc:17 | unrecorded |
-| OBJECT_FLAGS_CONFUSED | 0x00008000 | include/structs/CollisionData.inc:18 | unrecorded |
-| OBJECT_FLAGS_FROZEN | 0x00010000 | include/structs/CollisionData.inc:19 | unrecorded |
-| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | include/structs/CollisionData.inc:20 | unrecorded |
-| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | include/structs/CollisionData.inc:21 | unrecorded |
-| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | include/structs/CollisionData.inc:22 | unrecorded |
-| OBJECT_FLAGS_DRAG | 0x00100000 | include/structs/CollisionData.inc:23 | unrecorded |
-| OBJECT_FLAGS_ANGER | 0x00200000 | include/structs/CollisionData.inc:24 | unrecorded |
-| OBJECT_FLAGS_USING_ACTION | 0x00400000 | include/structs/CollisionData.inc:25 | unrecorded |
-| OBJECT_FLAGS_UNK_24 | 0x00800000 | include/structs/CollisionData.inc:26 | unrecorded |
-| OBJECT_FLAGS_UNK_25 | 0x01000000 | include/structs/CollisionData.inc:27 | unrecorded |
-| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | include/structs/CollisionData.inc:28 | unrecorded |
-| OBJECT_FLAGS_UNK_26 | 0x04000000 | include/structs/CollisionData.inc:29 | unrecorded |
-| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | include/structs/CollisionData.inc:30 | unrecorded |
-| OBJECT_FLAGS_UNK_28 | 0x10000000 | include/structs/CollisionData.inc:31 | unrecorded |
-| OBJECT_FLAGS_UNK_29 | 0x20000000 | include/structs/CollisionData.inc:32 | unrecorded |
-| OBJECT_FLAGS_UNK_30 | 0x40000000 | include/structs/CollisionData.inc:33 | unrecorded |
-| OBJECT_FLAGS_BUBBLED | 0x80000000 | include/structs/CollisionData.inc:34 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | include/structs/CollisionData.inc:48 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | include/structs/CollisionData.inc:49 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | include/structs/CollisionData.inc:50 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | include/structs/CollisionData.inc:51 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | include/structs/CollisionData.inc:52 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | include/structs/CollisionData.inc:53 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_06 | 0x00000040 | include/structs/CollisionData.inc:54 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_07 | 0x00000080 | include/structs/CollisionData.inc:55 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | include/structs/CollisionData.inc:56 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | include/structs/CollisionData.inc:57 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | include/structs/CollisionData.inc:58 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | include/structs/CollisionData.inc:59 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | include/structs/CollisionData.inc:60 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | include/structs/CollisionData.inc:61 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | include/structs/CollisionData.inc:62 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | include/structs/CollisionData.inc:63 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_16 | 0x00010000 | include/structs/CollisionData.inc:64 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_17 | 0x00020000 | include/structs/CollisionData.inc:65 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_18 | 0x00040000 | include/structs/CollisionData.inc:66 | unrecorded |
-| OBJECT_FLAGS_2_DO_UPDATE_COLLISION_P | 0x00080000 | include/structs/CollisionData.inc:67 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_20 | 0x00100000 | include/structs/CollisionData.inc:68 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_21 | 0x00200000 | include/structs/CollisionData.inc:69 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_22 | 0x00400000 | include/structs/CollisionData.inc:70 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_23 | 0x00800000 | include/structs/CollisionData.inc:71 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_24 | 0x01000000 | include/structs/CollisionData.inc:72 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_25 | 0x02000000 | include/structs/CollisionData.inc:73 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_26 | 0x04000000 | include/structs/CollisionData.inc:74 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_27 | 0x08000000 | include/structs/CollisionData.inc:75 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_28 | 0x10000000 | include/structs/CollisionData.inc:76 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_29 | 0x20000000 | include/structs/CollisionData.inc:77 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_30 | 0x40000000 | include/structs/CollisionData.inc:78 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_31 | 0x80000000 | include/structs/CollisionData.inc:79 | unrecorded |
-| DAMAGE_DOUBLE | 0x8000 | include/structs/BattleObject.inc:119 | unrecorded |
-| DAMAGE_PARALYZE | 0x4000 | include/structs/BattleObject.inc:120 | unrecorded |
-| DAMAGE_UNINSTALL | 0x2000 | include/structs/BattleObject.inc:121 | unrecorded |
-| DAMAGE_ERASECROSS_SKULL_HIT | 0x1000 | include/structs/BattleObject.inc:122 | unrecorded |
-| DAMAGE_NOTHING | 0x0800 | include/structs/BattleObject.inc:123 | unrecorded |
+| bit | value | setter | reader | battle_visible | via_table | cite | status |
+|---|---|---|---|---|---|---|---|
+| OBJECT_FLAGS_GUARD | 0x00000001 | asm/asm31.s:112363 (+8) | none | no | - | include/structs/CollisionData.inc:3 | unrecorded |
+| OBJECT_FLAGS_INVIS | 0x00000002 | asm/asm00_2.s:3315 | asm/asm00_2.s:22325 (+3) | yes | - | include/structs/CollisionData.inc:4 | unrecorded |
+| OBJECT_FLAGS_UNK_4 | 0x00000004 | asm/asm00_2.s:2875 (+2) | asm/asm00_2.s:2829 (+7) | yes | - | include/structs/CollisionData.inc:5 | unrecorded |
+| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | asm/asm31.s:68375 (+2) | asm/asm00_2.s:16729 | yes | - | include/structs/CollisionData.inc:6 | unrecorded |
+| OBJECT_FLAGS_AIRSHOE | 0x00000010 | asm/asm00_2.s:10661 (+7) | asm/asm00_2.s:3163 (+4) | yes | - | include/structs/CollisionData.inc:7 | unrecorded |
+| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | asm/asm00_2.s:10644 (+6) | asm/asm00_2.s:16589 (+3) | yes | - | include/structs/CollisionData.inc:8 | unrecorded |
+| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | asm/asm31.s:32325 (+144) | asm/asm00_2.s:21947 (+7) | yes | - | include/structs/CollisionData.inc:9 | unrecorded |
+| OBJECT_FLAGS_UNK_8 | 0x00000080 | NONE | none | no | - | include/structs/CollisionData.inc:10 | unrecorded |
+| OBJECT_FLAGS_DEAD | 0x00000100 | asm/asm00_2.s:23485 (+7) | asm/asm00_2.s:16761 (+23) | yes | - | include/structs/CollisionData.inc:11 | unrecorded |
+| OBJECT_FLAGS_FLASHING | 0x00000200 | asm/asm00_2.s:22338 (+2) | asm/asm03_0.s:14697 (+2) | yes | - | include/structs/CollisionData.inc:12 | unrecorded |
+| OBJECT_FLAGS_FLINCHING | 0x00000400 | asm/asm00_2.s:18308 | asm/asm00_2.s:12088 (+12) | yes | - | include/structs/CollisionData.inc:13 | unrecorded |
+| OBJECT_FLAGS_PARALYZED | 0x00000800 | asm/object.s:5333 | asm/asm00_2.s:12088 (+20) | yes | - | include/structs/CollisionData.inc:14 | unrecorded |
+| OBJECT_FLAGS_SLIDING | 0x00001000 | asm/asm00_2.s:16515 (+1) | asm/asm00_2.s:1745 (+12) | yes | - | include/structs/CollisionData.inc:15 | unrecorded |
+| OBJECT_FLAGS_BLIND | 0x00002000 | asm/object.s:5530 | asm/asm00_2.s:16861 (+89) | yes | - | include/structs/CollisionData.inc:16 | unrecorded |
+| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | asm/object.s:5510 (+1) | asm/asm31.s:171386 | yes | - | include/structs/CollisionData.inc:17 | unrecorded |
+| OBJECT_FLAGS_CONFUSED | 0x00008000 | asm/object.s:5483 | asm/asm00_2.s:1894 (+88) | yes | - | include/structs/CollisionData.inc:18 | unrecorded |
+| OBJECT_FLAGS_FROZEN | 0x00010000 | asm/object.s:5383 | asm/asm00_2.s:16784 (+18) | yes | - | include/structs/CollisionData.inc:19 | unrecorded |
+| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | asm/asm00_2.s:10684 (+9) | asm/asm00_2.s:23375 (+1) | yes | - | include/structs/CollisionData.inc:20 | unrecorded |
+| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | asm/asm00_2.s:10673 (+1) | asm/asm00_2.s:24874 | yes | - | include/structs/CollisionData.inc:21 | unrecorded |
+| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | asm/asm31.s:42478 (+117) | asm/asm00_2.s:21962 | yes | - | include/structs/CollisionData.inc:22 | unrecorded |
+| OBJECT_FLAGS_DRAG | 0x00100000 | asm/asm00_2.s:17289 (+3) | asm/asm00_2.s:17478 (+22) | yes | - | include/structs/CollisionData.inc:23 | unrecorded |
+| OBJECT_FLAGS_ANGER | 0x00200000 | asm/asm00_2.s:11994 | asm/asm00_2.s:11942 (+3) | yes | - | include/structs/CollisionData.inc:24 | unrecorded |
+| OBJECT_FLAGS_USING_ACTION | 0x00400000 | asm/asm00_2.s:18308 (+92) | asm/asm00_2.s:2870 | yes | - | include/structs/CollisionData.inc:25 | unrecorded |
+| OBJECT_FLAGS_UNK_24 | 0x00800000 | asm/asm32.s:15970 | none | no | - | include/structs/CollisionData.inc:26 | unrecorded |
+| OBJECT_FLAGS_UNK_25 | 0x01000000 | asm/asm31.s:46667 | asm/asm38.s:3243 | yes | - | include/structs/CollisionData.inc:27 | unrecorded |
+| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | asm/asm00_2.s:17693 | none | no | - | include/structs/CollisionData.inc:28 | unrecorded |
+| OBJECT_FLAGS_UNK_26 | 0x04000000 | NONE | asm/asm31.s:60669 | yes | - | include/structs/CollisionData.inc:29 | unrecorded |
+| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | asm/asm00_2.s:12678 (+1) | none | no | - | include/structs/CollisionData.inc:30 | unrecorded |
+| OBJECT_FLAGS_UNK_28 | 0x10000000 | NONE | asm/asm00_2.s:19868 (+5) | yes | - | include/structs/CollisionData.inc:31 | unrecorded |
+| OBJECT_FLAGS_UNK_29 | 0x20000000 | NONE | asm/asm00_2.s:24101 (+4) | yes | - | include/structs/CollisionData.inc:32 | unrecorded |
+| OBJECT_FLAGS_UNK_30 | 0x40000000 | NONE | asm/asm00_2.s:16374 (+3) | yes | - | include/structs/CollisionData.inc:33 | unrecorded |
+| OBJECT_FLAGS_BUBBLED | 0x80000000 | asm/object.s:5440 | asm/asm00_2.s:17107 (+18) | yes | - | include/structs/CollisionData.inc:34 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | asm/asm00_2.s:23824 (+6) | asm/asm00_2.s:23477 (+6) | yes | - | include/structs/CollisionData.inc:48 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | asm/asm00_2.s:23389 (+1) | asm/asm00_2.s:22310 (+2) | yes | - | include/structs/CollisionData.inc:49 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | asm/asm00_2.s:23383 (+2) | asm/asm00_2.s:11420 (+1) | yes | - | include/structs/CollisionData.inc:50 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | asm/asm00_2.s:22545 | asm/asm00_2.s:17482 | yes | 1 | include/structs/CollisionData.inc:51 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | asm/asm00_2.s:22000 (+3) | asm/asm00_2.s:23617 (+1) | yes | - | include/structs/CollisionData.inc:52 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | asm/asm00_2.s:11368 (+2) | none | no | 3 | include/structs/CollisionData.inc:53 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_06 | 0x00000040 | NONE | none | no | 4 | include/structs/CollisionData.inc:54 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_07 | 0x00000080 | NONE | none | no | 2 | include/structs/CollisionData.inc:55 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | asm/asm00_2.s:23090 (+4) | asm/asm00_2.s:11420 (+7) | yes | - | include/structs/CollisionData.inc:56 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | asm/asm00_2.s:11960 (+1) | asm/asm00_2.s:11985 | yes | - | include/structs/CollisionData.inc:57 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | NONE | asm/asm00_2.s:19645 (+5) | yes | - | include/structs/CollisionData.inc:58 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | NONE | asm/asm00_2.s:24077 (+4) | yes | - | include/structs/CollisionData.inc:59 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | NONE | asm/asm00_2.s:19814 (+5) | yes | - | include/structs/CollisionData.inc:60 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | NONE | asm/asm00_2.s:24093 (+4) | yes | - | include/structs/CollisionData.inc:61 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | asm/object.s:5859 (+1) | asm/asm00_2.s:23582 (+1) | yes | - | include/structs/CollisionData.inc:62 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | asm/asm00_2.s:1622 (+1) | asm/asm00_2.s:24046 (+19) | yes | - | include/structs/CollisionData.inc:63 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_16 | 0x00010000 | NONE | none | no | 5 | include/structs/CollisionData.inc:64 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_17 | 0x00020000 | NONE | none | no | 6 | include/structs/CollisionData.inc:65 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_18 | 0x00040000 | asm/asm00_2.s:1637 | none | no | - | include/structs/CollisionData.inc:66 | unrecorded |
+| OBJECT_FLAGS_2_DO_UPDATE_COLLISION_P | 0x00080000 | asm/asm03_0.s:10038 | none | no | - | include/structs/CollisionData.inc:67 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_20 | 0x00100000 | asm/asm00_2.s:1655 | asm/asm31.s:69250 (+1) | yes | - | include/structs/CollisionData.inc:68 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_21 | 0x00200000 | NONE | asm/asm00_2.s:1703 (+2) | yes | - | include/structs/CollisionData.inc:69 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_22 | 0x00400000 | NONE | none | no | - | include/structs/CollisionData.inc:70 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_23 | 0x00800000 | NONE | none | no | - | include/structs/CollisionData.inc:71 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_24 | 0x01000000 | NONE | none | no | - | include/structs/CollisionData.inc:72 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_25 | 0x02000000 | NONE | none | no | - | include/structs/CollisionData.inc:73 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_26 | 0x04000000 | NONE | asm/asm31.s:60663 | yes | - | include/structs/CollisionData.inc:74 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_27 | 0x08000000 | NONE | none | no | - | include/structs/CollisionData.inc:75 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_28 | 0x10000000 | NONE | none | no | - | include/structs/CollisionData.inc:76 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_29 | 0x20000000 | NONE | none | no | - | include/structs/CollisionData.inc:77 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_30 | 0x40000000 | NONE | none | no | - | include/structs/CollisionData.inc:78 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_31 | 0x80000000 | NONE | none | no | - | include/structs/CollisionData.inc:79 | unrecorded |
+| DAMAGE_DOUBLE | 0x8000 | NONE | none | no | - | include/structs/BattleObject.inc:119 | unrecorded |
+| DAMAGE_PARALYZE | 0x4000 | NONE | none | no | - | include/structs/BattleObject.inc:120 | unrecorded |
+| DAMAGE_UNINSTALL | 0x2000 | NONE | none | no | - | include/structs/BattleObject.inc:121 | unrecorded |
+| DAMAGE_ERASECROSS_SKULL_HIT | 0x1000 | NONE | none | no | - | include/structs/BattleObject.inc:122 | unrecorded |
+| DAMAGE_NOTHING | 0x0800 | NONE | none | no | - | include/structs/BattleObject.inc:123 | unrecorded |
 
 ### formations (M8) (FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays)
 
