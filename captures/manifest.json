@@ -290,7 +290,7 @@
   {
     "file": "captures/cannon-progress.gif",
     "name": "cannon-progress",
-    "label": "The legacy cannon row, the same fix as chip-cannon: its canon side moved onto the post-dissolve state with the direct input write (F7). The 14388 px were the old save state's portrait box and corpse, not the cannon.\n\ncannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "T13d NEGATIVE: cannon-route audio probe \u2014 canon fires ch0+ch4 SFX, ours silent. Docs-only commit; no harness change.\n\ncannon (isolated), before and after: canon on top; ours at 19b83ed (0 px over 40 frames, canon 5+k, rust offset 122); ours at e87cc7f (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-13"
   },
   {
@@ -746,7 +746,7 @@
   {
     "file": "captures/opening-integrated.gif",
     "name": "opening-integrated",
-    "label": "opening (integrated), FAILED: per-frame max 2691 px, total 72499 px over 40 frames. Alignment: canon frame 120+k, rust frame 8(marker)+119+k. canon\n\ncanon: BATTLESTART is documented as the battle's real frame 0 (eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just 120 battle-frames past that known origin, nothing searched on this side. rust: find_marker_origin() gives frame 8 for demo-open/OPEN_ROW; a 21-wide band around it finds a UNIQUE zero at offset 119 (partial band shown in the report), the residual sub-frame timing the marker alone does not pin. Ported from the demo-open feature to OPEN_ROW (fixture.rs's own table entry, AUDIT pair 17 prune ticket) -- same descriptor bytes, same numbers.\n\ncommit 58cb524",
+    "label": "opening (integrated), FAILED: per-frame max 2691 px, total 72499 px over 40 frames. Alignment: canon frame 120+k, rust frame 8(marker)+119+k. canon\n\ncanon: BATTLESTART is documented as the battle's real frame 0 (eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just 120 battle-frames past that known origin, nothing searched on this side. rust: find_marker_origin() gives frame 8 for demo-open/OPEN_ROW; a 21-wide band around it finds a UNIQUE zero at offset 119 (partial band shown in the report), the residual sub-frame timing the marker alone does not pin. Ported from the demo-open feature to OPEN_ROW (fixture.rs's own table entry, AUDIT pair 17 prune ticket) -- same descriptor bytes, same numbers. F38 (2026-09-14): integrated decomposed -- the search V is unique at 119 (72499 vs 151114/155175 either side). BG-only (isolated) reads 0 and an OBJ-only (--disable-bg both sides) re-capture repeats the integrated per-k list EXACTLY (total 72499), so all of it is OBJ. Regions: top 0 on every frame, mid ~1080-1470, bot ~270-1230 with a k=32+ jump (mid ~1430, bot ~1200). OAM at k=0/33/39 (canon 120+/rust 127+): canon 12 active -> 15 (navi pal 0 tiles 1/9/25/29 at x41-65, enemy pal 1 tiles 31/35/43 at x163-174, HUD pal 12 tiles 948/956 at y18; a second enemy cluster at x203-214 appears k=32+) while rust holds 11 frozen all three frames (HUD pal 4 tiles 168/176, navi pal 2 tiles 124/132/148/152, enemy pal 0 tiles 0/8 + pal 3 tiles 154/158/166, same positions): palette/sheet assignment differs and canon's enemy animates/materializes while ours holds -- an intro-hunk fix, out of scope.\n\ncommit 8c41aa1",
     "added": "2026-09-08"
   },
   {
