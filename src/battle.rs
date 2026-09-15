@@ -5023,23 +5023,17 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // object text does; the player's is the box at the top left. Both
         // show the lagging number, which flashes while it catches up.
         let hp_readout_live = self.hp_readout_live();
-        // F44's latch probe: one byte at BATTLE_MARKER's own tail (0x020000C0
-        // -- inside the marker array's 256 bytes, above the 0x40 descriptor
-        // and 0x80 trace blocks, written by nothing else), one bit per gate
-        // arm, read per frame with --watch. Export-only like the oracle
-        // block: nothing in this crate reads it back.
-        let latch_bits: u8 = hp_readout_live as u8
-            | ((self.intro_fade > 0) as u8) << 1
-            | ((self.intro_next < self.enemies.len()) as u8) << 2
-            | ((self.banner.is_some() && !self.banner_done) as u8) << 3
-            | (matches!(self.seq.state, SEQ_0C | SEQ_10) as u8) << 4
-            | (self.fight_latch as u8) << 5;
-        // canon: BATTLE_MARKER's own reservation (0x02000000..0x02000100,
-        // [u32; 64] at EWRAM base) -- the tail above the descriptor and
-        // trace blocks.
-        unsafe {
-            core::ptr::write_volatile(0x0200_00C0 as *mut u8, latch_bits);
-        }
+        // F44's latch evidence came from a probe build that wrote one byte
+        // per frame at BATTLE_MARKER's own tail (0x020000C0, inside the
+        // marker array's 256 bytes, above the 0x40 descriptor and 0x80 trace
+        // blocks): bit0 live, bit1 fade, bit2 next, bit3 banner, bit4 over,
+        // bit5 latch, read with --watch. The STORE does not land here: a
+        // per-frame extra volatile store in the draw hot path measurably
+        // perturbs the vblank-boundary cycle parity (cursor 1/1/170 ->
+        // 13/12/170 with neg 186277, reproducing fixture.rs's own
+        // "caching skip_intro() changed the residue" mechanism), and the
+        // traces were taken before this build. docs/worklog/F44.md carries
+        // the per-frame bit tables.
         for (actor, counter) in self
             .enemies
             .iter()
