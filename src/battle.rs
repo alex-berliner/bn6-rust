@@ -4528,6 +4528,31 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         }
     }
 
+    /// Canon's enemy HP readout is emitted by the battle HUD updater chain,
+    /// and battle_main only reaches that chain once the fight state is on:
+    /// the whole per-frame chain (RunBattleObjectLogic, camera, panel,
+    /// setChipsForPlayerObjects, updateBattleHudElements_801BEE0,
+    /// asm00_1.s:9764-9780) lives inside battle_update_8007A44
+    /// (asm00_1.s:9729), the state machine's fight handler -- the intro's
+    /// own states hand over through sub_8007A0C (`str #4`, asm00_1.s:9722)
+    /// only after the last enemy has materialised and the BATTLE START!
+    /// banner wait has run, so canon draws no HP digits through the whole
+    /// intro (F39a's OAM census: no canon counterpart for the y=84 pair at
+    /// k=0..39). Within the fight the chain also needs
+    /// eStruct2038160_getBattleTerminate01() == 0 (asm00_1.s:9757-9761:
+    /// nonzero leaves to state 16 before the chain) -- our `over`
+    /// (SEQ_0C | SEQ_10, battle.rs's own sequencer). Our intro is modelled
+    /// by `intro_fade`/`intro_next` and the opening banner (update()'s
+    /// `intro`/`opening` terms, the same ones `paused` carries); the banner
+    /// wait is the pre-fight SEQ_04 state (sub_8008064, asm00_1.s:10386),
+    /// equally before the fight handler.
+    fn hp_readout_live(&self) -> bool {
+        self.intro_fade == 0
+            && self.intro_next >= self.enemies.len()
+            && !(self.banner.is_some() && !self.banner_done)
+            && !matches!(self.seq.state, SEQ_0C | SEQ_10)
+    }
+
     pub fn draw(&mut self, frame: &mut GraphicsFrame) {
         // The sterile arena leaves the backdrop out for the same reason it
         // draws a plain field: the real ROM's captures strip their BG layers
@@ -4967,11 +4992,14 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // Each enemy's HP sits just under its panel, centred, as the game's
         // object text does; the player's is the box at the top left. Both
         // show the lagging number, which flashes while it catches up.
+        let hp_readout_live = self.hp_readout_live();
         for (actor, counter) in self
             .enemies
             .iter()
             .zip(self.hp_shown.iter().skip(1))
-            .filter(|(a, _)| a.is_present() && a.hp() > 0 && a.is_targetable())
+            .filter(|(a, _)| {
+                a.is_present() && a.hp() > 0 && a.is_targetable() && hp_readout_live
+            })
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
             let hp = counter.shown();
