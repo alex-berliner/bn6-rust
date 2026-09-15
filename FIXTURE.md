@@ -4,8 +4,11 @@ One ROM, any fixture. The harness writes a descriptor into EWRAM and the ROM rea
 startup. Written by the harness with per-frame `--cheat addr:val16` writes (or an `--init`
 flag that does the same), so it is present whenever the ROM reads it and survives startup.
 
-Address: **0x02000040** (the battle-started marker is at 0x02000000, 8 bytes). 64 bytes,
-little-endian.
+Address: **0x02000040** (the battle-started marker is at 0x02000000, 8 bytes). 67 bytes
+(2026-09-15: +3 bytes for per-enemy panel-cell data, F38f), little-endian. The
+extension pushed the trace block at EWRAM 0x02000080 forward to 0x02000084
+(main.rs's `TRACE_OFFSET` is now 132); BATTLE_MARKER still owns
+0x02000000..0x02000100 so the trace block stays inside the reservation.
 
 | off | type | field | meaning |
 |-----|------|-------|---------|
@@ -41,7 +44,10 @@ little-endian.
 | +55 | u8  | window_cursor | cursor position when `window_pick_count` = 1: 0..9 a slot, 0x0a = OK |
 | +56 | u16 | result_elapsed | when `start_state` = 1: frames of the RESULT sequence already elapsed at boot. 0 = the slide-in starts on the first battle frame; 0xFFFF = settled (the old `demo-resultmatch` picture) |
 | +58 | u32 | rng | the game's RNG state at battle frame 0, peeked from the canon state, so an RNG-gated enemy takes the same decisions on both sides; 0 = our default seed |
-| +62.. | | reserved | zero |
+| +62 | u8 | enemy_state | the enemy's `CurState` byte (NOT IN FIXTURE.md; see `Fixture::enemy_state`); 0 = no override |
+| +63 | u8 | enemy_action | the enemy's `CurAction` byte (NOT IN FIXTURE.md); 0 = no override |
+| +64 | u8[3] | enemy_panel | per-enemy panel cell, one byte per slot: low 3 bits = panel column, bits 4-6 = panel row. The encoding matches `spawnEnemy_80073E2`'s byte 1 of an `EnemySetup` structure (asm00_1.s:8695, `ldrb r0,[r6,#1]; lsr r1,r0,#4; ... lsl r0,r0,#0x1d; lsr r0,r0,#0x1d`). For the integrated opening row (3 Mettaurs), the canon ROM byte at 0x080b5354 holds `[0x15, 0x35, 0x26]` = `((1<<4)\|5, (3<<4)\|5, (2<<4)\|6)` = panels `(5,1)/(5,3)/(6,2)` -- the spawn cells the per-step introduce animation reads via `sub_801641A` (asm00_2.s:16101). 0 in any slot means "fall back to `enemy_col`/`enemy_row`" for backward compat with single-enemy rows. |
+| +67.. | | reserved | zero |
 
 **bit5 `resolve`.** An enemy-less arena whose fight is already decided. Without it a
 zero-enemy fixture holds the fight open forever (the chip-window fixtures depend on that:
