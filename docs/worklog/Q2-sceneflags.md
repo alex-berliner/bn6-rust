@@ -34,9 +34,50 @@ HEAD's cursor row is the baseline; the tear moves with ROM layout and is reporte
   (comment-only).
 - FIXTURE.md, tools/harness.py untouched; byte assignment unchanged (bits 0..7 same values).
 
-## Result (after, same command, same target dir)
+## Result (after, same command, same target dir, commit dfaeaa5)
 
-TBD (filled below after the post-change harness run + .gba diff).
+```
+--ui isolated (both runs, byte-identical to baseline):
+opening    PASS     total 0  worst 0  frames 40   | negative: not blind (total 86591)
+mettaur    PASS     total 0  worst 0  frames 70   | old-box 0, outside 0 (0%) | negative: not blind (total 41734)
+field      PASS     total 0  worst 0  frames 40   | negative: not blind (total 1139)
+cursor     FAILED   total 1  worst 1  frames 170  | negative: not blind (total 186279)   <- HEAD's own tear, unchanged
+--ui integrated (post-change build vs HEAD archive tree, all lines identical):
+opening    integrated FAILED total 25829 worst 931 frames 40 | negative: not blind (total 105749)   <- same at HEAD
+cursor     isolated   FAILED total 1     worst 1   frames 170| negative: not blind (total 186279)
+field      integrated FAILED (allowed: AUDIT-6 ... <=28000) total 158926 worst 5597 frames 40      <- same at HEAD
+fitted constants: 19 (derived 429, peeked 145) both sides
+```
+
+`python3 tools/verify_rows.py wt/q2-sceneflags mettaur,field,opening,cursor` (clean checkout,
+run from main repo): mettaur PASS 0/0/70, field PASS 0/0/40, opening PASS 0/0/40, cursor FAILED
+1/1/170 (HEAD's tear) -> verify_rows: PASS.
+
+### .gba diff vs HEAD (one line, per the coordinator note)
+
+Plain release builds (gbafix'd, both 583860 bytes): all 4054 differing bytes lie inside .text
+(image offsets 0x1444..0x4562, i.e. `Battle::draw` and the functions immediately after it);
+.rodata, .iwram, .ewram and every section size are byte-identical. The diffs are codegen jitter
+around the rewritten call sites (literal-pool placements and register allocation shifted by
+12 bytes / renumbered stack slots), NOT panic-line bytes alone -- wider than the ticket's
+prediction, so recorded here rather than papered over. Descriptor layout unchanged: `SceneFlags`
+is a single-field newtype over the same u8, so `Fixture.flags` keeps its offset/size and the
+harness's RAM poke (+19) reads the same value (battle.rs:2320's BLANK_HUD == BLANK_BACKDROP
+note unaffected).
+
+## Verdict
+
+The .gba does differ by slightly more than panic-line bytes (instruction-encoding jitter in the
+touched functions), which the ticket's rules did not predict; the four acceptance rows are
+byte-identical to HEAD on every line that ran, and verify_rows is PASS. Reported as-is; not
+widening the change to try to shrink the diff (the jitter comes from `flag(bit)`'s runtime-mask
+argument becoming a const immediate, which is the point of the ticket).
+
+## Unverified
+
+Nothing on the acceptance path; the residual is that the .text jitter is equivalence-argued
+(same operations, different register allocation) rather than proven beyond the four rows -- other
+rows (chip, popup, demo-*) were not re-run.
 
 ## Tried / dropped
 
