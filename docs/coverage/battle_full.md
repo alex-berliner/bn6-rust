@@ -1492,3 +1492,28 @@ Executed: 1140 routines, 41082350 instructions profiled (BIOS bucket 2749205, 6.
 | 316 | 0 | 471 | `locret_81096F8` (code in `sub_81096BA`) | asm31.s:170031 |
 | 317 | 0 | 0 | `byte_811EBDA` (code in `sub_811EA28`) | asm32.s:32522 |
 | 318 | 0 | 0 | `off_811F79C` (code in `sub_811F758`) | asm32.s:33919 |
+
+## T7n RNG cadence diagnostic (2026-09-14, follow-up to T7i BLOCKED)
+
+baseline `tools/trace.py record/diff --align row:battle_full` on HEAD: rng_cadence DIVERGES first k=271 (canon frame 282) on 10/540 frames. Six are canon-side (canon does more than one GetRNG call in some frames), four are rust-side (the F33d-attributed show_results CPU stall repeats one rust RNG value four times then advances by two steps on the recovery).
+
+**Mechanism (cite).** Canon advances `ePrimaryRngSeed` (0x020013f0) by exactly one step per battle frame for the routine per-frame advance, plus extra calls at two named sites:
+
+- `cbGameState_80050EC` (reference/bn6f/asm/asm00_1.s:4179-4180) — `bl GetRNG` + `bl GetRNGSecondary` immediately after the GameState jumptable dispatch. Fires once per game-state dispatch.
+- `sub_80C7EC8` (reference/bn6f/asm/asm31.s:34036) — the falling-body/debris spawner entered from `sub_80C7E6C` (asm31.s:33980) when an object lands on a solid panel. Calls `bl GetRNG` twice (the loop runs 2x at asm31.s:34050). This is the per-site source of the +2 steps at k=271/272 (frame 282/283): the dead Mettaur's body lands on a solid panel after Cannon kills it at frame 281 (sequencer 0x08, mm_state_action (4,3), e2_state_action (4,2)), and sub_80C7EC8's two RNG draws produce the +2 cadence delta we observe.
+
+Our side: `Battle::update` ticks `self.primary_rng.next()` once per frame at src/battle.rs:2268. No matching death-landing branch exists; the two-step delta at k=271 is therefore UNMATCHED on our side.
+
+**Per-frame value deltas on the 10 divergent frames** (canon frame = 11+k, rust index = k; pairs are canon (prev, current), rust (prev, current)):
+
+| k | cf | canon prev→cur | rust prev→cur | cause |
+|---|---|---|---|---|
+| 271 | 282 | 0x53ce885a→0xc67fdb44 (+2) | 0xeb872dae→0x5032f2bb (+1) | C: mettaur lands on solid panel (sub_80C7EC8, asm31.s:34036) |
+| 272 | 283 | 0xc67fdb44→0x90ba973a (+2) | 0x5032f2bb→0x27594c92 (+1) | C: death debris loop body |
+| 288 | 299 | 0x05262739→0x9ddd66cb (+2) | 0xaf7d392a→0xd9c6dbb3 (+1) | C: mettaur destroy tail |
+| 400 | 411 | 0xf195001c→0x191f5d50 (+3) | 0xebc0d5e0→0x30eaaa67 (+1) | C: 3-step effect (likely buster charge-sub-variance helper) |
+| 407-410 | 418-421 | OK | 0x6197defa→0x6197defa (×4) | R: F33d show_results CPU stall (counter stall, repeats value 4 times) |
+| 431 | 442 | 0xb6104cda→0x9151b462 (jumped) | 0xd6e02e65→0x358685142 (+1) | C: result-blit randomness resets the expected sequence |
+
+**Port.** A per-site mirror at the death-landing branch (when our equivalent of `sub_80C7E6C` enters `sub_80C7EC8`) would need to call `self.primary_rng.next()` twice there; the cleanest mirror is to gate the second step on the panel being solid. Not landed in this ticket — the citation and value-delta are the diagnostic; the next ticket decides between per-site mirror vs global RNG alignment. fitted-constant count in src/ unchanged at 19.
+
