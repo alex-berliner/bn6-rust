@@ -247,8 +247,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** dispatch first (then F21e, then T7l — disjoint from T7l's src/objects.rs; src/battle.rs is shared with F21e but F21e dispatches second). Worker muse-spark-1.3-contributor (F37g's child class), verifier GLM-5.3-flash cross-family; ≤$0.15 expected, ≤$0.40 cap; verify_rows on the full table. Advances **M2**.
 
-### F37i. cursor: close the 3 px residue at k=37/97 via the BG1 backdrop drain in src/backdrop.rs  *(OPEN -- 2026-09-14, follow-up to F37h NEGATIVE)*
+### F37i. cursor: close the 3 px residue at k=37/97 via the BG1 backdrop drain in src/backdrop.rs  *(BLOCKED -- 2026-09-14, F37i BLOCKED: worker hit tool soft-limit [60] on assembly research only)*
 
+**Result.** F37i BLOCKED: worker hit tool soft-limit (60) on assembly research only. No edit, no baseline trace, no commit. Research findings: canon's QueueEightWordAlignedGFXTransfer (sub_8001C94, asm/asm00_0.s:3752) enqueues tile copy and drains mid-frame so rows 0..5 carry previous step; our src/backdrop.rs:259-263 replace_tile lands before scanline 0 producing 5-pixel-wide top seam (k=37 BG1=18px, k=97 BG1=2px, x+128 repeats). Drain routine at asm00_0.s:910-911; called from reqBBS.s:1502,1607,4095,4112,4261 and asm38.s:761,802,2364,2374,3200. Worktree wt/f37i clean at 794a5c3, ROM /tmp/x_f37i.gba built (580900 bytes). Worker model: minimax (MiniMax-M3 thinking high), 7m. Follow-up needs: replace immediate replace_tile at :259-263 with QueueEightWordAlignedGFXTransfer enqueue (or equivalent agb/queue wrapper); rebuild; re-trace cursor; verify_rows.
 **Result.** (target) cursor isolated reads 0/0/170; windowclose 0/0/40; mettaur 0/0/70; result 0/0/40; no regression; the k=37/97 residue is closed by canon's `sub_8001C94 QueueEightWordAlignedGFXTransfer` drain timing cited in docs/coverage/cursor.md.
 
 **Files.** src/backdrop.rs (only the replace_tile timing at :259-263 — the BG1 drain entry), tools/probe.py (only if a watch must be added), tools/harness.py (cursor row's note only), docs/coverage/cursor.md (notes)
