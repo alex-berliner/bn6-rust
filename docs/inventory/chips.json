@@ -935,7 +935,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:2204",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 72,
@@ -948,7 +948,7 @@
    "damage": 80,
    "mb": 12,
    "cite": "data/ChipDataArr.s:2235",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 73,
@@ -961,7 +961,7 @@
    "damage": 100,
    "mb": 25,
    "cite": "data/ChipDataArr.s:2266",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 74,
@@ -974,7 +974,7 @@
    "damage": 150,
    "mb": 38,
    "cite": "data/ChipDataArr.s:2297",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 75,
@@ -987,7 +987,7 @@
    "damage": 150,
    "mb": 38,
    "cite": "data/ChipDataArr.s:2328",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 76,
@@ -1000,7 +1000,7 @@
    "damage": 140,
    "mb": 30,
    "cite": "data/ChipDataArr.s:2359",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 77,
@@ -1013,7 +1013,7 @@
    "damage": 160,
    "mb": 32,
    "cite": "data/ChipDataArr.s:2390",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 78,
@@ -1026,7 +1026,7 @@
    "damage": 120,
    "mb": 35,
    "cite": "data/ChipDataArr.s:2421",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 79,
@@ -1039,7 +1039,7 @@
    "damage": 150,
    "mb": 34,
    "cite": "data/ChipDataArr.s:2452",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 80,
@@ -1117,7 +1117,7 @@
    "damage": 1020,
    "mb": 77,
    "cite": "data/ChipDataArr.s:2638",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 86,

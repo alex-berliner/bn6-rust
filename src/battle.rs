@@ -1632,6 +1632,7 @@ const SWORD_HIT_SHAPE: [u8; 16] = [ // canon: SwordHitShapeBySubfamily_80EBA18 (
 /// subfamilies' shapes, none in this asset).
 const SHAPE_COLUMN: u8 = 4; // canon: SwordHitShapeBySubfamily_80EBA18's column-ahead shape
 const SHAPE_TWO_AHEAD: u8 = 2; // canon: SwordHitShapeBySubfamily_80EBA18's two-panels-ahead shape
+const SHAPE_PANEL_AHEAD: u8 = 1; // canon: SwordHitShapeBySubfamily_80EBA18's panel-ahead shape (Sword's own)
 /// The slash arc's effect-table row per sword subfamily, byte-indexed
 /// (asm31.s:109269: `ldrb r0, [r2,r3]`; 109264 is the loc_80EB992 label).
 const SWORD_ARC_ROW: [u8; 16] = [ // canon: SwordArcBySubfamily_80EBAD8 (asm31.s:109352)
@@ -4338,13 +4339,20 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // column ahead, 2 two panels ahead; the elemental swords are
             // all 4.
             match SWORD_HIT_SHAPE[sub] {
+                SHAPE_PANEL_AHEAD => panels.push((col + dx, row)), // canon: the ROM's shape-1 row, named so the default below stays a failure
                 SHAPE_COLUMN => {
                     panels.extend((1..=field::ROWS).map(|r| (col + dx, r)))
                 }
                 SHAPE_TWO_AHEAD => {
                     panels.extend([(col + dx, row), (col + LONG_SWORD_FAR * dx, row)])
                 }
-                _ => panels.push((col + dx, row)),
+                // SwordHitShapeBySubfamily_80EBA18's remaining shapes
+                // (0x11/6/0xB) belong to subfamilies no asset record can
+                // carry today; a widened asset delivering one must fail
+                // loudly, not quietly slash a single panel.
+                _ => panic!(
+                    "SwordHitShapeBySubfamily_80EBA18 shape without a panel arm: widened-asset subfamily",
+                ),
             }
             // With the hit region the strike spawns the slash arc: a
             // type-4 effect object at the front panel's coordinates,
@@ -4361,8 +4369,19 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 0x18 => (2, 0), // canon: EffectObjectRows_80E0398 row (arc anim 2, palette 0)
                 0x19 => (0, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
                 0x1a => (1, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
+                0x1b => (0, 0), // canon: EffectObjectRows_80E0398 row 0x1b (sprite 0x0c, animData 0x15, arc anim 0, palette 0)
+                0x1c => (0, 2), // canon: EffectObjectRows_80E0398 row 0x1c (sprite 0x0c, animData 0x15, arc anim 0, palette 2)
+                0x25 => (3, 0), // canon: EffectObjectRows_80E0398 row 0x25 (sprite 0x0c, animData 0x14, arc anim 3, palette 0)
+                0x28 => (0xb, 1), // canon: EffectObjectRows_80E0398 row 0x28 (sprite 0x14, animData 0x05, arc anim 0xb, palette 1)
                 0x2d => (1, 6), // canon: EffectObjectRows_80E0398 row (Muramasa, palette 6)
-                _ => (0, 0),
+                0x5f => (0, 0), // canon: EffectObjectRows_80E0398 row 0x5f (sprite 0x10, animData 0x41, arc anim 0, palette 0)
+                // Every row SwordArcBySubfamily_80EBAD8 defines now has an
+                // explicit arm above; a widened asset carrying a subfamily
+                // whose row is missing here must fail loudly, not quietly
+                // spawn row 0x16's arc (the old `_ => (0,0)`).
+                _ => panic!(
+                    "SwordArcBySubfamily_80EBAD8 row without an EffectObjectRows_80E0398 arm: widened-asset subfamily",
+                ),
             };
             // The elemental swords add their palette: the strike ORs
             // (subfamily - 0xb) into the spawn's Param3, which the effect

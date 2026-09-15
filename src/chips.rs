@@ -6,6 +6,12 @@
 use agb::display::tiled::{TileFormat, TileSet};
 
 const MAGIC: &[u8; 4] = b"BNCH";
+/// The exporter's header version: offset 4, u32, little-endian
+/// (tools/chip_export.py: "0x04 u32 version (2; v2 appends a behavioural
+/// tail, below)"). v1 files have no behavioural tail, so reading one with
+/// this code would find the tail pointer from the file end and hand the
+/// last TAIL bytes of blob data to behaviour arms as if they were records.
+const VERSION: u32 = 2; // canon: tools/chip_export.py's header field 0x04, "u32 version (2; v2 appends a behavioural tail)"
 const RECORD: usize = 36; // provenance: derived -- tools/chip_export.py's own fixed-width record layout, not a ROM constant
 /// v2's behavioural tail: 8 bytes per record, appended after the blobs
 /// (tools/chip_export.py's v2 section; ChipDataArr_8021DA8's EffectFlags
@@ -57,13 +63,17 @@ pub struct Chip {
 impl Chips {
     pub fn new(data: &'static [u8]) -> Self {
         assert_eq!(&data[0..4], MAGIC, "not a BNCH asset");
+        let version = u32::from_le_bytes(data[4..8].try_into().unwrap());
+        assert_eq!(
+            version, VERSION,
+            "chips.bin v1 read by v2 code: tail would be misread as behaviour"
+        );
         let count = u32::from_le_bytes(data[8..12].try_into().unwrap()) as usize;
         // v2 appends the behavioural tail after the blobs; the v1 table and
         // blobs are byte-identical, so the tail is found from the file end.
-        // NOTE: the version u32 at offset 4 is NOT checked, so a v1 asset
-        // read by this code passes the bounds assert below and silently
-        // reads trailing blob bytes as behaviour -- a follow-up must add
-        // the version check (see docs/worklog/T17.md).
+        // The version check above is what makes that search safe: without it
+        // a v1 asset passes the bounds assert below and silently reads
+        // trailing blob bytes as behaviour (docs/worklog/T17.md, T19).
         let tail = data.len() - count * TAIL;
         assert!(tail >= 12 + count * RECORD, "BNCH asset without a v2 tail");
         Self { data, count, tail }
