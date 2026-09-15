@@ -298,7 +298,7 @@ impl Backdrop {
         // TESTED AND CORRECT (F26b, 2026-09-13 -- the note that stood here
         // said this was an untested difference; it is not a difference at
         // all). canon's `BGScrollCB_BG1Diagonal3to2Scroll`
-        // (reference/bn6f/asm/asm00_0.s:3287-3303) does `sub r2,#8` /
+        // (reference/bn6f/asm/asm00_0.s:3306-3321) does `sub r2,#8` /
         // `lsr r2,r2,#4` / `strh` into RenderInfo Unk_10 (BG1HOFS), and the
         // counter is zeroed at battle init, so at battle frame f it holds
         // -8f and the register gets ((-8f) as u32) >> 4, whose low 9 bits are

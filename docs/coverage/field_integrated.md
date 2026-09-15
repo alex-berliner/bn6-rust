@@ -180,11 +180,52 @@ attribution of the 139125 is an elimination inference, not a measurement. Reject
 
 ## One line of mechanism
 
-Content-vs-timing UNRESOLVED — F42's (0,0)-unique shift test says the scroll is phase-exact
-and points at tile art (docs/worklog/F42.md:37-38: "the scroll is phase-EXACT; the residue
-is art CONTENT"), while the `field` row's own harness note at tools/harness.py:1368
-attributes only the k=5 transition frame to F32's end-sequence offset; no capture in this
-ticket distinguishes art from layout.
+ART-CLOCK PHASE, 3 frames — measured at tile level, F47 (kept dirs `/tmp/bn-f47/`, this
+session; the scroll registers are write-only and latch, see below). Canon's resident
+backdrop tile set steps at k=5,13,21,29,37 (tiles changed per edge: 36,34,8,5,9 — a
+RESIDENT-SLOT count, slots 1..37 whose 32 B changed; the verifier's whole-window hash
+counting gives 38,29,34,34 — different counting, same edges; from
+`/tmp/bn-f47/canon_tiles.bin`, slots 1..37 watched per frame); ours steps at k=8,16,24,32
+(36,34,8,5, same counting — the same schedule sequence; `/tmp/bn-f47/rust_tiles.bin`, slots
+512..548). The scroll is NOT the carrier: a <=2 px integer shift zeroes the bg1 mask exactly
+on 20/34 frames k=6..39 (base 300946 -> best 39580, dirs `/tmp/bn-f47/{canon,rust}_bg1`).
+HEADLINE CAVEAT: the base total and the period-4 best-shift cycle (2,1),(1,1),(2,1),(1,0)
+are convention-INDEPENDENT; the 39580 / 20-of-34 percentage is convention-DEPENDENT — these
+figures use the overlap-only convention (compare only the (240-|dx|)x(160-|dy|) overlap
+after translating canon; shifted-in edge pixels NOT charged, no wrap), while a +-4 run that
+CHARGES edge pixels gives 53937 and 0-of-34. Given the two edge sets, the residual after
+shift falls — arithmetically, it must — ONLY in [canon_edge, rust_edge): the 2-3 frames
+where canon has already stepped and we have not yet (k=6-7, 13-15, 21-23, 29-31, 37-39);
+that placement is a CONSEQUENCE of the edges (a prediction that held), not an independent
+observation. So F42's "residue is art CONTENT" and the end-sequence attribution are both
+wrong, and the live defect is: our art clock's edges fall 3 frames after canon's on an
+otherwise identical period-8 schedule. The latency is in the CLOCK, not the upload —
+`src/backdrop.rs:255-266` writes the step same-frame (replace_tile + commit, <=1 frame of
+pipeline). WHERE in the clock the 3 frames live is UNMEASURED: seed vs free-run cannot be
+separated from this fixture, and the earlier pointer to a seed path at
+`src/battle.rs:2385-2403` was a miscite (that range is the results-window tail —
+`self.results.show(...)`, `blit_slide`, `self.shown = Some(shown)` — plus
+`prime_backdrop`'s doc-comment and signature; the seed gate is `prime_backdrop`'s
+`match self.fixture` at battle.rs:2416, and it is unreachable under FIELD_ZERO,
+tools/harness.py:1564, used by the field/field-bg1 rust side at :2034). The smallest step
+that WOULD measure it: one `--peek`/`--watch` of canon's art-step counter (adjacent to
+`eBGScrollCBCounters` at 0x02009690) at one known battle-relative frame, showing its step
+index runs 3 ahead of ours. Register-level confirmation is structurally unavailable: the
+readback is address-agnostic (`--watch` = tools/mgba_capture.c:966-972, `core->busRead8`
+per byte after every rendered frame) and returns real per-register values where readable —
+in the SAME frame the write-only scroll halfwords 0x04000010..0x1E all read one latch value
+(cycling 0xd0fc/0x4211/0x4805/0xfffe, no ramp; rust: constant 0x30b8) while readable
+WININ/WINOUT 0x48/0x4A read a genuine 0x3f3f (canon_videoio.bin, the 0x04000000:0x60
+watch) — and HOFS/VOFS are write-only, so `--watch` cannot read ANY side's scroll position.
+Canon's scroll ramp is instead taken from its own counters (`eBGScrollCBCounters`
+0x02009690, `/tmp/bn-f47/canon_scrollcnt.bin`): SLOPE confirmed — 2400 -> 2088 falling
+8/frame and 33968 -> 33812 falling 4/frame = 0.5 and 0.25 px/frame after >>4 — while the
+absolute 82/41 -> 63/31 endpoints quoted in the F47 worklog table are NOT derivable from
+the kept counters (2400>>4 = 150, 33968>>4 = 2123): slope confirmed, offset unexplained.
+Ours tracks the ramp within the <=2 px shift dither. (0x040000D0..DE — the inverted premise
+F47's ticket was written under — is DMA2/DMA3 territory, DMA2CNT = 0xD0 per
+io_reg.h:119-137, and holds no scroll on either side; the scroll block is
+0x04000010..0x1E, and its write-only-ness is the latch above.)
 
 What IS established here: the positive controls that validate the N/N-1 pairing are
 `field-bg2`'s 0 on 39/40 frames and `field-bg3`'s 0 on post k=1..18; `field-bg1` (never 0,
