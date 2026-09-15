@@ -279,8 +279,18 @@ impl Backdrop {
             self.show_step(gfx, STEP_ORDER[self.entry]);
         }
 
-        self.x_q = (self.x_q + SCROLL_X_Q) % (256 * 4);
-        self.y_q = (self.y_q + SCROLL_Y_Q) % (256 * 4);
+        // The wrap period: canon's own scroll counters (oBGScrollCBCounters,
+        // driven by BGScrollCB_BG1Diagonal3to2Scroll at
+        // reference/bn6f/asm/asm00_0.s:3305-3321, steps .equiv'd at :3293-3295)
+        // run in 1/16-pixel units and turn over after 4096 counts = 256 px,
+        // which is the 256-pixel period the notes above the .equiv block
+        // record; ours here are quarter-pixel units, so the same period is
+        // 256 px * 4. provenance: derived -- canon counter modulus via the
+        // asm00_0.s notes; the 4 is this module's quarter-pixel scale (see
+        // the module doc).
+        const BACKDROP_SCROLL_PERIOD_Q: u32 = 256 * 4; // provenance: derived -- canon's 256-px counter period in quarter-pixel units
+        self.x_q = (self.x_q + SCROLL_X_Q) % BACKDROP_SCROLL_PERIOD_Q;
+        self.y_q = (self.y_q + SCROLL_Y_Q) % BACKDROP_SCROLL_PERIOD_Q;
         // The motif travels left and up, so the scroll position runs
         // negative: measured on the real ROM, a frame's image is the previous
         // one shifted, and matching the sign the other way scrolls it the
