@@ -200,8 +200,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** dispatch third (after F37h and F21e land — disjoint files, F21e is src/banner.rs/src/battle.rs/src/custom.rs, F37h is src/custom.rs/src/battle.rs, this is src/battle.rs/src/objects.rs; src/battle.rs is shared, so sequential, never paired). Worker muse-spark-1.3-contributor (T6's child class — the Mettaur as data), verifier GLM-5.3-flash cross-family; ≤$0.20 expected, ≤$0.50 cap; verify_rows on mettaur, wave, popup, cursor and the chip rows. Advances **M2**.
 
-### F21e. result isolated: decompose the remaining 102547/14866/40 per-object, name the next mechanism *(OPEN -- 2026-09-14, follows F21d [DONE -- 408337→102547/14866/40 via the CpuFastSet block copy])*
+### F21e. result isolated: decompose the remaining 102547/14866/40 per-object, name the next mechanism  *(DONE -- 2026-09-14, F21e was a no-op: HEAD result isolated already 0/0/40 PASS [neg 111839, not blind] via F34b's intro_fade=0/sta)*
 
+**Result.** F21e was a no-op: HEAD result isolated already 0/0/40 PASS (neg 111839, not blind) via F34b's intro_fade=0/start_state==1 + megaman_col=2 + enemies=0 ports (commits 939ea6c/92a01a9). Worker's OAM decomposition had no subject. verify_rows HEAD: result 0/0/40/111839 PASS, field 0/0/40/1139 PASS, cursor 10/9/170/186276 (equals F21e bound ≤10/9/170, F37h's scope), windowclose 0/0/40/207166 PASS, mettaur 0/0/70/41734 PASS. No src/ edit; fitted constants 19 unchanged. Worker model: minimax (Muse Spark 1.3 contributor-tier), async run 8m23s.
 **Result.** (target) result isolated reads 0/0/40 (or its per-object remainder with the named mechanism), field stays 0/0/40, cursor stays ≤10/9/170.
 
 **Files.** src/banner.rs (only the show_results → results_delay path that owns the remaining residue), src/battle.rs (only if the residue lives in the show_results chain), src/custom.rs (only if the residue is a custom-screen element), tools/probe.py (the per-frame OAM/watch), tools/harness.py (result row's note only), docs/coverage/result.md (notes)
