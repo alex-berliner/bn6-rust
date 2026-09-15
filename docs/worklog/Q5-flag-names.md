@@ -37,9 +37,18 @@ they exist for the harness's poke/cheat path (the descriptor at 0x02000040 is by
 not for call-site bit tests (`f.flags.0 & 0x20`); call sites use the named consts and
 accessors. No code inside the impls changed.
 
-## Verification after rebuild
+## Verification after rebuild (step 2)
 
-(see final commit) — to be filled with the after-run lines.
+Rebuild (`Finished` warm, 5.2s) produced a **byte-identical** ROM
+(`cmp -l baseline.gba new.gba` → 0 differing bytes; not even panic-line bytes moved).
+`--only mettaur,result,opening,popup --no-gallery` after:
+
+- opening  isolated PASS total 0 worst 0 frames 40  | negative: not blind (total 86591)
+- mettaur  isolated PASS total 0 worst 0 frames 70  | old-box 0, outside 0 (0%) | negative: not blind (total 41734)
+- result   isolated PASS total 0 worst 0 frames 40  | negative: not blind (total 111839)
+- popup    isolated PASS total 0 worst 0 frames 80  | negative: not blind (total 1288)
+
+Identical to baseline. `grep -c "FLAG_[A-Z_]" tools/harness.py` → 0.
 
 ## Ideas dropped / notes for the next worker
 
