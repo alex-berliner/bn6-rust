@@ -247,3 +247,72 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** dispatch first (then F21e, then T7l — disjoint from T7l's src/objects.rs; src/battle.rs is shared with F21e but F21e dispatches second). Worker muse-spark-1.3-contributor (F37g's child class), verifier GLM-5.3-flash cross-family; ≤$0.15 expected, ≤$0.40 cap; verify_rows on the full table. Advances **M2**.
 
+### F37i. cursor: close the 3 px residue at k=37/97 via the BG1 backdrop drain in src/backdrop.rs  *(OPEN -- 2026-09-14, follow-up to F37h NEGATIVE)*
+
+**Result.** (target) cursor isolated reads 0/0/170; windowclose 0/0/40; mettaur 0/0/70; result 0/0/40; no regression; the k=37/97 residue is closed by canon's `sub_8001C94 QueueEightWordAlignedGFXTransfer` drain timing cited in docs/coverage/cursor.md.
+
+**Files.** src/backdrop.rs (only the replace_tile timing at :259-263 — the BG1 drain entry), tools/probe.py (only if a watch must be added), tools/harness.py (cursor row's note only), docs/coverage/cursor.md (notes)
+
+**Why.** F37h NEGATIVE (672066f, docs/coverage/cursor.md only) proved the composite residue lives on BG1 (k=37 18 px, k=97 2 px, y=0..5 x=55..237 with x+128 repeats), not on OBJ; the OBJ mark residue (155 px y=75..84) is occluded by BG3 and contributes 0 to the composite count. The mechanism is canon's `sub_8001C94 QueueEightWordAlignedGFXTransfer` (asm/asm00_0.s:3752): the copy is queued and drained mid-frame, so rows 0..5 still carry the previous step; our `replace_tile` (src/backdrop.rs:259-263) lands before scanline 0 so the whole frame shows the new tile, producing the 5-pixel-wide top seam. F37h's named-file scope was src/custom.rs/src/battle.rs and could not close the row; F37i moves the fix into src/backdrop.rs where the drain timing lives. Cursor is the last non-zero isolated row (10/9/170 composite); closing it ends the convergence pass on isolated rows and unblocks the reopen of any T ticket that hinges on cursor staying at 0.
+
+**Do.**
+1. Baseline `tools/harness.py --only cursor` on HEAD → *report cursor 10/9/170, the per-layer breakdown (BG1 k=37=18 + k=97=2, OBJ k=37=155 + k=97=155 occluded), and the per-frame pixel counts.*
+2. In `src/backdrop.rs` at the BG1 replace_tile path, port the step copy so it enqueues via the same drain canon's `QueueEightWordAlignedGFXTransfer` (sub_8001C94, asm/asm00_0.s:3752) uses — queue the copy so it drains mid-frame instead of completing before scanline 0; cite the routine and the vendor/agb drain entry used → *report the new replace_tile timing, the cited drain site, and the per-frame BG1 per-row pixel counts after.*
+3. Re-run `tools/harness.py --only cursor` and `tools/verify_rows.py` from a clean detached checkout → *report cursor before/after (target 10/9/170 → 0/0/170), windowclose 0/0/40, mettaur 0/0/70, result 0/0/40, wave/opening/popup unchanged, the chip rows 0/0/30 (or their current).*
+
+**Rules.** Only the named files; no allowlist change; no new harness row; no alignment change; the fix is a port of canon's drain timing — never a fitted scanline wait; every new literal gets a `// provenance:` tag with the cite; `fitted constants in src/` (HEAD: 19) may not increase; canon never changes; ≤4 capture runs, one at a time inside the 3-slot semaphore.
+
+**Acceptance.** cursor 0/0/170 with no regression; windowclose stays 0/0/40; mettaur 0/0/70; result 0/0/40; wave/opening/popup/chip rows unchanged; no allowlist change; fitted-constant count unchanged or lower.
+
+**Measure and report.** row: cursor + windowclose + mettaur + result + wave + opening + popup + the chip rows (regression set). frames: 170 cursor, 40 windowclose, 70 mettaur. total/worst: cursor before/after (10/9 → 0/0). region: the k=37 and k=97 diffmask regions and BG1/OBJ per-layer pixel counts before/after. commit: src/backdrop.rs (the replace_tile path). One line of mechanism (canon's QueueEightWordAlignedGFXTransfer drain — replace_tile enqueues instead of completing before scanline 0). One line of what is unverified (the OBJ mark residue, occluded by BG3 in composite; lives in src/custom.rs).
+
+**Coordinator:** dispatch first (then T7m). Worker muse-spark-1.3-contributor (F37h's child class — BG1 backdrop timing), verifier GLM-5.3-flash cross-family; ≤$0.15 expected, ≤$0.40 cap; verify_rows on the full table. Advances **M2**.
+
+---
+
+### T7m. battle_full MegaMan tail at k=179: the mm_state_action/mm_anim/mm_timer group, finish the release-edge gate port  *(OPEN -- 2026-09-14, follow-up to T7i BLOCKED, different objective from T7l's opening-action chain)*
+
+**Result.** (target) battle_full's mm_state_action/mm_anim/mm_timer counts drop below their 101/86/302 baselines at k=179; the release-edge un-freed gate is closed by the cited MegaMan-executor ordering; cursor stays ≤10/9/170; chip-use integrated stays at its current value (no regression); mettaur stays 70/70.
+
+**Files.** src/battle.rs (only the release-edge predicate that owns the k=179 group), src/objects.rs (only the MegaMan executor's gate that fires at the edge), tools/trace.py (only if a field must be watched), docs/coverage/battle_full.md (notes)
+
+**Why.** T7i BLOCKED named the remaining M2 group inside battle_full: mm_state_action/mm_anim/mm_timer at k=179 on 101/86/302 frames (release-edge un-freed gate on MegaMan's executor) plus rng_cadence first k=271 on 10/540 frames. T7i's worked angle was the SEQ04 banner-composite (T7j PARTIAL, wt/t7j-banner-composite aa3486d, docs-only); the timer-arms 0x1e/0x293 in sub_801E754's leave predicate stayed peeked. T7m attacks the k=179 group directly with a different mechanism from T7i: the release-edge between window states fires one frame late on our side because the gate is checked after the MegaMan executor's per-tick work, not before — i.e. canon frees the gate, runs the executor, then enters the next state; ours runs the executor, then frees the gate. cite: sub_8008452/sub_800840C/sub_8008064 (T7f PARTIAL, banner 0x04 hold) and the MegaMan executor in asm/object.s. This is a different objective from T7l's opening-action (spawn fade / CurAction=0x00 vs0x0A), so the two-in-a-row rule on T7l does not apply. Closing the k=179 group brings battle_full's first divergence later and validates the next milestone's coverage.
+
+**Do.**
+1. Baseline `tools/trace.py record/diff --align row:battle_full` on HEAD → *report the per-field counts on mm_state_action/mm_anim/mm_timer at k=179 (baselines 101/86/302) and the per-frame per-side (CurState, CurAction, timer, anim) for k=175..183.*
+2. At the MegaMan executor in src/objects.rs (the per-tick work), free the release-edge gate before the executor's draw so the window-state leave predicate sees the post-tick state; cite asm/object.s:??? where the MegaMan executor checks the gate → *report the new k=179 group counts (target mm_state_action<101, mm_anim<86, mm_timer<302) and the new first divergence's field and k.*
+3. Re-run the diff and the mettaur/wave/popup traces on the same scenario set → *report the three field counts after, mettaur 70/70 unchanged, cursor ≤10/9/170, chip-use integrated unchanged.*
+4. Re-run `tools/verify_rows.py` from a clean detached checkout → *report the 67-row table: every chip row and mettaur/wave/result/popup at HEAD values; cursor ≤10/9/170.*
+
+**Rules.** Only the named files; no new harness row and no change to tools/harness.py, tools/states.py, FIXTURE.md, or the descriptor contract; no allowlist change; no alignment change; the fix is a port of canon's release-edge ordering — never a fitted timer; every new literal in an edited line gets a `// provenance:` tag or the canon symbol; `fitted constants in src/` (HEAD: 19) may not increase; canon never changes; ≤6 capture runs, one at a time inside the 3-slot semaphore.
+
+**Acceptance.** battle_full's mm_state_action/mm_anim/mm_timer counts drop below 101/86/302 with the gate cited from asm/object.s:???; cursor stays ≤10/9/170; mettaur 0/0/70; every isolated pixel row reads 0 as it does today (43 chips included); fitted-constant count unchanged or lower.
+
+**Measure and report.** row: battle_full + mettaur + wave + popup + cursor + result. frames: 540 battle_full, 70 mettaur, 170 cursor. total: mm_state_action/mm_anim/mm_timer counts before/after; pixel totals per row. worst: any pixel row that moves. region: for the trace, (CurState, CurAction, timer, anim) k=175..183 both sides; for any pixel regression, the diffmask frame and region. commit: src/battle.rs + src/objects.rs. One line of mechanism (MegaMan executor frees the release-edge gate before its draw, matching the cited object.s order). One line of what is unverified (the rng_cadence at k=271 — the timer-arms 0x1e/0x293 may still diverge past k=271).
+
+**Coordinator:** dispatch second (after F37i lands — disjoint from F37i's src/backdrop.rs; src/battle.rs is shared with T7m, so sequential, never paired). Worker muse-spark-1.3-contributor (T7i's child class — banner composite), verifier GLM-5.3-flash cross-family; ≤$0.25 expected, ≤$0.50 cap; verify_rows on mettaur, wave, popup, cursor and the chip rows. Advances **M2**.
+
+---
+
+### T7n. battle_full RNG cadence: name the rng_cadence first-divergence at k=271 on 10/540 frames, port the read-site if a clean mirror exists  *(OPEN -- 2026-09-14, follow-up to T7i BLOCKED, different mechanism from T7m's k=179 group)*
+
+**Result.** (target) battle_full's rng_cadence divergence is named with a citation (canon read site, PRNG state offset, per-frame value delta on the 10 frames); if a per-site mirror ports cleanly, rng_cadence count drops; cursor stays ≤10/9/170; mettaur stays 70/70; every other row unchanged.
+
+**Files.** src/battle.rs (only the RNG read site that owns k=271), tools/oracle.py (only to add the rng_cadence field watcher if missing), tools/trace.py (only if the field must be exported), docs/coverage/battle_full.md (notes)
+
+**Why.** T7i BLOCKED named a second remaining M2 group after the k=179 timer group: rng_cadence first-divergence at k=271 on 10/540 frames. T7m closes the larger k=179 group; T7n names the smaller RNG group with a citation so the trace driver can be fixed in a follow-up. RNG cadence divergence means our RNG and canon's RNG pick different outcomes at the same frame — canon's RNG read site (the PRNG state at asm/asm00_0.s:??? in the battle loop) returns a value offset by some count, so downstream uses (chip order, enemy AI roll, panel break) diverge. Naming the frame, the value delta, and the read site is the prerequisite for closing it; the fix itself may be a per-site mirror (peek the canon value at the read site and replay) or a global RNG state alignment. This is a diagnostic-plus-port ticket — acceptance is the named mechanism with a cite, and ideally a count drop; the full0/540 is the next ticket.
+
+**Do.**
+1. Baseline `tools/trace.py record/diff --align row:battle_full` on HEAD → *report the rng_cadence field counts (baseline 10/540) and the per-frame per-side (PRNG state, draw count, the read site return value) for k=265..275.*
+2. Add the rng_cadence field watcher to tools/oracle.py if missing (cite the read site in asm/asm00_0.s and the PRNG state offset); cross-reference the per-frame divergence against the battle loop's RNG read sites → *report the named read site(s), the PRNG state offset, and the value delta on each of the 10 frames.*
+3. Find canon's mechanism for the read (cite file:line); if it is a per-site mirror, port it in src/battle.rs with the cite; if it is a global alignment, name the global → *report the citation and the per-frame delta vs ours after the port (or, if no clean port exists, the gate that prevents the divergence: the read-site condition or the state-set boundary).*
+4. Re-run `tools/trace.py record/diff --align row:battle_full` and `tools/verify_rows.py` → *report the new rng_cadence count (target ≤10/540, ideally 0 if the per-site mirror lands), the full table identical to HEAD (mettaur 0/0/70, cursor ≤10/9/170, all chip rows 0/0/30).*
+
+**Rules.** Only the named files; no allowlist change; no new harness row; no alignment change; the fix (if any) is a port of canon's RNG read site — never a fitted state value; every new literal gets a `// provenance:` tag with the cite; `fitted constants in src/` (HEAD: 19) may not increase; canon never changes; ≤4 capture runs, one at a time inside the 3-slot semaphore.
+
+**Acceptance.** rng_cadence divergence named with a citation (canon read site at asm/asm00_0.s:???, the PRNG state offset, and the per-frame value delta on the 10 frames); rng_cadence count drops if a clean port lands; cursor ≤10/9/170; mettaur 0/0/70; all other rows unchanged; fitted-constant count unchanged or lower.
+
+**Measure and report.** row: battle_full + mettaur + wave + popup + cursor + result. frames: 540 battle_full, 70 mettaur, 170 cursor. total: rng_cadence count before/after; pixel totals per row. worst: any pixel row that moves. region: for the trace, PRNG state + read-site value k=265..275 both sides; for any pixel regression, the diffmask frame and region. commit: src/battle.rs + tools/oracle.py + tools/trace.py (if the watcher is added). One line of mechanism (canon's RNG read site at asm/asm00_0.s:??? + the per-site mirror or the named gate). One line of what is unverified (whether the full 0/540 needs a global alignment rather than a per-site mirror — the next ticket decides).
+
+**Coordinator:** dispatch third (after F37i lands and T7m lands — disjoint from F37i's src/backdrop.rs and T7m's src/battle.rs+src/objects.rs; src/battle.rs is shared with T7m, so sequential after T7m, never paired). Worker muse-spark-1.3-contributor (T7i's child class — RNG cadence diagnostic), verifier GLM-5.3-flash cross-family; ≤$0.15 expected, ≤$0.40 cap; verify_rows on the full table. Advances **M2**.
+
