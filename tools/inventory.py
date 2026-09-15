@@ -691,7 +691,10 @@ def _resolve_fwd_mask(lines, idx, reg, consts, depth=14):
 
 def _bits_hit(mask, consts):
     """every named 32-bit flag value covered by mask (combined masks count
-    for each bit they carry -- T18 rule, verified on the 0xa000 gate)"""
+    for each bit they carry -- LOOSE rule, used only for the 'any-mask
+    mention' column/counts; a combined test only proves SOME member
+    mattered, so the headline per-bit counts use mask == bit value, see
+    parse_statuses)"""
     out = set()
     for n, v in consts.items():
         if (n.startswith("OBJECT_FLAGS_") and not n.endswith("_BIT")
@@ -709,13 +712,13 @@ def _status_field_sites(consts):
     files = sorted(f for f in os.listdir(os.path.join(REF, STATUS_ASM_DIR))
                    if f.endswith(".s"))
     src = {f: read_lines(f"{STATUS_ASM_DIR}/{f}") for f in files}
-    setters = {1: {}, 2: {}}   # bitname -> ["file:line", ...]
+    setters = {1: {}, 2: {}}   # bitname -> [("file:line", mask), ...]
     clearers = {1: {}, 2: {}}
     readers = {1: {}, 2: {}}
 
     def add(d, fld, mask, cite):
         for bit in _bits_hit(mask, consts):
-            d[fld].setdefault(bit, []).append(cite)
+            d[fld].setdefault(bit, []).append((cite, mask))
 
     for f in files:
         lines = src[f]
@@ -723,6 +726,13 @@ def _status_field_sites(consts):
             s = ln.strip()
             for fld in (1, 2):
                 fldc = STATUS_FIELD_LOADS[fld]
+                # UNSOUND heuristic (T18 correction pass): this fires on ANY
+                # ldr/str/ldrh/strh touching the flags field, including a
+                # whole-word store / bulk zero, and credits the first orr/bic
+                # within +/-5 lines WITHOUT checking that the orr/bic targets
+                # the flags register. 4 credits this run came through here;
+                # a bulk zero near an unrelated orr must not read as
+                # "inflicting a status". Kept flagged, not silently trusted.
                 if re.search(rf"(ldr|str|ldrh|strh)\s+\w+,\s*\[\w+,\s*" + fldc,
                              s):
                     for k in range(max(0, i - 5), min(len(lines), i + 6)):
@@ -874,42 +884,73 @@ def parse_statuses():
             fams_hit = sorted(fi for fi, fm in fam_masks.items()
                               if fm & v == v and v) if is_f2 else []
             in_table = bool(fams_hit)
-            setter_txt = (st[0] + (f" (+{len(st) - 1})" if len(st) > 1 else "")
-                          if st else "NONE")
-            reader_txt = (rd[0] + (f" (+{len(rd) - 1})" if len(rd) > 1 else "")
-                          if rd else "none")
+            # per-bit (strict, mask == this bit's value) vs any-mask mention
+            # (loose): a combined test only proves SOME member mattered
+            st_strict = [c for c, m in st if m == v]
+            rd_strict = [c for c, m in rd if m == v]
+            st_loose = [c for c, m in st if m != v]
+            rd_loose = [c for c, m in rd if m != v]
+
+            def site_txt(strict, loose, none_txt, loose_tag):
+                if strict:
+                    return strict[0] + (f" (+{len(strict) - 1})"
+                                        if len(strict) > 1 else "")
+                if loose:
+                    return f"{loose[0]} ({loose_tag})"
+                return none_txt
+
+            setter_txt = site_txt(st_strict, st_loose, "NONE",
+                                  "combined-mask only")
+            reader_txt = site_txt(rd_strict, rd_loose, "none",
+                                  "combined-mask only")
             rows.append({
                 "bit": name, "value": val,
                 "setter": setter_txt,
                 "reader": reader_txt,
-                "battle_visible": "yes" if rd else "no",
+                # re-derived from the per-bit rule (T18 correction): not the
+                # loose any-mask count
+                "battle_visible": "yes" if rd_strict else "no",
                 "via_table": (",".join(str(x) for x in fams_hit)
                               if in_table else "-"),
                 "cite": f"{rel}:{i}", "status": "unrecorded",
-                "_counts": (len(st), len(cl), len(rd)),
+                "_counts": (len(st_strict), len(cl), len(rd_strict)),
+                "_loose": (len(st), len(cl), len(rd)),
                 "_in_direct_f2": is_f2 and bool(st),
             })
     n_set = sum(1 for r in rows if r["_counts"][0] > 0)
     n_rd = sum(1 for r in rows if r["_counts"][2] > 0)
+    n_set_loose = sum(1 for r in rows if r["_loose"][0] > 0)
+    n_rd_loose = sum(1 for r in rows if r["_loose"][2] > 0)
+    # three SEPARATE partitions (T18 correction: never add across them):
+    # RECORDS: table-only + shared-family = 37; MASKS: table-only + overlap
+    # = 6; and the directly-written-masks-outside-the-table count is a MASK
+    # count, not a record count.
+    overlap_masks = table_mask_set & direct_f2
+    records_overlap = sum(len(f["records"]) for f in fams
+                          if f["records"][0][0] in direct_f2)
     meta = {
         "families": fams,
         "fam_masks": fam_masks,
         "n_bits": len(rows),
         "n_written": n_set,
+        "n_written_loose": n_set_loose,
         "n_read": n_rd,
+        "n_read_loose": n_rd_loose,
         "n_unread": len(rows) - n_rd,
         "n_written_read": sum(1 for r in rows
                               if r["_counts"][0] > 0 and r["_counts"][2] > 0),
         "table_records": sum(len(f["records"]) for f in fams),
         "table_sizes": [len(f["records"]) for f in fams],
         "table_masks": sorted(hex(m) for m in table_mask_set),
-        # both set differences, on distinct flag2 masks
+        # set differences, on distinct flag2 masks
         "table_only_masks": sorted(
             hex(m) for m in table_mask_set - direct_f2),
         "direct_only_masks": sorted(
             hex(m) for m in direct_f2 - table_mask_set),
         "table_records_only": sum(len(f["records"]) for f in fams
                                   if f["records"][0][0] not in direct_f2),
+        "records_overlap": records_overlap,
+        "masks_overlap": sorted(hex(m) for m in overlap_masks),
         "fam_sizes": [len(f["records"]) for f in fams],
     }
     return rows, meta
@@ -917,13 +958,22 @@ def parse_statuses():
 
 STATUS_M3_CANDIDATES = [
     # (status, reader cite, inflicting path -- what a chip must write)
-    ("CONFUSED", "asm/asm31.s:171395-171397",
+    # T18 correction: CONFUSED's reader cite must be a PER-BIT test.
+    # asm31.s:171395-171397 was REFUTED (that is the effect body -- the strb
+    # of 8 to oAIState_Unk_00 and the strh #0 to +2); the 0xa000 tst lives at
+    # asm31.s:171391-171393 and is BLIND|CONFUSED combined, which only proves
+    # SOME member mattered. The per-bit CONFUSED reader is asm00_2.s:1894-1897
+    # (object_getFlag; mov r1,#1; lsl r1,#0xf; tst = 0x8000 alone).
+    ("CONFUSED", "asm/asm00_2.s:1894-1897",
      "StatusEffectFinal 0x2X -> sub_801A554 family 2 -> flag2 0x80 + timer"
      " oCollisionData_Unk_1e -> flags1 0x8000 (tick object.s:5438-5452)"),
-    ("BLIND", "asm/asm00_2.s:16861",
+    ("BLIND", "asm/asm00_2.s:16861-16863",
      "StatusEffectFinal 0x3X -> family 3 -> flag2 0x20 + BlindTimer"
-     " (inflicter measured: asm/asm00_2.s:11366-11368, timer 0x12c=300)"),
-    ("IMMOBILIZED", "asm/asm31.s:171385-171394",
+     " (inflicter measured: asm/asm00_2.s:11366-11368; NOTE the 0x12c=300 is"
+     " a SHARED 5-second status duration -- off_80141BC also feeds"
+     " oCollisionData_Unk_1e at 11375-11377 and setInvulnerableTime at"
+     " 11348/11356 -- not a BLIND-specific constant)"),
+    ("IMMOBILIZED", "asm/asm31.s:171386-171390",
      "StatusEffectFinal 0x4X -> family 4 (7 recs) -> flag2 0x40 + timer"
      " oCollisionData_Unk_22 -> flags1 0x4000 (tick object.s:5500-5508)"),
 ]
@@ -1128,31 +1178,57 @@ SECTION_NOTES = {
             " SpawnBattleObjectUsingBattleEntityConfig_8007368."),
     "statuses (M3)":
         lambda meta: (
-            "T18 verdict (DERIVED-FROM-CODE, measured -- counts are from the"
-            " site walk in this tool, not from header bit names): every bl"
-            " object_setFlag1/2 + object_clearFlag(2) + inline orr/str to"
-            " oCollisionData_ObjectFlags1/2 is a setter/clearer; every bl"
-            " object_getFlag(2) + direct flags-field load followed by a"
-            " tst/and/lsr mask test is a reader; multi-bit masks credit every"
-            " named bit they carry (e.g. the 0xa000 BLIND|CONFUSED gate in"
-            " MettaurDecideCheckStatusAndRow_810A004, asm/asm31.s:171395-171397;"
-            " the bit-14 lsl/tst IMMOBILIZED gate at asm/asm31.s:171385-171394"
-            " is found only through the mov #1 + lsl idiom). DAMAGE_*"
-            " (BattleObject.inc:119-123) have ZERO named sites in asm/ -- they"
-            " are carried in the damage word by the damage pipeline, not by"
-            " named constants, so all five stay header-derived here. Table"
-            " reconciliation: off_80209EC (data/dat01.s:155) decodes to"
-            " {table_records} records ({fam_sizes}) across 6 families, one"
-            " flag2 mask each: {table_masks}. Families only reachable THROUGH"
-            " sub_801A554 (no direct named setter): {table_only_masks} ="
-            " {table_records_only} of {table_records} records; flag2 masks"
-            " written by named code but NOT in the table: {direct_only_masks}."
-            " No table flag2 mask has a direct reader -- the observable read is"
-            " on the flags1 status bit the object.s per-frame status tick"
-            " propagates (e.g. object.s:5438-5452 clears flags1 0x8000 + flag2"
-            " 0x80 when the Confused timer Unk_1e expires), so per-bit"
-            " battle-visibility is judged on the flags1 bit. M3 scenario"
-            " candidates (reader + table-reachable): "
+            f"T18 verdict, CORRECTED by verifier-hyper re-run (all numbers are"
+            f" generator output; reader/writer rules now strict vs loose, BOTH"
+            f" printed): every bl object_setFlag1/2 + object_clearFlag(2) +"
+            f" inline orr/str to oCollisionData_ObjectFlags1/2 is a"
+            f" setter/clearer; every bl object_getFlag(2) + direct flags-field"
+            f" load followed by a tst/and/lsr mask test is a reader. PER-BIT"
+            f" reader = a mask EQUAL to the bit's own value; ANY-MASK mention ="
+            f" a combined mask that merely carries the bit (a combined test"
+            f" only proves SOME member mattered -- e.g. the 0xa000"
+            f" BLIND|CONFUSED tst at asm31.s:171391-171393 credits both, the"
+            f" 0x220000 tst at asm00_2.s:23375 credits SUPERARMOR). The"
+            f" M3-facing reader count is the PER-BIT one: {meta['n_read']}/69"
+            f" strict vs {meta['n_read_loose']} loose (loose-only bits:"
+            f" FLINCHING, SUPERARMOR, UNK_29, flags2 bits 11/13/20). Written is"
+            f" likewise per-bit-store: {meta['n_written']}/69 strict vs"
+            f" {meta['n_written_loose']} loose -- FLINCHING's only setter"
+            f" credit is the combined 0x400400 orr at asm00_2.s:18308"
+            f" (playerFlinchAction_80174FE), so per-bit-store it is unwritten."
+            f" The inline orr/str heuristic is UNSOUND and flagged in code: it"
+            f" fires on ANY ldr/str/ldrh/strh touching the flags field,"
+            f" including a whole-word bulk zero, and credits the first orr/bic"
+            f" within +/-5 lines without checking that the orr targets the"
+            f" flags register (4 credits this run). DAMAGE_*"
+            f" (BattleObject.inc:119-123) have ZERO named sites in asm/ -- they"
+            f" are carried in the damage word by the damage pipeline, so all"
+            f" five stay header-derived. Table reconciliation, three SEPARATE"
+            f" partitions (never added across): RECORDS --"
+            f" {meta['table_records_only']} table-only (f4=7 + f2=6 + f5=6 +"
+            f" f6=6) + {meta['records_overlap']} shared-family (f1=6 + f3=6) ="
+            f" {meta['table_records']}; MASKS --"
+            f" {len(meta['table_only_masks'])} table-only"
+            f" ({','.join(meta['table_only_masks'])}) +"
+            f" {len(meta['masks_overlap'])} overlap"
+            f" ({','.join(meta['masks_overlap'])}) = 6; and"
+            f" {len(meta['direct_only_masks'])} = the count of DISTINCT"
+            f" directly-written flag2 masks OUTSIDE the table"
+            f" ({','.join(meta['direct_only_masks'])}) -- a mask count, not a"
+            f" record count. Table-mask direct sites measured: 0x8 HAS a direct"
+            f" reader (asm00_2.s:17482-17485: object_getFlag2; mov r1,#8; tst;"
+            f" bne locret), 0x20 has a direct setter (asm00_2.s:11368) and no"
+            f" reader, 0x40/0x80 have neither, 0x10000/0x20000 UNMEASURED for"
+            f" direct sites (budget); the observable read for those is on the"
+            f" flags1 status bit the object.s per-frame status tick propagates"
+            f" (e.g. object.s:5438-5452 clears flags1 0x8000 + flag2 0x80 when"
+            f" the Confused timer Unk_1e expires), so battle_visible is judged"
+            f" on the flags1 bit and is re-derived from the per-bit rule."
+            f" Duration caveat: the 0x12c=300 at asm00_2.s:11364-11368 is a"
+            f" SHARED 5-second status constant -- off_80141BC also feeds"
+            f" oCollisionData_Unk_1e at 11375-11377 and setInvulnerableTime at"
+            f" 11348/11356 -- do NOT fit 300 to BLIND. M3 scenario candidates"
+            f" (per-bit reader + table-reachable): "
             + "; ".join(f"{s} reader {r} ({p})" for s, r, p in STATUS_M3_CANDIDATES)
             + ". Chip-id caveat: the fixture hand (FIXTURE.md +13) can carry"
             " any chip id, but the cannon/wave rows' fired chips inflict no"
@@ -1337,6 +1413,16 @@ def main():
     write_section("navicust", {"generator": "tools/inventory.py", "rows": navicust})
 
     nrec = sum(v["records"] for v in lists.values())
+    f1w = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_')
+              and not r['bit'].startswith('OBJECT_FLAGS_2_')
+              and r['_counts'][0] > 0)
+    f2w = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_2_')
+              and r['_counts'][0] > 0)
+    f1r = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_')
+              and not r['bit'].startswith('OBJECT_FLAGS_2_')
+              and r['_counts'][2] > 0)
+    f2r = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_2_')
+              and r['_counts'][2] > 0)
     sections = [
         ("M1", ("chips (M4)", "FOUND: data/ChipDataArr.s:2 ChipDataArr_8021DA8 (411 x chip_data_struct, stride 0x2c, include/rom_structs/ChipData.inc)", chips)),
         ("M1", ("program advances (M4)", "FOUND: asm/asm03_0.s off_802BCB0 + off_802BC60 recipe-pointer tables (records [count][matcher][result u16][chip,code]*n)", pas)),
@@ -1346,21 +1432,24 @@ def main():
         ("M1", ("forms (M7)", "FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789)", forms)),
         ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
         ("M1", ("statuses (M3)",
-                "DERIVED-FROM-CODE: per-bit canonical sites measured by walking every"
-                f" object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in"
-                f" reference/bn6f/asm -- {status_meta['n_written']}/{status_meta['n_bits']} named bits written"
-                f" (flags1 {sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_') and not r['bit'].startswith('OBJECT_FLAGS_2_') and r['setter'] != 'NONE')}/32,"
-                f" flags2 {sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_2_') and r['setter'] != 'NONE')}/32,"
-                f" DAMAGE {sum(1 for r in statuses if r['bit'].startswith('DAMAGE_') and r['setter'] != 'NONE')}/5),"
-                f" {status_meta['n_read']} with >=1 reader,"
-                f" {status_meta['n_unread']} with none, {status_meta['n_written_read']} both written and read;"
+                "DERIVED-FROM-CODE (T18, corrected by verifier re-run): per-bit canonical sites"
+                f" measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in"
+                f" reference/bn6f/asm -- written per-bit-store {status_meta['n_written']}/69"
+                f" (flags1 {f1w}/32, flags2 {f2w}/32, DAMAGE 0/5; loose any-mask mention {status_meta['n_written_loose']}/69),"
+                f" per-bit readers {status_meta['n_read']}/69 (flags1 {f1r}/32, flags2 {f2r}/32; loose any-mask mention {status_meta['n_read_loose']}/69),"
+                f" {status_meta['n_unread']} with no per-bit reader, {status_meta['n_written_read']} both written and read per-bit;"
                 f" nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211)"
-                f" holds {status_meta['table_records']} records ({','.join(map(str, status_meta['fam_sizes']))}) whose [+0] flag2 masks"
-                f" {','.join(status_meta['table_masks'])} reach 6 bits: reachable only via the table"
-                f" {','.join(status_meta['table_only_masks'])} = {status_meta['table_records_only']} records, directly-written masks outside the table"
-                f" {','.join(status_meta['direct_only_masks'])}; M3 candidates: "
-                + " / ".join(f"{s} (reader {r})" for s, r, _p in STATUS_M3_CANDIDATES),
+                f" holds {status_meta['table_records']} records -- RECORDS: {status_meta['table_records_only']} table-only"
+                f" (f4=7+f2=6+f5=6+f6=6) + {status_meta['records_overlap']} shared-family (f1=6+f3=6) = 37; MASKS:"
+                f" {len(status_meta['table_only_masks'])} table-only ({','.join(status_meta['table_only_masks'])})"
+                f" + {len(status_meta['masks_overlap'])} overlap ({','.join(status_meta['masks_overlap'])}) = 6; and"
+                f" {len(status_meta['direct_only_masks'])} distinct directly-written flag2 masks OUTSIDE the table"
+                f" ({','.join(status_meta['direct_only_masks'])}) -- a mask count, not a record count; table-mask direct sites:"
+                f" 0x8 direct reader asm/asm00_2.s:17482-17485, 0x20 direct setter asm/asm00_2.s:11368 / no reader, 0x40/0x80 neither,"
+                f" 0x10000/0x20000 unmeasured; M3 candidates (per-bit readers): "
+                + " / ".join(f"{s} ({r})" for s, r, _p in STATUS_M3_CANDIDATES),
                 statuses)),
+
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
