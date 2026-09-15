@@ -334,7 +334,7 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Measure and report.** rows: field (integrated + isolated), field-bg1, field-bg2, field-bg3 and each new dump row. frames: 40 each. totals/worst/negatives per row before and after (they must not move), the per-k register/map/art comparison table, the first differing k per channel, the fitted-constant count. region: whatever `field`/`field-bg1` compare, unchanged. commit. one line of mechanism. one line of what is unverified.
 **Coordinator:** verify_rows CAN check that F45's rows did not move -- run it on `field,field-bg1,field-bg2,field-bg3` with F45's landed expects, and that PASS-with-totals-unchanged is the whole free tier; the dump reading itself is not harness-checkable, so a verifier IS needed if a mechanism claim lands in docs/coverage/field_integrated.md. Remind your worker that F45's per-frame bg3 table was a transcription bug fixed only by re-diffing the KEPT capture dirs, so its report must quote the harness line as citable and the table as derived, never the other way round.
 
-### F47. Read the backdrop's REAL scroll registers on both sides, and name the captures the shift test runs on -- finish what F46 aimed at the wrong halfwords
+### F47. Read the backdrop's REAL scroll registers on both sides, and name the captures the shift test runs on -- finish what F46 aimed at the wrong halfwords  *(OPEN)*
 
 **Open.** Owner: whoever picks it up. Discovered: 2026-09-15 by a verifier-hyper audit of F46's kept dumps.
 
@@ -365,7 +365,7 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Rule: at most 7 capture runs on the integrated fixtures** (enforced at 7; plan for it: step 1 costs 2, step 3 reuses rows, step 4's dumps ride existing captures). **The drift is now a known property of this fixture** -- F46's verifier established it is capture-side (all three mask rows run `search=None` with a hard-pinned offset, and negatives reuse the same captures unsearched, so neither the alignment search nor fixture pairing explains +-18 on `field` / +570 on `bg1` / +720 on `bg2`), root cause UNCHECKED. Therefore: **always run your before/after pair in the same session, never quote a cross-run baseline as a reproduction, and if a number you need to compare against a landed line is a NON-ZERO total on a SEARCHED row, run it twice and report the spread.** Zero-rows are safe (a drift can never make a mispaired frame read 0). Record the run's model and turns.
 
-### F48. Measure the run-to-run drift on the non-zero integrated rows, and give `verify_rows` a policy for it -- F46's verifier found the drift, this ticket sizes it
+### F48. Measure the run-to-run drift on the non-zero integrated rows, and give `verify_rows` a policy for it -- F46's verifier found the drift, this ticket sizes it  *(OPEN)*
 
 **Open.** Owner: whoever picks it up. Discovered: 2026-09-15 by verifier-hyper audits of F46 and T17.
 
