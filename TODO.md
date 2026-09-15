@@ -270,8 +270,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T7m. battle_full MegaMan tail at k=179: the mm_state_action/mm_anim/mm_timer group, finish the release-edge gate port  *(OPEN -- 2026-09-14, follow-up to T7i BLOCKED, different objective from T7l's opening-action chain)*
+### T7m. battle_full MegaMan tail at k=179: the mm_state_action/mm_anim/mm_timer group, finish the release-edge gate port  *(BLOCKED -- 2026-09-14, T7m BLOCKED: worker hit tool soft-limit [60] on baseline capture only)*
 
+**Result.** T7m BLOCKED: worker hit tool soft-limit (60) on baseline capture only. No edit, no commit, no second trace. Research findings: fix site identified at src/battle.rs:2533-2537 (seq match block / SEQ04_FRAMES-1 age check); ours runs seq.transition BEFORE t1_player_entry at :3261, canon processes executor THEN re-enters sequencer handler via separate call (asm00_1.s:9775/13126) — gate fires first on ours, second on canon, leaving 1-frame late divergence at k=179. Proposed fix: relocate seq match block from line 2533 to AFTER t1_player_entry at :3261 (one-line relocation in src/battle.rs). Timer arms: 0x1e is SEQ_04 wait seeded at asm00_1.s:10476; 0x293 not found in asm/ (likely banner record). Worktree wt/t7m clean at 794a5c3, ROM /tmp/x.gba built (580900 bytes). Worker model: minimax (MiniMax-M3 thinking high), 1m29s. Follow-up needs: skip baseline trace (use HEAD numbers from ticket); do the relocation; rebuild; re-trace; verify_rows.
 **Result.** (target) battle_full's mm_state_action/mm_anim/mm_timer counts drop below their 101/86/302 baselines at k=179; the release-edge un-freed gate is closed by the cited MegaMan-executor ordering; cursor stays ≤10/9/170; chip-use integrated stays at its current value (no regression); mettaur stays 70/70.
 
 **Files.** src/battle.rs (only the release-edge predicate that owns the k=179 group), src/objects.rs (only the MegaMan executor's gate that fires at the edge), tools/trace.py (only if a field must be watched), docs/coverage/battle_full.md (notes)
