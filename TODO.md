@@ -434,3 +434,21 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Measure and report.** rows: none (byte-identical ROM, cmp diff count 0). The statuses line before/after; the three counts from step 2; the step-3 set differences; the step-5 three names with cites. commit. one line of mechanism. one line of what is unverified.
 **Coordinator:** no row check — step 6's cmp is the no-op proof (T14/T15 precedent). A verifier only to open two of the cited file:lines and confirm the bit name and the reader. Dispatch in parallel with F43: `**Files.**` lines are disjoint. ≤$0.10 expected.
 
+### T20. Scripted-input scenarios: one button log drives both sides  *(OPEN -- 2026-09-15)*
+**Why.** The chip-selection rules (codes, Regular, Tag, PA recognition, folder draw and reshuffle) cannot be exercised by a fixed recording: they need the same button sequence played into the original and into ours, frame-accurate, and both sides compared by pixels and trace. T7r already fed a scripted press through the fixture; this generalises it into a scenario type the harness runs. Milestone M2 (chip-selection rules) and every interaction rule after it.
+**Files.** tools/harness.py (a scenario kind with an input log), tools/mgba_capture (only if a per-frame input feed is missing; check `--script` first), src/fixture.rs and src/battle.rs (the ROM side reads the same log from the fixture region), docs/FIXTURE.md.
+**Do.** 1. Define the log: a list of (frame, buttons held) pairs, stored in the fixture region for our ROM and fed to the capture tool for canon (the same bytes). 2. Record one scenario by hand in canon: open the window, move the cursor across two codes, pick two chips, confirm; save the log and the recording. 3. Run ours with the same log; compare pixels (a new row `chipselect-script`) and the trace fields (window state, hand, cursor). 4. Report the first divergence.
+**Rules.** No fitted constants; the log is data, never a timer tuned by hand; canon never changes.
+**Acceptance.** The scenario runs on both sides from one log; the row exists with its negative fixture not blind; the first divergence is named with its frame and field (0 is not required for this ticket).
+**Measure and report.** The row's line, the trace summary, the log's length.
+**Coordinator:** infrastructure; a verifier pass on the claim that both sides consumed the identical log (byte compare of what each side read).
+
+### T21. The horizontal-blank tile writer: replace backdrop tiles at the original's scanline  *(OPEN -- 2026-09-15)*
+**Why.** The one tolerated residue is the cursor row's seam: the original drains its graphics-transfer queue part-way down the screen, so for one frame the top rows still show the previous artwork step (F37l: 1 px at y=5 on frame 97; up to 44 px depending on code layout). We write all 36 tiles before the frame starts. The fix is a writer that performs the replacement from the horizontal-blank interrupt at the scanline the original's drain lands on, so the seam sits where the original's does. Milestone M2 (the last pixel residue of the engine core) and M8.
+**Files.** src/backdrop.rs (the show_step replace path), src/main.rs (the interrupt hook, through the vendored agb runtime's interrupt API), vendor/agb only if the runtime lacks an HBlank hook, tools/harness.py (the cursor row's note).
+**Do.** 1. From the `// bn` notes and docs/renames.md, cite the original's drain routine and the scanline range its queue lands on (measure it: capture with a scanline probe on frames 37 and 97 of the cursor scene). 2. Implement the writer: the tiles are staged before the frame and copied at that scanline from the HBlank handler; every other frame's path is unchanged. 3. Run cursor, windowclose, field, opening, wave, mettaur; the cursor row must read 0/0/170 and every other row stay identical.
+**Rules.** No tolerance, no box; the scanline comes from the measurement, not from tuning; if the runtime's interrupt latency makes the exact scanline unreachable, report the measured latency and stop.
+**Acceptance.** cursor 0/0/170 with its negative not blind; the full isolated table identical otherwise; the trace unchanged.
+**Measure and report.** The cursor row before and after, the measured scanline, the latency if it blocked.
+**Coordinator:** a verifier pass on the scanline citation and the latency claim.
+
