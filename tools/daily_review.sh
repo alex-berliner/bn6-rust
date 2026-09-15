@@ -69,6 +69,8 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   fi
 } > "$OUT.tmp" 2>&1
 mv "$OUT.tmp" "$OUT"; echo "$OUT"
+# the disassembly's renamed symbols reach this repo's citations once, on a morning with no run active (2026-09-15)
+[ -f docs/renames-applied ] || { python3 tools/apply_renames.py --if-idle --commit 2>&1 | tail -3 | grep -q committed && date > docs/renames-applied && git add docs/renames-applied && git commit -q -m 'citations: renames applied marker' && git push -q origin main; }
 # the automated digest post (agreed 2026-09-14): one blog post per day that had a ticket result or a merge,
 # built from the record the review just read, with the auditor's open proposals summarized in it
 python3 tools/digest_post.py --since "$SINCE" --review "$OUT" --post 2>&1 | tail -2
