@@ -146,11 +146,14 @@ pub fn enemy_think(
         // interpreter reads the (Version, ActorType, AIIndex) row at
         // `&byte_80182C4[3*enemy_idx]` via `GetVerActorTyAndAIIdx_80182B4`
         // (asm00_2.s:19965-19974) and routes AIIndex 0x17 to
-        // `ForGunner_8113078` -- the same routine src/gunner.rs ports as
-        // the Gunner struct's materialize/animation/timer-arms. The battle.rs
-        // loop `continue`s past this leg for Gunner (the controller lives in
-        // `Battle::gunner_ctl`), so this arm is unreachable through the
-        // dispatch (kept total, not deleted).
+        // `ForGunner_8113078`. The CurAction 0x0A arm of that table is
+        // `sub_8112F4E` (asm32.s:9958-10102), ported as
+        // `gunner::gunner_update` below -- the per-type routine that
+        // advances the Gunner's per-state fields (stage/latch/wait/recover)
+        // and returns Update the way `MettaurEntry::think` runs CurAction 8
+        // for the Mettaur. Reached through the dispatch (battle.rs's
+        // `enemy_think` call) once CurAction reaches 0x0A; for the other
+        // CurActions this arm falls through to `ai.update` as before.
         Style::Gunner => {}
     }
     ai.update(me, target, blocked, rng);

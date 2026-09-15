@@ -2147,18 +2147,23 @@ PORTED_CHECKS: List[Check] = [
         ui="both",
         frames=130,
         align=Align(
-            canon_ref=0,
-            search=range(0, 1),
-            note="T9h (2026-09-15): the Gunner scenario -- cannon-fire from the poked "
+            canon_ref=80,
+            search=range(0, 40),
+            note="T9j (2026-09-15): the Gunner scenario -- cannon-fire from the poked "
                  "battlestart_gunner.state. canon: REAL+BATTLESTART_GUNNER (T9c's state, "
                  "BattleSettings record 6 with a Mettaur at slot 0 (panel (5,2), NameID "
                  "0x0001, HP 0x28) and a Gunner at slot 1 (panel (6,3), NameID 0x0085, HP "
                  "0x3c)). rust: GUNNER_ROW (enemies=2, enemy_kind=0x05 packing slot 0 "
                  "Mettaur + slot 1 Gunner, the kind_of() split fixture.rs:248-264 defines). "
-                 "INTEGRATED (ui='both'): both BG and OBJ, the whole 240x160. canon_ref=0, "
-                 "search band 0..1 -- the row pairs the rust side's marker origin (8 for "
-                 "GUNNER_ROW, same family as FIELD_ROW) against the canon side's frame 0 "
-                 "(the BATTLESTART_GUNNER state sits at battle frame 0). The 130-frame span "
+                 "INTEGRATED (ui='both'): both BG and OBJ, the whole 240x160. canon_ref=80 "
+                 "(first attack-event frame on canon side: canon's state-loading white runs "
+                 "capture frames 0..70; battle content starts at 71 and the gunner's first "
+                 "attack-event frame -- CurAction transitioning to 0x0A, when sub_8113162's "
+                 "row-check fires -- is 80), search band 0..40 (rust side's marker origin 8 "
+                 "+ 26..40 = the gunner attack event window on rust). rust_origin=8 for "
+                 "GUNNER_ROW, same family as FIELD_ROW. The 130-frame span covers one full "
+                 "materialize/attack/recover cycle (cursor walk 13 panels at 3 px/frame "
+                 "+ 3 shots at 10-frame gaps + 24-frame recover = ~127 frames, rounded to "
                  "covers one full materialize/attack/recover cycle (cursor walk 13 panels "
                  "at 3 px/frame + 3 shots at 10-frame gaps + 24-frame recover = ~127 "
                  "frames, rounded to 130 with margin). --disable-bg stays off -- "
