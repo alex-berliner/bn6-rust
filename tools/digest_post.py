@@ -172,6 +172,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--since", type=float, default=24.0); ap.add_argument("--review")
     ap.add_argument("--no-model", action="store_true"); ap.add_argument("--post", action="store_true")
+    ap.add_argument("--body", help="use this file's text as the day's account (reviewed by hand) instead of asking the model")
     a = ap.parse_args()
     since = "%d hours ago" % int(a.since); today = datetime.date.today().isoformat()
     review = a.review or ("docs/reviews/%s.md" % today)
@@ -214,7 +215,7 @@ def main():
     out.append("In the last %d hours the agents closed %d tickets: %d finished, %d half-done and kept, %d blocked or dead ends. "
                "Every number below was measured by the automatic comparison against a recording of the original game."
                % (int(a.since), len(results), len(done), len(part), len(stuck))); out.append("")
-    body = "" if (a.no_model or not DIGEST_MODEL) else newcomer_digest(results, facts)
+    body = open(a.body).read().strip() if a.body else ("" if (a.no_model or not DIGEST_MODEL) else newcomer_digest(results, facts))
     if body:
         out.append(body); out.append("")
     else:
