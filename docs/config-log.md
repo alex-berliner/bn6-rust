@@ -103,3 +103,11 @@ the run's stop threshold, from run_day.sh) re-reading `// bn` notes in the disas
 tiny request each, verdicts in docs/note_audits.md; tools/premise_check.py, in the 09:15 roundup, re-measures the
 rows an OPEN ticket cites and writes a **Premise check.** line when the number drifted, so a worker does not spend
 credits on a refuted premise (F39a, F41, F21e did today). The premise check costs no credits.
+
+## 2026-09-15 19:20 -- acceptance: the trace beside the pixels (the user: "Sounds good")
+
+For engine-core tickets the state trace (field, frames, first divergent frame) is the primary progress number and
+verify_rows is the veto; content tickets are done at their own scene and trace at 0; interaction rules get
+scripted-input scenarios (T20: one button log driving both sides); the seam is to be judged at the scanline once
+the horizontal-blank tile writer exists (T21). "Feels the same" is not a criterion: feel is what content delivers.
+The loop text and the judge prompt carry the rule.

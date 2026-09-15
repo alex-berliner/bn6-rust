@@ -68,6 +68,13 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 
 A ticket whose title or text says it stays OPEN (multi-pass, e.g. F12 per chip family) is stamped OPEN after every landed pass, never PARTIAL or DONE, until its stated end condition is met.
 
+**Acceptance, from 2026-09-15 (the user).** For engine-core (M2) tickets the primary progress number is the state trace
+(`python3 tools/trace.py`: which field, how many of the scene's frames diverge, the first divergent frame); pixels are
+the veto (verify_rows: every named row identical or better). A ticket that moves the trace and leaves the rows identical
+is progress; one that improves pixels while the trace gets worse is not. Content tickets (a chip, a virus) are done when
+their own scene AND its trace fields read 0. Interaction rules (chip selection, PA recognition, reshuffle) are measured
+with scripted-input scenarios (T20), never by eye.
+
 **Work logs.** A worker keeps docs/worklog/<ID>.md; `ticket_result.py` carries it to main with the stamp
 even when the branch stays unmerged, and `next_ticket.py` shows the objective's earlier logs to the next
 worker. Never skip the stamp for a failed ticket: the log is the point.
