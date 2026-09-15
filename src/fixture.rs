@@ -38,78 +38,134 @@ const MAGIC: u32 = 0x4649_5854; // provenance: derived -- this project's own pro
 /// Base address of the descriptor, per FIXTURE.md.
 pub const ADDR: usize = 0x0200_0040; // provenance: derived -- this project's own protocol choice (FIXTURE.md): EWRAM's base plus BATTLE_MARKER's own 64-byte reservation (see main.rs's BATTLE_MARKER doc), not a ROM address
 
-/// bit0: open with the chip window (gate the gauge-pause -> chip-window-open
-/// sequence; UNSET reproduces `demo-hudmatch`'s own special case, which
-/// freezes a full gauge and never opens the window -- see `read()`'s doc and
-/// the descriptor table below).
-pub const FLAG_OPEN_WINDOW: u8 = 1 << 0; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit1: blank HUD. UNSET means the real HUD (`HudTiles`) is always drawn
-/// with a descriptor -- AUDIT pair 6: the old sterile arena drew NOTHING at
-/// all where canon shows the HP box (no stub currently exists in this code
-/// to draw a bare "100" either; see the report), which made every chip
-/// comparison a box instead of a full screen. SET reproduces
-/// `demo-sterile`'s `hud_tiles: None`.
-pub const FLAG_BLANK_HUD: u8 = 1 << 1; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit2: blank backdrop. Reproduces the old `demo-sterile` feature's WHOLE
-/// non-HUD background, not just the `backdrop` module: `backdrop: None`,
-/// the field layer (`self.bg`) replaced with a blank tilemap, and the
-/// hand-chip icon object suppressed (`hand_icon_palette: None`) -- exactly
-/// the three things that feature used to gate. Broader than its name
-/// suggests; flagged in the report as worth a name/scope check with
-/// FIXTURE.md's author.
-pub const FLAG_BLANK_BACKDROP: u8 = 1 << 2; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit3: auto-fire the hand, on the schedule `fire_frame` seeds -- see its
-/// own field doc.
-pub const FLAG_AUTO_FIRE: u8 = 1 << 3; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit4: skip the white intro. SET reproduces every `demo-*` fixture's own
-/// legacy short black ramp (`SCREEN_FADE_FRAMES`'s `demo && !demo-open`
-/// branch, `0x10 * 2` = 32 frames); UNSET plays the real 71-frame white hold
-/// + 14-frame ramp, which is what `demo-open` and the default release build
-/// already do.
-pub const FLAG_SKIP_INTRO: u8 = 1 << 4; // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
-/// bit5: resolve. An enemy-less arena whose fight is already decided: `over`
-/// fires on the battle's first frame and the fight runs its whole end
-/// sequence (ENEMY DELETED banner, then the RESULT window 110 frames later)
-/// exactly as a fixture whose one enemy was killed before frame 0 would.
-/// This is the zero-enemy arena rows' stand-in for the canon side's own
-/// history, which is a battle whose enemy was deleted and whose all-dead
-/// check therefore advances: on the `field` row's own canon capture the
-/// banner sequencer enters its RESULT countdown 0x0C at canon frame 47 and
-/// the ENEMY DELETED banner runs canon 49..106 -- the real ROM resolves, so
-/// the fixture side has to be able to. Without the bit an empty `enemies`
-/// still holds the fight open forever (the chip-window fixtures depend on
-/// that: see battle.rs's own comment on `over`).
-pub const FLAG_RESOLVE_OVER: u8 = 1 << 5; // provenance: peeked -- canon's own deleted-enemy battle resolves (sequencer 0x08->0x0C at canon 47, watched on the field row's own canon capture, 2026-09-12, TODO F8); the bit assignment itself is this project's protocol
-/// bit6: the battle HUD is LIVE on this row's canon side at frame 0 -- canon's
-/// battle-HUD element mask `dword_20352C0` (eStruct2035280+0x40, dispatched
-/// every frame by sub_801BEE0, asm00_2.s:25540-25563) still has element 14,
-/// the emotion window (updater sub_801CADC asm00_2.s:25577, draw sub_801CDEC
-/// asm00_2.s:25627), enabled. Needed ONLY because a zero-enemy arena has no
-/// counterpart in canon (canon never fields an empty enemy list), so nothing
-/// in such a fixture says which side of the HUD teardown its canon capture
-/// sits on: the `popup` row's canon side is a live battle whose enemy was
-/// deleted on a ROM patched never to conclude (mask 0x4497 on all 125 frames,
-/// bit14=1), and the 43 chip rows' canon side is `afterdissolve_0x0c`, a
-/// battle already past the teardown (mask 0x8084 on all 47 frames, bit14=0) --
-/// two different canon states behind byte-identical descriptors. A fixture
-/// that fields an enemy needs no bit: canon's HUD is live whenever a battle
-/// has one, so `enemies` non-empty implies it (see battle.rs's `hud_live`).
-pub const FLAG_HUD_LIVE: u8 = 1 << 6; // provenance: peeked -- canon's own element mask at 0x020352C0 (--watch 0x20352C0:4, F27b): 0x4497 on every frame of the popup row's canon capture, 0x8084 on every frame of the chip rows'; the bit assignment itself is this project's protocol
+/// The descriptor's flags byte (+19 FIXTURE.md): a newtype over the raw byte,
+/// NOT an enum -- real descriptors set several bits at once (see the flags
+/// legend in `read()`'s doc below), so the named accessors are the only
+/// interface. The bit assignment is the contract: the harness pokes this
+/// byte into RAM and FIXTURE.md's legend documents the same bits, so neither
+/// may move.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct SceneFlags(u8);
 
-/// State-trace export enable (T1b): when set, the main loop writes the
-/// TRC2 block at 0x02000080 every frame; when clear, no trace store
-/// executes on any path, so pixel rows run byte-identical to a build
-/// without the export (field integrated back at 158950). Delivered
-/// per-frame by the harness's own descriptor cheats like every other
-/// flag, so it survives boot; tools/trace.py sets it on recordings only.
-/// Bit 7 is the last free bit of the flags byte (bits 0..6 taken above).
-/// NOT IN FIXTURE.md: a record-time knob, not battle setup -- pixel-row
-/// descriptors leave it clear and never mention it.
-/// Read live once per battle via `trace_enabled`, never via `Fixture`:
-/// `read()` runs once at startup and the bit is stable after that, while
-/// a per-frame re-read would put a load on the timed path every frame.
-/// Provenance of the bit assignment is this project's own protocol.
-pub const FLAG_TRACE: u8 = 1 << 7; // provenance: derived -- this project's own protocol bit assignment (the last free flags bit; see FLAG_TRACE's doc), not a ROM fact
+impl SceneFlags {
+    /// bit0: open with the chip window (gate the gauge-pause -> chip-window-open
+    /// sequence; UNSET reproduces `demo-hudmatch`'s own special case, which
+    /// freezes a full gauge and never opens the window -- see `read()`'s doc and
+    /// the descriptor table below).
+    pub const OPEN_WINDOW: SceneFlags = SceneFlags(1 << 0); // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+    /// bit1: blank HUD. UNSET means the real HUD (`HudTiles`) is always drawn
+    /// with a descriptor -- AUDIT pair 6: the old sterile arena drew NOTHING at
+    /// all where canon shows the HP box (no stub currently exists in this code
+    /// to draw a bare "100" either; see the report), which made every chip
+    /// comparison a box instead of a full screen. SET reproduces
+    /// `demo-sterile`'s `hud_tiles: None`.
+    pub const BLANK_HUD: SceneFlags = SceneFlags(1 << 1); // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+    /// bit2: blank backdrop. Reproduces the old `demo-sterile` feature's WHOLE
+    /// non-HUD background, not just the `backdrop` module: `backdrop: None`,
+    /// the field layer (`self.bg`) replaced with a blank tilemap, and the
+    /// hand-chip icon object suppressed (`hand_icon_palette: None`) -- exactly
+    /// the three things that feature used to gate. Broader than its name
+    /// suggests; flagged in the report as worth a name/scope check with
+    /// FIXTURE.md's author.
+    pub const BLANK_BACKDROP: SceneFlags = SceneFlags(1 << 2); // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+    /// bit3: auto-fire the hand, on the schedule `fire_frame` seeds -- see its
+    /// own field doc.
+    pub const AUTO_FIRE: SceneFlags = SceneFlags(1 << 3); // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+    /// bit4: skip the white intro. SET reproduces every `demo-*` fixture's own
+    /// legacy short black ramp (`SCREEN_FADE_FRAMES`'s `demo && !demo-open`
+    /// branch, `0x10 * 2` = 32 frames); UNSET plays the real 71-frame white hold
+    /// + 14-frame ramp, which is what `demo-open` and the default release build
+    /// already do.
+    pub const SKIP_INTRO: SceneFlags = SceneFlags(1 << 4); // provenance: derived -- this project's own protocol bit assignment (FIXTURE.md), not a ROM fact
+    /// bit5: resolve. An enemy-less arena whose fight is already decided: `over`
+    /// fires on the battle's first frame and the fight runs its whole end
+    /// sequence (ENEMY DELETED banner, then the RESULT window 110 frames later)
+    /// exactly as a fixture whose one enemy was killed before frame 0 would.
+    /// This is the zero-enemy arena rows' stand-in for the canon side's own
+    /// history, which is a battle whose enemy was deleted and whose all-dead
+    /// check therefore advances: on the `field` row's own canon capture the
+    /// banner sequencer enters its RESULT countdown 0x0C at canon frame 47 and
+    /// the ENEMY DELETED banner runs canon 49..106 -- the real ROM resolves, so
+    /// the fixture side has to be able to. Without the bit an empty `enemies`
+    /// still holds the fight open forever (the chip-window fixtures depend on
+    /// that: see battle.rs's own comment on `over`).
+    pub const RESOLVE_OVER: SceneFlags = SceneFlags(1 << 5); // provenance: peeked -- canon's own deleted-enemy battle resolves (sequencer 0x08->0x0C at canon 47, watched on the field row's own canon capture, 2026-09-12, TODO F8); the bit assignment itself is this project's protocol
+    /// bit6: the battle HUD is LIVE on this row's canon side at frame 0 -- canon's
+    /// battle-HUD element mask `dword_20352C0` (eStruct2035280+0x40, dispatched
+    /// every frame by sub_801BEE0, asm00_2.s:25540-25563) still has element 14,
+    /// the emotion window (updater sub_801CADC asm00_2.s:25577, draw sub_801CDEC
+    /// asm00_2.s:25627), enabled. Needed ONLY because a zero-enemy arena has no
+    /// counterpart in canon (canon never fields an empty enemy list), so nothing
+    /// in such a fixture says which side of the HUD teardown its canon capture
+    /// sits on: the `popup` row's canon side is a live battle whose enemy was
+    /// deleted on a ROM patched never to conclude (mask 0x4497 on all 125 frames,
+    /// bit14=1), and the 43 chip rows' canon side is `afterdissolve_0x0c`, a
+    /// battle already past the teardown (mask 0x8084 on all 47 frames, bit14=0) --
+    /// two different canon states behind byte-identical descriptors. A fixture
+    /// that fields an enemy needs no bit: canon's HUD is live whenever a battle
+    /// has one, so `enemies` non-empty implies it (see battle.rs's `hud_live`).
+    pub const HUD_LIVE: SceneFlags = SceneFlags(1 << 6); // provenance: peeked -- canon's own element mask at 0x020352C0 (--watch 0x20352C0:4, F27b): 0x4497 on every frame of the popup row's canon capture, 0x8084 on every frame of the chip rows'; the bit assignment itself is this project's protocol
+
+    /// State-trace export enable (T1b): when set, the main loop writes the
+    /// TRC2 block at 0x02000080 every frame; when clear, no trace store
+    /// executes on any path, so pixel rows run byte-identical to a build
+    /// without the export (field integrated back at 158950). Delivered
+    /// per-frame by the harness's own descriptor cheats like every other
+    /// flag, so it survives boot; tools/trace.py sets it on recordings only.
+    /// Bit 7 is the last free bit of the flags byte (bits 0..6 taken above).
+    /// NOT IN FIXTURE.md: a record-time knob, not battle setup -- pixel-row
+    /// descriptors leave it clear and never mention it.
+    /// Read live once per battle via `trace_enabled`, never via `Fixture`:
+    /// `read()` runs once at startup and the bit is stable after that, while
+    /// a per-frame re-read would put a load on the timed path every frame.
+    /// Provenance of the bit assignment is this project's own protocol.
+    pub const TRACE: SceneFlags = SceneFlags(1 << 7); // provenance: derived -- this project's own protocol bit assignment (the last free flags bit; see TRACE's doc), not a ROM fact
+
+    /// bit0: see `OPEN_WINDOW`'s doc.
+    pub const fn open_window(self) -> bool {
+        self.0 & Self::OPEN_WINDOW.0 != 0
+    }
+    /// bit1: see `BLANK_HUD`'s doc.
+    pub const fn blank_hud(self) -> bool {
+        self.0 & Self::BLANK_HUD.0 != 0
+    }
+    /// bit2: see `BLANK_BACKDROP`'s doc.
+    pub const fn blank_backdrop(self) -> bool {
+        self.0 & Self::BLANK_BACKDROP.0 != 0
+    }
+    /// bit3: see `AUTO_FIRE`'s doc.
+    pub const fn auto_fire(self) -> bool {
+        self.0 & Self::AUTO_FIRE.0 != 0
+    }
+    /// bit4: see `SKIP_INTRO`'s doc.
+    pub const fn skip_intro(self) -> bool {
+        self.0 & Self::SKIP_INTRO.0 != 0
+    }
+    /// bit5: see `RESOLVE_OVER`'s doc.
+    pub const fn resolve_over(self) -> bool {
+        self.0 & Self::RESOLVE_OVER.0 != 0
+    }
+    /// bit6: see `HUD_LIVE`'s doc.
+    pub const fn hud_live(self) -> bool {
+        self.0 & Self::HUD_LIVE.0 != 0
+    }
+    /// bit7: see `TRACE`'s doc.
+    pub const fn trace(self) -> bool {
+        self.0 & Self::TRACE.0 != 0
+    }
+}
+
+impl From<u8> for SceneFlags {
+    fn from(bits: u8) -> Self {
+        SceneFlags(bits)
+    }
+}
+
+impl From<SceneFlags> for u8 {
+    fn from(flags: SceneFlags) -> u8 {
+        flags.0
+    }
+}
 
 /// A fixture descriptor, parsed from the 64 bytes at `ADDR`. Fields and
 /// offsets match FIXTURE.md exactly, with additions past byte 48 (FIXTURE.md's
@@ -136,7 +192,7 @@ pub struct Fixture {
     pub hand_count: u8,
     pub hand: [u8; 5],
     pub gauge: u8,
-    pub flags: u8,
+    pub flags: SceneFlags,
     pub art_entry: u16,
     pub art_timer: u16,
     pub scroll_xq: u16,
@@ -284,10 +340,6 @@ pub const KIND_METTAUR: u8 = 0; // provenance: derived -- this project's own pro
 pub const KIND_GUNNER: u8 = 1; // provenance: derived -- T9b's slot probe of BattleSettings record 6 (0x080b4bd8): slot 1's BattleObject reads NameID 0x0085 (enemy_idx 0x85, the Gunner)
 
 impl Fixture {
-    pub fn flag(&self, bit: u8) -> bool {
-        self.flags & bit != 0
-    }
-
     /// The kind of enemy `slot` (0-based; slots past `enemies` are never
     /// built): two bits of the packed `enemy_kind` byte -- see the field's
     /// doc for the layout and the backward-compatibility argument.
@@ -333,7 +385,7 @@ const FLAGS_OFFSET: usize = 19; // provenance: derived -- this project's own des
 /// with no descriptor) means the frame loop takes the off branch and no
 /// trace store executes anywhere.
 pub fn trace_enabled() -> bool {
-    unsafe { r8(FLAGS_OFFSET) & FLAG_TRACE != 0 }
+    unsafe { SceneFlags::from(r8(FLAGS_OFFSET)).trace() }
 }
 
 /// Read the descriptor at `ADDR`. `None` when the magic is absent, which is
@@ -384,7 +436,7 @@ pub fn read() -> Option<Fixture> {
             hand_count: r8(12),
             hand,
             gauge: r8(18),
-            flags: r8(19),
+            flags: SceneFlags::from(r8(19)),
             art_entry: r16(20),
             art_timer: r16(22),
             scroll_xq: r16(24),
@@ -457,15 +509,15 @@ pub fn read() -> Option<Fixture> {
 // demo-sterile,demo-cannon,
 //   demo-auto                0    --  --  --  100    2    2  [1]              0  0b00011111     0xFFFF  0xFFFF    0xFFFF    0xFFFF      90        --
 //
-// flags legend: bit0 FLAG_OPEN_WINDOW, bit1 FLAG_BLANK_HUD, bit2
-// FLAG_BLANK_BACKDROP, bit3 FLAG_AUTO_FIRE, bit4 FLAG_SKIP_INTRO (written
+// flags legend: bit0 OPEN_WINDOW, bit1 BLANK_HUD, bit2
+// BLANK_BACKDROP, bit3 AUTO_FIRE, bit4 SKIP_INTRO (written
 // low-to-high, so demo-hudmatch's 0b00010000 is "skip intro, nothing else").
 //
-// demo-open is the ONE row with FLAG_SKIP_INTRO unset: it exists to compare
+// demo-open is the ONE row with SKIP_INTRO unset: it exists to compare
 // the real white-hold-and-ramp opening, so it plays it, exactly like the
 // default release build.
 //
-// demo-hudmatch is the ONE row with FLAG_OPEN_WINDOW unset: its capture
+// demo-hudmatch is the ONE row with OPEN_WINDOW unset: its capture
 // holds a full gauge and never opens the chip window (battle.rs's own
 // `!cfg!(feature = "demo-hudmatch")` guard on the gauge-pause branch, which
 // this flag reproduces).

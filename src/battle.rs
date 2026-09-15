@@ -12,7 +12,7 @@ use agb::display::object::{
     PaletteVramSingle, Size, SpriteVram,
 };
 // Unconditional now (AUDIT pairs 6/14/17): a fixture-driven battle can ask
-// for a blank arena at runtime (FLAG_BLANK_BACKDROP) in a build that has no
+// for a blank arena at runtime (BLANK_BACKDROP) in a build that has no
 // demo-sterile feature at all, so the blank background's own constructor
 // must exist in every build, not just one gated on that cfg.
 use agb::display::tiled::{RegularBackgroundSize, TileFormat};
@@ -219,7 +219,7 @@ const GLOW_ANIM: [usize; 3] = [0, 0, 2]; // provenance: derived -- chargeShotCha
 // provenance: peeked -- `71 + INTRO_RAMP` (below), measured from a save
 // state at a battle's first frame, full white through frame 70. The runtime
 // formula this used to be a standalone const for is now `Battle::new`'s own
-// `intro_fade`, which reads FLAG_SKIP_INTRO from a fixture instead of a
+// `intro_fade`, which reads SKIP_INTRO from a fixture instead of a
 // demo-* feature (the old legacy `0x10 * 2` black-ramp branch, AUDIT pair 17
 // prune ticket).
 /// Frames the white takes to come off at the end of the hold. Measured: full
@@ -1448,7 +1448,7 @@ pub struct Battle<'a> {
     /// result_arrival: BG3, priority 1). `Some` exactly when `hud_tiles` is
     /// (created alongside it in `Battle::new`), or lazily the first time
     /// `custom`'s window opens with `hud_tiles` blanked (the isolated
-    /// `window`/`card` checks: FLAG_BLANK_HUD with FLAG_OPEN_WINDOW) --
+    /// `window`/`card` checks: BLANK_HUD with OPEN_WINDOW) --
     /// see `open_custom_window`. `hud_tiles` and `custom` each borrow it for
     /// the span of one call, never own it, so both can draw into it in the
     /// same frame; its scroll is 0 whenever `custom` is not driving it
@@ -1536,7 +1536,7 @@ pub struct Battle<'a> {
     clock: u32,
     moves: u8,
     /// Countdown to the next automatic chip use, when present, from a
-    /// fixture's own FLAG_AUTO_FIRE.
+    /// fixture's own AUTO_FIRE.
     auto_ticks: u16,
     /// AUDIT pairs 6/14/17: the fixture this battle was built from, if any --
     /// kept so `update`/`draw` can consult its flags too (`skip_intro`,
@@ -1608,24 +1608,24 @@ impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
     /// hold + 14-frame ramp (`false`) or the old `demo-*` fixtures' own
     /// legacy 32-frame black ramp (`true`, only ever reachable through a
-    /// fixture's own FLAG_SKIP_INTRO now that every `demo-*` feature that
+    /// fixture's own SKIP_INTRO now that every `demo-*` feature that
     /// used to drive this at compile time is gone). No fixture: no reason
     /// to skip -- the default build always plays the real intro.
     fn skip_intro(&self) -> bool {
         match self.fixture {
-            Some(f) => f.flag(fixture::FLAG_SKIP_INTRO),
+            Some(f) => f.flags.skip_intro(),
             None => false,
         }
     }
 
     /// Whether the gauge-pause -> chip-window-open sequence is allowed to
-    /// run at all. UNSET (via FLAG_OPEN_WINDOW) reproduced the old
+    /// run at all. UNSET (via OPEN_WINDOW) reproduced the old
     /// `demo-hudmatch` feature's guard, which froze a full gauge and never
     /// opened the window so a long HUD capture never lost the battle screen
     /// to it. No fixture: always allowed.
     fn open_window_allowed(&self) -> bool {
         match self.fixture {
-            Some(f) => f.flag(fixture::FLAG_OPEN_WINDOW),
+            Some(f) => f.flags.open_window(),
             None => true,
         }
     }
@@ -1821,19 +1821,19 @@ impl<'a> Battle<'a> {
         }
         let deck = deck;
         let panels = Panels::new(field::PANEL_NORMAL);
-        // AUDIT pairs 6/14/17: FLAG_BLANK_HUD and FLAG_BLANK_BACKDROP,
+        // AUDIT pairs 6/14/17: BLANK_HUD and BLANK_BACKDROP,
         // reduced to what the old demo-sterile feature used to mean when
         // there is no fixture, so every site below that used to check that
         // cfg directly keeps reading exactly what it read before.
-        // FLAG_BLANK_BACKDROP is broader than its name: it reproduces
+        // BLANK_BACKDROP is broader than its name: it reproduces
         // demo-sterile's WHOLE non-HUD arena (backdrop module, field bg
         // layer and the hand-chip icon object), not just the backdrop --
         // see fixture.rs's own doc on the flag.
         let blank_hud = fixture
-            .map(|f| f.flag(fixture::FLAG_BLANK_HUD))
+            .map(|f| f.flags.blank_hud())
             .unwrap_or(false);
         let blank_backdrop = fixture
-            .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
+            .map(|f| f.flags.blank_backdrop())
             .unwrap_or(false);
         // The sterile arena draws a plain background so the real ROM's field can
         // be stripped via the harness's --disable-bg (BG layers) and the two
@@ -1963,7 +1963,7 @@ impl<'a> Battle<'a> {
         // when HP reaches zero (spawn_t1_0x0_EffectObject via byte_80E0398 row
         // 3; asm31.s:85229, 85033). An enemy's is given a 0x5a-frame timer.
         let effects: Vec<(spr::Player, (i32, i32), u8, bool, bool)> = Vec::new();
-        // AUDIT pairs 6/14/17: a fixture's own FLAG_SKIP_INTRO drives this;
+        // AUDIT pairs 6/14/17: a fixture's own SKIP_INTRO drives this;
         // no fixture means no reason to skip (see `skip_intro`'s own doc).
         // F34b: a fixture starting on the results screen (start_state == 1,
         // canon: FIXTURE.md +40) has no fade left -- canon's RESULT_ARRIVAL
@@ -1979,7 +1979,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         let intro_fade: u16 = if fixture.map(|f| f.start_state == 1).unwrap_or(false) {
             0 // canon: no fade left 8048 battle frames in (see the F34b note above)
         } else if fixture
-            .map(|f| f.flag(fixture::FLAG_SKIP_INTRO))
+            .map(|f| f.flags.skip_intro())
             .unwrap_or(false)
         {
             INTRO_SKIP_FADE
@@ -2014,11 +2014,11 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         let fade_out = 0u8;
         let clock = 0u32;
         let moves = 0u8;
-        // AUDIT pairs 6/14/17: a fixture's own FLAG_AUTO_FIRE seeds this
+        // AUDIT pairs 6/14/17: a fixture's own AUTO_FIRE seeds this
         // with its `fire_frame` -- see the per-frame firing block in
         // `update` below. No fixture: no auto-fire.
         let auto_ticks: u16 = if let Some(f) = fixture {
-            if f.flag(fixture::FLAG_AUTO_FIRE) { f.fire_frame } else { 0 }
+            if f.flags.auto_fire() { f.fire_frame } else { 0 }
         } else {
             0u16
         };
@@ -2118,9 +2118,9 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // set and is only ever cleared (in `update`, on the teardown).
             // A battle with an enemy always has a live HUD in canon; only a
             // zero-enemy arena -- which canon never fields -- has to be told,
-            // hence FLAG_HUD_LIVE (see its own doc in fixture.rs).
+            // hence HUD_LIVE (see its own doc in fixture.rs).
             hud_live: !enemies.is_empty()
-                || fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false),
+                || fixture.map(|f| f.flags.hud_live()).unwrap_or(false),
             hand_icon_palette: (!blank_backdrop).then(hand_icon_palette),
             hud_tiles,
             hud_bg,
@@ -2317,7 +2317,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // regardless of the backdrop -- gated on `self.hud_tiles.is_some()`
         // rather than folded into the `backdrop.is_some()` block above (which
         // is what this was before this ticket). Every existing fixture and
-        // demo build has always carried FLAG_BLANK_HUD == FLAG_BLANK_BACKDROP
+        // demo build has always carried BLANK_HUD == BLANK_BACKDROP
         // (both set or both clear -- see fixture.rs's own descriptor table),
         // so this split changes nothing for any of them; it only matters for
         // a fixture that blanks the backdrop but NOT the HUD (a sterile arena
@@ -2490,7 +2490,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // on its first frame and hold the gauge, which is what opens the
         // window. No fixture: the default release build's own lineup always
         // fields at least one.
-        // EXCEPTION (TODO F8, measured): a fixture carrying FLAG_RESOLVE_OVER
+        // EXCEPTION (TODO F8, measured): a fixture carrying RESOLVE_OVER
         // is an enemy-less arena whose fight is already decided -- the
         // zero-enemy rows' stand-in for the canon side's own deleted-enemy
         // history, which resolves (canon's all-dead advance measured: the
@@ -2509,7 +2509,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // so there is no dissolve left to count.
         let decided = if self.fixture.is_some() {
             let f = self.fixture.unwrap();
-            (f.flag(fixture::FLAG_RESOLVE_OVER) || !self.enemies.is_empty())
+            (f.flags.resolve_over() || !self.enemies.is_empty())
                 && (self.megaman.is_defeated()
                     || self.megaman.is_dying()
                     || self.enemies.iter().all(|e| e.is_defeated() || e.is_dying()))
@@ -2520,7 +2520,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         };
         if decided && self.dissolve_in.is_none() {
             let instant = self.enemies.is_empty()
-                && matches!(self.fixture, Some(f) if f.flag(fixture::FLAG_RESOLVE_OVER));
+                && matches!(self.fixture, Some(f) if f.flags.resolve_over());
             // Seed the full count: this block runs before the take_damage
             // sites below each update, so the latch observes the killing blow
             // a frame late, and the 0x0C write lands DISSOLVE_FRAMES exported
@@ -2667,8 +2667,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     .collect();
                 // AUDIT wave 3d "bg3-merge": the shared HUD/window
                 // background, lazily created here for the isolated
-                // `window`/`card` checks (FLAG_BLANK_HUD with
-                // FLAG_OPEN_WINDOW -- `hud_tiles` is None there, so
+                // `window`/`card` checks (BLANK_HUD with
+                // OPEN_WINDOW -- `hud_tiles` is None there, so
                 // `Battle::new` never made one).
                 let bg = self.hud_bg.get_or_insert_with(|| {
                     RegularBackground::new(
@@ -2741,7 +2741,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 // answer with `PauseBattle` and battle state 0x14 in one
                 // breath (asm00_1.s:11188-11195). `gauge_pause` is this
                 // project's model of the chimes BEFORE that transition, so a
-                // fixture whose window may not open (FLAG_OPEN_WINDOW clear,
+                // fixture whose window may not open (OPEN_WINDOW clear,
                 // `demo-hudmatch`'s own case) has no transition to wait for
                 // and must keep running. It did not: the branch below that
                 // counts `gauge_pause` down is itself gated on
@@ -2966,14 +2966,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         }
         // AUDIT pairs 6/14/17: MegaMan fires the hand chips on a repeating
         // timer, so a capture run does not rely on key timing -- a fixture's
-        // own FLAG_AUTO_FIRE; its `fire_frame` seeds `auto_ticks` in
+        // own AUTO_FIRE; its `fire_frame` seeds `auto_ticks` in
         // `Battle::new` and reseeds it here between shots. Waits for the
         // fight to open, a free navi and a chip; the hand is cycled forever
         // (hand_at wraps) and the custom window is never allowed to open, so
         // a capture run keeps shooting the featured chip instead of dropping
         // into a chip select that empties the hand. No fixture: no auto-fire.
         if let Some(f) = self.fixture {
-            if f.flag(fixture::FLAG_AUTO_FIRE)
+            if f.flags.auto_fire()
                 && !paused
                 && self.intro_next >= self.enemies.len()
             {
@@ -3696,7 +3696,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                         // the comparison 1440 px a frame. The sheet itself is
                         // objects and shows on both sides. `self.backdrop` is
                         // None under exactly the same condition (sterile, or
-                        // a fixture's FLAG_BLANK_BACKDROP) so it stands in for
+                        // a fixture's BLANK_BACKDROP) so it stands in for
                         // the old cfg! check without a second stored flag.
                         if self.backdrop.is_some() {
                             self.panels.set(c, r, field::PANEL_POISON);
@@ -4115,7 +4115,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 // sub_801E95C, reference/bn6f asm/asm00_2.s:31328, sharing the banner's
                 // 0x6016E00 tile region per the NOTE at asm00_2.s:31152): it shows while
                 // the battle HUD is up and not past its teardown. The descriptor's
-                // FLAG_HUD_LIVE (fixture.rs: canon mask 0x4497 = live vs 0x8084 = torn
+                // HUD_LIVE (fixture.rs: canon mask 0x4497 = live vs 0x8084 = torn
                 // down) is the only thing that says which canon state sits behind a
                 // zero-enemy fixture -- the `popup` row (live) against the 43 chip rows
                 // (afterdissolve_0x0c). Measured: zero popup-region pixels over 210
@@ -4127,7 +4127,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 // used-static pad alongside it moves cursor -28 (154389->154361/909)
                 // with no logic change: layout-jitter class (cf. F30's +-21s), not a
                 // code-path effect. Kept as-is.
-                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
@@ -4136,7 +4136,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 // Same live-HUD gate as CHIP_INVISIBL above: the name popup
                 // shows only while the battle HUD is up (canon mask 0x4497
                 // live vs 0x8084 torn-down; builder sub_801E95C).
-                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
@@ -4150,7 +4150,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 // Same live-HUD gate as CHIP_INVISIBL above: the name popup
                 // shows only while the battle HUD is up (canon mask 0x4497
                 // live vs 0x8084 torn-down; builder sub_801E95C).
-                if self.fixture.map(|f| f.flag(fixture::FLAG_HUD_LIVE)).unwrap_or(false) {
+                if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
@@ -4496,7 +4496,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // FULL WHITE, held, not a ramp: the real ROM is 100% white through
             // its 71st frame and 0% on the 72nd. A demo build keeps the old
             // black ramp, so its fixtures' offsets still hold; a fixture's
-            // FLAG_SKIP_INTRO reproduces the same choice at runtime.
+            // SKIP_INTRO reproduces the same choice at runtime.
             if self.skip_intro() {
                 let amount = Num::from_raw((self.intro_fade as u8).div_ceil(2)); // canon: INTRO_SKIP_FADE counts half blend steps
                 frame
