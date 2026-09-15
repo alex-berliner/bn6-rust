@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>test D: bn — play in the browser</title>
+<style>
+  body { margin: 0; background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
+  header { padding: 10px 16px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header a { color: #8cf; }
+  #game { width: 100vw; height: calc(100svh - 44px); }
+  #diag { height: 44px; box-sizing: border-box; overflow: hidden; font: 11px/1.25 ui-monospace, Menlo, monospace; color: #9f9; background: #000; padding: 3px 6px; white-space: pre-wrap; }
+  kbd { background: #333; border-radius: 3px; padding: 0 5px; }
+</style>
+</head>
+<body>
+<p><a href="blog/index.html">Project blog: milestones</a> · <a href="learn.html">How it works, one slide at a time</a></p>
+<div id="diag">diagnostics: loading…</div>
+<div id="game"></div>
+<header>
+  <h1>bn</h1>
+  <span>d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) · start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open chip window</span>
+  <label>demo <select id="rom"></select></label>
+  <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
+  <span id="build"></span>
+</header>
+<script>
+  // diagnostics for the phone: keep the frame buffer so drawn pixels can be counted, and log to the strip
+  (function () {
+    var g = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (t, o) { if (t === 'webgl' || t === 'webgl2') { o = Object.assign({}, o || {}, { preserveDrawingBuffer: true }); } return g.call(this, t, o); };
+    window.__diag = []; var seen = 0;
+    function log(s) { window.__diag.push(s); window.__diag = window.__diag.slice(-2); var el = document.getElementById('diag'); if (el) { el.textContent = window.__diag.join(' | '); } }
+    window.addEventListener('error', function (e) { log('ERR ' + (e.message || e).toString().slice(0, 80)); });
+    var origErr = console.error; console.error = function () { try { log('console.error ' + Array.prototype.slice.call(arguments).join(' ').slice(0, 80)); } catch (e) {} return origErr.apply(console, arguments); };
+    setInterval(function () {
+      try {
+        var c = document.querySelector('canvas.ejs_canvas') || document.querySelector('canvas'); if (!c) { log('t=' + (seen += 2) + 's no canvas yet'); return; }
+        var gl = c.getContext('webgl2') || c.getContext('webgl'); var lost = gl ? gl.isContextLost() : 'nogl';
+        var lit = -1; try { var s = document.createElement('canvas'); s.width = 48; s.height = 32; var x = s.getContext('2d'); x.drawImage(c, 0, 0, 48, 32); var px = x.getImageData(0, 0, 48, 32).data; lit = 0; for (var i = 0; i < px.length; i += 4) { if (px[i] + px[i+1] + px[i+2] > 60) { lit++; } } } catch (e) { lit = 'read-fail'; }
+        var em = window.EJS_emulator; var r = c.getBoundingClientRect();
+        log('t=' + (seen += 2) + 's canvas ' + c.width + 'x' + c.height + ' at ' + Math.round(r.y) + ' css ' + Math.round(r.width) + 'x' + Math.round(r.height) + ' gl=' + (gl ? (gl instanceof WebGL2RenderingContext ? '2' : '1') : 'none') + ' lost=' + lost + ' lit=' + lit + '/1536 started=' + (em && em.started) + ' paused=' + (em && em.paused) + ' vp=' + innerWidth + 'x' + innerHeight + ' dpr=' + devicePixelRatio);
+      } catch (e) { log('diag error ' + e); }
+    }, 2000);
+  })();
+</script>
+<script>
+  // EmulatorJS runs mGBA compiled to WebAssembly; its loader and core come
+  // from its CDN, so a client needs internet for those, while the ROM is
+  // served from here. A cache-busting query keeps a rebuilt ROM fresh.
+  const stamp = Date.now();
+  const params = new URLSearchParams(location.search);
+  let romParam = params.get('rom') || 'bn6-rust.gba';
+  // A demo ROM may be given as ?rom=roms/sword.gba (from the dropdown) or
+  // ?rom=sword.gba (a bare name); demos live under roms/, so resolve a bare
+  // name there. The full game and the canon ROM live at the web root.
+  if (romParam !== 'bn6-rust.gba' && romParam !== 'real-bn6f.gba' && !romParam.includes('/')) {
+    romParam = 'roms/' + romParam;
+  }
+  EJS_player = '#game';
+  EJS_core = 'gba';
+  // The name is used for the emulator's save/state files: a bare name,
+  // no directory, no extension.
+  EJS_gameName = romParam.split('/').pop().replace(/\.gba$/, '');
+  EJS_gameUrl = romParam + '?' + stamp;
+  EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
+  EJS_startOnLoaded = true;
+  EJS_backgroundColor = '#111';
+  EJS_defaultControls = {
+    0: {
+      0: { value: 'x', value2: 'BUTTON_2' },       // B  = buster
+      8: { value: 'z', value2: 'BUTTON_1' },       // A  = chip
+      2: { value: 'shift', value2: 'SELECT' },
+      3: { value: 'enter', value2: 'START' },
+      4: { value: 'up arrow', value2: 'DPAD_UP' },
+      5: { value: 'down arrow', value2: 'DPAD_DOWN' },
+      6: { value: 'left arrow', value2: 'DPAD_LEFT' },
+      7: { value: 'right arrow', value2: 'DPAD_RIGHT' },
+      10: { value: 'a', value2: 'LEFT_TOP_SHOULDER' },
+      11: { value: 's', value2: 'RIGHT_TOP_SHOULDER' },
+    },
+    1: {},
+    2: {},
+    3: {},
+  };
+  // Every ROM's label starts with the moment it was packed
+  // ("2026-09-08 03:14 — <label>"), written by the build script itself
+  // (tools/build_roms.sh for web/roms/manifest.json, tools/web_rom.sh for
+  // web/build.txt) rather than derived from a file's mtime here -- see
+  // AUDIT.md pair 8. A label with no parseable timestamp is left OUT of the
+  // dropdown entirely, because there is no way to tell a fresh build from a
+  // stale one without it.
+  const TS_RE = /^(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s+—\s+(.*)$/;
+  // The demo dropdown: the canon reference first (it is never rebuilt, so it
+  // carries no pack timestamp and sits outside the sort below), then the
+  // full game and every demo ROM from web/roms/manifest.json, newest first.
+  // Picking one reloads with ?rom=... so the emulator restarts on the
+  // selected build.
+  Promise.all([
+    fetch('build.txt?' + stamp).then(r => r.ok ? r.text() : ''),
+    fetch('roms/manifest.json?' + stamp).then(r => r.ok ? r.json() : []),
+  ]).then(([buildTxt, roms]) => {
+    buildTxt = buildTxt.trim();
+    document.getElementById('build').textContent = buildTxt ? 'build ' + buildTxt : '';
+
+    const sel = document.getElementById('rom');
+    const add = (file, label) => {
+      const o = document.createElement('option');
+      o.value = file;
+      o.textContent = label;
+      if (file === romParam) o.selected = true;
+      sel.appendChild(o);
+    };
+    add('real-bn6f.gba', 'MMBN6F Falzar (canon ROM)');
+
+    const timestamped = [];
+    const game = TS_RE.exec(buildTxt);
+    if (game) timestamped.push({ file: 'bn6-rust.gba', ts: game[1],
+                                  label: game[1] + ' — Full game (Rust port)' });
+    for (const r of roms) {
+      const m = TS_RE.exec(r.label || '');
+      if (m) timestamped.push({ file: r.file, ts: m[1], label: r.label });
+    }
+    timestamped.sort((a, b) => b.ts.localeCompare(a.ts));
+    for (const e of timestamped) add(e.file, e.label);
+
+    sel.addEventListener('change', () => {
+      location.search = sel.value === 'bn6-rust.gba' ? '' : '?rom=' + encodeURIComponent(sel.value);
+    });
+    // Keep the download link in sync with the selection.
+    document.getElementById('dl').href = romParam;
+  }).catch(() => {});
+</script>
+<script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>
