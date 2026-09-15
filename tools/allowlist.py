@@ -54,5 +54,13 @@ ALLOWLIST = {
     "field:integrated": (28000, "AUDIT-6: HUD vs a zero-enemy arena, not compared before", "2026-09-08"),
     "warp:integrated": (19500, "AUDIT-6: HUD vs a zero-enemy arena, not compared before", "2026-09-08"),
     "buster:integrated": (28000, "AUDIT-6: HUD vs a zero-enemy arena, not compared before", "2026-09-08"),
-    "chip-use:integrated": (28000, "AUDIT-6: HUD vs a zero-enemy arena, not compared before", "2026-09-08"),
+    # chip-use re-titled by F41 (2026-09-15, NEGATIVE): the AUDIT-6 text was
+    # wrong for this row -- isolated (OBJ+HUD) reads 0, so the residue is not
+    # the HUD: ~8000/frame of BG1 backdrop-art mismatch (k=0..23) plus canon's
+    # RESULT window slide-in on BG3 (k=24..29, one 16-px column per frame,
+    # resultWindowSlideTick_802BE36, asm03_0.s:11701) that our never-resolving
+    # zero-enemy fixture cannot draw (F38b's RESOLVE_OVER retry measured worse;
+    # T7w's split: full 275307 / BG3-only 44306 / BG1-only 443520). See
+    # docs/worklog/F41.md. max_px and date unchanged.
+    "chip-use:integrated": (28000, "BG1 backdrop art + canon's RESULT window on BG3 (F41 NEGATIVE 2026-09-15: total 275307, not 2; band = resultWindowSlideTick_802BE36 16px/frame, rust side never resolves)", "2026-09-08"),
 }
