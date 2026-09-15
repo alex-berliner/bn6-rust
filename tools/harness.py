@@ -1997,6 +1997,93 @@ PORTED_CHECKS: List[Check] = [
         canon=_zero_enemy_canon("Start@10"),
         canon_variant="canon (sterile)",
     ),
+    # F45 (2026-09-16): three post-boundary per-layer attribution rows for the `field`
+    # integrated residue (158935/5606/40). NEW ROWS ONLY -- the `field` row above is
+    # untouched. Why the split exists: from rust capture 121 (= battle 110, k=5) self.shown
+    # is Some and battle.rs:4546-4549 skips filler_bg, so every layer drops one hardware BG
+    # (backdrop BG1->BG0, panels BG2->BG1, HUD BG3->BG2, shown->BG3) while canon's own
+    # RESULT window has not started (canon ~154). Past that boundary same content therefore
+    # pairs canon BG N with rust BG N-1 (the .show() order at src/battle.rs:4536-4549); at
+    # or before it, the SAME index N on both sides is the same-content pairing (that is
+    # what the `field` row's own note means by the stall at captures 118-120). Each row
+    # proves one thing only: whether the k>=5 bulk of field's 158935 px lives in the layer
+    # it isolates. A frame whose differing-pixel mask covers more than 75% of the 240x160
+    # screen is a full-screen render, not a layer mask (the measured gap sits between 28.9%
+    # and 92.5%, docs/recon/F45.md section 3), and is rejected in
+    # docs/coverage/field_integrated.md -- no number from a rejected frame is quoted there.
+    Check(
+        name="field-bg1",
+        ui="isolated",
+        frames=40,
+        align=Align(
+            # canon: the `field` row's own canon_ref 130 + the 5 pre-boundary frames
+            canon_ref=135,
+            # canon: the `field` row's own event-locked offset 108 + the same 5 frames
+            rust_offset=113,
+            search=None,
+            note="F45 post-boundary backdrop attribution: canon --only-bg 1 (backdrop) vs "
+                 "rust --only-bg 0, because rust capture 121 = k=5 is where the hardware "
+                 "layers renumber (self.shown Some, filler_bg skipped, src/battle.rs:4546-4549). "
+                 "Band: canon_ref=135 and rust_offset=113 are the `field` row's own "
+                 "event-locked pairing (mark's first wrapped frame) moved past the 5 "
+                 "pre-boundary frames -- search=None because a pairing already argued by "
+                 "event must not be re-picked by score (F2's rule). Proves whether the "
+                 "k>=5 bulk of field's 158935 px lives in the backdrop layer; frames with "
+                 ">75% mask coverage are rejected (full-screen render, not a layer mask) -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it; a stronger mask-row guard (mask_diff AND integ_equal AND not_in_occluder == 0) is left for a later ticket (F46/F47).",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
+                             extra=("--only-bg", "0")),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=DELETE_ENEMY,
+                              script="Start@10", extra=("--only-bg", "1")),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="field-bg2",
+        ui="isolated",
+        frames=40,
+        align=Align(
+            # canon: the `field` row's own canon_ref 130 + the 5 pre-boundary frames
+            canon_ref=135,
+            # canon: the `field` row's own event-locked offset 108 + the same 5 frames
+            rust_offset=113,
+            search=None,
+            note="F45 post-boundary field-panels attribution: canon --only-bg 2 (panels) vs "
+                 "rust --only-bg 1, same renumbering boundary as field-bg1 (rust capture 121 "
+                 "= k=5, self.shown Some). Band identical to field-bg1's (event-locked, not "
+                 "scored). Proves whether the k>=5 bulk of field's 158935 px lives in the "
+                 "field-panels layer; frames with >75% mask coverage are rejected -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
+                             extra=("--only-bg", "1")),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=DELETE_ENEMY,
+                              script="Start@10", extra=("--only-bg", "2")),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="field-bg3",
+        ui="isolated",
+        frames=40,
+        align=Align(
+            # canon: the `field` row's own canon_ref 130 + the 5 pre-boundary frames
+            canon_ref=135,
+            # canon: the `field` row's own event-locked offset 108 + the same 5 frames
+            rust_offset=113,
+            search=None,
+            note="F45 post-boundary HUD attribution: canon --only-bg 3 (HUD) vs rust "
+                 "--only-bg 2, same renumbering boundary as field-bg1 (rust capture 121 = "
+                 "k=5, self.shown Some). Weakest pairing of the three: rust's BG3 is the "
+                 "`shown` RESULT background from capture 121 while canon's BG3 is the HUD, "
+                 "and canon's own RESULT slide-in does not start until canon ~154 (k=24 of "
+                 "this window) -- so this row proves HUD parity, NOT the `shown` layer, and "
+                 "a large reading here is expected to be the shown-vs-HUD mismatch, not a "
+                 "HUD defect. Frames with >75% mask coverage are rejected -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
+                             extra=("--only-bg", "2")),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=DELETE_ENEMY,
+                              script="Start@10", extra=("--only-bg", "3")),
+        canon_variant="canon (sterile)",
+    ),
     Check(
         name="warp",
         ui="both",
