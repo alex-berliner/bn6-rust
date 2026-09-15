@@ -467,8 +467,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** dispatch third (after F38c and T9h land — F38c src/actor.rs+src/objects.rs, T9h src/gunner.rs+src/objects.rs (different dispatch slot); this is src/battle.rs+src/custom.rs; sequential after T9h, never paired). Worker muse-spark-1.3-contributor (T7c's child class — sequencer custom-screen states), verifier GLM-5.3-flash cross-family; ≤$0.20 expected, ≤$0.50 cap; verify_rows on the full table. Advances **M2**.
 ```
 
-### T7q. battle_full k=179 group: add the seq.state gate in Actor::update so the MegaMan executor's per-tick work respects SEQ_20/SEQ_24/SEQ_00/SEQ_04  *(OPEN -- 2026-09-15, follow-up to T7o PARTIAL 784c8e5)*
+### T7q. battle_full k=179 group: add the seq.state gate in Actor::update so the MegaMan executor's per-tick work respects SEQ_20/SEQ_24/SEQ_00/SEQ_04  *(BLOCKED -- 2026-09-15, T7q BLOCKED: worker hit cold-start / no-output failure in 2m25s)*
 
+**Result.** T7q BLOCKED: worker hit cold-start / no-output failure in 2m25s. No worktree created, no baseline, no edit. Retry needed with fresh dispatch.
 **Result.** T7q OPEN. T7o PARTIAL (784c8e5) shipped the SEQ04 seq-match-block relocation from src/battle.rs:2533 to :3268 (after t1_player_entry) and the cite chain sub_8008452/sub_800840C/sub_8008064 + asm00_1.s:9775/13126 (sub_800938A → battle_update_8007A44). Counts did NOT move: mm_state_action/mm_anim/mm_timer stayed at 101/86/302. T7o named the root cause: the MegaMan executor is ungated — `Actor::update` / `t1_player_entry` has no early-return when seq.state in {SEQ_20, SEQ_24, SEQ_00, SEQ_04}, so the executor's per-tick work still runs in those windows. Cursor improved 10/9/170→1/1/170 incidentally.
 **Result.** (target) battle_full's mm_state_action/mm_anim/mm_timer counts drop below 101/86/302 at k=179 with the seq.state gate cited from asm/object.s:???; cursor stays ≤1/1/170; mettaur stays 0/0/70; chip-use integrated stays at its current value; result 0/0/40 unchanged.
 
