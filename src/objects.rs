@@ -57,6 +57,40 @@ const T3_VULCAN_SEED: u8 = 0x12; // provenance: derived -- t3_0x12_80C6946, asm3
 /// T3 type of the shockwave segment: `t3_0x16_80C6B40` (asm31.s:31413).
 const T3_SHOCKWAVE: u8 = 0x16; // provenance: derived -- t3_0x16_80C6B40, asm31.s:31413
 
+// T7q: the MegaMan executor's per-tick gate. Canon runs
+// `playerObject_main_80EA460` (`reference/bn6f/asm/asm31.s:107131`) and
+// its tail `playerObject_update_80EA484` (asm31.s:107147), which calls
+// the per-tick work (input read `sub_8012E74`, AI tick `sub_8013DA0`,
+// state-machine dispatch `sub_801AC6C`, attack `ai_eventuallyRunsAIAttack_801AF44`,
+// etc). When the sequencer state is in the pre-fight window the
+// executor's per-tick work is gated (draw, timer tick, state advance
+// all skipped so +0x20 / CurState / CurAction hold their previous
+// values for that frame -- the same mechanism T7o PARTIAL [784c8e5]
+// observed the SEQ_04 -> SEQ_08 release edge fires AFTER). The gate
+// values 0x20/0x24/0x00/0x04 are off_8008038 entries 8/9/0/1,
+// respectively `sub_8008452` (window opening), `sub_8008492` (window
+// open), `sub_800840C` (post-window settle), `sub_8008064` (the
+// banner wait).
+const PLAYER_EXECUTOR_GATED_STATE_00: u32 = 0x00; // provenance: derived -- off_8008038 entry 0 (sub_800840C, the post-window settle)
+const PLAYER_EXECUTOR_GATED_STATE_04: u32 = 0x04; // provenance: derived -- off_8008038 entry 1 (sub_8008064, the banner wait)
+const PLAYER_EXECUTOR_GATED_STATE_20: u32 = 0x20; // provenance: derived -- off_8008038 entry 8 (sub_8008452, the window opening)
+const PLAYER_EXECUTOR_GATED_STATE_24: u32 = 0x24; // provenance: derived -- off_8008038 entry 9 (sub_8008492, the window open)
+
+/// True when canon's MegaMan executor (`playerObject_update_80EA484` /
+/// `sub_801AC6C`) early-returns because the sequencer is in a pre-fight
+/// window. Calling code skips `Actor::update` so the player's per-tick
+/// fields (CurState, CurAction, Timer, CurAnim) hold their previous
+/// frame's values for the frame.
+fn player_executor_gated(seq_state: u32) -> bool {
+    matches!(
+        seq_state,
+        PLAYER_EXECUTOR_GATED_STATE_00
+            | PLAYER_EXECUTOR_GATED_STATE_04
+            | PLAYER_EXECUTOR_GATED_STATE_20
+            | PLAYER_EXECUTOR_GATED_STATE_24
+    )
+}
+
 /// Which T3 table entry a shot ticks through. The discriminant IS the canon
 /// T3 type number (the `T3BattleObjectJumptable` index, asm00_1.s:2087), so
 /// `t3_entry`'s match reads as the table itself.
@@ -133,7 +167,23 @@ pub fn enemy_act(enemy: &mut Actor) -> Update {
 /// `playerObject_main_80EA460`. Reached through the same common path; the
 /// player's input sampling (`pwrAtkRelated_readsFromJoypad_8012FC8`,
 /// asm00_2.s:9332) stays at the battle.rs call site with the other input.
-pub fn t1_player_entry(player: &mut Actor) -> Update {
+///
+/// T7q: the `seq_state` parameter is the sequencer's current state
+/// (battle.rs's `self.seq.state`). When canon's MegaMan executor is in
+/// one of the pre-fight window states (SEQ_20/SEQ_24/SEQ_00/SEQ_04)
+/// its per-tick work is gated -- draw, timer tick, state advance all
+/// skipped (cited at asm31.s:107147 `playerObject_update_80EA484`'s
+/// call chain into `sub_801AC6C`/the AI attacks/etc, gated by the
+/// off_8008038 entries 8/9/0/1 dispatcher `sub_8009158` in
+/// asm00_1.s:12760 which routes SEQ_20/24/00/04 to the window/banner
+/// handler arms and does NOT itself call `RunBattleObjectLogic`).
+/// Porting the gate here means the per-tick fields stay at their
+/// previous-frame values for those frames, matching canon's
+/// observed +0x20/CurState/CurAction/CurAnim hold.
+pub fn t1_player_entry(player: &mut Actor, seq_state: u32) -> Update {
+    if player_executor_gated(seq_state) {
+        return Update::Nothing;
+    }
     battle_common_path(player)
 }
 
