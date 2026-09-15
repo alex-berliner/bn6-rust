@@ -2,7 +2,7 @@
  "generator": "tools/inventory.py",
  "rows": [
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 339,
@@ -13,11 +13,11 @@
     "49/00"
    ],
    "raw_bytes": "03 04 53 01 47 00 48 00 49 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA60 asm/asm03_0.s:11356",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA60 asm/asm03_0.s:11368",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 339,
@@ -28,11 +28,11 @@
     "4b/00"
    ],
    "raw_bytes": "03 04 53 01 47 00 4a 00 4b 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA6A asm/asm03_0.s:11358",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA6A asm/asm03_0.s:11370",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 342,
@@ -43,11 +43,11 @@
     "98/00"
    ],
    "raw_bytes": "03 04 56 01 46 00 46 00 98 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA74 asm/asm03_0.s:11360",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA74 asm/asm03_0.s:11372",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 343,
@@ -58,11 +58,11 @@
     "bb/00"
    ],
    "raw_bytes": "03 04 57 01 ba 00 bc 00 bb 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA7E asm/asm03_0.s:11362",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA7E asm/asm03_0.s:11374",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 334,
@@ -73,11 +73,11 @@
     "24/00"
    ],
    "raw_bytes": "03 04 4e 01 22 00 23 00 24 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA88 asm/asm03_0.s:11364",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA88 asm/asm03_0.s:11376",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 344,
@@ -88,11 +88,11 @@
     "e2/00"
    ],
    "raw_bytes": "03 04 58 01 4a 00 4b 00 e2 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA92 asm/asm03_0.s:11366",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA92 asm/asm03_0.s:11378",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 345,
@@ -103,11 +103,11 @@
     "2d/01"
    ],
    "raw_bytes": "03 04 59 01 96 00 96 00 2d 01",
-   "cite": "asm/asm03_0.s:11502 + byte_802BA9C asm/asm03_0.s:11368",
+   "cite": "asm/asm03_0.s:11514 + byte_802BA9C asm/asm03_0.s:11380",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 345,
@@ -118,11 +118,11 @@
     "32/01"
    ],
    "raw_bytes": "03 04 59 01 96 00 96 00 32 01",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAA6 asm/asm03_0.s:11370",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAA6 asm/asm03_0.s:11382",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 347,
@@ -133,11 +133,11 @@
     "b9/00"
    ],
    "raw_bytes": "03 04 5b 01 8b 00 c3 00 b9 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAB0 asm/asm03_0.s:11372",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAB0 asm/asm03_0.s:11384",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 348,
@@ -148,11 +148,11 @@
     "10/01"
    ],
    "raw_bytes": "03 04 5c 01 e2 00 ba 00 10 01",
-   "cite": "asm/asm03_0.s:11502 + byte_802BABA asm/asm03_0.s:11374",
+   "cite": "asm/asm03_0.s:11514 + byte_802BABA asm/asm03_0.s:11386",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 348,
@@ -163,11 +163,11 @@
     "e0/00"
    ],
    "raw_bytes": "03 04 5c 01 12 01 ba 00 e0 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAC4 asm/asm03_0.s:11376",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAC4 asm/asm03_0.s:11388",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 349,
@@ -178,11 +178,11 @@
     "18/01"
    ],
    "raw_bytes": "03 04 5d 01 16 01 17 01 18 01",
-   "cite": "asm/asm03_0.s:11502 + byte_802BACE asm/asm03_0.s:11378",
+   "cite": "asm/asm03_0.s:11514 + byte_802BACE asm/asm03_0.s:11390",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 4,
    "matcher_raw": 4,
    "result_chip": 346,
@@ -194,341 +194,341 @@
     "27/00"
    ],
    "raw_bytes": "04 04 5a 01 6d 00 3f 00 24 00 27 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAD8 asm/asm03_0.s:11380",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAD8 asm/asm03_0.s:11392",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 320,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 40 01 01 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAE4 asm/asm03_0.s:11382",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAE4 asm/asm03_0.s:11394",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 321,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 41 01 02 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAEA asm/asm03_0.s:11384",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAEA asm/asm03_0.s:11396",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 322,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 42 01 03 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAF0 asm/asm03_0.s:11386",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAF0 asm/asm03_0.s:11398",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 337,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 51 01 17 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAF6 asm/asm03_0.s:11388",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAF6 asm/asm03_0.s:11400",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 323,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 43 01 14 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BAFC asm/asm03_0.s:11390",
+   "cite": "asm/asm03_0.s:11514 + byte_802BAFC asm/asm03_0.s:11402",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 324,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 44 01 15 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB02 asm/asm03_0.s:11392",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB02 asm/asm03_0.s:11404",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 325,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 45 01 16 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB08 asm/asm03_0.s:11394",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB08 asm/asm03_0.s:11406",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 326,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 46 01 6b 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB0E asm/asm03_0.s:11396",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB0E asm/asm03_0.s:11408",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 327,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 47 01 6c 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB14 asm/asm03_0.s:11398",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB14 asm/asm03_0.s:11410",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 328,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 48 01 6d 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB1A asm/asm03_0.s:11400",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB1A asm/asm03_0.s:11412",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 338,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 52 01 09 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB20 asm/asm03_0.s:11402",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB20 asm/asm03_0.s:11414",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 338,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 52 01 0a 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB26 asm/asm03_0.s:11404",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB26 asm/asm03_0.s:11416",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 338,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 52 01 0b 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB2C asm/asm03_0.s:11406",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB2C asm/asm03_0.s:11418",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 341,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 55 01 32 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB32 asm/asm03_0.s:11408",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB32 asm/asm03_0.s:11420",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 340,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 54 01 13 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB38 asm/asm03_0.s:11410",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB38 asm/asm03_0.s:11422",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 335,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4f 01 90 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB3E asm/asm03_0.s:11412",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB3E asm/asm03_0.s:11424",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 335,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4f 01 c8 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB44 asm/asm03_0.s:11414",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB44 asm/asm03_0.s:11426",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 335,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4f 01 c9 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB4A asm/asm03_0.s:11416",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB4A asm/asm03_0.s:11428",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 329,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 49 01 5c 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB50 asm/asm03_0.s:11418",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB50 asm/asm03_0.s:11430",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 330,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4a 01 5d 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB56 asm/asm03_0.s:11420",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB56 asm/asm03_0.s:11432",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 331,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4b 01 5e 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB5C asm/asm03_0.s:11422",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB5C asm/asm03_0.s:11434",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 332,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4c 01 40 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB62 asm/asm03_0.s:11424",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB62 asm/asm03_0.s:11436",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 332,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4c 01 41 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB68 asm/asm03_0.s:11426",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB68 asm/asm03_0.s:11438",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 332,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4c 01 42 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB6E asm/asm03_0.s:11428",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB6E asm/asm03_0.s:11440",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 333,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4d 01 7b 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB74 asm/asm03_0.s:11430",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB74 asm/asm03_0.s:11442",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 333,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4d 01 7c 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB7A asm/asm03_0.s:11432",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB7A asm/asm03_0.s:11444",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 333,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 4d 01 7d 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB80 asm/asm03_0.s:11434",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB80 asm/asm03_0.s:11446",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 336,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 50 01 5f 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB86 asm/asm03_0.s:11436",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB86 asm/asm03_0.s:11448",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 336,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 50 01 60 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB8C asm/asm03_0.s:11438",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB8C asm/asm03_0.s:11450",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BCB0",
+   "list": "PARecipePtrsA_802BCB0",
    "count": 3,
    "matcher_raw": 0,
    "result_chip": 336,
    "result_name": "",
    "ingredients": [],
    "raw_bytes": "03 00 50 01 61 00",
-   "cite": "asm/asm03_0.s:11502 + byte_802BB92 asm/asm03_0.s:11440",
+   "cite": "asm/asm03_0.s:11514 + byte_802BB92 asm/asm03_0.s:11452",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 320,
@@ -539,11 +539,11 @@
     "0c/00"
    ],
    "raw_bytes": "03 04 40 01 01 00 01 00 0c 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BB98 asm/asm03_0.s:11442",
+   "cite": "asm/asm03_0.s:11493 + byte_802BB98 asm/asm03_0.s:11454",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 321,
@@ -554,11 +554,11 @@
     "0d/00"
    ],
    "raw_bytes": "03 04 41 01 02 00 02 00 0d 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBA2 asm/asm03_0.s:11444",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBA2 asm/asm03_0.s:11456",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 322,
@@ -569,11 +569,11 @@
     "0e/00"
    ],
    "raw_bytes": "03 04 42 01 03 00 03 00 0e 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBAC asm/asm03_0.s:11446",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBAC asm/asm03_0.s:11458",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 323,
@@ -584,11 +584,11 @@
     "6e/00"
    ],
    "raw_bytes": "03 04 43 01 14 00 14 00 6e 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBB6 asm/asm03_0.s:11448",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBB6 asm/asm03_0.s:11460",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 324,
@@ -599,11 +599,11 @@
     "6f/00"
    ],
    "raw_bytes": "03 04 44 01 15 00 15 00 6f 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBC0 asm/asm03_0.s:11450",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBC0 asm/asm03_0.s:11462",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 325,
@@ -614,11 +614,11 @@
     "70/00"
    ],
    "raw_bytes": "03 04 45 01 16 00 16 00 70 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBCA asm/asm03_0.s:11452",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBCA asm/asm03_0.s:11464",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 326,
@@ -629,11 +629,11 @@
     "2e/00"
    ],
    "raw_bytes": "03 04 46 01 6b 00 6b 00 2e 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBD4 asm/asm03_0.s:11454",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBD4 asm/asm03_0.s:11466",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 327,
@@ -644,11 +644,11 @@
     "2e/00"
    ],
    "raw_bytes": "03 04 47 01 6c 00 6c 00 2e 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBDE asm/asm03_0.s:11456",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBDE asm/asm03_0.s:11468",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 328,
@@ -659,11 +659,11 @@
     "2e/00"
    ],
    "raw_bytes": "03 04 48 01 6d 00 6d 00 2e 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBE8 asm/asm03_0.s:11458",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBE8 asm/asm03_0.s:11470",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 329,
@@ -674,11 +674,11 @@
     "05/00"
    ],
    "raw_bytes": "03 04 49 01 5c 00 5c 00 05 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBF2 asm/asm03_0.s:11460",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBF2 asm/asm03_0.s:11472",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 330,
@@ -689,11 +689,11 @@
     "06/00"
    ],
    "raw_bytes": "03 04 4a 01 5d 00 5d 00 06 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BBFC asm/asm03_0.s:11462",
+   "cite": "asm/asm03_0.s:11493 + byte_802BBFC asm/asm03_0.s:11474",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 331,
@@ -704,11 +704,11 @@
     "07/00"
    ],
    "raw_bytes": "03 04 4b 01 5e 00 5e 00 07 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC06 asm/asm03_0.s:11464",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC06 asm/asm03_0.s:11476",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 332,
@@ -719,11 +719,11 @@
     "42/00"
    ],
    "raw_bytes": "03 04 4c 01 40 00 41 00 42 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC10 asm/asm03_0.s:11466",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC10 asm/asm03_0.s:11478",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 333,
@@ -734,11 +734,11 @@
     "7d/00"
    ],
    "raw_bytes": "03 04 4d 01 7b 00 7c 00 7d 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC1A asm/asm03_0.s:11468",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC1A asm/asm03_0.s:11480",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 335,
@@ -749,11 +749,11 @@
     "c9/00"
    ],
    "raw_bytes": "03 04 4f 01 90 00 c8 00 c9 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC24 asm/asm03_0.s:11470",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC24 asm/asm03_0.s:11482",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 336,
@@ -764,11 +764,11 @@
     "61/00"
    ],
    "raw_bytes": "03 04 50 01 5f 00 60 00 61 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC2E asm/asm03_0.s:11472",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC2E asm/asm03_0.s:11484",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 337,
@@ -779,11 +779,11 @@
     "30/00"
    ],
    "raw_bytes": "03 04 51 01 17 00 17 00 30 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC38 asm/asm03_0.s:11474",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC38 asm/asm03_0.s:11486",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 338,
@@ -794,11 +794,11 @@
     "0b/00"
    ],
    "raw_bytes": "03 04 52 01 09 00 0a 00 0b 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC42 asm/asm03_0.s:11476",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC42 asm/asm03_0.s:11488",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 341,
@@ -809,11 +809,11 @@
     "33/00"
    ],
    "raw_bytes": "03 04 55 01 32 00 32 00 33 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC4C asm/asm03_0.s:11478",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC4C asm/asm03_0.s:11490",
    "status": "unrecorded"
   },
   {
-   "list": "off_802BC60",
+   "list": "PARecipePtrsB_802BC60",
    "count": 3,
    "matcher_raw": 4,
    "result_chip": 340,
@@ -824,7 +824,7 @@
     "4a/00"
    ],
    "raw_bytes": "03 04 54 01 13 00 13 00 4a 00",
-   "cite": "asm/asm03_0.s:11481 + byte_802BC56 asm/asm03_0.s:11480",
+   "cite": "asm/asm03_0.s:11493 + byte_802BC56 asm/asm03_0.s:11492",
    "status": "unrecorded"
   }
  ]

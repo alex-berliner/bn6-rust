@@ -2,69 +2,108 @@
  "generator": "tools/inventory.py",
  "rows": [
   {
-   "routine": "panel_800BFC4",
-   "cite": "asm/object.s:1018",
-   "status": "unrecorded"
+   "type": "0x0",
+   "meaning": "hole (skipped by every reader; flag word is the only one with bit 0x8000)",
+   "flag_word": "0x18000",
+   "writer": "unnamed: no direct strb of 0 to oPanelData_Type found",
+   "reader": "asm/asm38.s:4315-4317 (_object_setPanelType tst->skip) + asm/object.s:1426-1428 (tickPanels skip)",
+   "status": "unverified: reader-only (no writer cite)"
   },
   {
-   "routine": "object_getPanelParameters",
-   "cite": "asm/object.s:2153",
-   "status": "unrecorded"
+   "type": "0x1",
+   "meaning": "broken",
+   "flag_word": "0x14000",
+   "writer": "asm/object.s:2323 (object_breakPanel); also object_crackPanel 2nd arm asm/object.s:2235; cracked regen asm/object.s:1503-1504",
+   "reader": "asm/asm00_2.s:11130 (sub_8013CC4 cmp #1) + asm/object.s:1430-1434 (tickPanels regen 0x708)",
+   "status": "verified"
   },
   {
-   "routine": "object_crackPanel",
-   "cite": "asm/object.s:2201",
-   "status": "unrecorded"
+   "type": "0x2",
+   "meaning": "normal (regen target of broken)",
+   "flag_word": "0x10010",
+   "writer": "asm/object.s:1471-1472 (tickPanels regen); also asm/asm00_2.s:8300-8301 (sub_8012792 stage chip), asm/asm31.s:38397-38398 (t3_0x31_80C9F78), fire melts type 7 -> 2 asm/asm38.s:3575-3582 (sub_3007460)",
+   "reader": "asm/object.s:1460 (tickPanels default arm regen)",
+   "status": "verified"
   },
   {
-   "routine": "object_breakPanel",
-   "cite": "asm/object.s:2305",
-   "status": "unrecorded"
+   "type": "0x3",
+   "meaning": "cracked",
+   "flag_word": "0x10050",
+   "writer": "asm/object.s:2218-2222 (object_crackPanel 1st arm: Flags = (Flags & ~0x3f0f)+3, Type=3)",
+   "reader": "asm/object.s:1436-1442 (tickPanels: regen then -> 1)",
+   "status": "verified"
   },
   {
-   "routine": "object_breakPanelLoud",
-   "cite": "asm/object.s:2487",
-   "status": "unrecorded"
+   "type": "0x4",
+   "meaning": "poison",
+   "flag_word": "0x10110",
+   "writer": "asm/asm31.s:6146-6147 (sub_80BAE16 local arm)",
+   "reader": "asm/asm00_2.s:21674-21689 (sub_801A186 ticks oCollisionData_PoisonPanelTimer)",
+   "status": "verified"
   },
   {
-   "routine": "object_panel_setPoison",
-   "cite": "asm/object.s:2537",
-   "status": "unrecorded"
+   "type": "0x5",
+   "meaning": "holy",
+   "flag_word": "0x12010",
+   "writer": "unnamed: no writer found in bn6f disassembly (chip-side write not located)",
+   "reader": "asm/object.s:4831-4833 (object_calculateFinalDamage1 'cmp r1,#5 // holy panel?') + asm/asm00_2.s:22788-22791 (sub_801A7F4 halves the damage sum)",
+   "status": "unverified: reader-only (no writer cite)"
   },
   {
-   "routine": "object_highlightPanel",
-   "cite": "asm/object.s:2569",
-   "status": "unrecorded"
+   "type": "0x6",
+   "meaning": "grass",
+   "flag_word": "0x10410",
+   "writer": "asm/asm31.s:6168-6169 (sub_80BAE16 local arm) + asm/asm31.s:30843-30844 (cornfiestaRelatedObject_80C6580)",
+   "reader": "asm/asm38.s:3855-3862 (applyHeatOnGrassDamage_300766c 'cmp r0,#6 // grass')",
+   "status": "verified"
   },
   {
-   "routine": "object_setPanelType",
-   "cite": "asm/object.s:2600",
-   "status": "unrecorded"
+   "type": "0x7",
+   "meaning": "unnamed: stage terrain melted to normal(2) by fire (sub_3007460); ice candidate",
+   "flag_word": "0x10810",
+   "writer": "asm/asm31.s:6104-6105 (sub_80BAE16 local arm)",
+   "reader": "asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> setPanelType 2); readers asm/asm00_2.s:16573/17376/18848/19321/19552",
+   "status": "verified"
   },
   {
-   "routine": "object_setPanelAlliance",
-   "cite": "asm/object.s:2609",
-   "status": "unrecorded"
+   "type": "0x8",
+   "meaning": "unnamed: regen like broken, no writer located",
+   "flag_word": "0x11010",
+   "writer": "unnamed: no writer found",
+   "reader": "asm/object.s:1444-1450 (tickPanels regen 0x258/0x708)",
+   "status": "unverified: reader-only (no writer cite)"
   },
   {
-   "routine": "object_setPanelAllianceTimerLong",
-   "cite": "asm/object.s:2629",
-   "status": "unrecorded"
+   "type": "0x9",
+   "meaning": "unnamed: 9..0xC share flag word 0x10210; regen without the 0x708 blink timer",
+   "flag_word": "0x10210",
+   "writer": "unnamed: no writer found for 9 itself",
+   "reader": "asm/asm38.s:4318-4326 (_object_setPanelType: 9..0xC get Unk_12=0x708) + asm/object.s:1452-1458 + asm/asm00_2.s:21953-21960",
+   "status": "unverified: reader-only (no writer cite)"
   },
   {
-   "routine": "object_setPanelAllianceTimerShort",
-   "cite": "asm/object.s:2640",
-   "status": "unrecorded"
+   "type": "0xA",
+   "meaning": "unnamed: same regen group as 9",
+   "flag_word": "0x10210",
+   "writer": "unnamed: no writer found",
+   "reader": "asm/asm38.s:4318-4326 + asm/object.s:1452-1458 (9..0xC range)",
+   "status": "unverified: reader-only (no writer cite)"
   },
   {
-   "routine": "object_setPanelTypeBlink",
-   "cite": "asm/object.s:2651",
-   "status": "unrecorded"
+   "type": "0xB",
+   "meaning": "unnamed: stage type written from the hit object's CurState (alliance arm)",
+   "flag_word": "0x10210",
+   "writer": "asm/asm31.s:27871-27872 (t3_0x0_80C4E58, alliance != 0 arm)",
+   "reader": "asm/asm38.s:4318-4326 (_object_setPanelType 9..0xC)",
+   "status": "verified"
   },
   {
-   "routine": "object_checkPanelParameters",
-   "cite": "asm/object.s:2688",
-   "status": "unrecorded"
+   "type": "0xC",
+   "meaning": "unnamed: stage type written from the hit object's CurState (alliance arm)",
+   "flag_word": "0x10210",
+   "writer": "asm/asm31.s:27855-27856 (t3_0x0_80C4E58, alliance == 0 arm)",
+   "reader": "asm/asm38.s:4318-4326 (_object_setPanelType 9..0xC)",
+   "status": "verified"
   }
  ]
 }

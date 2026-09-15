@@ -2,8 +2,8 @@
 
 Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 
-- identity rows: 452 (byte_80182C4, bound inferred from getBattleArmPositionMaybe_8018810, asm00_2.s:20449)
-- think words: 32 (off_8109050, bound inferred from off_81090D0, asm31.s:169485); act words: 32 (off_81091D0, bound inferred from off_8109250, asm31.s:169680)
+- identity rows: 452 (byte_80182C4, bound inferred from getBattleArmPositionMaybe_8018810, asm00_2.s:20497)
+- think words: 32 (off_8109050, bound inferred from AIEnemyStruct1Ptrs_81090D0, asm31.s:169509); act words: 32 (off_81091D0, bound inferred from off_8109250, asm31.s:169704)
 - between them: Struct1 ptrs off_81090D0 (32 words, asm31.s:169485) and Struct2 ptrs off_8109150 (32 words, asm31.s:169550) — the ticket's 0x180 span is think+Struct1+Struct2; act starts exactly at its end
 - think entries are CurAction-indexed state-handler TABLE pointers (passed to battle_801B1C4 as a jump table, asm31.s:169395-169402; '// indexed by CurAction * 4', asm31.s:170981-170984) — NOT called routines; act words ARE called (mov lr,pc; bx r0)
 - think handler-table pointers named `For*_HHHHHHHH`: 2/32; distinct think handler tables over used AIIndexes (family count): 32; act routines named `For*`: 0/32
@@ -11,7 +11,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 - HP pointer: off_8109150 Struct2 elem_hp (asm31.s:169550, layout asm00_2.s:677-681); spot-check Mettaur elem_hp=0x0028 vs expected 0x28: **PASS**
 - HP pointer: off_8109150 Struct2 elem_hp (asm31.s:169550, layout asm00_2.s:677-681); spot-check Gunner elem_hp=0x003C vs expected 0x3C: **PASS**
 - known-answer: idx 0x01..0x04 -> AIIndex 0x01 -> ForMettaur_8109EF4: **PASS** (asm/asm31.s:170982 (T6))
-- known-answer: idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078: **PASS** (asm/asm32.s:10123 (definition; table slot asm31.s:169468) (T9b))
+- known-answer: idx 0x85 -> AIIndex 0x17 -> ForGunner_8113078: **PASS** (asm/asm32.s:10141 (definition; table slot asm31.s:169468) (T9b))
 - AIIndex with no think entry (32-word table): 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30
 - AIIndex with no act entry (32-word table): 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30
 
@@ -26,7 +26,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 
 ## Families (grouped by think handler-table pointer; cites are think file:line; think entries are CurAction-indexed handler tables, not called routines)
 
-### ForGunner_8113078 — 12 enemy_idx (think cite asm/asm32.s:10123)
+### ForGunner_8113078 — 12 enemy_idx (think cite asm/asm32.s:10141)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -43,7 +43,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x189 | 4 | ACTOR_TYPE_NAVI | 0x17 | nullsub_13 |
 | 0x18A | 5 | ACTOR_TYPE_NAVI | 0x17 | nullsub_13 |
 
-### ForMettaur_8109EF4 — 82 enemy_idx (think cite asm/asm31.s:170982)
+### ForMettaur_8109EF4 — 82 enemy_idx (think cite asm/asm31.s:171012)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -130,7 +130,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x106 | 5 | ACTOR_TYPE_NAVI | 0x01 | nullsub_13 |
 | 0x1A1 | 0 | ACTOR_TYPE_PLAYER | 0x01 | nullsub_13 |
 
-### off_8109B74 — 18 enemy_idx (think cite asm/asm31.s:170576)
+### off_8109B74 — 18 enemy_idx (think cite asm/asm31.s:170600)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -153,7 +153,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x19F | 0 | ACTOR_TYPE_NAVI | 0x00 | nullsub_13 |
 | 0x1A0 | 0 | ACTOR_TYPE_PLAYER | 0x00 | nullsub_13 |
 
-### off_810A550 — 13 enemy_idx (think cite asm/asm31.s:171935)
+### off_810A550 — 13 enemy_idx (think cite asm/asm31.s:172012)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -171,7 +171,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x10C | 5 | ACTOR_TYPE_NAVI | 0x02 | nullsub_13 |
 | 0x1A2 | 0 | ACTOR_TYPE_PLAYER | 0x02 | nullsub_13 |
 
-### off_810A9EC — 13 enemy_idx (think cite asm/asm31.s:172426)
+### off_810A9EC — 13 enemy_idx (think cite asm/asm31.s:172503)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -189,7 +189,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x112 | 5 | ACTOR_TYPE_VIRUS | 0x03 | sub_810ABD0 |
 | 0x1A3 | 0 | ACTOR_TYPE_PLAYER | 0x03 | sub_810ABD0 |
 
-### off_810B2D0 — 13 enemy_idx (think cite asm/asm31.s:173531)
+### off_810B2D0 — 13 enemy_idx (think cite asm/asm31.s:173608)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -207,7 +207,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x118 | 5 | ACTOR_TYPE_NAVI | 0x04 | nullsub_13 |
 | 0x1A4 | 0 | ACTOR_TYPE_PLAYER | 0x04 | nullsub_13 |
 
-### off_810BB94 — 13 enemy_idx (think cite asm/asm31.s:174575)
+### off_810BB94 — 13 enemy_idx (think cite asm/asm31.s:174652)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -225,7 +225,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x11E | 5 | ACTOR_TYPE_NAVI | 0x05 | nullsub_13 |
 | 0x1A5 | 0 | ACTOR_TYPE_PLAYER | 0x05 | nullsub_13 |
 
-### off_810C170 — 13 enemy_idx (think cite asm/asm31.s:175255)
+### off_810C170 — 13 enemy_idx (think cite asm/asm31.s:175332)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -243,7 +243,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x124 | 5 | ACTOR_TYPE_NAVI | 0x06 | nullsub_13 |
 | 0x1A6 | 0 | ACTOR_TYPE_PLAYER | 0x06 | nullsub_13 |
 
-### off_810C6F0 — 13 enemy_idx (think cite data/dat31.s:377)
+### off_810C6F0 — 13 enemy_idx (think cite data/dat31.s:384)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -261,7 +261,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x12A | 5 | ACTOR_TYPE_NAVI | 0x07 | nullsub_13 |
 | 0x1A7 | 0 | ACTOR_TYPE_PLAYER | 0x07 | nullsub_13 |
 
-### off_810CD60 — 13 enemy_idx (think cite data/dat31.s:1123)
+### off_810CD60 — 13 enemy_idx (think cite data/dat31.s:1130)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -279,7 +279,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x130 | 5 | ACTOR_TYPE_NAVI | 0x08 | nullsub_13 |
 | 0x1A8 | 0 | ACTOR_TYPE_PLAYER | 0x08 | nullsub_13 |
 
-### off_810D0F4 — 13 enemy_idx (think cite data/dat31.s:1450)
+### off_810D0F4 — 13 enemy_idx (think cite data/dat31.s:1457)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -297,7 +297,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x136 | 5 | ACTOR_TYPE_NAVI | 0x09 | nullsub_13 |
 | 0x1A9 | 0 | ACTOR_TYPE_PLAYER | 0x09 | nullsub_13 |
 
-### off_810D554 — 13 enemy_idx (think cite data/dat31.s:1960)
+### off_810D554 — 13 enemy_idx (think cite data/dat31.s:1967)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -315,7 +315,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x13C | 5 | ACTOR_TYPE_NAVI | 0x0A | nullsub_13 |
 | 0x1AA | 0 | ACTOR_TYPE_PLAYER | 0x0A | nullsub_13 |
 
-### off_810D910 — 13 enemy_idx (think cite data/dat31.s:2362)
+### off_810D910 — 13 enemy_idx (think cite data/dat31.s:2369)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -520,7 +520,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x183 | 4 | ACTOR_TYPE_NAVI | 0x16 | sub_81129EE |
 | 0x184 | 5 | ACTOR_TYPE_NAVI | 0x16 | sub_81129EE |
 
-### off_81135CC — 12 enemy_idx (think cite asm/asm32.s:10736)
+### off_81135CC — 12 enemy_idx (think cite asm/asm32.s:10758)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -537,7 +537,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x18F | 4 | ACTOR_TYPE_NAVI | 0x18 | nullsub_13 |
 | 0x190 | 5 | ACTOR_TYPE_NAVI | 0x18 | nullsub_13 |
 
-### off_8113D50 — 7 enemy_idx (think cite asm/asm32.s:11633)
+### off_8113D50 — 7 enemy_idx (think cite asm/asm32.s:11655)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -549,7 +549,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x96 | 5 | ACTOR_TYPE_VIRUS | 0x19 | nullsub_13 |
 | 0x1AC | 0 | ACTOR_TYPE_PLAYER | 0x19 | nullsub_13 |
 
-### off_81154F0 — 7 enemy_idx (think cite asm/asm32.s:14393)
+### off_81154F0 — 7 enemy_idx (think cite asm/asm32.s:14415)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -561,7 +561,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0xA2 | 5 | ACTOR_TYPE_VIRUS | 0x1B | nullsub_13 |
 | 0x1AE | 0 | ACTOR_TYPE_PLAYER | 0x1B | nullsub_13 |
 
-### off_8115950 — 7 enemy_idx (think cite asm/asm32.s:14872)
+### off_8115950 — 7 enemy_idx (think cite asm/asm32.s:14894)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -573,7 +573,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0xA8 | 5 | ACTOR_TYPE_VIRUS | 0x1C | sub_81159DC |
 | 0x1AF | 0 | ACTOR_TYPE_PLAYER | 0x1C | sub_81159DC |
 
-### off_8115DE0 — 7 enemy_idx (think cite asm/asm32.s:15371)
+### off_8115DE0 — 7 enemy_idx (think cite asm/asm32.s:15393)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -585,7 +585,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0xAE | 5 | ACTOR_TYPE_VIRUS | 0x1D | sub_81162AA |
 | 0x1B0 | 0 | ACTOR_TYPE_PLAYER | 0x1D | sub_81162AA |
 
-### off_81163F0 — 7 enemy_idx (think cite asm/asm32.s:15999)
+### off_81163F0 — 7 enemy_idx (think cite asm/asm32.s:16021)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -597,7 +597,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0xB4 | 5 | ACTOR_TYPE_VIRUS | 0x1E | sub_81165A4 |
 | 0x1B1 | 0 | ACTOR_TYPE_PLAYER | 0x1E | sub_81165A4 |
 
-### off_81166B0 — 7 enemy_idx (think cite asm/asm32.s:16238)
+### off_81166B0 — 7 enemy_idx (think cite asm/asm32.s:16260)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -609,7 +609,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0xBA | 5 | ACTOR_TYPE_VIRUS | 0x1F | nullsub_13 |
 | 0x1B2 | 0 | ACTOR_TYPE_PLAYER | 0x1F | nullsub_13 |
 
-### snakearmAttackTable_8114710 — 7 enemy_idx (think cite asm/asm32.s:12791)
+### snakearmAttackTable_8114710 — 7 enemy_idx (think cite asm/asm32.s:12813)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
