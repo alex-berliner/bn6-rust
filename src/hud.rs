@@ -79,7 +79,15 @@ impl Counter {
         // 55, then 51, then 50 -- steps of 5, 4 and 1, which is
         // |difference| / 8 + 4, not + 2. provenance: peeked (8, 4) -- fits
         // that one capture's own step sequence; no disassembly citation.
-        let step = self.shown.abs_diff(actual) / 8 + 4;
+        // Q1 (2026-09-15) looked for a canon walk routine to cite and did
+        // not find one: GetMaxAndCurHPForCurPETNavi_80010D4
+        // (asm/asm00_0.s:1963) is an accessor, the oBattleObject_HP readers
+        // at asm/asm00_1.s:12860/16301/16994 never step a display value, and
+        // no walk/divide site turned up in the HUD-tile chains. The pair is
+        // OUR fit to the capture, named so no bare literal remains.
+        const HP_WALK_DIVISOR: u16 = 8; // provenance: peeked -- from the measured 60->50 step sequence above
+        const HP_WALK_MIN_STEP: u16 = 4; // provenance: peeked -- same sequence; the +4 floor is what makes the last step land
+        let step = self.shown.abs_diff(actual) / HP_WALK_DIVISOR + HP_WALK_MIN_STEP;
         self.shown = if actual < self.shown {
             self.shown.saturating_sub(step).max(actual)
         } else {
