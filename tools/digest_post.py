@@ -96,6 +96,9 @@ def newcomer_digest(results, facts):
     """one plain-language account of the day for a reader who has never seen the project; '' when unusable"""
     items = "\n".join("- %s (%s): %s. RESULT: %s" % (tid, status, ttl, res) for tid, ttl, status, res in results)
     prompt = ("Write the day's progress report for a project blog whose reader has NEVER looked at the project and knows nothing about it. "
+              "The model to imitate is the Dolphin emulator's monthly progress reports: for each change, first explain the concept behind it "
+              "(what that part of the game or the emulation does and why a player would notice), then what was done and what it changed, as a "
+              "story, precise but free of jargon. "
               "Here is what the project is: %s\n\n%s\nRules: 500 to 900 words. Group the day's tickets by the part of the game they concern "
               "(an enemy, the fight's phases, the opening of a fight, the results screen, sound, the inventory of game data, the tooling), one "
               "section each with a ## heading in plain words. In every section first say what that part of the game is and why it matters, then "
