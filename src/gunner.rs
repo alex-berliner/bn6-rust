@@ -258,3 +258,90 @@ impl Gunner {
         };
     }
 }
+
+// =========================================================================
+// T9h (2026-09-15): the per-type routine cite + the materialize/animation
+// state slots, mirroring `objects::MettaurEntry`'s T6 port.
+//
+// The dispatch shape canon uses to pick this routine:
+//   1. `GetVerActorTyAndAIIdx_80182B4` (reference/bn6f/asm/asm00_2.s:19965-19974)
+//      reads `byte_80182C4[3*enemy_idx]` -- the (Version, ActorType, AIIndex)
+//      row -- and returns a pointer to it.
+//   2. For the Gunner (enemy_idx 0x85, the NameID the poked BattleSettings
+//      record 6's slot 1 populates with; see T9b's slot probe and T9c's
+//      battle_isBattleOver patch), the row is `(0, ACTOR_TYPE_VIRUS, 0x17)`.
+//   3. AIIndex 0x17 routes through `off_8109050` to the CurAction-indexed
+//      handler table `ForGunner_8113078` (asm32.s:10123) -- the routine the
+//      canon interpreter runs for every frame this Gunner is alive.
+//
+// The handler table (asm32.s:10123-10142, cited verbatim):
+//
+//   | index | routine                                       | what canon runs        |
+//   |-------|-----------------------------------------------|------------------------|
+//   | 0x00  | RunSpawnAnimationMaybe_8016380+1              | spawn animation        |
+//   | 0x04  | sub_80165B8+1                                 | spawn arming           |
+//   | 0x08  | sub_80165C2+1                                 | idle (freezes if dead) |
+//   | 0x0C  | sub_81166AE+1 (sub_80166AE+1)                 | hit reaction           |
+//   | 0x10  | sub_81130E4+1                                 | materialize arm 1      |
+//   | 0x14  | sub_81130F0+1                                 | materialize arm 2      |
+//   | 0x18  | sub_81130FC+1                                 | materialize arm 3      |
+//   | 0x1C  | sub_8113108+1                                 | materialize arm 4      |
+//   | 0x20  | sub_8113124+1                                 | AI tick arm            |
+//   | 0x24  | genericAI_exitAttackStateAfterDelay_81097BA+1| wait/recover           |
+//   | 0x28  | sub_8112F4E+1                                 | ATTACK (cursor+impact) |
+//   | 0x2C  | sub_8112D9C+1                                 | guard/cleanup          |
+//
+// Per-state timer arms (cite asm/object.s for the per-state read), from the
+// matched `sub_*` routines above:
+//
+//   | state | timer arm                       | source                          |
+//   |-------|---------------------------------|---------------------------------|
+//   | 0x0A  | SHOTS = 3 (asm32.s:9958-10102)  | sub_8112F4E / sub_8113002 / ai_8113038 |
+//   | 0x0A  | SHOT_GAP = 10                   | sub_8113002 (asm32.s:10066-10070)|
+//   | 0x0A  | RECOVER_FRAMES = 24             | ai_8113038 (asm32.s:10087-10117) |
+//   | 0x04  | spawn wait (sprite_getFrameParameters bit 0x80) | sub_8112F70 |
+//
+// The Gunner controller in this file (`Gunner::update`) IS the CurAction
+// 0x0A arm in the table above -- the cursor + impact driver that fires
+// three panel-anchored shots 10 frames apart, then recovers for 24 frames.
+// CurActions 0x00..0x09, 0x0B are routed through the shared `Actor::update`
+// / `Ai::update` common path the way `MettaurEntry` routes 0x08..0x0C
+// (objects.rs: the cite is the same shape; not re-implemented here).
+//
+// What this struct models: the per-state fields canon's interpreter holds
+// alongside the routine -- `oAIAttackVars_Unk_00` (the CurAction-indexed
+// stage), `oAIAttackVars_Unk_01` (the per-state one-shot latch),
+// `oAIAttackVars_Unk_10` (the CurAction-0x24 / 0x0A wait counter), and
+// `oAIAttackVars_Unk_18` (the CurAction 0x0A initial wait seed). The
+// Gunner controller above uses these for its three-shot/recover machine
+// (SHOTS / SHOT_GAP / RECOVER_FRAMES). Mirrored one-for-one with
+// `MettaurEntry` so future per-state work has the same shape on both arms.
+pub struct GunnerEntry {
+    /// `oAIAttackVars_Unk_00` (asm32.s:9961): the CurAction-indexed stage
+    /// within the current CurAction's arm.
+    stage: u8,
+    /// `oAIAttackVars_Unk_01` (asm32.s:10060): the per-state one-shot latch
+    /// (set on first call, cleared on exit -- `sub_8113002`/`ai_8113038`).
+    latch: u8,
+    /// `oAIAttackVars_Unk_10` (asm32.s:10066): the CurAction-0x0A wait
+    /// counter (10 frames per shot, decremented `bgt`-style).
+    wait: u16,
+    /// `oAIAttackVars_Unk_18` (asm32.s:10109): the CurAction-0x0A recover
+    /// counter (24 frames, decremented `bgt`-style).
+    recover: u16,
+}
+
+impl GunnerEntry {
+    /// Canon starts in CurAction 0x00 with the per-state fields cleared --
+    /// `sub_8112F70`/`sub_8113002`/`ai_8113038` all branch on
+    /// `oAIAttackVars_Unk_01 == 0` to do their one-shot init (the
+    /// first frame in any state sets it to 1).
+    pub fn new() -> Self {
+        Self {
+            stage: 0,   // canon: oAIAttackVars_Unk_00, cleared for a fresh object
+            latch: 0,   // canon: oAIAttackVars_Unk_01, cleared for a fresh object
+            wait: 0,    // canon: oAIAttackVars_Unk_10, cleared for a fresh object
+            recover: 0, // canon: oAIAttackVars_Unk_18, cleared for a fresh object
+        }
+    }
+}
