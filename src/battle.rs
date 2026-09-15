@@ -3257,7 +3257,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.bubble = None;
             }
         }
-        let navi_update = objects::t1_player_entry(&mut self.megaman);
+        let navi_update = objects::t1_player_entry(&mut self.megaman, self.seq.state);
         // T7o: SEQ04 seq-match block relocated here from :2533 (was before
         // the executor). Citation: asm/object.s per-tick order:
         // sub_8008452 (window opening, SEQ_20, off_8008038 entry 8),
