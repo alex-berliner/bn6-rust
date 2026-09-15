@@ -75,3 +75,12 @@ Dropped idea: porting the aim cursor per the ticket's cite — the split and the
   make our window open on canon's schedule and freeze our battle in step. NOT attempted here
   (gauge is outside this ticket's allowed GUNNER_ROW fields).
 - The enemy HP box pair layout (second box) and the k=0..5 fade are independent, smaller.
+
+## Step 6 — verify_rows.py from its own clean checkout (3f516d4)
+
+PASS, all expectations matched: gunner 2105613/38237/130/2284867 MATCH (status FAILED =
+the row under repair, expected), cursor **1/1/170** (<=1/1/170 ✓), mettaur 0/0/70 PASS,
+opening 0/0/40, warp 0/0/30, field 0/0/40, chip-use 0/0/30 all PASS unchanged; chip
+spot-checks chip-cannon 0/0/40, chip-vulcan2 0/0/70, chip-recov30 0/0/40 (total/worst 0;
+the "30" in the scoreboard's 0/0/30 is the negative total, verified not-blind by the tool).
+No BLIND anywhere.
