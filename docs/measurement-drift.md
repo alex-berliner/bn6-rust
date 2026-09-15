@@ -48,7 +48,7 @@ Every delta against a fixed point, in measurement order:
 |---|---|---|---|---|
 | F45 landed line (session ~18:16) | ab80121e… | 158935/5606/261034 | — | 4560 (19 rows) |
 | F46 session 18:28 | ab80121e… | 158953/5624/261052 | **+18** | 5280 (22 rows) |
-| F48 session ~19:15, old ROM re-run in F45's tree | ab80121e… | 158953/5624/261052 | **+18, exactly F46's** | (not run) |
+| F48 session ~19:15, old ROM re-run in F45's tree | ab80121e… | 158953/5624/261052 | **+18, exactly F46's** | 5280 — **also exactly F46's** (command 12) |
 | F48 session, own tree ed9c9c1 (T17/T19 chips) | 1997be3b… | 158930/5601/261029 ×4 | **−23 vs old ROM** | 4800 (20 rows) |
 | coordinator "today's main" (ticket text) | ? | 158928 | −2 vs F48's new-ROM reading | ? |
 
@@ -70,13 +70,14 @@ input-version event between F45's 18:16 session and F46's 18:28 session moved it
 +3 scanline rows). Candidate for that event, on the record: the documented verifier
 destruction/restore of the /tmp canon inputs (restore mtimes 18:41 on `/tmp/bn6f_real.gba` +
 `/tmp/bn6f_sterile.gba`; destruction time and file not recorded — the ticket itself says "a
-verifier destroyed one today and it cost a landing"). Note F46's 18:28 run and this ticket's ~19:15
-old-ROM run straddle that restore and read identically, so the restore itself did NOT change
-readings; F45's 18:16 line is the one un-reproduced outlier, and no input set available now
-reproduces it. The commit pairs to diff if the hunt reopens: `1c49bc5`..`ed9c9c1` for
-`src/ vendor/ assets/` (the −23, already explained by T17/T19), and — for the +18 — the /tmp
-input history, which git cannot see: re-run `field` at `1c49bc5` against each candidate input
-version (pre/post restore) if anyone revives this.
+verifier destroyed one today and it cost a landing"). Note F46's 18:28 run and this ticket's
+~19:15 old-ROM runs straddle that restore and read identically — and the old-ROM re-run
+reproduced F46's numbers on BOTH rows tested (field 158953, bg2 5280), so session
+reproducibility on identical inputs is 3 for 3 — while F45's 18:16 line is the one un-reproduced
+outlier, and no input set available now reproduces it. The commit pairs to diff if the hunt
+reopens: `1c49bc5`..`ed9c9c1` for `src/ vendor/ assets/` (the −23, already explained by
+T17/T19), and — for the +18 — the /tmp input history, which git cannot see: re-run `field` at
+`1c49bc5` against each candidate input version (pre/post restore) if anyone revives this.
 
 `opening integrated 18740/647/40` and `gunner 2105613/38237/130` reproduce EXACTLY across both ROM
 generations and at least four independent sessions — the constants F44 was landed on are stable
