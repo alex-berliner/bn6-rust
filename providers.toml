@@ -27,6 +27,7 @@
 # worker-class models produced accounts that named tickets without saying what they were; "pi" uses the run
 # profiles' digest job instead.
 digest_writer = "claude:claude-opus-5"
+slides_writer = "claude:claude-opus-5"   # the learn feed too: readable content is Opus's job (the user, 2026-09-15)
 
 [schedule]
 runs = ["hyper", "minimax"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all

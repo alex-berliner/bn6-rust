@@ -35,6 +35,7 @@ def titles():
 
 def pick_model(explicit):
     if explicit: return explicit
+    if writer().startswith("claude:"): return writer()
     import tomllib
     for run in tomllib.load(open("providers.toml", "rb"))["schedule"]["runs"]:
         r = subprocess.run(["python3", "tools/roles.py", "model", run, "digest", "--tail"], capture_output=True, text=True)
@@ -42,7 +43,19 @@ def pick_model(explicit):
     return None
 
 
+def writer():
+    import tomllib
+    try: return tomllib.load(open("providers.toml", "rb")).get("roundup", {}).get("slides_writer", "pi")
+    except Exception: return "pi"
+
+
 def ask(model, prompt):
+    if model.startswith("claude:"):
+        r = subprocess.run(["claude", "-p", "--model", model.split(":", 1)[1], "--output-format", "text", prompt],
+                           capture_output=True, text=True, timeout=1800, stdin=subprocess.DEVNULL, cwd=ROOT)
+        last = r.stdout.strip(); os.makedirs("/tmp/bn-learn", exist_ok=True)
+        open("/tmp/bn-learn/reply-%s.txt" % re.sub(r"\W", "_", prompt[-40:]), "w").write(last)
+        return [x for x in json_objects(last) if isinstance(x, dict) and "title" in x], 0.0
     p = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", model, "--thinking", "medium",
                         "--tools", "read,grep,find,ls", prompt], capture_output=True, text=True, timeout=1500, stdin=subprocess.DEVNULL)
     last, cost = "", 0.0
@@ -99,10 +112,15 @@ def check(slide, known):
     path = slide["codePath"].strip()
     if not (path.startswith("src/") and os.path.exists(path)): why.append("codePath not a file under src/: %r" % path)
     else:
-        real = {l.strip() for l in open(path).read().splitlines() if l.strip()}
+        real = [l.strip() for l in open(path).read().splitlines() if l.strip()]; realset = set(real)
         lines = [l for l in slide["code"].splitlines() if l.strip()]
         if len(lines) > 22: why.append("code longer than 22 lines")
-        fake = [l for l in lines if l.strip() not in real and not l.strip().startswith("// ...")]
+        def excerpt(l):
+            t = l.strip()
+            if t in realset or t.startswith("// ..."): return True
+            head = t.split("//")[0].rstrip()                      # a trailing comment left out or shortened is fine
+            return bool(head) and any(r.startswith(head) for r in real)
+        fake = [l for l in lines if not excerpt(l)]
         if fake: why.append("code not an excerpt of %s: %r" % (path, fake[:2]))
     words = len(slide["text"].split())
     if not 45 <= words <= 130: why.append("text is %d words (45-130)" % words)
