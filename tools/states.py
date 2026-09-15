@@ -607,9 +607,40 @@ TRACE_SCENARIOS = {
             "fixture": {
                 "enemies": 1, "enemy_kind": 0, "enemy_col": 5, "enemy_row": 2,
                 "megaman_hp": 60, "megaman_col": 2, "megaman_row": 2,
-                "hand": [1], "hand_count": 1, "gauge": 0, "flags": 0x19,
+                "hand": [1], "hand_count": 1,
+                # T7r (2026-09-15): set gauge non-zero so Battle::new seeds the
+                # gauge to GAUGE_FULL (src/battle.rs:1975 -- `f.gauge != 0 ?
+                # GAUGE_FULL : 0`). The gauge-fill branch (src/battle.rs:2724)
+                # then arms gauge_pause = GAUGE_PAUSE (60 frames) once intro
+                # finishes; the countdown (src/battle.rs:2615-2655) opens the
+                # chip window at frame ~124 (rust side), transitions
+                # SEQ_08 -> SEQ_20 -> SEQ_24 -> SEQ_00 -> SEQ_04, and trips
+                # T7q's seq.state gate in t1_player_entry (src/objects.rs:184)
+                # so the k=179 group divergence drops. The "scripted-L"
+                # cited in the ticket text is canon's PAUSED-state side
+                # effect (sub_800A21C asm00_1.s:15203-15218): a full gauge
+                # alone triggers the window opening; the L press itself is a
+                # no-op in canon's fight state.
+                "gauge": 1,
+                "flags": 0x19,
+                # T7r: also pre-pick the cannon and place the cursor on the OK
+                # button (custom::OK = 0xa, src/custom.rs:106) so the scripted
+                # A press below closes the window on its first try -- matches
+                # canon's L@40 -> Start@70 -> A@80 progression (canon recipe
+                # above). Without window_cursor=OK the A press would add
+                # whatever slot cursor_at starts on, never close.
+                "deck_count": 5, "deck": [5, 4, 71, 54, 1],
+                "deck_codes": [3, 0xFF, 18, 0xFF, 0xFF],
+                "window_pick_count": 1, "window_pick_slot": 4, "window_cursor": 0xa,
                 "fire_frame": 180, "enemy_hp": 0,
             },
+            # T7r: scripted A press at frame 170 (after the window opens at
+            # ~k=124; window_pick_count pre-selects Cannon and OK is already
+            # cursor_at so A closes the window immediately, src/custom.rs:
+            # 1201-1210). Window close -> SEQ_00 (settle) -> SEQ_04 (banner
+            # wait) -> SEQ_08 (fight) per the seq.match block at
+            # src/battle.rs:3270-3277 (sub_800840C/sub_8008064 edges).
+            "script": "A@170",
         },
     },
 }
