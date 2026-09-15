@@ -155,12 +155,21 @@ impl SceneFlags {
     }
 }
 
+/// Raw-byte door for the harness's poke/cheat path only: the fixture descriptor
+/// at [`ADDR`] arrives (and is written by tools/harness.py) as plain bytes, so
+/// something must turn a byte into typed flags. NOT for call-site bit tests --
+/// test bits with the named consts and accessors (`SceneFlags::OPEN_WINDOW`,
+/// `flags.open_window()`), never a bare `f.flags.0 & 0x20` (that is the
+/// raw-bit style this newtype exists to remove).
 impl From<u8> for SceneFlags {
     fn from(bits: u8) -> Self {
         SceneFlags(bits)
     }
 }
 
+/// Inverse of the raw-byte door: serializes typed flags back to the descriptor
+/// byte for the harness's poke/cheat path, which writes bytes. NOT a licence for
+/// call-site bit tests -- see [`From<u8> for SceneFlags`]'s doc.
 impl From<SceneFlags> for u8 {
     fn from(flags: SceneFlags) -> u8 {
         flags.0
