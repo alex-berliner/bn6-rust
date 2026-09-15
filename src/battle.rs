@@ -1895,17 +1895,45 @@ impl<'a> Battle<'a> {
         // lineup.
         let (mut enemies, ais): (Vec<Actor>, Vec<ai::Ai>) = if let Some(f) = fixture {
             // enemy_kind 0 = Mettaur, the only kind FIXTURE.md defines yet.
-            // Laid out on a diagonal -- (enemy_col, enemy_row), (+1, +1),
-            // (+2, +1)... -- which is the only multi-enemy shape any
-            // existing fixture needs.
+            // Spawn cell per slot:
+            //   - default: diagonal (enemy_col+i, enemy_row+i) -- the only
+            //     multi-enemy shape every pre-F38h descriptor used.
+            //   - F38h override: when the fixture's panel_override_mask
+            //     has bit `i` set, use panel_col[i] / panel_row[i] instead.
+            //     The opening scenario's three Mettaurs sit at (5,1)/(5,3)/
+            //     (6,2) (the real ROM's per-enemy panel-cell triple from
+            //     spawnEnemy_80073E2 asm00_1.s:8695, applied to slots 0/1/2);
+            //     the diagonal default would have put them at (4,1)/(5,2)/
+            //     (6,3) instead, which is what rust produced pre-F38h and
+            //     what made the second-cluster materialize land at y=88..104
+            //     instead of y=112..128 (F38d's table). Cite:
+            //     reference/bn6f/asm/asm00_1.s:8695 -- the real ROM's
+            //     per-enemy panel-cell reader pulls panel_y from the high
+            //     bits of EnemySetup byte 1 (bits 4-6) and panel_x from
+            //     the low bits (bits 0-2); this fixture encodes col and
+            //     row as separate u8s so any per-scenario row can name any
+            //     of the 6x3 panel grid.
             let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
             let mut es = alloc::vec::Vec::new();
             let mut ai_list = alloc::vec::Vec::new();
             for i in 0..f.enemies as i32 {
+                let (col, row) = if (f.panel_override_mask & (1 << i)) != 0 {
+                    // F38h: explicit per-slot panel cell from the
+                    // descriptor's panel_col[i] / panel_row[i]. panel_col
+                    // and panel_row are derived from the real ROM's
+                    // spawnEnemy_80073E2 data (peeked from the battlestart
+                    // state's per-enemy EnemySetup bytes, cited at
+                    // asm00_1.s:8695); per-scenario, not fitted.
+                    (f.panel_col[i as usize] as i32, f.panel_row[i as usize] as i32)
+                } else {
+                    // Default diagonal: the only multi-enemy shape every
+                    // pre-F38h descriptor needed (enemy_col+i, enemy_row+i).
+                    (f.enemy_col as i32 + i, f.enemy_row as i32 + i)
+                };
                 es.push(Actor::new(
                     spr::Assets::new(METTAUR),
-                    f.enemy_col as i32 + i,
-                    f.enemy_row as i32 + i,
+                    col,
+                    row,
                     true,
                     enemy(hp),
                 ));

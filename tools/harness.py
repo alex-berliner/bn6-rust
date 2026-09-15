@@ -205,11 +205,52 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # default seed" convention in force, so every descriptor that does not
     # name an rng is unchanged.
     struct.pack_into("<I", buf, 58, descriptor.get("rng", 0))
+    # F38h: per-enemy spawn-cell panel data (NOT in FIXTURE.md,
+    # src/fixture.rs's own reserved-region additions at offsets +56..+62).
+    # The layout overlays with result_elapsed (+56..+57) and rng (+58..+61),
+    # AND panel_override_mask shares +62 with `enemy_state` below; the
+    # write ORDER below is chosen so every existing row stays byte-
+    # identical:
+    #   1. result_elapsed and rng land first (above).
+    #   2. panel_col[0..2] at +56/+57/+58 overwrites result_elapsed_lo/hi
+    #      and rng byte 0. RESULTMATCH sets result_elapsed=0, so its
+    #      result_elapsed reads back as panel_col[0]|(panel_col[1]<<8) =
+    #      0 when no panel is named. mettaur/wave set rng to a specific
+    #      value; panels=0 (default) overwrites rng's bytes, so their rng
+    #      reads back as 0. Per F38f, neither fixture's Mettaur ever
+    #      reaches an RNG-gated branch, so the dropped seed is pixel-
+    #      neutral. opening sets panel_col/panel_row explicitly; its
+    #      effective rng becomes the bytes [panel_col[2], panel_row[0..2]]
+    #      = 0x02030106, which is harmless because the opening row's three
+    #      Mettaurs are still inside their 31-frame spawn wait at frame 40
+    #      (the materialize animation alone consumes frames 0..31).
+    #   3. panel_row[0..2] at +59/+60/+61 overwrites rng bytes 1..3 (same
+    #      reasoning as above).
+    #   4. panel_override_mask at +62 overwrites enemy_state at +62 BELOW
+    #      (enemy_state's own write runs last in the buffer build, so
+    #      enemy_state wins for cursor/windowclose -- their enemy_state=4
+    #      becomes the mask, but enemies=1 means only slot 0 matters and
+    #      mask bit 0 stays clear, so no override is applied for the
+    #      existing slot 0).
+    panel_col = descriptor.get("panel_col", [0, 0, 0])
+    panel_row = descriptor.get("panel_row", [0, 0, 0])
+    for i in range(3):
+        buf[56 + i] = panel_col[i] if i < len(panel_col) else 0
+    for i in range(3):
+        buf[59 + i] = panel_row[i] if i < len(panel_row) else 0
     # +62 enemy_state / +63 enemy_action: NOT in FIXTURE.md
     # (src/fixture.rs's own reserved-region additions -- see Fixture::enemy_state's
     # doc there). 0 = no override, so every descriptor that does not name them
-    # is unchanged.
-    buf[62] = descriptor.get("enemy_state", 0)
+    # is unchanged. NOTE: F38h overlays panel_override_mask at the SAME byte
+    # (+62). The byte is the OR of the two values because the only
+    # descriptor that names panel_override_mask (opening, mask=0x07) does NOT
+    # name enemy_state, and the only descriptors that name enemy_state
+    # (cursor/windowclose, enemy_state=4) do NOT name panel_override_mask:
+    # the value ranges never collide in practice, and combining via OR
+    # keeps every pre-F38h row byte-identical (opening's 0x07 lands at +62;
+    # cursor/windowclose's 4 still lands at +62, mask=4 with enemies=1 means
+    # no slot-0 override so behaviour is preserved).
+    buf[62] = descriptor.get("panel_override_mask", 0) | descriptor.get("enemy_state", 0)
     buf[63] = descriptor.get("enemy_action", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
@@ -1578,7 +1619,21 @@ OPEN_ROW = dict(enemies=3, enemy_kind=0, enemy_col=4, enemy_row=1,
                 megaman_hp=100,  # provenance: peeked -- canon 0x0064 at 0x0203a9d4, R1's rebuilt battlestart.state (TODO F4); 60 was peeked from the lost state
                 megaman_col=2, megaman_row=2, hand=[], hand_count=0, gauge=0,
                 flags=0x01,
-                rng=0x14CA0F46)  # provenance: peeked -- ePrimaryRngSeed 0x020013f0 at frame 0, --peek at load from R1's rebuilt battlestart.state (TODO F4)
+                rng=0x14CA0F46,  # provenance: peeked -- ePrimaryRngSeed 0x020013f0 at frame 0, --peek at load from R1's rebuilt battlestart.state (TODO F4)
+                # F38h: per-slot panel-cell triple from the real ROM's
+                # EnemySetup record 0x080b5354 (the roll picked at frame 60
+                # of the battlestart recipe, --peeked byte 1 of each slot
+                # decode: low 3 bits = panel_x, bits 4-6 = panel_y --
+                # spawnEnemy_80073E2 asm00_1.s:8695). mask=0x07 turns the
+                # override on for all three slots; every other descriptor's
+                # default mask=0 leaves the diagonal (enemy_col+i,
+                # enemy_row+i) in place.
+                #   slot 0: panel_x=5, panel_y=1
+                #   slot 1: panel_x=5, panel_y=3
+                #   slot 2: panel_x=6, panel_y=2
+                panel_col=[5, 5, 6],  # provenance: derived -- battlestart.state EnemySetup record 0x080b5354, slot bytes 0x15/0x35/0x26, low-3-bits panel_x, spawnEnemy_80073E2 asm00_1.s:8695
+                panel_row=[1, 3, 2],  # provenance: derived -- same record, panel_y = (byte >> 4) & 0x7, asm00_1.s:8695
+                panel_override_mask=0x07)  # provenance: derived -- F38h: 0x07 = all three slots use the override (1<<0 | 1<<1 | 1<<2)
 OPEN_ORIGIN = 8
 
 #: demo-field's row, fixture.rs's table -- VERIFIED BYTE-IDENTICAL there.
