@@ -1275,7 +1275,26 @@ SECTION_NOTES = {
             " #0x82/#0x70/#0x5e dispatching to byte_812489C/81248C0/"
             " 81248E4/812492C) -- so the byte->art mapping is a per-scene"
             " compare chain over four tile arrays, not a table. Still a"
-            " GAP for a table."),
+            " GAP for a table."
+            " T22 art-content chain (verified as data, settled F47's open"
+            " (c)): BattleBackdropGFXAnimScript_807FB98 (data/dat20.s:148;"
+            " initial gfx_anim_4bit_tile_copy gfx_dest=unk_6000040"
+            " num_tiles=0x24 at :149, then 29 gfx_anim_data_ptr entries"
+            " :150-178, gfx_anim_loop :179) schedules the 7 tile tables"
+            " BattleBackdropTiles0-6_807FE40/807FCD8/807FC90/807FD20/"
+            " 807FD68/807FDB0/807FDF8 (dat20.s:222/:187/:181/:193/:201/"
+            " :208/:216, 36 halfwords each, blob indices into"
+            " GFXAnimTileBlob_8617488) copied as 36 tiles to 0x06000040"
+            " (VRAM slots 2..37; slot 1 = the blank filler the map's empty"
+            " cells point at). tools/backdrop_export.py's FRAMES[s] == [0] +"
+            " table byte-exact for all 7 tables (36/36 slots x 7, T22 step"
+            " 1); canon's resident VRAM set matches asset[FRAMES[step]]"
+            " 37/37 slots for ALL 7 steps and the port's set is 37/37 for"
+            " all 7 steps order-insensitively on the kept F47 tile dumps"
+            " (the port uploads in map-scan order vs canon's table order --"
+            " content identical, the map compensates; T22 steps 2-3,"
+            " /tmp/bn-t22-backdrop-content/). Palette bank 0 rests on the"
+            " exporter's record: no palette watch in the kept dumps."),
     "navicust battle effects (M7)":
         lambda meta: (
             "T15 verdict (corrected from 'program-id enumeration'): FOUND --"
@@ -1467,7 +1486,7 @@ def main():
                 statuses)),
 
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
-        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note)", backdrops)),
+        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon resident VRAM set 37/37 x 7 steps, rust set 37/37 x 7 on kept F47 dumps -- port's slot order differs (map-scan vs table order), map compensates)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
     regenerate_scope(sections, pa_meta={
