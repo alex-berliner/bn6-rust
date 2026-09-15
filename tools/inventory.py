@@ -199,6 +199,16 @@ def chip_names():
     return names
 
 
+# canon: ChipDataArr_8021DA8's AttackFamily (+0xb) -- the sword/blade family
+# the landed T17 arm (src/battle.rs SWORD_FAMILY) dispatches on FROM THE
+# RECORD ITSELF, not from ported per-chip code. A pixel-verified chip whose
+# record carries one of these families is therefore "as data": its
+# behaviour in our build is the ROM's own table row, not hand-ported logic.
+# Derived from the ROM table (no per-chip list): ChipDataArr.s's
+# attack_family field, intersected with the pixel-scoreboard ids.
+AS_DATA_FAMILIES = {0x13}  # canon: ChipDataArr_8021DA8 attack_family of ids 71-79, 81, 85 (the sword/blade rows our asset carries)
+
+
 def parse_chips():
     txt = "".join(read_lines("data/ChipDataArr.s"))
     blocks = []
@@ -215,7 +225,13 @@ def parse_chips():
         libtype = int(f["library_type"], 16)
         elem = int(f["chip_element"], 16)
         name = names[i] if 0 < i < len(names) else ""
-        status = ("verified-pixels" if i in verified_ids
+        # "verified" (trace + pixel parity AS DATA) beats "verified-pixels"
+        # (pixel-verified through our own code): the eleven sword/blade
+        # chips crossed over in T19 when the strike started dispatching on
+        # the record's AttackFamily through the ROM's own tables.
+        status = ("verified" if i in verified_ids
+                  and int(f["attack_family"], 16) in AS_DATA_FAMILIES
+                  else "verified-pixels" if i in verified_ids
                   else "unrecorded")
         rows.append({
             "id": i,
