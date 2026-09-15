@@ -30,8 +30,10 @@ def show_message(who, m):
                 out("[%s] %s   -> %s %s" % (stamp(m.get("timestamp")), who, c.get("name"), json.dumps(c.get("arguments"))[:180]))
         if m.get("errorMessage"): out("[%s] %s   !! %s" % (stamp(m.get("timestamp")), who, str(m["errorMessage"])[:200]))
     elif m.get("role") == "toolResult":
-        t = " ".join(c.get("text", "") for c in m.get("content", []) if isinstance(c, dict) and c.get("type") == "text").strip()
-        out("           %s <- %s%s: %s" % (who, m.get("toolName"), " (error)" if m.get("isError") else "", t[:140].replace("\n", " | ")))
+        c = m.get("content")
+        t = " ".join(x.get("text", "") for x in c if isinstance(x, dict) and x.get("type") == "text").strip() if isinstance(c, list) else (c if isinstance(c, str) else "")
+        if t or m.get("isError"):      # children's transcripts record calls but not outputs (content null): print those only when there is something
+            out("           %s <- %s%s: %s" % (who, m.get("toolName"), " (error)" if m.get("isError") else "", t[:140].replace("\n", " | ")))
 
 
 def tail_lines(path):
