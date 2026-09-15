@@ -83,6 +83,9 @@ def json_objects(text):
 
 
 NUM = re.compile(r"0x[0-9a-fA-F]+|\d{2,}")
+JARGON = ("sequencer", "executor", "handler", "descriptor", "oracle", "harness", "canon", "fixture", "opcode", "dispatch", "predicate",
+          "gate", "gating", "edge", "state machine", "callback", "hunk", "residue", "regression", "trace", "sub_")
+EXPLAINERS = (" is ", " are ", " means ", "that is,", "in other words", "which is", ": ", " — ", " -- ", "(")
 
 
 def check(slide, known):
@@ -111,6 +114,11 @@ def check(slide, known):
             if slide["code"].count(c) != 1: why.append("highlight code not exactly once: %r" % c[:40])
             if slide["text"].count(t) != 1: why.append("highlight text not exactly once: %r" % t[:40])
     text = slide["text"]
+    low = text.lower()
+    for j in JARGON:
+        if j in low:
+            sent = next((x for x in re.split(r"(?<=[.!?])\s+", text) if j in x.lower()), "")
+            if not any(e in sent for e in EXPLAINERS): why.append("jargon %r used without explaining it in its sentence" % j)
     if NUM.match(text.strip()): why.append("text starts with a bare number")
     for m in NUM.finditer(text):
         tail = text[m.end():]; sentence = re.split(r"[.!?](?:\s|$)", tail, 1)[0]
@@ -145,19 +153,28 @@ def main():
               'write in the text must be explained in the same sentence (what it counts, in plain words), and no number may appear in '
               'the title. highlights are 3 to 5 pairs; each code half is an exact substring of this slide\'s code occurring exactly once, '
               'each text half an exact substring of this slide\'s text occurring exactly once, pointing at the concrete thing the sentence '
-              'talks about. Never describe the project\'s process, tickets, agents or history: only how the code works.')
+              'talks about. Never describe the project\'s process, tickets, agents or history: only how the code works. The reader has '
+              'never seen this project or a game engine: write the way the Dolphin emulator\'s progress reports do, saying what a thing is '
+              'before saying what the code does with it; words such as sequencer, executor, handler, descriptor, gate, edge, state machine, '
+              'fixture or harness may appear only in a sentence that says in plain words what they mean here.')
     intro = "Rules of the learn feed (from the top of web/learn/slides.js):\n%s\n\nSlides already in the feed (do not repeat their subjects):\n- %s\n\n" % (rules(), "\n- ".join(known))
     slides, cost = [], 0.0
     def batches(n):
         while n > 0: yield min(3, n); n -= 3
+
+    def ask2(model, prompt):
+        arr, c = ask(model, prompt)
+        if not arr:
+            arr2, c2 = ask(model, prompt); arr, c = arr2, c + c2
+        return arr, c
     for n in batches(a.existing):
-        arr, c = ask(model, intro + schema + ("\n\nWrite %d slides about parts of src/ that no existing slide covers (read the files first: src/*.rs). "
+        arr, c = ask2(model, intro + schema + ("\n\nWrite %d slides about parts of src/ that no existing slide covers (read the files first: src/*.rs). "
                                              "Prefer the pieces a curious reader would ask about: how a frame is drawn, how input becomes an action, "
                                              "how the harness compares pixels, how a chip resolves, how an enemy decides. Subjects already used this "
                                              "morning: %s") % (n, [x[1].get("title") for x in slides]))
         cost += c; slides += [("existing", s) for s in arr]
     for n in batches(a.recent):
-        arr, c = ask(model, intro + schema + ("\n\nWrite %d slides about the code that landed in the last %d hours, explaining how it works now "
+        arr, c = ask2(model, intro + schema + ("\n\nWrite %d slides about the code that landed in the last %d hours, explaining how it works now "
                                              "(not that it changed, not who changed it). The commits touching src/ in that window:\n%s\n"
                                              "Files changed:\n%s\nRead the current files before writing. Subjects already used this morning: %s")
                                              % (n, a.since, recent, stat, [x[1].get("title") for x in slides]))
