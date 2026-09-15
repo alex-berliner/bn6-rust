@@ -343,8 +343,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T7o. battle_full release-edge at k=179: relocate the SEQ04 seq-match block past t1_player_entry so the gate frees before the executor  *(OPEN -- 2026-09-14, follow-up to T7m BLOCKED 794a5c3)*
+### T7o. battle_full release-edge at k=179: relocate the SEQ04 seq-match block past t1_player_entry so the gate frees before the executor  *(PARTIAL -- 2026-09-14, T7o PARTIAL: SEQ04 seq-match block relocated from src/battle.rs:2533 to :3268 [after t1_player_entry], matchin)*
 
+**Result.** T7o PARTIAL: SEQ04 seq-match block relocated from src/battle.rs:2533 to :3268 (after t1_player_entry), matching canon's call chain at asm00_1.s:9775/13126 (sub_800938A → battle_update_8007A44). Counts did NOT move: mm_state_action/mm_anim/mm_timer stayed at 101/86/302 — root cause is the executor is ungated (Actor::update / t1_player_entry has no early-return when seq.state in {SEQ_20, SEQ_24, SEQ_00, SEQ_04}). Cite added: sub_8008452/sub_800840C/sub_8008064 (T7f banner 0x04 hold) + asm00_1.s:9775/13126. Cursor improved 10/9/170→1/1/170 (incidental 3-pixel drop from the same relocation). Branch wt/t7o merged as 784c8e5 (2 commits: src/battle.rs + docs/coverage/battle_full.md). verify_rows: mettaur 0/0/70, cursor 1/1/170, result 0/0/40, wave 0/0/90, popup 0/0/80, chip-use 0/0/30 all matching. Fitted constants 19 unchanged. Worker model: minimax, 4m31s. Follow-up needs seq.state gate in Actor::update.
 **Result.** (target) battle_full's mm_state_action/mm_anim/mm_timer counts drop below 101/86/302 at k=179; cursor stays ≤10/9/170; mettaur stays 0/0/70; chip-use integrated unchanged; the release-edge un-freed gate is closed by the cited MegaMan-executor ordering.
 
 **Files.** src/battle.rs (only the seq match block at :2533-2537 — relocate it past `t1_player_entry` at :3261), src/objects.rs (only if the MegaMan executor's per-tick work needs a guard comment for the cited order), tools/trace.py (only if a field must be watched), docs/coverage/battle_full.md (notes)
