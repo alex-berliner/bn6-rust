@@ -3214,6 +3214,12 @@ def main():
     ap.add_argument("--ui", choices=("isolated", "integrated"), help="run only this ui variant of each row (a worker's inner loop; landing runs both)")
     args = ap.parse_args()
 
+    # Q4 self-check: the committed docs/oracle_layout.json must still be what
+    # src/battle.rs's ORACLE_LAYOUT table generates, and tools/oracle.py's
+    # reader must read the same offsets -- never measure against a stale reader.
+    import oracle_layout
+    oracle_layout.self_check()
+
     if args.list:
         for c in CHECKS:
             pending = "  [pending-src: %s]" % c.pending_src if c.pending_src else ""

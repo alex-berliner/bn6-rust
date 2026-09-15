@@ -125,6 +125,7 @@ Usage:
 import argparse
 import dataclasses
 import os
+import json
 import struct
 import sys
 
@@ -145,7 +146,17 @@ def rng_step(seed: int) -> int:
 MM_BASE = 0x0203A9B8  # eT1BattleObject0 + oBattleObject_CurState
 GAUGE_ADDR = 0x020352A0  # eStruct2035280 + 0x20
 RNG_ADDR = 0x020013F0  # ePrimaryRngSeed
-MM_ORACLE_ADDR = 0x02000008  # the rust export block ("ORCL", 40 bytes)
+MM_ORACLE_ADDR = 0x02000008  # the rust export block ("ORCL"); docs/oracle_layout.json's block_addr
+
+#: The ORCL block's layout, GENERATED from src/battle.rs's ORACLE_LAYOUT table
+#: by tools/oracle_layout.py (Q4): the Rust table is authoritative, this JSON is
+#: its committed projection, and harness.py's startup self-check
+#: (oracle_layout.self_check) re-parses the Rust table and refuses a stale copy.
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                       "docs", "oracle_layout.json")) as _layout_file:
+    ORCL_LAYOUT = json.load(_layout_file)
+ORCL_BLOCK_LEN = ORCL_LAYOUT["block_len"]
+ORCL_OFFSETS = {f["name"]: f["offset"] for f in ORCL_LAYOUT["fields"]}
 
 #: The canon battle-object table (ewram.s:2972-2992): slot 0 is MegaMan
 #: (0x0203a9b0, watched at +0x08), the struct stride is 0xD8
@@ -215,25 +226,27 @@ def canon_fields_enemy(row: bytes) -> dict:
 
 
 def rust_fields(row: bytes) -> dict:
-    """From one 40-byte ORCL block row -- battle.rs oracle_snapshot's map."""
+    """From one 40-byte ORCL block row -- offsets read from
+    docs/oracle_layout.json (generated from src/battle.rs's ORACLE_LAYOUT,
+    Q4; harness.py's self-check keeps the two in agreement)."""
     return dict(
-        state=row[12],
-        action=row[13],
-        anim=row[14],
-        panel_x=row[15],
-        panel_y=row[16],
-        timer=struct.unpack_from("<H", row, 18)[0],
-        hp=struct.unpack_from("<H", row, 20)[0],
-        enemy_state=row[22],
-        enemy_action=row[23],
-        enemy_anim=row[24],
-        enemy_panel_x=row[25],
-        enemy_panel_y=row[26],
-        enemy_timer=struct.unpack_from("<H", row, 28)[0],
-        enemy_hp=struct.unpack_from("<H", row, 30)[0],
-        battle_frame=struct.unpack_from("<I", row, 4)[0],
-        rng=struct.unpack_from("<I", row, 8)[0],
-        gauge=struct.unpack_from("<H", row, 32)[0],
+        state=row[ORCL_OFFSETS["mm_state_action"]],
+        action=row[ORCL_OFFSETS["mm_state_action"] + 1],
+        anim=row[ORCL_OFFSETS["mm_anim"]],
+        panel_x=row[ORCL_OFFSETS["mm_panel_x"]],
+        panel_y=row[ORCL_OFFSETS["mm_panel_y"]],
+        timer=struct.unpack_from("<H", row, ORCL_OFFSETS["mm_timer"])[0],
+        hp=struct.unpack_from("<H", row, ORCL_OFFSETS["mm_hp"])[0],
+        enemy_state=row[ORCL_OFFSETS["enemy_state_action"]],
+        enemy_action=row[ORCL_OFFSETS["enemy_state_action"] + 1],
+        enemy_anim=row[ORCL_OFFSETS["enemy_anim"]],
+        enemy_panel_x=row[ORCL_OFFSETS["enemy_panel_x"]],
+        enemy_panel_y=row[ORCL_OFFSETS["enemy_panel_y"]],
+        enemy_timer=struct.unpack_from("<H", row, ORCL_OFFSETS["enemy_timer"])[0],
+        enemy_hp=struct.unpack_from("<H", row, ORCL_OFFSETS["enemy_hp"])[0],
+        battle_frame=struct.unpack_from("<I", row, ORCL_OFFSETS["battle_frame"])[0],
+        rng=struct.unpack_from("<I", row, ORCL_OFFSETS["rng"])[0],
+        gauge=struct.unpack_from("<H", row, ORCL_OFFSETS["gauge"])[0],
     )
 
 

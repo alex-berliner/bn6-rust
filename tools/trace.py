@@ -53,8 +53,8 @@ import states as S  # noqa: E402
 
 CAPTURE = "/tmp/mgba_capture"
 MARKER_ADDR = 0x02000000
-ORCL_ADDR = 0x02000008
-ORCL_LEN = 40
+ORCL_ADDR = int(O.MM_ORACLE_ADDR, 0)  # the rust export block ("ORCL"); oracle.py reads the address from docs/oracle_layout.json (Q4)
+ORCL_LEN = O.ORCL_BLOCK_LEN            # from docs/oracle_layout.json, generated from src/battle.rs's ORACLE_LAYOUT (Q4)
 TRC2_ADDR = 0x02000080
 TRC2_LEN = 64
 TRC2_MAGIC = 0x54524332

@@ -203,16 +203,44 @@ impl BattleMarker {
         // the assert is kept in release too (a `debug_assert!` here cost
         // MORE release .text under fat LTO -- +6.3KB of `inner` inlining
         // jitter vs +280 for the assert version -- measured, see
-        // docs/worklog/Q3.md).
+        // docs/worklog/Q3.md). This runtime assert is a belt-and-braces
+        // backstop only: the LOAD-BEARING check is the compile-time one
+        // below (`ORACLE_REGION_FITS`), which cannot fold away.
         assert!(offset + bytes.len() <= Self::LEN);
         unsafe {
             let p = (core::ptr::addr_of_mut!(BATTLE_MARKER) as *mut u8).add(offset);
-            for (i, b) in bytes.iter().enumerate() {
-                core::ptr::write_volatile(p.add(i), *b);
+            // Word-wide stores whenever the transfer is word-aligned: the
+            // marker's magic and frame word (offsets 0/4) used to be ONE
+            // `str` each in the pre-wrapper code, and a mid-frame sampler
+            // (harness --watch, oracle.py) must not witness a torn word
+            // through four byte stores. The oracle/trace blocks (8/128,
+            // 40/64 bytes) are word-aligned too, so they get the same
+            // treatment for free. All lengths are compile-time constants
+            // at every call site, so the branch folds either way.
+            if offset % 4 == 0 && bytes.len() % 4 == 0 {
+                let w = p.cast::<u32>();
+                for (i, chunk) in bytes.chunks_exact(4).enumerate() {
+                    core::ptr::write_volatile(w.add(i), u32::from_ne_bytes(chunk.try_into().unwrap()));
+                }
+            } else {
+                for (i, b) in bytes.iter().enumerate() {
+                    core::ptr::write_volatile(p.add(i), *b);
+                }
             }
         }
     }
 }
+
+/// The compile-time twin of `put_bytes`'s runtime assert, for the oracle
+/// block (Q4): the 40-byte block plus its offset must fit the marker's own
+/// 256 bytes, checked here where it cannot fold away -- a bad ORACLE_OFFSET
+/// or layout table fails the BUILD, not some release run. The block's own
+/// internal tiling (no overlap, ends at 40) is battle.rs's
+/// `oracle_layout_tiles` check; this is the region-side half of the bound.
+const ORACLE_REGION_FITS: () = assert!(
+    ORACLE_OFFSET + battle::ORACLE_SNAPSHOT_LEN <= BattleMarker::LEN,
+    "oracle block does not fit BATTLE_MARKER's reservation"
+);
 
 /// Volatile so the write can't be optimised away as dead (nothing in this
 /// crate ever reads `BATTLE_MARKER` back) or reordered past a frame's
@@ -259,6 +287,7 @@ fn write_trace_block(bytes: &[u8; 64]) {
 /// Export-only: nothing in this crate reads the block back, so the volatile
 /// byte stores are what keep it from being optimised away.
 fn write_oracle_block(bytes: &[u8; 40]) {
+    let _ = ORACLE_REGION_FITS;
     BattleMarker::put_bytes(ORACLE_OFFSET, bytes);
 }
 

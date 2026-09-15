@@ -1547,7 +1547,7 @@ pub struct Battle<'a> {
 /// The oracle snapshot's own 40-byte export block (see the layout table on
 /// `oracle_snapshot`): this project's own protocol, so the length is chosen,
 /// not read.
-const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this project's own oracle protocol (see oracle_snapshot's table)
+pub(crate) const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this project's own oracle protocol (see oracle_snapshot's table)
 /// The state-trace export block's own length (see `trace_snapshot`'s
 /// table): this project's own protocol, so the length is chosen, not read.
 const TRACE_SNAPSHOT_LEN: usize = 64; // provenance: chosen -- this project's own trace protocol (see trace_snapshot's table)
@@ -1604,31 +1604,111 @@ const RESULTS_FADE_BLACK: u8 = 16; // provenance: derived -- results::Shown::upd
 /// build's own, tuned to the panel art.
 const SWORD_ARC_UP: i32 = 0x10; // provenance: fitted -- this build's own arc height, tuned to the panel art
 
-impl<'a> Battle<'a> {
-    /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
-    /// hold + 14-frame ramp (`false`) or the old `demo-*` fixtures' own
-    /// legacy 32-frame black ramp (`true`, only ever reachable through a
-    /// fixture's own SKIP_INTRO now that every `demo-*` feature that
-    /// used to drive this at compile time is gone). No fixture: no reason
-    /// to skip -- the default build always plays the real intro.
-    fn skip_intro(&self) -> bool {
-        match self.fixture {
-            Some(f) => f.flags.skip_intro(),
-            None => false,
-        }
-    }
+/// The forty-byte oracle block's field table: one `(name, offset, width)`
+/// entry per field, in offset order, with the three unwritten regions (the
+/// two one-byte gaps inside each actor's run and the six-byte tail) as
+/// entries of their own so the table tiles the whole block. This is the
+/// ONE place the layout is written: `oracle_snapshot` assembles the block
+/// through it (a named `put` per field below), and tools/oracle_layout.py
+/// parses this very table into docs/oracle_layout.json, which tools/oracle.py
+/// and tools/trace.py read their offsets from -- tools/harness.py's startup
+/// self-check re-parses and refuses a stale JSON. The gaps are never written
+/// (`b` starts zeroed and the puts below skip them) but they are layout, so
+/// they belong in the table, not in scattered literals.
+pub const ORACLE_LAYOUT: [(&str, usize, usize); 19] = [ // provenance: chosen -- this project's own oracle protocol (offsets mirror oracle_snapshot's documented field map; the canon-side addresses live in that doc table)
+    ("magic", 0, 4),               // "ORCL", see main.rs's ORACLE_MAGIC
+    ("battle_frame", 4, 4),        // the counter passed in (canon has no battle-frame word)
+    ("rng", 8, 4),                 // primary_rng.state(), canon 0x020013f0
+    ("mm_state_action", 12, 2),    // MegaMan CurState|CurAction<<8
+    ("mm_anim", 14, 1),            // MegaMan CurAnim
+    ("mm_panel_x", 15, 1),         // MegaMan PanelX
+    ("mm_panel_y", 16, 1),         // MegaMan PanelY
+    ("mm_gap", 17, 1),             // unwritten: kept 0 (was implicit before)
+    ("mm_timer", 18, 2),           // MegaMan Timer (flinch + post_flinch shadow)
+    ("mm_hp", 20, 2),              // MegaMan HP
+    ("enemy_state_action", 22, 2), // first populated enemy slot, CurState|CurAction<<8
+    ("enemy_anim", 24, 1),         // enemy CurAnim
+    ("enemy_panel_x", 25, 1),      // enemy PanelX
+    ("enemy_panel_y", 26, 1),      // enemy PanelY
+    ("enemy_gap", 27, 1),          // unwritten: kept 0 (was implicit before)
+    ("enemy_timer", 28, 2),        // enemy Timer (always 0: unsupported, R6)
+    ("enemy_hp", 30, 2),           // enemy HP
+    ("gauge", 32, 2),              // custom gauge, canon 0x020352a0
+    ("padding", 34, 6),            // unwritten tail: kept 0 (was implicit before)
+];
 
-    /// Whether the gauge-pause -> chip-window-open sequence is allowed to
-    /// run at all. UNSET (via OPEN_WINDOW) reproduced the old
-    /// `demo-hudmatch` feature's guard, which froze a full gauge and never
-    /// opened the window so a long HUD capture never lost the battle screen
-    /// to it. No fixture: always allowed.
-    fn open_window_allowed(&self) -> bool {
-        match self.fixture {
-            Some(f) => f.flags.open_window(),
-            None => true,
+/// Compile-time check that `ORACLE_LAYOUT` tiles the block: entries are in
+/// offset order, no two overlap, and the last one ends exactly at
+/// `ORACLE_SNAPSHOT_LEN` (40). Expressed here and not as a release `assert!`
+/// precisely so it cannot fold away -- a bad edit fails the build.
+/// (main.rs's `BattleMarker` carries the region-side twin of this bound:
+/// `ORACLE_OFFSET + ORACLE_SNAPSHOT_LEN <= BattleMarker::LEN`.)
+const fn oracle_layout_tiles(layout: &[(&str, usize, usize)]) -> bool {
+    let mut cursor = 0;
+    let mut i = 0;
+    while i < layout.len() {
+        let (_, off, width) = layout[i];
+        if off < cursor || off + width > ORACLE_SNAPSHOT_LEN {
+            return false;
         }
+        cursor = off + width;
+        i += 1;
     }
+    cursor == ORACLE_SNAPSHOT_LEN
+}
+const ORACLE_LAYOUT_OK: () =
+    assert!(oracle_layout_tiles(&ORACLE_LAYOUT), "ORACLE_LAYOUT must tile the 40-byte oracle block exactly");
+
+/// Selector for one `ORACLE_LAYOUT` entry: the discriminant IS the table
+/// index, so a named put and the table can never disagree about an offset.
+#[derive(Clone, Copy)]
+enum OracleField {
+    Magic,
+    BattleFrame,
+    Rng,
+    MmStateAction,
+    MmAnim,
+    MmPanelX,
+    MmPanelY,
+    MmGap,
+    MmTimer,
+    MmHp,
+    EnemyStateAction,
+    EnemyAnim,
+    EnemyPanelX,
+    EnemyPanelY,
+    EnemyGap,
+    EnemyTimer,
+    EnemyHp,
+    Gauge,
+    Padding,
+}
+
+/// The named put: write one field's bytes at the offset the table gives it.
+/// A width the table does not agree with is a `debug_assert_eq!` (release:
+/// folded -- every call site here is literal and correct, proven by the
+/// compile-time tiling check above) and `copy_from_slice`'s own panic.
+fn put_oracle(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, bytes: &[u8]) {
+    let _ = ORACLE_LAYOUT_OK;
+    let (off, width) = {
+        let (_, off, width) = ORACLE_LAYOUT[field as usize];
+        (off, width)
+    };
+    debug_assert_eq!(bytes.len(), width);
+    b[off..off + width].copy_from_slice(bytes);
+}
+
+fn put_oracle_u8(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u8) {
+    put_oracle(b, field, &[v]);
+}
+
+fn put_oracle_u16(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u16) {
+    put_oracle(b, field, &v.to_le_bytes());
+}
+
+fn put_oracle_u32(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u32) {
+    put_oracle(b, field, &v.to_le_bytes());
+}
 
     /// The state oracle's export block (TODO R6): 40 bytes the main loop
     /// writes to EWRAM 0x02000008 every frame (inside the marker array's own
@@ -1663,34 +1743,63 @@ impl<'a> Battle<'a> {
     /// reservation (bytes 8..48), which nothing else touches -- the first
     /// cut placed it at 0x02000080, which is agb's `SPRITE_LOADER` (nm),
     /// and the two fought every frame.
+impl<'a> Battle<'a> {
+    /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
+    /// hold + 14-frame ramp (`false`) or the old `demo-*` fixtures' own
+    /// legacy 32-frame black ramp (`true`, only ever reachable through a
+    /// fixture's own SKIP_INTRO now that every `demo-*` feature that
+    /// used to drive this at compile time is gone). No fixture: no reason
+    /// to skip -- the default build always plays the real intro.
+    fn skip_intro(&self) -> bool {
+        match self.fixture {
+            Some(f) => f.flags.skip_intro(),
+            None => false,
+        }
+    }
+
+    /// Whether the gauge-pause -> chip-window-open sequence is allowed to
+    /// run at all. UNSET (via OPEN_WINDOW) reproduced the old
+    /// `demo-hudmatch` feature's guard, which froze a full gauge and never
+    /// opened the window so a long HUD capture never lost the battle screen
+    /// to it. No fixture: always allowed.
+    fn open_window_allowed(&self) -> bool {
+        match self.fixture {
+            Some(f) => f.flags.open_window(),
+            None => true,
+        }
+    }
+
     pub fn oracle_snapshot(&self, battle_frame: u32) -> [u8; ORACLE_SNAPSHOT_LEN] {
         let mut b = [0u8; ORACLE_SNAPSHOT_LEN];
-        b[0..4].copy_from_slice(&crate::ORACLE_MAGIC.to_le_bytes()); // "ORCL", see main.rs's ORACLE_MAGIC (provenance: chosen -- this project's own protocol constant)
-        b[4..8].copy_from_slice(&battle_frame.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-        b[8..12].copy_from_slice(&self.primary_rng.state().to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        // Every write below goes through the named put (ORACLE_LAYOUT above);
+        // mm_gap/enemy_gap/padding are never written: `b` starts zeroed and
+        // the table lists them only so the tiling check covers the whole 40.
+        put_oracle_u32(&mut b, OracleField::Magic, crate::ORACLE_MAGIC); // "ORCL", see main.rs's ORACLE_MAGIC (provenance: chosen -- this project's own protocol constant)
+        put_oracle_u32(&mut b, OracleField::BattleFrame, battle_frame); // canon: oracle snapshot layout, see the table above
+        put_oracle_u32(&mut b, OracleField::Rng, self.primary_rng.state()); // canon: oracle snapshot layout, see the table above
         let mm = self.megaman.oracle_fields(true, false);
-        b[12..14].copy_from_slice(&mm.cur_state_action.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-        b[14] = mm.anim; // canon: oracle snapshot layout, see the table above
-        b[15] = mm.panel_x; // canon: oracle snapshot layout, see the table above
-        b[16] = mm.panel_y; // canon: oracle snapshot layout, see the table above
-        b[18..20].copy_from_slice(&mm.timer.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-        b[20..22].copy_from_slice(&mm.hp.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        put_oracle_u16(&mut b, OracleField::MmStateAction, mm.cur_state_action); // canon: oracle snapshot layout, see the table above
+        put_oracle_u8(&mut b, OracleField::MmAnim, mm.anim); // canon: oracle snapshot layout, see the table above
+        put_oracle_u8(&mut b, OracleField::MmPanelX, mm.panel_x); // canon: oracle snapshot layout, see the table above
+        put_oracle_u8(&mut b, OracleField::MmPanelY, mm.panel_y); // canon: oracle snapshot layout, see the table above
+        put_oracle_u16(&mut b, OracleField::MmTimer, mm.timer); // canon: oracle snapshot layout, see the table above
+        put_oracle_u16(&mut b, OracleField::MmHp, mm.hp); // canon: oracle snapshot layout, see the table above
         // First enemy. Every oracle row so far has exactly one; the empty
         // slots around it export 0xffff sentinels.
         if let Some(enemy) = self.enemies.first() {
             let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
             let e = enemy.oracle_fields(false, ai_wait);
-            b[22..24].copy_from_slice(&e.cur_state_action.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-            b[24] = e.anim; // canon: oracle snapshot layout, see the table above
-            b[25] = e.panel_x; // canon: oracle snapshot layout, see the table above
-            b[26] = e.panel_y; // canon: oracle snapshot layout, see the table above
-            b[28..30].copy_from_slice(&e.timer.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-            b[30..32].copy_from_slice(&e.hp.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+            put_oracle_u16(&mut b, OracleField::EnemyStateAction, e.cur_state_action); // canon: oracle snapshot layout, see the table above
+            put_oracle_u8(&mut b, OracleField::EnemyAnim, e.anim); // canon: oracle snapshot layout, see the table above
+            put_oracle_u8(&mut b, OracleField::EnemyPanelX, e.panel_x); // canon: oracle snapshot layout, see the table above
+            put_oracle_u8(&mut b, OracleField::EnemyPanelY, e.panel_y); // canon: oracle snapshot layout, see the table above
+            put_oracle_u16(&mut b, OracleField::EnemyTimer, e.timer); // canon: oracle snapshot layout, see the table above
+            put_oracle_u16(&mut b, OracleField::EnemyHp, e.hp); // canon: oracle snapshot layout, see the table above
         } else {
-            b[22..24].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // canon: oracle snapshot layout, see the table above
-            b[30..32].copy_from_slice(&FIXTURE_UNSET.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+            put_oracle_u16(&mut b, OracleField::EnemyStateAction, FIXTURE_UNSET); // canon: oracle snapshot layout, see the table above
+            put_oracle_u16(&mut b, OracleField::EnemyHp, FIXTURE_UNSET); // canon: oracle snapshot layout, see the table above
         }
-        b[32..34].copy_from_slice(&self.gauge.to_le_bytes()); // canon: oracle snapshot layout, see the table above
+        put_oracle_u16(&mut b, OracleField::Gauge, self.gauge); // canon: oracle snapshot layout, see the table above
         b
     }
 
