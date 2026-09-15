@@ -122,7 +122,7 @@ def find_marker_origin(watch_file, magic=MARKER_MAGIC):
 # ROM's own init could plausibly stomp EWRAM at 0x02000040.
 FIXTURE_ADDR = 0x0200_0040
 FIXTURE_MAGIC = 0x4649_5854  # "FIXT"
-FIXTURE_SIZE = 64
+FIXTURE_SIZE = 67  # 64 + 3 (F38f, FIXTURE.md +64..+66 per-enemy panel bytes)
 
 
 def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
@@ -211,10 +211,25 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # is unchanged.
     buf[62] = descriptor.get("enemy_state", 0)
     buf[63] = descriptor.get("enemy_action", 0)
+    # +64..+66 enemy_panel (F38f, FIXTURE.md): per-enemy panel-cell byte,
+    # one per slot 0..3, encoded as `(panel_y << 4) | panel_x` per
+    # `spawnEnemy_80073E2` (asm00_1.s:8695). 0 in a slot = fall back to
+    # the descriptor's own `enemy_col`/`enemy_row` on the rust side, so
+    # every pre-F38f descriptor (all three bytes unset) is unchanged.
+    panel = descriptor.get("enemy_panel", [])
+    for i in range(3):
+        buf[64 + i] = panel[i] if i < len(panel) else 0
     out = []
-    for off in range(0, FIXTURE_SIZE, 2):
+    # Loop in 2-byte `--cheat` steps for the 64-byte prefix, then a single
+    # trailing 1-byte write for the odd 67-byte descriptor (F38f, FIXTURE.md
+    # +64..+66) -- mgba_capture's --cheat is val16-only and writing the
+    # stray byte as `0x02000082:<panel_byte>` would clobber byte 67 (still
+    # reserved today but in case it grows again). A second `--poke 67:val`
+    # covers the last byte.
+    for off in range(0, FIXTURE_SIZE - 1, 2):
         val, = struct.unpack_from("<H", buf, off)
         out.append("0x%08x:0x%04x" % (FIXTURE_ADDR + off, val))
+    out.append("0x%08x:0x%04x" % (FIXTURE_ADDR + FIXTURE_SIZE - 1, buf[FIXTURE_SIZE - 1]))
     return tuple(out)
 
 
@@ -1574,7 +1589,14 @@ def held(key: str, first: int, n: int) -> str:
 #:     wave 3d ticket); without it the integrated variant's viruses materialize
 #:     on our default seed instead of canon's history.
 #: Marker origin 8 (measured live for demo-open), same family as demo-field.
+#: F38f: per-enemy panel bytes (FIXTURE.md +64) override the old (col+i,
+#: row+i) diagonal. For the integrated opening row the canon ROM byte at
+#: 0x080b5354 holds 0x15/0x35/0x26 = (panel_y<<4)|panel_x for slots 0..2,
+#: i.e. panels (5,1)/(5,3)/(6,2). enemy_col/enemy_row are kept at their
+#: old (4,1) only as a sentinel-less default; src/battle.rs reads panel
+#: bytes first.
 OPEN_ROW = dict(enemies=3, enemy_kind=0, enemy_col=4, enemy_row=1,
+                enemy_panel=[0x15, 0x35, 0x26],  # provenance: ROM 0x080b5354 (read by spawnEnemy_80073E2 at byte 1 of its EnemySetup, asm00_1.s:8695); panel_x in bits 0-2, panel_y in bits 4-6
                 megaman_hp=100,  # provenance: peeked -- canon 0x0064 at 0x0203a9d4, R1's rebuilt battlestart.state (TODO F4); 60 was peeked from the lost state
                 megaman_col=2, megaman_row=2, hand=[], hand_count=0, gauge=0,
                 flags=0x01,
