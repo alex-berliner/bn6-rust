@@ -2,138 +2,50 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>bn — play in the browser</title>
 <style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #111; }
-  body { color: #ddd; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-
-  /* THE EMULATOR IS THE FIRST THING IN THE PAGE AND IT IS EXACTLY ONE
-     SCREENFUL. Nothing above it: the old page put a paragraph and a header
-     first and gave the emulator nearly a full viewport of its own, so the
-     virtual gamepad EmulatorJS hangs at the bottom of its own container
-     ended up below the fold on a phone. Everything else on this page now
-     lives BELOW this box, one scroll away.
-
-     EmulatorJS fits its canvas inside this container at the GBA's 240x160
-     and puts its touch controls in the leftover room, so sizing the
-     container to the viewport is what keeps screen and buttons together.
-     100dvh, not 100vh: on mobile browsers 100vh is the tallest the viewport
-     ever gets, which is taller than what you can see while the address bar
-     is showing. */
-  #game {
-    width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    background: #111;
-    overflow: hidden;
-  }
-
-  /* Progressive nudges to EmulatorJS's own layout, by its own class names.
-     If a future build of the CDN renames them these rules simply do not
-     apply and the canvas stays centred in the container -- which still fits
-     entirely on screen, so nothing breaks either way.
-     Portrait: pull the screen to the top so all the room underneath belongs
-     to the buttons. Landscape: pull it to the left so the room is beside it. */
-  @media (orientation: portrait) {
-    #game .ejs_canvas_parent, #game .ejs_game { align-items: flex-start; }
-    #game canvas.ejs_canvas { align-self: flex-start; }
-  }
-  @media (orientation: landscape) {
-    #game .ejs_canvas_parent, #game .ejs_game { justify-content: flex-start; }
-    #game canvas.ejs_canvas { justify-self: start; margin-left: 0; margin-right: auto; }
-  }
-
-  /* A small control that sits over the top-right corner of the emulator.
-     It is the only thing allowed to overlap the screen. */
-  #keystoggle {
-    position: fixed;
-    top: calc(6px + env(safe-area-inset-top));
-    right: calc(6px + env(safe-area-inset-right));
-    z-index: 5;
-    padding: 4px 9px;
-    border: 1px solid #444;
-    border-radius: 999px;
-    background: rgba(17, 17, 17, 0.72);
-    color: #9cf;
-    font: 600 12px/1 system-ui, sans-serif;
-    cursor: pointer;
-  }
-  #keys {
-    position: fixed;
-    top: calc(34px + env(safe-area-inset-top));
-    right: calc(6px + env(safe-area-inset-right));
-    left: auto;
-    z-index: 5;
-    max-width: min(22rem, calc(100vw - 12px));
-    padding: 10px 12px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: rgba(17, 17, 17, 0.94);
-    font-size: 13px;
-  }
-  #keys p { margin: 0 0 6px; }
-  #keys p:last-child { margin-bottom: 0; }
-  kbd {
-    background: #333;
-    border: 1px solid #4a4a4a;
-    border-radius: 3px;
-    padding: 0 5px;
-    font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
-
-  /* Everything that is not the emulator, below the fold. */
-  #about {
-    max-width: 42rem;
-    margin: 0 auto;
-    padding: 18px 16px calc(28px + env(safe-area-inset-bottom));
-  }
-  #about h1 { font-size: 17px; margin: 0 0 8px; }
-  #about p { margin: 0 0 10px; }
-  #about a { color: #8cf; }
-  .row { display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
-  select { font: inherit; background: #1c1c1c; color: #ddd; border: 1px solid #444; border-radius: 4px; padding: 2px 4px; }
-  #build { color: #999; }
+  body { margin: 0; background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
+  header { padding: 10px 16px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header a { color: #8cf; }
+  /* The emulator is one stable screenful under a 44px bar. svh (the small viewport) never changes when a phone's
+     URL bar hides, so the emulator is never resized mid-play; the bar is the strip of page a finger can still
+     scroll by, since the emulator takes every touch inside it as gamepad input. */
+  #top { height: 44px; box-sizing: border-box; margin: 0; padding: 12px 16px; overflow: hidden; white-space: nowrap; }
+  #top a { color: #8cf; }
+  #game { width: 100vw; height: calc(100svh - 44px); }
+  kbd { background: #333; border-radius: 3px; padding: 0 5px; }
 </style>
 </head>
 <body>
-
+<p id="top"><a href="index.html">&larr; everything on this site</a> · <a href="blog/index.html">blog</a> · <a href="learn.html">learn</a></p>
 <div id="game"></div>
-<button id="keystoggle" type="button" aria-expanded="false" aria-controls="keys">keys</button>
-<div id="keys" hidden>
-  <p>On a phone, use the buttons EmulatorJS draws on screen.</p>
-  <p>On a keyboard: d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) ·
-     start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open the chip window.</p>
-</div>
-
-<section id="about">
-  <h1>bn — Mega Man Battle Network 6 rebuilt in Rust</h1>
-  <p>This is a real Game Boy Advance ROM running in an emulator in the page. The emulator
-     (EmulatorJS, mGBA compiled to WebAssembly) is fetched from its own CDN, so this page needs
-     internet for that; the ROM itself is served from here.</p>
-  <div class="row">
-    <label>build <select id="rom"></select></label>
-    <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
-    <span id="build"></span>
-  </div>
-  <p><a href="index.html">← everything else on this site</a></p>
-</section>
-
+<header>
+  <h1>bn</h1>
+  <span>d-pad <kbd>arrows</kbd> · buster <kbd>X</kbd> (B) · chip <kbd>Z</kbd> (A) · start <kbd>Enter</kbd> · select <kbd>Shift</kbd> · L <kbd>A</kbd> / R <kbd>S</kbd> open chip window</span>
+  <label>demo <select id="rom"></select></label>
+  <a id="dl" href="bn6-rust.gba" download>download the .gba</a>
+  <span id="build"></span>
+</header>
 <script>
-  // The keys panel: a small toggle rather than a block of text above the
-  // screen, so on a phone the first thing in the page is the game.
+  // The game canvas keeps its frame buffer between frames. Without this,
+  // Android Chrome showed a blank (white or black) canvas while the emulator
+  // reported itself running (2026-09-15, measured with an on-page probe): the
+  // core draws on its own clock, and a buffer the browser is allowed to clear
+  // after each composite was blank whenever the two did not line up. Desktop
+  // and headless browsers never showed it. EmulatorJS has no option for this,
+  // so the context request is patched before its loader runs.
   (function () {
-    var toggle = document.getElementById('keystoggle');
-    var panel = document.getElementById('keys');
-    toggle.addEventListener('click', function () {
-      panel.hidden = !panel.hidden;
-      toggle.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-    });
+    var getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, options) {
+      if (type === 'webgl' || type === 'webgl2') {
+        options = Object.assign({}, options || {}, { preserveDrawingBuffer: true });
+      }
+      return getContext.call(this, type, options);
+    };
   })();
 </script>
-
 <script>
   // EmulatorJS runs mGBA compiled to WebAssembly; its loader and core come
   // from its CDN, so a client needs internet for those, while the ROM is
@@ -173,15 +85,6 @@
     2: {},
     3: {},
   };
-  // The touch controls are EmulatorJS's own: it draws its virtual gamepad
-  // for the selected core inside the player element on a touch device, which
-  // is why that element is sized to the whole viewport above. No custom
-  // layout is declared here on purpose -- the shipped GBA pad already has
-  // the d-pad, A/B, L/R, start and select in the right places.
-  // Start the button bar at the top of the container so it never lands
-  // under the virtual pad.
-  EJS_alignStartButton = 'top';
-
   // Every ROM's label starts with the moment it was packed
   // ("2026-09-08 03:14 — <label>"), written by the build script itself
   // (tools/build_roms.sh for web/roms/manifest.json, tools/web_rom.sh for
