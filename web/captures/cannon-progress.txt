@@ -1,3 +1,3 @@
-The legacy cannon row, the same fix as chip-cannon: its canon side moved onto the post-dissolve state with the direct input write (F7). The 14388 px were the old save state's portrait box and corpse, not the cannon.
+T13d NEGATIVE: cannon-route audio probe — canon fires ch0+ch4 SFX, ours silent. Docs-only commit; no harness change.
 
-cannon (isolated), before and after: canon on top; ours at 90e2d05 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at e565702 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
+cannon (isolated), before and after: canon on top; ours at 19b83ed (0 px over 40 frames, canon 5+k, rust offset 122); ours at e87cc7f (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
