@@ -173,15 +173,56 @@ pub static mut BATTLE_MARKER: [u32; 64] = [0; 64];
 
 const BATTLE_MAGIC: u32 = 0x4241_5454; // provenance: derived -- this project's own protocol choice (AUDIT pair 1), not a ROM fact; "BATT" read big-endian, chosen freely
 
+/// The one owner of raw access to `BATTLE_MARKER`'s bytes. Every write the
+/// program makes into the region goes through here, so the volatile-raw-
+/// pointer contract is written exactly once, in `put_bytes` below:
+///
+/// - the stores must be volatile, because nothing in this crate ever reads
+///   the region back (the harness's `--watch`, tools/oracle.py and
+///   tools/trace.py are the readers), so ordinary stores could be deleted
+///   as dead -- and so they cannot be reordered past a frame's `commit()`;
+/// - `offset + bytes.len()` must stay inside the region's own 256 bytes
+///   (`BATTLE_MARKER` is `[u32; 64]`), which the assert checks on every
+///   call -- the region's block offsets (ORACLE_OFFSET, TRACE_OFFSET) are
+///   the callers' bounds, and the reader-side contract for them lives in
+///   tools/oracle.py and tools/trace.py, not here.
+struct BattleMarker;
+
+impl BattleMarker {
+    /// The region's own byte length: `BATTLE_MARKER` is `[u32; 64]`.
+    // canon: BATTLE_MARKER -- the array's own size, not an independent number
+    const LEN: usize = core::mem::size_of::<[u32; 64]>();
+
+    fn put_u32(offset: usize, v: u32) {
+        Self::put_bytes(offset, &v.to_ne_bytes());
+    }
+
+    fn put_bytes(offset: usize, bytes: &[u8]) {
+        // Bounds are the callers' layout constants (0, 4, ORACLE_OFFSET,
+        // TRACE_OFFSET), checked on every call; a violation is a bug, so
+        // the assert is kept in release too (a `debug_assert!` here cost
+        // MORE release .text under fat LTO -- +6.3KB of `inner` inlining
+        // jitter vs +280 for the assert version -- measured, see
+        // docs/worklog/Q3.md).
+        assert!(offset + bytes.len() <= Self::LEN);
+        unsafe {
+            let p = (core::ptr::addr_of_mut!(BATTLE_MARKER) as *mut u8).add(offset);
+            for (i, b) in bytes.iter().enumerate() {
+                core::ptr::write_volatile(p.add(i), *b);
+            }
+        }
+    }
+}
+
 /// Volatile so the write can't be optimised away as dead (nothing in this
 /// crate ever reads `BATTLE_MARKER` back) or reordered past a frame's
-/// `commit()`.
+/// `commit()` -- see `BattleMarker`'s contract above. The two words are
+/// bytes 0 and 4 of the region itself (`BATTLE_MARKER[0]` and `[1]`).
 fn write_battle_marker(magic: u32, frame: u32) {
-    unsafe {
-        let p = core::ptr::addr_of_mut!(BATTLE_MARKER) as *mut u32;
-        core::ptr::write_volatile(p, magic);
-        core::ptr::write_volatile(p.add(1), frame);
-    }
+    // canon: BATTLE_MARKER[0] -- the marker magic the harness aligns on
+    BattleMarker::put_u32(0, magic);
+    // canon: BATTLE_MARKER[1] -- the per-frame counter next to it
+    BattleMarker::put_u32(4, frame);
 }
 
 /// Byte offset of the state oracle's export block inside `BATTLE_MARKER`
@@ -212,27 +253,13 @@ const TRACE_MAGIC: u32 = 0x5452_4332; // provenance: chosen -- this project's ow
 /// block back, so the volatile byte stores are what keep it from being
 /// optimised away.
 fn write_trace_block(bytes: &[u8; 64]) {
-    unsafe {
-        let p = core::ptr::addr_of_mut!(BATTLE_MARKER)
-            .cast::<u8>()
-            .add(TRACE_OFFSET);
-        for (i, b) in bytes.iter().enumerate() {
-            core::ptr::write_volatile(p.add(i), *b);
-        }
-    }
+    BattleMarker::put_bytes(TRACE_OFFSET, bytes);
 }
 
 /// Export-only: nothing in this crate reads the block back, so the volatile
 /// byte stores are what keep it from being optimised away.
 fn write_oracle_block(bytes: &[u8; 40]) {
-    unsafe {
-        let p = core::ptr::addr_of_mut!(BATTLE_MARKER)
-            .cast::<u8>()
-            .add(ORACLE_OFFSET);
-        for (i, b) in bytes.iter().enumerate() {
-            core::ptr::write_volatile(p.add(i), *b);
-        }
-    }
+    BattleMarker::put_bytes(ORACLE_OFFSET, bytes);
 }
 
 /// The fixture descriptor's own start address, for `fixture::read()`: byte
@@ -242,7 +269,11 @@ fn write_oracle_block(bytes: &[u8; 40]) {
 /// keeps the whole reservation from being linked away as dead -- see
 /// `write_battle_marker` above for the other one.
 pub fn fixture_ptr() -> *const u8 {
-    unsafe { core::ptr::addr_of!(BATTLE_MARKER).cast::<u8>().add(64) }
+    // `&raw const` of a `static mut` only forms the pointer, which is safe
+    // in edition 2024; the volatile reads live in fixture.rs. `wrapping_add`
+    // is the safe form of `.add(64)` here: the address is always inside the
+    // region, so it never actually wraps.
+    (&raw const BATTLE_MARKER).cast::<u8>().wrapping_add(64)
 }
 
 #[agb::entry]
