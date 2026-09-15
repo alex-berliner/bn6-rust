@@ -14,6 +14,9 @@
 //             something left out; say in the text what it was.
 //   text      about 60-100 words of plain English: how this part works, as
 //             it works today. No jargon the same slide does not explain.
+//             A number is explained by what it counts or selects, never by
+//             converting hex to decimal for its own sake; give the decimal
+//             only when the size is the point (0x100 is 256, life size).
 //   highlights 3 to 5 {code, text} pairs. Each is an EXACT substring of this
 //             slide's own `code` and `text`, and each must occur exactly
 //             once in its string -- lengthen the substring or reword the
@@ -513,7 +516,7 @@ pub const FLAG_TRACE: u8 = 1 << 7;`,
 {
   title: "The word the game leaves at boot",
   codePath: "src/main.rs",
-  code: `// 0x42415454 is 1111577684, and its four bytes are the letters B A T T.
+  code: `// The four bytes of 0x42415454 are the letters B A T T.
 const BATTLE_MAGIC: u32 = 0x4241_5454;
 
 fn write_battle_marker(magic: u32, frame: u32) {
@@ -582,12 +585,12 @@ b[20..22].copy_from_slice(&mm.hp.to_le_bytes());`,
   title: "The random number generator",
   codePath: "src/ai.rs",
   code: `// The seed a battle starts from unless the scene supplies one:
-// 0xa338244f, which is 2738365519.
+// 0xa338244f.
 pub const DEFAULT_SEED: u32 = 0xa338_244f;
 
 pub fn next(&mut self) -> u32 {
     // Rotate left one bit, add one, then flip the bits picked out by
-    // 0x873ca9e5, which is 2268899813 -- the original game's own constant.
+    // 0x873ca9e5 -- the original game's own constant.
     self.0 = self.0.rotate_left(1).wrapping_add(1) ^ 0x873c_a9e5;
     self.0
 }
@@ -939,7 +942,7 @@ shown.bg.copy_map_block(MAP_ORIGIN, MAP_W, &block);`,
   title: "Seeding the background for a scene",
   codePath: "src/battle.rs",
   code: `// A scene compared against a snapshot of the real game starts where the
-// snapshot is. 0xFFFF, which is 65535, means "no seed given".
+// snapshot is. 0xFFFF, means "no seed given".
 match self.fixture {
     Some(f) if f.art_entry != FIXTURE_UNSET => {
         backdrop.seed(
@@ -1029,7 +1032,7 @@ backdrop.prime(gfx);`,
   title: "A thrown bomb climbs, slows and falls",
   codePath: "src/battle.rs",
   code: "const BOMB_VX: i32 = 0x2e666;\nconst BOMB_VZ: i32 = 0x20666;\nconst BOMB_GRAVITY: i32 = 0x2800;\n// ...\nimpl Bomb {\n    fn step(&mut self) {\n        self.x += self.vx;\n        if self.moves_before_falling {\n            self.z += self.vz;\n            self.vz -= self.gravity;\n        } else {\n            self.vz -= self.gravity;\n            self.z += self.vz;\n        }\n    }\n\n    /// Screen position of the bomb; the game truncates Y and Z separately.\n    fn position(&self) -> (i32, i32) {\n        (self.x >> Q16_SHIFT, (self.y >> Q16_SHIFT) - (self.z >> Q16_SHIFT))\n    }",
-  text: "A thrown bomb keeps its position in tiny units, 65536 to a pixel, so it can move by fractions of a pixel. Every frame, step pushes it forward by 0x2e666 (190054) of those units, about 2.9 pixels. Its climbing speed starts at 0x20666 (132710), about 2 pixels a frame, and gravity takes 0x2800 (10240), a sixth of a pixel, off it every frame, so the bomb rises, slows and drops. The lines left out hold the bomb's other settings. To draw it, position drops the fractions and lifts the bomb above its shadow by its height.",
+  text: "A thrown bomb keeps its position in tiny units, 65536 to a pixel, so it can move by fractions of a pixel. Every frame, step pushes it forward by 0x2e666 of those units, about 2.9 pixels. Its climbing speed starts at 0x20666, about 2 pixels a frame, and gravity takes 0x2800, a sixth of a pixel, off it every frame, so the bomb rises, slows and drops. The lines left out hold the bomb's other settings. To draw it, position drops the fractions and lifts the bomb above its shadow by its height.",
   highlights: [
     { code: "self.x += self.vx;",
       text: "pushes it forward by 0x2e666" },
