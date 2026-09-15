@@ -1192,7 +1192,7 @@ def _tiles_gauge(name: str, subject_note: str) -> Check:
                  "both rows now read the SAME whole-screen number and the HUD defect is "
                  "reported (and allowlisted, not hidden) on both. F28 (2026-09-13) measured "
                  "what the 3865 IS, and it is not the HUD: (a) the rust side's battle FREEZES "
-                 "at battle frame 62 -- HUDMATCH clears FLAG_OPEN_WINDOW, so battle.rs's "
+                 "at battle frame 62 -- HUDMATCH clears SceneFlags::OPEN_WINDOW, so battle.rs's "
                  "gauge-fill branch re-arms gauge_pause = GAUGE_PAUSE every frame while the "
                  "branch that decrements it is gated on open_window_allowed(), leaving `paused` "
                  "true for good; the Mettaur never leaves its post-spawn wait (oracle enemy "
@@ -1340,7 +1340,7 @@ ZERO_ENEMY_ORIGIN = 8
 # What is left on these four rows is NOT the HUD and NOT the backdrop:
 #   * canon's RESULT window slides in from canon 154 on all four canon
 #     captures (the deleted-enemy battle resolves), and only `field` carries
-#     FLAG_RESOLVE_OVER, so warp k>=24, buster k>=22 and chip-use k>=4 are the
+#     SceneFlags::RESOLVE_OVER, so warp k>=24, buster k>=22 and chip-use k>=4 are the
 #     window's own ramp: warp 40628 of 40628, buster 45810 of 54672, chip-use
 #     565717 of 567780, all of it on BG3.
 #   * buster additionally keeps drawing the name from k=1 where canon has
@@ -1448,7 +1448,7 @@ ZERO_ENEMY_ORIGIN = 8
 # warp's window while the banner tail would regress k=0..7 and isolated), and
 # BANNER_TO_RESULTS is untouched (field's coincidence depends on it).
 
-#: ZERO_ENEMY plus FLAG_RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
+#: ZERO_ENEMY plus SceneFlags::RESOLVE_OVER (FIXTURE.md +19 bit5, TODO F8): the
 #: `field` row's rust side resolves the way its own canon side does -- canon's
 #: deleted-enemy battle reaches the all-dead advance (sequencer 0x0C at canon
 #: 47, watched), ENEMY DELETED (canon 49..106, documented), the RESULT window
@@ -1458,7 +1458,7 @@ ZERO_ENEMY_ORIGIN = 8
 #: carries the bit: warp/buster's own windows end before canon's mark enters
 #: (their tickets F11/F10), and chip-use must keep the fight alive to fire
 #: its chip at all.
-#: F38b (2026-09-14): FLAG_RESOLVE_OVER retried on warp/buster/chip-use now that `over`
+#: F38b (2026-09-14): SceneFlags::RESOLVE_OVER retried on warp/buster/chip-use now that `over`
 #: no longer freezes inputs/objects (F33d) -- measured worse-or-flat, reverted: warp
 #: integrated 40628->45751 (isolated 0->5123, banner tail k=0..7), buster 54672->81083
 #: (isolated 0->2286, our show/mark entering a window whose canon side has neither),
@@ -1486,7 +1486,7 @@ ZERO_ENEMY_ORIGIN = 8
 #: aligned frames early). warp/buster/chip-use/opening byte-identical to the
 #: T7c battery; field's allowed row 158979 unchanged; cursor 10/9/170/186276
 #: (T7c left it at 3/2/170/186277 -- the binary moved the tear, not chased).
-ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | FLAG_RESOLVE_OVER (bit5)
+ZERO_ENEMY_RESOLVED = dict(ZERO_ENEMY, flags=0x31)  # 0x11 | SceneFlags::RESOLVE_OVER (bit5)
 
 #: `chip-use` alone: an A press with an empty hand uses nothing, so this
 #: variant carries Cannon (PAUSED's own queued chip) the way FIELD_ROW does.
@@ -1797,8 +1797,8 @@ WINDOWCLOSE_ROW = dict(CUSTMATCH_ROW, art_entry=17, art_timer=1, scroll_xq=846, 
 CARDNAME_ROW = dict(CUSTMATCH_ROW, window_cursor=0)
 
 #: `window`/`card` isolated variants: CUSTMATCH_ROW/CARDNAME_ROW with
-#: FLAG_BLANK_HUD|FLAG_BLANK_BACKDROP added on top of their own
-#: FLAG_OPEN_WINDOW|FLAG_SKIP_INTRO (0x11 | 0x06 = 0x17), so nothing but
+#: SceneFlags::BLANK_HUD|SceneFlags::BLANK_BACKDROP added on top of their own
+#: SceneFlags::OPEN_WINDOW|SceneFlags::SKIP_INTRO (0x11 | 0x06 = 0x17), so nothing but
 #: the window itself renders on the rust side -- the full-screen match for
 #: canon's --only-bg 3 (see the `window` Check's own note).
 ISOLATED_CUSTMATCH_ROW = dict(CUSTMATCH_ROW, flags=0x17)
@@ -1982,7 +1982,7 @@ PORTED_CHECKS: List[Check] = [
                  "RESULT window arriving: the canon side's deleted-enemy battle resolves "
                  "(banner sequencer 0x08->0x0C at canon 47, ENEMY DELETED banner canon "
                  "49..106, RESULT window BG3 slide-in canon ~154..167, mark OBJ entering "
-                 "canon 163..166), so the rust side now carries FLAG_RESOLVE_OVER and "
+                 "canon 163..166), so the rust side now carries SceneFlags::RESOLVE_OVER and "
                  "resolves on the same schedule (banner at battle 0 = capture 8, mark at "
                  "capture ~121). The pairing is therefore by measured EVENT, not only by "
                  "static score: the banner start (canon 49 <-> rust capture 8) and the mark's "
@@ -2160,7 +2160,7 @@ PORTED_CHECKS: List[Check] = [
                  "span from the fire frame (canon 130..159, attack through 163; ours "
                  "battle 101..130); the window STOPS at 159 on purpose, before canon's "
                  "result mark from 164 (an OBJ the rust side never draws without "
-                 "FLAG_RESOLVE_OVER) -- the same stop buster uses. Canon's 4-frame-longer "
+                 "SceneFlags::RESOLVE_OVER) -- the same stop buster uses. Canon's 4-frame-longer "
                  "tail (attack through 163 vs ours through 131) sits outside the window "
                  "and stays OPEN with this ticket. F38b (2026-09-14): resolve retried now that "
                  "`over` no longer freezes inputs/objects (F33d) -- chip-use integrated "
@@ -2809,7 +2809,7 @@ PORTED_CHECKS: List[Check] = [
                  "inside the prompt box: the setup map's lit line replaced by byte_802C834's "
                  "flat face) and the bit-3 blink toggles 249 px at k=20/21, 28/29 and 36/37 -- "
                  "the same pixels on the same frames on both sides. THE 92760 IS THE INTRO "
-                 "FADE: RESULT_ROW carries FLAG_SKIP_INTRO, so src/battle.rs USED to start the battle "
+                 "FADE: RESULT_ROW carries SceneFlags::SKIP_INTRO, so src/battle.rs USED to start the battle "
                  "with intro_fade = INTRO_SKIP_FADE and darken the field layer and the objects "
                  "for the first ten compared frames, while canon's RESULT_ARRIVAL is 8048 battle "
                  "frames in with no fade left. LANDED (F34b -- this ticket's own three): "
@@ -2885,7 +2885,7 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=80,
         align=ALIGN_CHIP,
-        # F27b: 0x1F | FLAG_HUD_LIVE (FIXTURE.md +19 bit6) -- the ONE thing
+        # F27b: 0x1F | SceneFlags::HUD_LIVE (FIXTURE.md +19 bit6) -- the ONE thing
         # this row's rust side needs that the other 43 chip rows do not:
         # its canon side is a LIVE battle HUD (element mask 0x020352C0 =
         # 0x4497, bit14 set, on all 125 frames), theirs is a battle already
@@ -2908,7 +2908,7 @@ PORTED_CHECKS: List[Check] = [
         # content we lack -- it is the EMOTION WINDOW, the navi's face at the
         # top left, which src/emotion.rs already draws pixel-exactly and which
         # this row gates off. The earlier note here ("rust BLANK_HUD blanks
-        # it") is REFUTED: FLAG_BLANK_HUD only drops hud_tiles/hud_bg; the
+        # it") is REFUTED: SceneFlags::BLANK_HUD only drops hud_tiles/hud_bg; the
         # emotion window is dropped by src/battle.rs's `fighting` gate, and
         # this row's fixture has enemies=0.
         # Identified by OAM, per frame (--watch 0x7000000:0x400 over the whole
@@ -2957,7 +2957,7 @@ PORTED_CHECKS: List[Check] = [
         # their canon sides are on opposite sides of that teardown, so no rule
         # computed from our own state can tell them apart. A zero-enemy arena
         # has no canon counterpart at all; a fixture that fields an enemy
-        # needs no bit (see src/fixture.rs's FLAG_HUD_LIVE).
+        # needs no bit (see src/fixture.rs's SceneFlags::HUD_LIVE).
         # The remaining 5094 (x149-196 y81-126) is the enemy's dissolve,
         # F28's Mettaur phase.
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
