@@ -306,3 +306,39 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** dispatch in parallel with T7y — files are disjoint (no src/, no tools/states.py, no captures), and it is the only proposal here that costs no capture slots. Cheap worker is fine; verifier = the other family, spot-checking two cites at random against the file on disk. ≤$0.15 expected, ≤$0.35 cap. Advances **M1** (its last DERIVED-FROM-CODE table with a live candidate on disk) and unblocks **M3** (panels 0/13 → a cited per-type work list).
 
+### Q1. Name the last bare numbers in the HUD walk and the backdrop wrap  *(OPEN -- 2026-09-15)*
+**Why.** The learn feed's reader (2026-09-15) flagged bare numbers in src/hud.rs and src/backdrop.rs: the health counter's walk `abs_diff / 8 + 4` and the scroll wrap `% (256 * 4)`. The project's rule is that every number touched carries a name with its provenance (a canon symbol or a measured origin). Milestone M8 (presentation).
+**Files.** src/hud.rs, src/backdrop.rs (the two sites only), tools/harness.py (row notes only if a note names the numbers).
+**Do.** 1. Find canon's routine for the HP counter walk (the `// bn` notes and docs/renames.md name the results-screen and HUD chains) and cite the 8 and the 4; name them `HP_WALK_DIVISOR` and `HP_WALK_MIN_STEP` (or the canon-derived names) with `provenance:` comments. 2. Name the scroll wrap (`256 * 4`: the backdrop's 256-pixel period in quarter-pixel units) the same way. 3. Rebuild and run the canaries: `python3 tools/harness.py --only field,opening,wave --no-gallery` must read identical to HEAD.
+**Rules.** Behaviour-neutral: the .gba may differ only by panic-line bytes; no other file.
+**Acceptance.** No bare literal remains at the two sites; verify_rows PASS on field, opening, wave, mettaur identical to HEAD.
+**Measure and report.** The harness lines before and after, and the citations.
+**Coordinator:** a naming ticket: no verifier needed when verify_rows is identical.
+
+### Q2. The scene's switches as a flags type, not a bare byte  *(OPEN -- 2026-09-15)*
+**Why.** The learn feed's reader (2026-09-15): "Things like this should be an enum right?" The eight FLAG_* bits in src/fixture.rs are combined (several on at once), so an enum is the wrong shape, but a bare u8 with constants hides intent at every call site. A small newtype with named accessors keeps the byte's layout (the harness pokes it into RAM) and makes `fixture.blank_hud()` readable. Milestone M2 (the engine core's tooling).
+**Files.** src/fixture.rs, and the call sites that test `flags & FLAG_*` (grep `FLAG_` in src/).
+**Do.** 1. Add `pub struct SceneFlags(u8)` with `const` bit constructors and `fn blank_hud(self) -> bool` etc., `From<u8>`/`Into<u8>`. 2. Replace each `flags & FLAG_X != 0` with the accessor. 3. Keep the byte's bit assignment and FIXTURE.md unchanged.
+**Rules.** Behaviour-neutral; the .gba may differ only by panic-line bytes.
+**Acceptance.** No `& FLAG_` test remains outside fixture.rs; verify_rows PASS on mettaur, field, opening, cursor identical to HEAD.
+**Measure and report.** The harness lines before and after.
+**Coordinator:** no verifier needed when verify_rows is identical.
+
+### Q3. One safe wrapper for the boot mark and the state block  *(OPEN -- 2026-09-15)*
+**Why.** The learn feed's reader (2026-09-15): "please try to minimize the amount of unsafe". src/main.rs writes the boot mark and the forty-byte state block through two separate `unsafe` blocks of raw volatile pointer writes into the fixed BATTLE_MARKER region. One small type owning that region can expose safe `put_u32(offset, v)` / `put_bytes(offset, &[u8])`, leaving a single `unsafe` in the file with the contract written once. Milestone M2.
+**Files.** src/main.rs (the marker/oracle writers only), src/battle.rs (only if the block assembly moves behind the type).
+**Do.** 1. Define the wrapper over the existing static with the layout constants (ORACLE_OFFSET, TRACE_OFFSET) as its methods' bounds. 2. Route write_battle_marker and write_oracle_block through it; the trace export too if it writes the same region. 3. `grep -c unsafe src/main.rs` drops to one block.
+**Rules.** Behaviour-neutral: the marker's addresses and the harness contract (tools/oracle.py, tools/trace.py read them) are unchanged.
+**Acceptance.** One `unsafe` block in src/main.rs; verify_rows PASS on mettaur, result, opening identical to HEAD; `python3 tools/trace.py record` on mettaur still reads its fields.
+**Measure and report.** The unsafe count before and after, the harness lines, one trace record line.
+**Coordinator:** a verifier pass only if trace.py's numbers move.
+
+### Q4. The forty-byte state block as named fields, not byte offsets  *(OPEN -- 2026-09-15)*
+**Why.** The learn feed's reader (2026-09-15): "Can we eventually get rid of the raw b indexing and replace it with a more structured approach". src/battle.rs fills the state block with `b[8..12].copy_from_slice(...)`, `b[14] = ...`: the offsets mirror the original game's own layout and tools/oracle.py reads the same offsets, so the layout must stay, but it should be written once as named fields with their offsets and sizes, serialised in order, and the Python reader generated or checked from the same table. Milestone M2.
+**Files.** src/battle.rs (the block assembly), src/main.rs (the block's definition if it moves there), tools/oracle.py, tools/trace.py (the reader tables), docs/FIXTURE.md.
+**Do.** 1. Write the block as a table of (name, offset, width) in one place in Rust, with a `put` per field and a compile-time check that fields do not overlap and end at 40. 2. Make tools/oracle.py's offsets come from that table (a generated docs/oracle_layout.json is enough) and assert the two agree in the harness's self-check. 3. Replace every `b[...]` write with the named put.
+**Rules.** Behaviour-neutral; the bytes written are identical (compare a `--dump 0x02000008:40` between HEAD and the branch over 40 frames of mettaur).
+**Acceptance.** No `b[` indexing remains in the block assembly; the dump is byte-identical; verify_rows PASS on mettaur, result identical to HEAD.
+**Measure and report.** The dump comparison, the harness lines.
+**Coordinator:** no verifier needed when the dump is identical.
+
