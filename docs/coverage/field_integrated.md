@@ -1,0 +1,189 @@
+# `field` integrated residue — per-layer attribution (F45, 2026-09-16)
+
+Row: `field` integrated = **158935 total / 5606 worst / 40 frames**, negative not blind
+(261034). Re-measured on this branch before any edit; the row's own entry is unchanged.
+`field` isolated = 0/0/40 (neg 1139): the subject is OBJ and OBJ matches, so the residue is a
+BG/window/blend story. Fitted constants: **19** (derived 430, peeked 147).
+
+## The boundary
+
+Rust capture **121 = battle 110 = k=5** on the `field` row (rust base 8 + offset 108 = 116;
+canon_ref 130). At that capture `self.shown` becomes `Some` and `src/battle.rs:4546-4549`
+skips `filler_bg`, so every layer drops one hardware BG (backdrop BG1→BG0, panels BG2→BG1,
+HUD BG3→BG2, `shown`→BG3) while canon's own RESULT window has not started (canon ~154).
+Captures 118-120 are byte-identical stall frames. Same content therefore pairs:
+
+* **k=0..4 (pre-boundary):** the SAME `--only-bg N` on both sides.
+* **k>=5 (post-boundary):** canon `--only-bg N` vs rust `--only-bg N-1`.
+
+The rows: `field-bg1` (canon BG1 backdrop vs rust BG0), `field-bg2` (canon BG2 panels vs
+rust BG1), `field-bg3` (canon BG3 HUD vs rust BG2), all `Align(canon_ref=135,
+rust_offset=113, search=None)`, frames=40 — the `field` row's event-locked pairing moved
+past the 5 pre-boundary frames. Rust capture 121 is **k=0** on the post rows, **k=5** on
+`field` itself.
+
+**The N/N-1 compensation is confirmed by collapse, not assumption:** F42's both-sides
+`--only-bg 1` mask was 100% saturated on 34 of 40 frames (a black-screen comparison). With
+the compensated pairing the same layer's mask peaks at **37.9%** and never saturates; and
+`field-bg2` reads **0 differing pixels on 39 of 40 frames** — a wrong pairing (panels vs
+backdrop) cannot read byte-identical for 39 straight frames.
+
+## The rule (recon F45 §3, applied before trusting any number)
+
+A per-layer isolation frame whose differing-pixel mask covers more than **X = 75%** of the
+240x160 screen (28800 px) is a full-screen render, not a layer mask, and is **rejected**: no
+number from it may be quoted. X=75% sits inside the measured gap between usable masks
+(28.9% worst pre-boundary) and F42's saturated ones (92.5% at the boundary, 100% after).
+The mask is a property of the paired captures (one RGB-only diff per frame
+`tools/chip_compare.py`), so per frame there is one coverage number per mask; the per-SIDE
+content is fixed by each side's own flag (rust `--only-bg N-1`, canon `--only-bg N`), which
+is what makes the two sides the same layer.
+
+**Rejected frames: 0.** No frame in any mask used below reaches 75%.
+
+## Per-frame coverage table
+
+`integ` = the unchanged `field` integrated row (per-k from F42's kept integrated capture,
+sums exactly to the row's own 158935/5606/40). Coverage = mask px / 38400. `pre-bg1` =
+pre-boundary same-N BG1-only mask from F42's kept `--only-bg 1`-on-both-sides capture
+(base 116, canon_ref 130), re-derived offline; its integrated per-k reproduces main's row
+exactly, so the rust ROM it captured renders identically to main on these frames.
+
+Pre-boundary (the same-N window, `field` k=0..4 = rust 116..120 <-> canon 130..134).
+For reference, F42's own both-sides BG1 mask at k=5 read 35505 (92.5%) — saturated under
+the rule, REJECTED, and no number from it is used anywhere below; every mask quoted here
+comes from the compensated post rows or the same-N pre-boundary frames, all <=75%:
+
+| field k | integ | pre-bg1 | pre-bg1 % |
+|---|---|---|---|
+| 0 | 0 | 0 | 0.0 |
+| 1 | 0 | 0 | 0.0 |
+| 2 | 3566 | 7362 | 19.2 |
+| 3 | 5319 | 11117 | 29.0 |
+| 4 | 5319 | 11117 | 29.0 |
+
+Post rows (post k = `field` k - 5; post k=1..34 = `field` k=6..39):
+
+| post k | field k | integ | bg1 | bg1 % | bg2 | bg2 % | bg3 | bg3 % |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 5 | 5606 | 14559 | 37.9 | 4560 | 11.9 | 704 | 1.8 |
+| 1 | 6 | 4092 | 8642 | 22.5 | 0 | 0.0 | 0 | 0.0 |
+| 2 | 7 | 5515 | 11608 | 30.2 | 0 | 0.0 | 0 | 0.0 |
+| 3 | 8 | 4701 | 9923 | 25.8 | 0 | 0.0 | 0 | 0.0 |
+| 4 | 9 | 5545 | 11679 | 30.4 | 0 | 0.0 | 0 | 0.0 |
+| 5 | 10 | 4911 | 10419 | 27.1 | 0 | 0.0 | 0 | 0.0 |
+| 6 | 11 | 5488 | 11665 | 30.4 | 0 | 0.0 | 0 | 0.0 |
+| 7 | 12 | 5335 | 11385 | 29.6 | 0 | 0.0 | 0 | 0.0 |
+| 8 | 13 | 5075 | 10751 | 28.0 | 0 | 0.0 | 0 | 0.0 |
+| 9 | 14 | 3868 | 8263 | 21.5 | 0 | 0.0 | 0 | 0.0 |
+| 10 | 15 | 5093 | 10830 | 28.2 | 0 | 0.0 | 0 | 0.0 |
+| 11 | 16 | 4342 | 9263 | 24.1 | 0 | 0.0 | 0 | 0.0 |
+| 12 | 17 | 5113 | 10900 | 28.4 | 0 | 0.0 | 0 | 0.0 |
+| 13 | 18 | 4614 | 9879 | 25.7 | 0 | 0.0 | 0 | 0.0 |
+| 14 | 19 | 5002 | 10786 | 28.1 | 0 | 0.0 | 0 | 0.0 |
+| 15 | 20 | 4671 | 10057 | 26.2 | 0 | 0.0 | 0 | 0.0 |
+| 16 | 21 | 4361 | 9492 | 24.7 | 0 | 0.0 | 0 | 0.0 |
+| 17 | 22 | 3358 | 7362 | 19.2 | 0 | 0.0 | 0 | 0.0 |
+| 18 | 23 | 4374 | 9536 | 24.8 | 0 | 0.0 | 0 | 0.0 |
+| 19 | 24 | 3528 | 7893 | 20.6 | 0 | 0.0 | 0 | 0.0 |
+| 20 | 25 | 4281 | 9570 | 24.9 | 0 | 0.0 | 1917 | 5.0 |
+| 21 | 26 | 3292 | 7338 | 19.1 | 0 | 0.0 | 3837 | 10.0 |
+| 22 | 27 | 4243 | 9430 | 24.6 | 0 | 0.0 | 5757 | 15.0 |
+| 23 | 28 | 3470 | 7822 | 20.4 | 0 | 0.0 | 7677 | 20.0 |
+| 24 | 29 | 3977 | 9170 | 23.9 | 0 | 0.0 | 9696 | 25.2 |
+| 25 | 30 | 3170 | 6990 | 18.2 | 0 | 0.0 | 11744 | 30.6 |
+| 26 | 31 | 3961 | 9141 | 23.8 | 0 | 0.0 | 13792 | 35.9 |
+| 27 | 32 | 3384 | 7521 | 19.6 | 0 | 0.0 | 15840 | 41.2 |
+| 28 | 33 | 3623 | 9104 | 23.7 | 0 | 0.0 | 17973 | 46.8 |
+| 29 | 34 | 2788 | 6810 | 17.7 | 0 | 0.0 | 20197 | 52.6 |
+| 30 | 35 | 3149 | 8896 | 23.2 | 0 | 0.0 | 22421 | 58.4 |
+| 31 | 36 | 2673 | 7261 | 18.9 | 0 | 0.0 | 24642 | 64.2 |
+| 32 | 37 | 2836 | 8543 | 22.2 | 0 | 0.0 | 24818 | 64.6 |
+| 33 | 38 | 2465 | 6422 | 16.7 | 0 | 0.0 | 24906 | 64.9 |
+| 34 | 39 | 2827 | 8477 | 22.1 | 0 | 0.0 | 24906 | 64.9 |
+| 35 | 40..44 | (past field's window) | 6786 | 17.7 | 0 | 0.0 | 24906 | 64.9 |
+| 36 | 40..44 | (past field's window) | 8407 | 21.9 | 0 | 0.0 | 24906 | 64.9 |
+| 37 | 40..44 | (past field's window) | 7645 | 19.9 | 0 | 0.0 | 24906 | 64.9 |
+| 38 | 40..44 | (past field's window) | 9584 | 25.0 | 0 | 0.0 | 24906 | 64.9 |
+| 39 | 40..44 | (past field's window) | 7967 | 20.7 | 0 | 0.0 | 24906 | 64.9 |(Full 40-value count lines for every mask are in docs/worklog/F45.md; the table shows the
+shape — every bg1 frame 16.7-37.9%, bg2 zero except the boundary frame, bg3 zero until
+canon's RESULT arrives.)
+
+
+Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560** (worst
+4560, neg 4560 — non-blind only via the boundary frame), `field-bg3` **380263** (worst
+24906, neg 405169). All negatives non-blind.
+
+## Attribution — the parts sum to 158935 with no gap
+
+* **k=0,1 (0 px):** nothing to attribute.
+* **k=2..4 (14204 px) — backdrop, pre-boundary.** The same-N BG1-only mask reads
+  7362/11117/11117 (coverage 19.2/29.0/29.0%, all <=75%, none rejected) — MORE than the
+  integrated 3566/5319/5319 on each frame: the arena (panels/HUD/OBJ drawn over the
+  backdrop) hides part of the backdrop divergence. These are the three byte-identical stall
+  frames 118-120.
+* **k=5 (5606 px) — the boundary frame itself.** All three layers' masks are usable there
+  (backdrop 14559/37.9%, panels 4560/11.9%, HUD 704/1.8%): the frame where the stack
+  renumbers, backdrop-dominant. No frame rejected.
+* **k=6..39 (139125 px, 87.5% of the row) — the BACKDROP layer carries it.**
+  - panels (`field-bg2`): **0 px on every frame k=1..39** — panels carry nothing.
+  - HUD (`field-bg3`): **0 px for k=1..18** — HUD content matches. From k=19 the row diverges
+    in an exact 1917 px/frame ramp saturating at 24906 (64.9%): that is canon's own RESULT
+    window slide-in starting at canon 154 = k=19, drawn on canon BG3 over the HUD, compared
+    against rust's HUD (BG2). It is a z-order/stack difference (canon: RESULT overwrites HUD
+    on one tilemap; rust: HUD on BG2, `shown` RESULT on BG3), NOT a HUD content defect — in
+    the integrated composite there is no spike at k>=19 (integ stays 2.4-5.6k), i.e. both
+    sides render the same RESULT content and the stack difference is invisible in the
+    composite.
+  - backdrop (`field-bg1`): nonzero on **every** one of the 40 frames, 6422..14559 px
+    (coverage 16.7-37.9%, never saturated, zero frames rejected). Its isolated diff exceeds
+    the integrated diff on every frame — the arena hides 60-80% of it.
+  - OBJ: 0/0/40 (`field` isolated, `--disable-bg` blanks all 4 BGs and both WINs, keeps OBJ).
+  - So for k=6..39 the only measured carrier of integrated residue is the backdrop.
+
+**Accounting: 14204 (k=2..4, backdrop) + 5606 (k=5, boundary transition) + 139125
+(k=6..39, backdrop) = 158935. Rejected px: 0. Uncovered px: 0.**
+
+## What cannot be tested with this tooling (ticket step 5)
+
+* **Windows:** both `--disable-bg` and `--only-bg N` force `disableWIN[0]=disableWIN[1]=true`
+  (`tools/mgba_capture.c:396-398` and `:549-550`). No capture on this row has ever had a
+  window on, so a window claim cannot come from any isolation mechanism here at all.
+* **BLEND (BLDCNT/BLDALPHA/BLDY) and mosaic:** untouched by every capture flag (grep across
+  `tools/*.c`, `tools/*.py` is empty), active in both integrated and isolation captures, and
+  never isolated. They could in principle carry composite-only residue where every layer
+  mask reads equal; I could not test them because no flag renders a blend-off/mosaic-off
+  frame, and the capture budget was spent. Note the backdrop is a scrolling, palette-heavy
+  layer, so a BLDY/BLDALPHA difference would show up inside the bg1 mask anyway — the bg1
+  mask already covers the integrated residue per frame.
+* **BG2-only and BG0-only full composites** (F42 never tested them): not captured — the
+  6-capture budget went to the three post rows that attribute the 139125 px bulk. Unmeasured.
+* **Pre-boundary panels/HUD isolation (same-N rows for k=0..4):** not captured (budget);
+  the pre-boundary attribution rests on the backdrop mask alone (usable, 0/0/7362/11117/
+  11117) exceeding the integrated diff per frame, which is consistent with backdrop-only
+  divergence but does not by itself exclude a small additional contribution on other layers
+  hidden by the backdrop overlap. Unverified remainder: <= 14204 px, bounded by k=2..4.
+
+## One line of mechanism
+
+The integrated residue is backdrop content that diverges from rust capture 121 (the
+`shown`-renumber boundary, right after the 3-frame stall at 118-120) and persists on every
+frame after, mostly hidden by the arena — a timing/layout story (F32's end-sequence offset),
+not tile art, consistent with F42's (0,0)-unique shift test.
+
+## One line of what is unverified
+
+That the post-boundary pairing is same-content rests on the collapse (saturation 100% ->
+<=37.9%) plus `field-bg2`'s 39 zero frames — the `.show()`-order argument itself is still
+inference, and the pre-boundary panels/HUD masks and the BLEND/mosaic channel were never
+captured.
+
+## Rows this ticket adds
+
+`field-bg1`, `field-bg2`, `field-bg3` (post-boundary, notes state what each proves). The
+existing `field` row is unchanged: this session it reads 158935/5606/40 integrated
+(neg 261034) and 0/0/40 isolated (neg 1139). The pre-boundary same-N row (k=0..4,
+`Align(canon_ref=130, rust_offset=108, search=None)`, frames=5) was NOT landed: the capture
+budget (6) is exactly the three post rows, and its numbers are derived above from F42's kept
+`--only-bg 1` capture; a follow-up can land it with the same recipe if verification wants it
+harness-run.
