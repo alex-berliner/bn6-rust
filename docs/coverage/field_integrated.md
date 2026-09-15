@@ -85,36 +85,41 @@ Post rows (post k = `field` k - 5; post k=1..34 = `field` k=6..39):
 | 16 | 21 | 4361 | 9492 | 24.7 | 0 | 0.0 | 0 | 0.0 |
 | 17 | 22 | 3358 | 7362 | 19.2 | 0 | 0.0 | 0 | 0.0 |
 | 18 | 23 | 4374 | 9536 | 24.8 | 0 | 0.0 | 0 | 0.0 |
-| 19 | 24 | 3528 | 7893 | 20.6 | 0 | 0.0 | 0 | 0.0 |
-| 20 | 25 | 4281 | 9570 | 24.9 | 0 | 0.0 | 1917 | 5.0 |
-| 21 | 26 | 3292 | 7338 | 19.1 | 0 | 0.0 | 3837 | 10.0 |
-| 22 | 27 | 4243 | 9430 | 24.6 | 0 | 0.0 | 5757 | 15.0 |
-| 23 | 28 | 3470 | 7822 | 20.4 | 0 | 0.0 | 7677 | 20.0 |
-| 24 | 29 | 3977 | 9170 | 23.9 | 0 | 0.0 | 9696 | 25.2 |
-| 25 | 30 | 3170 | 6990 | 18.2 | 0 | 0.0 | 11744 | 30.6 |
-| 26 | 31 | 3961 | 9141 | 23.8 | 0 | 0.0 | 13792 | 35.9 |
-| 27 | 32 | 3384 | 7521 | 19.6 | 0 | 0.0 | 15840 | 41.2 |
-| 28 | 33 | 3623 | 9104 | 23.7 | 0 | 0.0 | 17973 | 46.8 |
-| 29 | 34 | 2788 | 6810 | 17.7 | 0 | 0.0 | 20197 | 52.6 |
-| 30 | 35 | 3149 | 8896 | 23.2 | 0 | 0.0 | 22421 | 58.4 |
-| 31 | 36 | 2673 | 7261 | 18.9 | 0 | 0.0 | 24642 | 64.2 |
-| 32 | 37 | 2836 | 8543 | 22.2 | 0 | 0.0 | 24818 | 64.6 |
+| 19 | 24 | 3528 | 7893 | 20.6 | 0 | 0.0 | 1917 | 5.0 |
+| 20 | 25 | 4281 | 9570 | 24.9 | 0 | 0.0 | 3837 | 10.0 |
+| 21 | 26 | 3292 | 7338 | 19.1 | 0 | 0.0 | 5757 | 15.0 |
+| 22 | 27 | 4243 | 9430 | 24.6 | 0 | 0.0 | 7677 | 20.0 |
+| 23 | 28 | 3470 | 7822 | 20.4 | 0 | 0.0 | 9696 | 25.2 |
+| 24 | 29 | 3977 | 9170 | 23.9 | 0 | 0.0 | 11744 | 30.6 |
+| 25 | 30 | 3170 | 6990 | 18.2 | 0 | 0.0 | 13792 | 35.9 |
+| 26 | 31 | 3961 | 9141 | 23.8 | 0 | 0.0 | 15840 | 41.2 |
+| 27 | 32 | 3384 | 7521 | 19.6 | 0 | 0.0 | 17973 | 46.8 |
+| 28 | 33 | 3623 | 9104 | 23.7 | 0 | 0.0 | 20197 | 52.6 |
+| 29 | 34 | 2788 | 6810 | 17.7 | 0 | 0.0 | 22421 | 58.4 |
+| 30 | 35 | 3149 | 8896 | 23.2 | 0 | 0.0 | 24642 | 64.2 |
+| 31 | 36 | 2673 | 7261 | 18.9 | 0 | 0.0 | 24818 | 64.6 |
+| 32 | 37 | 2836 | 8543 | 22.2 | 0 | 0.0 | 24906 | 64.9 |
 | 33 | 38 | 2465 | 6422 | 16.7 | 0 | 0.0 | 24906 | 64.9 |
 | 34 | 39 | 2827 | 8477 | 22.1 | 0 | 0.0 | 24906 | 64.9 |
 | 35 | 40..44 | (past field's window) | 6786 | 17.7 | 0 | 0.0 | 24906 | 64.9 |
 | 36 | 40..44 | (past field's window) | 8407 | 21.9 | 0 | 0.0 | 24906 | 64.9 |
 | 37 | 40..44 | (past field's window) | 7645 | 19.9 | 0 | 0.0 | 24906 | 64.9 |
 | 38 | 40..44 | (past field's window) | 9584 | 25.0 | 0 | 0.0 | 24906 | 64.9 |
-| 39 | 40..44 | (past field's window) | 7967 | 20.7 | 0 | 0.0 | 24906 | 64.9 |(Full 40-value count lines for every mask are in docs/worklog/F45.md; the table shows the
+| 39 | 40..44 | (past field's window) | 7967 | 20.7 | 0 | 0.0 | 24906 | 64.9 |
+
+(Full 40-value count lines for every mask are in docs/worklog/F45.md; the table shows the
 shape — every bg1 frame 16.7-37.9%, bg2 zero except the boundary frame, bg3 zero until
 canon's RESULT arrives.)
 
 
 Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560** (worst
 4560, neg 4560 — non-blind only via the boundary frame), `field-bg3` **380263** (worst
-24906, neg 405169). All negatives non-blind.
+24906, neg 405169). All negatives non-blind. The HARNESS LINE is the
+citable number for each row; the per-frame tables are transcriptions of the kept capture
+dirs (/tmp/bn-cd4ee804/, re-diffed with chip_compare.diff_frames this pass, bg3 corrected
+from a one-frame shift), and any discrepancy is a transcription bug, not a measurement.
 
-## Attribution — the parts sum to 158935 with no gap
+## Attribution — by-index bookkeeping, layer assignment by elimination
 
 * **k=0,1 (0 px):** nothing to attribute.
 * **k=2..4 (14204 px) — backdrop, pre-boundary.** The same-N BG1-only mask reads
@@ -125,7 +130,7 @@ Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560
 * **k=5 (5606 px) — the boundary frame itself.** All three layers' masks are usable there
   (backdrop 14559/37.9%, panels 4560/11.9%, HUD 704/1.8%): the frame where the stack
   renumbers, backdrop-dominant. No frame rejected.
-* **k=6..39 (139125 px, 87.5% of the row) — the BACKDROP layer carries it.**
+* **k=6..39 (139125 px, 87.5% of the row) — assigned to the backdrop by elimination.**
   - panels (`field-bg2`): **0 px on every frame k=1..39** — panels carry nothing.
   - HUD (`field-bg3`): **0 px for k=1..18** — HUD content matches. From k=19 the row diverges
     in an exact 1917 px/frame ramp saturating at 24906 (64.9%): that is canon's own RESULT
@@ -137,12 +142,20 @@ Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560
     composite.
   - backdrop (`field-bg1`): nonzero on **every** one of the 40 frames, 6422..14559 px
     (coverage 16.7-37.9%, never saturated, zero frames rejected). Its isolated diff exceeds
-    the integrated diff on every frame — the arena hides 60-80% of it.
+    the integrated diff on every frame — the arena hides 52-67% of it (1 - integ/bg1
+    recomputed from the table; min 52.5%, max 66.8%; pre-boundary 51.6%/52.2%).
   - OBJ: 0/0/40 (`field` isolated, `--disable-bg` blanks all 4 BGs and both WINs, keeps OBJ).
   - So for k=6..39 the only measured carrier of integrated residue is the backdrop.
 
-**Accounting: 14204 (k=2..4, backdrop) + 5606 (k=5, boundary transition) + 139125
-(k=6..39, backdrop) = 158935. Rejected px: 0. Uncovered px: 0.**
+**Bookkeeping: the k=2..4 / k=5 / k=6..39 split of the row's own 158935 is by frame index
+and closes trivially; layers are assigned only by elimination (panels 0 on 39/40 frames,
+HUD 0 before canon 154, OBJ 0/0/40), with windows and blend/mosaic unexcluded.** The three
+field-bgN rows measure a paired --only-bg composite on the post-boundary N/N-1 pairing, so
+their totals (367776/4560/380263) include any systematic difference that pairing itself
+introduces and are never summed against, or compared with, the 158935 residue; 14204/5606/
+139125 are the field row's own integrated per-frame sums partitioned by k, and the backdrop
+attribution of the 139125 is an elimination inference, not a measurement. Rejected frames:
+0. Uncovered px: 0.
 
 ## What cannot be tested with this tooling (ticket step 5)
 
@@ -153,9 +166,10 @@ Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560
   `tools/*.c`, `tools/*.py` is empty), active in both integrated and isolation captures, and
   never isolated. They could in principle carry composite-only residue where every layer
   mask reads equal; I could not test them because no flag renders a blend-off/mosaic-off
-  frame, and the capture budget was spent. Note the backdrop is a scrolling, palette-heavy
-  layer, so a BLDY/BLDALPHA difference would show up inside the bg1 mask anyway — the bg1
-  mask already covers the integrated residue per frame.
+  frame, and the capture budget was spent. With every other BG disabled there is nothing
+  for blend to blend with, so a blend-only or window-only composite difference is
+  structurally invisible to all three masks — which is exactly why windows and
+  blend/mosaic stay unexcluded in the bookkeeping above.
 * **BG2-only and BG0-only full composites** (F42 never tested them): not captured — the
   6-capture budget went to the three post rows that attribute the 139125 px bulk. Unmeasured.
 * **Pre-boundary panels/HUD isolation (same-N rows for k=0..4):** not captured (budget);
@@ -166,10 +180,16 @@ Row totals: `field-bg1` **367776** (worst 14559, neg 402740), `field-bg2` **4560
 
 ## One line of mechanism
 
-The integrated residue is backdrop content that diverges from rust capture 121 (the
-`shown`-renumber boundary, right after the 3-frame stall at 118-120) and persists on every
-frame after, mostly hidden by the arena — a timing/layout story (F32's end-sequence offset),
-not tile art, consistent with F42's (0,0)-unique shift test.
+Content-vs-timing UNRESOLVED — F42's (0,0)-unique shift test says the scroll is phase-exact
+and points at tile art (docs/worklog/F42.md:37-38: "the scroll is phase-EXACT; the residue
+is art CONTENT"), while the `field` row's own harness note at tools/harness.py:1368
+attributes only the k=5 transition frame to F32's end-sequence offset; no capture in this
+ticket distinguishes art from layout.
+
+What IS established here: the positive controls that validate the N/N-1 pairing are
+`field-bg2`'s 0 on 39/40 frames and `field-bg3`'s 0 on post k=1..18; `field-bg1` (never 0,
+min 6422) and `field-bg3` post-154 carry no control of their own and may be cited for the
+PRESENCE of a difference, never its magnitude.
 
 ## One line of what is unverified
 

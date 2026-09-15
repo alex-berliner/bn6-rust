@@ -2029,7 +2029,7 @@ PORTED_CHECKS: List[Check] = [
                  "pre-boundary frames -- search=None because a pairing already argued by "
                  "event must not be re-picked by score (F2's rule). Proves whether the "
                  "k>=5 bulk of field's 158935 px lives in the backdrop layer; frames with "
-                 ">75% mask coverage are rejected (full-screen render, not a layer mask).",
+                 ">75% mask coverage are rejected (full-screen render, not a layer mask) -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it; a stronger mask-row guard (mask_diff AND integ_equal AND not_in_occluder == 0) is left for a later ticket (F46/F47).",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
                              extra=("--only-bg", "0")),
@@ -2051,7 +2051,7 @@ PORTED_CHECKS: List[Check] = [
                  "rust --only-bg 1, same renumbering boundary as field-bg1 (rust capture 121 "
                  "= k=5, self.shown Some). Band identical to field-bg1's (event-locked, not "
                  "scored). Proves whether the k>=5 bulk of field's 158935 px lives in the "
-                 "field-panels layer; frames with >75% mask coverage are rejected.",
+                 "field-panels layer; frames with >75% mask coverage are rejected -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
                              extra=("--only-bg", "1")),
@@ -2076,7 +2076,7 @@ PORTED_CHECKS: List[Check] = [
                  "and canon's own RESULT slide-in does not start until canon ~154 (k=24 of "
                  "this window) -- so this row proves HUD parity, NOT the `shown` layer, and "
                  "a large reading here is expected to be the shown-vs-HUD mismatch, not a "
-                 "HUD defect. Frames with >75% mask coverage are rejected.",
+                 "HUD defect. Frames with >75% mask coverage are rejected -- the cap is applied BY HAND in docs/coverage/field_integrated.md, the harness does not enforce it",
         ),
         rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ZERO, script="Start@10",
                              extra=("--only-bg", "2")),
