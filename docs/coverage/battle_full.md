@@ -1517,3 +1517,25 @@ Our side: `Battle::update` ticks `self.primary_rng.next()` once per frame at src
 
 **Port.** A per-site mirror at the death-landing branch (when our equivalent of `sub_80C7E6C` enters `sub_80C7EC8`) would need to call `self.primary_rng.next()` twice there; the cleanest mirror is to gate the second step on the panel being solid. Not landed in this ticket — the citation and value-delta are the diagnostic; the next ticket decides between per-site mirror vs global RNG alignment. fitted-constant count in src/ unchanged at 19.
 
+
+## T7o SEQ04 release-edge relocation (2026-09-14, follow-up to T7m BLOCKED 794a5c3)
+
+Mechanism: `match self.seq.state { SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08) ... }` was at src/battle.rs:2533 (BEFORE `t1_player_entry` at :3261). Relocated to :3268 (AFTER `t1_player_entry`). Citation: sub_8008452 (window opening, SEQ_20, off_8008038 entry 8) / sub_800840C (banner wait, SEQ_04 hold) / sub_8008064 (SEQ_04 -> SEQ_08 release edge) per T7f PARTIAL; asm/object.s per-tick order. Canon's main loop is sub_800938A -> battle_update_8007A44 (asm00_1.s:9775/13126) which runs the executor first and re-enters the sequencer handler on the same frame. With the match block relocated, our SEQ_04 -> SEQ_08 release edge fires AFTER the player's per-tick work on its last frame (k=147..207 on canon), matching canon.
+
+HEAD counts after relocation (vs before): mm_state_action 101/540, mm_anim 86/540, mm_timer 302/540 -- unchanged at k=179. The relocation matches canon's call chain but the executor's gate is not a function of `seq.state` in our model (the executor reads no sequencer state -- it runs unconditionally per the actor's per-tick bookkeeping), so the visible counts do not move on this ticket alone. Cursor 10/9/170 unchanged, mettaur 0/0/70 unchanged, chip-use integrated unchanged (AUDIT-6 allowed), all 43 chip rows + wave + popup + result PASS isolated. fitted-constant count in src/ unchanged at 19.
+
+Per-frame per-side k=175..183 (CurState, CurAction, timer, anim):
+
+| k | canon frame | rust frame | canon sa/timer/anim | rust sa/timer/anim | canon seq (banner) | rust seq |
+|---|---|---|---|---|---|---|
+| 175 | 186 | 175 | (4,8)/0/0 | (4,8)/0/0 | 0x04 (banner wait) | 0x08 (gate open) |
+| 176 | 187 | 176 | (4,8)/0/0 | (4,8)/0/0 | 0x04 | 0x08 |
+| 177 | 188 | 177 | (4,8)/0/0 | (4,8)/0/0 | 0x04 | 0x08 |
+| 178 | 189 | 178 | (4,8)/0/0 | (4,8)/0/0 | 0x04 | 0x08 |
+| 179 | 190 | 179 | (4,8)/0/0 | (4,3)/22/1 | 0x04 | 0x08 |
+| 180 | 191 | 180 | (4,8)/0/0 | (4,3)/21/1 | 0x04 | 0x08 |
+| 181 | 192 | 181 | (4,8)/0/0 | (4,3)/20/1 | 0x04 | 0x08 |
+| 182 | 193 | 182 | (4,8)/0/0 | (4,3)/19/1 | 0x04 | 0x08 |
+| 183 | 194 | 183 | (4,8)/0/0 | (4,3)/18/1 | 0x04 | 0x08 |
+
+At k=179 the rust side fires the Cannon chip (CurAction 0x03, timer 22 ticks to 0, anim 1 = pose begun); the canon side is still in the SEQ_04 banner wait (chip has not begun firing) -- a divergence of (CurAction, timer, anim) that persists through the SEQ_04 wait and beyond. The relocation does NOT close this divergence because the rust executor is unconditionally invoked per tick (it does not gate on `seq.state`); the release-edge is on canon's side but our model has no equivalent gate. The mechanism is correctly ported (call order matches), the visible counts are unchanged.
