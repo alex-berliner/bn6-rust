@@ -15,9 +15,11 @@ SKIP = ("reference/", "web/", "target/", ".git/", "vendor/", "docs/benchmarks/",
 def pairs():
     out = []
     for line in open(MAP):
-        m = re.search(r"`?([A-Za-z_][A-Za-z0-9_.]*)`?\s*->\s*`?([A-Za-z_][A-Za-z0-9_.]*)`?", line)
-        if m and m.group(1) != m.group(2) and re.search(r"[0-9A-F]{6,}", m.group(1)): out.append((m.group(1), m.group(2)))
-    return out
+        m = (re.match(r"^\|\s*`?([A-Za-z_][A-Za-z0-9_.]*)`?\s*\|\s*`?([A-Za-z_][A-Za-z0-9_.]*)`?\s*\|", line)      # a table row: | old | new | evidence |
+             or re.search(r"`?([A-Za-z_][A-Za-z0-9_.]*)`?\s*->\s*`?([A-Za-z_][A-Za-z0-9_.]*)`?", line))               # or `old -> new`
+        if m and m.group(1) != m.group(2) and m.group(1) not in ("old", "Old") and re.search(r"[0-9A-Fa-f]{5,}", m.group(1)):
+            out.append((m.group(1), m.group(2)))
+    return list(dict.fromkeys(out))
 
 
 def main():
