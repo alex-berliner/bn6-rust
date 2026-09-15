@@ -60,6 +60,10 @@ impl Chips {
         let count = u32::from_le_bytes(data[8..12].try_into().unwrap()) as usize;
         // v2 appends the behavioural tail after the blobs; the v1 table and
         // blobs are byte-identical, so the tail is found from the file end.
+        // NOTE: the version u32 at offset 4 is NOT checked, so a v1 asset
+        // read by this code passes the bounds assert below and silently
+        // reads trailing blob bytes as behaviour -- a follow-up must add
+        // the version check (see docs/worklog/T17.md).
         let tail = data.len() - count * TAIL;
         assert!(tail >= 12 + count * RECORD, "BNCH asset without a v2 tail");
         Self { data, count, tail }

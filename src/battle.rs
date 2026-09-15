@@ -1620,18 +1620,20 @@ const RESULTS_FADE_BLACK: u8 = 16; // provenance: derived -- results::Shown::upd
 /// attack_family 0x13; the ROM dispatches the strike on it, not the chip id.
 const SWORD_FAMILY: u8 = 0x13; // canon: ChipDataArr_8021DA8 AttackFamily +0xb of the sword/blade rows (include/rom_structs/ChipData.inc)
 /// The hit shape per sword subfamily: the ROM loads this table word-indexed
-/// (asm31.s:109246, `lsl r2,#2; ldr r3,[r3,r2]`), so each subfamily's byte is
+/// (asm31.s:109241-109243, `lsl r3,#2; ldr r4,[r4,r3]` -- the instruction that
+/// holds the read is 109243; 109246 there is the AttackBoost reload; the
+/// same read at the earlier site is 109177), so each subfamily's byte is
 /// the first of its 4-byte entry.
 const SWORD_HIT_SHAPE: [u8; 16] = [ // canon: SwordHitShapeBySubfamily_80EBA18 (asm31.s:109334)
     1, 4, 2, 4, 2, 0x11, 0x11, 0x11, 2, 6, 0xB, 0x11, 4, 4, 4, 4,
 ];
-/// SwordHitShapeBySubfamily_80EBA18's shape codes (asm31.s:109246): 1 the
+/// SwordHitShapeBySubfamily_80EBA18's shape codes (asm31.s:109243): 1 the
 /// panel ahead, 2 two panels ahead, 4 the column ahead (0x11/6/0xB are other
 /// subfamilies' shapes, none in this asset).
 const SHAPE_COLUMN: u8 = 4; // canon: SwordHitShapeBySubfamily_80EBA18's column-ahead shape
 const SHAPE_TWO_AHEAD: u8 = 2; // canon: SwordHitShapeBySubfamily_80EBA18's two-panels-ahead shape
 /// The slash arc's effect-table row per sword subfamily, byte-indexed
-/// (asm31.s:109264: `ldrb r0, [r2,r3]`).
+/// (asm31.s:109269: `ldrb r0, [r2,r3]`; 109264 is the loc_80EB992 label).
 const SWORD_ARC_ROW: [u8; 16] = [ // canon: SwordArcBySubfamily_80EBAD8 (asm31.s:109352)
     0x18, 0x16, 0x17, 0x19, 0x1A, 0x1B, 0x1C, 0x28, 0x2D, 0x25, 0x5F, 0x1B, 0x16, 0x16, 0x16, 0x16,
 ];
@@ -4331,7 +4333,8 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             let sub = chip.subfamily as usize;
             let mut panels: Vec<(i32, i32)> = Vec::new();
             // The hit shape is SwordHitShapeBySubfamily_80EBA18's first byte
-            // per subfamily (asm31.s:109246): 1 the panel ahead, 4 the
+            // per subfamily (asm31.s:109241-109243, the read is 109243's
+            // `ldr r4,[r4,r3]`): 1 the panel ahead, 4 the
             // column ahead, 2 two panels ahead; the elemental swords are
             // all 4.
             match SWORD_HIT_SHAPE[sub] {
@@ -4346,28 +4349,28 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // With the hit region the strike spawns the slash arc: a
             // type-4 effect object at the front panel's coordinates,
             // 0x10 up, table row SwordArcBySubfamily_80EBAD8[subfamily] of
-            // byte_80E0398 (asm31.s:109264 and 109180-109200) -- effect
-            // list entry 0x14 (sprite_830F144) -- gone when the animation
-            // ends. The row indexes byte_80E0398: // canon:
-            // SwordArcBySubfamily_80EBAD8's rows -- 0x16/0x17/0x18 are the
-            // arc's animations 0/1/2 in palette 0, the blades' rows
-            // 0x19/0x1a are animations 0 and 1 in palette 5, and Muramasa's
-            // row 0x2d is LongBlde's animation in palette 6 (asm31.s:85787).
+            // EffectObjectRows_80E0398 -- effect list entry 0x14
+            // (sprite_830F144) -- gone when the animation ends.
+            // Row->(animation, palette) from EffectObjectRows_80E0398's
+            // rows (asm31.s:85181), read by sub_80E0568 (asm31.s:85239)
+            // which loads [row+2] into CurAnim (asm31.s:85251) and
+            // [row+3] + Param3 into the palette (asm31.s:85257-85260).
             let (arc_anim, mut arc_palette) = match SWORD_ARC_ROW[sub] {
-                0x16 => (0, 0),
-                0x17 => (1, 0),
-                0x18 => (2, 0),
-                0x19 => (0, 5),
-                0x1a => (1, 5),
-                0x2d => (1, 6),
+                0x16 => (0, 0), // canon: EffectObjectRows_80E0398 row (arc anim 0, palette 0)
+                0x17 => (1, 0), // canon: EffectObjectRows_80E0398 row (arc anim 1, palette 0)
+                0x18 => (2, 0), // canon: EffectObjectRows_80E0398 row (arc anim 2, palette 0)
+                0x19 => (0, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
+                0x1a => (1, 5), // canon: EffectObjectRows_80E0398 row (blade palette 5)
+                0x2d => (1, 6), // canon: EffectObjectRows_80E0398 row (Muramasa, palette 6)
                 _ => (0, 0),
             };
             // The elemental swords add their palette: the strike ORs
-            // (subfamily - 0xb) into the spawn's Param3 for subfamily
-            // 0xc..0xf, which the effect object adds to the sprite's
-            // palette (asm31.s:109268-109276; sub_80E0568, asm31.s:85852).
-            if (0xc..=0xf).contains(&chip.subfamily) {
-                arc_palette = (chip.subfamily - 0xb) as usize;
+            // (subfamily - 0xb) into the spawn's Param3, which the effect
+            // object adds to the sprite's palette; the elemental
+            // palette-add (subfamily - 0xb, subfamily 0xc..0xf) is
+            // asm31.s:109271-109276.
+            if (0xc..=0xf).contains(&chip.subfamily) { // canon: asm31.s:109271-109273 (sub 0xc..0xf test)
+                arc_palette = (chip.subfamily - 0xb) as usize; // canon: asm31.s:109275 (sub - 0xb)
             }
             let (fx, fy) = field::panel_centre(col + dx, row);
             let mut arc = spr::Player::new(spr::Assets::new(SWORD_ARC), arc_anim);
