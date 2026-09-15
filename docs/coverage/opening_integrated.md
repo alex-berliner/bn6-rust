@@ -178,3 +178,48 @@ No canonical ROM data was modified. No allowlist change was made.
 
 What is unverified (the end-sequence integration rows — warp/buster/chip-use — they need the
 end-sequence state machine ticket, not this one).
+
+## F38f per-enemy panel-cell port (2026-09-15)
+
+**What changed.** Per-enemy panel-cell bytes are now read from the descriptor instead of
+being computed as a +1/+1 diagonal from `(enemy_col, enemy_row)`. The diagonal at
+`src/battle.rs:1907-1908` is gone; the new path reads `f.enemy_panel[i]` and decodes via
+the same bit layout `spawnEnemy_80073E2` uses at byte 1 of its `EnemySetup` structure
+(asm00_1.s:8695): low 3 bits = panel column, bits 4-6 = panel row.
+
+- FIXTURE.md: descriptor grew 64 -> 67 bytes; new field `enemy_panel: [u8; 3]` at
+  +64..+66, cited at ROM 0x080b5354 and spawnEnemy_80073E2 (asm00_1.s:8695).
+- src/fixture.rs: `Fixture::enemy_panel` field, read from offsets +64/+65/+66 in `read()`.
+- src/main.rs: `TRACE_OFFSET` 128 -> 132 (descriptor grew 3 bytes; trace block still
+  fits in BATTLE_MARKER at 0x02000000..0x02000100).
+- src/battle.rs:1907-1908: per-enemy `(col, row)` from `f.enemy_panel[i]`; byte 0 in a
+  slot falls back to the old `(enemy_col+i, enemy_row+i)` (back-compat for every
+  pre-F38f single-enemy descriptor).
+- tools/harness.py: `FIXTURE_SIZE` 64 -> 67, fixture_cheats writes a trailing 1-byte
+  cheat for the odd length, `OPEN_ROW` gets `enemy_panel=[0x15, 0x35, 0x26]`.
+
+**Measurement.** opening integrated 72499/2691/40 -> **25829/931/40** (64% drop).
+Not yet 0/0/40; the residual is the PAL_OBJ slot-allocation order defect named in
+F38e's analysis (src/spr.rs:701-761), now the obvious next ticket.
+
+Per-enemy spawn positions on rust after the change:
+
+| enemy | canon (5,1)/(5,3)/(6,2) | rust after F38f | matches canon? |
+|-------|-------------------------|------------------|----------------|
+| 0     | (5, 1)                  | (5, 1)           | yes |
+| 1     | (5, 3)                  | (5, 3)           | yes |
+| 2     | (6, 2)                  | (6, 2)           | yes |
+
+The 24-px y delta for enemy 3 in F38d's table is fully explained by the panel-cell fix
+(it was the only thing F38e needed on top of the cite chain); bug 2's "second-cluster
+y-delta" was de-scoped.
+
+Fitted constants count unchanged at 19 (no new constants introduced). No allowlist
+change. No canonical ROM data was modified. Cursor 1/1/170 and other rows confirmed
+unchanged by `tools/verify_rows.py`'s full-table check on main (run separately by the
+land script).
+
+What is unverified: the residual 25829/931/40 px layout beyond the spawn-cell move (the
+PAL_OBJ slot-allocation order in src/spr.rs:701-761, named by F38e, out of scope here),
+and a per-frame OAM trace at k=10..39 on the new build (saved by the budget cap, named
+in F38f's "measure and report" call-out for the next ticket).
