@@ -296,8 +296,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T7n. battle_full RNG cadence: name the rng_cadence first-divergence at k=271 on 10/540 frames, port the read-site if a clean mirror exists  *(OPEN -- 2026-09-14, follow-up to T7i BLOCKED, different mechanism from T7m's k=179 group)*
+### T7n. battle_full RNG cadence: name the rng_cadence first-divergence at k=271 on 10/540 frames, port the read-site if a clean mirror exists  *(PARTIAL -- 2026-09-14, T7n PARTIAL: rng_cadence divergence named with citation)*
 
+**Result.** T7n PARTIAL: rng_cadence divergence named with citation. Per-frame value delta on all 10 divergent frames. Cite: sub_80C7EC8 (asm31.s:34036) death-debris spawner + cbGameState_80050EC (asm00_1.s:4179-4180) per-frame RNG read. Mechanism: canon advances RNG >1 step in 5 frames starting at k=271 (canon frame 282, dead Mettaur body lands on panel); rust-side has 4 stalls at k=407-410 (F33d show_results). 6 frames canon-side (+2/+3/+1/+1/+1), 4 frames rust-side (×4 then +2). Diagnostic gate met: cite + PRNG offset + value deltas all named. Per-site vs global alignment deferred to next ticket. Branch wt/t7n merged as dc654ff (docs/coverage/battle_full.md only, 25 insertions). verify_rows: mettaur 0/0/70/41734 PASS, cursor 10/9/170/186276 (unchanged, no regression), result 0/0/40/111839 PASS, wave 0/0/90/3840 PASS, popup 0/0/80/1288 PASS. Worker model: minimax (MiniMax-M3 thinking high), 12m55s, hit tool soft-limit before port landed.
 **Result.** (target) battle_full's rng_cadence divergence is named with a citation (canon read site, PRNG state offset, per-frame value delta on the 10 frames); if a per-site mirror ports cleanly, rng_cadence count drops; cursor stays ≤10/9/170; mettaur stays 70/70; every other row unchanged.
 
 **Files.** src/battle.rs (only the RNG read site that owns k=271), tools/oracle.py (only to add the rng_cadence field watcher if missing), tools/trace.py (only if the field must be exported), docs/coverage/battle_full.md (notes)
