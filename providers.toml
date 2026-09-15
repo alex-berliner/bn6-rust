@@ -21,6 +21,13 @@
 # hyper's day is spent, and every subscription keeps draining. That is joint orchestration: e.g. hyper's
 # coordinator over minimax's workers while both have budget.
 
+[roundup]
+# who writes the human-readable output of the 09:15 roundup. "claude:<model>" runs the Claude Code CLI headless
+# (claude -p) on the user's own plan -- the user asked for an Opus 5 writer for the blog (2026-09-15) after the
+# worker-class models produced accounts that named tickets without saying what they were; "pi" uses the run
+# profiles' digest job instead.
+digest_writer = "claude:claude-opus-5"
+
 [schedule]
 runs = ["hyper", "minimax"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all
 parallel = true               # 2026-09-14 evening: two independent runs, each self-sufficient (M3 coordinated a full

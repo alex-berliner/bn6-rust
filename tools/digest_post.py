@@ -30,6 +30,13 @@ def _digest_model():
 DIGEST_MODEL = _digest_model()
 
 
+def _writer():
+    """providers.toml [roundup].digest_writer: 'claude:<model>' (the Claude Code CLI, headless) or 'pi'"""
+    import tomllib
+    try: return tomllib.load(open("providers.toml", "rb")).get("roundup", {}).get("digest_writer", "pi")
+    except Exception: return "pi"
+
+
 def sh(cmd, **kw):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True, **kw).stdout
 
@@ -106,16 +113,25 @@ def newcomer_digest(results, facts):
               "sentence; put ids in parentheses at the end of the sentence they belong to, like (T7e). Explain every term the first time; never "
               "use a term from the glossary bare. Use only numbers that appear in the ticket results below, and explain what each number counts "
               "in the same sentence; never add a file path, branch name or commit hash. No bullet lists. No preamble, no closing summary.\n\n"
+              "For EVERY ticket the reader must learn concretely what it was about and what came of it; a sentence like 'an agent set "
+              "out to improve a residue and the change was set aside' is worthless -- say what the residue was (e.g. the colours of the "
+              "small enemies in the opening seconds, which the game assigns by handing each sprite a palette slot), what was tried and what "
+              "was found. Dead ends and blocked attempts get the same concreteness. 900 to 1500 words. "
               "Write the report directly as your reply, without planning it at length first; do not read any file.\n\n"
               "The day's tickets and their results:\n%s" % (ORIENTATION, GLOSSARY, items))
+    writer = _writer()
     for attempt in range(3):
-        out = ""
+        out = ""; last = ""; kinds = {}
         try:
-            out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", DIGEST_MODEL, "--thinking", "low",
-                                  "--tools", "read", prompt], capture_output=True, text=True, timeout=1200, stdin=subprocess.DEVNULL).stdout
+            if writer.startswith("claude:"):
+                last = subprocess.run(["claude", "-p", "--model", writer.split(":", 1)[1], "--output-format", "text", prompt],
+                                      capture_output=True, text=True, timeout=1500, stdin=subprocess.DEVNULL, cwd=ROOT).stdout.strip()
+            else:
+                if not DIGEST_MODEL: return ""
+                out = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", DIGEST_MODEL, "--thinking", "low",
+                                      "--tools", "read", prompt], capture_output=True, text=True, timeout=1200, stdin=subprocess.DEVNULL).stdout
         except (subprocess.TimeoutExpired, FileNotFoundError):
             return ""
-        last = ""; kinds = {}
         for line in out.splitlines():
             try: e = json.loads(line)
             except ValueError: continue
@@ -132,7 +148,7 @@ def newcomer_digest(results, facts):
             len(results), sum(1 for r in results if r[2] == "DONE"), sum(1 for r in results if r[2] == "PARTIAL"), sum(1 for r in results if r[2] in ("BLOCKED", "NEGATIVE")))
         extra = numbers(last) - numbers(allowed)
         bad = re.search(r"/tmp/|\bwt/|verify_rows|\b(?=[0-9a-f]*[a-f])[0-9a-f]{7,}\b", last)   # paths, branch names, commit hashes
-        why = ("%d words" % words) if not (350 <= words <= 1300) else ("numbers not in the facts: %s" % sorted(extra)[:8]) if extra else ("forbidden token %r" % bad.group(0)) if bad else ""
+        why = ("%d words" % words) if not (350 <= words <= 1700) else ("numbers not in the facts: %s" % sorted(extra)[:8]) if extra else ("forbidden token %r" % bad.group(0)) if bad else ""
         if why: print("digest: model account rejected (attempt %d): %s" % (attempt + 1, why), file=sys.stderr); continue
         return last
     return ""
@@ -215,7 +231,7 @@ def main():
     out.append("In the last %d hours the agents closed %d tickets: %d finished, %d half-done and kept, %d blocked or dead ends. "
                "Every number below was measured by the automatic comparison against a recording of the original game."
                % (int(a.since), len(results), len(done), len(part), len(stuck))); out.append("")
-    body = open(a.body).read().strip() if a.body else ("" if (a.no_model or not DIGEST_MODEL) else newcomer_digest(results, facts))
+    body = open(a.body).read().strip() if a.body else ("" if (a.no_model or not (DIGEST_MODEL or _writer().startswith("claude:"))) else newcomer_digest(results, facts))
     if body:
         out.append(body); out.append("")
     else:
