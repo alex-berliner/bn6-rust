@@ -106,9 +106,17 @@ pub fn enemy_think(
         Style::Mettaur => {}
         // canon: navi ActorType -> sub_80F2330; same core, same call.
         Style::Thrust | Style::Divide => {}
-        // canon: driven by its own controller, never the AI tables; the
-        // battle.rs loop `continue`s past this leg for Gunner, so this arm
-        // is unreachable through the dispatch (kept total, not deleted).
+        // canon: virus ActorType -> battleObject_dispatch_8108F50. The per-
+        // type routine `ForGunner_8113078` (reference/bn6f/asm/asm32.s:10123)
+        // is selected through `byte_80182C4[3*enemy_idx]`: the canon
+        // interpreter reads the (Version, ActorType, AIIndex) row at
+        // `&byte_80182C4[3*enemy_idx]` via `GetVerActorTyAndAIIdx_80182B4`
+        // (asm00_2.s:19965-19974) and routes AIIndex 0x17 to
+        // `ForGunner_8113078` -- the same routine src/gunner.rs ports as
+        // the Gunner struct's materialize/animation/timer-arms. The battle.rs
+        // loop `continue`s past this leg for Gunner (the controller lives in
+        // `Battle::gunner_ctl`), so this arm is unreachable through the
+        // dispatch (kept total, not deleted).
         Style::Gunner => {}
     }
     ai.update(me, target, blocked, rng);

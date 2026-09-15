@@ -1562,6 +1562,33 @@ FIELD_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=6
                  enemy_hp=0xFFFF)
 FIELD_ORIGIN = 8
 
+#: T9h (2026-09-15): the Gunner scenario's rust descriptor. The Mettaur+Gunner
+#: record (T9b's frame-60 iCurrFrame lever, T9c's recipe: battlestart + a
+#: one-shot poke of 0x0200a210:0x371 at frame 60) populates slot 0 with a
+#: Mettaur (NameID 0x0001, HP 0x0028, panel (5,2)) and slot 1 with a Gunner
+#: (NameID 0x0085, HP 0x003c, panel (6,3)). For the gunner harness row we
+#: pin enemies=2 with enemy_kind bits (0=Mettaur slot 0, 1=Gunner slot 1);
+#: the kind byte packs 0x01 << 0 | 0x01 << 2 = 0x05, and src/fixture.rs's
+#: kind_of() shifts those bits back out (T9c, fixture.rs:248-264).
+#: enemy_kind byte pack: 0x05 = slot0 Mettaur | slot1 Gunner (kinds 0,1).
+#: enemy_hp 0xFFFF = use src/fixture.rs's per-kind default (KIND_METTAUR=40,
+#: KIND_GUNNER=60, the values the poked record carries live at slot init).
+#: art_entry/art_timer/scroll_xq/scroll_yq are FIELD_ROW's seeds; the
+#: backdrop's phase matches `mettaur` at the same battle frame.
+GUNNER_ROW = dict(enemies=2, enemy_kind=0x05, enemy_col=5, enemy_row=2, megaman_hp=60,
+                  megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=0,
+                  flags=0x11, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
+                  enemy_hp=0xFFFF)
+GUNNER_ORIGIN = 8
+
+#: T9h (2026-09-15): canon-side state for the gunner row. Re-uses T9c's
+#: battlestart_gunner.state (built by states.py from overworld_net.state +
+#: battlestart's pokes + the iCurrFrame lever) -- the BattleSettings record
+#: 6 (0x080b4bd8) the lever picks has a Mettaur in slot 0 and a Gunner in
+#: slot 1, exactly what GUNNER_ROW asks for on the rust side. Named
+#: distinctly from any local alias a future check might add.
+BATTLESTART_GUNNER = "/tmp/battlestart_gunner.state"
+
 #: demo-custmatch's row (demo-cardname is a feature alias, not a different
 #: descriptor -- fixture.rs's table). The offered deck is NOT expressible
 #: now read by src/fixture.rs (see its own table's "WAVE 3 ADDITIONS" and
@@ -2082,6 +2109,38 @@ PORTED_CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
                               extra=("--only-bg", "2")),
         canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="gunner",
+        ui="both",
+        frames=130,
+        align=Align(
+            canon_ref=0,
+            search=range(0, 1),
+            note="T9h (2026-09-15): the Gunner scenario -- cannon-fire from the poked "
+                 "battlestart_gunner.state. canon: REAL+BATTLESTART_GUNNER (T9c's state, "
+                 "BattleSettings record 6 with a Mettaur at slot 0 (panel (5,2), NameID "
+                 "0x0001, HP 0x28) and a Gunner at slot 1 (panel (6,3), NameID 0x0085, HP "
+                 "0x3c)). rust: GUNNER_ROW (enemies=2, enemy_kind=0x05 packing slot 0 "
+                 "Mettaur + slot 1 Gunner, the kind_of() split fixture.rs:248-264 defines). "
+                 "INTEGRATED (ui='both'): both BG and OBJ, the whole 240x160. canon_ref=0, "
+                 "search band 0..1 -- the row pairs the rust side's marker origin (8 for "
+                 "GUNNER_ROW, same family as FIELD_ROW) against the canon side's frame 0 "
+                 "(the BATTLESTART_GUNNER state sits at battle frame 0). The 130-frame span "
+                 "covers one full materialize/attack/recover cycle (cursor walk 13 panels "
+                 "at 3 px/frame + 3 shots at 10-frame gaps + 24-frame recover = ~127 "
+                 "frames, rounded to 130 with margin). --disable-bg stays off -- "
+                 "integrated is the documented 'M5 baseline (0/0/130)' shape the ticket "
+                 "asks for. Per-state timer arms cite asm/object.s via src/gunner.rs's "
+                 "GunnerEntry doc; the per-type routine cite byte_80182C4[3*enemy_idx] sits "
+                 "at src/objects.rs:Style::Gunner and src/gunner.rs:GunnerEntry. The "
+                 "negative fixture (frame-shift) MUST be non-blind -- the cursor's own "
+                 "panels at x2..37 / y18..152 are the live content a shifted diff would "
+                 "break (open question until this row is measured).",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=GUNNER_ROW),
+        canon=lambda ui: Side(rom=REAL, loadstate=BATTLESTART_GUNNER),
+        canon_variant="canon",
     ),
     Check(
         name="window",
