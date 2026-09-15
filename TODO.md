@@ -368,8 +368,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T7p. battle_full RNG cadence: port the per-site mirror at sub_80C7EC8 / cbGameState_80050EC so rng_cadence drops below 10/540  *(OPEN -- 2026-09-14, follow-up to T7n PARTIAL dc654ff)*
+### T7p. battle_full RNG cadence: port the per-site mirror at sub_80C7EC8 / cbGameState_80050EC so rng_cadence drops below 10/540  *(DONE -- 2026-09-15, T7p was a no-op: HEAD rng_cadence 9/540, already below 10/540 acceptance threshold [T7o's PARTIAL landing 784c)*
 
+**Result.** T7p was a no-op: HEAD rng_cadence 9/540, already below 10/540 acceptance threshold (T7o's PARTIAL landing 784c8e5 reduced it from 10→9 by relocating the SEQ04 seq-match block past t1_player_entry). T7n's predicted baseline of 10/540 was stale. Per-site mirror at sub_80C7EC8 / cbGameState_80050EC not needed for the acceptance gate; if a future ticket wants 0/540, the rust-side ×0 stalls at k=407..410 remain. Worktree wt/t7p clean, no commit. Worker model: minimax (MiniMax-M3 thinking high), 13m1s, hit tool soft-limit before applying port.
 **Result.** (target) battle_full's rng_cadence count drops below 10/540 with the cited per-site mirror (sub_80C7EC8 asm31.s:34036 death-debris spawner + cbGameState_80050EC asm00_1.s:4179-4180 per-frame RNG read); cursor stays ≤10/9/170; mettaur stays 70/70; all chip rows unchanged; the F33d show_results stalls at k=407..410 are absorbed by the same port.
 
 **Files.** src/battle.rs (only the RNG read site that owns k=271 and the show_results stalls at k=407..410), src/objects.rs (only the death-debris spawner path if it needs a guard for the per-site mirror), tools/oracle.py (the rng_cadence field watcher is already added by T7n's docs-only commit; only if a new frame must be watched), docs/coverage/battle_full.md (notes)
