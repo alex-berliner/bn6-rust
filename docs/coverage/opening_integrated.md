@@ -110,3 +110,71 @@ The PAL_OBJ slot-0-5 vs 0-15 divergence and the missing second-cluster materiali
 2. Port the second enemy cluster materialize — the second cluster's tiles are the first cluster's tiles with the panel x-offset applied; the materialize path is shared with the first cluster's setup at k=0 but triggered on a 32-tick delay.
 
 This measurement is sufficient for the next F38c dispatch to drive the port.
+
+## F38d re-measurement (2026-09-15)
+
+Re-ran `tools/harness.py --only opening --ui integrated` on HEAD: 72499/2691/40 (unchanged from F38c).
+Re-ran `tools/probe.py --oam --pal` via `/tmp/dump_oam.py` for k=0..39 on both sides — F38c data confirmed.
+
+### Per-frame OAM totals (this re-measurement)
+
+| k | canon OBJs | rust OBJs | rust-canon |
+|---|------------|-----------|------------|
+| 0  | 12 | 14 | +2 (spurious at y=84) |
+| 1  | 12 | 14 | +2 (spurious at y=84) |
+| 32 | 15 | 19 | +4 (spurious at y=84, y=108) |
+| 33 | 15 | 19 | +4 |
+| 39 | 15 | 19 | +4 |
+
+### PAL_OBJ 4-bit palette field on every OAM entry at k=39
+
+| side | HUD | navi | enemy | spurious |
+|------|-----|------|-------|----------|
+| canon | 2 | 2 | 6 | n/a |
+| rust  | 2 | 10 | 14 | 2 |
+
+The OAM palette field (attr2 bits 10-11) is the SAME (0b2 = bit-1 set) on every visible OAM
+entry on both sides; the 4-bit `pal` field (bits 10-13 of attr2, when extended) differs:
+canon uses palette indices 2 (navi/HUD) + 6 (enemy) + 0 (no entry), rust uses 2 (HUD), 10
+(navi), 14 (enemy), 2 (spurious).
+
+### Position summary (k=39)
+
+| role | canon | rust | diff |
+|------|-------|------|------|
+| navi       | x=41-65, y=70-102 | x=41-65, y=70-102 | match |
+| enemy 1    | x=163-174, y=64-80 | x=123-134, y=64-80 | rust -40px x |
+| enemy 2    | x=163-174, y=112-128 | x=163-174, y=88-104 | rust y -24px |
+| enemy 3 (k=32+) | x=203-214, y=88-104 | x=203-214, y=112-128 | rust y +24px |
+| spurious   | n/a | y=84 (x=132/140), y=108 (x=172/180) | 4 extra |
+
+So the rust second cluster materializes at y=88-104 (rust: front-row panel 5), while canon's
+second cluster is at y=112-128 (panel 5 row 3). And rust's third cluster at y=112-128
+matches what canon drew for its SECOND cluster. Rust's first cluster is at x=123-134 (panel 4
+from rust's diagonal `(enemy_col+i, enemy_row+i)` spawn), canon's first cluster is at x=163-174
+(panel 5). Two distinct position bugs.
+
+## F38d port attempt: NOT LANDED
+
+The two cited mechanisms need deep changes that did not land within budget:
+
+1. **PAL_OBJ slot-allocation order** in `src/actor.rs`: the slot index for each sprite is
+   picked by `PaletteVramSingle::try_allocate_shared` (src/spr.rs:701-761) in call order. The
+   order canon uses is dictated by the per-element introduction routine in
+   `reference/bn6f/asm/asm00_1.s:8695` (`spawnEnemy_80073E2`) and the materialize animation
+   `reference/bn6f/asm/asm00_2.s:16101` (`sub_801641A`, called from the `off_80163A8`
+   jumptable at `:16046`). A speculative re-order in src/actor.rs / src/spr.rs could
+   collapse the +123 / +151 tile shifts but would be a fitted palette index, not a port.
+
+2. **Second-cluster materialize at k=32+** in `src/objects.rs`: the per-element materialize
+   is `sub_801641A` (asm00_2.s:16101). The 32-tick duration comes from `APPEAR_STEPS *
+   APPEAR_TICKS_PER_STEP = 16 * 2 = 32` (`src/actor.rs:257`) which matches
+   `sub_801641A`'s outer/inner counter (asm00_2.s:16106-16136). The second enemy DOES
+   materialize in rust at the right offset (rust k=32 adds 5 OBJs), but the
+   panel position and tile VRAM offset differ from canon.
+
+The "fitted constants in src/" count stayed at 19; no new fitted constants were introduced.
+No canonical ROM data was modified. No allowlist change was made.
+
+What is unverified (the end-sequence integration rows — warp/buster/chip-use — they need the
+end-sequence state machine ticket, not this one).
