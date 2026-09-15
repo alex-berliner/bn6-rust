@@ -687,13 +687,17 @@ def parse_backdrops(formation_lists):
 
 # --------------------------------------------------------------- NaviCust
 
-# DERIVED-FROM-HEADERS: GiveNaviCustPrograms/TakeNaviCustPrograms
-# (asm/asm03_1_1.s:8794/:8814) install into the NaviStats block; the
-# battle-relevant slots are the named struct offsets of NaviStats.inc.
-# No program->effect table exists in the disassembly (search trail:
-# 'NaviCust' in data/, asm/, constants/enums/ -- only text scripts and the
-# give/take pair). A GAP for the program-id enumeration; the slots are the
-# ROM-named inventory.
+# FOUND (T15): the program-id table is navicust_jt_NCPs
+# (asm/asm37_0.s:2111, 48 words, stride 4, one handler per program id),
+# dispatched per equipped program by applyNavicustPrograms_813C684
+# (asm/asm37_0.s:2012): handler index = sub_813B9FC(id-1) halfword >> 2.
+# Give/take chain: GiveNaviCustPrograms/TakeNaviCustPrograms
+# (asm/asm03_1_1.s:8794/:8814) -> GiveItem 803cd98 (KeyItemsPtr byte array
+# indexed directly by program id, no stride) -> reloadCurNaviStatBoosts_813c3ac
+# (id 0x71 only) -> applyNaviStatsMaybe_813C458 (asm37_0.s:1796) ->
+# applyNavicustPrograms_813C684 -> navicust_jt_NCPs. The 48-entry table
+# enumerates ALL NaviCust programs (battle + PET utility); the rows below are
+# the 19 named NaviStats slots those handlers write (a different axis).
 NAVICUST_FIELDS = [
     "Attack", "Speed", "Charge", "BButton", "BPwrAtk", "FstBarr",
     "BLeftAbility", "CustomLevel", "MegaLevel", "GigaLevel", "Mood",
@@ -778,13 +782,53 @@ SECTION_NOTES = {
             " stride x count vs each list's byte span. Formation arrays: 4-byte"
             " entries up to the 0xF0 stop consumed by"
             " SpawnBattleObjectUsingBattleEntityConfig_8007368."),
+    "statuses (M3)":
+        lambda meta: (
+            "T15 verdict: the 69 bits are set/cleared DIRECTLY by code"
+            " (object_setFlag/object_setFlag2, strh to BattleObject.Damage) --"
+            " no bit-indexed table exists. Walked:"
+            " object_setCollisionStatusEffect1/2 (asm/asm00_2.s:21768/21776)"
+            " store oCollisionData_StatusEffectBase/Final; sub_801A554"
+            " (asm/asm00_2.s:22211-22230) indexes the nearest per-status data"
+            " table off_80209EC (data/dat01.s:155, 6 pointers, pointer stride"
+            " 4, index (StatusEffectFinal>>4)-1, record stride 8: [0] flag2"
+            " mask word, [4] hword value, [6] CollisionData byte offset, 6-7"
+            " records per family). That table enumerates 6 status-effect"
+            " families (x timing variants), NOT the 69 flag bits -- so the"
+            " rows stay header-derived."),
     "backdrops (M8)":
         lambda meta: (
             "Sentinel note: Background 0xff on 268 of 461 records is counted as"
             " an UNSET sentinel, not backdrop id 255. What this section counts"
             " after excluding 0xff: 2 set values (0x07 on 192 records, 0x08 on"
             " 1 record); the distinct-value denominator 3 includes the"
-            " sentinel row so the sentinel itself stays auditable."),
+            " sentinel row so the sentinel itself stays auditable."
+            " T15 mapping trail: battleSettings_setBackground"
+            " (asm/asm03_0.s:14592-14595) stores the byte at"
+            " BattleSettings_200AF60+0x4; battleSettings_802D2B2"
+            " (asm/asm03_0.s:14599-14618) sources it from byte_203CA50"
+            " stage-pair rows (byte_203CA50[2*(stage-1)+1]);"
+            " CopyBackgroundTiles (asm/asm00_0.s:3096) takes tile ids from its"
+            " caller, not from the byte. No byte->art/palette table and no"
+            " arithmetic offset located -- the mapping is a GAP."),
+    "navicust battle effects (M7)":
+        lambda meta: (
+            "T15 verdict (program-id enumeration): FOUND -- navicust_jt_NCPs"
+            " (asm/asm37_0.s:2111), 48 words, stride 4, one handler per"
+            " program id, dispatched by applyNavicustPrograms_813C684"
+            " (asm/asm37_0.s:2012) as jt[sub_813B9FC(id-1) halfword >> 2] over"
+            " the 8 equipped-program slots (byte_2006DD8, cleared/filled in"
+            " the same routine). Count reconciliation: the table enumerates 48"
+            " programs vs this section's 19 NaviStats slots -- 48 is ALL"
+            " programs (battle + PET utility: Collect, Millions, Humor, Poem,"
+            " Rush/Beat/Tango, HP+ tiers...), 19 is the named NaviStats battle"
+            " slots the handlers write; per-handler battle-relevance is NOT"
+            " classified here. Give/take chain walked:"
+            " GiveNaviCustPrograms (asm/asm03_1_1.s:8794) -> GiveItem 803cd98"
+            " (KeyItemsPtr[program_id], plain byte array, no stride) ->"
+            " reloadCurNaviStatBoosts_813c3ac (asm37_0.s:1719, id 0x71 only)"
+            " -> applyNaviStatsMaybe_813C458 (asm37_0.s:1796) ->"
+            " applyNavicustPrograms_813C684."),
 }
 
 
@@ -913,10 +957,10 @@ def main():
         ("M1", ("cybeasts (M6)", "FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18)", cybeasts)),
         ("M1", ("forms (M7)", "FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789)", forms)),
         ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
-        ("M1", ("statuses (M3)", "DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits", statuses)),
+        ("M1", ("statuses (M3)", "DERIVED-FROM-HEADERS: CollisionData.inc / BattleObject.inc named bits, set/cleared directly by code (object_setFlag/object_setFlag2, strh Damage); nearest per-status data table off_80209EC (data/dat01.s:155, 6 families x 6-7 records, record stride 8, via sub_801A554 asm/asm00_2.s:22211) enumerates 6 status-effect families, not the 69 bits", statuses)),
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
-        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (no backdrop table named; search trail: 'backdrop', 'arena' in data/, asm/)", backdrops)),
-        ("M1", ("navicust battle effects (M7)", "GAP (program-id table) + DERIVED-FROM-HEADERS (NaviStats slots): search trail 'NaviCust' in data/, asm/, constants/enums/", navicust)),
+        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note)", backdrops)),
+        ("M1", ("navicust battle effects (M7)", "FOUND (program-id table): asm/asm37_0.s:2111 navicust_jt_NCPs, 48 words stride 4, dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) halfword >>2); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
     regenerate_scope(sections, pa_meta={
         "pointer_words": sum(t["pointer_words"] for t in PA_TABLES),
