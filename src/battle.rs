@@ -1503,6 +1503,22 @@ pub struct Battle<'a> {
     cross_shape: Option<&'static [(i32, i32)]>,
     intro_fade: u16,
     intro_next: usize,
+    /// Canon's `oBattleState_Index_00 == 4` handover latch (F44): true once
+    /// our battle has reached the state canon writes 4 into
+    /// `oBattleState_Index_00` -- sub_8007A0C's `mov r0,#4 / str` handover
+    /// (asm00_1.s:9716-9718), which runs only after the last enemy has
+    /// materialised. That is the only state whose handler
+    /// (battle_update_8007A44, asm00_1.s:9727) reaches the battle HUD chain
+    /// that emits the enemy HP readout (updateBattleHudElements_801BEE0,
+    /// single call site asm00_1.s:9790). Set at `Battle::new` when the
+    /// descriptor's SKIP_INTRO declares the pairing against a mid-fight
+    /// canon state (a state-loaded battle's `oBattleState_Index_00` IS 4:
+    /// the save state was written long past the handover), and in update()'s
+    /// intro machine when the last enemy finishes materialising. This is
+    /// the state-machine fact F43's first cut approximated with our own
+    /// fixture plumbing (`intro_fade`/`intro_next`), which cursor's row
+    /// proved wrong.
+    fight_latch: bool,
     gauge: u16,
     gauge_pause: u16,
     /// Set when the chip window closes with picks committed: canon's close
@@ -2255,6 +2271,13 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             cross_shape,
             intro_fade,
             intro_next,
+            // SKIP_INTRO is the descriptor's declaration that canon's own
+            // state word is already 4 (see fight_latch's doc): the battle
+            // starts handed over. Without it, update()'s intro machine sets
+            // the latch at the handover.
+            fight_latch: fixture
+                .map(|f| f.flags.skip_intro())
+                .unwrap_or(false),
             gauge,
             gauge_pause,
             name_suppressed: false,
@@ -2872,7 +2895,13 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 self.enemies[self.intro_next].appear();
             } else if !self.enemies[self.intro_next].is_busy() {
                 self.intro_next += 1;
-                // The last one has finished materialising: BATTLE START!.
+                // The last one has finished materialising: canon's handover
+                // writes 4 into oBattleState_Index_00 exactly here
+                // (sub_8007A0C, asm00_1.s:9716-9718) -- latch the fight
+                // state on (see fight_latch's doc).
+                if self.intro_next >= self.enemies.len() {
+                    self.fight_latch = true;
+                }
                 // sub_8008064 (asm00_1.s:10386) raises message 0 here, and
                 // THE FIGHT IS PAUSED FOR THE WHOLE OF IT. There is no
                 // PauseBattle call inside sub_8008064, which is what an
@@ -4528,6 +4557,32 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         }
     }
 
+    /// Canon's enemy HP readout is emitted by the battle HUD updater chain,
+    /// and battle_main only reaches that chain once the fight state is on:
+    /// the whole per-frame chain (RunBattleObjectLogic, camera, panel,
+    /// setChipsForPlayerObjects, updateBattleHudElements_801BEE0,
+    /// asm00_1.s:9764-9790) lives inside battle_update_8007A44
+    /// (asm00_1.s:9727), the state machine's fight handler. The intro's own
+    /// states hand over through sub_8007A0C only after the last enemy has
+    /// materialised (the `mov r0,#4 / str` at asm00_1.s:9716-9718), so the
+    /// latch is update()'s own intro machine, not our fixture plumbing:
+    /// F43's first cut stood in for this predicate with `intro_fade`/
+    /// `intro_next` (our fade counter and our materialise walk), which
+    /// cursor's row proved wrong (1/1/170 -> 54/43/170, neg 186281).
+    /// Within the fight the chain also needs
+    /// eStruct2038160_getBattleTerminate01() == 0 (asm00_1.s:9757-9776:
+    /// nonzero leaves to state 0x10 before the chain) -- our `over`
+    /// sequencer states. F43's banner arm is DROPPED: the only banner it
+    /// could see is the closing ENEMY-DELETED one, armed only when `over`
+    /// (so the terminate arm already covers it -- vacuous on every row).
+    /// No paused term: oGameState_BattlePaused is tested AFTER the chain
+    /// (asm00_1.s:9795), so a paused fight still draws digits -- cursor's
+    /// own row proves it (canon sits under BattlePaused for all 170 frames
+    /// and still draws the digits).
+    fn hp_readout_live(&self) -> bool {
+        self.fight_latch && !matches!(self.seq.state, SEQ_0C | SEQ_10)
+    }
+
     pub fn draw(&mut self, frame: &mut GraphicsFrame) {
         // The sterile arena leaves the backdrop out for the same reason it
         // draws a plain field: the real ROM's captures strip their BG layers
@@ -4967,11 +5022,25 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // Each enemy's HP sits just under its panel, centred, as the game's
         // object text does; the player's is the box at the top left. Both
         // show the lagging number, which flashes while it catches up.
+        let hp_readout_live = self.hp_readout_live();
+        // F44's latch evidence came from a probe build that wrote one byte
+        // per frame at BATTLE_MARKER's own tail (0x020000C0, inside the
+        // marker array's 256 bytes, above the 0x40 descriptor and 0x80 trace
+        // blocks): bit0 live, bit1 fade, bit2 next, bit3 banner, bit4 over,
+        // bit5 latch, read with --watch. The STORE does not land here: a
+        // per-frame extra volatile store in the draw hot path measurably
+        // perturbs the vblank-boundary cycle parity (cursor 1/1/170 ->
+        // 13/12/170 with neg 186277, reproducing fixture.rs's own
+        // "caching skip_intro() changed the residue" mechanism), and the
+        // traces were taken before this build. docs/worklog/F44.md carries
+        // the per-frame bit tables.
         for (actor, counter) in self
             .enemies
             .iter()
             .zip(self.hp_shown.iter().skip(1))
-            .filter(|(a, _)| a.is_present() && a.hp() > 0 && a.is_targetable())
+            .filter(|(a, _)| {
+                a.is_present() && a.hp() > 0 && a.is_targetable() && hp_readout_live
+            })
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
             let hp = counter.shown();
