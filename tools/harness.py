@@ -374,12 +374,29 @@ MARKER_MARGIN = 40
 NEGATIVE_MARGIN = 5
 
 
-def run(rust: Side, canon: Side, frames: int, align: Align) -> Result:
+def run(rust: Side, canon: Side, frames: int, align: Align, *,
+        variant_label: str = "", serial: bool = False) -> Result:
     """Capture both sides, align them, and return the full 240x160
     differing-pixel count for `frames` consecutive frames -- AUDIT pair 6:
     one harness, one job, no boxes.
+
+    `variant_label` is folded into the scratch-dir key so two ui variants of
+    the same Check (ui='both' runs in parallel via run_check's pool.map) do
+    not share a watch file -- ui='both' rows whose rust/canon lambdas do not
+    vary by ui (e.g. `gunner`) would otherwise collide on the key and race
+    to read+remove the same watch_file, with the second variant's
+    find_marker_origin raising FileNotFoundError.
+
+    `serial=True` (T9i, 2026-09-15, gunner row) runs rust then canon in this
+    process, bypassing the ThreadPoolExecutor path -- the rust+canon pair is
+    then sequentially captured in one process, never competing for one of
+    cc.CAPTURE_SLOTS together. AUDIT T9i follow-up: the harness's default
+    parallel capture had the gunner canon side short-count under slot
+    contention (rust 58/170 + canon 27/135 on the 3-slot pool, then watch
+    file race). Serial captures stay within one slot at a time so the race
+    is bypassed for that row.
     """
-    key = hashlib.sha1(repr((rust, canon, frames, align)).encode()).hexdigest()[:10]
+    key = hashlib.sha1(repr((rust, canon, frames, align, variant_label)).encode()).hexdigest()[:10]
     rust_dir = cc.scratch("h_rust_%s" % key)
     canon_dir = cc.scratch("h_canon_%s" % key)
     watch_file = cc.scratch("h_watch_%s.bin" % key)
@@ -388,17 +405,27 @@ def run(rust: Side, canon: Side, frames: int, align: Align) -> Result:
     rust_count = MARKER_MARGIN + upper + frames
     canon_count = align.canon_ref + frames + NEGATIVE_MARGIN
 
-    # Build (or fetch) the rust ROM BEFORE the threads start: cargo and the
-    # ROM cache are not something two threads should race on. The two captures
-    # are independent processes, so they overlap (bounded by cc.CAPTURE_SLOTS).
+    # Build (or fetch) the rust ROM BEFORE any capture starts: cargo and the
+    # ROM cache are not something two threads should race on.
     if not rust.capture_fn:
         rust.resolved_rom()
-    from concurrent.futures import ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        fr = pool.submit(rust.do_capture, rust_dir, rust_count, watch_file=watch_file)
-        fc = pool.submit(canon.do_capture, canon_dir, canon_count)
-        fr.result()
-        fc.result()
+    if serial:
+        # provenance: derived -- tools/harness.py:2114 capture-order (T9i)
+        # rust+canon run sequentially in this process -- never together in
+        # the slot pool, no thread pool. The watch file is still produced by
+        # the rust capture (it carries the marker), and find_marker_origin
+        # below reads it once both are done.
+        rust.do_capture(rust_dir, rust_count, watch_file=watch_file)
+        canon.do_capture(canon_dir, canon_count)
+    else:
+        # The two captures are independent processes, so they overlap
+        # (bounded by cc.CAPTURE_SLOTS).
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fr = pool.submit(rust.do_capture, rust_dir, rust_count, watch_file=watch_file)
+            fc = pool.submit(canon.do_capture, canon_dir, canon_count)
+            fr.result()
+            fc.result()
 
     origin = find_marker_origin(watch_file)
     # AUDIT pair 13: stream what we can, and do not keep what we cannot --
@@ -500,6 +527,11 @@ class Check:
     #: `window` uses "pixel", and its own note carries the measurement that
     #: justifies it.
     negative: str = "frame"
+    #: T9i (2026-09-15): when True, run() captures rust then canon
+    #: sequentially in this process (no ThreadPoolExecutor) -- the rust+canon
+    #: pair stays out of cc.CAPTURE_SLOTS contention together. The gunner
+    #: row sets this; the default is False (parallel).
+    serial: bool = False
 
 
 def _cannon_canon(ui: str) -> Side:
@@ -2141,6 +2173,17 @@ PORTED_CHECKS: List[Check] = [
         rust=lambda ui: Side(rom=plain_rom(), fixture=GUNNER_ROW),
         canon=lambda ui: Side(rom=REAL, loadstate=BATTLESTART_GUNNER),
         canon_variant="canon",
+        # T9i (2026-09-15): serialize rust+canon in one process so the pair
+        # never competes for one of cc.CAPTURE_SLOTS -- the default
+        # ThreadPoolExecutor path had the gunner canon side short-count
+        # under slot contention (rust 58/170 + canon 27/135 on the 3-slot
+        # pool) and the parallel ui='both' variants (isolated + integrated)
+        # raced on the same watch file because their rust/canon lambdas do
+        # not vary by ui (key collision in run()'s scratch path). run() now
+        # folds variant_label into the scratch key, so the watch file is
+        # unique per variant, and serial captures run rust then canon
+        # sequentially -- the gunner row no longer hits the 3-slot race.
+        serial=True,
     ),
     Check(
         name="window",
@@ -3033,7 +3076,8 @@ def run_check(check: Check, *, gallery: bool = True, only_ui: Optional[str] = No
 
     def one(ui):
         rust_side, canon_side = sides[ui]
-        result = run(rust_side, canon_side, check.frames, check.align)
+        result = run(rust_side, canon_side, check.frames, check.align,
+                     variant_label=ui, serial=check.serial)
         neg = negative_counts(result, check.frames, kind=check.negative)
         blind = all(c == 0 for c in neg)
         allowed = _allowed(check.name, ui, result.worst)
