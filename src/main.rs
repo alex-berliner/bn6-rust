@@ -270,7 +270,7 @@ fn main(mut gba: agb::Gba) -> ! {
     // also needs to know whether the backdrop is blanked.
     let fixture = fixture::read();
     let blank_backdrop = fixture
-        .map(|f| f.flag(fixture::FLAG_BLANK_BACKDROP))
+        .map(|f| f.flags.blank_backdrop())
         .unwrap_or(false);
     // The field uses banks 0-8; the results windows live in 9-11.
     let mut palettes = field.palettes();
@@ -316,7 +316,7 @@ fn main(mut gba: agb::Gba) -> ! {
         // the backdrop's art step (see its doc comment), it does not tick.
         write_battle_marker(0, 0);
         let mut battle_frame: u32 = 0;
-        // T1b gate: FLAG_TRACE (src/fixture.rs) read once per battle --
+        // T1b gate: TRACE (src/fixture.rs) read once per battle --
         // the descriptor is stable (the harness pokes identical bytes
         // every frame, which is what the startup `fixture::read()`
         // already relies on). The frame path below keeps one taken-never
