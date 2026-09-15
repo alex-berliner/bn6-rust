@@ -72,4 +72,8 @@ mv "$OUT.tmp" "$OUT"; echo "$OUT"
 # the automated digest post (agreed 2026-09-14): one blog post per day that had a ticket result or a merge,
 # built from the record the review just read, with the auditor's open proposals summarized in it
 python3 tools/digest_post.py --since "$SINCE" --review "$OUT" --post 2>&1 | tail -2
+# the learn feed grows every morning (the user, 2026-09-15): slides on existing code and on the last day's code
+python3 tools/learn_slides.py --existing 6 --recent 6 --since "$SINCE" --post 2>&1 | tail -16
+# the day's findings go back into the disassembly as comment-only notes on bn-notes (the user, 2026-09-15)
+python3 tools/annotate_asm.py --since "$SINCE" --post 2>&1 | tail -8
 

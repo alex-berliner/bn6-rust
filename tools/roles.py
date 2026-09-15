@@ -49,11 +49,13 @@ def provider_of(model):
 
 
 def budget(cfg, provider, phase):
-    """0 ok, 1 no budget, 2 probe error; prints the probe's last line"""
+    """0 ok, 1 no budget, 2 probe error; prints the probe's last line. Phases: --start (a run may start),
+    --stop (a run may keep going), --tail (a one-shot session may run: stop_below plus the provider's oneshot_flags)"""
     p = cfg["providers"][provider]
     if p["kind"] == "subscription":
         need = p["start_above"] if phase == "--start" else p["stop_below"]
-        r = subprocess.run(p["probe"] + " --min %s" % need, shell=True, capture_output=True, text=True, cwd=ROOT)
+        extra = (" " + p["oneshot_flags"]) if phase == "--tail" and p.get("oneshot_flags") else ""
+        r = subprocess.run(p["probe"] + " --min %s%s" % (need, extra), shell=True, capture_output=True, text=True, cwd=ROOT)
         out = (r.stdout + r.stderr).strip(); print(out.splitlines()[-1] if out else "(no probe output)")
         return 0 if r.returncode == 0 else (1 if r.returncode == 1 else 2)
     r = subprocess.run(p["probe"], shell=True, capture_output=True, text=True, cwd=ROOT)
@@ -71,7 +73,7 @@ def can_start(provider, phase="--start"):
     if provider not in cfg["providers"]: return False
     with open(os.devnull, "w") as devnull:
         old = sys.stdout; sys.stdout = devnull
-        try: rc = budget(cfg, provider, "--start" if phase == "--start" else "--stop")
+        try: rc = budget(cfg, provider, phase if phase in ("--start", "--tail") else "--stop")
         finally: sys.stdout = old
     return rc == 0
 

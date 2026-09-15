@@ -33,7 +33,9 @@ for name in $RUNS; do
     if [ -n "$qprov" ] && python3 tools/roles.py budget "${qprov%% *}" --start >/dev/null 2>&1; then
       sed -i '1d' /tmp/bn-bench/queue
       margs=""; [ "$qm" != "-" ] && margs="--model $qm"
-      setsid nohup python3 tools/bench_provider.py run "$qrun" --tickets "$qt" $margs > "/tmp/bn-bench/$qrun-$(date +%H%M).log" 2>&1 < /dev/null &
+      blog="/tmp/bn-bench/$qrun-$(date +%H%M).log"
+      if command -v tmux >/dev/null 2>&1; then tmux new-session -d -s "bn-bench-$qrun-$(date +%H%M)" -c "$PWD" "python3 tools/bench_provider.py run '$qrun' --tickets '$qt' $margs 2>&1 | tee '$blog'"
+      else setsid nohup python3 tools/bench_provider.py run "$qrun" --tickets "$qt" $margs > "$blog" 2>&1 < /dev/null & fi
       echo "$name: started the queued benchmark ($qrun: $qt); no run this tick"; sleep 3
       [ "$PARALLEL" = 1 ] && continue || break
     fi

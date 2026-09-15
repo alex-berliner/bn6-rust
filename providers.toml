@@ -59,6 +59,7 @@ start_above = 10                          # percent of the window a run needs to
 stop_below = 2                            # day's weekly ALLOWANCE is spent (weekly remainder / days left, measured each
 tail = false                              # morning), so the week lasts the week: about 0.7% of the week per ticket cycle
 reset = "rolling 5h"                      # (2026-09-14), i.e. roughly 20 cycles a day at an even spend
+oneshot_flags = "--ignore-allowance"     # one-shot sessions (digest, learn slides, judge) may run on a spent allowance
 price_usd_per_month = 22
 daily_credits = 480                       # 100 percent points per 5-hour window, 4.8 windows a day: the price of a point
 

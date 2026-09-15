@@ -69,7 +69,18 @@ done
 CAPW
 chmod +x "$RUN/capwatch.sh"
 chmod +x "$RUN/run.sh"
-setsid nohup "$RUN/run.sh" > /dev/null 2>&1 < /dev/null &
+# the run lives in a tmux session (the user, 2026-09-15: "launch future pi instances in tmux so I can log into them"):
+#   tmux attach -t bn-<run>-<stamp>   window "view" pretty-prints the coordinator's turns and the status log live;
+#   window "run" is run.sh itself. Without tmux the run is detached with setsid as before.
+if command -v tmux >/dev/null 2>&1; then
+  TS="bn-$NAME-$(basename "$RUN" | tr -d '-')"
+  tmux new-session -d -s "$TS" -n run -c "$ROOT" "bash '$RUN/run.sh'"
+  tmux new-window -t "$TS" -n view -c "$ROOT" "python3 '$ROOT/tools/watch_run.py' '$RUN'"
+  tmux select-window -t "$TS:view"
+  echo "$TS" > "$RUN/tmux"
+else
+  setsid nohup "$RUN/run.sh" > /dev/null 2>&1 < /dev/null &
+fi
 setsid nohup "$RUN/capwatch.sh" > /dev/null 2>&1 < /dev/null &
 # the run stops when a subscription provider its coordinator or worker sits on is exhausted (tools/budget_watch.sh)
 (setsid nohup bash "$ROOT/tools/budget_watch.sh" "$RUN" >/dev/null 2>&1 &)

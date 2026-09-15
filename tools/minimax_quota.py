@@ -5,7 +5,8 @@ one (a ticket cycle costs about 0.7% of the week and 5% of a 5-hour window, meas
 is spent evenly: each calendar day may use the weekly remainder at the start of that day divided by the days
 left in the week (the day's ALLOWANCE), so the week lasts the week and nothing is left at its reset. Prints
   minimax: remaining P% of the 5h window (resets in M min); weekly W% (resets in D.d days); today used U% of an allowance of A%
-and with --min N exits 1 when the 5-hour or weekly percentage is below N OR the day's allowance is spent,
+and with --min N exits 1 when the 5-hour or weekly percentage is below N OR the day's allowance is spent
+(--ignore-allowance drops that last condition: a one-shot session such as the digest or the learn slides),
 2 when the probe itself failed (never treated as exhausted), 0 otherwise. The key is read from
 ~/.pi/agent/auth.json (never printed). The day's starting point is kept in /tmp/bn-pi/quota/minimax-<date>.
 """
@@ -33,7 +34,8 @@ def main():
         json.dump({"weekly_at_start": pw, "days_left": max(1.0, dw)}, open(snap, "w")); allowance, used = pw / max(1.0, dw), 0.0
     print("minimax: remaining %.0f%% of the 5h window (resets in %.0f min); weekly %.0f%% (resets in %.1f days); today used %.1f%% of an allowance of %.1f%%"
           % (p5, m5, pw, dw, used, allowance))
-    if need is not None and (min(p5, pw) < need or used >= allowance): sys.exit(1)
+    spent = used >= allowance and "--ignore-allowance" not in sys.argv
+    if need is not None and (min(p5, pw) < need or spent): sys.exit(1)
 
 
 if __name__ == "__main__":
