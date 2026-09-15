@@ -158,7 +158,21 @@ def main():
     ap.add_argument("--existing", type=int, default=6); ap.add_argument("--recent", type=int, default=6)
     ap.add_argument("--since", type=int, default=24); ap.add_argument("--model"); ap.add_argument("--post", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--append", help="append the slides of this preview JSON (re-checked) instead of generating; with --post also publish")
     a = ap.parse_args()
+    if a.append:
+        known = titles(); kept = []
+        for sl in json.load(open(a.append)):
+            why = check(sl, known + [k["title"] for k in kept])
+            (kept.append(sl) if not why else print("  dropped %r: %s" % (sl.get("title"), "; ".join(why)[:160])))
+        if not kept: print("nothing to append"); return
+        js = open(SLIDES).read(); end = js.rstrip().rfind("];"); assert end > 0
+        open(SLIDES, "w").write(js[:end].rstrip() + "\n\n" + "\n\n".join(to_js(x) for x in kept) + "\n\n];\n")
+        print("appended %d slides: %s" % (len(kept), "; ".join(x["title"] for x in kept)))
+        if a.post:
+            msg = "learn: %d new slides (%s)" % (len(kept), "; ".join(x["title"] for x in kept)[:300])
+            print(sh("exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add web/learn/slides.js && git commit -q -m %s && git push -q origin main && bash tools/publish_site.sh --no-build | tail -1" % json.dumps(msg + "\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>")))
+        return
     model = pick_model(a.model)
     if not model: print("learn_slides: no model with budget for a one-shot session; nothing written"); return
     known = titles()
