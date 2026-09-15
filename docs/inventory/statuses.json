@@ -1,419 +1,1521 @@
 {
  "generator": "tools/inventory.py",
+ "table_meta": {
+  "fam_masks": {
+   "1": 8,
+   "2": 128,
+   "3": 32,
+   "4": 64,
+   "5": 65536,
+   "6": 131072
+  },
+  "n_bits": 69,
+  "n_written": 39,
+  "n_written_loose": 40,
+  "n_read": 37,
+  "n_read_loose": 43,
+  "n_unread": 32,
+  "n_written_read": 30,
+  "table_records": 37,
+  "table_sizes": [
+   6,
+   6,
+   6,
+   7,
+   6,
+   6
+  ],
+  "table_masks": [
+   "0x10000",
+   "0x20",
+   "0x20000",
+   "0x40",
+   "0x8",
+   "0x80"
+  ],
+  "table_only_masks": [
+   "0x10000",
+   "0x20000",
+   "0x40",
+   "0x80"
+  ],
+  "direct_only_masks": [
+   "0x1",
+   "0x10",
+   "0x100",
+   "0x100000",
+   "0x2",
+   "0x200",
+   "0x4",
+   "0x4000",
+   "0x40000",
+   "0x8000",
+   "0x80000"
+  ],
+  "table_records_only": 25,
+  "records_overlap": 12,
+  "masks_overlap": [
+   "0x20",
+   "0x8"
+  ],
+  "fam_sizes": [
+   6,
+   6,
+   6,
+   7,
+   6,
+   6
+  ]
+ },
  "rows": [
   {
    "bit": "OBJECT_FLAGS_GUARD",
    "value": "0x00000001",
+   "setter": "asm/asm31.s:112363 (+8)",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:3",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    9,
+    15,
+    0
+   ],
+   "_loose": [
+    9,
+    15,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_INVIS",
    "value": "0x00000002",
+   "setter": "asm/asm00_2.s:3315",
+   "reader": "asm/asm00_2.s:22325",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:4",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    2,
+    1
+   ],
+   "_loose": [
+    1,
+    2,
+    4
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_4",
    "value": "0x00000004",
+   "setter": "asm/asm00_2.s:2875 (+2)",
+   "reader": "asm/asm00_2.s:2829 (+2)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:5",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    3,
+    3
+   ],
+   "_loose": [
+    3,
+    3,
+    8
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_INVULNERABLE",
    "value": "0x00000008",
+   "setter": "asm/asm31.s:68375 (+2)",
+   "reader": "asm/asm00_2.s:16729",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:6",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    2,
+    1
+   ],
+   "_loose": [
+    3,
+    2,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_AIRSHOE",
    "value": "0x00000010",
+   "setter": "asm/asm00_2.s:10661 (+3)",
+   "reader": "asm/asm00_2.s:3163 (+4)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:7",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    4,
+    2,
+    5
+   ],
+   "_loose": [
+    8,
+    2,
+    5
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_FLOATSHOE",
    "value": "0x00000020",
+   "setter": "asm/asm00_2.s:10644 (+2)",
+   "reader": "asm/asm38.s:3905",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:8",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    3,
+    1
+   ],
+   "_loose": [
+    7,
+    3,
+    4
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_CANNOT_SLIDE",
    "value": "0x00000040",
+   "setter": "asm/asm31.s:32325 (+143)",
+   "reader": "asm/asm00_2.s:23084 (+3)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:9",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    144,
+    186,
+    4
+   ],
+   "_loose": [
+    145,
+    186,
+    8
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_8",
    "value": "0x00000080",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:10",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_DEAD",
    "value": "0x00000100",
+   "setter": "asm/asm00_2.s:23485 (+7)",
+   "reader": "asm/asm00_2.s:16761 (+23)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:11",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    8,
+    0,
+    24
+   ],
+   "_loose": [
+    8,
+    0,
+    24
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_FLASHING",
    "value": "0x00000200",
+   "setter": "asm/asm00_2.s:22338 (+2)",
+   "reader": "asm/asm03_0.s:14697 (+1)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:12",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    2,
+    2
+   ],
+   "_loose": [
+    3,
+    2,
+    3
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_FLINCHING",
    "value": "0x00000400",
+   "setter": "asm/asm00_2.s:18308 (combined-mask only)",
+   "reader": "asm/asm00_2.s:12088 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:13",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    9,
+    0
+   ],
+   "_loose": [
+    1,
+    9,
+    13
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_PARALYZED",
    "value": "0x00000800",
+   "setter": "asm/object.s:5333",
+   "reader": "asm/asm00_2.s:17033 (+6)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:14",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    13,
+    7
+   ],
+   "_loose": [
+    1,
+    13,
+    21
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_SLIDING",
    "value": "0x00001000",
+   "setter": "asm/asm00_2.s:16515 (+1)",
+   "reader": "asm/asm00_2.s:1745 (+11)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:15",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    18,
+    12
+   ],
+   "_loose": [
+    2,
+    18,
+    13
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_BLIND",
    "value": "0x00002000",
+   "setter": "asm/object.s:5530",
+   "reader": "asm/asm00_2.s:16861 (+11)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:16",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    2,
+    12
+   ],
+   "_loose": [
+    1,
+    2,
+    90
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_IMMOBILIZED",
    "value": "0x00004000",
+   "setter": "asm/object.s:5510 (+1)",
+   "reader": "asm/asm31.s:171386",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:17",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    2,
+    1
+   ],
+   "_loose": [
+    2,
+    2,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_CONFUSED",
    "value": "0x00008000",
+   "setter": "asm/object.s:5483",
+   "reader": "asm/asm00_2.s:1894 (+10)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:18",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    5,
+    11
+   ],
+   "_loose": [
+    1,
+    5,
+    89
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_FROZEN",
    "value": "0x00010000",
+   "setter": "asm/object.s:5383",
+   "reader": "asm/asm00_2.s:16784 (+5)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:19",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    9,
+    6
+   ],
+   "_loose": [
+    1,
+    9,
+    19
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_SUPERARMOR",
    "value": "0x00020000",
+   "setter": "asm/asm00_2.s:10684 (+9)",
+   "reader": "asm/asm00_2.s:23375 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:20",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    10,
+    3,
+    0
+   ],
+   "_loose": [
+    10,
+    3,
+    2
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNDERSHIRT",
    "value": "0x00040000",
+   "setter": "asm/asm00_2.s:10673",
+   "reader": "asm/asm00_2.s:24874",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:21",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    1,
+    1
+   ],
+   "_loose": [
+    2,
+    1,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_MOVE_COMPLETE",
    "value": "0x00080000",
+   "setter": "asm/asm31.s:42478 (+117)",
+   "reader": "asm/asm00_2.s:21962",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:22",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    118,
+    1,
+    1
+   ],
+   "_loose": [
+    118,
+    1,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_DRAG",
    "value": "0x00100000",
+   "setter": "asm/asm00_2.s:17289 (+2)",
+   "reader": "asm/asm00_2.s:23606 (+6)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:23",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    13,
+    7
+   ],
+   "_loose": [
+    4,
+    13,
+    23
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_ANGER",
    "value": "0x00200000",
+   "setter": "asm/asm00_2.s:11994",
+   "reader": "asm/asm00_2.s:11942 (+1)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:24",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    2,
+    2
+   ],
+   "_loose": [
+    1,
+    2,
+    4
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_USING_ACTION",
    "value": "0x00400000",
+   "setter": "asm/asm00_2.s:18388 (+89)",
+   "reader": "asm/asm00_2.s:2870",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:25",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    90,
+    43,
+    1
+   ],
+   "_loose": [
+    93,
+    43,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_24",
    "value": "0x00800000",
+   "setter": "asm/asm32.s:15970",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:26",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    0
+   ],
+   "_loose": [
+    1,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_25",
    "value": "0x01000000",
+   "setter": "asm/asm31.s:46667",
+   "reader": "asm/asm38.s:3243",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:27",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    1
+   ],
+   "_loose": [
+    1,
+    0,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_AFFECTED_BY_ICE",
    "value": "0x02000000",
+   "setter": "asm/asm00_2.s:17693",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:28",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    0
+   ],
+   "_loose": [
+    1,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_26",
    "value": "0x04000000",
+   "setter": "NONE",
+   "reader": "asm/asm31.s:60669",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:29",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    1
+   ],
+   "_loose": [
+    0,
+    0,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNAFFECTED_BY_POISON",
    "value": "0x08000000",
+   "setter": "asm/asm00_2.s:12678 (+1)",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:30",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    4,
+    0
+   ],
+   "_loose": [
+    2,
+    4,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_28",
    "value": "0x10000000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:19868",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:31",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    1
+   ],
+   "_loose": [
+    0,
+    0,
+    6
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_29",
    "value": "0x20000000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:24101 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:32",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    5
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_UNK_30",
    "value": "0x40000000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:16374 (+3)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:33",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    4
+   ],
+   "_loose": [
+    0,
+    0,
+    4
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_BUBBLED",
    "value": "0x80000000",
+   "setter": "asm/object.s:5440",
+   "reader": "asm/asm00_2.s:17107 (+7)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:34",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    10,
+    8
+   ],
+   "_loose": [
+    1,
+    10,
+    19
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_00",
    "value": "0x00000001",
+   "setter": "asm/asm00_2.s:23824 (+6)",
+   "reader": "asm/asm00_2.s:23477 (+6)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:48",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    7,
+    7,
+    7
+   ],
+   "_loose": [
+    7,
+    7,
+    7
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_01",
    "value": "0x00000002",
+   "setter": "asm/asm00_2.s:23389 (+1)",
+   "reader": "asm/asm00_2.s:22310 (+2)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:49",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    11,
+    3
+   ],
+   "_loose": [
+    2,
+    11,
+    3
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_02",
    "value": "0x00000004",
+   "setter": "asm/asm00_2.s:23383 (+2)",
+   "reader": "asm/asm00_2.s:23637",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:50",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    17,
+    1
+   ],
+   "_loose": [
+    3,
+    17,
+    2
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_03",
    "value": "0x00000008",
+   "setter": "asm/asm00_2.s:22545",
+   "reader": "asm/asm00_2.s:17482",
+   "battle_visible": "yes",
+   "via_table": "1",
    "cite": "include/structs/CollisionData.inc:51",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    12,
+    1
+   ],
+   "_loose": [
+    1,
+    12,
+    1
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_04",
    "value": "0x00000010",
+   "setter": "asm/asm00_2.s:22000 (+3)",
+   "reader": "asm/asm00_2.s:23617 (+1)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:52",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    4,
+    14,
+    2
+   ],
+   "_loose": [
+    4,
+    14,
+    2
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_05",
    "value": "0x00000020",
+   "setter": "asm/asm00_2.s:11368 (+2)",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "3",
    "cite": "include/structs/CollisionData.inc:53",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    3,
+    8,
+    0
+   ],
+   "_loose": [
+    3,
+    8,
+    0
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_06",
    "value": "0x00000040",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "4",
    "cite": "include/structs/CollisionData.inc:54",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    10,
+    0
+   ],
+   "_loose": [
+    0,
+    10,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_07",
    "value": "0x00000080",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "2",
    "cite": "include/structs/CollisionData.inc:55",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    12,
+    0
+   ],
+   "_loose": [
+    0,
+    12,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_08",
    "value": "0x00000100",
+   "setter": "asm/asm00_2.s:23090 (+4)",
+   "reader": "asm/asm00_2.s:23566 (+6)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:56",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    5,
+    14,
+    7
+   ],
+   "_loose": [
+    5,
+    14,
+    8
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_09",
    "value": "0x00000200",
+   "setter": "asm/asm00_2.s:11960 (+1)",
+   "reader": "asm/asm00_2.s:11985",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:57",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    4,
+    1
+   ],
+   "_loose": [
+    2,
+    4,
+    1
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_10",
    "value": "0x00000400",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:19645",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:58",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    1,
+    1
+   ],
+   "_loose": [
+    0,
+    1,
+    6
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_11",
    "value": "0x00000800",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:24077 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:59",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    1,
+    0
+   ],
+   "_loose": [
+    0,
+    1,
+    5
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_12",
    "value": "0x00001000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:19814",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:60",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    1,
+    1
+   ],
+   "_loose": [
+    0,
+    1,
+    6
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_13",
    "value": "0x00002000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:24093 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:61",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    1,
+    0
+   ],
+   "_loose": [
+    0,
+    1,
+    5
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_14",
    "value": "0x00004000",
+   "setter": "asm/object.s:5859 (+1)",
+   "reader": "asm/asm00_2.s:23582 (+1)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:62",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    4,
+    2
+   ],
+   "_loose": [
+    2,
+    4,
+    2
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_15",
    "value": "0x00008000",
+   "setter": "asm/asm00_2.s:1622 (+1)",
+   "reader": "asm/asm00_2.s:24046 (+19)",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:63",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    2,
+    0,
+    20
+   ],
+   "_loose": [
+    2,
+    0,
+    20
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_16",
    "value": "0x00010000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "5",
    "cite": "include/structs/CollisionData.inc:64",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    10,
+    0
+   ],
+   "_loose": [
+    0,
+    10,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_17",
    "value": "0x00020000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "6",
    "cite": "include/structs/CollisionData.inc:65",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    11,
+    0
+   ],
+   "_loose": [
+    0,
+    11,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_18",
    "value": "0x00040000",
+   "setter": "asm/asm00_2.s:1637",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:66",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    0
+   ],
+   "_loose": [
+    1,
+    0,
+    0
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_DO_UPDATE_COLLISION_PANELS",
    "value": "0x00080000",
+   "setter": "asm/asm03_0.s:10038",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:67",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    0
+   ],
+   "_loose": [
+    1,
+    0,
+    0
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_20",
    "value": "0x00100000",
+   "setter": "asm/asm00_2.s:1655",
+   "reader": "asm/asm31.s:69250 (combined-mask only)",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:68",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    1,
+    0,
+    0
+   ],
+   "_loose": [
+    1,
+    0,
+    2
+   ],
+   "_in_direct_f2": true
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_21",
    "value": "0x00200000",
+   "setter": "NONE",
+   "reader": "asm/asm00_2.s:1703",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:69",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    1
+   ],
+   "_loose": [
+    0,
+    0,
+    3
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_22",
    "value": "0x00400000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:70",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_23",
    "value": "0x00800000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:71",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_24",
    "value": "0x01000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:72",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_25",
    "value": "0x02000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:73",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_26",
    "value": "0x04000000",
+   "setter": "NONE",
+   "reader": "asm/asm31.s:60663",
+   "battle_visible": "yes",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:74",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    1
+   ],
+   "_loose": [
+    0,
+    0,
+    1
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_27",
    "value": "0x08000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:75",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_28",
    "value": "0x10000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:76",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_29",
    "value": "0x20000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:77",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_30",
    "value": "0x40000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:78",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "OBJECT_FLAGS_2_UNK_BIT_31",
    "value": "0x80000000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/CollisionData.inc:79",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "DAMAGE_DOUBLE",
    "value": "0x8000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/BattleObject.inc:119",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "DAMAGE_PARALYZE",
    "value": "0x4000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/BattleObject.inc:120",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "DAMAGE_UNINSTALL",
    "value": "0x2000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/BattleObject.inc:121",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "DAMAGE_ERASECROSS_SKULL_HIT",
    "value": "0x1000",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/BattleObject.inc:122",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   },
   {
    "bit": "DAMAGE_NOTHING",
    "value": "0x0800",
+   "setter": "NONE",
+   "reader": "none",
+   "battle_visible": "no",
+   "via_table": "-",
    "cite": "include/structs/BattleObject.inc:123",
-   "status": "unrecorded"
+   "status": "unrecorded",
+   "_counts": [
+    0,
+    0,
+    0
+   ],
+   "_loose": [
+    0,
+    0,
+    0
+   ],
+   "_in_direct_f2": false
   }
  ]
 }

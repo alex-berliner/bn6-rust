@@ -40,7 +40,11 @@
 //! `RowCheck` gates on two object-flag tests before the row compare:
 //! `OBJECT_FLAGS_IMMOBILIZED` (bit 14, freeze) and `OBJECT_FLAGS_BLIND |
 //! OBJECT_FLAGS_CONFUSED` (bits 13/15, divert to `Wander`) --
-//! include/structs/CollisionData.inc:16-18. This project has no chip that
+//! include/structs/CollisionData.inc:16-18. T18 measured both gates' canonical
+//! sites in the disassembly and they are exactly here: the bit-14
+//! `mov r1,#1; lsl r1,#0xe; tst` gate is asm31.s:171385-171394 and the
+//! `=0xa000` BLIND|CONFUSED gate is asm31.s:171395-171397 (per-bit setter/
+//! reader walk in docs/inventory/statuses.json). This project has no chip that
 //! sets any of the three, so both gates are always false; kept as a named,
 //! always-false constant (`BLIND_OR_CONFUSED` in objects.rs) rather than
 //! deleted, so `Wander`/`WaitOut` stay real, RNG-consuming code instead of

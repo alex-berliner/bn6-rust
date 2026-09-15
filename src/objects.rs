@@ -295,6 +295,10 @@ const METTAUR_ROW: u8 = 0; // provenance: derived -- off_8109FF0[0], asm31.s:171
 const METTAUR_ALIGN: u8 = 4; // provenance: derived -- off_8109FF0[1], asm31.s:171197
 /// `off_8109FF0[2]`, `sub_810A0BA` (asm31.s:171311-171376): blind/confused
 /// wander, in `decide_sub` halves. The value IS `oAIState_Unk_00`.
+/// T18 measured the gate that arms this state (the RowCheck
+/// `=0xa000` BLIND|CONFUSED tst) at asm31.s:171395-171397, and BLIND's own
+/// reader (a hide-sprite `tst` of 0x2000 on `battle_findPlayer`'s result) at
+/// asm00_2.s:16861 -- see docs/inventory/statuses.json.
 const METTAUR_WANDER: u8 = 8; // provenance: derived -- off_8109FF0[2], asm31.s:171199
 /// `off_8109FF0[3]`, `sub_810A126` (asm31.s:171379-171451): rows equal,
 /// attack. The value IS `oAIState_Unk_00`.
