@@ -393,8 +393,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** dispatch third (after F37j and T7o land — disjoint from F37j's src/backdrop.rs and T7o's src/battle.rs; src/battle.rs is shared with T7o, so sequential after T7o, never paired). Worker muse-spark-1.3-contributor (T7n's child class — RNG cadence port), verifier GLM-5.3-flash cross-family; ≤$0.15 expected, ≤$0.40 cap; verify_rows on the full table. Advances **M2**.
 ```
 
-### F38c. opening integrated 72499: port canon's intro-hunk palette/sheet assignment and the enemy's materialize animation  *(OPEN -- 2026-09-15)*
+### F38c. opening integrated 72499: port canon's intro-hunk palette/sheet assignment and the enemy's materialize animation  *(BLOCKED -- 2026-09-15, F38c BLOCKED: worker hit cold-start / no-output failure in 3m20s)*
 
+**Result.** F38c BLOCKED: worker hit cold-start / no-output failure in 3m20s. No edit, no commit, no baseline. Worktree wt/f38c clean at d812e56 (the judge-admitted commit), no progress. Worker model: minimax (MiniMax-M3 thinking high), 3m20s. Retry needed with fresh dispatch.
 **Result.** (target) opening integrated reads 0/0/40 with the cited intro-hunk ports; opening isolated stays 0/0/40; cursor stays ≤1/1/170; mettaur 0/0/70; windowclose 0/0/40; result 0/0/40; field 0/0/40; wave/opening/popup/cards/chip rows stay 0/0.
 
 **Files.** src/actor.rs (only the palette/sheet assignment for navi/enemy/HUD at intro-hunk time, the OAM remap), src/objects.rs (only the enemy's materialize animation that canon fires from k=32+), src/battle.rs (only if the intro hunk runs through battle_init), src/custom.rs (only if a chip-window element overlaps the intro hunk), tools/probe.py (the per-frame OAM/PAL watch), tools/harness.py (opening row's data-note), docs/coverage/opening_integrated.md (new file, notes)
