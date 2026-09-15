@@ -2529,14 +2529,13 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // What each state RUNS is the composite this build already had (the
         // window in `custom`, the redraw in `close_redraw_pending`, the
         // banner in `banner_at`/`opening`); the table owns the state word
-        // and these edges.
-        match self.seq.state {
-            SEQ_20 if self.seq.age >= 1 => self.seq.transition(SEQ_24),
-            SEQ_00 if self.seq.age >= 2 => self.seq.transition(SEQ_04),
-            SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08),
-            SEQ_20 | SEQ_00 | SEQ_04 => self.seq.age += 1,
-            _ => {}
-        }
+        // and these edges. T7o: the match block was here, BEFORE
+        // `t1_player_entry` at :3261; canon's order at asm00_1.s:9775/13126
+        // (sub_800938A -> battle_update_8007A44) runs the executor first
+        // and re-enters the sequencer handler on the same frame, so the
+        // SEQ_04 -> SEQ_08 release edge fires AFTER the player's per-tick
+        // work on its last frame (k=147..207, SEQ04_FRAMES - 1). Moving the
+        // block to after the executor closes that gate by one frame.
         // The end sequence is the end COUNTS only: the window path's
         // 0x20/0x24/0x00/0x04 are not it. `over` used to read `state !=
         // SEQ_08`, which tore the HUD down and armed the results the moment
@@ -3259,6 +3258,22 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             }
         }
         let navi_update = objects::t1_player_entry(&mut self.megaman);
+        // T7o: SEQ04 seq-match block relocated here from :2533 (was before
+        // the executor). Citation: asm/object.s per-tick order:
+        // sub_8008452 (window opening, SEQ_20, off_8008038 entry 8),
+        // sub_800840C (banner wait, SEQ_04 hold), sub_8008064 (the SEQ_04
+        // -> SEQ_08 release edge into the fight). Canon's main loop is
+        // sub_800938A -> battle_update_8007A44 (asm00_1.s:9775/13126): the
+        // executor runs FIRST, then the sequencer handler is re-entered on
+        // the same frame. With the block here the release edge fires AFTER
+        // the player's per-tick work on the SEQ_04 -> SEQ_08 frame.
+        match self.seq.state {
+            SEQ_20 if self.seq.age >= 1 => self.seq.transition(SEQ_24),
+            SEQ_00 if self.seq.age >= 2 => self.seq.transition(SEQ_04),
+            SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08),
+            SEQ_20 | SEQ_00 | SEQ_04 => self.seq.age += 1,
+            _ => {}
+        }
         if let Some((gun, _, _)) = self.vulcan_gun.as_mut() {
             match navi_update {
                 // The firing state's first frame is also its first shot.
