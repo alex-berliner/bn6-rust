@@ -198,3 +198,19 @@ SuperFW does with a homebrew ROM (its save-type detection and patcher look for S
 does not have; try its "no patching" option if it has one, and a ROM padded to a power of two); (3) memory
 the emulator zeroes and hardware does not (our code's reads before init); (4) interrupt acknowledgement
 at 0x03007FF8 for the BIOS VBlank wait, which HLE emulators forgive. The user's report is the only test.
+
+## The 09:15 roundup, the work logs and the tmux sessions (2026-09-15)
+
+- **Roundup** (`tools/daily_review.sh`, cron 09:15): the review, then the digest post (`tools/digest_post.py`: one
+  account of the day for a reader who has never seen the project, written by Opus 5 through `claude -p` per
+  `providers.toml [roundup]`, checked mechanically: every number from the results, no paths or hashes; `--body FILE`
+  publishes a hand-reviewed text), then new learn slides (`tools/learn_slides.py`, Opus too, a jargon gate and a
+  real-excerpt check; `--append preview.json --post` publishes a reviewed preview), then the assembly notes
+  (`tools/annotate_asm.py`: comment-only `// bn <ticket> (<date>)` notes at the sites the day's results cite, on
+  bn-notes, pushed to the fork). The user's standard for all of it: the Dolphin emulator's progress reports.
+- **Work logs**: a worker keeps `docs/worklog/<ID>.md`; `ticket_result.py` carries it to main with the stamp even
+  when the branch stays unmerged; `next_ticket.py` prints the objective's earlier logs to the next worker.
+- **tmux**: every run and queued benchmark starts in a tmux session (`bn-<run>-<stamp>`, `bn-bench-...`);
+  `tmux attach -t <name>`; window `view` (`tools/watch_run.py`) shows the coordinator, its children and the status
+  log live. The user wants to be told of every launch.
+- **land.sh --no-verify** is refused for branches that change code (a worker used it to land a regression).

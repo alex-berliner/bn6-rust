@@ -84,3 +84,14 @@ left) and the run stops for the day when it is spent. Decision: schedule.runs = 
 each run self-sufficient; the joint sketch (hyper coordinating minimax's workers) stays a comment -- it is not
 needed and would add a fourth hyper session, which trips hyper's hourly limit. Benchmarks are queued ahead of a
 provider's run, never beside it.
+
+## 2026-09-15 11:00 -- readable output by Opus; work logs; tmux; the day's other changes
+
+The user rejected the first automated digest ("completely incomprehensible") and set the standard for every
+human-readable thing here: understandable by someone who has never looked at the project, the Dolphin emulator's
+progress reports as the model, and asked for an Opus 5 writer instead of the worker-class models. So: the digest
+and the learn slides are written by Opus 5 through the Claude Code CLI (providers.toml [roundup]); the worker-class
+models keep the engine work. Also today: per-ticket work logs (docs/worklog, carried to main on every stamp, shown
+to the next worker), runs and benchmarks in tmux with a live view, comment-only assembly notes every morning,
+land.sh --no-verify refused for code, the coordinator resuming after an early stop, judge tickets up to 9000
+chars, MiniMax's daily allowance and pacer, and both subscriptions scheduled in parallel.
