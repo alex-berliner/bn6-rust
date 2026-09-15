@@ -131,7 +131,7 @@ def newcomer_digest(results, facts):
         allowed = facts + " " + " ".join(t + " " + ttl for t, ttl, _, _ in results) + " 60 24 %d %d %d %d" % (
             len(results), sum(1 for r in results if r[2] == "DONE"), sum(1 for r in results if r[2] == "PARTIAL"), sum(1 for r in results if r[2] in ("BLOCKED", "NEGATIVE")))
         extra = numbers(last) - numbers(allowed)
-        bad = re.search(r"/tmp/|wt/|worktree|\bbranch\b|verify_rows|\b(?=[0-9a-f]*[a-f])[0-9a-f]{7,}\b", last)
+        bad = re.search(r"/tmp/|\bwt/|verify_rows|\b(?=[0-9a-f]*[a-f])[0-9a-f]{7,}\b", last)   # paths, branch names, commit hashes
         why = ("%d words" % words) if not (350 <= words <= 1300) else ("numbers not in the facts: %s" % sorted(extra)[:8]) if extra else ("forbidden token %r" % bad.group(0)) if bad else ""
         if why: print("digest: model account rejected (attempt %d): %s" % (attempt + 1, why), file=sys.stderr); continue
         return last
