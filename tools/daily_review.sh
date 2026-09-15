@@ -80,4 +80,6 @@ python3 tools/digest_post.py --since "$SINCE" --review "$OUT" --post 2>&1 | tail
 python3 tools/learn_slides.py --existing 6 --recent 6 --since "$SINCE" --post 2>&1 | tail -16
 # the day's findings go back into the disassembly as comment-only notes on bn-notes (the user, 2026-09-15)
 python3 tools/annotate_asm.py --since "$SINCE" --post 2>&1 | tail -8
-
+# a fresh ROM on the site every morning (the user, 2026-09-15): tools/publish_site.sh without --no-build rebuilds the
+# release ROMs, the browser ROM (web/bn6-rust.gba + build.txt) and the gallery manifest, then publishes
+CARGO_BUILD_JOBS=2 bash tools/publish_site.sh 2>&1 | tail -2
