@@ -23,7 +23,13 @@ mettaur warmup run agreed too.
 | mettaur · isolated (control) | 0/0/41734 | same | same | same | spread 0 |
 
 **Runs needed to see any movement: 4 of 4 saw none.** On the same commit the harness is
-run-to-run deterministic to the pixel, including the negative totals.
+run-to-run deterministic to the pixel, including the negative totals — on the FIVE rows measured
+here. That is NOT a harness-wide claim, and the landed record carries its own counter-example:
+Q3's merge `184b9b5` documents `cursor` reading `1/1/170/186279` and then `13/12/170/186277` at
+the SAME commit (`7cd1ec1`), called capture instability at the time and deliberately not gated.
+Honest boundary: five rows measured deterministically, `cursor` not, and no per-run build
+identity (ROM sha256 + /tmp input hashes) was recorded alongside any of these runs — that
+omission is exactly what let F45's 158935 become un-reproducible (§6).
 
 ## 2. per-capture or per-frame? (field-bg2, kept dirs in /tmp/bn-f48/)
 
@@ -62,22 +68,22 @@ does not: the deltas above are constant across total, worst AND negative (+18/+1
 −23/−23/−23), which is the signature of **one frame's content changing between input versions**,
 not of sampling noise (sampling noise would scatter total without moving worst equally).
 
-**Verdict: the "run-to-run drift" is input-version skew, not run-to-run nondeterminism.**
-Within any one session it is exactly 0 (four runs; kept dirs byte-identical). Across sessions it
-appears only when an input changed: the T17/T19 ROM change (src/battle.rs 159 lines, src/chips.rs
-+49, assets/chips.bin 48396→48780) deterministically moves `field` by −23 on one frame; and one
-input-version event between F45's 18:16 session and F46's 18:28 session moved it +18 (and bg2 by
-+3 scanline rows). Candidate for that event, on the record: the documented verifier
-destruction/restore of the /tmp canon inputs (restore mtimes 18:41 on `/tmp/bn6f_real.gba` +
-`/tmp/bn6f_sterile.gba`; destruction time and file not recorded — the ticket itself says "a
-verifier destroyed one today and it cost a landing"). Note F46's 18:28 run and this ticket's
-~19:15 old-ROM runs straddle that restore and read identically — and the old-ROM re-run
-reproduced F46's numbers on BOTH rows tested (field 158953, bg2 5280), so session
-reproducibility on identical inputs is 3 for 3 — while F45's 18:16 line is the one un-reproduced
-outlier, and no input set available now reproduces it. The commit pairs to diff if the hunt
-reopens: `1c49bc5`..`ed9c9c1` for `src/ vendor/ assets/` (the −23, already explained by
-T17/T19), and — for the +18 — the /tmp input history, which git cannot see: re-run `field` at
-`1c49bc5` against each candidate input version (pre/post restore) if anyone revives this.
+**Verdict (revised — the first headline, "the movement is built-ROM-version skew", over-claimed
+and is withdrawn):** Same-ROM captures are pixel-deterministic on `field`, `opening`, `gunner`,
+`mettaur` and `field-bg2` (0 of 373 kept frames differ across two real re-captures, both sides,
+verified independently), so the movement is NOT sampling drift. Part of it is a version event:
+T17/T19's ROM change (`ab80121e…` → `1997be3b…`) deterministically moves `field` by −23 on one
+frame and `field-bg2` from 22 to 20 whole-scanline rows. The F45→F46 movement (158935 → 158953,
+4560 → 5280) is NOT that — both trees build byte-identical ROMs (`sha256sum
+/tmp/bn-f48/rom_f45tree.gba rom_f46tree.gba` → the same `ab80121e…`) — so ROM version is
+variable-free there and the cause remains **UNNAMED**. The leading candidate is a canon-side
+input version that existed at 18:16 and no longer exists: the 18:41 `restore_inputs.sh` is AFTER
+F46's 18:28 run — which already reads the new numbers — and reproduces F46's numbers exactly,
+which exonerates the restore itself. This **half-discharges** the "root cause unchecked"
+verdict, not discharges it: determinism is proven and one version event is named; the F45→F46
+input version is not. The commit pair to diff if the hunt reopens: `1c49bc5`..`ed9c9c1` for
+`src/ vendor/ assets/` (the −23, already explained by T17/T19); the +18 lives in the /tmp input
+history, which git cannot see.
 
 `opening integrated 18740/647/40` and `gunner 2105613/38237/130` reproduce EXACTLY across both ROM
 generations and at least four independent sessions — the constants F44 was landed on are stable
@@ -98,12 +104,21 @@ far outside any plausible band; they were never at risk from capture noise.
 - **A row whose expected total is 0 is never widened** (its failure is a real signal), and
   neither side of a banded comparison may be BLIND. Exit-code semantics unchanged: PASS only when
   every row is matched or drift-banded. The envelope in force is printed.
-- Envelope table (pixels): **field = 25** — provenance: peeked, the max spread of recorded
-  field-integrated totals across input versions (158928 coordinator / 158930 this ticket ×4 on
-  the new ROM / 158935 F45 / 158953 F46 + this ticket on the old ROM → 158953−158928). The
-  same-commit measured spread is 0; the band covers recorded-constant skew across trees and input
-  versions, which is the only skew ever observed. Every other row: absent → 0 → no banding
+- Envelope table (pixels): **field = 25** — provenance: peeked, and NOT one measured delta: the
+  max of FOUR recorded field-integrated totals — 158928 (coordinator/main, reproduced by no run
+  ever), 158935 (F45 landed), 158953 (F46 + this ticket's old-ROM re-run), 158930 (this ticket
+  ×4 on the new ROM) → 158953−158928 = 25. Of that, only **23 is reproduced** (the T17/T19 ROM
+  change, deterministic ×4); the outer **2 px exist only to cover 158928**, which nobody has
+  reproduced. The same-commit measured spread is 0; the band covers recorded-constant skew
+  across trees and input versions, the only skew ever observed. **Consequence: a real tree-side
+  regression of up to 25 px on `field` bands through** when branch == main; anything larger
+  fails and forces the constant to be re-recorded. Every other row: absent → 0 → no banding
   (strict). field-bg1/bg2/bg3 are structurally excluded (`search=None`, pinned pairing).
+- Mechanics, so the next reader does not re-derive them: the `search=None` exclusion is read at
+  RUNTIME from the measured tree's own `Align` config (`_searched_rows` imports that tree's
+  `tools/harness.py`; import failure returns `{}` → the band is disabled — fail-closed, back to
+  strict). And a zero total can never be banded: `_try_drift_band` returns None immediately
+  when `env <= 0 or want[0] in ("-", "0")` — a zero row's failure is a real signal.
 - Auxiliary fix, needed so the at-risk class is gateable at all: an expectation is now matched
   against ANY of the row's harness ui lines, not only the first printed one. Before this,
   `--expect opening=18740/647/40/98649` (the integrated line every report quotes) ALWAYS read
@@ -115,4 +130,40 @@ Known limitation, stated: with envelope 25, the real tree-side −23 (T17/T19) b
 generations is inside the band, so a constant recorded on the old ROM bands through on the new
 ROM when branch == main. That is the policy working as specified (the branch-vs-main guard is
 what catches real regressions); a future tree change LARGER than the envelope fails the gate and
-forces the constant to be re-recorded.
+forces the constant to be re-recorded. With the corrected accounting above: 23 of the 25 px are
+a reproduced, named event; the outer 2 px cover the never-reproduced 158928.
+
+## 5. The band is DIAGNOSTIC-ONLY, and the same-tree invocation is a trap
+
+`tools/land.sh` does not pass `--with-main` — its only call site passes `--expect` — so today's
+landing gates are untouched. That is the only reason a numeric band coexists with AGENTS.md's
+"never a tolerance".
+
+The trap, named: in `verify_rows.py`, `if main_sha == sha: main_results = results`. With
+`--with-main` pointing at the branch's own ref (or any ref resolving to the same commit),
+"main" IS the branch's own measurement and the band degenerates into a plain one-sided ±25
+tolerance on the branch's own number — exactly the widened-tolerance gate AGENTS.md forbids.
+**Rule: `verify_rows … --with-main` is a diagnostic and may never be a landing gate. If
+`--with-main` is ever wired into `land.sh`, that change needs its own ticket and an explicit
+owner decision.**
+
+## 6. What the enabling fix reveals about two LANDED merges (read before re-quoting F44/F45 numbers)
+
+Before this ticket's auxiliary matcher fix, `parse()` kept ONE line per row — the first printed,
+which for a `ui=both` row is the ISOLATED line — so an integrated claim could never MATCH a
+gate: the comparison always ran against the isolated line. Consequences, precise:
+
+- `gunner`'s `2105613/38237/130` MATCH at F44 DID check real pixels: that row's isolated and
+  integrated lines are numerically identical, so the isolated line it matched carries the same
+  numbers.
+- **F44's `opening integrated 18740/647/40/98649` and F45's `field integrated
+  158935/5606/40/261034` were never machine-gated.** The recorded gate lines are `opening PASS
+  0/0/40/86591 MATCH` and `field PASS 0/0/40/1139 MATCH` — the isolated ones. No merge needs
+  reverting; both constants must be treated as REPORT-ONLY until re-gated under the fixed
+  matcher. F45's `158935/5606` — the one total on either tree that no run has reproduced — is
+  now most plausibly a carried-forward quote rather than a measurement of `1c49bc5`.
+
+Rule, every landing from here on: **a landing that quotes a non-zero expected total must also
+quote the sha256 of the built ROM and of every /tmp canon input it was measured against, and
+must name which harness ui line (isolated or integrated) the gate matched; a number without its
+build identity is a report quote, not a gate.**
