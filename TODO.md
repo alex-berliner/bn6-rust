@@ -327,8 +327,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T7v. battle_full RNG cadence 9/540 → 0/540: port the per-site mirror at the remaining divergence frames  *(OPEN -- 2026-09-15)*
+### T7v. battle_full RNG cadence 9/540 → 0/540: port the per-site mirror at the remaining divergence frames  *(BLOCKED -- 2026-09-15, no code change)*
 
+**Result.** no code change; cited mechanism (sub_80C7EC8 death-debris spawner) insufficient alone. baseline shifted to 14/540 [T7r PARTIAL chip-window stalls added 9 frames]. Per-site mirror would close 2/14 [k=282/283], other 12 are sites outside cited scope [rust-side stalls + other per-site draws]. cost $0.281 model=minimax/MiniMax-M3:high
 **Why.** T7n PARTIAL named the rng_cadence first-divergence at k=271 on 10/540 frames (cite sub_80C7EC8 / cbGameState_80050EC). T7p DONE was a no-op (HEAD rng_cadence 9/540, already below the ≤10/540 acceptance threshold per T7p's landing 784c8e5). The remaining 9 frames are at known positions per T7n's divergence list. M2 acceptance is "battle_full trace: first divergence none" — pushing 9/540 → 0/540 fully clears the M2 trace metric. The per-site mirror at sub_80C7EC8 ticks once per frame and cbGameState_80050EC is the per-site reader; both are cited in T7n PARTIAL.
 
 **Files.** src/rng.rs (only the per-site mirror at the named sites), src/battle.rs (only if the read-site is reached from a per-tick battle path), tools/trace.py (only if rng_cadence watch needs widening), docs/coverage/battle_full.md (notes)
