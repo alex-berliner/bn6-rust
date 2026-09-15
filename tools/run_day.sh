@@ -57,5 +57,10 @@ print(' '.join(sorted({m.split('/')[0] for role in ('coordinator','worker','veri
     bash tools/tail.sh "$name"
   done
 done
+# the last credits of a subscription with a daily balance (under the run's stop threshold, above 1) check our own notes
+for p in hyper; do
+  bal="$(python3 tools/hyper_credits.py 2>/dev/null | grep -oE 'remaining [0-9.]+' | awk '{print $2}')"
+  [ -n "$bal" ] && python3 -c "import sys; sys.exit(0 if 1.0 <= float('$bal') < 3.0 else 1)" && python3 tools/note_audit.py --max 3 2>&1 | tail -4
+done
 [ "$running" = 0 ] && echo "nothing running"
 exit 0

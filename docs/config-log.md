@@ -95,3 +95,11 @@ models keep the engine work. Also today: per-ticket work logs (docs/worklog, car
 to the next worker), runs and benchmarks in tmux with a live view, comment-only assembly notes every morning,
 land.sh --no-verify refused for code, the coordinator resuming after an early stop, judge tickets up to 9000
 chars, MiniMax's daily allowance and pacer, and both subscriptions scheduled in parallel.
+
+## 2026-09-15 16:40 -- the last credits and the free check (the user's pick)
+
+Two small mechanisms the user chose: tools/note_audit.py spends the day's last Hyper credits (the 1..3 band under
+the run's stop threshold, from run_day.sh) re-reading `// bn` notes in the disassembly against their code with one
+tiny request each, verdicts in docs/note_audits.md; tools/premise_check.py, in the 09:15 roundup, re-measures the
+rows an OPEN ticket cites and writes a **Premise check.** line when the number drifted, so a worker does not spend
+credits on a refuted premise (F39a, F41, F21e did today). The premise check costs no credits.
