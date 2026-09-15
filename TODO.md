@@ -300,8 +300,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### F37k. cursor 3 px residue at k=37/97 via per-scanline BG1 backdrop seam port  *(OPEN -- 2026-09-15)*
+### F37k. cursor 3 px residue at k=37/97 via per-scanline BG1 backdrop seam port  *(BLOCKED -- 2026-09-15, infra failures [bash exit 1, then model cold-start on resume])*
 
+**Result.** infra failures (bash exit 1, then model cold-start on resume); worker explored tools/harness.py and src/ but never reached baseline measurement; no commits, no progress; cost $0.125 model=minimax/MiniMax-M3:high
 **Why.** F37i BLOCKED (BG1 backdrop drain in src/backdrop.rs; tool budget 60 before port) and F37j NEGATIVE (port canon's QueueEightWordAlignedGFXTransfer drain into src/backdrop.rs; both drain-timing ports regressed cursor) on the 3 px residue at k=37/97 (cursor 1/1/170 — the last unfixed pixel on the cursor row). The 60-frame periodicity (k=37, k=97 differ by 60) matches Battle::tick % 60 in canon's BGScrollCB_BG1Diagonal3to2Scroll (sub_8001C94, per F6 cite in tools/harness.py:1708). The 3 px is the seam tile transition at the BG1 drain scanline (around y=143 per F36a's warp decomposition at 40302 px y=24..143). A per-scanline port from sub_8001C94's BG1 seam handler into src/backdrop.rs respects the 60-frame cycle without the drain-timing regression F37j hit. M2 acceptance is "integrated-row pixel parity"; closing the cursor row at 0/0/170 removes one of the four small cursor residues (the 3 px is the last).
 
 **Files.** src/backdrop.rs (only the BG1 seam transition path), src/battle.rs (only if the BG1 seam is reached from a per-tick battle path), tools/harness.py (only if a new BG1 phase probe is needed), tools/diffmask.py (only for region split at the seam), docs/coverage/cursor.md (notes)
