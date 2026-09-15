@@ -68,6 +68,10 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
 
 A ticket whose title or text says it stays OPEN (multi-pass, e.g. F12 per chip family) is stamped OPEN after every landed pass, never PARTIAL or DONE, until its stated end condition is met.
 
+**Work logs.** A worker keeps docs/worklog/<ID>.md; `ticket_result.py` carries it to main with the stamp
+even when the branch stays unmerged, and `next_ticket.py` shows the objective's earlier logs to the next
+worker. Never skip the stamp for a failed ticket: the log is the point.
+
 **Landing a verified partial.** A branch whose verify_rows PASS shows its named rows improved (or a cited
 behaviour change with every row unchanged) and nothing worse, with any claim beyond harness lines
 confirmed, is LANDED and stamped PARTIAL even when the ticket's acceptance is not fully met; keep a branch

@@ -159,6 +159,14 @@ def main():
                     shown += 1
         if shown >= a.results and not same:
             break
+    # the work logs of this objective (docs/worklog/<base>*.md): what earlier workers tried, newest first, two at most
+    import glob as _glob
+    logs = sorted((f for f in _glob.glob(os.path.join(ROOT, "docs", "worklog", base + "*.md"))), key=os.path.getmtime, reverse=True)
+    own = os.path.join(ROOT, "docs", "worklog", t["id"] + ".md")
+    for f in ([own] if os.path.exists(own) and own not in logs[:2] else []) + logs[:2]:
+        body_log = open(f).read().strip()
+        if body_log:
+            print("--- work log %s (what was tried before; read it first)\n%s\n" % (os.path.basename(f), body_log[:3500] + (" [...]" if len(body_log) > 3500 else "")))
     # shared procedure paragraph anywhere in the ticket's section
     sec_start = text.rfind("\n## ", 0, t["start"])
     sec_next = re.search(r"^## ", text[t["end"]:], re.M)

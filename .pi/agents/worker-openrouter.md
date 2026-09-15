@@ -35,3 +35,10 @@ ticket needs.
 
 Report in the AGENTS.md shape. If the number did not move as the ticket predicted, say so and stop;
 do not widen the change to make it move.
+
+**Your work log.** Keep `docs/worklog/<ticket ID>.md` in your worktree as you go and commit it with each
+step (a commit of the log alone is fine): what you measured and the numbers, every idea you tried and why
+you dropped it, what you would try next. Write it for the next worker on this objective, who starts with
+none of your context; a failed attempt with a good log is worth more than a silent one. The log lands on
+main even when your branch does not, and `next_ticket.py` shows the earlier logs of the same objective to
+whoever picks up the follow-up.
