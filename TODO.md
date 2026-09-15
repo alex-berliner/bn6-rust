@@ -215,3 +215,28 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 - T9l PARTIAL -- gunner 2850534/38237/130: derive this row's own backdrop seed, then split the residue by layer. LANDED as 424814d
 - F39a NEGATIVE -- opening integrated 25829/931/40: the four OBJ entries canon does not draw, and the per-sprite PAL_OBJ slot. Premise refuted by measurement
 - F40a BLOCKED -- gunner 2105613/38237/130: settle whether the BG3 plateau is gauge-driven, then port the chip-window auto-open that canon takes at capture ~157. Lever not settled
+
+### T7x. battle_full SEQ_04's leave predicate is a bit test: port isBannerBusy_801E754, delete SEQ04_FRAMES and BANNER_FRAMES  *(OPEN -- 2026-09-15)*
+
+**Why.** battle_full's trace diverges on 173/540 sequencer frames — 165 at k=31..195 (window setup) + 8 at k=297..304 (kill timing) (tools/harness.py:1484). T7u BLOCKED ($0.395): it replaced the fitted count with a `banner_idle(&BannerComposite)` check, got 273/540 → 256/540 and regressed cursor 1/1/170 → 38/37/170; not landed. Its diagnosis — "banner_at 30-frame countdown defeats banner_idle before the Banner struct spawns" — says the predicate was wrong in *shape*, not in kind: canon's is not about a banner object, it is one bit test. src/battle.rs:4550-4560 already holds the measured pattern from the real ROM (PAUSED, enemy HP forced 0, Start@10): teardown store at=0x0801BEDC lr=0x080081B9, mask 0x4497→0x0084 at frame 48, "bit 15 is set back a moment later by the ENEMY DELETED banner going up (sub_801E792's sub_801BECC(1<<15), asm00_2.s:31055-31112)", the mask reads 0x8084 (bit 15 set) across 48..105 and 0x0084 from 106. bn6f renamed the reader for exactly this: `isBannerBusy_801E754` = `HudElementMask & 0x8000` (asm00_2.s:31071-31097), with T7d's note that sequencer state 0x04 "writes 0x08 only when it returns 0" (reference/bn6f/docs/renames.md:136). Ours carries two fitted counts instead: `SEQ04_FRAMES: u16 = 60` (src/battle.rs:1186, leave at :3301) and `BANNER_FRAMES: u16 = 58 // provenance: peeked` (:1161).
+
+**Coordinator note (2026-09-15).** F42a (the battle-HUD element mask on gunner) and F41a (the integrated band) were NOT admitted this run -- their objectives already carry two consecutive non-landings (T9l PARTIAL + F40a BLOCKED, and F36c + T7w NEGATIVE). So this ticket is self-contained: if step 2 names bit 15's setter/clear, YOU add the mask bit; there is no earlier ticket to build on.
+
+**Files.** src/battle.rs (bit 15 of the HUD mask, SEQ_04's leave :3301, SEQ04_FRAMES :1186, BANNER_FRAMES :1161, the banner arm :2556/:2579 — nothing else), src/banner.rs (only the record's own completion that clears the bit), tools/trace.py (watch only), tools/probe.py (watch only), docs/coverage/battle_full.md (notes)
+
+**Do.**
+1. `tools/trace.py record/diff --align row:battle_full` on HEAD → *report the sequencer divergence (expected 173/540) and our k-spans for SEQ_08/20/24/00/04/08.*
+2. Read isBannerBusy_801E754 (asm00_2.s:31071-31097), spawnBannerRecord_801E792 (:31055-31112) and clearBattleHudElements_801BED6 (:25575) and their callers → *report the site that sets bit 15, the one that clears it, and the counter/timer the clear waits on (T7d's 0x1e / 0x293 arms named).*
+3. After the change, first the cheap gate: `tools/harness.py --only cursor --ui isolated` → *report cursor before/after; if it moves off 1/1/170 stop, report NEGATIVE with both sides' mask series (T7u's failure mode).*
+4. Port: set bit 15 at the banner-spawn site, clear it at step 2's cited site, make SEQ_04's leave `!mask & BANNER_BUSY`, delete SEQ04_FRAMES and BANNER_FRAMES → *report the diff, the cite count, fitted-constant count before/after (HEAD 19, target ≤17).*
+5. Re-run step 1 → *report the new divergence count and SEQ_04's enter/leave k on both sides.*
+6. `tools/verify_rows.py` (`row:ui=` form) → *report the 67-row table, that the mask export at :1762 now comes from the ported bitset, and that no other row's mask series changed.*
+
+**Rules.** Only the named files. The leave predicate is a bit test on a ported mask — never a frame count, never `banner_age >= N`, never a per-row case; SEQ04_FRAMES and BANNER_FRAMES are deleted, not retuned. If bit 15's clear site is not a ported routine, report the reading and keep the constant (NEGATIVE). No new harness row, no alignment/descriptor/flag change (FIXTURE_SIZE 67); fitted count must not rise; canon never changes; ≤3 capture runs; tool budget ≤100.
+
+**Acceptance.** battle_full sequencer divergence ≤20/540 (from 173) with SEQ_04 entering and leaving on canon's k; both frame constants gone; isBannerBusy_801E754 cited at asm00_2.s:31071 in src/battle.rs; cursor still 1/1/170; mettaur 0/0/70; windowclose 0/0/40; every isolated pixel row 0/0; no allowlist change; fitted ≤17. A NEGATIVE with both sides' mask series and the sequencer edges also closes it.
+
+**Measure and report.** rows: battle_full (trace), cursor, windowclose, mettaur, result, field, wave, popup, the chip rows. frames: 540/170/40/70/40/40/90/80/30. total/worst: divergence before/after, SEQ_04's span, both sides' mask words at 40..115. region: self.seq.state k=31..195. commit. one line of mechanism. one line of what is unverified (whether the 8 kill-timing frames at k=297..304 also shift, and whether bit 15's clear is the same event that ends opening's ENEMY DELETED banner).
+
+**Coordinator:** dispatch first and alone (its Files. name src/battle.rs, which no other live ticket touches). Worker = the run profile's resolved worker (T7u's class $0.395); verifier = the other family, on the step-2 clear-site cite. ≤$0.35 expected, ≤$0.70 cap, tool budget ≤100. Advances **M2** (165 of battle_full's 173 diverging frames) and the no-fitted-constants invariant.
+
