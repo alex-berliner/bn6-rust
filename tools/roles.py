@@ -48,10 +48,20 @@ def provider_of(model):
     return model.split("/")[0]
 
 
+def expired(cfg, provider):
+    """a subscription with an `expires` date in the past can buy nothing, whatever its probe says"""
+    import datetime
+    d = cfg["providers"][provider].get("expires")
+    try: return bool(d) and datetime.date.fromisoformat(str(d)) < datetime.date.today()
+    except ValueError: return False
+
+
 def budget(cfg, provider, phase):
     """0 ok, 1 no budget, 2 probe error; prints the probe's last line. Phases: --start (a run may start),
     --stop (a run may keep going), --tail (a one-shot session may run: stop_below plus the provider's oneshot_flags)"""
     p = cfg["providers"][provider]
+    if expired(cfg, provider):
+        print("%s: the plan expired on %s" % (provider, p.get("expires"))); return 1
     if p["kind"] == "subscription":
         need = p["start_above"] if phase == "--start" else p["stop_below"]
         extra = (" " + p["oneshot_flags"]) if phase == "--tail" and p.get("oneshot_flags") else ""
