@@ -1559,3 +1559,102 @@ Mechanism: rust-side fixture in tools/states.py TRACE_SCENARIOS['battle_full']['
 Measurements (post-scripted-input): self.seq.state on rust side traverses SEQ_08 (k=0..132) -> SEQ_24 (k=133..171) -> SEQ_00 (k=172..173) -> SEQ_04 (k=174..233) -> SEQ_08 (k=234..404) -> SEQ_0C (k=405..539) over the 540-frame capture. mm_state_action/mm_anim/mm_timer counts at k=179 drop 101/86/302 (HEAD) to 76/78/270 (T7r PARTIAL): all three below the baseline. T7q's seq.state gate in t1_player_entry (src/objects.rs:184) now fires for the SEQ_24/SEQ_00/SEQ_04 segment. Cursor 1/1/170 unchanged, mettaur 0/0/70, wave 0/0/90, popup 0/0/80, result 0/0/40, windowclose 0/0/40, buster 0/0/28, warp 0/0/30, field 0/0/40 (all 8 regression rows pass verify_rows with the same values as HEAD). fitted-constant count unchanged at 19 (no new literals in src/).
 
 What is unverified (per ticket's "one line of what is unverified"): the rust window opens ~100 frames later than canon's (canon frame 42 / k=31; rust frame ~124 / k=124) because the gauge_pause = 60 chimes model adds 60 frames between gauge-full and the SEQ_20 transition, on top of the 32+32 frame intro/enemy-appear; the k=179 group sits inside the window-open segment for both sides, but its mm_state_action/mm_anim/mm_timer counts only drop partway (76/78/270, not 0/0/0). Whether the residual closes with a sequencer-timing fix (gauge_pause shorter, or window open without chime delay) is the next ticket's decision, not this one's -- the rule says "no widening the change to make it move".
+
+## T26 — the custom-screen edge ladder: what each edge waits on (asm-walked, 2026-09-16)
+
+Baseline (re-measured, no edit): sequencer **273/540** divergent frames, first divergence **k=31**
+(canon 0x20, ours 0x08), identical to the ticket's prediction. Canon k-spans on word 0x0203CA70:
+0x1C 0..10, 0x08 11..41, 0x20 42..43, 0x24 44..143, 0x00 144..146, 0x04 147..206, 0x08 207..315,
+0x0C 316..554. Ours: 0x08 0..124, 0x24 125..171, 0x00 172..173, 0x04 174..233, 0x08 234..404,
+0x0C 405..542. Line numbers are from the pinned worktree copy of `asm00_1.s` (2026-09-15 22:53
+snapshot), re-opened on disk by verifier-hyper (2026-09-16), which corrected eight of them — this
+section carries the corrections. Every cite is anchored on a unique symbol or label
+(`sub_800855E`, `loc_80084BA`, ...) because bn6f re-cuts move line numbers: re-grep the symbol,
+not the number, when the reference is re-cut again.
+
+The state word 0x0203CA70 has TWO dispatch tables over it (`stepBannerSequencer_800801C`,
+asm00_1.s:10448, table `BannerSequencerStates_8008038` :10484 — ten entries, states 0x00..0x24;
+and `sub_80084F0` :11150 — seven entries, states 0x00..0x18, reached from a different battle-FSM
+state). The fight body the port models is the second table's state-0x04 handler `sub_800855E`
+(asm00_1.s:11206). The gauge-full arm and its twin:
+
+| arm site | file:line | predicate | writes |
+|---|---|---|---|
+| sub_800855E | asm00_1.s:11267-11274 | `isCustGaugeFullAndBattleLive_800A21C` (:15305) == 1 | `PauseBattle` (:11272) + 0x14 into [r5] (= 0x0203CA70; store :11273-11274), one frame |
+| sub_80089CC (twin) | asm00_1.s:11870-11878 | same | same |
+
+The 0x14 chain's waits live in `sub_8008840` (asm00_1.s:11597), which sub-dispatches on the byte
+**0x0203CA72** (`ldrb r0,[r5,#2]` :11600-11601) through `off_8008854` — four sub-states:
+
+| sub-state (byte 0x0203CA72) | handler | leaves on | count in state |
+|---|---|---|---|
+| 0 | sub_8008864 :11616 | `isBannerBusy_801E754` (:11632) == 0 → `strh 4,[r5,#2]` :11636 | none (spawns banner 0x54 :11626) |
+| 4 | sub_8008894 :11642 | [r5,#8] countdown (`mov r0,#0x1e` :11647) reaches 0 → `strh 8,[r5,#2]` :11657 | **0x1e = 30** |
+| 8 | sub_80088B2 :11663 | `isBannerBusy_801E754` (:11675) == 0 → `strh 0xc,[r5,#2]` :11679 | none (spawns banner 0x1c :11670) |
+| 0xC | sub_80088D6 :11685 | [r5,#8] countdown (`mov r0,#0x1e` :11690) reaches 0 → `strb 7,[r5,#4]` :11699-11700 + GameState_Unk_14=7 (:11703) | **0x1e = 30** |
+
+The chain never writes the state word 0x0203CA70; it exits through byte_203CA74=7
+(:11699-11700) + `oGameState_Unk_14=7` (:11703) + `eStruct200A008_setUnk02(1)`. Caveat
+(verifier-hyper): byte_203CA72 is a SHARED per-state latch field, not a global chain position —
+`bannerSeqState00Settle` latches it at :11034-11039, `bannerSeqState24WindowOpen` at
+:11098-11103, state 0x18's `sub_8008364` at :10944 — its value means "which sub-state of the
+CURRENT banner-table state", not "position in the 0x14 chain".
+
+### Per-edge table — banner-table states (what the trace field actually shows)
+
+| edge | canon predicate (asm00_1.s) | count in state | canon span (measured) | src/battle.rs line it replaces |
+|---|---|---|---|---|
+| SEQ_08 → SEQ_20 | `sub_800A244` :15327: gate `sub_800A8F8()`==1 (:15329-15331; the wrapper itself is TestBattleFlag_0x40, :16364) + !timeStop + !battleOver, then ORs both players' ready bytes `[sub_802E070(n)+0x50]` (:15340-15347); the L/R press test is `sub_800A29A` :15368-15398, called from :15350/:15357 — `ldrh [player+0x28]` :15372, HP-vs-0x2900 compare :15374, **key mask 0x300 (L\|R)** `ldr r2, off_800A2CC // =0x300` :15381, `tst r1,r2` :15382; the same flag also gates the SEQ_20/SEQ_24 handlers inline (:11060/:11092). When armed, `bannerSeqState08Fight`'s loc_800819A (:10681): `PauseBattle` :10682, `mov r0,#0x20; str r0,[r5]` :10683-10684. The earlier "gauge-full arm reaches the same window via the 0x14 chain" sentence is DISASSEMBLY-ONLY INFERENCE (verifier-hyper): battle_full's trace never shows 0x14 (observed low bytes exactly 0x1C,0x08,0x20,0x24,0x00,0x04,0x08,0x0C), so the measured route into the window is loc_800819A. | none | 2 (frames 42-43) | the arm at :2906-2908 (`gauge_pause = GAUGE_PAUSE`, GAUGE_PAUSE=60 :1116, provenance: peeked) and edge :3459 |
+| SEQ_20 → SEQ_24 | `bannerSeqState20WindowOpening_8008452` :11055: waits `sub_802D6C4` == 0 (:11076-11078, the two players' entry machines) → `mov r0,#0x24; str r0,[r5]` :11080-11081 | none | 2 | :3459 `SEQ_20 if self.seq.age >= 1` — a fitted 1-frame minimum with no cite, where canon waits on a busy flag |
+| SEQ_24 → SEQ_00 | `bannerSeqState24WindowOpen_8008492` :11087: waits `sub_801483C` (window slide idle) == 0 (:11095) → exits by `mov r0,#6; strb r0,[r5,#4]` :11106-11107 (byte_203CA74=6); the state word itself is written by the dispatcher's caller | none | 100 (player dwell in the open window) | — (ours has no SEQ_24 predicate; ours enters SEQ_24 directly from SEQ_08 :3459) |
+| SEQ_00 → SEQ_04 | `bannerSeqState00Settle_800840C` :11020: waits `sub_801483C` == 0 (:11031-11033) AND the [r5,#2] latch (:11034-11041) → `mov r0,#4; str r0,[r5]` :11048-11049 | none | 3 | :3460 `SEQ_00 if self.seq.age >= 2` — a fitted 2-frame minimum with no cite |
+| SEQ_04 → SEQ_08 | `bannerSeqState04BannerWait_8008064` :10517: arms `0x1e`=30 at [r5,#8] (:10530-10531) and 0x293=659 at [r5,#0xA]; spawns a banner record; waits `isBannerBusy_801E754` == 0 (:10565-10567) → `mov r0,#8; str r0,[r5]` :10578-10579 | none in the state — the observed 60 is the spawned banner record's lifetime, owned by isBannerBusy | 60 (frames 147-206) | :1186 `SEQ04_FRAMES=60` + :3461 `SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1` — models the banner's lifetime as a state-local age count |
+| SEQ_08 → SEQ_0C | `bannerSeqState08Fight` :10585: `getBattleOutcome_800A152` == 1 (cmp :10602) → `oBattleState_Unk_18 += 1`, `mov r0,#0xc; str r0,[r5]` :10615-10616 (loc_8008116 :10611) | none | 109 (frames 207-315) | over-gate :2725 `matches!(self.seq.state, SEQ_0C | SEQ_10)` |
+
+**Arithmetic test (step 3): NEGATIVE.** Walked counts vs measured spans: SEQ_20 0/2, SEQ_24 0/100,
+SEQ_00 0/3, SEQ_04 0/60 — **no per-state count reproduces any span**. Every timer in the family
+is the SHARED driver slot [r5,#8] = 0x0203CA78, armed/decremented at: :10530-10531 (SEQ_04,
+0x1e=30; aux 0x293=659 at [r5,#0xA] :10537), :10713-10714 + :10745/:10749 + :10767-10769
+(`bannerSeqState0CWinCount_80081A4`, 0x66=102), :10815/:10818/:10820 + :10832-10834
+(`bannerSeqState10LoseCount_800825A`, 0x66 or 0x5e), :10863
+(`bannerSeqState14MessageCount_80082DC` :10854, 0x66=102), :10939 (state 0x18's `sub_8008364`,
+counts UP to 0x3c=60), and the second dispatcher's copies (:11188/:11647/:11690, 0x1e=30).
+Every 2/100/3/60 span is a banner
+record lifetime or a busy/pad wait, owned outside the states. Per the ticket's acceptance, this
+NEGATIVE closes T26 and re-points T27 at the driver countdown + `isBannerBusy_801E754`
+(asm00_2.s:31073) rather than per-state constants.
+
+### Pad path (step 4)
+
+Canon: `refreshAIDataFromJoypad_8012DFC` (asm00_2.s:8972) copies the joypad mirror 0x02036822 into
+each AIData's JoypadHeld and derives JoypadPressed = ~held_prev & cur (asm00_2.s:8989-8993); in the
+live fight the open is armed by `sub_800A244` (asm00_1.s:15327) ORing both players' ready bytes.
+Canon's literal L|R mask (walked by verifier-hyper): `sub_800A29A` asm00_1.s:15368-15398 reads the
+joypad mirror dword_2036820 at key-slot +4 and tests **0x300 (L|R)** (`ldr r2, off_800A2CC //
+=0x300` :15381, `tst r1,r2` :15382) after the HP<0x2900 gate (:15372-15375); called from
+`sub_800A244` :15350/:15357. Corrective: `sub_800A244`'s gate is `sub_800A8F8()`==1
+(:15329-15331), not an inline TestBattleFlag_0x40 — that flag gates the SEQ_20/SEQ_24 handlers
+(:11060/:11092).
+Ours: src/battle.rs:2883-2886 — `if cfg!(debug_assertions) && (L is_just_pressed || R is_just_pressed)
+{ self.gauge_pause = 1; }` (the ticket's :2729-2732 moved to :2883 in the 357da2a re-cut). Harness
+builds with `cargo build --release` (tools/harness.py:272), so **in every measured capture the
+debug-only pad arm is compiled out and the player is not in the loop**.
+
+### State word (step 5)
+
+The 0x14 chain sub-dispatches on the byte **0x0203CA72** (`[r5,#2]`), selected at
+sub_8008840 :11600-11603 and written at :11636/:11657/:11679 — **not** 0x0203CA70. Same 12-byte
+struct (`sub_80084C0` zeroes 0xC bytes at 0x0203CA70, asm00_1.s:11113-11119; corroborated by
+ewram.s:3040-3046: `eBattleSequencerState_203CA70 .space 4` / `byte_203CA74 .space 6`), different
+byte. Corrections from verifier-hyper's reading of our own artifacts: byte_203CA72 is a SHARED
+per-state latch field (latched at :11034-11039, :11098-11103, :10944), not a global chain
+position, so T7y's gunner observation (0x0203CA70 = 0x00 for all 260 frames while the window
+opens) means the ladder's position is simply not visible in the traced word — a port must watch
+**0x0203CA70:8** (eight bytes, covering the +0 word, the +2 latch, the +3 arm and +4
+byte_203CA74), not 0x0203CA70 alone. And bytes +2/+3 of the 4-byte banner watch are LIVE in
+/tmp/bn-t26/tr_c/banner.bin (0x0000 k=0..42, 0x0400 k=43, 0x0404 k=145..146, 0x0400 k=148..206
+and k=317..554) while tools/trace.py masks the sequencer comparison to the low half (its comment
+at :285-287) — which is why the traced sequencer field alone cannot see the chain. Gunner-side
+holder of the observed 0x00: the second dispatcher's state-0x00 handler `sub_8008528` (:11189,
+arms 0x1e :11188, waits isBannerBusy :11196). (Writer cite is by table position;
+the gunner capture itself was not re-run — T7y's measurement stands.)
