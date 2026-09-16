@@ -391,32 +391,13 @@ const fn sheet_palette(id: u16) -> usize {
 const SEED_PALETTE_ICE: usize = 1; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
 const SEED_PALETTE_GRAS: usize = 2; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
 const SEED_PALETTE_POIS: usize = 3; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
-const fn seed_or_bomb_palette(element: u8, thrown: bool) -> usize {
-    // Seed elements per data/ChipDataArr.s: IceSeed 0x01 (AQUA, line 2175),
-    // GrasSeed 0x03 (WOOD, line 2144), PoisSeed 0x07 (OBSTACLE, line 2113) --
-    // the seed palette is the record's attack_param_2 in ROM, matched to the
-    // element here so the bomb path can stay record-driven. BugBomb shares
-    // element 0x03 (WOOD) but its palette is 0 (the old
-    // `CHIP_BUGBOMB | CHIP_VDOLL => 0` arm's intent), and VDoll shares 0x07
-    // but also takes 0: the seed palette WIN by element because the BOMBS
-    // are routed through a different element value (CURSOR 0x06 / NONE 0x0A).
-    match element {
-        0x01 => SEED_PALETTE_ICE,
-        0x03 => SEED_PALETTE_GRAS,
-        0x07 => SEED_PALETTE_POIS,
-        _ => bomb_palette_from_element(element),
-    }
-}
-
-// Wrapper so the bomb-palette dispatch stays a single per-chip call: the
-// bomb_palette family helper needs family+subfamily, which seed_or_bomb_palette
-// does not have (it dispatches on element alone). Bomb-specific palettes for
-// BlkBomb/BigBomb (the NONE-element bombs) are set directly in the chip_strike
-// bomb block via bomb_palette(chip.family, chip.subfamily, chip.element, _).
-const fn bomb_palette_from_element(element: u8) -> usize {
-    match element {
-        x if x == CHIP_ELEM_CURSOR_U8 => BOMB_PALETTE_ENER,
-        _ => 0,
+const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
+    match id {
+        CHIP_ICESEED => SEED_PALETTE_ICE,
+        CHIP_GRASSEED => SEED_PALETTE_GRAS,
+        CHIP_POISSEED => SEED_PALETTE_POIS,
+        CHIP_BUGBOMB | CHIP_VDOLL => 0,
+        _ => bomb_palette(id, thrown),
     }
 }
 /// The poison sheet's animation and how long it runs, from the sprite's own
@@ -929,15 +910,18 @@ const fn bomb_anim(element: u8, thrown: bool) -> usize {
     }
 }
 
-const fn bomb_palette(family: u8, subfamily: u8, element: u8, thrown: bool) -> usize {
-    // BlkBomb: family 0x12 sub 0x01, held only (data/ChipDataArr.s:1708).
-    // BigBomb: family 0x12 sub 0x0F, both (data/ChipDataArr.s:6265).
-    // Energ/Flash: CURSOR element, both (data/ChipDataArr.s:1336/1367/1398).
-    // Everyone else (MiniBomb, default): 0.
-    match (family, subfamily, thrown) {
-        (BOMB_FAMILY_BLK_BIG, BOMB_SUB_BLKBOMB, false) => BOMB_PALETTE_BLK_HELD,
-        (BOMB_FAMILY_BLK_BIG, BOMB_SUB_BIGBOMB, _) => BOMB_PALETTE_BIG,
-        _ if element == CHIP_ELEM_CURSOR_U8 => BOMB_PALETTE_ENER,
+const fn bomb_palette(id: u16, thrown: bool) -> usize {
+    match (id, thrown) {
+        (CHIP_BLKBOMB, false) => BOMB_PALETTE_BLK_HELD,
+        (CHIP_BIGBOMB, _) => BOMB_PALETTE_BIG,
+        // EnergBom and MegEnBom are MiniBomb's own held sprite row in
+        // another palette (byte_80EB738 pair 1, asm31.s:108898), and they
+        // throw through the same sub_80C5DBC. The exporter's palette order is
+        // not the ROM's, so the index is the measured one: the real held bomb
+        // is grey with brown and orange, and palette 5 is the only one of
+        // sprite_82F569C's thirteen that holds all of those colours. The
+        // asset is exported with every palette so that index exists.
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, _) => BOMB_PALETTE_ENER,
         _ => 0,
     }
 }
@@ -4188,7 +4172,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 if seed || chip.id == CHIP_BUGBOMB {
                     held.set_offsets_follow_shift(true);
                 }
-                held.set_palette_add(seed_or_bomb_palette(chip.element, false));
+                held.set_palette_add(seed_or_bomb_palette(chip.id, false));
                 // The flash bomb's sprite carries its own part offsets, which
                 // sit 22 right and 10 down of where the bomb sprite's do:
                 // measured from the held ball's centre, (37,88) on the real
@@ -4494,7 +4478,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 if seed || chip.id == CHIP_BUGBOMB {
                     thrown.set_offsets_follow_shift(true);
                 }
-                thrown.set_palette_add(seed_or_bomb_palette(chip.element, true));
+                thrown.set_palette_add(seed_or_bomb_palette(chip.id, true));
                 self.bombs.push(Bomb {
                     player: thrown,
                     // BigBomb is the unique family 0x12 subfamily 0x0F
