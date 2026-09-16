@@ -10,6 +10,12 @@ HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. .*\*\((OPEN)\b.*\)\*\s*$", re.M)
 p = sys.argv[1]; text = open(p).read()
 todo = open(os.path.join(ROOT, "TODO.md")).read(); arch = open(os.path.join(ROOT, "TODO_ARCHIVE.md")).read()
 known = set(re.findall(r"^### ([A-Z]+\d+[a-z]?)\. ", todo + arch, re.M)) | set(re.findall(r"^- ([A-Z]+\d+[a-z]?) ", todo, re.M))
+# statuses of every ticket, to refuse proposals that continue an objective a NEGATIVE or BLOCKED ticket just closed
+STATUS = {}
+for m in re.finditer(r"^### ([A-Z]+\d+[a-z]?)\. .*?\*\((\w+)\b", todo + arch, re.M): STATUS[m.group(1)] = m.group(2)
+for m in re.finditer(r"^- ([A-Z]+\d+[a-z]?) (\w+) -- ", todo + arch, re.M): STATUS.setdefault(m.group(1), m.group(2))
+# a daily cap: the judge minted three chained dead ends an hour overnight on 2026-09-16
+today_batches = subprocess.run("git -C %s log --since='%s 00:00' --format=%%s | grep -c judge-admitted" % (ROOT, __import__('datetime').date.today().isoformat()), shell=True, capture_output=True, text=True).stdout.strip()
 heads = list(HEAD.finditer(text)); admitted, refused = [], []
 for i, m in enumerate(heads):
     body = text[m.start():heads[i + 1].start() if i + 1 < len(heads) else len(text)].rstrip() + "\n\n"
@@ -19,6 +25,10 @@ for i, m in enumerate(heads):
     if "**Acceptance.**" not in body and "**Measure and report.**" not in body: why.append("no acceptance")
     if not re.search(r"\bM(1[01]|[1-9])\b", body) and not re.search(r"\b(follows|follow-up to|after) [A-Z]+\d+[a-z]?\b", body): why.append("no milestone or predecessor")
     if len(body) > 9000: why.append("too long (over 9000 characters; the judge is asked for 5000)")
+    whytext = re.search(r"\*\*Why\.\*\*(.*?)(?=\n\*\*|\Z)", body, re.S); whytext = whytext.group(1) if whytext else body
+    dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
+    if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
+    if today_batches.isdigit() and int(today_batches) >= 3: why.append("daily cap: %s judge batches already admitted today" % today_batches)
     (refused if why else admitted).append((tid, why, body))
 if admitted:
     # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section
