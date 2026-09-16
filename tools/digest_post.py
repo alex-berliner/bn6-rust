@@ -189,6 +189,7 @@ def main():
     ap.add_argument("--since", type=float, default=24.0); ap.add_argument("--review")
     ap.add_argument("--no-model", action="store_true"); ap.add_argument("--post", action="store_true")
     ap.add_argument("--body", help="use this file's text as the day's account (reviewed by hand) instead of asking the model")
+    ap.add_argument("--title", help="the post's title (default: 'Daily digest, <today>')")
     a = ap.parse_args()
     since = "%d hours ago" % int(a.since); today = datetime.date.today().isoformat()
     review = a.review or ("docs/reviews/%s.md" % today)
@@ -224,7 +225,7 @@ def main():
     # 3. the post
     done = [r for r in results if r[2] == "DONE"]; part = [r for r in results if r[2] == "PARTIAL"]
     stuck = [r for r in results if r[2] in ("BLOCKED", "NEGATIVE")]
-    title = "Daily digest, %s" % datetime.date.today().strftime("%-d %B %Y")
+    title = a.title or "Daily digest, %s" % datetime.date.today().strftime("%-d %B %Y")
     facts = "\n".join(r[3] for r in results) + "\n" + score + "\n" + "\n".join(failing) + "\n" + ledger + "\n" + "\n".join(hyper)
     out = []                                     # blog.py writes the title itself; the body must not repeat it
     out.append(ORIENTATION); out.append("")
@@ -268,9 +269,10 @@ def main():
     md = "\n".join(out)
     if not a.post:
         print(md); return
-    slug_exists = glob.glob("web/blog/posts/%s-daily-digest*.md" % today)
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
+    slug_exists = glob.glob("web/blog/posts/%s-%s.md" % (today, slug))
     if slug_exists:
-        print("digest: already posted today (%s)" % slug_exists[0]); return
+        print("digest: already posted (%s)" % slug_exists[0]); return
     subprocess.run(["python3", "tools/blog.py", "new", title], input=md, text=True, check=True)
     cmd = ("exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add web/blog && git commit -q -m 'blog: %s (tools/digest_post.py)\n\n"
            "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>' && git push -q origin main && bash tools/publish_site.sh --no-build" % title)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The daily cost-per-progress review (agreed 2026-09-13): joins ticket outcome to model and cost,
 # re-measures the scoreboard, computes the metrics, evaluates the auditor's triggers, and writes
-# docs/reviews/<date>.md. Meant for a machine cron (see the crontab line in HANDOFF); it changes
+# docs/reviews/<date>.md. Meant for a machine cron at 06:00 (the user, 2026-09-16; was 09:15); it changes
 # nothing but that file and, when triggered, runs tools/pi_audit.sh (a cent, read-only) whose
 # proposal a human session applies. Model switches are never made here: they need the replay
 # benchmark (tools/replay_bench.py) and the pre-agreed rule in docs/config-log.md.
