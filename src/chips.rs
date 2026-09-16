@@ -24,6 +24,63 @@ pub const PICTURE_TILES: (usize, usize) = (7, 6); // provenance: derived -- sub_
 /// Code byte for '*', which matches any other (sub_8028E4C, asm03_0.s:5595).
 pub const WILDCARD: u8 = 0x1a; // provenance: derived -- sub_8028E4C, asm03_0.s:5595
 
+// ----------------------------------------------------------------------------
+// T28 minimal first step: chip-state byte reader at 0x02014F6C.
+//
+// The address sits inside the unnamed 0xA00-byte block `unk_2014000` at
+// 0x02014000 (reference/bn6f/ewram.s:1821; bn6f.map:6203-6204 -- the block
+// ends at 0x02014A00, the next symbol `eDecompBuffer2014A00`). No public
+// symbol or per-asm cite for 0x02014F6C exists in the repo (grep over
+// reference/bn6f/{asm,include,data,ewram}.s and bn6f.map finds no
+// `chip_state`, `14F6C`, `2014F6` token). The 8-chip x 4-byte layout is
+// cited from T28 (TODO.md:613+); the state field is the first byte of the
+// 4-byte record (T28's "chip_state_byte"). Subsequent T28 steps will name
+// the remaining three bytes and wire the arms (Recov/Barrier/Vulcan) to
+// read them; this commit only adds the reader.
+
+/// EWRAM base of the chip-state array (T28). Sits at offset 0xF6C inside
+/// `unk_2014000` (reference/bn6f/ewram.s:1821).
+pub const CHIP_STATE_BASE: u32 = 0x02014F6C; // canon: unk_2014000 + 0xF6C (reference/bn6f/ewram.s:1821)
+
+/// 8 entries: one per chip slot in the player's hand.
+pub const CHIP_STATE_COUNT: usize = 8; // provenance: derived -- T28 task description ("8 chips x 4 bytes struct")
+
+/// 4-byte stride per entry (1 state byte + 3 unnamed bytes, filled by later T28 steps).
+pub const CHIP_STATE_STRIDE: usize = 4; // provenance: derived -- T28 task description ("8 chips x 4 bytes struct")
+
+/// One entry of the chip-state array. Only the state byte is wired in this commit.
+#[derive(Clone, Copy)]
+pub struct ChipState {
+    /// The chip's state byte (offset 0 of the 4-byte record at `0x02014F6C + i*4`).
+    pub state: u8,
+    // canon: 8-chip hand record at 0x02014F6C (reference/bn6f/ewram.s:1821, unk_2014000 + 0xF6C)
+}
+
+/// Read one chip-state entry from the EWRAM array at 0x02014F6C.
+///
+/// `index` is the hand slot (0..CHIP_STATE_COUNT). The reader is a
+/// `unsafe` raw pointer read because the array lives in EWRAM (0x02000000
+/// range) and is not aliased by any `&'static` in this crate; later T28
+/// steps wrap it behind a safe accessor in `src/battle.rs` per the file
+/// list ("src/chips.rs: accessors for the record bytes used, nothing
+/// else").
+///
+/// # Safety
+/// Caller must ensure `index < CHIP_STATE_COUNT` and that the read happens
+/// inside a battle main loop where 0x02014F6C has been populated (the
+/// subsystem byte at 0x02001B80 is 12). Outside that window the bytes are
+/// the freed-heap fill the rest of `unk_2014000` carries (AGENT_GUIDE.md
+/// "Freed-heap fill patterns 0x11/0x22 look like state").
+pub unsafe fn read_chip_state(index: usize) -> ChipState {
+    debug_assert!(index < CHIP_STATE_COUNT);
+    let base = CHIP_STATE_BASE as usize + index * CHIP_STATE_STRIDE;
+    // SAFETY: the caller upholds the safety contract above; the pointer is
+    // 4-byte aligned because CHIP_STATE_BASE (0x02014F6C) and the stride
+    // (4) are both 4-byte aligned.
+    let p = base as *const u8;
+    ChipState { state: *p }
+}
+
 pub struct Chips {
     data: &'static [u8],
     count: usize,
