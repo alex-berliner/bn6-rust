@@ -1628,8 +1628,26 @@ FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
 #:     it from the counters as the plain->4 residual series H [2,1] period-2,
 #:     V [1,0,1,1] period-4 at the old seed, the cycle's negation.
 #:     // canon: eBGScrollCBCounters at 0x02009690, canon caps 135..174,
-#:     /tmp/bn-f47/canon_scrollcnt.bin + /tmp/bn-t25-watch (T25, re-solved
-#:     T29).
+#:     /tmp/bn-f47/canon_scrollcnt.bin (captured 21:55 this session's T25 run).
+#:     OURS: /tmp/bn-t25-watch -- AND NOTE ITS OWN SEED, because a solver that
+#:     misses it gets a self-consistent wrong answer (T31 hit exactly that):
+#:     that stream is the OLD 466/745 capture (its files are timestamped
+#:     2026-09-15 21:55:50, 31 min BEFORE 718fba5 moved the pair, and the dump
+#:     proves it independently -- x_q is all-even across 210 watches with
+#:     SCROLL_X_Q = 2, so parity is invariant and no odd seed can produce it;
+#:     the anchor reads x_q[8]=470 = 466+2*2, y_q[8]=747 = 745+2 at battle
+#:     frame 0). Therefore every seed in items (1)-(3) above is a SHIFT APPLIED
+#:     TO A 466/745 MIRROR (candidate s -> mirror + (s-466) in x, + (s-745) in
+#:     y), never a value read out of a 471/748 capture, and what the dump
+#:     validates directly is only the OLD-seed series in (3). That dir's kept
+#:     analyze.py is a superseded convention (canon 135+k <-> mirror 113+k,
+#:     fold mod 512) and reproduces nothing; the validated model is
+#:     one-capture-later + equality mod the 256-px content period. T31's
+#:     verifier re-derived (1)'s sets from these two files alone in `field`'s
+#:     own row indices (canon 130+k <-> rust 116+k -- same model, k relabelled
+#:     by 5, the canon-rust gap is 14 in both) and got H {471,472} / V {748}
+#:     for the ramp and k=0..2's {465,466} / {744,745,746}, disjoint: see
+#:     docs/worklog/T31.md step 3.
 #: (4) T31 (2026-09-16): MEASURED verdict on the k=0..2 group of field's
 #:     integrated residue (15823 px = 5806+5319+4698, full height, cols
 #:     0..227): NOT SCROLL -- no seed and no pixel shift reduces it. Two
