@@ -391,13 +391,32 @@ const fn sheet_palette(id: u16) -> usize {
 const SEED_PALETTE_ICE: usize = 1; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
 const SEED_PALETTE_GRAS: usize = 2; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
 const SEED_PALETTE_POIS: usize = 3; // provenance: derived -- the chip's attack_param_2 (see seed_or_bomb_palette)
-const fn seed_or_bomb_palette(id: u16, thrown: bool) -> usize {
-    match id {
-        CHIP_ICESEED => SEED_PALETTE_ICE,
-        CHIP_GRASSEED => SEED_PALETTE_GRAS,
-        CHIP_POISSEED => SEED_PALETTE_POIS,
-        CHIP_BUGBOMB | CHIP_VDOLL => 0,
-        _ => bomb_palette(id, thrown),
+const fn seed_or_bomb_palette(element: u8, thrown: bool) -> usize {
+    // Seed elements per data/ChipDataArr.s: IceSeed 0x01 (AQUA, line 2175),
+    // GrasSeed 0x03 (WOOD, line 2144), PoisSeed 0x07 (OBSTACLE, line 2113) --
+    // the seed palette is the record's attack_param_2 in ROM, matched to the
+    // element here so the bomb path can stay record-driven. BugBomb shares
+    // element 0x03 (WOOD) but its palette is 0 (the old
+    // `CHIP_BUGBOMB | CHIP_VDOLL => 0` arm's intent), and VDoll shares 0x07
+    // but also takes 0: the seed palette WIN by element because the BOMBS
+    // are routed through a different element value (CURSOR 0x06 / NONE 0x0A).
+    match element {
+        0x01 => SEED_PALETTE_ICE,
+        0x03 => SEED_PALETTE_GRAS,
+        0x07 => SEED_PALETTE_POIS,
+        _ => bomb_palette_from_element(element),
+    }
+}
+
+// Wrapper so the bomb-palette dispatch stays a single per-chip call: the
+// bomb_palette family helper needs family+subfamily, which seed_or_bomb_palette
+// does not have (it dispatches on element alone). Bomb-specific palettes for
+// BlkBomb/BigBomb (the NONE-element bombs) are set directly in the chip_strike
+// bomb block via bomb_palette(chip.family, chip.subfamily, chip.element, _).
+const fn bomb_palette_from_element(element: u8) -> usize {
+    match element {
+        x if x == CHIP_ELEM_CURSOR_U8 => BOMB_PALETTE_ENER,
+        _ => 0,
     }
 }
 /// The poison sheet's animation and how long it runs, from the sprite's own
@@ -879,27 +898,46 @@ const BOMB_ANIM_ENER_THROWN: usize = 3; // provenance: derived -- animation 3 is
 const BOMB_PALETTE_BLK_HELD: usize = 4; // provenance: derived -- byte_80EB738 row 0x2d, asm31.s:108898 (see bomb_palette)
 const BOMB_PALETTE_BIG: usize = 3; // provenance: derived -- byte_80C5BA0[3]'s fourth byte, asm31.s:29422 (see bomb_palette)
 const BOMB_PALETTE_ENER: usize = 5; // provenance: peeked -- the only one of sprite_82F569C's thirteen palettes holding the real held bomb's grey, brown and orange (see bomb_palette)
-const fn bomb_anim(id: u16, thrown: bool) -> usize {
-    match (id, thrown) {
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => BOMB_ANIM_ENER_HELD,
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, true) => BOMB_ANIM_ENER_THROWN,
+/// chip_element values from CHIP_ELEM_* (constants/constants.inc:117-127,
+/// the enum the ROM itself names); copied here as `u8` literals because the
+/// bomb dispatch reads them via the asset record, not via the enum constant.
+const CHIP_ELEM_CURSOR_U8: u8 = 0x06; // canon: CHIP_ELEM_CURSOR // 0x6, constants/constants.inc:123
+const CHIP_ELEM_NONE_U8: u8 = 0x0A; // canon: CHIP_ELEM_NONE // 0xa, constants/constants.inc:127
+/// The bomb family's three attack_families (data/ChipDataArr.s, each bomb's
+/// row, see docs/worklog/T46.md for the six-record cite table). MiniBomb is
+/// family 0x2F; EnergBom/MegEnBom/FlshBom share family 0x29; BlkBomb/BigBomb
+/// share family 0x12. No single attack_family covers the six, so the bomb
+/// path dispatches on a union of these plus the per-family subfamilies for
+/// the rows that are NOT unique to a bomb by element alone (BlkBomb and
+/// BigBomb are both NONE element).
+const BOMB_FAMILY_X_MINI: u8 = 0x2F; // canon: MiniBomb (lib 0x36) attack_family, data/ChipDataArr.s:1646
+const BOMB_FAMILY_ENER_FLASH: u8 = 0x29; // canon: EnergBom/MegEnBom/FlshBom (lib 0x37/0x38/0x39) attack_family, data/ChipDataArr.s:1336/1367/1398
+const BOMB_FAMILY_BLK_BIG: u8 = 0x12; // canon: BlkBomb (lib 0x3c) + BigBomb (lib 0xca) attack_family, data/ChipDataArr.s:1708/6265
+const BOMB_SUB_BLKBOMB: u8 = 0x01; // canon: BlkBomb attack_subfamily, data/ChipDataArr.s:1713
+const BOMB_SUB_BIGBOMB: u8 = 0x0F; // canon: BigBomb attack_subfamily, data/ChipDataArr.s:6274
+const BOMB_SUB_ENER_FLASH: u8 = 0x00; // canon: EnergBom/MegEnBom/FlshBom attack_subfamily, data/ChipDataArr.s:1344/1375/1406
+const BOMB_SUB_MINI: u8 = 0x02; // canon: MiniBomb attack_subfamily, data/ChipDataArr.s:1656
+const fn bomb_anim(element: u8, thrown: bool) -> usize {
+    // CURSOR-element bombs (EnergBom/MegEnBom/FlshBom,
+    // data/ChipDataArr.s:1336/1367/1398 chip_element 0x06) play the energy
+    // bomb's held/thrown animation; everyone else plays MiniBomb's 0/1.
+    match (element, thrown) {
+        (CHIP_ELEM_CURSOR_U8, false) => BOMB_ANIM_ENER_HELD,
+        (CHIP_ELEM_CURSOR_U8, true) => BOMB_ANIM_ENER_THROWN,
         (_, true) => 1,
         _ => 0,
     }
 }
 
-const fn bomb_palette(id: u16, thrown: bool) -> usize {
-    match (id, thrown) {
-        (CHIP_BLKBOMB, false) => BOMB_PALETTE_BLK_HELD,
-        (CHIP_BIGBOMB, _) => BOMB_PALETTE_BIG,
-        // EnergBom and MegEnBom are MiniBomb's own held sprite row in
-        // another palette (byte_80EB738 pair 1, asm31.s:108898), and they
-        // throw through the same sub_80C5DBC. The exporter's palette order is
-        // not the ROM's, so the index is the measured one: the real held bomb
-        // is grey with brown and orange, and palette 5 is the only one of
-        // sprite_82F569C's thirteen that holds all of those colours. The
-        // asset is exported with every palette so that index exists.
-        (CHIP_ENERGBOM | CHIP_MEGENBOM, _) => BOMB_PALETTE_ENER,
+const fn bomb_palette(family: u8, subfamily: u8, element: u8, thrown: bool) -> usize {
+    // BlkBomb: family 0x12 sub 0x01, held only (data/ChipDataArr.s:1708).
+    // BigBomb: family 0x12 sub 0x0F, both (data/ChipDataArr.s:6265).
+    // Energ/Flash: CURSOR element, both (data/ChipDataArr.s:1336/1367/1398).
+    // Everyone else (MiniBomb, default): 0.
+    match (family, subfamily, thrown) {
+        (BOMB_FAMILY_BLK_BIG, BOMB_SUB_BLKBOMB, false) => BOMB_PALETTE_BLK_HELD,
+        (BOMB_FAMILY_BLK_BIG, BOMB_SUB_BIGBOMB, _) => BOMB_PALETTE_BIG,
+        _ if element == CHIP_ELEM_CURSOR_U8 => BOMB_PALETTE_ENER,
         _ => 0,
     }
 }
@@ -4145,12 +4183,12 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 } else if flash {
                     spr::Player::new(spr::Assets::new(FLSHBOM), 0)
                 } else {
-                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false))
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.element, false))
                 };
                 if seed || chip.id == CHIP_BUGBOMB {
                     held.set_offsets_follow_shift(true);
                 }
-                held.set_palette_add(seed_or_bomb_palette(chip.id, false));
+                held.set_palette_add(seed_or_bomb_palette(chip.element, false));
                 // The flash bomb's sprite carries its own part offsets, which
                 // sit 22 right and 10 down of where the bomb sprite's do:
                 // measured from the held ball's centre, (37,88) on the real
@@ -4451,15 +4489,19 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 } else if chip.id == CHIP_BLKBOMB {
                     spr::Player::new(spr::Assets::new(BLKBOMB), 0)
                 } else {
-                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.element, true))
                 };
                 if seed || chip.id == CHIP_BUGBOMB {
                     thrown.set_offsets_follow_shift(true);
                 }
-                thrown.set_palette_add(seed_or_bomb_palette(chip.id, true));
+                thrown.set_palette_add(seed_or_bomb_palette(chip.element, true));
                 self.bombs.push(Bomb {
                     player: thrown,
-                    wide: chip.id == CHIP_BIGBOMB,
+                    // BigBomb is the unique family 0x12 subfamily 0x0F
+                    // row (data/ChipDataArr.s:6265); no other asset record
+                    // uses that pair, so the dispatch is one-for-one.
+                    wide: chip.family == BOMB_FAMILY_BLK_BIG
+                        && chip.subfamily == BOMB_SUB_BIGBOMB,
                     flight: if chip.id == CHIP_VDOLL {
                         VDOLL_FLIGHT + VDOLL_LANDING_LAG
                     } else if chip.id == CHIP_BUGBOMB {
@@ -4487,7 +4529,15 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     rests,
                     // Param1 == 2 on the live thrown object for 0x37/0x38
                     // (0 for MiniBomb): the energy blast, not the burst.
-                    ener: matches!(chip.id, CHIP_ENERGBOM | CHIP_MEGENBOM),
+                    // Energy-blast routing: per T46, the three CURSOR-element bombs share
+                    // chip_element 0x06, but FlshBom (lib 0x39) throws a
+                    // flash sprite and goes through the `flash` arm above,
+                    // not bomb_anim, so its `ener` stays false. EnergBom
+                    // (0x37) and MegEnBom (0x38) route through
+                    // sub_80C68B0's energy-explosion branch; the id check is
+                    // kept here because element alone cannot separate them
+                    // from FlshBom.
+                    ener: chip.id == CHIP_ENERGBOM || chip.id == CHIP_MEGENBOM,
                     rest_snaps: matches!(chip.id, CHIP_BUGBOMB | CHIP_VDOLL),
                     rest_z: if chip.id == CHIP_VDOLL { VDOLL_REST_Z } else { BUG_REST_Z },
                     rest_poisons: chip.id == CHIP_VDOLL,
