@@ -133,6 +133,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import chip_compare as cc  # noqa: E402
 import harness as H  # noqa: E402
+import states as S  # noqa: E402
 
 # --- the field model ---------------------------------------------------------
 
@@ -189,6 +190,12 @@ ENEMY_SLOT = {
     "cursor": 2,
     "windowclose": 2,
     "result": 2,
+    # T47 (2026-09-16): battle_full scenario (states.TRACE_SCENARIOS) is a
+    # 540-frame scripted PAUSED battle against a single Mettaur (kind=0),
+    # the same enemy family as the mettaur row -- the populated canon slot
+    # is the SECOND T1 entry, 0x0203ab60 (ALIVE proof: 0x0203ab84 =
+    # 0x0203ab60 + oBattleObject_HP).
+    "battle_full": 2,
 }
 
 #: fields watched and printed but NEVER compared: the two FIXTURES disagree
@@ -326,12 +333,59 @@ def compare(rust_rows: list, canon_mm: list, canon_enemy: list,
     return out
 
 
+def _scenario_check(name: str) -> H.Check:
+    """Build a synthetic H.Check from a states.TRACE_SCENARIOS scenario so
+    the oracle can run on non-comparison scenarios (T47: battle_full).
+
+    Sides come from the scenario's own spec dict: rust = fixture+script,
+    canon = rom+loadstate+cheats+script. Alignment is the scenario's own
+    canon_ref/rust_base pairing (the same one tools/trace.py uses). The
+    marker on the rust side is the harness's own boot marker -- the
+    fixture writes it from BATT onward (src/main.rs's Battle::update), so
+    H.run()'s find_marker_origin still gives a usable origin.
+    """
+    scen = S.TRACE_SCENARIOS[name]
+
+    def rust_factory(_variant: str) -> H.Side:
+        spec = dict(scen["rust"])
+        fixture = spec.pop("fixture", None)
+        return H.Side(rom=H.plain_rom(), fixture=fixture,
+                      script=spec.pop("script", None),
+                      extra=tuple(spec.pop("extra", ())),
+                      **{k: v for k, v in spec.items()
+                         if k in ("loadstate", "cheats", "pokes", "pokes_at",
+                                  "zero")})
+
+    def canon_factory(_variant: str) -> H.Side:
+        spec = dict(scen["canon"])
+        return H.Side(**{k: v for k, v in spec.items()
+                         if k in ("rom", "loadstate", "script", "cheats",
+                                  "pokes", "pokes_at", "zero", "extra",
+                                  "features", "fixture")})
+
+    return H.Check(
+        name=name, ui="isolated", frames=scen["frames"],
+        align=H.Align(canon_ref=scen["canon_ref"], rust_offset=scen["rust_base"],
+                      search=None,
+                      note="scenario %s alignment from states.TRACE_SCENARIOS"
+                           % name),
+        rust=rust_factory, canon=canon_factory,
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("row")
     ap.add_argument("--shift", type=int, default=0,
                     help="canon side shifted N frames later (the negative "
                          "control is --shift 1 on the same captures)")
+    ap.add_argument("--both", action="store_true",
+                    help="accepted for compatibility with the battle_full "
+                         "ticket's documented invocation; the oracle on a "
+                         "harness row already watches BOTH sides (rust "
+                         "ORCL block + canon RNG/MM/enemy/gauge), so this "
+                         "flag is a no-op kept to keep tool invocations "
+                         "from erroring out (T47, 2026-09-16)")
     args = ap.parse_args()
 
     if args.row == "rollup":
@@ -340,10 +394,17 @@ def main() -> None:
             "run_rollup): it has no Sides and no Align to reuse, so there is "
             "nothing for the oracle to watch on a canon side")
     checks = [c for c in H.CHECKS if c.name == args.row]
+    if not checks and args.row in H.SCENARIO_ROWS:
+        # T47 (2026-09-16): the scenario path is a non-comparison scenario
+        # whose Sides and alignment live in states.TRACE_SCENARIOS, not in
+        # CHECKS. Build a synthetic Check and route through the same flow.
+        checks = [_scenario_check(args.row)]
     if not checks:
         raise SystemExit(
-            "unknown row %r: harness.py --list names the rows (rollup is a "
-            "no-crash walk, not a comparison)" % (args.row,))
+            "unknown row %r: harness.py --list names the rows, "
+            "tools/harness.py SCENARIO_ROWS lists the non-comparison "
+            "scenarios (%s); rollup is a no-crash walk, not a comparison"
+            % (args.row, ", ".join(H.SCENARIO_ROWS)))
     check = checks[0]
     if check.ui not in ("isolated", "integrated", "both"):
         raise SystemExit("row %s has ui=%r; the oracle runs one variant"
