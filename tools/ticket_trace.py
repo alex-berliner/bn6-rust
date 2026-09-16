@@ -41,7 +41,9 @@ def children_for(tid):
     """every child session that worked this ticket: its report names the ticket most often, or the task it was
     given names it (a verifier is told "Branch wt/q3-..., commit ...", so the report alone misses it)"""
     out = []
-    word = re.compile(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(tid), re.I)
+    # a task belongs to the ticket when it IS the ticket (its heading) or names its branch; a passing mention
+    # of another ticket in a Why paragraph is not enough (T57's task cites T52, 2026-09-16)
+    word = re.compile(r"(^|\n)###\s*%s\.|wt/%s[-_/ ]|branch\s+%s\b|ticket\s+%s\b" % ((re.escape(tid),) * 4), re.I)
     for meta in glob.glob("/tmp/bn-pi/*/session/subagent-artifacts/*_meta.json"):
         rep = meta.replace("_meta.json", "_output.md")
         transcript = meta.replace("_meta.json", "_transcript.jsonl")
