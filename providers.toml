@@ -107,8 +107,10 @@ stop_below = 1                            # exhausted (0).
 tail = false
 reset = "rolling 5h"                      # measured 2026-09-16: the window allowed about 2.5 replay tickets before
                                           # "Usage limit reached for 5 hour" (resets on the hour it names)
-price_usd_per_month = 0                   # fill in what the plan costs
-daily_credits = 1
+price_usd_per_month = 18                  # the user's plan, 2026-09-16
+daily_credits = 1428                      # 10,000 credits a week (the dashboard's weekly bar), so ~1,430 a day;
+                                          # a 5-hour window holds 2,000 of them and one replay ticket costs ~670,
+                                          # which is about 15 tickets a week against Hyper's ~25 a day
 oneshot_flags = ""
 
 [providers.zai.pacer]
