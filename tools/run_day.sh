@@ -30,7 +30,11 @@ for name in $RUNS; do
   if [ -s /tmp/bn-bench/queue ]; then
     q="$(head -1 /tmp/bn-bench/queue)"; set -- $q; qrun="$1"; qt="$2"; qm="${3:--}"; qv="${4:--}"; qx="${5:--}"
     qprov="$(python3 tools/roles.py providers "$qrun" 2>/dev/null)"
-    if [ -n "$qprov" ] && python3 tools/roles.py budget "${qprov%% *}" --start >/dev/null 2>&1; then
+    # the queued benchmark's OWN provider must be free: this loop runs once per scheduled profile, and on
+    # 2026-09-16 the minimax iteration launched a hyper-queued benchmark beside the hyper one already running
+    qbusy=""; for p in $qprov; do [ -f "/tmp/bn-bench/$p.lock" ] && kill -0 "$(cut -d' ' -f1 "/tmp/bn-bench/$p.lock")" 2>/dev/null && qbusy="$p"; done
+    if [ -n "$qbusy" ]; then echo "queued benchmark waits: $qbusy is busy"
+    elif [ -n "$qprov" ] && python3 tools/roles.py budget "${qprov%% *}" --start >/dev/null 2>&1; then
       sed -i '1d' /tmp/bn-bench/queue
       margs=""; [ "$qm" != "-" ] && margs="--model $qm"; [ "$qv" != "-" ] && margs="$margs --variant $qv"; [ "$qx" != "-" ] && margs="$margs --role-extra $qx"
       blog="/tmp/bn-bench/$qrun-$(date +%H%M).log"
