@@ -21,3 +21,9 @@ web/*.srm
 .pi/goals/
 .pi/.goals-pool-snapshot.json
 .pi/npm/
+
+# Ghidra's decompilation of the real cartridge (tools/ghidra_decompile.sh).
+# Derived from the copyrighted ROM, so it is a local reading aid only and must
+# never be committed.  The Ghidra install and its project database live outside
+# the repo, under /home/box/opt, so they need no rule here.
+decomp/
