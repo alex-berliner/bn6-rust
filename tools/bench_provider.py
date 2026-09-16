@@ -90,7 +90,18 @@ def run(a):
     model = a.model or c["runs"][a.run][a.role][0]; a.provider = provider_of(model); p = c["providers"][a.provider]
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     doc = "docs/benchmarks/provider-%s-%s.md" % (a.provider, stamp)
-    os.makedirs(LOCKS, exist_ok=True); open(lock_path(a.provider), "w").write("%d %s\n" % (os.getpid(), stamp))   # run_day.sh starts no run on this provider while it exists
+    os.makedirs(LOCKS, exist_ok=True)
+    # one benchmark per provider at a time: two arms sharing a provider share its rate limit, which voided
+    # replays on 2026-09-14 and started a second arm beside a running one on 2026-09-16
+    if os.path.exists(lock_path(a.provider)):
+        try: held = int(open(lock_path(a.provider)).read().split()[0])
+        except (ValueError, IndexError): held = None
+        if held and held != os.getpid():
+            try:
+                os.kill(held, 0); sys.exit("bench_provider: %s is already running a benchmark (pid %d); queue this one instead" % (a.provider, held))
+            except OSError:
+                pass
+    open(lock_path(a.provider), "w").write("%d %s\n" % (os.getpid(), stamp))
     try:
         _run(a, c, p, model, stamp, doc)
     finally:
