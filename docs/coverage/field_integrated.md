@@ -324,3 +324,59 @@ it):
   this recipe (the anim-script upload list) as the way to settle (c). F47's phase headline is
   untouched: it comes from capture-to-capture change counts, which need no asset indexing at
   all.
+
+## T23 — F47's 3-frame art-clock phase located: canon's OWN anim-state record read over the field row's window — VERDICT: SEED
+
+F47 left "WHERE the phase difference lives" open. Read from canon's own anim-state machinery
+(one capture run, 2026-09-15; artifacts kept for the auditor in `/tmp/bn-t23-art-clock-phase/` —
+`canon_animstates.bin`, `canon_scrollcnt_run1.bin`, `t23_analyze.py`, `t23_align.py`; the four
+/tmp canon roots untouched):
+
+- The watch: 175 frames from the `field` row's own canon side (sterile ROM +
+  `/tmp/pausedwithcannon.state` + DELETE_ENEMY `0x0203ab84:0 0x0203ab86:0` + script `Start@10`,
+  `--disable-bg`), watching ALL of `eGFXAnimStates` `0x020094c0:0x1d0` (19 x 24-byte records,
+  // canon: eGFXAnimStates, ewram.s:596) AND `eBGScrollCBCounters` `0x02009690:0x8`. Run
+  identity: the scroll-counter stream is **175/175 word-identical** to F47's kept
+  `/tmp/bn-f47/canon_scrollcnt.bin` at shift 0 — this run IS F47's capture indexing; every
+  number below is directly comparable to F47's tile edges.
+- Record 0's six halfwords (only record 0 of 19 changes — it IS the backdrop anim):
+  hw0 `0x0001` constant (active flag + anim id, `LoadGFXAnim` 0x8001b1c,
+  reference/bn6f/docs/decomp/asm00_0.c:2316-2339); **hw1 = frame countdown** — decremented
+  1/frame and reloaded from the entry's hold field by the ticker `ProcessGFXAnims` 0x8001b94
+  (asm00_0.c:2359-2394, `*(v0+1) -= 1; if <= 0` reload), observed `0008`→`0001` every frame;
+  hw2:hw3 `0x0807fba4` constant = the anim script's LoopAddress (the same base
+  `src/backdrop.rs`'s seed doc cites); **hw4:hw5 = entry index** — the current script-entry
+  pointer, advanced +8/entry by `ProcessGFXAnims` (`*(v0+2) = v3`; "eight bytes an entry").
+- Canon's clock edges MEASURED: the entry pointer advances (and the countdown reloads to 8) at
+  captures **139, 147, 155, 163, 171** — every capture ≡ 3 (mod 8) in 135..174 and nowhere else
+  (full 0..174 scanned: ramp-up edges at 3,7,11,15,19, then steady 8s). F47's tile-set edges
+  (140,148,156,164,172) are exactly ONE capture later — a CORRECTION to the ticket's
+  prediction that the index changes AT 140,148,...: the art CLOCK ticks at **k=4+8m** and the
+  resident tile set follows at k=5+8m (pointer→VRAM lands the next capture).
+- Paired k=0 numbers (F47's axis, canon 135+k ↔ rust 121+k): canon countdown hw1 at cap 135 =
+  `0004`, canon entry = CommandPos `0x0807fc64`; resident step 4 (T22's table). Ours at paired
+  k=0 (rust cap 121): resident step 4 (T22) — the STEP INDEX is EQUAL, but the timer phase is
+  not: our seed is `FIELD_ZERO art_timer=7` (+1 construction lead = **8 at k=0**,
+  tools/harness.py:1564 + src/backdrop.rs:233), so our first tick is at k=8 vs canon's k=4.
+  The countdown comparison is invariant to the pairing's 8-frame ambiguity (the row's own
+  Align offset 22 pairs rust 121 with canon 143, which reads the same `0004` — the two
+  pairings differ by exactly one art period).
+- **VERDICT: SEED** — canon's art timer is ALREADY 4 frames ahead of ours at paired k=0
+  (countdown 4 vs 8), constant across all five measured edges, with no accumulating frame in
+  the window (both timers decrement 1/frame, period 8 both sides). 4 − canon's 1-frame
+  pointer→VRAM pipeline = F47's 3-frame tile-edge offset. A step-index-only comparison at k=0
+  would have misread FREE-RUN (both show step 4); the countdown phase is the discriminator.
+- src/ fix site (named, NOT edited): the seed path `prime_backdrop`'s `match self.fixture`
+  (src/battle.rs:2416) → `Backdrop::seed`'s `self.timer = timer + 1` (src/backdrop.rs:231-233),
+  fed by `FIELD_ZERO art_entry=10, art_timer=7` (tools/harness.py:1564); the fresh-battle
+  default is `timer: STEP_HOLD[0] + 1` (src/backdrop.rs:179). Two corrections to F47's prose:
+  the seed gate DOES fire under FIELD_ZERO (art_entry=10 ≠ `FIXTURE_UNSET` 0xFFFF, and
+  `prime_backdrop` is called unconditionally at src/main.rs:372) — F47's "unreachable under
+  FIELD_ZERO" parenthetical is a miscite. Any timer-phase fix is a one-constant change at
+  those lines; the src/ ticket this verdict gates must first reconcile that the `field` row
+  reads 0/0/40 despite the 4-frame timer offset (the row's own pairing/compare evidently
+  bounds the tile-level residuals out of the pixel gate).
+
+No row added or changed; no src/ edit; built ROM byte-identical to main's (`cmp` = 0 differing
+bytes, sha256 1997be3b4e8f463ac328aede2d5a027d7f73fcb8adcab5834592d71a7a419fed); 1 of ≤2
+capture runs used.
