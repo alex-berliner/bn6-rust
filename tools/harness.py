@@ -1562,7 +1562,26 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 #: 100 (619364 vs 645772/648094), field 108 (323855 vs 402474/389... either
 #: side). Before the seeds, chip-use's band bottomed at 105, not 100.
 FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
-                  art_entry=10, art_timer=4, scroll_xq=466, scroll_yq=745)
+                  art_entry=10, art_timer=4, scroll_xq=471, scroll_yq=748)
+#: T25: scroll_xq 466 -> 471, scroll_yq 745 -> 748, so our VISIBLE BG1 scroll
+#: register equals canon's (mod 256 px, the map's content period) on every
+#: compared frame. Measured, not fitted. Canon side: the eBGScrollCBCounters
+#: RAM stream 0x02009690, caps 135..174 = paired k=0..39
+#: (/tmp/bn-f47/canon_scrollcnt.bin); ours: the TRC2 mirror 0x020000B2/
+#: 0x020000B6, post-update x_q/y_q (/tmp/bn-t25-watch). The pixel evidence
+#: (F47's period-4 best-shift cycle (-2,-1),(-1,0),(-2,-1),(-1,-1) on
+#: /tmp/bn-t25-bg1, re-measured post-T24) is reproduced ONLY by the model
+#: "register visible during rust cap 121+k = mirror at 121+k-1" -- our agb
+#: commit lands the write one capture after the game-logic frame the mirror
+#: records, canon's counter-to-register is same-capture. Under that model
+#: seed 466/745 predicts exactly the measured cycle, and 471/748 zeroes the
+#: displacement: dV on all 40 frames, dH on k=1..39. k=0 is not seed-fixable:
+#: the F45 pre-boundary transition stalls our scroll updates 5 capture frames
+#: and catches up +4 quarters at rust cap 121, splitting the H phase (k>=1
+#: needs seed 471 or 472, k=0 would need 473..476); that frame is also the one
+#: that stays nonzero even at best shift. // canon: eBGScrollCBCounters at
+#: 0x02009690, canon caps 135..174, /tmp/bn-f47/canon_scrollcnt.bin +
+#: /tmp/bn-t25-watch (T25).
 #: T24: art_timer 7 -> 4, so `Backdrop::seed`'s construction lead (+1,
 #: (art_entry, art_timer) = (10, 4) are both read at the POST-boundary anchor, canon cap 135 /
 #: rust cap 121 (paired k=0); the cap-130 line above (entry 23, timer 1) is F26b's own anchor and is
