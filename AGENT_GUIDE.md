@@ -42,11 +42,11 @@ come from a command you ran in that session.
 - `reference/bn6f` is read-only for you: never edit it, never commit in it.
 
 ## What this project is
-A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored
-agb). The standard is per-pixel parity with the original ROM ("canon"), full 240x160, every compared
-frame, zero differing pixels. A non-zero is a defect with a frame and a region. No boxes in space or
-time, no subtracted baselines, no "inherent" residues. Every check has a negative fixture that must fail.
-For engine-core work the state trace is the primary number and the pixels are the veto.
+A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored agb).
+The standard is per-pixel parity with the original ROM ("canon"), full 240x160, every compared frame, zero
+differing pixels: a non-zero is a defect with a frame and a region. No boxes in space or time, no subtracted
+baselines, no "inherent" residues; every check has a negative fixture that must fail. For engine-core work
+the state trace is the primary number and the pixels are the veto.
 
 ## How a row works
 One plain ROM, told what to be: the harness writes a 64-byte descriptor at `0x02000040` every frame
@@ -74,7 +74,13 @@ python3 tools/verify_rows.py <branch> ROW,ROW --expect ROW=T/W/F/NEG   # reprodu
 python3 tools/trace.py record canon <scenario> --out /tmp/tr_c         # canon's per-frame state
 python3 tools/trace.py record rust  <scenario> --out /tmp/tr_r         # ours (TRC2 v3, written only when the trace flag is set)
 python3 tools/trace.py diff /tmp/tr_c /tmp/tr_r --align row:<scenario> # first divergent field and frame, then the list
+python3 tools/scoreboard.py                       # the whole table at a glance
 ```
+Extraction and dumps the tickets use: `tools/spr_export.py` and `tools/spr.py` (sprites), `tools/spr_dump.py`
+and `tools/spr_export_range.py` (sheets), `tools/throw_dump.py` (thrown-object arcs), `tools/text_font_export.py`
+(glyphs), `tools/chip_export.py` (chip records), `tools/sample_export.py` (audio). `tools/web_rom.sh` and `tools/serve.py` build and serve the
+browser ROM; you rarely need either.
+
 `mgba_capture <rom> <outdir> <count>` then: `--loadstate F` · `--loadsave F.srm` · `--script "A@40,Start@10"`
 · `--cheat addr:val16` (every frame) · `--poke addr:val16` (once at load) · `--poke-at frame:addr:val16`
 (once, before that frame; max 32) · `--zero addr:len` · `--watch addr:len:file` · `--watch-write addr[:len]`
@@ -92,16 +98,13 @@ where a diff is.
 - `land.sh --no-verify` is refused for any branch that changes code, and rightly: a worker used it to land
   a regression on 2026-09-15.
 - Never measure from a tree another agent holds. Stage by path. Commit per step. Never push.
-- Every turn re-sends your whole context: batch shell work into one command or a script per stretch, read
-  file ranges rather than whole files, and re-read a file rather than trust a prune summary when exact
-  text or numbers matter.
 - Your captures share three machine-wide slots with everyone else's; a row's own captures already run in
-  parallel.
+  parallel. (Token discipline is in your role text, and it is not optional.)
 
 ## RAM you will meet
-GameState 0x02001b80 (SubsystemIndex byte: 4 map, 8 battle_init, 12 battle main) · CurBattleDataPtr
-0x02001b9c · RNG seed 0x020013f0 (seed = rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan's BattleObject 0x0203a9b0
-(CurState/CurAction +8/+9, HP +0x24, timer +0x20) · enemy slots 0x0203aa88 / 0x0203ab60 / 0x0203ac38 ·
-MegaMan's AIData JoypadPressed 0x020340a4 / Held 0x020340a2 (input reaches him only while the sequencer
-word 0x0203CA70 is in state 0x08; in 0x0C a one-shot poke here delivers a press) · joypad mirror
-0x02036822 · scroll counters 0x02009690/94 read 0/0 at a battle's frame 0.
+GameState 0x02001b80 (SubsystemIndex: 4 map, 8 battle_init, 12 battle main) · CurBattleDataPtr 0x02001b9c ·
+RNG seed 0x020013f0 (seed = rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan's BattleObject 0x0203a9b0 (CurState +8,
+CurAction +9, timer +0x20, HP +0x24) · enemy slots 0x0203aa88 / 0x0203ab60 / 0x0203ac38 · his AIData
+JoypadPressed 0x020340a4, Held 0x020340a2 (input reaches him only while the sequencer word 0x0203CA70 is in
+state 0x08; in 0x0C a one-shot poke here delivers a press) · joypad mirror 0x02036822 · scroll counters
+0x02009690/94, both 0 at a battle's frame 0.

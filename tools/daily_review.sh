@@ -50,6 +50,9 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo "## Switch rule (docs/config-log.md)"
   echo "A role's model changes only if, over at least 10 tickets, its cost per landed ticket is twice an alternative's on the replay benchmark (tools/replay_bench.py), and never on one day's numbers."
   echo
+  echo "## Do the instructions still match the project (tools/docs_check.py)"
+  python3 tools/docs_check.py --since-days 7 2>&1 | tee "$TMP/docs.txt"
+  echo
   echo "## Waste (tools/waste_report.py, last ${SINCE}h)"
   echo "What the model usage spent on nothing: time and tokens in sessions, provider errors, repeated calls."
   python3 tools/waste_report.py --since "$SINCE" 2>&1 | tee "$TMP/waste.txt"
@@ -62,6 +65,7 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   [ "$NT" -ge 8 ] && [ "$NEGRATE" -ge 30 ] && TRIG="$TRIG negative-or-blocked rate ${NEGRATE}% over $NT tickets;"
   [ "$PHASE" != "$LASTPHASE" ] && TRIG="$TRIG phase changed $LASTPHASE -> $PHASE;"
   [ "$AUDIT" = 1 ] && TRIG="$TRIG forced;"
+  grep -q "^DOCS-TRIGGER: yes" "$TMP/docs.txt" 2>/dev/null && TRIG="$TRIG instructions behind the tools ($(grep -c '^- ' "$TMP/docs.txt") findings);"
   grep -q "^WASTE-TRIGGER: yes" "$TMP/waste.txt" 2>/dev/null && TRIG="$TRIG waste: $(grep -oE 'provider errors per 100 turns: [0-9.]+' "$TMP/waste.txt" | head -1), or a repeated-call loop;"
   echo "$PHASE" > "$TMP/last_phase"
   echo "- phase: $PHASE; negative-or-blocked rate: ${NEGRATE}% over $NT tickets; no-pair dispatches: $NOPAIR"
