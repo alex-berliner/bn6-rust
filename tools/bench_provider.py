@@ -35,7 +35,7 @@ def reads(doc):
     The disassembly ships a 2019 decompilation under address-only names (reference/bn6f/docs/decomp), which
     workers already use in about a sixth of sessions, so it is counted apart from the assembly itself and
     apart from tools/csrc.py's fresh, symbol-carrying C."""
-    m = re.search(r"(\d{8}-\d{6})\.md$", doc); ev = "/tmp/bn-pi/replay/%s/events.jsonl" % m.group(1) if m else ""
+    m = re.search(r"-(\d{8}-\d{6}(?:-[a-z0-9]+)?)\.md$", doc); ev = "/tmp/bn-pi/replay/%s/events.jsonl" % m.group(1) if m else ""
     if not os.path.exists(ev): return (None, None, None)
     asm = old_c = csrc = 0
     for line in open(ev):

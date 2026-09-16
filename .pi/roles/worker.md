@@ -39,3 +39,10 @@ you dropped it, what you would try next. Write it for the next worker on this ob
 none of your context; a failed attempt with a good log is worth more than a silent one. The log lands on
 main even when your branch does not, and `next_ticket.py` shows the earlier logs of the same objective to
 whoever picks up the follow-up.
+
+**The original's code, two ways.** `python3 tools/csrc.py <symbol or address>` prints a decompilation of the
+original game's routine (Ghidra, generated from the cartridge with this disassembly's own symbol names)
+followed by the assembly lines it came from. Use it to find a routine's shape before reading the assembly:
+in a measured A/B it halved the assembly reads per solved ticket. `reference/bn6f/docs/decomp/*.c` is a
+different, older decompilation under address-only names and may disagree with the current symbols. Either is
+a MAP: a citation is always an assembly file and line, and every number is verified by measurement.
