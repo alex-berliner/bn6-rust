@@ -36,6 +36,8 @@ def make_handler(a, pacer, log):
         def forward(self):
             n = int(self.headers.get("Content-Length") or 0); body = self.rfile.read(n) if n else None
             headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP}
+            for h in a.header:
+                k, _, v = h.partition(":"); headers[k.strip()] = v.strip()
             url = a.upstream.rstrip("/") + self.path; t0 = time.time(); tries = 0
             with pacer.sem:
                 while True:
@@ -75,7 +77,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--provider", required=True); ap.add_argument("--port", type=int, required=True); ap.add_argument("--upstream", required=True)
     ap.add_argument("--rpm", type=float, default=20); ap.add_argument("--concurrency", type=int, default=2); ap.add_argument("--retries", type=int, default=6)
-    ap.add_argument("--log", default=None)
+    ap.add_argument("--log", default=None); ap.add_argument("--header", action="append", default=[], help="'Name: value' added to every upstream request (repeatable)")
     a = ap.parse_args()
     out = open(a.log, "a") if a.log else sys.stderr
     def log(s): out.write(s + "\n"); out.flush()

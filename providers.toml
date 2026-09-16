@@ -33,7 +33,7 @@ slides_writer = "claude:claude-opus-5"   # the learn feed too: readable content 
 runs = ["hyper", "minimax"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all
 parallel = true               # 2026-09-14 evening: two independent runs, each self-sufficient (M3 coordinated a full
                               # cycle correctly: T7e landed 19:07); tickets are claimed per run
-reserve = ["openrouter"]      # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
+reserve = ["openrouter", "opencode"]      # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
 
 # ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
@@ -77,6 +77,24 @@ upstream = "https://api.minimax.io"       # (2026-09-14). tools/api_pacer.py sit
 rpm = 20                                  # spaces request starts, and retries 429s itself, so the agents never see them.
 concurrency = 2
 
+[providers.opencode]
+kind = "subscription"                     # the OpenCode Go plan ($10/month): per-model limits per 5-hour window and per month,
+probe = "python3 tools/opencode_quota.py" # no balance endpoint, so the probe is a tiny request: open (1) or exhausted (0)
+start_above = 1
+stop_below = 1
+tail = false
+reset = "rolling 5h"
+price_usd_per_month = 10
+daily_credits = 1
+oneshot_flags = ""
+
+[providers.opencode.pacer]                # the Go gateway lives at /zen/go/v1 and wants a session header (found in the
+port = 8792                               # OpenCode client's binary, 2026-09-16); the pacer adds it and spaces requests
+upstream = "https://opencode.ai/zen/go"
+rpm = 30
+concurrency = 2
+headers = ["x-opencode-session: bn-pi", "User-Agent: Mozilla/5.0 (X11; Linux x86_64) pi-agent"]
+
 # ---------------------------------------------------------------- run profiles: candidates per job, in order
 [runs.hyper]
 workers = 2                               # worker slots in flight
@@ -97,6 +115,16 @@ recon = ["openrouter/deepseek/deepseek-v4.1-flash"]
 judge = ["openrouter/meta/muse-spark-1.3-contributor"]
 auditor = ["openrouter/meta/muse-spark-1.3-contributor"]
 digest = ["openrouter/meta/muse-spark-1.3-contributor"]
+
+[runs.opencode]                           # OpenCode Go on its own (reserve until its benchmark is in, 2026-09-16)
+workers = 2
+coordinator = ["opencode/qwen3.8-flash"]
+worker = ["opencode/deepseek-v4.1-flash", "opencode/glm-5.3-flash"]
+verifier = ["opencode/qwen3.8-flash"]
+recon = ["opencode/deepseek-v4.1-flash"]
+judge = ["opencode/qwen3.8-flash"]
+auditor = ["opencode/qwen3.8-flash"]
+digest = ["opencode/qwen3.8-flash"]
 
 # A joint plan the user sketched (2026-09-14), NOT a rule: nothing decides it until minimax is benchmarked on the
 # same seven tickets (tools/bench_provider.py) and its pass rate, minutes and quota per pass are on the table
