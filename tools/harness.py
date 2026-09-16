@@ -1562,7 +1562,19 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 #: 100 (619364 vs 645772/648094), field 108 (323855 vs 402474/389... either
 #: side). Before the seeds, chip-use's band bottomed at 105, not 100.
 FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
-                  art_entry=10, art_timer=7, scroll_xq=466, scroll_yq=745)
+                  art_entry=10, art_timer=4, scroll_xq=466, scroll_yq=745)
+#: T24: art_timer 7 -> 4, so `Backdrop::seed`'s construction lead (+1,
+#: src/backdrop.rs:233) puts our art countdown at 5 at the paired anchor.
+#: 4 = canon's own countdown (`// canon: eGFXAnimStates[0] hw1 reads 4 at the
+#: paired anchor, /tmp/bn-t23-art-clock-phase/canon_animstates.bin caps 135 and
+#: 143, T23 step 3`) + 1 for the pipeline this engine's seed note records:
+#: canon's tile copy lands one frame AFTER its clock edge
+#: (QueueEightWordAlignedGFXTransfer), our port writes same-frame, so the
+#: resident art matches only if we fire at canon's edge+1 (timer 8 fired 3
+#: frames after canon's resident edge -- F47's +3, the whole 158930 px field
+#: integrated residue). T23's naive art_timer 3 (timer 4 = canon's literal
+#: countdown) would fire one frame early: the 208-px tiles/gauge failure the
+#: seed note already recorded for the bare peeked Timer 4.
 WARP_ZERO = dict(ZERO_ENEMY,
                  art_entry=17, art_timer=6, scroll_xq=580, scroll_yq=802)
 BUSTER_ZERO = dict(ZERO_ENEMY,
