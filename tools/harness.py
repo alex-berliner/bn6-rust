@@ -153,7 +153,7 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     buf[12] = descriptor.get("hand_count", len(hand))
     for i in range(5):
         buf[13 + i] = hand[i] if i < len(hand) else 0
-    buf[18] = descriptor.get("gauge", 0)
+    buf[18] = descriptor.get("gauge", 0) & 0xFF  # T32: mask the asm-world gauge value (e.g. 0x4000 at asm00_1.s:15305) to u8 for the FIXTURE.md +18 byte; every existing row's gauge is 0 or 1, so the mask is byte-identical for them.
     buf[19] = descriptor.get("flags", 0)
     struct.pack_into("<H", buf, 20, descriptor.get("art_entry", 0xFFFF))
     struct.pack_into("<H", buf, 22, descriptor.get("art_timer", 0xFFFF))
@@ -1757,9 +1757,12 @@ FIELD_ORIGIN = 8
 #: were FIELD_ROW's borrowed seeds (5/4/424/724, "the backdrop's phase
 #: matches mettaur at the same battle frame") -- never derived for this row.
 GUNNER_ROW = dict(enemies=2, enemy_kind=0x05, enemy_col=5, enemy_row=2, megaman_hp=60,
-                  megaman_col=2, megaman_row=2, hand=[1], hand_count=1, gauge=0,
+                  megaman_col=2, megaman_row=2, hand=[1], hand_count=1,
+                  gauge=0x4000,  # T32: asm-world full-gauge value (sub_801DFE4 == 0x4000, asm00_1.s:15311-15313); the FIXTURE.md +18 byte is u8 and rounds to 0 here, which is byte-identical to the prior gauge=0 -- the seed is a documentation marker, not a cheat-side change.
                   flags=0x11, art_entry=11, art_timer=2, scroll_xq=108, scroll_yq=54,  # provenance: peeked -- canon's own counters at this row's canon_ref
-                  enemy_hp=0xFFFF)
+                  enemy_hp=0xFFFF,
+                  name="isCustGaugeFullAndBattleLive_800A21C",  # T32: canon-side gate symbol at asm00_1.s:15305; gates BG3 plateau on band 2 second half (F44).
+                  gate="isCustGaugeFullAndBattleLive_800A21C")  # T32: same symbol as name; fixture_cheats does not read this key today (it is harness-side doc until a future src/ gate wiring lifts it).
 GUNNER_ORIGIN = 8
 
 #: T9h (2026-09-15): canon-side state for the gunner row. Re-uses T9c's
