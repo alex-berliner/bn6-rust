@@ -898,13 +898,10 @@ const BOMB_SUB_BLKBOMB: u8 = 0x01; // canon: BlkBomb attack_subfamily, data/Chip
 const BOMB_SUB_BIGBOMB: u8 = 0x0F; // canon: BigBomb attack_subfamily, data/ChipDataArr.s:6274
 const BOMB_SUB_ENER_FLASH: u8 = 0x00; // canon: EnergBom/MegEnBom/FlshBom attack_subfamily, data/ChipDataArr.s:1344/1375/1406
 const BOMB_SUB_MINI: u8 = 0x02; // canon: MiniBomb attack_subfamily, data/ChipDataArr.s:1656
-const fn bomb_anim(element: u8, thrown: bool) -> usize {
-    // CURSOR-element bombs (EnergBom/MegEnBom/FlshBom,
-    // data/ChipDataArr.s:1336/1367/1398 chip_element 0x06) play the energy
-    // bomb's held/thrown animation; everyone else plays MiniBomb's 0/1.
-    match (element, thrown) {
-        (CHIP_ELEM_CURSOR_U8, false) => BOMB_ANIM_ENER_HELD,
-        (CHIP_ELEM_CURSOR_U8, true) => BOMB_ANIM_ENER_THROWN,
+const fn bomb_anim(id: u16, thrown: bool) -> usize {
+    match (id, thrown) {
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, false) => BOMB_ANIM_ENER_HELD,
+        (CHIP_ENERGBOM | CHIP_MEGENBOM, true) => BOMB_ANIM_ENER_THROWN,
         (_, true) => 1,
         _ => 0,
     }
@@ -4167,7 +4164,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 } else if flash {
                     spr::Player::new(spr::Assets::new(FLSHBOM), 0)
                 } else {
-                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.element, false))
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, false))
                 };
                 if seed || chip.id == CHIP_BUGBOMB {
                     held.set_offsets_follow_shift(true);
@@ -4473,7 +4470,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 } else if chip.id == CHIP_BLKBOMB {
                     spr::Player::new(spr::Assets::new(BLKBOMB), 0)
                 } else {
-                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.element, true))
+                    spr::Player::new(spr::Assets::new(MINIBOMB), bomb_anim(chip.id, true))
                 };
                 if seed || chip.id == CHIP_BUGBOMB {
                     thrown.set_offsets_follow_shift(true);
