@@ -401,8 +401,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T49. M2 battle_full first-divergence recon with fixed trace tools  *(OPEN)*
+### T49. M2 battle_full first-divergence recon with fixed trace tools  *(DONE -- 2026-09-16, wt/t49-battlefull-recon landed as 34a4dd8)*
 
+**Result.** wt/t49-battlefull-recon landed as 34a4dd8. Recon: oracle.py battle_full --both names first divergence = enemy_state_action at k=0 (canon frame 11) canon=(4,10) rust=(4,0). Cite reference/bn6f/asm/asm31.s:170689 (sub_8109CE6, 0x0A hop executor) + asm31.s:170982 (ForMettaur_8109EF4). Mechanism: CurAction byte divergence - canon 0x0A, rust 0x00. 10,827,099 px diff / 35,308 worst at k=0 / 540 frames. Side-fix: tools/diffmask.py Image-import regression from T47 (1 line). verify_rows wave/window/opening/chip-cannon/mettaur identical to HEAD 0/0/{90,16,40,40,70}/{3840,81056,86591,9505,41734}. No src/ edits. cost: ~$0.20 MiniMax-M3.
 **Why.** T44 NEGATIVE (2026-09-16) measured coverage.py (1140 routines / 255 uncovered on battle_full) but failed the trace path because the tools rejected battle_full. T47 (proposed above) fixes `tools/oracle.py`, `tools/diffmask.py`, `tools/trace.py`. With those fixed, this ticket runs the recon T44 aimed at: name the first divergent field and frame on T7r PARTIAL's scripted fixture (gauge=1 + window_pick OK + A@170).
 
 **New evidence.** T47 lands the tool fixes (its result is the new evidence); T44 NEGATIVE named each tool gap with file:line; T7r PARTIAL landed the scripted fixture (TODO.md:197); T7p DONE drove rng_cadence below 10/540; coverage.py battle_full shows 255 uncovered routines that the next port can target.
