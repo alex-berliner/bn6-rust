@@ -51,7 +51,10 @@ def children_for(tid):
         hits = collections.Counter(re.findall(r"\b([A-Z]{1,2}\d{1,3}[a-z]?)\b", text))
         top = hits.most_common(1)[0][0] if hits else None
         task = task_of(transcript)
-        if top != tid and not word.search(task[:4000]): continue
+        head = word.search(task[:4000])
+        # the report usually opens with the ticket it answers, so its first lines count as strongly as the top hit
+        opener = re.search(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(tid), text[:300], re.I)
+        if not (top == tid or head or opener): continue
         try: d = json.load(open(meta))
         except ValueError: continue
         out.append(dict(meta=meta, report=rep, transcript=transcript,
