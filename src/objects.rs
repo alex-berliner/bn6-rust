@@ -312,6 +312,19 @@ const METTAUR_ACT_DECIDE: u8 = 8; // provenance: derived -- ForMettaur_8109EF4[8
 /// The plain "wait N frames" CurAction the spawn pause runs in
 /// (`ForMettaur_8109EF4[9]` = `sub_8109CBC`, asm31.s:171004).
 const METTAUR_ACT_WAIT: u8 = 9; // provenance: derived -- ForMettaur_8109EF4[9], asm31.s:171004
+/// The Mettaur's hop executor CurAction (T50): `MettaurHopExec_8109CE6`
+/// (reference/bn6f/asm/asm31.s:170689), reached through `ForMettaur_8109EF4`
+/// at entry 0x28 (CurAction 0x0A, asm31.s:171021). Canon keeps the Mettaur
+/// in CurAction 0x0A throughout the battle's "idle" frames -- the executor's
+/// own initial sub-step at Unk_00=0 (`MettaurHopReservePanel_8109D08`,
+/// asm31.s:170689-170746, the per-frame `object_canMove` check that refuses
+/// a move by setting Unk_1a=0 and calling `object_exitAttackState`) -- so
+/// the rust mapping sends `Action::Idle` (the post-spawn, pre-decision
+/// state) and the same state's spawn-wrapper arms to 0x0A instead of 0x00
+/// or 0x08. Without this, the first compared frame of `battle_full` reads
+/// (4, 0) instead of canon's (4, 10): the divergence T49 named at
+/// `enemy_state_action k=0` (4,827,099 px diff, 35,308 worst at k=0).
+const METTAUR_ACT_HOP: u8 = 0x0a; // provenance: derived -- ForMettaur_8109EF4[0x28] = MettaurHopExec_8109CE6, reference/bn6f/asm/asm31.s:170689, 171021
 /// The one-time pause before a freshly-spawned Mettaur's very first
 /// decision: `sub_810A004`'s own `oBattleObject_Param4 == 0` branch arms a
 /// flat 0x1e wait (CurAction 9, `sub_8109CBC`) the first time `RowCheck`

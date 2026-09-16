@@ -687,9 +687,27 @@ impl Actor {
                 }
             }
             Action::Hopping { .. } if !is_player => 0x0a, // canon: hop executor (see above)
-            Action::Hidden | Action::Appearing { .. } => 0x00, // canon: spawn-animation state (see above)
+            // T50: the Mettaur's idle is canon's CurAction 0x0a, the hop
+            // executor's initial Unk_00=0 step (MettaurHopExec_8109CE6,
+            // reference/bn6f/asm/asm31.s:170689; ForMettaur_8109EF4[0x28],
+            // asm31.s:171021). The first compared frame of battle_full had
+            // canon=(4,10), rust=(4,0): the rust side was in
+            // Action::Hidden/Action::Appearing because the rust intro runs
+            // after battle_main starts, while canon has already settled into
+            // its hop-executor pre-step by canon frame 11 (= rust k=0). The
+            // trap-only change is the CurAction byte: keep player behaviour
+            // (Hidden/Appearing->0x00, default->0x08), send the enemy's two
+            // waiting-and-default arms to the executor byte canon reads.
+            // gunner.rs's own ForGunner routine also sits at 0x0a when
+            // idle (same ForXxx[0x28] layout, asm32.s:10370-10385), so the
+            // non-player default covers the gunner row too without
+            // regressing it.
+            Action::Hidden if is_player => 0x00, // canon: player's Hidden state (PlayerSpawnAnimation, asm31.s:108868)
+            Action::Appearing { .. } if is_player => 0x00, // canon: player's Appearing intro (same path; PLAYER_DEATH_FRAMES sibling)
+            Action::Hidden | Action::Appearing { .. } => 0x0a,
             _ if !is_player && ai_wait => 0x09, // canon: plain wait-N-frames state (see above)
-            _ => 0x08, // canon: decision loop / player AI update [8] (see above)
+            _ if is_player => 0x08, // canon: player AI update [8] (see above)
+            _ => 0x0a, // canon: enemy hop executor idle step Unk_00=0, MettaurHopExec_8109CE6 at reference/bn6f/asm/asm31.s:170689
         };
         // The enemy's +0x20 reads a constant 0x0002 through the whole
         // measured window (see the doc above): nothing dynamic to model, so
