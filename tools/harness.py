@@ -1596,15 +1596,21 @@ FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
 #: (0x02000080+50/+54, src/battle.rs's trace table; /tmp/bn-t25-watch).
 #:
 #: T29 corrections to this record, all re-measured from the kept dumps:
-#: (1) CONVENTION FIT, NOT DERIVED. Our own cite for the scroll CB
-#:     (asm00_0.s:3287-3303, the F33b block above) says the asm writes
-#:     (counter-8)>>4 and (counter-4)>>4. Under THAT convention no lag/offset
-#:     fits the pixel cycle and the solve's seeds move to H {473,474},
-#:     V {749}. The landed mechanism is fitted under the PLAIN >>4 convention
-#:     (register = counter>>4, Lo=1); the -8/-4 constant convention is settled
-#:     empirically by the capture, not derived from the asm. A later ticket
-#:     that re-derives a scroll seed from the asm cite will get different
-#:     numbers -- use the solve, not the asm arithmetic.
+#: (1) CONVENTION PAIRING, NOT COMPETING MODELS. Our own cite for the scroll
+#:     CB body (asm00_0.s:3305-3321, the F33b block above) says the asm writes
+#:     (counter-8)>>4 and (counter-4)>>4. That -8/-4 wording SAMPLES THE
+#:     COUNTER ONE FRAME EARLY relative to a per-frame watch: the asm stores
+#:     the DECREMENTED counter before shifting, so plain >>4 applied to the
+#:     value our watch sees IS the asm's value. The two conventions are the
+#:     same counter read at two different points in the frame, not competing
+#:     models of the hardware. The honest residual: the seed solution sets
+#:     MOVE ({471,472}/{748} here vs {473,474}/{749} under the asm-sampled
+#:     pairing) because pairing our per-frame mirror against canon's
+#:     per-frame counter is off by one sample -- which set is canonical
+#:     depends on whether you compare watch-to-watch or
+#:     watch-to-asm-sampled-value; the capture decides the PAIRING, not the
+#:     shift. A later ticket re-deriving a seed from the asm cite gets the
+#:     other set -- decide by the pairing, not by the shift.
 #: (2) k=0 IS OUTSIDE THE RAMP MODEL, not merely seed-unfixable: at 471/748
 #:     the model predicts dH(k=0) = +1 px (H's k=0-only seed set {473..476} is
 #:     disjoint from k=1..39's {471,472}), but the measured k=0 best shift is
