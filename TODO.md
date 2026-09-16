@@ -270,8 +270,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 - T48 DONE -- M4 chips as data: Barrier family reads amount from the record. wt/t48-barrier landed as 079531c
 - T49 DONE -- M2 battle_full first-divergence recon with fixed trace tools. wt/t49-battlefull-recon landed as 34a4dd8
 
-### T50. M2: Port sub_8109CE6 (0x0A hop executor) into MettaurEntry to align enemy_state_action at k=0 *(OPEN -- 2026-09-16)*
+### T50. M2: Port sub_8109CE6 (0x0A hop executor) into MettaurEntry to align enemy_state_action at k=0  *(DONE -- 2026-09-16, trace: enemy_state_action first divergence k=0 -> k=17 [oracle: canon=[4,8], rust=[4,10] at k=17, rust [4,10] )*
 
+**Result.** trace: enemy_state_action first divergence k=0 -> k=17 (oracle: canon=(4,8), rust=(4,10) at k=17, rust (4,10) at k=0 matches canon (4,10)); sequencer divergence 1387 -> 1370 (-17); sub_8109CE6 cite at asm31.s:170689 in src/actor.rs; fitted 19 unchanged; verify_rows PASS on wave 0/0/90/3840, window 0/0/16/81056, opening 0/0/40/86591, chip-cannon 0/0/40/9505, mettaur 0/0/70/41734; verifier confirmed all 4 claims; landed 21fde8f; verifier-minimax + worker-minimax, both sub ~/bin/bash.40
 **Why.** T49 (DONE 34a4dd8) recon on the fixed trace tools named first divergence at k=0 (frame 11), field enemy_state_action, canon=(4,10), rust=(4,0). 10,827,099 px diff / 35,308 worst at k=0 / 540 frames. Cite sub_8109CE6 (reference/bn6f/asm/asm31.s:170689, the 0x0A hop executor) + ForMettaur_8109EF4 (asm31.s:170982). T7h NEGATIVE (spawn arm at src/objects.rs:243-251,298-308,343-362) and T7l BLOCKED closed the previous attempts; this is a fresh port under T49's recon. Milestone **M2**.
 
 **New evidence.** T49 DONE (2026-09-16, landed 34a4dd8) recon: oracle.py battle_full --both names first divergence at k=0, field enemy_state_action (canon=(4,10), rust=(4,0)), cite sub_8109CE6 + ForMettaur_8109EF4. T47 DONE (12f10c2) fixed tools/trace.py:56 ORCL_ADDR TypeError; T49 ran the recon on the fixed tools. T7p DONE drove rng_cadence below 10/540; battle_full trace remains at 273/540 with first divergence k=0 (T49 supersedes T26's k=31 sequencer reading).
