@@ -285,9 +285,6 @@ const CHIP_RECOV200: u16 = 160;
 const CHIP_RECOV300: u16 = 161;
 const CHIP_AREAGRAB: u16 = 163;
 const CHIP_INVISIBL: u16 = 177;
-const CHIP_BARRIER: u16 = 178;
-const CHIP_BARR100: u16 = 179;
-const CHIP_BARR200: u16 = 180;
 const CHIP_ENERGBOM: u16 = 55;
 /// LilBolr1/2/3: bomb family, subfamily 3, which routes through sub_80D7A96
 /// rather than MiniBomb's sub_80C5DBC -- a fixed target ahead rather than the
@@ -647,37 +644,49 @@ const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // proven
 const HEAL_FRAMES: u8 = 14; // provenance: derived -- the sprite's own frame durations
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
 const INVISIBL_FRAMES: u16 = 0x68; // provenance: derived -- ChipDataArr.s:5490
-/// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
-const BARRIER_HP: u16 = 10; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, rows :195-202 stride 6, ldr asm00_2.s:22591 / .word :22602, decomp asm00_2.c:16089, ROM offset 0x020B2C)
 /// Barrier, Barr100 and Barr200 are one chip with one handler: family 0x15
 /// subfamily 4 (off_802CCB4[4] = sub_80E3B50), whose first attack parameter
-/// indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP. Barrier's
-/// parameter is 1 -> row 1 = 10, Barr100's is 5 -> 0x64, Barr200's is 7 ->
-/// 0xc8. Nothing else about them differs.
+/// (chip.params[0] / ChipDataArr_8021DA8 AttackParam1 +0x10) indexes
+/// BarrierHpByType_8020B2C (data/dat01.s:194) for the bubble's HP. Barrier's
+/// parameter is 1 -> row 1 = 10 (0x000A), Barr100's is 5 -> 100 (0x0064),
+/// Barr200's is 7 -> 200 (0x00C8). Nothing else about them differs.
+///
+/// canon: ChipDataArr_8021DA8 AttackFamily +0xb of ids 178/179/180
+/// (include/rom_structs/ChipData.inc; data/ChipDataArr.s:5521/5552/5583).
+const BARRIER_FAMILY: u8 = 0x15; // canon: ChipDataArr_8021DA8 AttackFamily of ids 178-180 (data/ChipDataArr.s:5530/5561/5592)
+/// The Barrier subfamily (off_802CCB4[4] = sub_80E3B50, asm03_0.s cited
+/// in the parity block above). Subfamily 0/0x01 also bear attack_family 0x15
+/// in the asset (AreaGrab sub 0x00, Invisibl sub 0x01), so the family check
+/// alone would over-match; the subfamily splits them.
+const BARRIER_SUBFAMILY: u8 = 0x04; // canon: BarrierHpByType_8020B2C's subfamily is the row index (`ldr asm00_2.s:22591 / .word :22602`, the subfamily identifies which byte_8020B2C row gets used)
+/// Barrier's HP for type N is byte_8020B2C[N*6..N*6+2] as a little-endian
+/// u16 (rows :195-202 stride 6, the u16 is the HP and the next four bytes
+/// are 0x00 0x00 0xff 0xff -- the canon effect-row pad). Only the indices
+/// our three Barrier records carry are set; the rest stay zero so a
+/// widened asset supplying a stray param byte never spawns a barrier.
+/// The byte_8020B2C values themselves (the entries of this table):
+/// index 0=none, 1=0x000A=10, 5=0x0064=100, 7=0x00C8=200.
+const BARRIER_HP_BY_PARAM: [u16; 8] = [
+    0, 0x000A, 0, 0, 0, 0x0064, 0, 0x00C8,
+]; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, rows :195-202 stride 6, ldr asm00_2.s:22591 / .word :22602, decomp asm00_2.c:16089, ROM offset 0x020B2C); the entries our three records index are 1=10, 5=100, 7=200
 /// The bubble is the same object in another colour: Barrier's is teal,
 /// Barr100's gold and Barr200's pink, matched colour for colour against the
 /// real captures against sprite_832F8C8's thirteen palettes. The asset is
 /// exported with all of them for this.
-// provenance: peeked -- matched colour for colour against the real captures.
-const BARRIER_PALETTE_GOLD: usize = 3; // provenance: peeked -- matched colour for colour against the real captures (see barrier_palette)
-const BARRIER_PALETTE_PINK: usize = 6; // provenance: peeked -- matched colour for colour against the real captures (see barrier_palette)
-const fn barrier_palette(id: u16) -> usize {
-    match id {
-        CHIP_BARR100 => BARRIER_PALETTE_GOLD,
-        CHIP_BARR200 => BARRIER_PALETTE_PINK,
-        _ => 0,
-    }
+///
+/// provenance: peeked -- matched colour for colour against the real captures.
+/// The palette index for a Barrier/Barr100/Barr200 invocation is the asset's
+/// bubble palette add: 0 (teal), 3 (gold), 6 (pink). Indexed by attack_param_1
+/// (chip.params[0]) the same way as the HP table -- the three Barrier rows
+/// in the asset are the discriminator.
+const BARRIER_PALETTE_BY_PARAM: [usize; 8] = [
+    0, 0, 0, 0, 0, 3, 0, 6,
+]; // provenance: peeked -- matched colour for colour against the real captures (chip.params[0] -> sprite_832F8C8 palette index)
+fn barrier_palette(chip: &Chip) -> usize {
+    BARRIER_PALETTE_BY_PARAM[chip.params[0] as usize]
 }
-
-// provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, rows :195-202 stride 6, ldr asm00_2.s:22591 / .word :22602, decomp asm00_2.c:16089, ROM offset 0x020B2C).
-const BARR100_HP: u16 = 100; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, ROM offset 0x020B2C)
-const BARR200_HP: u16 = 200; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, ROM offset 0x020B2C)
-const fn barrier_hp(id: u16) -> u16 {
-    match id {
-        CHIP_BARR100 => BARR100_HP,
-        CHIP_BARR200 => BARR200_HP,
-        _ => BARRIER_HP,
-    }
+fn barrier_hp(chip: &Chip) -> u16 {
+    BARRIER_HP_BY_PARAM[chip.params[0] as usize]
 }
 /// Frames from the press to the effect, measured on the real ROM (the
 /// bubble object's first, one-frame dot is behind the navi, so it is
@@ -3420,12 +3429,24 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     // as it landed (see the orb update above), so by the time
                     // the presentation ends there is nothing left to take.
                     CHIP_AREAGRAB => {}
-                    CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
-                        self.megaman.set_barrier(barrier_hp(chip.id));
-                        let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
-                        bubble.set_offsets_follow_shift(true);
-                        bubble.set_palette_add(barrier_palette(chip.id));
-                        self.bubble = Some(bubble);
+                    _ => {
+                        // Barrier (178/0xb2), Barr100 (179/0xb3) and
+                        // Barr200 (180/0xb4) all share attack_family 0x15
+                        // subfamily 0x04 -- the dispatcher is the record,
+                        // not the chip id (CHIP_BARRIER/CHIP_BARR100/
+                        // CHIP_BARR200 are intentionally deleted). No
+                        // other family-0x15 subfamily-0x04 chip is in
+                        // the 48-record asset, so this is data-driven
+                        // and stays correct under widening.
+                        if chip.family == BARRIER_FAMILY
+                            && chip.subfamily == BARRIER_SUBFAMILY
+                        {
+                            self.megaman.set_barrier(barrier_hp(&chip));
+                            let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
+                            bubble.set_offsets_follow_shift(true);
+                            bubble.set_palette_add(barrier_palette(&chip));
+                            self.bubble = Some(bubble);
+                        }
                     }
                     _ => {}
                 }
@@ -4310,15 +4331,6 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
-            CHIP_BARRIER | CHIP_BARR100 | CHIP_BARR200 => {
-                self.presentation = Some((chip, BARRIER_PRESENTATION));
-                // Same live-HUD gate as CHIP_INVISIBL above: the name popup
-                // shows only while the battle HUD is up (canon mask 0x4497
-                // live vs 0x8084 torn-down; builder sub_801E95C).
-                if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
-                    self.popup = Some(NamePopup::new(chip.name()));
-                }
-            }
             // AreaGrab needs per-panel ownership, which the field does not
             // track yet. The stand-in is nothing.
             // AreaGrab takes the enemy's front-most column, a row at a time
@@ -4334,8 +4346,26 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 }
             }
             _ => {
-                self.chip_in_use = Some(chip);
-                self.megaman.attack(actor::BUSTER);
+                // Barrier family (Barrier 0xb2, Barr100 0xb3, Barr200 0xb4)
+                // dispatch on the record: attack_family 0x15, subfamily 0x04
+                // (ChipDataArr.s:5521/5530/5552/5561/5583/5592). No Barrier
+                // chip id is named here -- the three siblings share one
+                // presentation arm.
+                if chip.family == BARRIER_FAMILY
+                    && chip.subfamily == BARRIER_SUBFAMILY
+                {
+                    self.presentation = Some((chip, BARRIER_PRESENTATION));
+                    // Same live-HUD gate as CHIP_INVISIBL above: the name
+                    // popup shows only while the battle HUD is up (canon
+                    // mask 0x4497 live vs 0x8084 torn-down; builder
+                    // sub_801E95C).
+                    if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
+                        self.popup = Some(NamePopup::new(chip.name()));
+                    }
+                } else {
+                    self.chip_in_use = Some(chip);
+                    self.megaman.attack(actor::BUSTER);
+                }
             }
         }
     }
