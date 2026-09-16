@@ -4604,3 +4604,177 @@ And one live measurement question, cheap: `field-bg2`'s residue is ALSO exactly 
 **Coordinator:** dispatch after T36 lands (it owns the same files) — `next_ticket.py --pair` cannot run them together. Free tier: `verify_rows` across the chip set with the landed negatives as expects — every gate here is a zero total, so F48's drift band does not apply and none may be widened. A verifier for step 2's parity claim only (the same ROM read T17's verifier did). ≤$0.20 expected, ≤$0.40 cap. Advances **M4**.
 
 ---
+
+
+---
+
+# archived 2026-09-16
+
+### T44. battle_full sequencer first-divergence on T7r scripted fixture  *(NEGATIVE -- 2026-09-16, wt/t44-battlefull-divergence @ 6b676b4)*
+
+**Result.** wt/t44-battlefull-divergence @ 6b676b4; worklog-only on docs/worklog/T44.md; verify_rows HEAD wave,window,opening,chip-cannon,mettaur PASS 0/0/{90,16,40,40,70}/{3840,81056,86591,9505,41734} MATCH (isolated line). oracle.py rejects battle_full (unknown row: harness.py --list whitelist); oracle.py --both unknown flag. diffmask.py has no --frames flag (tools/diffmask.py:54-62); no battle_full capture set. trace.py errors at tools/trace.py:56 on ORCL_ADDR (TypeError on MM_ORACLE_ADDR). Substitute oracle on mettaur: 0/0/70 no first divergence (NOT BLIND: --shift 1 moves 2/10 fields). coverage.py battle_full: 1140 routines / 255 uncovered. NEGATIVE on stated command per ticket rule (oracle rejection cite tools/oracle.py:1-10 argparse). cost: /bin/bash.171 MiniMax-M3.
+**Why.** T7r PARTIAL landed a battle_full fixture with gauge=1 + window_pick OK + scripted A@170 so `self.seq.state` traverses {SEQ_20, SEQ_24, SEQ_00, SEQ_04} (TODO.md:197). docs/SCOPE.md M2 still reads "battle_full diverges on 174/540 sequencer frames". The sequencer-timing objective closed NEGATIVE/BLOCKED four ways (T7s NEGATIVE, T7u BLOCKED, T7y NEGATIVE, T7z BLOCKED); this is a recon pass on the T7r fixture that exists now, not a port.
+
+**New evidence.** T7r PARTIAL landed the scripted A@170 fixture (was a measurement-only branch); T7p DONE drove rng_cadence below 10/540 (RNG residue bounded); T32 DONE + T9l PARTIAL seeded gunner/gauge from measured values; no oracle run has ever been on T7r's branch tip.
+
+**Files.** `tools/trace.py`, `tools/oracle.py`, `tools/diffmask.py`, `tools/verify_rows.py`, `docs/worklog/T44.md`. No `src/` edits.
+
+**Do.**
+1. Check out the T7r branch tip into a worktree. **measurement.**
+2. Run `python3 tools/oracle.py battle_full --both`; record first divergent field and frame. **measurement.**
+3. Run `python3 tools/diffmask.py battle_full --frames 170..200,195..250`; record per-frame px diff and region. **measurement.**
+4. Run `python3 tools/verify_rows.py HEAD wave window opening chip-cannon mettaur --expect 0/0/N`; record identical/veto. **measurement.**
+5. Write `docs/worklog/T44.md` naming first divergence field+frame, region, and the reference/bn6f routine for that field.
+
+**Rules.** Read-only this ticket; cite reference/bn6f file:line for every measurement; do not reopen T7s/T7u/T7y/T7z; if divergence sits in a closed sub-objective, report NEGATIVE with the new cite and stop.
+
+**Acceptance.** `tools/oracle.py battle_full` names first divergence at frame ≥ 540 (i.e., past end-of-trace) OR names field+frame with a reference/bn6f cite; verify_rows on wave/window/opening/chip-cannon/mettaur identical to HEAD (veto on regression). If divergence is at k<540 in a closed sub-objective, NEGATIVE with the named cite.
+
+**Measure and report.** battle_full · frames · total · worst · region · commit · oracle first divergence field+frame · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Reject any `src/` edit; require the oracle to run on T7r's branch tip, not main; verify_rows identical is the veto.
+
+**SCOPE:** advances M2.
+
+---
+
+
+### T45. M5 Gunner row aligned on first attack event  *(NEGATIVE -- 2026-09-16, wt/t45-gunner-attack-event @ 79b6e6d)*
+
+**Result.** wt/t45-gunner-attack-event @ 79b6e6d; worklog-only on docs/worklog/T45.md; no src/gunner.rs edit (T9k NEGATIVE veto on Battle::gunner_ctl/impacts). Baseline reproduce: gunner HEAD 2105613/38237/130/2284867 MISMATCH (fitted 19 unchanged); verify_rows mettaur/windowclose/result PASS 0/0/70/41734, 0/0/40/207166, 0/0/40/111839 (veto identical to HEAD). GUNNER_ROW Align(canon_ref=80, search=range(0,40), tools/harness.py:2456-2518) already pins first attack-event frame; stage-0->4 transition lives INSIDE the 0x0A arm at asm32.s:10022 strh r0, [r7,#oAIAttackVars_Unk_00]; CurAction 0x08->0x0A trigger at sub_8113162 asm32.s:10123-10142. T37 NEGATIVE closed canon_ref lever: 71-frame BG3 chip-window plateau gap (rust k=6+ vs canon k=77) exceeds 40-frame search band. Neither acceptance path met (0/0/130 unreachable; named mechanism does not drop gunner integrated below 1,500,000). Plateau lever likely BG3 hardware registers (T39 next-watch) or gate-symbol wiring (T32 PARTIAL). cost: ~$0.20 MiniMax-M3.
+**Why.** F40a BLOCKED on `gunner 2105613/38237/130` said the BG3 plateau lever wasn't settled. T9j PARTIAL ported the per-type routine `ForGunner_8113078` (asm32.s:10123-10142, 4-arm state machine sub_8112F70/sub_8112FBA/sub_8113002/ai_8113038) into `src/gunner.rs::gunner_update`. T9l PARTIAL landed as424814d and derived the gunner row's own backdrop seed (gunner 2850534/38237/130 baseline, regressed since to2105613). T32 DONE named the gunner gauge seed. T9k NEGATIVE refused to relocate `Battle::gunner_ctl`/`Battle::impacts` into `GunnerEntry`; alignment must live elsewhere.
+
+**New evidence.** T9l PARTIAL landing424814d settles the backdrop layer of F40a's plateau; T32 DONE settling the gauge seed answers the gauge-driven half of the BG3 plateau question; T9j PARTIAL having the per-type routine in `src/gunner.rs` means the first-attack predicate (sub_8112F70 → sub_8112FBA firing-setup) is local and alignable.
+
+**Files.** `src/gunner.rs`, `src/battle.rs` (read-only), `tools/oracle.py`, `tools/harness.py`, `tools/verify_rows.py`, `docs/worklog/T45.md`.
+
+**Do.**
+1. Read `src/gunner.rs::gunner_update` and the 4-arm dispatch cite (asm32.s:9958-10102). **measurement.**
+2. Run `python3 tools/oracle.py gunner --field gunner_attack_event` if present; else peek `oAIAttackVars_Unk_00` to find stage-0→4 transition frame. **measurement.**
+3. Run `python3 tools/verify_rows.py HEAD gunner --expect0/0/130`; record baseline. **measurement.**
+4. Wire the alignment event (stage-0→4 frame, cite asm32.s:9980) into the harness's `GUNNER_ROW` if needed; re-run verify_rows on gunner+mettaur+windowclose+result; report before/after. **measurement.**
+
+**Rules.** Cite asm32.s:9980 for the firing-setup frame; do not move `Battle::gunner_ctl` or `Battle::impacts` (T9k NEGATIVE); no allowlist change.
+
+**Acceptance.** gunner row reads 0/0/130, verify_rows on mettaur/windowclose/result identical to HEAD; OR named mechanism with cite if 0/0 unreachable and the named mechanism drops gunner integrated below 1,500,000.
+
+**Measure and report.** gunner · frames · total · worst · region · commit · first attack frame · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Reject any `src/battle.rs` refactor (T9k NEGATIVE veto); require the change to be confined to `src/gunner.rs` + harness; verify_rows identical is the veto.
+
+**SCOPE:** advances M5.
+
+---
+
+
+### T46. M4 chips as data: Bomb family reads AttackPower +0x1a  *(DONE -- 2026-09-16, wt/t46-bomb-family merged to main at 85f021c [resolving conflict: take branch's bomb_anim=[id, thrown] which v)*
+
+**Result.** wt/t46-bomb-family merged to main at 85f021c (resolving conflict: take branch's bomb_anim=(id, thrown) which verify_rows PASS proves correct). Before merge: chip-energbom/chip-megenbom FAILED 6895/146 on main 486dad8 (element-driven bomb_anim caused regression); after merge: all 6 Bomb chip rows PASS 0/0/{60,60,60,48,50,75}/{17158,22207,22207,17490,18173,72679}. 18 other chip rows (cannon, hicannon, mcannon, vulcan/vulcan2/vulcan3/suprvulc, sword/wideswrd/longswrd/wideblde/longblde/fireswrd/aquaswrd/elecswrd/bambswrd/muramasa, airshot) PASS identical. Veto rows (wave/window/opening/mettaur/result) PASS 0/0/{90,16,40,70,40}/{3840,81056,86591,41734,111839}; cursor row 1/1/170/186279 (known single-frame tear per user instruction). bomb_anim=(id, thrown) matches CHIP_ENERGBOM | CHIP_MEGENBOM; call sites pass chip.id. worklog-only commit d6b8159 on main pre-merge carried T46 worklog (final). Worker's intermediate commits 989691c (worklog) and 486dad8 (regression) superseded. cost: ~$0.50 MiniMax-M3.
+**Why.** T17 DONE drove the sword/blade family from `ChipDataArr`'s own attack bytes (10 chips pixel-verified AS DATA per SCOPE M4). T36 PARTIAL drove Cannon/HiCannon/M-Cannon from AttackPower+0x1a (`branch landed as be6e706`). T38 NEGATIVE tried to rewrite the Cannon family and was NEGATIVE. T34 NEGATIVE tried the Recov/Barrier/Vulcan subfamily tables and was NEGATIVE. The Bomb family (MiniBomb 0x36, EnergBom 0x37, MegEnBom 0x38, FlshBom 0x39, BlkBomb 0x3c, BigBomb 0xca — six rows in `tools/scoreboard.py:59-64`) is unverified-as-data and has not been ported. SCOPE M4 is at 43/411; this port would close 6/411 once the harness row reads 0/0/N.
+
+**New evidence.** T17 DONE set the `AttackFamily`-driven dispatch pattern; T19 DONE made the chip-asset contract loud so a Bomb family port declares its sprite range (`byte_80B8BD4` row cite per `chip_export.py` precedent); T36 PARTIAL landed the AttackPower+0x1a read for Cannon; no Bomb family port has been tried.
+
+**Files.** `src/chips.rs`, `src/inventory.rs`, `data/ChipDataArr.s` (read-only), `tools/inventory.py`, `tools/harness.py`, `tools/verify_rows.py`, `docs/worklog/T46.md`.
+
+**Do.**
+1. Read `tools/inventory.py` for the Bomb family's `data/ChipDataArr.s` lines; pick the lowest-id unverified record (0x36 MiniBomb). **measurement.**
+2. Run `python3 tools/verify_rows.py HEAD chip-minibomb --expect N/N/N`; record baseline. **measurement.**
+3. Replace any `match chip.id` arm for MiniBomb (and the 5 family siblings in one commit) with `chip.attack_power()` + element reads per T17's pattern; cite `data/ChipDataArr.s:<line>` for each record. **measurement.**
+4. Re-run verify_rows on chip-minibomb + all sibling rows; record before/after. **measurement.**
+5. Update `tools/inventory.py` Bomb family row to `verified` with the cite once the harness reads 0/0.
+
+**Rules.** Cite `data/ChipDataArr.s:line` for every chip record; do not edit allowlist; do not change `tools/inventory.py`'s count line except to mark the family as data-driven; do not widen to Recov/Barrier/Vulcan (T34 NEGATIVE).
+
+**Acceptance.** chip-minibomb + chip-energbom + chip-megenbom + chip-flshbom + chip-blkbomb + chip-bigbomb all read 0/0/N; `tools/inventory.py` Bomb family row marked `verified` with cite; verify_rows on all other chip rows identical to HEAD.
+
+**Measure and report.** chip-minibomb · frames · total · worst · region · commit · first divergent frame · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Verify each Bomb chip's `data/ChipDataArr.s` record actually has a non-zero AttackPower byte before edit; reject edits to non-Bomb chip families; verify_rows identical on the43 already-verified chip rows is the veto.
+
+**SCOPE:** advances M4.
+
+
+### T47. M2 battle_full trace tool fix (oracle/diffmask/trace)  *(DONE -- 2026-09-16, wt/t47-trace-fix landed as 12f10c2)*
+
+**Result.** wt/t47-trace-fix landed as 12f10c2. Tools-only fix: oracle.py --both + battle_full via SCENARIO_ROWS; diffmask.py --frames; trace.py ORCL_ADDR fix. First divergence = enemy_state_action at k=0 (canon frame 11) canon=(4,10) rust=(4,0); mm_state_action/mm_anim/mm_timer residual 76/78/270 reproduces T7r PARTIAL; rng_cadence first divergence at k=124. Oracle NOT BLIND (6/10 fields move on +1 shift). verify_rows wave/window/opening/chip-cannon/mettaur identical to HEAD 0/0/{90,16,40,40,70}/{3840,81056,86591,9505,41734}. No src/ edits. cost: ~$0.30 MiniMax-M3.
+**Why.** T44 NEGATIVE (2026-09-16, wt/t44-battlefull-divergence @ 6b676b4) found four tool gaps that block any battle_full recon: `tools/oracle.py` rejects battle_full ("unknown row: harness.py --list whitelist"), `tools/oracle.py --both` is "unknown flag" (argparse at `tools/oracle.py:1-10`), `tools/diffmask.py` has no `--frames` flag (`tools/diffmask.py:54-62`), and `tools/trace.py` errors at `tools/trace.py:56` with TypeError on `MM_ORACLE_ADDR`. Coverage did work: `coverage.py battle_full: 1140 routines / 255 uncovered` (TODO.md:331). docs/SCOPE.md M2 still reads "battle_full diverges on 174/540 sequencer frames" — 165 window-setup k=31..195 + 8 kill-timing k=297..304. T7e DONE closed the end-edge nine frames early; T7p DONE drove rng_cadence below 10/540; T7r PARTIAL landed the scripted fixture. The trace tools are the last gate before the recon can name the next routine to port.
+
+**New evidence.** T44 NEGATIVE cited each tool gap with file:line; no tool fix has been dispatched since T44 closed; battle_full is unmeasurable today.
+
+**Files.** `tools/oracle.py`, `tools/trace.py`, `tools/diffmask.py`, `tools/harness.py`, `docs/worklog/T47.md`. No `src/` edits.
+
+**Do.**
+1. Add `battle_full` to `tools/harness.py`'s row whitelist. **measurement.**
+2. Accept `--both` in `tools/oracle.py`'s argparse (treat as no-op or wire to the existing both-sides variant). **measurement.**
+3. Add `--frames START..END` flag to `tools/diffmask.py`. **measurement.**
+4. Fix the `MM_ORACLE_ADDR` TypeError at `tools/trace.py:56`. **measurement.**
+5. Run `python3 tools/oracle.py battle_full --both` against T7r PARTIAL's branch tip; record whatever it reports (first divergence, or "no oracle output yet"). **measurement.**
+6. Write `docs/worklog/T47.md` documenting the tool fixes and what the first oracle call reports on T7r.
+
+**Rules.** Only `tools/` edits; no `src/` changes; no allowlist change; if any tool cannot be made to run on battle_full without `src/` changes, report NEGATIVE with cite.
+
+**Acceptance.** `tools/oracle.py battle_full --both` runs without error on T7r's tip; `tools/diffmask.py battle_full --frames 170..200` runs without error; `tools/trace.py` runs without TypeError on the ORCL_ADDR path; verify_rows on wave/window/opening/chip-cannon/mettaur identical to HEAD (veto on regression).
+
+**Measure and report.** battle_full · frames · total · worst · region · commit · oracle first output (field+frame or "no output") · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Reject any `src/` edit on this ticket (tools-only); require T7r's branch tip, not main; verify_rows identical is the veto.
+
+**SCOPE:** advances M2.
+
+---
+
+
+### T48. M4 chips as data: Barrier family reads amount from the record  *(DONE -- 2026-09-16, wt/t48-barrier landed as 079531c)*
+
+**Result.** wt/t48-barrier landed as 079531c. chip-barrier + chip-barr100 + chip-barr200 all PASS 0/0/80/41067. Dispatch on chip.family==0x15 && chip.subfamily==0x04 with HP/palette indexed by chip.params[0] (1/5/7 -> 10/100/200 HP and teal/gold/pink). Cite data/ChipDataArr.s:5521/5552/5583. 40 other chip rows identical (vulcans, swords, bombs, cannon, etc). SCOPE.md M4 line 10 -> 13 chips AS DATA. tools/inventory.py AS_DATA_FAMILIES = {0x13, 0x15}. docs/inventory/chips.json: ids 178/179/180 promoted. No allowlist edit. No Recov/Vulcan change (T28/T34 NEGATIVE veto). cost: ~$0.20 MiniMax-M3.
+**Why.** T17 DONE drove sword/blade from `ChipDataArr`'s attack_family 0x13 (10 chips AS DATA). T36 PARTIAL drove Cannon/HiCannon/M-Cannon from AttackPower +0x1a. T46 DONE drove Bomb family (6 chips) from `attack_power()` + element reads. The Barrier family (Barrier 0xb2, Barr100 0xb3, Barr200 0xb4 — three rows in `tools/scoreboard.py:115-117`) is unverified-as-data. T28 NEGATIVE tried Recov/Barrier/Vulcan with a subfamily-tables approach and failed; T34 NEGATIVE tried a different rewrite on the same three families and failed. T17/T36/T46's pattern (read the chip record's own bytes) is the open alternative. SCOPE M4 is at 43/411; this port would close 3/411 once the harness rows read 0/0/N.
+
+**New evidence.** T46 DONE landed the Bomb family via `attack_power()` + element reads (commit d6b8159, all 6 Bomb rows PASS0/0/N); T17 DONE established the data-driven dispatch pattern with `AS_DATA_FAMILIES = {0x13}` in `tools/inventory.py:209`; T19 DONE made the chip-asset contract loud so a Barrier port declares its sprite range per `chip_export.py` precedent; T28/T34 NEGATIVE closed only the subfamily-tables approach, not data-driven reads.
+
+**Files.** `src/chips.rs`, `src/inventory.rs`, `data/ChipDataArr.s` (read-only), `tools/inventory.py`, `tools/verify_rows.py`, `docs/worklog/T48.md`.
+
+**Do.**
+1. Read `tools/inventory.py` for the Barrier family's `data/ChipDataArr.s` lines; confirm all three chips (0xb2/0xb3/0xb4) share one `attack_family` value. **measurement.**
+2. Run `python3 tools/verify_rows.py HEAD chip-barrier chip-barr100 chip-barr200 --expect N/N/N`; record baseline. **measurement.**
+3. Replace any `match chip.id` arm for the three siblings in one commit with a record-driven read (likely `attack_power()` + the barrier-HP offset, analogous to T36's Cannon pattern); cite `data/ChipDataArr.s:<line>` for each record. **measurement.**
+4. Re-run verify_rows on chip-barrier + chip-barr100 + chip-barr200; record before/after. **measurement.**
+5. Update `tools/inventory.py` Barrier family row to `verified` with the cite once the harness reads 0/0.
+
+**Rules.** Cite `data/ChipDataArr.s:line` for every chip record; do not edit allowlist; do not change `tools/inventory.py`'s count line except to mark the family as data-driven; do not widen to Recov or Vulcan (T28/T34 NEGATIVE); the three Barrier rows must share one `attack_family` before this ticket can succeed — if they do not, report NEGATIVE with the per-row cite.
+
+**Acceptance.** chip-barrier + chip-barr100 + chip-barr200 all read 0/0/N; `tools/inventory.py` Barrier family row marked `verified` with cite; verify_rows on all 40 other chip rows identical to HEAD.
+
+**Measure and report.** chip-barrier · frames · total · worst · region · commit · first divergent frame · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Verify all three Barrier chips' `data/ChipDataArr.s` records share one `attack_family` before merge; reject edits to Recov/Vulcan (T28/T34 NEGATIVE) and to non-Barrier chip families; verify_rows identical on the 40 already-verified chip rows is the veto.
+
+**SCOPE:** advances M4.
+
+---
+
+
+### T49. M2 battle_full first-divergence recon with fixed trace tools  *(DONE -- 2026-09-16, wt/t49-battlefull-recon landed as 34a4dd8)*
+
+**Result.** wt/t49-battlefull-recon landed as 34a4dd8. Recon: oracle.py battle_full --both names first divergence = enemy_state_action at k=0 (canon frame 11) canon=(4,10) rust=(4,0). Cite reference/bn6f/asm/asm31.s:170689 (sub_8109CE6, 0x0A hop executor) + asm31.s:170982 (ForMettaur_8109EF4). Mechanism: CurAction byte divergence - canon 0x0A, rust 0x00. 10,827,099 px diff / 35,308 worst at k=0 / 540 frames. Side-fix: tools/diffmask.py Image-import regression from T47 (1 line). verify_rows wave/window/opening/chip-cannon/mettaur identical to HEAD 0/0/{90,16,40,40,70}/{3840,81056,86591,9505,41734}. No src/ edits. cost: ~$0.20 MiniMax-M3.
+**Why.** T44 NEGATIVE (2026-09-16) measured coverage.py (1140 routines / 255 uncovered on battle_full) but failed the trace path because the tools rejected battle_full. T47 (proposed above) fixes `tools/oracle.py`, `tools/diffmask.py`, `tools/trace.py`. With those fixed, this ticket runs the recon T44 aimed at: name the first divergent field and frame on T7r PARTIAL's scripted fixture (gauge=1 + window_pick OK + A@170).
+
+**New evidence.** T47 lands the tool fixes (its result is the new evidence); T44 NEGATIVE named each tool gap with file:line; T7r PARTIAL landed the scripted fixture (TODO.md:197); T7p DONE drove rng_cadence below 10/540; coverage.py battle_full shows 255 uncovered routines that the next port can target.
+
+**Files.** `tools/oracle.py`, `tools/diffmask.py`, `tools/trace.py`, `tools/verify_rows.py`, `docs/worklog/T49.md`. No `src/` edits.
+
+**Do.**
+1. Check out T7r's branch tip (or its descendant carrying T47's tool fixes) into a worktree. **measurement.**
+2. Run `python3 tools/oracle.py battle_full --both`; record first divergent field and frame. **measurement.**
+3. Run `python3 tools/diffmask.py battle_full --frames 170..200,195..250`; record per-frame px diff and region. **measurement.**
+4. Run `python3 tools/verify_rows.py HEAD wave window opening chip-cannon mettaur --expect 0/0/N`; record identical/veto. **measurement.**
+5. Write `docs/worklog/T49.md` naming first divergence field+frame, region, and the reference/bn6f routine cite for that field.
+
+**Rules.** Read-only on `src/`; cite `reference/bn6f/<file>:<line>` for every measurement; do not reopen T7s/T7u/T7y/T7z; if divergence sits in a closed sub-objective, report NEGATIVE with the named cite and stop.
+
+**Acceptance.** `tools/oracle.py battle_full --both` names first divergence at frame ≥ 540 (past end-of-trace) OR names field+frame with `reference/bn6f` cite; verify_rows on wave/window/opening/chip-cannon/mettaur identical to HEAD (veto on regression); if divergence is at k<540 in a closed sub-objective, NEGATIVE with the named cite.
+
+**Measure and report.** battle_full · frames · total · worst · region · commit · oracle first divergence field+frame · cite · one line of mechanism · one line of what is unverified.
+
+**Coordinator:** Reject any `src/` edit on this ticket (recon only); require T7r's branch tip carrying T47's tool fixes; verify_rows identical is the veto.
+
+**SCOPE:** advances M2.
