@@ -1,88 +1,107 @@
-# AGENT_GUIDE — the 2k-token extract of docs/HANDOFF_2026-09-12.md that a worker actually needs
+# AGENT_GUIDE — what a worker needs, in the order it is needed
 
-HANDOFF.md is the short session-start document; the long one with the history, incidents and the
-"HANDOFF §N" sections tickets cite is docs/HANDOFF_2026-09-12.md. Read THIS, then only the section a
-ticket names. Rules are in AGENTS.md; your ticket text comes from `tools/next_ticket.py`.
+Your ticket text arrives in your task. Rules are in AGENTS.md. When a ticket cites "HANDOFF §N", read
+only that section of docs/HANDOFF_2026-09-12.md. Never read TODO.md, HANDOFF.md or tools/harness.py
+whole; grep them.
 
-## What this is
+## The loop
+```
+bash tools/worktree.sh <name>                     # your own worktree, branch and target dir (it prints them)
+export CARGO_TARGET_DIR=/tmp/ct_<name>            # keep ONE target dir: a fat-LTO release build is ~1 min cold, seconds warm
+python3 tools/harness.py --only ROW --no-gallery  # the ticket's baseline, BEFORE any edit (--ui isolated for the inner loop)
+# ... the change, in the files the ticket allows ...
+python3 tools/harness.py --only ROW --no-gallery  # the identical command again
+git add <paths> && git commit                     # per landed step, saying what was measured; never `git add -A`, never push
+```
+Read the result line: `ROW isolated PASS total 0 worst 0 frames 90 | negative: not blind (total 3840)`.
+`total` is differing pixels summed over the compared frames, `worst` the worst single frame; PASS only
+when every frame reads 0. `FAILED (allowed: ...)` is a ticketed failure: never widen tools/allowlist.py.
+`BLIND` means the negative control also read 0, so the row proves nothing. Every number you report must
+come from a command you ran in that session.
+
+## What you leave behind
+- `docs/worklog/<ID>.md`, written as you go and committed with your other work: what you measured and the
+  numbers, every idea you tried and why you dropped it, what you would try next. It lands on main even if
+  your branch does not, and the next worker on this objective starts by reading it. A failed ticket with a
+  good log is worth more than a silent one.
+- A report in the AGENTS.md shape: the harness lines before and after, the citations, and what is unproven.
+- Constants tagged `// provenance: derived|peeked|fitted -- <source>` (derived = from ROM data, peeked =
+  from the running game, fitted = matched to the picture, mechanism unknown; the harness counts fitted ones).
+
+## Finding things in the original game
+- `python3 tools/csrc.py <symbol or address>` prints a decompiled C view of a routine of the original
+  followed by the disassembly lines it came from. Use it to see a routine's shape before reading assembly;
+  in a measured A/B it halved the assembly reading per solved ticket. It is a MAP: a citation is always an
+  assembly file and line, and every number is verified by measurement.
+- `docs/recon/<ID>.md`, when it exists, is a map of where your ticket's behaviour lives; read it first, and
+  treat every causal claim in it as unverified.
+- The disassembly's symbols were renamed from address-only names on 2026-09-15 (321 of them:
+  `sub_8109EF4` became `ForMettaur_8109EF4` and so on). `reference/bn6f/docs/renames.md` maps old to new,
+  and every new name keeps the address as its suffix, so searching by address always works.
+  `reference/bn6f/docs/decomp/*.c` is a different, older decompilation under the old names.
+- `reference/bn6f` is read-only for you: never edit it, never commit in it.
+
+## What this project is
 A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored
-agb). Standard: per-pixel parity with the original ROM ("canon"), full 240x160, every compared frame,
-zero differing pixels. A non-zero is a defect with a frame and region. No boxes in space or time, no
-subtracted baselines, no "inherent" residues. Every check has a negative fixture that must fail.
-
-## Inputs (never tracked, never committed)
-`/tmp/bn6f_real.gba` canon · `/tmp/bn6f_real.srm` battery save · `/tmp/bn6f_sterile.gba` canon with
-2 code patches ("canon (sterile)": battle never concludes, no banner) · `/tmp/bn6f_sterile_emptynet.gba`
-· `/tmp/*.state` save states · `/tmp/mgba_capture` the capture tool. If any is missing:
-`bash tools/restore_inputs.sh` (roots from /home/box/bn-backup, everything else rebuilt; `python3
-tools/states.py build all` rebuilds every state from recipes).
-
-## Build and measure
-```
-export CARGO_TARGET_DIR=/tmp/ct_<name>            # your worktree's own target dir (tools/worktree.sh prints it)
-cargo build --release && python3 tools/gbafix.py target/thumbv4t-none-eabi/release/bn /tmp/x.gba
-python3 tools/harness.py --list                  # every row
-python3 tools/harness.py --only ROW --no-gallery # one row (add --ui isolated for a fast inner loop; landing runs both)
-python3 tools/oracle.py wave|mettaur             # first divergent STATE field and frame (R7)
-python3 tools/verify_rows.py <branch> ROW,ROW --expect ROW=T/W/F/NEG   # reproduce claimed lines, clean checkout
-```
-Result line: `ROW isolated PASS total 0 worst 0 frames 90 | negative: not blind (total 3840)`.
-`total` = differing pixels summed over compared frames, `worst` = worst frame; PASS only when every
-frame is 0; `FAILED (allowed: ...)` is a ticketed failure, never widen tools/allowlist.py; `BLIND`
-means the negative also read 0 and the row proves nothing. `fitted constants: N` counts `// provenance:
-fitted` tags in src/ (tag every constant: derived = from ROM data, peeked = from the running game,
-fitted = matched to the picture, mechanism unknown).
+agb). The standard is per-pixel parity with the original ROM ("canon"), full 240x160, every compared
+frame, zero differing pixels. A non-zero is a defect with a frame and a region. No boxes in space or
+time, no subtracted baselines, no "inherent" residues. Every check has a negative fixture that must fail.
+For engine-core work the state trace is the primary number and the pixels are the veto.
 
 ## How a row works
 One plain ROM, told what to be: the harness writes a 64-byte descriptor at `0x02000040` every frame
-(`--cheat`), `src/fixture.rs` reads it at startup (enemies, HP, hand, gauge, flags, fire_frame, rng...;
-contract in FIXTURE.md). The ROM writes a marker "BATT" + frame counter at `0x02000000` every frame;
-the harness aligns on its first appearance, never on power-on frame counts (boot length moves with code
-size). R7's oracle block sits at `0x02000008` (40 bytes). A `Check` has `rust`/`canon` Sides (rom,
-loadstate, script, cheats, pokes, zero, extra flags), `frames`, an `Align(canon_ref, search, note)`, a
-`ui` (isolated blanks what the check is not about, on both sides; integrated leaves everything on), a
-negative ("frame" shift, or "pixel" for a static subject). Alignment is chosen BY EVENT (a RAM value
-that marks the moment on both sides), and the search band only confirms a unique minimum -- never pick
-an offset because it scores lower (F2's rule).
+(`--cheat`), `src/fixture.rs` reads it at startup (enemies, HP, hand, gauge, flags as a `SceneFlags`
+type, fire_frame, rng...; contract in FIXTURE.md). The ROM writes a marker "BATT" plus a frame counter at
+`0x02000000` every frame and the harness aligns on its first appearance, never on power-on frame counts
+(boot length moves with code size). The oracle block sits at `0x02000008` (40 bytes, assembled from one
+table in src/battle.rs). A `Check` has `rust`/`canon` Sides (rom, loadstate, script, cheats, pokes, zero,
+extra flags), `frames`, an `Align(canon_ref, search, note)`, a `ui` (isolated blanks what the check is not
+about, on both sides; integrated leaves everything on), and a negative. Alignment is chosen BY EVENT (a
+RAM value that marks the moment on both sides); the search band only confirms a unique minimum, never
+pick an offset because it scores lower (F2's rule).
 
-## mgba_capture flags
-`<rom> <outdir> <count>` then: `--loadstate F` · `--loadsave F.srm` · `--script "A@40,Start@10"` ·
-`--cheat addr:val16` (every frame) · `--poke addr:val16` (once at load) · `--poke-at frame:addr:val16`
-(once, before that frame; max 32) · `--zero addr:len` · `--watch addr:len:file` (append after every
-frame) · `--watch-write addr[:len]` (log every write: frame, old->new, writing instruction; R5) ·
-`--dump addr:len:file` · `--peek addr` (at load; an object the intro has not populated reads 0) ·
-`--only-bg N` · `--disable-obj` · `--disable-bg` · `--trace-pc addr --trace-steps N` (perturbs
-timing; bounded use only). Frames are `frame.#####.rgb`; `tools/mgba_frames.py <dir> --at i` renders a
-PNG; `tools/diffmask.py` shows where a diff is.
+## Inputs (never tracked, never committed)
+`/tmp/bn6f_real.gba` canon · `/tmp/bn6f_real.srm` battery save · `/tmp/bn6f_sterile.gba` canon with two
+code patches ("canon (sterile)": the battle never concludes, no banner) · `/tmp/bn6f_sterile_emptynet.gba`
+· `/tmp/*.state` save states · `/tmp/mgba_capture` the capture tool. If any is missing:
+`bash tools/restore_inputs.sh` (`python3 tools/states.py build all` rebuilds every state from recipes).
+
+## Measuring tools
+```
+python3 tools/oracle.py wave|mettaur              # first divergent STATE field and frame
+python3 tools/probe.py watch|peek|frame|diff      # the common measurements, one command instead of a script
+python3 tools/verify_rows.py <branch> ROW,ROW --expect ROW=T/W/F/NEG   # reproduce your lines from a clean checkout
+python3 tools/trace.py record canon <scenario> --out /tmp/tr_c         # canon's per-frame state
+python3 tools/trace.py record rust  <scenario> --out /tmp/tr_r         # ours (TRC2 v3, written only when the trace flag is set)
+python3 tools/trace.py diff /tmp/tr_c /tmp/tr_r --align row:<scenario> # first divergent field and frame, then the list
+```
+`mgba_capture <rom> <outdir> <count>` then: `--loadstate F` · `--loadsave F.srm` · `--script "A@40,Start@10"`
+· `--cheat addr:val16` (every frame) · `--poke addr:val16` (once at load) · `--poke-at frame:addr:val16`
+(once, before that frame; max 32) · `--zero addr:len` · `--watch addr:len:file` · `--watch-write addr[:len]`
+(every write: frame, old->new, writing instruction) · `--dump addr:len:file` · `--peek addr` (at load) ·
+`--only-bg N` · `--disable-obj` · `--disable-bg` · `--trace-pc addr --trace-steps N` (perturbs timing).
+Frames are `frame.#####.rgb`; `tools/mgba_frames.py <dir> --at i` renders a PNG; `tools/diffmask.py` shows
+where a diff is.
+
+## Traps that cost a day each
+- Forcing the encounter roll's accumulator EVERY frame freezes the generator's draw (orbit trap): use a
+  one-shot `--poke-at` and vary held directions.
+- Freed-heap fill patterns 0x11/0x22 look like state; a value's MEANING needs evidence, not the value.
+- A chip press is refused after an enemy died at reload (the sequencer is left in 0x08): see F5b.
+- `--peek` at load reads 0 for objects the intro has not populated; dump from a later frame.
+- `land.sh --no-verify` is refused for any branch that changes code, and rightly: a worker used it to land
+  a regression on 2026-09-15.
+- Never measure from a tree another agent holds. Stage by path. Commit per step. Never push.
+- Every turn re-sends your whole context: batch shell work into one command or a script per stretch, read
+  file ranges rather than whole files, and re-read a file rather than trust a prune summary when exact
+  text or numbers matter.
+- Your captures share three machine-wide slots with everyone else's; a row's own captures already run in
+  parallel.
 
 ## RAM you will meet
 GameState 0x02001b80 (SubsystemIndex byte: 4 map, 8 battle_init, 12 battle main) · CurBattleDataPtr
-0x02001b9c · RNG seed 0x020013f0 (GetRNG: seed = rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan's
-BattleObject 0x0203a9b0 (CurState/CurAction +8/+9, HP +0x24, timer +0x20) · enemy slots
-0x0203aa88 / 0x0203ab60 / 0x0203ac38 · MegaMan's AIData JoypadPressed 0x020340a4 / Held
-0x020340a2 (input reaches him only while the banner sequencer dword_203CA70 is in state 0x08; in 0x0C a
-one-shot poke here delivers a press -- F5b/F11) · joypad mirror 0x02036822 · scroll counters
-0x02009690/94 read 0/0 at a battle's frame 0.
-
-## Traps that cost a day each
-- Forcing the encounter roll's accumulator EVERY frame freezes GetRNG's draw (orbit trap): use one-shot
-  `--poke-at` and vary held directions. Patching an encounter-table entry changes which entry a roll
-  selects.
-- Freed-heap fill patterns 0x11/0x22 look like state; a value's MEANING needs evidence, not just the value.
-- A chip press is refused after an enemy died at reload (banner sequencer left 0x08): see F5b.
-- `--peek` at load reads 0 for objects the intro has not populated; dump from a later frame.
-- Never measure from a tree another agent holds; never `git add -A`; stage by path; commit per landed
-  step with what was measured; never push.
-- Re-read a file rather than trust a prune summary when exact text or numbers matter. Batch shell work
-  into one command or a script per stretch: every turn re-sends your whole context.
-- Wall time: a row's captures run in parallel (3 machine-wide slots); a fat-LTO release build is the slow
-  step (~1 min cold, seconds warm), so keep one target dir and do not `cargo clean`.
-
-## State trace (T1b): record canon's battle state per frame, replay ours
-```
-python3 tools/trace.py record canon battle_full --out /tmp/tr_c   # canon side: 13 --watch streams -> table.json
-python3 tools/trace.py record rust battle_full --out /tmp/tr_r    # rust side: TRC2 block (0x02000080, v2) -> table.json
-python3 tools/trace.py diff /tmp/tr_c /tmp/tr_r --align row:battle_full  # first divergent field+frame, then the list
-```
-`--align row:<scenario>` reuses the scenario's own canon_ref/rust_base pairing (states.TRACE_SCENARIOS: battle_full + mettaur/popup/result); `--shift 1` is the negative (table must move). Parity = oracle.py's FIELD_PAIRS + rng_cadence, so the first divergence agrees with the oracle on mettaur/popup/result; the rest (HP/gauge/mercy/banner/HUD/camera/backdrop/GFX) is INFO-only. TRC2 layout: src/battle.rs `trace_snapshot` (grown BATTLE_MARKER owns 0x02000000..0x02000100 per nm -- never absolute 0x02000080, which collides per R6).
-Gated export (T1b): the block is written only while the descriptor's FLAG_TRACE bit (flags bit 7, src/fixture.rs) is set -- read once per battle in main.rs; when clear the frame path skips the snapshot computation and all 64 stores. Pixel rows leave it clear; `record rust` sets it, so only trace captures pay the export. Pixel rows leave it clear and run byte-identical to main (field integrated 158950); `record rust` sets it, so only trace captures pay the 64 stores.
+0x02001b9c · RNG seed 0x020013f0 (seed = rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan's BattleObject 0x0203a9b0
+(CurState/CurAction +8/+9, HP +0x24, timer +0x20) · enemy slots 0x0203aa88 / 0x0203ab60 / 0x0203ac38 ·
+MegaMan's AIData JoypadPressed 0x020340a4 / Held 0x020340a2 (input reaches him only while the sequencer
+word 0x0203CA70 is in state 0x08; in 0x0C a one-shot poke here delivers a press) · joypad mirror
+0x02036822 · scroll counters 0x02009690/94 read 0/0 at a battle's frame 0.
