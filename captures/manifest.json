@@ -62,7 +62,7 @@
   {
     "file": "captures/chip-barrier-progress.gif",
     "name": "chip-barrier-progress",
-    "label": "F12 barrier: bubble spawns at attack+46 like canon (was 78); 52560 to 0\n\nchip-barrier (isolated), before and after: canon on top; ours at 4f72383 (52560 px over 80 frames, canon 5+k, rust offset 124); ours at 5e681a1 (0 px, canon 5+k, rust offset 124). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "T48 DONE: Barrier family reads AttackParam1 from data/ChipDataArr.s:5521/5552/5583. Dispatch on family=0x15, subfamily=0x04. chip-barrier/barr100/barr200 all PASS 0/0/80/41067.\n\nchip-barrier (isolated), before and after: canon on top; ours at 33e9fbd (0 px over 80 frames, canon 5+k, rust offset 124); ours at 079531c (0 px, canon 5+k, rust offset 124). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-14"
   },
   {
@@ -326,7 +326,7 @@
   {
     "file": "captures/chip-minibomb-progress.gif",
     "name": "chip-minibomb-progress",
-    "label": "MiniBomb's thrown ball. Ours (middle) drew the ball underneath its own shadow; canon's sprite order puts the ball above the shadow. F12a fixed the draw order to match canon's object order (bottom). The same change nudged the three seed chips, which share the code, by a few pixels; the seeds pass owns that.\n\nchip-minibomb (isolated), before and after: canon on top; ours at 8ff4bd9 (10 px over 60 frames, canon 5+k, rust offset 122); ours at a607263 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "T46 DONE: Bomb family reads attack_power() + element from data/ChipDataArr.s:1646/1336/1367/1398/1708/6265. Before: chip-energbom/chip-megenbom FAILED 6895/146. After: all 6 PASS 0/0/N.\n\nchip-minibomb (isolated), before and after: canon on top; ours at d6b8159 (0 px over 60 frames, canon 5+k, rust offset 122); ours at 85f021c (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-13"
   },
   {
