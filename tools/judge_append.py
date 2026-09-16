@@ -28,7 +28,7 @@ for i, m in enumerate(heads):
     whytext = re.search(r"\*\*Why\.\*\*(.*?)(?=\n\*\*|\Z)", body, re.S); whytext = whytext.group(1) if whytext else body
     dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
     if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
-    if today_batches.isdigit() and int(today_batches) >= 3: why.append("daily cap: %s judge batches already admitted today" % today_batches)
+    if today_batches.isdigit() and int(today_batches) >= 6: why.append("daily cap: %s judge batches already admitted today" % today_batches)
     (refused if why else admitted).append((tid, why, body))
 if admitted:
     # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section

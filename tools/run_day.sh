@@ -40,6 +40,11 @@ for name in $RUNS; do
       [ "$PARALLEL" = 1 ] && continue || break
     fi
   fi
+  # an empty queue that the judge cannot refill (its daily cap) is not worth a run: each launch would spend a judge call and stop
+  if ! python3 tools/next_ticket.py --list 2>/dev/null | grep -qE '^\S+\s+OPEN\b'; then
+    batches="$(git log --since="$(date +%F) 00:00" --format=%s | grep -c judge-admitted)"
+    if [ "${batches:-0}" -ge 6 ]; then echo "$name: queue empty and the judge is at its daily cap; no run this tick"; continue; fi
+  fi
   if python3 tools/roles.py resolve "$name" > /tmp/bn-pi/resolve_$name.txt 2>&1; then
     BN_RUN="$name" bash tools/pi_coordinator.sh > /tmp/bn-pi/last_run_dir 2>&1 && { echo "$name: started $(cat /tmp/bn-pi/last_run_dir)"; running=$((running + 1)); }
     [ "$PARALLEL" = 1 ] && continue || break
