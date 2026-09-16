@@ -1564,6 +1564,9 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
                   art_entry=10, art_timer=4, scroll_xq=466, scroll_yq=745)
 #: T24: art_timer 7 -> 4, so `Backdrop::seed`'s construction lead (+1,
+#: (art_entry, art_timer) = (10, 4) are both read at the POST-boundary anchor, canon cap 135 /
+#: rust cap 121 (paired k=0); the cap-130 line above (entry 23, timer 1) is F26b's own anchor and is
+#: superseded for this field by T23's. Source of both: // canon: eGFXAnimStates[0] at 0x020094c0.
 #: src/backdrop.rs:233) puts our art countdown at 5 at the paired anchor.
 #: 4 = canon's own countdown (`// canon: eGFXAnimStates[0] hw1 reads 4 at the
 #: paired anchor, /tmp/bn-t23-art-clock-phase/canon_animstates.bin caps 135 and
