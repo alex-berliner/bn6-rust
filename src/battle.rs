@@ -267,7 +267,6 @@ const CHIP_BAMBSWRD: u16 = 79;
 const CHIP_CANNON: u16 = 1;
 const CHIP_HICANNON: u16 = 2;
 const CHIP_MCANNON: u16 = 3;
-const CHIP_AIRSHOT: u16 = 4;
 const CHIP_VULCAN: u16 = 5;
 const CHIP_VULCAN2: u16 = 6;
 const CHIP_VULCAN3: u16 = 7;
@@ -637,6 +636,10 @@ const AIRSHOT: actor::AttackSpec = actor::AttackSpec {
 /// row 0xa: +18 forward, 24 up, byte_80188C0[20..22]).
 const AIRSHOT_FRAMES: u8 = 21; // provenance: derived -- sub_80EC8A0/sub_80EC90E, asm31.s:111067-111142
 const AIRSHOT_ARM: (i32, i32) = (18, -24); // provenance: derived -- byte_80B8BD4 row 0x13, byte_80188C0[20..22]
+/// AirShot is the only chip in the asset with attack_family 0x21
+/// (data/ChipDataArr.s:127 = id 4); the family byte drives dispatch in
+/// use_chip and chip_strike, replacing the deleted CHIP_AIRSHOT id check.
+const AIRSHOT_FAMILY: u8 = 0x21; // canon: ChipDataArr_8021DA8 AttackFamily of id 4 (data/ChipDataArr.s:136)
 /// The Recov chips heal their names; the amounts are byte_80EC870
 /// (asm31.s:111044), one per subfamily.
 const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- RecovHealBySubfamily_80EC870 (asm31.s:111132, body :111133-111134, reader sub_80EC844 :111110-111131, off_80EC86C :111130-111131, decomp asm31.c:86133, ROM offset 0x0EC870)
@@ -4117,6 +4120,26 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
     /// rest take effect at once. Ids the fight cannot use yet are consumed
     /// without effect.
     fn use_chip(&mut self, chip: Chip) {
+        // AirShot (attack family 0x21, sub_80EC884) dispatches from the
+        // record, not the chip id: only one chip in ChipDataArr_8021DA8
+        // carries attack_family 0x21 (data/ChipDataArr.s:127 = id 4), so
+        // an early-return here is exact and the per-id CHIP_AIRSHOT arm
+        // below is gone.
+        if chip.family == AIRSHOT_FAMILY {
+            self.chip_in_use = Some(chip);
+            self.megaman.attack(AIRSHOT);
+            let (mc, mr) = self.megaman.panel();
+            let (mx, my) = field::panel_centre(mc, mr);
+            let dx = self.megaman.facing_dx();
+            self.effects.push((
+                spr::Player::new(spr::Assets::new(AIRSHOT_BARREL), 0),
+                (mx + dx * AIRSHOT_ARM.0, my + AIRSHOT_ARM.1),
+                AIRSHOT_FRAMES,
+                false,
+                false,
+            ));
+            return;
+        }
         match chip.id {
             CHIP_SWORD | CHIP_WIDESWRD | CHIP_LONGSWRD | CHIP_WIDEBLDE | CHIP_LONGBLDE
             | CHIP_MURAMASA | CHIP_STEPSWRD | CHIP_FIRESWRD | CHIP_AQUASWRD
@@ -4278,20 +4301,6 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     self.vulcan_fireball = Some((fireball, None));
                 }
             }
-            CHIP_AIRSHOT => {
-                self.chip_in_use = Some(chip);
-                self.megaman.attack(AIRSHOT);
-                let (mc, mr) = self.megaman.panel();
-                let (mx, my) = field::panel_centre(mc, mr);
-                let dx = self.megaman.facing_dx();
-                self.effects.push((
-                    spr::Player::new(spr::Assets::new(AIRSHOT_BARREL), 0),
-                    (mx + dx * AIRSHOT_ARM.0, my + AIRSHOT_ARM.1),
-                    AIRSHOT_FRAMES,
-                    false,
-                    false,
-                ));
-            }
             CHIP_RECOV10 | CHIP_RECOV30 | CHIP_RECOV50 | CHIP_RECOV80 | CHIP_RECOV120
             | CHIP_RECOV150 | CHIP_RECOV200 | CHIP_RECOV300 => {
                 self.megaman
@@ -4452,6 +4461,24 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             }
             return;
         }
+        // AirShot's hitbox lands on the panel ahead at once and shoves
+        // what it hits one panel back; the shove is the hop the field
+        // already has, its own timing not yet taken from the game.
+        // Family-driven (data/ChipDataArr.s:127 attack_family 0x21 = id 4).
+        if chip.family == AIRSHOT_FAMILY {
+            let (fc, fr) = self.megaman.front_panel();
+            let blocked = self
+                .enemies
+                .iter()
+                .fold(self.megaman.occupancy(), |m, e| m | e.occupancy())
+                | self.panels.other_half(true);
+            for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
+                if enemy.panel() == (fc, fr) && enemy.take_damage(chip.power) {
+                    enemy.hop(dx, 0, blocked);
+                }
+            }
+            return;
+        }
         match chip.id {
             CHIP_MINIBOMB | CHIP_BLKBOMB | CHIP_BIGBOMB | CHIP_ENERGBOM | CHIP_MEGENBOM
             | CHIP_LILBOLR1 | CHIP_LILBOLR2 | CHIP_LILBOLR3
@@ -4596,19 +4623,6 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // AirShot's hitbox lands on the panel ahead at once and shoves
             // what it hits one panel back; the shove is the hop the field
             // already has, its own timing not yet taken from the game.
-            CHIP_AIRSHOT => {
-                let (fc, fr) = self.megaman.front_panel();
-                let blocked = self
-                    .enemies
-                    .iter()
-                    .fold(self.megaman.occupancy(), |m, e| m | e.occupancy())
-                    | self.panels.other_half(true);
-                for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
-                    if enemy.panel() == (fc, fr) && enemy.take_damage(chip.power) {
-                        enemy.hop(dx, 0, blocked);
-                    }
-                }
-            }
             CHIP_VULCAN | CHIP_VULCAN2 | CHIP_VULCAN3 | CHIP_SUPRVULC => {
                 const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
                 let (fc, fr) = self.megaman.front_panel();
