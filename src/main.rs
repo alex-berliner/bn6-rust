@@ -138,14 +138,14 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 ///
 /// The state oracle's export block (TODO R6) lives in the PADDING, bytes
 /// 8..48 (0x02000008..0x02000030) -- see `ORACLE_OFFSET`. NOT after byte
-/// 128: this static must stay exactly 128 bytes because agb's own EWRAM
-/// data (`SPRITE_LOADER`, checked with `nm`) begins at 0x02000080 the
-/// moment it ends -- a first cut that grew the array to 168 bytes to put
-/// the block at 0x02000080 overlapped the loader and the two clobbered
-/// each other every frame (caught because the exported RNG word's low
-/// byte moved while its high three followed GetRNG exactly; the four
-/// rerun rows happened to stay identical anyway). Inside this array the
-/// block is safe by Rust's own array-layout guarantee, like the
+/// 256: this static must stay exactly 256 bytes (current `[u32; 64]`)
+/// because agb's own EWRAM data (`INTERRUPT_TABLE`, checked with `nm`)
+/// begins at 0x02000100 the moment it ends -- a first cut that grew the
+/// array to 168 bytes to put the block at 0x02000080 overlapped the loader
+/// and the two clobbered each other every frame (caught because the exported
+/// RNG word's low byte moved while its high three followed GetRNG exactly;
+/// the four rerun rows happened to stay identical anyway). Inside this
+/// array the block is safe by Rust's own array-layout guarantee, like the
 /// descriptor.
 ///
 /// ONE static, not a second one in its own `.ewram.fixture` section: TWO
@@ -261,7 +261,7 @@ fn write_battle_marker(magic: u32, frame: u32) {
 /// note. Nothing else writes bytes 8..64: the marker write touches only
 /// indices 0 and 1, and the harness's descriptor cheats start at
 /// 0x02000040.
-const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layout constant (where in the marker's padding to put the block); the padding is demonstrably free (nm: BATTLE_MARKER owns 0x02000000..0x02000080, SPRITE_LOADER starts at 0x02000080), see the array doc
+const ORACLE_OFFSET: usize = 8; // provenance: chosen -- this project's own layout constant (where in the marker's padding to put the block); the padding is demonstrably free (nm: BATTLE_MARKER owns 0x02000000..0x02000100, INTERRUPT_TABLE at 0x02000100, SPRITE_LOADER at 0x020001a8), see the array doc
 
 const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's own protocol constant (free choice, like BATTLE_MAGIC); "ORCL" read big-endian
 
@@ -270,7 +270,7 @@ const ORACLE_MAGIC: u32 = 0x4f52_434c; // provenance: chosen -- this project's o
 /// Linker-placed, NOT an absolute address: growing the array pushes agb's
 /// own EWRAM data (`INTERRUPT_TABLE`, `SPRITE_LOADER`) forward instead of
 /// overlapping it -- verify with `nm <elf> | grep -A1 BATTLE_MARKER` that
-/// this static owns 0x02000000..0x02000100. The R6 cut that wrote an
+/// this static owns 0x02000000..0x02000100 (today: `INTERRUPT_TABLE` at 0x02000100, `SPRITE_LOADER` at 0x020001a8). The R6 cut that wrote an
 /// absolute 0x02000080 collided with the sprite loader (see the array doc).
 const TRACE_OFFSET: usize = 128; // provenance: chosen -- this project's own layout constant (first 64-byte slot past the descriptor that nm proves free); the freeness is re-measured, not assumed, see the array doc
 

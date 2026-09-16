@@ -499,11 +499,11 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
 /// the real ROM, the muzzle flashes run every 5 frames from c5 and each
 /// extra shot lengthens the attack by 11 frames: the gun is on screen 35,
 /// 46 and 57 frames for the three chips.
-// provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892.
-const VULCAN1_SHOTS: u8 = 3; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
-const VULCAN2_SHOTS: u8 = 4; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
-const VULCAN3_SHOTS: u8 = 5; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
-const SUPRVULC_SHOTS: u8 = 10; // provenance: derived -- dword_80EBFEC = 0xA050403, asm31.s:109878-109892
+// provenance: derived -- VulcanShotsBySubfamily_80EBFEC (asm31.s:110022, data .word 0xA050403 :110023, reader ldr asm31.s:109967, off_80EBFE4 :110018-110019, decomp asm31.c:85326, ROM offset 0x0EBFEC).
+const VULCAN1_SHOTS: u8 = 3; // provenance: derived -- VulcanShotsBySubfamily_80EBFEC = 0xA050403 (asm31.s:110022, reader ldr asm31.s:109967, ROM offset 0x0EBFEC)
+const VULCAN2_SHOTS: u8 = 4; // provenance: derived -- VulcanShotsBySubfamily_80EBFEC = 0xA050403 (asm31.s:110022, reader ldr asm31.s:109967, ROM offset 0x0EBFEC)
+const VULCAN3_SHOTS: u8 = 5; // provenance: derived -- VulcanShotsBySubfamily_80EBFEC = 0xA050403 (asm31.s:110022, reader ldr asm31.s:109967, ROM offset 0x0EBFEC)
+const SUPRVULC_SHOTS: u8 = 10; // provenance: derived -- VulcanShotsBySubfamily_80EBFEC = 0xA050403 (asm31.s:110022, reader ldr asm31.s:109967, ROM offset 0x0EBFEC)
 const fn vulcan_shots(id: u16) -> u8 {
     match id {
         CHIP_VULCAN2 => VULCAN2_SHOTS,
@@ -642,13 +642,13 @@ const AIRSHOT_FRAMES: u8 = 21; // provenance: derived -- sub_80EC8A0/sub_80EC90E
 const AIRSHOT_ARM: (i32, i32) = (18, -24); // provenance: derived -- byte_80B8BD4 row 0x13, byte_80188C0[20..22]
 /// The Recov chips heal their names; the amounts are byte_80EC870
 /// (asm31.s:111044), one per subfamily.
-const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- byte_80EC870, asm31.s:111044
+const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- RecovHealBySubfamily_80EC870 (asm31.s:111132, body :111133-111134, reader sub_80EC844 :111110-111131, off_80EC86C :111130-111131, decomp asm31.c:86133, ROM offset 0x0EC870)
 /// The heal effect's animation length, from its frame durations.
 const HEAL_FRAMES: u8 = 14; // provenance: derived -- the sprite's own frame durations
 /// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
 const INVISIBL_FRAMES: u16 = 0x68; // provenance: derived -- ChipDataArr.s:5490
 /// Barrier's HP for type 1 is 10 (byte_8020B2C, dat01.s:189).
-const BARRIER_HP: u16 = 10; // provenance: derived -- byte_8020B2C, dat01.s:189
+const BARRIER_HP: u16 = 10; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, rows :195-202 stride 6, ldr asm00_2.s:22591 / .word :22602, decomp asm00_2.c:16089, ROM offset 0x020B2C)
 /// Barrier, Barr100 and Barr200 are one chip with one handler: family 0x15
 /// subfamily 4 (off_802CCB4[4] = sub_80E3B50), whose first attack parameter
 /// indexes byte_8020B2C (data/dat01.s:189) for the bubble's HP. Barrier's
@@ -669,9 +669,9 @@ const fn barrier_palette(id: u16) -> usize {
     }
 }
 
-// provenance: derived -- byte_8020B2C, data/dat01.s:189.
-const BARR100_HP: u16 = 100; // provenance: derived -- byte_8020B2C, data/dat01.s:189
-const BARR200_HP: u16 = 200; // provenance: derived -- byte_8020B2C, data/dat01.s:189
+// provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, rows :195-202 stride 6, ldr asm00_2.s:22591 / .word :22602, decomp asm00_2.c:16089, ROM offset 0x020B2C).
+const BARR100_HP: u16 = 100; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, ROM offset 0x020B2C)
+const BARR200_HP: u16 = 200; // provenance: derived -- BarrierHpByType_8020B2C (dat01.s:194, ROM offset 0x020B2C)
 const fn barrier_hp(id: u16) -> u16 {
     match id {
         CHIP_BARR100 => BARR100_HP,
@@ -1779,7 +1779,7 @@ fn put_oracle_u32(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u32)
     /// change behaviour -- the rerun rows prove that. Also nothing may write
     /// over it: 0x02000008..0x02000030 is inside `BATTLE_MARKER`'s own
     /// reservation (bytes 8..48), which nothing else touches -- the first
-    /// cut placed it at 0x02000080, which is agb's `SPRITE_LOADER` (nm),
+    /// cut placed it at 0x02000080, which back then collided with agb's EWRAM layout
     /// and the two fought every frame.
 impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
@@ -1844,7 +1844,7 @@ impl<'a> Battle<'a> {
     /// The state-trace export block (T1): 64 bytes at EWRAM 0x02000080
     /// (bytes 128..192 of main.rs's `BATTLE_MARKER`, linker-placed -- `nm`
     /// proves the array owns 0x02000000..0x02000100, so the block can never
-    /// overlap agb's `SPRITE_LOADER`/interrupt table the way an absolute
+    /// overlap agb's INTERRUPT_TABLE (now at 0x02000100, nm) or SPRITE_LOADER (now at 0x020001a8, nm) the way an absolute
     /// 0x02000080 address did in R6). Versioned (`TRC2`, version 2): the
     /// v1 ORCL block at 0x02000008 is untouched, so oracle.py keeps
     /// reading it byte-identically. Field map (offsets in the block;
@@ -4552,8 +4552,8 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 const FAN: [i32; 4] = [0x08, 0x10, 0x18, 0x20];
                 let (fc, fr) = self.megaman.front_panel();
                 // Shots per chip, from the subfamily (dword_80EBFEC =
-                // 0xA050403: Vulcan1 3, Vulcan2 4, Vulcan3 5,
-                // asm31.s:109878-109892). Each extra shot lengthens the
+                // 0xA050403: Vulcan1 3, Vulcan2 4, Vulcan3 5;
+                // VulcanShotsBySubfamily_80EBFEC, asm31.s:110022). Each extra shot lengthens the
                 // attack by ~11 frames (see vulcan_shots); the delay staggers
                 // them 10 frames apart.
                 const VULCAN_SHOT_DELAY_STEP: u8 = 0xa; // provenance: peeked -- staggers the stream so each extra shot lengthens the attack ~11 frames (see vulcan_shots)
