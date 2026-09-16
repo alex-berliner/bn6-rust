@@ -225,13 +225,14 @@ def main():
     # 3. the post
     done = [r for r in results if r[2] == "DONE"]; part = [r for r in results if r[2] == "PARTIAL"]
     stuck = [r for r in results if r[2] in ("BLOCKED", "NEGATIVE")]
-    title = a.title or "Daily digest, %s" % datetime.date.today().strftime("%-d %B %Y")
+    end = datetime.datetime.now(); start = end - datetime.timedelta(hours=a.since)
+    title = a.title or "Daily digest for %s" % start.strftime("%-d %B %Y")      # the day the window mostly covers
     facts = "\n".join(r[3] for r in results) + "\n" + score + "\n" + "\n".join(failing) + "\n" + ledger + "\n" + "\n".join(hyper)
     out = []                                     # blog.py writes the title itself; the body must not repeat it
     out.append(ORIENTATION); out.append("")
-    out.append("In the last %d hours the agents closed %d tickets: %d finished, %d half-done and kept, %d blocked or dead ends. "
+    out.append("This covers %s to %s. In that window the agents closed %d tickets: %d finished, %d half-done and kept, %d blocked or dead ends. "
                "Every number below was measured by the automatic comparison against a recording of the original game."
-               % (int(a.since), len(results), len(done), len(part), len(stuck))); out.append("")
+               % (start.strftime("%H:%M on %-d %B"), end.strftime("%H:%M on %-d %B"), len(results), len(done), len(part), len(stuck))); out.append("")
     body = open(a.body).read().strip() if a.body else ("" if (a.no_model or not (DIGEST_MODEL or _writer().startswith("claude:"))) else newcomer_digest(results, facts))
     if body:
         out.append(body); out.append("")
@@ -270,7 +271,7 @@ def main():
     if not a.post:
         print(md); return
     slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
-    slug_exists = glob.glob("web/blog/posts/%s-%s.md" % (today, slug))
+    slug_exists = glob.glob("web/blog/posts/*-%s.md" % slug)
     if slug_exists:
         print("digest: already posted (%s)" % slug_exists[0]); return
     subprocess.run(["python3", "tools/blog.py", "new", title], input=md, text=True, check=True)
