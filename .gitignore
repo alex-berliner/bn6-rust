@@ -27,3 +27,4 @@ web/*.srm
 # never be committed.  The Ghidra install and its project database live outside
 # the repo, under /home/box/opt, so they need no rule here.
 decomp/
+docs/tickets/    # generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible

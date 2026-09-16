@@ -83,6 +83,11 @@ vs after -- a merge that changed nothing is not parity).
   Charm Hyper: $20/month for 250 credits a day, `python3 tools/hyper_credits.py` prints what is left. MiniMax coding plan ($22/month, from 2026-09-14 evening): `python3 tools/minimax_quota.py` prints the 5-hour and weekly windows and the day's allowance; pi reaches it through `tools/pacer.sh start minimax` (a pacing proxy on 127.0.0.1:8791). Schedule: both runs in parallel, each self-sufficient.
   Benchmarks of a provider against the archived Muse answers: `python3 tools/bench_provider.py run <run>` (a
   fixed set of F tickets replayed with its worker; credits measured by balance delta) and `bench_provider.py table`.
+- **Inspecting one ticket end to end:** `python3 tools/ticket_trace.py <ID>` writes `docs/tickets/<ID>.md`
+  (untracked): who worked it and on what model, every tool call and its result in time order across the
+  coordinator, the workers, the verifier and recon, what the run recorded, and what reached main. It records
+  nothing itself, it reassembles the artifacts under /tmp/bn-pi, which a reboot wipes. `--worker-only` drops
+  the coordinator's turns, `--full` stops truncating, `--chars N` sets the truncation.
 - **Money:** `python3 tools/or_spend.py` prints the real OpenRouter balance (the lower of the key's
   limit and the account's credit). The user's floor is $0.50 in the account (2026-09-14, was $5); runs stop at that floor.
   `python3 tools/spend_ledger.py` shows spend per role and model.

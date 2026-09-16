@@ -116,6 +116,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ticket"); ap.add_argument("--out"); ap.add_argument("--stdout", action="store_true")
     ap.add_argument("--chars", type=int, default=220); ap.add_argument("--full", action="store_true")
+    ap.add_argument("--worker-only", action="store_true", help="leave the coordinator's own turns out (the children's story alone)")
     a = ap.parse_args(); tid = a.ticket.upper(); chars = 100000 if a.full else a.chars
     kids = children_for(tid)
     if not kids: sys.exit("no session's report names %s (the artifacts under /tmp/bn-pi are wiped by a reboot)" % tid)
@@ -124,13 +125,19 @@ def main():
     for c in kids:
         actor = "%s (%s)" % (c["role"], c["model"].split("/")[-1])
         timeline += events_from_transcript(c["transcript"], actor, chars)
-    for r in runs:
-        timeline += coordinator_events(r, tid, chars, window)
+    if not a.worker_only:
+        for r in runs:
+            timeline += coordinator_events(r, tid, chars, window)
     timeline.sort(key=lambda x: (int(x[0]) if str(x[0]).isdigit() else 0))
     # the ticket's own text, its result, and what reached main
     body = sh("python3 tools/next_ticket.py --id %s --results 0 2>/dev/null" % tid)
     commits = sh("git log --format='%%h %%ad %%s' --date=format:'%%m-%%d %%H:%%M' --grep='\\b%s\\b' main | head -12" % tid)
-    status = "\n".join(l for r in runs for l in open("/tmp/bn-pi/%s/status.log" % r, errors="replace").read().splitlines() if tid in l) if runs else ""
+    status_lines = []
+    for r in runs:
+        f = "/tmp/bn-pi/%s/status.log" % r
+        if os.path.exists(f):
+            status_lines += [l for l in open(f, errors="replace").read().splitlines() if tid in l]
+    status = "\n".join(status_lines)
     out = ["# %s: everything that happened" % tid, "",
            "Reassembled from the run artifacts by tools/ticket_trace.py; nothing was recorded specially.", ""]
     out += ["## Who worked on it", "", "| when | part | model | turns | tokens | cost (nominal) |", "|---|---|---|---|---|---|"]
