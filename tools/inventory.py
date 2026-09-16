@@ -206,7 +206,7 @@ def chip_names():
 # behaviour in our build is the ROM's own table row, not hand-ported logic.
 # Derived from the ROM table (no per-chip list): ChipDataArr.s's
 # attack_family field, intersected with the pixel-scoreboard ids.
-AS_DATA_FAMILIES = {0x13}  # canon: ChipDataArr_8021DA8 attack_family of ids 71-79, 81, 85 (the sword/blade rows our asset carries)
+AS_DATA_FAMILIES = {0x13, 0x15}  # canon: ChipDataArr_8021DA8 attack_family of ids 71-79, 81, 85 (sword/blade, T17) + 178-180 subfamily 0x04 (Barrier/Barr100/Barr200, T48)
 
 
 def parse_chips():
