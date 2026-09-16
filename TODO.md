@@ -373,8 +373,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T48. M4 chips as data: Barrier family reads amount from the record  *(OPEN)*
+### T48. M4 chips as data: Barrier family reads amount from the record  *(DONE -- 2026-09-16, wt/t48-barrier landed as 079531c)*
 
+**Result.** wt/t48-barrier landed as 079531c. chip-barrier + chip-barr100 + chip-barr200 all PASS 0/0/80/41067. Dispatch on chip.family==0x15 && chip.subfamily==0x04 with HP/palette indexed by chip.params[0] (1/5/7 -> 10/100/200 HP and teal/gold/pink). Cite data/ChipDataArr.s:5521/5552/5583. 40 other chip rows identical (vulcans, swords, bombs, cannon, etc). SCOPE.md M4 line 10 -> 13 chips AS DATA. tools/inventory.py AS_DATA_FAMILIES = {0x13, 0x15}. docs/inventory/chips.json: ids 178/179/180 promoted. No allowlist edit. No Recov/Vulcan change (T28/T34 NEGATIVE veto). cost: ~$0.20 MiniMax-M3.
 **Why.** T17 DONE drove sword/blade from `ChipDataArr`'s attack_family 0x13 (10 chips AS DATA). T36 PARTIAL drove Cannon/HiCannon/M-Cannon from AttackPower +0x1a. T46 DONE drove Bomb family (6 chips) from `attack_power()` + element reads. The Barrier family (Barrier 0xb2, Barr100 0xb3, Barr200 0xb4 — three rows in `tools/scoreboard.py:115-117`) is unverified-as-data. T28 NEGATIVE tried Recov/Barrier/Vulcan with a subfamily-tables approach and failed; T34 NEGATIVE tried a different rewrite on the same three families and failed. T17/T36/T46's pattern (read the chip record's own bytes) is the open alternative. SCOPE M4 is at 43/411; this port would close 3/411 once the harness rows read 0/0/N.
 
 **New evidence.** T46 DONE landed the Bomb family via `attack_power()` + element reads (commit d6b8159, all 6 Bomb rows PASS0/0/N); T17 DONE established the data-driven dispatch pattern with `AS_DATA_FAMILIES = {0x13}` in `tools/inventory.py:209`; T19 DONE made the chip-asset contract loud so a Barrier port declares its sprite range per `chip_export.py` precedent; T28/T34 NEGATIVE closed only the subfamily-tables approach, not data-driven reads.
