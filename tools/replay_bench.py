@@ -80,7 +80,9 @@ def main():
     exp = {r: v for r, v in exp.items() if r in named or any(r == e.split("=")[0] for e in a.expect or [])}
     if not exp: sys.exit("no expectations for rows the ticket names; pass --expect ROW=T/W/F")
     base, subject = (a.base, "(given)") if a.base else base_commit(a.ticket)
-    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # the stamp names the session dir and the worktree: two replays started in the same second (two benchmark arms
+    # in parallel, 2026-09-16) collided on it and mixed their events, so the model and pid go in it
+    stamp = "%s-%s%d" % (datetime.datetime.now().strftime("%Y%m%d-%H%M%S"), re.sub(r"[^a-z0-9]+", "", a.model.split("/")[-1].lower())[:8], os.getpid() % 100)
     name = "replay-%s-%s" % (a.ticket, stamp); wt = "/tmp/bnwt/" + name; branch = "wt/" + name
     print("ticket %s: %d chars; base %s (%s); expect %s" % (a.ticket, len(ticket), base[:7], subject[:70], exp))
     if a.dry_run: return
