@@ -83,3 +83,7 @@ python3 tools/annotate_asm.py --since "$SINCE" --post 2>&1 | tail -8
 # a fresh ROM on the site every morning (the user, 2026-09-15): tools/publish_site.sh without --no-build rebuilds the
 # release ROMs, the browser ROM (web/bn6-rust.gba + build.txt) and the gallery manifest, then publishes
 CARGO_BUILD_JOBS=2 bash tools/publish_site.sh 2>&1 | tail -2
+# the build rewrites tracked files (captures manifest, progress GIFs): commit them, or every landing refuses a dirty tree
+( exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add web/captures web/blog web/build.txt 2>/dev/null; git diff --cached --quiet || git commit -q -m 'roundup: rebuilt captures manifest, progress GIFs and site index
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>' && git push -q origin main )

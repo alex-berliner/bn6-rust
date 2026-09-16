@@ -77,6 +77,10 @@ def main():
         f.write(header + stamp + "\n\n".join(c.rstrip() + "\n" for c in cut))
     open(todo, "w").write(new)
     print("moved %d item(s) to TODO_ARCHIVE.md; TODO.md %d -> %d bytes" % (len(moved), len(s), len(new)))
+    # commit the move itself: a coordinator that ends its session between the move and its own commit leaves the tree
+    # dirty, and every landing after that refuses (2026-09-16)
+    import subprocess
+    subprocess.run("exec 9>/tmp/bn-land.lock; flock -w 600 9 && git -C %s add TODO.md TODO_ARCHIVE.md && git -C %s commit -q -m 'archive: %d closed ticket(s) moved to TODO_ARCHIVE.md (tools/archive_tickets.py)'" % (ROOT, ROOT, len(moved)), shell=True)
 
 
 if __name__ == "__main__":
