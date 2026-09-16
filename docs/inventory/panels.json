@@ -5,9 +5,9 @@
    "type": "0x0",
    "meaning": "hole (skipped by every reader; flag word is the only one with bit 0x8000)",
    "flag_word": "0x18000",
-   "writer": "unnamed: no direct strb of 0 to oPanelData_Type found",
+   "writer": "GAP (T33): no writer in bn6f disassembly -- walked 4 sites of bl _object_setPanelType (asm38.s:3581/3969/3980/3993, all pass r2=#2), 14 sites of inline strb ... oPanelData_Type (asm38.s:4318 inside _object_setPanelType itself + object.s:2220/2235/2272/2287/2323/2357/2371/2405/2419/2455/2469/2505/2519 all store mov r2,#1 or #3), and object_panel_setPoison (object.s:2540-2563, literal-offset strb r2,[r0,#2] with r2=#4). None writes 0. Type 0 = default-zero state of oPanelData_Type, set by init / memset, never re-written",
    "reader": "asm/asm38.s:4315-4317 (_object_setPanelType tst->skip) + asm/object.s:1426-1428 (tickPanels skip)",
-   "status": "unverified: reader-only (no writer cite)"
+   "status": "bounded-GAP (T33): walked writer sites, no writer in disassembly"
   },
   {
    "type": "0x1",
@@ -45,9 +45,9 @@
    "type": "0x5",
    "meaning": "holy",
    "flag_word": "0x12010",
-   "writer": "unnamed: no writer found in bn6f disassembly (chip-side write not located)",
+   "writer": "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). Holy panel is a live M3 damage rule (object.s:4831-4833 'cmp r1,#5 // holy panel?' + asm00_2.s:22788-22791 halves the damage sum), but no bl _object_setPanelType nor inline strb produces it. Stage-terrain data, not code",
    "reader": "asm/object.s:4831-4833 (object_calculateFinalDamage1 'cmp r1,#5 // holy panel?') + asm/asm00_2.s:22788-22791 (sub_801A7F4 halves the damage sum)",
-   "status": "unverified: reader-only (no writer cite)"
+   "status": "bounded-GAP (T33): walked writer sites, no writer in disassembly"
   },
   {
    "type": "0x6",
@@ -69,25 +69,25 @@
    "type": "0x8",
    "meaning": "unnamed: regen like broken, no writer located",
    "flag_word": "0x11010",
-   "writer": "unnamed: no writer found",
-   "reader": "asm/object.s:1444-1450 (tickPanels regen 0x258/0x708)",
-   "status": "unverified: reader-only (no writer cite)"
+   "writer": "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). sub_3007708 (asm38.s:3942-3994) KNOWS type 8 (cmp r0,#8 then setPanelType 2 on Elec), but no bl _object_setPanelType nor inline strb produces it. Stage-record / chip-spawn write",
+   "reader": "asm/object.s:1444-1450 (tickPanels regen 0x258/0x708) + asm/asm38.s:3960-3983 (sub_3007708 cmp #8 + Elec melts to 2)",
+   "status": "bounded-GAP (T33): walked writer sites, no writer in disassembly"
   },
   {
    "type": "0x9",
    "meaning": "unnamed: 9..0xC share flag word 0x10210; regen without the 0x708 blink timer",
    "flag_word": "0x10210",
-   "writer": "unnamed: no writer found for 9 itself",
+   "writer": "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). _object_setPanelType itself has special-case arms for 9..0xC (asm38.s:4318-4326, sets oPanelData_Unk_12=0x708), but the upstream write is in stage/chip-spawn data, not in code. sub_3007708 (asm38.s:3993) melts 9..0xC + element 4 to type 2",
    "reader": "asm/asm38.s:4318-4326 (_object_setPanelType: 9..0xC get Unk_12=0x708) + asm/object.s:1452-1458 + asm/asm00_2.s:21953-21960",
-   "status": "unverified: reader-only (no writer cite)"
+   "status": "bounded-GAP (T33): walked writer sites, no writer in disassembly"
   },
   {
    "type": "0xA",
    "meaning": "unnamed: same regen group as 9",
    "flag_word": "0x10210",
-   "writer": "unnamed: no writer found",
-   "reader": "asm/asm38.s:4318-4326 + asm/object.s:1452-1458 (9..0xC range)",
-   "status": "unverified: reader-only (no writer cite)"
+   "writer": "GAP (T33): no writer in bn6f disassembly -- same walk as 0x9 (T33). 9..0xC share flag word 0x10210; the in-code handles (asm38.s:4318-4326 _object_setPanelType Unk_12=0x708, sub_3007708 asm38.s:3993 melt on element 4) confirm the type exists in code, but no bl _object_setPanelType nor inline strb produces 0xA",
+   "reader": "asm/asm38.s:4318-4326 + asm/object.s:1452-1458 (9..0xC range) + asm/asm38.s:3993 (sub_3007708 melt)",
+   "status": "bounded-GAP (T33): walked writer sites, no writer in disassembly"
   },
   {
    "type": "0xB",
