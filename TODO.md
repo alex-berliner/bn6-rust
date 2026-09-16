@@ -344,8 +344,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **SCOPE:** advances M4.
 
-### T47. M2 battle_full trace tool fix (oracle/diffmask/trace)  *(OPEN)*
+### T47. M2 battle_full trace tool fix (oracle/diffmask/trace)  *(DONE -- 2026-09-16, wt/t47-trace-fix landed as 12f10c2)*
 
+**Result.** wt/t47-trace-fix landed as 12f10c2. Tools-only fix: oracle.py --both + battle_full via SCENARIO_ROWS; diffmask.py --frames; trace.py ORCL_ADDR fix. First divergence = enemy_state_action at k=0 (canon frame 11) canon=(4,10) rust=(4,0); mm_state_action/mm_anim/mm_timer residual 76/78/270 reproduces T7r PARTIAL; rng_cadence first divergence at k=124. Oracle NOT BLIND (6/10 fields move on +1 shift). verify_rows wave/window/opening/chip-cannon/mettaur identical to HEAD 0/0/{90,16,40,40,70}/{3840,81056,86591,9505,41734}. No src/ edits. cost: ~$0.30 MiniMax-M3.
 **Why.** T44 NEGATIVE (2026-09-16, wt/t44-battlefull-divergence @ 6b676b4) found four tool gaps that block any battle_full recon: `tools/oracle.py` rejects battle_full ("unknown row: harness.py --list whitelist"), `tools/oracle.py --both` is "unknown flag" (argparse at `tools/oracle.py:1-10`), `tools/diffmask.py` has no `--frames` flag (`tools/diffmask.py:54-62`), and `tools/trace.py` errors at `tools/trace.py:56` with TypeError on `MM_ORACLE_ADDR`. Coverage did work: `coverage.py battle_full: 1140 routines / 255 uncovered` (TODO.md:331). docs/SCOPE.md M2 still reads "battle_full diverges on 174/540 sequencer frames" — 165 window-setup k=31..195 + 8 kill-timing k=297..304. T7e DONE closed the end-edge nine frames early; T7p DONE drove rng_cadence below 10/540; T7r PARTIAL landed the scripted fixture. The trace tools are the last gate before the recon can name the next routine to port.
 
 **New evidence.** T44 NEGATIVE cited each tool gap with file:line; no tool fix has been dispatched since T44 closed; battle_full is unmeasurable today.
