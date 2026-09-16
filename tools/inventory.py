@@ -1275,7 +1275,58 @@ SECTION_NOTES = {
             " #0x82/#0x70/#0x5e dispatching to byte_812489C/81248C0/"
             " 81248E4/812492C) -- so the byte->art mapping is a per-scene"
             " compare chain over four tile arrays, not a table. Still a"
-            " GAP for a table."),
+            " GAP for a table."
+            " T22 art-content chain (verified as data, settled F47's open"
+            " (c)): BattleBackdropGFXAnimScript_807FB98 (data/dat20.s:148;"
+            " initial gfx_anim_4bit_tile_copy gfx_dest=unk_6000040"
+            " num_tiles=0x24 at :149, then 29 gfx_anim_data_ptr entries"
+            " :150-178, gfx_anim_loop :179) schedules the 7 tile tables"
+            " BattleBackdropTiles0-6_807FE40/807FCD8/807FC90/807FD20/"
+            " 807FD68/807FDB0/807FDF8 (dat20.s:222/:187/:181/:193/:201/"
+            " :208/:216, 36 halfwords each, blob indices into"
+            " GFXAnimTileBlob_8617488) copied as 36 tiles to 0x06000040"
+            " (VRAM slots 2..37; slot 1 = the blank filler the map's empty"
+            " cells point at). tools/backdrop_export.py's FRAMES[s] == [0] +"
+            " table byte-exact for all 7 tables (36/36 slots x 7, T22 step"
+            " 1). Canon VRAM is SLOTWISE faithful: canon slot k (slots 1..37"
+            " of the 0x06000000:0x800 window, slot k at window offset k*32)"
+            " holds FRAMES[step][k-1], 37/37 at all 7 steps on the kept F47"
+            " tile dumps (named captures 140/148/156/164/172 -> steps"
+            " 5/6/0/1/2; steps 3 and 4 attested in the same dump at caps"
+            " 16-27 and 68-83, outside F47's compared 40-frame window), and"
+            " the relation is pinned by the map: canon's BG1 cell ids are the"
+            " asset MAP values +1 (1..37, no 0), the port's are +512. The"
+            " port is NOT slotwise faithful (1/37 at every capture -- only"
+            " the blank tile aligns): it permutes the tile array AND its map,"
+            " and the two cancel -- composed render (map composed with the"
+            " tile array) vs the asset's composed render: 1024/1024 cells"
+            " identical for canon at all 7 steps and the port at 6 of 7"
+            " sampled steps (the port's earliest step-0 capture reads 0/1024"
+            " until its map write lands, ~cap 30 -- the tile write runs ahead"
+            " of the map write in the port's first frames). The permutation's"
+            " provenance ('map-scan first-occurrence order') is the worker's"
+            " label, unconfirmed -- hypothesis, not result. Naive-grid control"
+            " reproduces F47's figure IN MAGNITUDE only: window tiles 0..1152"
+            " vs flat s*37+k gives best 2/37 (cap 174 [2,2,1,0,1,0,2]; cap 39"
+            " [2,2,2,1,1,1,1]; no step 3), the +1-shifted variant s*37+(k-1)"
+            " reads 36/37 (the window's first 32 bytes are not a backdrop"
+            " slot), the corrected slot alignment (offsets 32..1216, slot k ="
+            " FRAMES[step][k-1]) reads 37/37 -- counting convention stated so"
+            " the next reader gets the same figure. FORWARD-BLOCKING LIMITS:"
+            " (i) do not extend 37/37 x 7 to the palette -- bank 0 rests only"
+            " on the exporter's 'read from a live battle' comment, no palette"
+            " watch in the kept dumps; (ii) byte->art mapping stays 0/3, a"
+            " per-scene compare chain at asm33.s:4168-4195 -- nothing here"
+            " proves byte 0x07 is the field stage's byte; (iii) the typed"
+            " constants in this note (29/7/36/37/37) are NOT re-verified by"
+            " the generator -- if FRAMES ever changes, SCOPE keeps asserting"
+            " 37/37 forever ('generated' here is assembled prose, not"
+            " machine-checked); (iv) this CLOSES F47's stated open item"
+            " (docs/worklog/F47.md:156-158 and :262 already disclaimed the"
+            " naive grid and named this recipe) -- F47's phase headline is"
+            " untouched (capture-to-capture change counts, no asset"
+            " indexing). T22 steps 2-3 + verifier audit + wording pass,"
+            " /tmp/bn-t22-backdrop-content/"),
     "navicust battle effects (M7)":
         lambda meta: (
             "T15 verdict (corrected from 'program-id enumeration'): FOUND --"
@@ -1467,7 +1518,7 @@ def main():
                 statuses)),
 
         ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
-        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note)", backdrops)),
+        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
     regenerate_scope(sections, pa_meta={
