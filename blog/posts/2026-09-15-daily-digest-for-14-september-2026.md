@@ -1,8 +1,8 @@
-# Daily digest, 15 September 2026
+# Daily digest for 14 September 2026
 
 This project rebuilds the battle engine of Mega Man Battle Network 6, a Game Boy Advance game, as new code in Rust. The rule is exact: a scene played by our version must match a recording of the original game pixel for pixel, frame by frame. Small AI agents do the work in tickets, each a bounded task; a ticket ends finished, half-done, blocked, or as a dead end that taught us something.
 
-In the last 24 hours the agents closed 54 tickets: 10 finished, 19 half-done and kept, 25 blocked or dead ends. Every number below was measured by the automatic comparison against a recording of the original game.
+This covers 10:50 on 14 September to 10:50 on 15 September. In that window the agents closed 54 tickets: 10 finished, 19 half-done and kept, 25 blocked or dead ends. Every number below was measured by the automatic comparison against a recording of the original game.
 
 ## The opening seconds of a fight
 
