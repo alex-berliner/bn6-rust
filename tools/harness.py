@@ -3221,6 +3221,16 @@ PORTED_CHECKS: List[Check] = [
 CHECKS.extend(PORTED_CHECKS)
 
 
+#: Non-comparison scenarios accepted by tools/oracle.py alongside the rows
+#: in CHECKS. These are scenarios with their own side specs in
+#: tools/states.py's TRACE_SCENARIOS table -- they have no rust/canon
+#: factories here because they're not pixel comparisons; oracle.py routes
+#: them through TRACE_SCENARIOS instead. battle_full is the only one
+#: currently (T47, 2026-09-16): the 540-frame scripted battle from PAUSED
+#: that the sequencer-divergence recon needs.
+SCENARIO_ROWS = ("battle_full",)
+
+
 #: rollup (AUDIT ticket step 1): not a comparison -- a no-crash check, run
 #: through the SAME capture path (cc.capture / mgba_capture) every other
 #: check here uses, per the ticket ("keep it as one, but run it through the
