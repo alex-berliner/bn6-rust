@@ -94,6 +94,10 @@ upstream = "https://opencode.ai/zen/go"
 rpm = 30
 concurrency = 2
 headers = ["x-opencode-session: bn-pi", "User-Agent: Mozilla/5.0 (X11; Linux x86_64) pi-agent"]
+# three of the plan's models are served only by the Responses API (a chat-completions call answers 500, or
+# "not supported for format oa-compat"); the pacer translates their requests and replies so pi can use them,
+# adding 4096 tokens of headroom for the hidden reasoning that budget also has to cover.
+responses_models = ["muse-spark-1.3-contributor", "gpt-5.6-luna", "grok-4.6"]
 
 # ---------------------------------------------------------------- run profiles: candidates per job, in order
 [runs.hyper]

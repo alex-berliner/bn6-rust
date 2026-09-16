@@ -11,6 +11,8 @@ RPM="$(python3 -c "import tomllib; print(tomllib.load(open('providers.toml','rb'
 CONC="$(python3 -c "import tomllib; print(tomllib.load(open('providers.toml','rb'))['providers']['$prov']['pacer'].get('concurrency', 2))")"
 mapfile -t HDRS < <(python3 -c "import tomllib; [print(h) for h in tomllib.load(open('providers.toml','rb'))['providers']['$prov']['pacer'].get('headers', [])]")
 args=(); for h in "${HDRS[@]}"; do [ -n "$h" ] && args+=(--header "$h"); done
+mapfile -t RMODELS < <(python3 -c "import tomllib; [print(m) for m in tomllib.load(open('providers.toml','rb'))['providers']['$prov']['pacer'].get('responses_models', [])]")
+for m in "${RMODELS[@]}"; do [ -n "$m" ] && args+=(--responses-model "$m"); done
 pat="api_pacer.py --provider $prov "
 pid="$(ps -eo pid,args | grep -F "$pat" | grep -vE 'grep|pacer.sh' | awk '{print $1}' | head -1)"
 case "$cmd" in
