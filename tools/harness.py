@@ -1528,6 +1528,25 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 #:                   canon's (entry, Timer), minus the seed's construction
 #:                   lead (Backdrop::seed stores timer + 1).
 #:
+#: T25 supersedes the closed form above for FIELD_ZERO's pair (T29, re-derived
+#: from the kept dumps). The closed form reproduces the PRE-T25 pair exactly
+#: (canon 130 = -64176/-32088 -> f=8022, R0=116 -> 466/745), but reproduces the
+#: LANDED 471/748 for NO whole-frame lag: stepping the lag by one moves H by 2
+#: and V by 1, and 466->471 wants +5 quarters while 745->748 wants +3, so no
+#: integer lag reaches either -- the +5/+3 is a ceil-edge phase correction
+#: (reg = -ceil(x_q/4) rounds in half-frames), not a lag. The true derivation
+#: of 471/748 is an exhaustive solve, not a fit: over all 1024 quarter-values,
+#: against the two kept counter series (/tmp/bn-f47/canon_scrollcnt.bin +
+#: /tmp/bn-t25-watch) under the model below (plain >>4 register, visible =
+#: mirror lagged 1 capture, equality mod the 256-px content period), the seeds
+#: zeroing k=1..39 are H = {471, 472} and V = {748} -- 2-of-1024 and 1-of-1024
+#: constraints; the k=0-only sets are {473..476} H and {747..750} V, so H's
+#: intersection with k=0 is EMPTY (k=0 is not seed-fixable). At the old
+#: 466/745 the same model predicts the register-residual series H period-2
+#: [2,1], V period-4 [1,0,1,1] px -- the negation of F47's measured best-shift
+#: cycle [(-2,-1),(-1,0),(-2,-1),(-1,-1)], i.e. the closed form's own premise
+#: confirmed; 471/748 zeroes the residual on k=1..39.
+#:
 #: The derivation was checked against F26b's two landed seeds before being
 #: used here and reproduces both exactly with no tuning: CHIPSELECT canon 15
 #: (counters -25368/-12684 = battle frame 3171, art entry 17 timer 4, R0 245)
@@ -1563,25 +1582,48 @@ ZERO_ENEMY_WITH_HAND = dict(ZERO_ENEMY, hand=[1], hand_count=1)
 #: side). Before the seeds, chip-use's band bottomed at 105, not 100.
 FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
                   art_entry=10, art_timer=4, scroll_xq=471, scroll_yq=748)
-#: T25: scroll_xq 466 -> 471, scroll_yq 745 -> 748, so our VISIBLE BG1 scroll
-#: register equals canon's (mod 256 px, the map's content period) on every
-#: compared frame. Measured, not fitted. Canon side: the eBGScrollCBCounters
-#: RAM stream 0x02009690, caps 135..174 = paired k=0..39
-#: (/tmp/bn-f47/canon_scrollcnt.bin); ours: the TRC2 mirror 0x020000B2/
-#: 0x020000B6, post-update x_q/y_q (/tmp/bn-t25-watch). The pixel evidence
-#: (F47's period-4 best-shift cycle (-2,-1),(-1,0),(-2,-1),(-1,-1) on
-#: /tmp/bn-t25-bg1, re-measured post-T24) is reproduced ONLY by the model
-#: "register visible during rust cap 121+k = mirror at 121+k-1" -- our agb
-#: commit lands the write one capture after the game-logic frame the mirror
-#: records, canon's counter-to-register is same-capture. Under that model
-#: seed 466/745 predicts exactly the measured cycle, and 471/748 zeroes the
-#: displacement: dV on all 40 frames, dH on k=1..39. k=0 is not seed-fixable:
-#: the F45 pre-boundary transition stalls our scroll updates 5 capture frames
-#: and catches up +4 quarters at rust cap 121, splitting the H phase (k>=1
-#: needs seed 471 or 472, k=0 would need 473..476); that frame is also the one
-#: that stays nonzero even at best shift. // canon: eBGScrollCBCounters at
-#: 0x02009690, canon caps 135..174, /tmp/bn-f47/canon_scrollcnt.bin +
-#: /tmp/bn-t25-watch (T25).
+#: T25: scroll_xq 466 -> 471, scroll_yq 745 -> 748. What the pair buys: the
+#: ANCHOR from which our one-capture-visible lag renders canon's offsets --
+#: under the model "register visible during rust cap 121+k = mirror at
+#: 121+k-1" (our agb commit lands the write one capture after the game-logic
+#: frame the mirror records; canon's counter-to-register is same-capture),
+#: 471/748 are the exhaustive-solve seeds that make our VISIBLE BG1 scroll
+#: register equal canon's mod the 256-px content period on k=1..39 (see the
+#: T25-supersedes paragraph at the F33b block above for the solve and its
+#: solution sets). Canon side: the eBGScrollCBCounters RAM stream 0x02009690,
+#: caps 135..174 = paired k=0..39 (/tmp/bn-f47/canon_scrollcnt.bin); ours:
+#: the TRC2 mirror 0x020000B2/0x020000B6, post-update x_q/y_q
+#: (0x02000080+50/+54, src/battle.rs's trace table; /tmp/bn-t25-watch).
+#:
+#: T29 corrections to this record, all re-measured from the kept dumps:
+#: (1) CONVENTION FIT, NOT DERIVED. Our own cite for the scroll CB
+#:     (asm00_0.s:3287-3303, the F33b block above) says the asm writes
+#:     (counter-8)>>4 and (counter-4)>>4. Under THAT convention no lag/offset
+#:     fits the pixel cycle and the solve's seeds move to H {473,474},
+#:     V {749}. The landed mechanism is fitted under the PLAIN >>4 convention
+#:     (register = counter>>4, Lo=1); the -8/-4 constant convention is settled
+#:     empirically by the capture, not derived from the asm. A later ticket
+#:     that re-derives a scroll seed from the asm cite will get different
+#:     numbers -- use the solve, not the asm arithmetic.
+#: (2) k=0 IS OUTSIDE THE RAMP MODEL, not merely seed-unfixable: at 471/748
+#:     the model predicts dH(k=0) = +1 px (H's k=0-only seed set {473..476} is
+#:     disjoint from k=1..39's {471,472}), but the measured k=0 best shift is
+#:     0 px (T29, translation sweep on /tmp/bn-t25-bg1: minimum AT (0,0)=4800,
+#:     next best 10362 at (0,+1)) -- the k=0 residue is CONTENT (the 240x20
+#:     top band, rows 0..19 x cols 0..239), not an unseeded phase, and the
+#:     "+4 catch-up splits the H phase" phrasing above does not reach it.
+#:     T29 measured field-bg2's residue: the SAME band (rows 0..19 x
+#:     cols 0..239, k=0, 4800 px, zero on k=1..39) -- so bg1's and bg2's 4800
+#:     are one shared F45-transition band, not a scroll defect and not two
+#:     coincidental regions.
+#: (3) The pixel evidence (F47's period-4 best-shift cycle
+#:     (-2,-1),(-1,0),(-2,-1),(-1,-1) on /tmp/bn-t25-bg1, re-measured
+#:     post-T24) is reproduced ONLY by the lag model above -- T29 re-derived
+#:     it from the counters as the plain->4 residual series H [2,1] period-2,
+#:     V [1,0,1,1] period-4 at the old seed, the cycle's negation.
+#:     // canon: eBGScrollCBCounters at 0x02009690, canon caps 135..174,
+#:     /tmp/bn-f47/canon_scrollcnt.bin + /tmp/bn-t25-watch (T25, re-solved
+#:     T29).
 #: T24: art_timer 7 -> 4, so `Backdrop::seed`'s construction lead (+1,
 #: (art_entry, art_timer) = (10, 4) are both read at the POST-boundary anchor, canon cap 135 /
 #: rust cap 121 (paired k=0); the cap-130 line above (entry 23, timer 1) is F26b's own anchor and is
