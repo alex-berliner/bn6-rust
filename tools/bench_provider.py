@@ -31,15 +31,19 @@ VARIANT = re.compile(r", variant (\S+)")
 
 
 def reads(doc):
-    """(assembly reads, csrc calls) in the replay session behind a benchmark doc"""
+    """Which source of truth a replay leaned on: (assembly reads, old pseudo-C reads, csrc calls).
+    The disassembly ships a 2019 decompilation under address-only names (reference/bn6f/docs/decomp), which
+    workers already use in about a sixth of sessions, so it is counted apart from the assembly itself and
+    apart from tools/csrc.py's fresh, symbol-carrying C."""
     m = re.search(r"(\d{8}-\d{6})\.md$", doc); ev = "/tmp/bn-pi/replay/%s/events.jsonl" % m.group(1) if m else ""
-    if not os.path.exists(ev): return (None, None)
-    asm = csrc = 0
+    if not os.path.exists(ev): return (None, None, None)
+    asm = old_c = csrc = 0
     for line in open(ev):
         if '"type":"toolCall"' not in line and '"toolCall"' not in line: continue
         if "csrc.py" in line: csrc += 1
+        elif "docs/decomp" in line: old_c += 1
         elif "reference/bn6f" in line: asm += 1
-    return (asm, csrc)
+    return (asm, old_c, csrc)
 COST = re.compile(r"cost \$([0-9.]+), (\d+) turns, (\d+) min")
 CREDITS = re.compile(r"credits used ([0-9.]+)( est)?")
 
@@ -186,9 +190,9 @@ def table(a):
                 real = cr * price[p] if cr is not None else None
             else:
                 real = cost
-            asm, cs = reads(per_doc.get((mo, t), "")) if "per_doc" in dir() else (None, None)
-            cells.append("%s, %d turns, %d min, $%.2f%s%s" % (verdict, turns, mins, real if real is not None else cost, ("" if not est else " est") if real is not None else " nominal",
-                                                             (", %d asm reads, %d csrc" % (asm, cs)) if asm is not None else ""))
+            asm, old_c, cs = reads(per_doc.get((mo, t), ""))
+            sources = "" if asm is None else ", sources %d asm / %d old C / %d csrc" % (asm, old_c, cs)
+            cells.append("%s, %d turns, %d min, $%.2f%s%s" % (verdict, turns, mins, real if real is not None else cost, ("" if not est else " est") if real is not None else " nominal", sources))
             if verdict == "PASS": passes.append((cost, real, mins))
         n = sum(1 for t in a.tickets if (mo, t) in per)
         if passes:
