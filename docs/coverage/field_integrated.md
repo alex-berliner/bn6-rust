@@ -258,7 +258,8 @@ budget (6) is exactly the three post rows, and its numbers are derived above fro
 `--only-bg 1` capture; a follow-up can land it with the same recipe if verification wants it
 harness-run.
 
-## T22 — F47's open (c) ART CONTENT settled: ART FAITHFUL (0 captures used)
+## T22 — F47's open (c) ART CONTENT settled: ART FAITHFUL — canon SLOTWISE 37/37 x 7 steps
+(slot k = `FRAMES[step][k-1]`; canon BG1 cell ids = asset MAP +1, port's = +512; 0 captures used)
 
 F47's naive `s*37+k` art test failed on LAYOUT, not content. Rebuilt on the ROM's own upload
 list — `BattleBackdropGFXAnimScript_807FB98` (dat20.s:148; initial
@@ -270,19 +271,56 @@ list — `BattleBackdropGFXAnimScript_807FB98` (dat20.s:148; initial
 - Transcription: `backdrop_export.py`'s `FRAMES[s]` == `[0] + table` byte-exact, 36/36 slots
   x 7 tables (tables index VRAM slots 2..37; slot 1 = the blank filler the map's empty cells
   point at).
-- Canon resident set (slots 1..37 of the 0x06000000:0x800 window): **37/37 vs
-  `asset[FRAMES[step]]` for ALL 7 steps** (F47's named captures 140/148/156/164/172 → steps
-  5/6/0/1/2 each 37/37; step 3 resident at caps 16-19 and 68-69).
-- Rust: slot-ordered 1/37 — the port uploads in map-scan order vs canon's table order (the
-  bijection canon-slot ↔ rust-slot was verified exhaustively; the map compensates) — but
-  **order-insensitive set 37/37 for ALL 7 steps**.
-- Naive control at F47's own capture (canon k=39 = cap 174): best 3/37 (`{1:3}`) — the
-  2-3/37 was a 1-based-VRAM-slot vs 0-based-FRAMES-row off-by-one.
+- Canon is SLOTWISE faithful (the headline): canon VRAM slot k (slots 1..37 of the
+  0x06000000:0x800 window, slot k at window offset k*32) holds `FRAMES[step][k-1]` — **37/37 at
+  ALL 7 steps** (F47's named captures 140/148/156/164/172 → steps 5/6/0/1/2 each 37/37; steps 3
+  and 4 attested in the same kept dump at caps 16-27 and 68-83, i.e. OUTSIDE F47's compared
+  40-frame window). The slot relation is pinned independently by the map: canon's BG1 cell ids
+  are the asset MAP values **+1** (ids 1..37, no 0; id 1 = the blank), the port's are the asset
+  MAP values **+512**.
+- The port is NOT slotwise faithful: its resident window reads **1/37 at every capture** (only
+  the blank tile aligns slotwise) — the port permutes the tile array AND its map, and the two
+  cancel. Measured on the COMPOSED render (map composed with the tile array) against the
+  asset's composed render: **1024/1024 cells identical for canon at all 7 steps and for the
+  port at 6 of 7 sampled steps** (the port's earliest step-0 capture reads 0/1024 until its map
+  write lands, ~cap 30 — the tile write runs ahead of the map write in the port's first
+  frames). Positions are therefore proven AS DRAWN, which is stronger than a set claim. The
+  permutation's provenance ("map-scan first-occurrence order", worklog T22 step 2) is the
+  worker's label and was NOT confirmed by the verifier audit — kept as a labelled hypothesis,
+  not a result.
+- Naive-grid control, reproduced IN MAGNITUDE only (verifier-hyper audit; the exact digits
+  depend on the counting convention, so the convention is stated here). Naive convention:
+  reading the canon window's first 37 tiles (offsets 0..1152) against the flat asset grid
+  `s*37+k` gives best **2/37** (cap 174 `[2,2,1,0,1,0,2]`; cap 39 `[2,2,2,1,1,1,1]`; no step
+  reaches 3) — F47's 2-3/37 magnitude. The +1-shifted variant (`s*37+(k-1)`, same 37 window
+  positions) reads **36/37** — 36 of 37, because the window's first 32 bytes are not a backdrop
+  slot. The corrected alignment — slots 1..37 at offsets 32..1216, canon slot k =
+  `FRAMES[step][k-1]` — reads **37/37**. The off-by-one is DEMONSTRATED and stands: identical
+  bytes, 37/37 under the corrected alignment versus single digits (2/37) under the naive one,
+  independently pinned by the map's +1/+512 cell ids. (This pass's offline check
+  `/tmp/bn-t22-backdrop-content/t22_convention_check2.py` reproduces the verifier's vectors
+  exactly under the stated conventions; the worklog's original step-3 figures
+  `[2,3,2,2,1,2,2]`/`[3,3,2,1,2,1,2]` were convention-muddled and are superseded — no exact
+  3/37 digit match is claimed.)
 
-So the ROM holds no tile the asset lacks at any step, on either side; `field`'s integrated
-residue stays timing-only, exactly the F42/F45/F46/F47 circle's conclusion. No row moved,
-no src/ edit; built ROM byte-identical to main's (`cmp` = 0 differing bytes, sha256
-1997be3b4e8f463ac328aede2d5a027d7f73fcb8adcab5834592d71a7a419fed).
+So the ROM holds no tile the asset lacks at any step, on either side, and canon draws them
+from the same cells slotwise while the port's permuted array+map composes to the same 1024
+cells: `field`'s integrated residue stays timing-only, exactly the F42/F45/F46/F47 circle's
+conclusion. No row moved, no src/ edit; built ROM byte-identical to main's (`cmp` = 0 differing
+bytes, sha256 1997be3b4e8f463ac328aede2d5a027d7f73fcb8adcab5834592d71a7a419fed).
 
-Unverified: palette bank 0 (no palette watch in the kept dumps — rests on the exporter's
-record); byte→art mapping stays a GAP as a table (T15's per-scene compare chain trail).
+Forward-blocking limits (stated here so the next ticket hits them with the caveat, not after
+it):
+
+- Palette: do NOT extend "37/37 x 7" to the palette — bank 0 rests only on the exporter's
+  "read from a live battle" comment; no palette watch exists in the kept dumps.
+- Byte→art mapping: still 0/3, still a per-scene compare chain at `asm33.s:4168-4195`; nothing
+  here proves byte 0x07 is the field stage's byte.
+- The regenerated SCOPE prose carries typed constants (29 entries / 7 tables / 36 halfwords /
+  37/37) that nothing re-verifies: if `FRAMES` ever changes, SCOPE keeps asserting 37/37
+  forever. "Generated file" here means generator-assembled prose, NOT machine-checked.
+- This ticket CLOSES F47's stated open item rather than overturning a landed claim:
+  `docs/worklog/F47.md:156-158` and `:262` already disclaimed the naive grid and named exactly
+  this recipe (the anim-script upload list) as the way to settle (c). F47's phase headline is
+  untouched: it comes from capture-to-capture change counts, which need no asset indexing at
+  all.
