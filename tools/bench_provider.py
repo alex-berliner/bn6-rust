@@ -27,6 +27,19 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 os.chdir(ROOT)
 DEFAULT = ["F18d", "F25c", "F21b", "F27b", "F34b", "F37c", "F37g"]
 HEAD = re.compile(r"^# Replay (\S+) with (\S+) \((\w+)\): (\S+)")
+VARIANT = re.compile(r", variant (\S+)")
+
+
+def reads(doc):
+    """(assembly reads, csrc calls) in the replay session behind a benchmark doc"""
+    m = re.search(r"(\d{8}-\d{6})\.md$", doc); ev = "/tmp/bn-pi/replay/%s/events.jsonl" % m.group(1) if m else ""
+    if not os.path.exists(ev): return (None, None)
+    asm = csrc = 0
+    for line in open(ev):
+        if '"type":"toolCall"' not in line and '"toolCall"' not in line: continue
+        if "csrc.py" in line: csrc += 1
+        elif "reference/bn6f" in line: asm += 1
+    return (asm, csrc)
 COST = re.compile(r"cost \$([0-9.]+), (\d+) turns, (\d+) min")
 CREDITS = re.compile(r"credits used ([0-9.]+)( est)?")
 
@@ -87,10 +100,11 @@ def _run(a, c, p, model, stamp, doc):
         # other pi sessions on this provider (their spend would land in the balance delta); counted before our replay starts
         others = subprocess.run("pgrep -fc -- '--model %s/' || true" % a.provider, shell=True, capture_output=True, text=True).stdout.strip()
         before = balance(a.provider); t0 = time.time()
-        r = subprocess.run(["python3", "tools/replay_bench.py", tid, "--model", model, "--thinking", a.thinking, "--role", a.role],
+        extra = (["--variant", a.variant] if a.variant else []) + (["--role-extra", a.role_extra] if a.role_extra else [])
+        r = subprocess.run(["python3", "tools/replay_bench.py", tid, "--model", model, "--thinking", a.thinking, "--role", a.role] + extra,
                            capture_output=True, text=True)
         after = balance(a.provider)
-        files = sorted(glob.glob("docs/benchmarks/%s-%s-*.md" % (tid, model.split("/")[-1])), key=os.path.getmtime)
+        files = sorted(glob.glob("docs/benchmarks/%s-%s%s-*.md" % (tid, model.split("/")[-1], ("+" + a.variant) if a.variant else "")), key=os.path.getmtime)
         f = files[-1] if files and os.path.getmtime(files[-1]) >= t0 - 5 else None
         verdict, cost, turns, mins = "NO-FILE", 0.0, 0, 0
         if f:
@@ -141,16 +155,16 @@ def muse_originals(tickets):
 
 def table(a):
     c = cfg(); rate = {}
-    per = {}   # (model, ticket) -> (verdict, cost, turns, mins, credits, est)
+    per = {}; per_doc = {}   # (model[+variant], ticket) -> (verdict, cost, turns, mins, credits, est), and the doc behind it
     for f in glob.glob("docs/benchmarks/F*-*.md"):
         s = open(f).read(); h = HEAD.search(s); m = COST.search(s)
         if not h or not m or h.group(1) not in a.tickets or ":free" in h.group(2): continue
         cr = CREDITS.search(s)
-        key = (h.group(2), h.group(1))
+        v = VARIANT.search(s); key = (h.group(2) + (("+" + v.group(1)) if v else ""), h.group(1))
         if "rate-limited:" in s or (rate_limited(f) >= 5 and h.group(4) != "PASS"): continue      # a void replay
         cand = (h.group(4), float(m.group(1)), int(m.group(2)), int(m.group(3)), float(cr.group(1)) if cr else None, bool(cr and cr.group(2)))
         # keep the best replay per model and ticket: PASS over others, then the cheapest
-        if key not in per or (cand[0] == "PASS", -cand[1]) > (per[key][0] == "PASS", -per[key][1]): per[key] = cand
+        if key not in per or (cand[0] == "PASS", -cand[1]) > (per[key][0] == "PASS", -per[key][1]): per[key] = cand; per_doc[key] = f
     orig = muse_originals(set(a.tickets))
     models = sorted({k[0] for k in per})
     price = {p: credit_price(p) for p in c["providers"]}
@@ -172,7 +186,9 @@ def table(a):
                 real = cr * price[p] if cr is not None else None
             else:
                 real = cost
-            cells.append("%s, %d turns, %d min, $%.2f%s" % (verdict, turns, mins, real if real is not None else cost, ("" if not est else " est") if real is not None else " nominal"))
+            asm, cs = reads(per_doc.get((mo, t), "")) if "per_doc" in dir() else (None, None)
+            cells.append("%s, %d turns, %d min, $%.2f%s%s" % (verdict, turns, mins, real if real is not None else cost, ("" if not est else " est") if real is not None else " nominal",
+                                                             (", %d asm reads, %d csrc" % (asm, cs)) if asm is not None else ""))
             if verdict == "PASS": passes.append((cost, real, mins))
         n = sum(1 for t in a.tickets if (mo, t) in per)
         if passes:
@@ -191,13 +207,15 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("run"); r.add_argument("--model"); r.add_argument("--tickets", default=",".join(DEFAULT[2:]))
+    r.add_argument("--variant", default=""); r.add_argument("--role-extra")
     r.add_argument("--role", default="worker"); r.add_argument("--thinking", default="high")
     q = sub.add_parser("queue"); q.add_argument("run"); q.add_argument("--model"); q.add_argument("--tickets", default=",".join(DEFAULT[2:]))
+    q.add_argument("--variant", default=""); q.add_argument("--role-extra")
     t = sub.add_parser("table"); t.add_argument("--tickets", default=",".join(DEFAULT))
     a = ap.parse_args(); a.tickets = [x for x in a.tickets.split(",") if x]
     if a.cmd == "queue":
         os.makedirs(LOCKS, exist_ok=True)
-        with open(os.path.join(LOCKS, "queue"), "a") as fh: fh.write("%s %s %s\n" % (a.run, ",".join(a.tickets), a.model or "-"))
+        with open(os.path.join(LOCKS, "queue"), "a") as fh: fh.write("%s %s %s %s %s\n" % (a.run, ",".join(a.tickets), a.model or "-", a.variant or "-", a.role_extra or "-"))
         print("queued: %s on %s%s" % (",".join(a.tickets), a.run, " with " + a.model if a.model else "")); return
     {"run": run, "table": table}[a.cmd](a)
 

@@ -28,11 +28,11 @@ for name in $RUNS; do
   locked=""; for p in $provs; do [ -f "/tmp/bn-bench/$p.lock" ] && kill -0 "$(cut -d' ' -f1 "/tmp/bn-bench/$p.lock")" 2>/dev/null && locked="$p"; done
   if [ -n "$locked" ]; then echo "$name: a benchmark holds $locked; no run this tick"; [ "$PARALLEL" = 1 ] && continue || break; fi
   if [ -s /tmp/bn-bench/queue ]; then
-    q="$(head -1 /tmp/bn-bench/queue)"; qrun="${q%% *}"; rest="${q#* }"; qt="${rest%% *}"; qm="${rest#* }"
+    q="$(head -1 /tmp/bn-bench/queue)"; set -- $q; qrun="$1"; qt="$2"; qm="${3:--}"; qv="${4:--}"; qx="${5:--}"
     qprov="$(python3 tools/roles.py providers "$qrun" 2>/dev/null)"
     if [ -n "$qprov" ] && python3 tools/roles.py budget "${qprov%% *}" --start >/dev/null 2>&1; then
       sed -i '1d' /tmp/bn-bench/queue
-      margs=""; [ "$qm" != "-" ] && margs="--model $qm"
+      margs=""; [ "$qm" != "-" ] && margs="--model $qm"; [ "$qv" != "-" ] && margs="$margs --variant $qv"; [ "$qx" != "-" ] && margs="$margs --role-extra $qx"
       blog="/tmp/bn-bench/$qrun-$(date +%H%M).log"
       if command -v tmux >/dev/null 2>&1; then tmux new-session -d -s "bn-bench-$qrun-$(date +%H%M)" -c "$PWD" "python3 tools/bench_provider.py run '$qrun' --tickets '$qt' $margs 2>&1 | tee '$blog'"
       else setsid nohup python3 tools/bench_provider.py run "$qrun" --tickets "$qt" $margs > "$blog" 2>&1 < /dev/null & fi

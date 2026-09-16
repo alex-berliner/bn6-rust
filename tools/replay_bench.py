@@ -71,6 +71,8 @@ def main():
     ap.add_argument("--role", default="worker"); ap.add_argument("--minutes", type=int, default=45)
     ap.add_argument("--expect", action="append"); ap.add_argument("--base"); ap.add_argument("--keep", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--variant", default="", help="a label for an A/B variant of the role (e.g. csrc), recorded in the report")
+    ap.add_argument("--role-extra", help="a file whose text is appended to the role prompt for this replay (the variant's aid)")
     a = ap.parse_args()
     ticket, result = ticket_section(a.ticket)
     exp = expectations(result, a.expect)
@@ -85,7 +87,7 @@ def main():
     sh(["git", "-C", ROOT, "worktree", "add", "-b", branch, wt, base])
     sh("rm -rf reference/bn6f && ln -s %s/reference/bn6f reference/bn6f && git update-index --skip-worktree reference/bn6f" % ROOT, cwd=wt)
     rp = "/tmp/bn-pi/replay/%s" % stamp; os.makedirs(rp, exist_ok=True)
-    open(rp + "/role.md", "w").write(role_prompt(a.role))
+    open(rp + "/role.md", "w").write(role_prompt(a.role) + (("\n\n" + open(a.role_extra).read().strip()) if a.role_extra else ""))
     prompt = ("You are replaying an archived ticket as a benchmark of your model, in a headless session. Your worktree is the "
               "current directory (branch %s); AGENTS.md and AGENT_GUIDE.md apply (read them first; you are already in your "
               "worktree, do not create another). Never push, never touch other directories. Commit on the current branch. "
@@ -117,9 +119,9 @@ def main():
     lines = "\n".join(l for l in v.stdout.splitlines() if l.startswith("  ") or l.startswith("verify_rows"))
     os.makedirs(os.path.join(ROOT, "docs", "benchmarks"), exist_ok=True)
     short = a.model.split("/")[-1]
-    doc = os.path.join(ROOT, "docs", "benchmarks", "%s-%s-%s.md" % (a.ticket, short, stamp))
-    open(doc, "w").write("# Replay %s with %s (%s): %s\n\nbase %s (%s)\ncost $%.4f, %d turns, %.0f min, thinking %s, role %s\n\nexpected: %s\n\n```\n%s\n```\n\nsession: %s\n" % (
-        a.ticket, a.model, a.thinking, verdict, base[:7], subject, cost, turns, minutes, a.thinking, a.role, exp, lines, rp))
+    doc = os.path.join(ROOT, "docs", "benchmarks", "%s-%s%s-%s.md" % (a.ticket, short, ("+" + a.variant) if a.variant else "", stamp))
+    open(doc, "w").write("# Replay %s with %s (%s): %s\n\nbase %s (%s)\ncost $%.4f, %d turns, %.0f min, thinking %s, role %s%s\n\nexpected: %s\n\n```\n%s\n```\n\nsession: %s\n" % (
+        a.ticket, a.model, a.thinking, verdict, base[:7], subject, cost, turns, minutes, a.thinking, a.role, (", variant " + a.variant) if a.variant else "", exp, lines, rp))
     print("%s: %s  $%.4f  %d turns  %.0f min  -> %s" % (a.ticket, verdict, cost, turns, minutes, doc))
     if not a.keep:
         sh(["git", "-C", ROOT, "worktree", "remove", "--force", wt]); sh(["git", "-C", ROOT, "branch", "-D", branch])
