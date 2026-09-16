@@ -21,7 +21,7 @@ def clock(ms):
 
 
 def short(s, n):
-    s = re.sub(r"\s+", " ", s or "").strip()
+    s = (s or "").strip()
     return s if len(s) <= n else s[:n] + " …"
 
 
@@ -58,7 +58,7 @@ def children_for(tid):
     return sorted(out, key=lambda c: c["ts"])
 
 
-def events_from_transcript(path, actor, chars):
+def events_from_transcript(path, actor, chars, rchars, thinking=True):
     """(ts, actor, kind, text) for one child's transcript. pi writes a child's file as records: `tool_start`
     carries the call and a preview of its arguments, `message` carries the assistant's words (inside `message`)
     and each tool result's text, `tool_end` the error flag."""
@@ -70,24 +70,31 @@ def events_from_transcript(path, actor, chars):
         ts = e.get("ts") or 0
         kind = e.get("recordType")
         if kind == "tool_start":
-            out.append((ts, actor, "runs", "%s %s" % (e.get("toolName"), short(e.get("argsPreview") or json.dumps(e.get("argsPayload") or {}), chars))))
+            # argsPreview is pi's own truncation; argsPayload is the whole call, which is what a reader needs
+            args = e.get("argsPayload")
+            args = json.dumps(args) if not isinstance(args, str) else args
+            if not args or args == "{}": args = e.get("argsPreview") or ""
+            out.append((ts, actor, "runs", "%s %s" % (e.get("toolName"), short(args, 10 ** 9))))
         elif kind == "message" and e.get("role") == "assistant":
             m = e.get("message") or {}
             parts = m.get("content") if isinstance(m.get("content"), list) else []
             t = " ".join(c.get("text", "") for c in parts if isinstance(c, dict) and c.get("type") == "text").strip()
             if not t: t = (m.get("text") or "").strip()
+            if thinking:
+                th = " ".join(c.get("thinking", "") for c in parts if isinstance(c, dict) and c.get("type") in ("thinking", "reasoning")).strip()
+                if th: out.append((ts, actor, "thinks", short(th, chars)))
             if t: out.append((ts, actor, "says", short(t, chars)))
             if m.get("errorMessage") or e.get("errorMessage"):
                 out.append((ts, actor, "error", short(str(m.get("errorMessage") or e.get("errorMessage")), chars)))
         elif kind == "message" and e.get("role") == "toolResult":
             t = e.get("text") or ""
-            out.append((ts, actor, "gets", "%s%s: %s" % (e.get("toolName"), " (error)" if e.get("isError") else "", short(t, chars))))
+            out.append((ts, actor, "gets", "%s%s: %s" % (e.get("toolName"), " (error)" if e.get("isError") else "", short(t, rchars))))
         elif kind == "message" and e.get("role") == "user" and (e.get("text") or "").strip() not in ("", "[prompt redacted]"):
             out.append((ts, actor, "is told", short(e.get("text"), chars)))
     return out
 
 
-def coordinator_events(run, tid, chars, window):
+def coordinator_events(run, tid, chars, window, thinking=True):
     """the coordinator's own turns that name the ticket, or fall inside its children's window"""
     ev = "/tmp/bn-pi/%s/events.jsonl" % run
     out = []
@@ -102,35 +109,49 @@ def coordinator_events(run, tid, chars, window):
         ts = m.get("timestamp") or 0
         blob = json.dumps(m)
         if tid not in blob and not (lo - 120000 <= ts <= hi + 600000): continue
+        if thinking:
+            th = " ".join(c.get("thinking", "") for c in m.get("content") or [] if c.get("type") in ("thinking", "reasoning")).strip()
+            if th: out.append((ts, "coordinator", "thinks", short(th, chars)))
         t = " ".join(c.get("text", "") for c in m.get("content") or [] if c.get("type") == "text").strip()
         if t: out.append((ts, "coordinator", "says", short(t, chars)))
         for c in m.get("content") or []:
             if c.get("type") == "toolCall":
                 args = json.dumps(c.get("arguments"))
                 if tid in args or c.get("name") == "subagent" or "land.sh" in args or "verify_rows" in args or "ticket_result" in args:
-                    out.append((ts, "coordinator", "runs", "%s %s" % (c.get("name"), short(args, chars))))
+                    out.append((ts, "coordinator", "runs", "%s %s" % (c.get("name"), args)))
     return out
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("ticket"); ap.add_argument("--out"); ap.add_argument("--stdout", action="store_true")
-    ap.add_argument("--chars", type=int, default=220); ap.add_argument("--full", action="store_true")
+    ap.add_argument("--chars", type=int, default=4000, help="cap on a model's own words and thinking")
+    ap.add_argument("--result-chars", type=int, default=800, help="cap on what a tool printed back")
+    ap.add_argument("--no-thinking", action="store_true", help="leave the models' thinking out")
+    ap.add_argument("--full", action="store_true", help="no caps at all")
     ap.add_argument("--worker-only", action="store_true", help="leave the coordinator's own turns out (the children's story alone)")
-    a = ap.parse_args(); tid = a.ticket.upper(); chars = 100000 if a.full else a.chars
+    a = ap.parse_args(); tid = a.ticket.upper()
+    chars = 10 ** 9 if a.full else a.chars
+    rchars = 10 ** 9 if a.full else a.result_chars
     kids = children_for(tid)
     if not kids: sys.exit("no session's report names %s (the artifacts under /tmp/bn-pi are wiped by a reboot)" % tid)
     runs = sorted({c["run"] for c in kids}); window = (min(c["ts"] for c in kids), max(c["ts"] for c in kids))
     timeline = []
     for c in kids:
         actor = "%s (%s)" % (c["role"], c["model"].split("/")[-1])
-        timeline += events_from_transcript(c["transcript"], actor, chars)
+        timeline += events_from_transcript(c["transcript"], actor, chars, rchars, not a.no_thinking)
     if not a.worker_only:
         for r in runs:
-            timeline += coordinator_events(r, tid, chars, window)
+            timeline += coordinator_events(r, tid, chars, window, not a.no_thinking)
     timeline.sort(key=lambda x: (int(x[0]) if str(x[0]).isdigit() else 0))
     # the ticket's own text, its result, and what reached main
-    body = sh("python3 tools/next_ticket.py --id %s --results 0 2>/dev/null" % tid)
+    body = ""
+    for f in ("TODO.md", "TODO_ARCHIVE.md"):
+        if not os.path.exists(f): continue
+        m = re.search(r"^### %s\. .*?(?=^### |\n## |\Z)" % re.escape(tid), open(f).read(), re.M | re.S)
+        if m: body = m.group(0).strip(); break
+    if not body:
+        body = sh("python3 tools/next_ticket.py --id %s --results 0 2>/dev/null" % tid) or "(the ticket's text is no longer in TODO.md or the archive)"
     commits = sh("git log --format='%%h %%ad %%s' --date=format:'%%m-%%d %%H:%%M' --grep='\\b%s\\b' main | head -12" % tid)
     status_lines = []
     for r in runs:
@@ -146,12 +167,19 @@ def main():
         out.append("| %s | %s | %s | %s | %s | $%.3f |" % (clock(c["ts"]), c["role"], c["model"], u.get("turns", "?"), tok, float(u.get("cost") or 0)))
     if status: out += ["", "## What the run recorded", "", "```", status, "```"]
     if commits.strip(): out += ["", "## What reached main", "", "```", commits.strip(), "```"]
-    out += ["", "## The ticket as the worker received it", "", "```", short(body, 4000) if not a.full else body, "```"]
+    out += ["", "## The ticket as the worker received it", "", "```", body, "```"]
     out += ["", "## Timeline", ""]
     last_actor = None
     for ts, actor, kind, text in timeline:
         if actor != last_actor: out.append(""); last_actor = actor
-        out.append("- `%s` **%s** %s: %s" % (clock(ts), actor, kind, text))
+        if len(text) > 300 or "\n" in text:
+            out.append("- `%s` **%s** %s:" % (clock(ts), actor, kind))
+            out.append("")
+            out.append("  ```")
+            out += ["  " + l for l in text.splitlines()]
+            out.append("  ```")
+        else:
+            out.append("- `%s` **%s** %s: %s" % (clock(ts), actor, kind, text))
     doc = "\n".join(out) + "\n"
     if a.stdout: print(doc); return
     path = a.out or os.path.join("docs", "tickets", "%s.md" % tid)
