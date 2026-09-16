@@ -206,7 +206,26 @@ def chip_names():
 # behaviour in our build is the ROM's own table row, not hand-ported logic.
 # Derived from the ROM table (no per-chip list): ChipDataArr.s's
 # attack_family field, intersected with the pixel-scoreboard ids.
-AS_DATA_FAMILIES = {0x13, 0x15, 0x21}  # canon: ChipDataArr_8021DA8 attack_family of ids 71-79, 81, 85 (sword/blade, T17) + 178-180 subfamily 0x04 (Barrier/Barr100/Barr200, T48) + id 4 (AirShot, T52)
+# T57 43-row audit (docs/worklog/T57.md): the families whose EVERY
+# pixel-verified id's behaviour src/battle.rs dispatches through the
+# record, not through a `match chip.id` arm. Per family:
+#   0x13 sword/blade -- all ten verified ids (71-79, 85) are consumed at
+#     src/battle.rs:4391 (`chip.family == SWORD_FAMILY`, hit shape from
+#     SWORD_HIT_SHAPE indexed by the record's AttackSubFamily); the one
+#     byte this family still keys by id is the use_chip ENTRY arm
+#     src/battle.rs:4144 (`CHIP_SWORD | ... | CHIP_BAMBSWRD`), common to
+#     all swords and not behaviour-selecting. Stays in.
+#   0x21 AirShot -- id 4 read at src/battle.rs:4128 and :4468, both
+#     `chip.family == AIRSHOT_FAMILY`. Stays in.
+#   0x15 DROPPED (had Barrier/Barr100/Barr200 via T48): a family rule
+#     cannot express the dispatch -- the same family's other verified ids
+#     163 (AreaGrab, src/battle.rs:3434/:3459/:4348) and 177 (Invisibl,
+#     :3430/:4321) are consumed by `match chip.id`, and the barrier gate
+#     :3444/:4363 tests family 0x15 AND subfamily 0x04, so family 0x15
+#     alone selects nothing. The trio is still record-dispatched
+#     (barrier_hp(&chip) reads the record) but no AS_DATA_FAMILIES rule
+#     can carry it, so it falls back to verified-pixels.
+AS_DATA_FAMILIES = {0x13, 0x21}  # canon: T57 per-id audit; see block comment above
 
 
 def parse_chips():
