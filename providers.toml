@@ -105,7 +105,8 @@ probe = "python3 tools/zai_quota.py"      # (api.z.ai/api/coding/paas/v4); the p
 start_above = 1                           # balance". No usage endpoint, so the probe is a tiny request: open (1) or
 stop_below = 1                            # exhausted (0).
 tail = false
-reset = "rolling 5h"
+reset = "rolling 5h"                      # measured 2026-09-16: the window allowed about 2.5 replay tickets before
+                                          # "Usage limit reached for 5 hour" (resets on the hour it names)
 price_usd_per_month = 0                   # fill in what the plan costs
 daily_credits = 1
 oneshot_flags = ""
