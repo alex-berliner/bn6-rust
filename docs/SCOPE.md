@@ -812,17 +812,17 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | type | meaning | flag_word | writer | reader | status |
 |---|---|---|---|---|---|
-| 0x0 | hole (skipped by every r | 0x18000 | unnamed: no direct strb of 0 to oPanelData | asm/asm38.s:4315-4317 (_object_setPanelType  | unverified: reader-only (no writer cite) |
+| 0x0 | hole (skipped by every r | 0x18000 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4315-4317 (_object_setPanelType  | bounded-GAP (T33): walked writer sites,  |
 | 0x1 | broken | 0x14000 | asm/object.s:2323 (object_breakPanel); als | asm/asm00_2.s:11130 (sub_8013CC4 cmp #1) + a | verified |
 | 0x2 | normal (regen target of  | 0x10010 | asm/object.s:1471-1472 (tickPanels regen); | asm/object.s:1460 (tickPanels default arm re | verified |
 | 0x3 | cracked | 0x10050 | asm/object.s:2218-2222 (object_crackPanel  | asm/object.s:1436-1442 (tickPanels: regen th | verified |
 | 0x4 | poison | 0x10110 | asm/asm31.s:6146-6147 (sub_80BAE16 local a | asm/asm00_2.s:21674-21689 (sub_801A186 ticks | verified |
-| 0x5 | holy | 0x12010 | unnamed: no writer found in bn6f disassemb | asm/object.s:4831-4833 (object_calculateFina | unverified: reader-only (no writer cite) |
+| 0x5 | holy | 0x12010 | GAP (T33): no writer in bn6f disassembly - | asm/object.s:4831-4833 (object_calculateFina | bounded-GAP (T33): walked writer sites,  |
 | 0x6 | grass | 0x10410 | asm/asm31.s:6168-6169 (sub_80BAE16 local a | asm/asm38.s:3855-3862 (applyHeatOnGrassDamag | verified |
 | 0x7 | unnamed: stage terrain m | 0x10810 | asm/asm31.s:6104-6105 (sub_80BAE16 local a | asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> | verified |
-| 0x8 | unnamed: regen like brok | 0x11010 | unnamed: no writer found | asm/object.s:1444-1450 (tickPanels regen 0x2 | unverified: reader-only (no writer cite) |
-| 0x9 | unnamed: 9..0xC share fl | 0x10210 | unnamed: no writer found for 9 itself | asm/asm38.s:4318-4326 (_object_setPanelType: | unverified: reader-only (no writer cite) |
-| 0xA | unnamed: same regen grou | 0x10210 | unnamed: no writer found | asm/asm38.s:4318-4326 + asm/object.s:1452-14 | unverified: reader-only (no writer cite) |
+| 0x8 | unnamed: regen like brok | 0x11010 | GAP (T33): no writer in bn6f disassembly - | asm/object.s:1444-1450 (tickPanels regen 0x2 | bounded-GAP (T33): walked writer sites,  |
+| 0x9 | unnamed: 9..0xC share fl | 0x10210 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4318-4326 (_object_setPanelType: | bounded-GAP (T33): walked writer sites,  |
+| 0xA | unnamed: same regen grou | 0x10210 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4318-4326 + asm/object.s:1452-14 | bounded-GAP (T33): walked writer sites,  |
 | 0xB | unnamed: stage type writ | 0x10210 | asm/asm31.s:27871-27872 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 | 0xC | unnamed: stage type writ | 0x10210 | asm/asm31.s:27855-27856 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 
