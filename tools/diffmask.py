@@ -57,6 +57,7 @@ def parse_frames(spec):
 
 
 def diff_one(ra, rb, dx, dy, solid, difcol):
+    from PIL import Image  # T49: load_frame uses its own local import for --help, but diff_one is at module level and needs Image here too
     pa = ra.load()
     pb = rb.load()
     w = min(ra.width, rb.width)
