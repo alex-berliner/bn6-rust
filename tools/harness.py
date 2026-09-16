@@ -1628,8 +1628,75 @@ FIELD_ZERO = dict(ZERO_ENEMY_RESOLVED,
 #:     it from the counters as the plain->4 residual series H [2,1] period-2,
 #:     V [1,0,1,1] period-4 at the old seed, the cycle's negation.
 #:     // canon: eBGScrollCBCounters at 0x02009690, canon caps 135..174,
-#:     /tmp/bn-f47/canon_scrollcnt.bin + /tmp/bn-t25-watch (T25, re-solved
-#:     T29).
+#:     /tmp/bn-f47/canon_scrollcnt.bin (captured 21:55 this session's T25 run).
+#:     OURS: /tmp/bn-t25-watch -- AND NOTE ITS OWN SEED, because a solver that
+#:     misses it gets a self-consistent wrong answer (T31 hit exactly that):
+#:     that stream is the OLD 466/745 capture (its files are timestamped
+#:     2026-09-15 21:55:50, 31 min BEFORE 718fba5 moved the pair, and the dump
+#:     proves it independently -- x_q is all-even across 210 watches with
+#:     SCROLL_X_Q = 2, so parity is invariant and no odd seed can produce it;
+#:     the anchor reads x_q[8]=470 = 466+2*2, y_q[8]=747 = 745+2 at battle
+#:     frame 0). Therefore every seed in items (1)-(3) above is a SHIFT APPLIED
+#:     TO A 466/745 MIRROR (candidate s -> mirror + (s-466) in x, + (s-745) in
+#:     y), never a value read out of a 471/748 capture, and what the dump
+#:     validates directly is only the OLD-seed series in (3). That dir's kept
+#:     analyze.py is a superseded convention (canon 135+k <-> mirror 113+k,
+#:     fold mod 512) and reproduces nothing; the validated model is
+#:     one-capture-later + equality mod the 256-px content period. T31's
+#:     verifier re-derived (1)'s sets from these two files alone in `field`'s
+#:     own row indices (canon 130+k <-> rust 116+k -- same model, k relabelled
+#:     by 5, the canon-rust gap is 14 in both) and got H {471,472} / V {748}
+#:     for the ramp and k=0..2's {465,466} / {744,745,746}, disjoint: see
+#:     docs/worklog/T31.md step 3.
+#: (4) T31 (2026-09-16): MEASURED verdict on the k=0..2 group of field's
+#:     integrated residue (15823 px = 5806+5319+4698, full height, cols
+#:     0..227): NOT SCROLL -- no seed and no pixel shift reduces it. Two
+#:     independent measurements, no value moved (ROM byte-identical):
+#:     (a) exhaustive seed solve extended to ROW k=0..2 (canon cap 130+k <->
+#:     rust cap 116+k, origin 8 + offset 108), all 1024 quarter-values per
+#:     axis, both pairings, equality mod the 256-px content period. NOTE the
+#:     kept /tmp/bn-t25-watch dumps are at the OLD seed 466/745
+#:     (watch_scroll.py ran before the fixture move), and that dir's
+#:     analyze.py (canon 135+k <-> mirror 113+k, fold mod 512) is a superseded
+#:     convention -- the validated model is one-capture-later + mod 256 +
+#:     dump seed 466/745 (it reproduces this block's (2)/(3) artifacts
+#:     exactly). Result: under the landed one-capture-later pairing the H
+#:     seeds zeroing row k=0..2 are {465,466} and V's are {744,745,746},
+#:     while the seeds zeroing the ramp window k=6..39 are {471,472}/{748} --
+#:     DISJOINT, so no seed zeroes both; best over k=0..2 alone is 0 px at
+#:     466/745, but that seed predicts H [1,2] period-2 / V [0,1,1,1]
+#:     period-4 residual across the 34 ramp frames whose pixels read 0.
+#:     Same-capture pairing: H best over k=0..2 is 1 px (zero set NONE), V
+#:     zero set {743..746}. At the landed 471/748 the model itself predicts
+#:     only (-2,-1),(-1,-1),(-1,-1) px on row k=0..2 -- sub-2px, and:
+#:     (b) pixel translation sweep on the row's own integrated pairing
+#:     (harness.run serial, origin 8, canon 130+k <-> rust 116+k): the
+#:     minimum over the whole dx,dy in [-4..4]^2 grid is AT (0,0) on all
+#:     three frames (5806/5319/4698); the best non-zero shift is (dx=-1,dy=0)
+#:     on each and makes every frame ~2x WORSE (11123/10675/9187). The 15823
+#:     is transition CONTENT in place, not displaced content. Mechanism
+#:     named: across caps 128..142 canon's counter->register rounds to
+#:     half-px steps (H reg 86,85,85,84,84,...) while our engine holds x_q
+#:     at 686 for 5 caps (STEP_HOLD, the 192-tick cycle) -- at the F45
+#:     pre-boundary transition the two quantizations diverge by 1-2 px AND
+#:     the resident art differs mid-transition; no seed fixes that without
+#:     unfixing the ramp.
+#: (5) T31: the bg1/bg2 one-capture-later ROW pairing question (rust_offset
+#:     113 -> 114, same event-locked canon_ref 135), measured as a pair:
+#:     field-bg2 total 0 worst 0 (the 4800 VANISHES; panels content is static
+#:     so the moved pairing holds all 40 frames); field-bg1 total 170745
+#:     worst 9923 -- its k=0 band ALSO vanishes (k=0 reads 0) but the moved
+#:     pairing mispairs the scrolling backdrop on every k>=1 (full-height
+#:     rows 0..159, cols 0..229; canon's register is stalled across the
+#:     transition while ours has resumed). So neither 4800 persists as a k=0
+#:     band under rust-later: the band is a ONE-CAPTURE TRANSITION EDGE on
+#:     both layers (rust reaches canon-135's appearance one capture later
+#:     than the landed pairing expects), not static content -- but no
+#:     row-level pairing move fixes both rows, bg1's row cannot hold offset
+#:     114, and no FIELD_ZERO value moves (the solve sets above are disjoint
+#:     from the ramp's). bg1's and bg2's 4800 remain ONE shared F45
+#:     transition artifact; bg1's half of that sentence is now pairing-
+#:     measured, not only translation-swept.
 #: T24: art_timer 7 -> 4, so `Backdrop::seed`'s construction lead (+1,
 #: (art_entry, art_timer) = (10, 4) are both read at the POST-boundary anchor, canon cap 135 /
 #: rust cap 121 (paired k=0); the cap-130 line above (entry 23, timer 1) is F26b's own anchor and is
