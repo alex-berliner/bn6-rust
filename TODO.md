@@ -312,8 +312,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T52. M4: AirShot (id 4) as data — port from match chip.id to chip.family == 0x21 *(OPEN -- 2026-09-16)*
+### T52. M4: AirShot (id 4) as data — port from match chip.id to chip.family == 0x21  *(DONE -- 2026-09-16, chip-airshot 0/0/40/4602 unchanged with non-blind negative)*
 
+**Result.** chip-airshot 0/0/40/4602 unchanged with non-blind negative; cursor 1/1/170/186279 unchanged (known tear); all 9 regression rows identical; verify_rows PASS; AS_DATA_FAMILIES {0x13,0x15} -> {0x13,0x15,0x21}; SCOPE M4 13 -> 14; fitted 19 unchanged; landed 50e4d49; worker-minimax + verifier confirmed parity table all agree.
 **Why.** AirShot is "verified-pixels" (43/411): the chip works through our own code but not from the chip record. The arm at src/battle.rs:4281 `CHIP_AIRSHOT => { ... }` is keyed by id 4; the canonical dispatch is chip.family=0x21 (per src/battle.rs:617 "AirShot (attack family 0x21, sub_80EC884)"). Per chip_data_struct (include/rom_structs/ChipData.inc), AttackPower=20 at +0x1a matches src literal, Element=CHIP_ELEM_WIND matches src default. T17/T46/T48 precedent: each chip-family port lands zero rows unchanged because F48's drift band cannot make a mispaired frame read 0. The v2 asset (T17/T19) ships the per-record attack_family byte. Milestone **M4**.
 
 **Files.** src/chips.rs (no change — accessors exist), src/battle.rs (**only** the AirShot arm in use_chip at :4281-4293 and any chip_strike AirShot arm — never landed sword/blade arm, never fight_latch/hp_readout_live from F44), tools/inventory.py (AS_DATA_FAMILIES extension only), docs/SCOPE.md (regenerated only), docs/worklog/T52.md. **NOT** tools/chip_export.py, assets/chips.bin, tools/harness.py, tools/allowlist.py, src/hud*.rs, src/backdrop.rs, src/fixture.rs, src/spr.rs; reference/bn6f read-only.
