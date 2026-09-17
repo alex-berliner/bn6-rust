@@ -2320,7 +2320,17 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             ring_target: (0, 0),
             // Objects, not tiles, so it shows in the sterile arena too --
             // which is where it was measured.
-            emotion: crate::emotion::Emotion::new(crate::EMOTION),
+            emotion: crate::emotion::Emotion::new(
+                crate::EMOTION,
+                // +63 is SHARED with enemy_action (T105 overlay): a row with
+                // enemies names enemy_action there; a zero-enemy arena names
+                // emotion. Same disambiguation the harness's own overlay
+                // comment states -- enemy_action is only ever read for
+                // existing enemies, so with enemies=0 the byte can only be
+                // an emotion, and with enemies>=1 this window's face byte is
+                // not ours to read (0 = calm = the pre-T105 behaviour).
+                fixture.map_or(0, |f| if f.enemies == 0 { f.emotion } else { 0 }),
+            ),
             // Canon enables the emotion window with the rest of the battle
             // HUD and never re-enables it inside a battle, so this starts
             // set and is only ever cleared (in `update`, on the teardown).

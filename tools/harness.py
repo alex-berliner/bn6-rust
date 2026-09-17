@@ -251,7 +251,14 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # cursor/windowclose's 4 still lands at +62, mask=4 with enemies=1 means
     # no slot-0 override so behaviour is preserved).
     buf[62] = descriptor.get("panel_override_mask", 0) | descriptor.get("enemy_state", 0)
-    buf[63] = descriptor.get("enemy_action", 0)
+    # T105: +63 emotion, overlaying enemy_action at the SAME byte, written
+    # after it so an emotion row's value wins -- same shape as F38h's +62
+    # overlay above. The domains never collide: an emotion row is a
+    # zero-enemy arena (so enemy_action is never read by src/battle.rs) and
+    # an enemy row never names an emotion (0 = calm = the byte every
+    # pre-T105 row already delivered). The value is canon's off_801CD08 face
+    # slot (asm00_2.s:27580-27603), read by src/fixture.rs's `emotion`.
+    buf[63] = descriptor.get("enemy_action", 0) | descriptor.get("emotion", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -719,12 +726,17 @@ def plain_rom() -> str:
 
 #: TODO F27b: `flags` defaults to every chip row's own 0x1F and only the
 #: `popup` row passes anything else -- see that row's own note.
-def _chip_rust(chip_hex: str, flags: int = 0x1F) -> Callable[[str], Side]:
+def _chip_rust(chip_hex: str, flags: int = 0x1F, emotion: int = 0) -> Callable[[str], Side]:
     desc = {
         "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
         "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
         "flags": flags, "fire_frame": 90,
     }
+    if emotion:
+        # T105: the emotion window's face slot (off_801CD08 index). Only
+        # named when nonzero so every pre-existing descriptor's +63 byte is
+        # untouched.
+        desc["emotion"] = emotion
     return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
 
 
@@ -3215,6 +3227,89 @@ PORTED_CHECKS: List[Check] = [
         # already the 43-chip scoreboard's own chip-areagrab/chip-barrier/
         # chip-barr100/chip-barr200 rows above, same recipe, not
         # duplicated here.
+    ),
+    Check(
+        name="emotion_syn",
+        ui="isolated",
+        frames=40,
+        align=ALIGN_CHIP,
+        # T105 (2026-09-17): the emotion window's face-selection gate. The
+        # popup row's own recipe -- the ONE route whose canon side draws the
+        # emotion window at all (element mask 0x4497, bit14 set, live HUD;
+        # the 43-chip afterdissolve_0x0c route has it torn down, 0x8084) --
+        # with the face flipped from calm to slot 1 (the anger face) on BOTH
+        # sides:
+        #
+        # canon: the player's AIData.Anger poked to 1 at load
+        # (0x020340B4 = AIData base 0x02034080 + oAIData_Anger 0x34).
+        # possiblyGetBattleEmotion_8015B64 (asm00_2.s:15149-15155) turns a
+        # nonzero Anger into emotion enum 3 while Unk_36==0/Mood!=0 hold
+        # (peeked at frame 4: 0x020340b0:8 = 0000000000000000), and
+        # byte_801E6F4 (asm00_2.s:31044) maps enum 3 -> face slot 1.
+        # sub_801CB38 (asm00_2.s:27332-27464) then re-uploads slot 1's art
+        # from off_801CD08[1] (dword_872D994) + the shared right half
+        # dword_872D914, and slot 1's OWN palette (dword_872F114 + 1*0x20,
+        # asm00_2.s:27449-27452) every frame. MEASURED: --poke
+        # 0x020340B4:0x0001 is stable over 80 frames (probe.py watch:
+        # 0x0001 on every sampled frame, no decay) and the draw-gate byte
+        # r5[0xf] = 0x0203528F stays 0x00 the whole window, so the 5/6 skip
+        # never fires and no flash animation arms (the updater's flash
+        # timer r5[0x14] tracks r5[0x17]/stats, not Anger).
+        #
+        # The old poke target named by earlier passes, 0x0203528F itself,
+        # is only the DRAW GATE byte -- the face's art is picked from live
+        # battle data, so poking it changes no pixels. The workaround for
+        # its 16-bit rounding (--poke 0x0203528E:0x0100) is still what sets
+        # the byte cleanly, but nothing reads it for the face.
+        #
+        # rust: the same descriptor with emotion=1 (+63, src/fixture.rs's
+        # `emotion`); src/emotion.rs indexes its FACE_INDEX table (canon's
+        # off_801CD08 deltas) and uploads slot 1's left half + shared right
+        # half + slot 1's palette.
+        #
+        # NEGATIVE: the no-poke pair IS the `cannon` row's own recipe shape
+        # (this row minus the Anger poke and the emotion byte) -- on this
+        # route with the calm face the same 40-frame window is measured 0
+        # today (cannon isolated PASS total 0 worst 0 frames 40, this
+        # session), so the poke + descriptor are the only difference
+        # between the two worlds; a rust side that ignored the emotion byte
+        # would read this row as canon-anger vs rust-calm, i.e. the face
+        # region alone (~2-3k px), not 0. The harness's own frame-shift
+        # negative rides along (the cannon fire at canon 43 gives the window
+        # motion to catch a dead alignment).
+        # NEGATIVE: this window has no motion of its own -- no chip is
+        # fired (the A@40 press of the popup/cannon recipes is DROPPED and
+        # AUTO_FIRE is clear on our side), and per F12's measurement an
+        # idle navi carries no timing, so the harness's frame-shift negative
+        # would read 0 (BLIND). Same documented case as the `window` and
+        # chip-invisibl rows: negative="pixel", a one-column shift, tests
+        # that the diff is live on real content. The no-poke calm world is
+        # itself measured: this same recipe minus the Anger poke and the
+        # emotion byte is the popup row's (0/0/80, this session), so the
+        # poke + descriptor are the only difference between the two worlds.
+        #
+        # WHY NO FIRE: the anger state is not pixel-neutral behind the face
+        # -- canon's angry shots render with their own tint and damage, so
+        # a fired-cannon window compares canon-anger-shot vs rust-normal-shot
+        # and reads ~2166 px/frame (measured 86662/40, worst 2825) with the
+        # face identical. The ticket's subject is the FACE gate; the shot
+        # tint is a separate feature and deliberately not widened into.
+        rust=_chip_rust("01", flags=0x57, emotion=1),
+        # The popup row's own canon side verbatim (chip b1 -> 01, plus the
+        # Anger poke, minus the A press): the same DELETE + ENEMY_TILES/
+        # dissolve zeroing that keeps the deleted Mettaur's OBJ dissolve
+        # out of the compared window there. flags 0x57 on our side = that
+        # row's 0x5F minus AUTO_FIRE, to match the dropped A press.
+        negative="pixel",
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0x01" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("01") + ("0x020340b4:0x0001",),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
+                              script="Start@10", extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
     ),
 ]
 
