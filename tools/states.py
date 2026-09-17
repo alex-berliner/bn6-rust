@@ -867,6 +867,18 @@ TRACE_SCENARIOS = {
         "frames": 40,
         "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
     },
+    # T135: the cross-body row's trace scenario -- same shape as the emotion
+    # trio (it rides the row's own sides via harness_row). The poked byte
+    # (0x0203ce2c, oNaviStats_Transformation) and the body palette bank are
+    # outside trace.py's fixed CANON_WATCHES -- measured with probe.py watch
+    # in docs/worklog/T135.md (OAM byte-identical, OBJ bank 0 row 0 -> row 2).
+    "form_cross_full": {
+        "harness_row": "form_cross",
+        "canon_ref": 43,  # provenance: derived -- ALIGN_CHIP's own canon_ref, the row's pairing
+        "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, same recipe family as emotion_syn
+        "frames": 40,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
+    },
     # T131: the scripted-entry (family-A) scenario. Canon side rides the
     # battlestart_scripted state (battlestart_ai4_rank0's route + the roll's
     # OPT-path pokes, asm/asm29.s:10216-10234). The settings word (0x02001b9c,

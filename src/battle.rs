@@ -1644,6 +1644,27 @@ const STEP_TRAIL_NEXT: usize = 1; // provenance: derived -- one slot round the f
 const STEP_RING_PERIOD: u8 = 4; // provenance: derived -- step_trail's own four-frame ring (see its doc)
 const STEP_BLINK_SHOWN: u8 = 2; // provenance: peeked -- the copies blink two on and two off (see STEP_GHOST2_FIRST)
 const STEP_GHOST_FIRST: u8 = 2; // provenance: peeked -- the first drawn age in STEP_GHOST_LAST's measured drawn frames
+/// The player NaviStats' oNaviStats_Transformation: eBattleNaviStats0
+/// 0x0203ce00 (ewram.s:3109) + 0x2c (include/structs/NaviStats.inc).
+const NAVISTATS_TRANSFORMATION_ADDR: u32 = 0x0203_ce2c; // canon: oNaviStats_Transformation
+
+/// Transformation byte -> body palette row, canon's byte_80203EA
+/// (@0x080203EA, read straight from the sterile ROM), consumed by
+/// sub_801002C for cross values only (asm00_2.s:2776-2779: the byte is read
+/// when TF is neither 0 nor 0xb nor 0xc; TF 0..0xa are the only values that
+/// reach the load here, so the table carries exactly those 11 entries).
+/// TF 0 (calm) is row 0. Values > 0xa (beast/over bodies: canon swaps the
+/// sprite SET for those, byte_800FCBC via sub_800FC9E, asm00_2.s:2201-2215)
+/// are unported and stay on row 0 -- see docs/coverage/forms.md.
+fn cross_form_palette_row(transformation: usize) -> usize {
+    const CROSS_FORM_PALETTE_ROW: [usize; 11] =
+        [0x0, 0x2, 0x7, 0x9, 0xd, 0x13, 0x5, 0x11, 0xb, 0xf, 0x15]; // provenance: derived -- canon byte_80203EA @0x080203EA (ROM bytes, T135 A/B: TF_HEATCROSS -> row 2 measured in OBJ bank 0)
+    CROSS_FORM_PALETTE_ROW
+        .get(transformation)
+        .copied()
+        .unwrap_or(0)
+}
+
 /// The no-fixture lineup: an empty hand, MegaMan at column 2, row 2, and
 /// one Mettaur at (5, 3) (see Battle::new).
 const DEMO_COL: i32 = 2; // provenance: chosen -- this build's no-fixture lineup (see Battle::new)
@@ -2201,7 +2222,17 @@ impl<'a> Battle<'a> {
             None => (alloc::vec::Vec::new(), DEMO_COL),
         };
         let demo_row = fixture.map(|f| f.megaman_row as i32).unwrap_or(DEMO_ROW);
-        let megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, demo_row, false, player);
+        let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, demo_row, false, player);
+        // T135: the cross-form body. canon reads the transformation byte once
+        // at battle init (playerObject_init_80172F0, asm00_2.s:18108-18110)
+        // and re-derives the palette row per frame (sub_801002C +
+        // sub_80100EC); our route reads the same byte here -- the harness's
+        // load poke is the only writer on this route (T123 measured zero
+        // mid-battle writes) and the read lands before any further allocation.
+        let transformation = unsafe {
+            (NAVISTATS_TRANSFORMATION_ADDR as *const u8).read_volatile()
+        } as usize;
+        megaman.set_form_palette_row(cross_form_palette_row(transformation));
         // Whether a virus dies with the navi's 0x5a-frame blink was not checked.
         // A debug build fights just the Mettaur, to exercise the hand, chips
         // and deletion without the bosses; the release build keeps the game's

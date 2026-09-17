@@ -599,6 +599,10 @@ def parse_forms():
         idx = int(idx_m.group(1), 16)
         charges[idx] = {"symbol": sym, "cite": f"asm/asm00_2.s:{i + 1}"}
     rows = []
+    # T135: TF_HEATCROSS's body selection is ported (src/battle.rs
+    # cross_form_palette_row, exercised by the form_cross row); the other 24
+    # TF rows stay unrecorded until their own scenarios exist.
+    forms_recorded = {"0x1": "recorded (form_cross)"}
     for t in TF_ENUM:
         ch = charges.get(t["value"])
         rows.append({
@@ -607,7 +611,7 @@ def parse_forms():
             "form_cite": t["cite"],
             "charge_shot": ch["symbol"] if ch else "// unnamed: no charge-shot entry",
             "charge_cite": ch["cite"] if ch else "",
-            "status": "unrecorded",
+            "status": forms_recorded.get(f"0x{t['value']:x}", "unrecorded"),
         })
     tf_max = max(t["value"] for t in TF_ENUM)
     extra = [{"index": f"0x{k:02x}", "charge_shot": v["symbol"], "cite": v["cite"]}
