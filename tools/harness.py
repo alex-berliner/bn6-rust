@@ -40,7 +40,7 @@ import re
 import struct
 import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -738,6 +738,16 @@ def _chip_rust(chip_hex: str, flags: int = 0x1F, emotion: int = 0) -> Callable[[
         # untouched.
         desc["emotion"] = emotion
     return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
+
+
+def _form_cross_rust(chip_hex: str) -> Callable[[str], Side]:
+    """T135: the emotion_syn descriptor route with the transformation byte
+    poked on OUR side too -- src/battle.rs reads it at battle build the way
+    canon's init reads it (playerObject_init_80172F0, asm00_2.s:18108-18110).
+    emotion=5 takes the landed 5/6 arm (empty face box, matching the canon
+    side's pinned countdown), so the row isolates the recoloured body."""
+    inner = _chip_rust(chip_hex, flags=0x5F, emotion=5)
+    return lambda ui: replace(inner(ui), pokes=inner(ui).pokes + ("0x0203ce2c:0x0001",))
 
 
 def _chip_canon(chip_hex: str, a_frame: int = 40, hide_enemy: bool = False,
@@ -3447,6 +3457,51 @@ PORTED_CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
                               cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
                               pokes=_chip_pokes("b1") + ("0x0203528e:0x0500",),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
+                              script="Start@10,A@40", extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="form_cross",
+        ui="isolated",
+        frames=40,
+        align=ALIGN_CHIP,
+        # T135: the cross-form BODY. emotion_syn's route with the
+        # transformation byte poked to TF_HEATCROSS on BOTH sides
+        # (0x0203ce2c = eBattleNaviStats0 0x0203ce00 + 0x2c,
+        # include/structs/NaviStats.inc; T123 measured zero mid-battle
+        # writers, so a load poke holds) -- the row isolates the body by
+        # emptying the face box on BOTH sides instead of drawing slot 5:
+        # canon's draw gate blanks 5/6 when the blink countdown byte
+        # 0x0203528F sits at 5 (asm00_2.s:27648-27652; the emotion_skip
+        # row's own halfword pin 0x0203528e:0x0500, measured face-only
+        # there), and our descriptor emotion=5 takes the landed 5/6 arm
+        # (src/emotion.rs). The face-slot rule itself (byte_801E700[1]=5,
+        # +5/+1 adjustments sub_801E660, asm00_2.s:30975-31001) is NOT under
+        # test here -- no src/emotion.rs change, no landed emotion row moved.
+        # Mechanism (measured A/B this ticket, 90-frame watch pair): the
+        # poke leaves canon's OAM byte-identical and recolours MegaMan's
+        # body (OAM objects 6..9, x41..81/y70..118, OBJ bank 0) from
+        # palette row 0 to row 2 of the SAME resident battleSpriteMegaMan
+        # blob at the first frame after the poke -- canon's own selector
+        # sub_801002C (asm00_2.s:2776-2779) -> byte_80203EA[TF], applied by
+        # sub_80100EC (:2789-2804) via sprite_setPalette, init at
+        # playerObject_init_80172F0 (:18109-18110). Our side reads the same
+        # byte at battle build (src/battle.rs cross_form_palette_row ->
+        # src/actor.rs set_form_palette_row -> spr Player::palette_add; the
+        # asset re-export carries rows 1..21 per frame, canon bytes via
+        # tools/spr_export.py --palettes 21). PRE-CHANGE this row reads
+        # FAILED 23480 worst 587 (T123's number, reproduced: the body
+        # region alone; the face is emptied by the pin), the bounded
+        # negative: without the poke both sides show the base form.
+        rust=_form_cross_rust("b1"),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1")
+                                     + ("0x0203ce2c:0x0001", "0x0203528e:0x0500"),
                               zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
                                     ENEMY_DISSOLVE_FIRST_PHASE),
                               pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)

@@ -348,6 +348,10 @@ pub enum Update {
 
 pub struct Actor {
     player: spr::Player,
+    /// The body palette row this actor's form selects (0 = the calm body).
+    /// Only the player's is ever non-zero: canon selects a cross body with
+    /// the SAME sprite set recoloured, see `set_form_palette_row`.
+    form_palette_row: usize,
     /// Canon's `CurAnim` byte at BattleObject+0x10
     /// (reference/bn6f/include/structs/BattleObject.inc:62-66): the AI-side
     /// animation selection. `select` writes it (like `sub_8109DEC`'s
@@ -452,6 +456,7 @@ impl Actor {
     ) -> Self {
         Self {
             player: spr::Player::new(assets, anim::IDLE),
+            form_palette_row: 0,
             cur_anim: anim::IDLE,
             cur_anim_copy: anim::IDLE,
             col,
@@ -944,6 +949,23 @@ impl Actor {
         };
     }
 
+    /// Select the body's palette row from MegaMan's form (T135). Canon keeps
+    /// the base body's sprite set for every cross (the set selector
+    /// `sub_800FC9E`, asm00_2.s:2201-2215, maps TF 0..0xa all onto category 0
+    /// via byte_800FCBC) and recolours it per frame: `sub_801002C`
+    /// (asm00_2.s:2724-2800) reads oNaviStats_Transformation and, for cross
+    /// values (anything but 0/0xb/0xc), takes the palette row from
+    /// byte_80203EA; `sub_80100EC` (:2789-2804) applies it through
+    /// sprite_setPalette -- at init (playerObject_init_80172F0 :18109-18110)
+    /// and on every real transformation activation (the script opcode,
+    /// asm31.s:107177). Measured A/B (this ticket): poking the byte to
+    /// TF_HEATCROSS mid-battle leaves the OAM byte-identical and swaps OBJ
+    /// bank 0 from palette row 0 to row 2 -- a recolour, not a new body.
+    pub fn set_form_palette_row(&mut self, row: usize) {
+        self.form_palette_row = row;
+        self.player.set_palette_add(row);
+    }
+
     /// The per-type entry the dispatcher calls: reached through
     /// `objects::battle_common_path` (plan §2.3 step 1, `battle_801B1C4`,
     /// asm00_2.s:23679) from every T1 arm -- the virus/navi act legs and
@@ -957,7 +979,11 @@ impl Actor {
         if self.pale > 0 {
             self.pale -= 1;
             if self.pale == 0 {
-                self.player.set_palette_add(0);
+                // The warp's washed-out palette expires back to the body's
+                // OWN palette -- which for a cross form is the form's row,
+                // not row 0 (canon's per-frame staging re-derives the row
+                // every frame, stageObjPalette_8002818, sprite.s:254-302).
+                self.player.set_palette_add(self.form_palette_row);
             }
         }
         if self.flash > 0 {
