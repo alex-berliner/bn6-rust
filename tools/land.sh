@@ -68,7 +68,25 @@ if ! git merge --no-ff -q -F /tmp/land_msg.txt "$branch"; then
   bash tools/incident.sh land-conflict "$branch conflicts with main in: $(echo "$conflicts" | tr '\n' ' ')"
   exit 1
 fi
-[ -d "/tmp/bnwt/$name" ] && git worktree remove --force "/tmp/bnwt/$name" || true
+# Do not pull a worktree out from under a run that is still standing in it. Landing another run's
+# finished branch is correct -- the commits are in main either way -- but removing its directory while
+# its coordinator is mid-turn there loses that run the ground under its feet. It happened on
+# 2026-09-17: the hyper coordinator removed /tmp/bnwt/t125-fullmap while the zai run owned it. A
+# directory left behind costs nothing; run_day.sh prunes stale ones every tick.
+inuse=""
+if [ -d "/tmp/bnwt/$name" ]; then
+  wtreal="$(cd "/tmp/bnwt/$name" && pwd -P)"
+  for pr in /proc/[0-9]*; do
+    c="$(readlink "$pr/cwd" 2>/dev/null)" || continue
+    case "$c" in "$wtreal"|"$wtreal"/*) inuse="$(basename "$pr")"; break ;; esac
+  done
+fi
+if [ -n "$inuse" ]; then
+  echo "worktree /tmp/bnwt/$name is another process's working directory (pid $inuse); leaving it for the prune"
+  bash tools/incident.sh worktree-in-use "$branch landed but /tmp/bnwt/$name is pid $inuse's cwd; not removed"
+else
+  [ -d "/tmp/bnwt/$name" ] && git worktree remove --force "/tmp/bnwt/$name" || true
+fi
 git branch -d "$branch" >/dev/null 2>&1 || git branch -D "$branch" >/dev/null
 rm -rf "/tmp/ct_$name" "/tmp/bn-target-$name"
 echo "landed $branch as $(git rev-parse --short HEAD)"

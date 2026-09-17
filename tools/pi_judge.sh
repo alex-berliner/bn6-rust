@@ -16,7 +16,7 @@ CTX="$(python3 tools/next_ticket.py --list 2>/dev/null || true)"
 SCOPE="$(sed -n '1,60p' docs/SCOPE.md 2>/dev/null || true)"
 BLOCKED="$(grep -E '^- .* BLOCKED -- ' TODO.md TODO_ARCHIVE.md 2>/dev/null | cut -c1-400 || true)"
 LEDGER="$(python3 tools/spend_ledger.py 2>/dev/null | tail -8 || true)"
-timeout 900 pi -p --approve --no-session --mode json \
+timeout 1500 pi -p --approve --no-session --mode json \
   --model "$MODEL" --thinking high --tools read,grep,find,ls \
   "You are the judge for /home/box/Code/bn. Read HANDOFF.md (short) and AGENTS.md. Do not edit or run anything; you have read-only tools. ${1:-}
 
@@ -32,7 +32,7 @@ $BLOCKED
 Spend so far:
 $LEDGER
 
-Propose the next FIVE tickets, in the exact ticket format used in TODO.md, every part present or the ticket is refused by tools/judge_append.py: `### ID. title *(OPEN -- date)*` with a fresh ID, **Why.** with the measured facts, a **Files.** line naming the files the worker may touch, numbered **Do** steps each ending in a measurement, **Rules**, **Acceptance.** (what measured numbers close it) and **Measure and report.**, a **Coordinator:** note, and the docs/SCOPE.md milestone it advances (M1..M11). Keep each ticket under 5000 characters: name the facts and the measurements, do not narrate; every ticket is re-sent to a worker on every turn. Never continue an objective whose last ticket ended NEGATIVE or BLOCKED: that objective is closed until new evidence exists (a recon map or a measurement made after the close, which the ticket must quote under **New evidence.**); pick another item from the ladder instead. Two proposals in a row on one objective is the most you may make in a day. For an engine-core (M2) ticket the acceptance is a trace target (field, frames of the scene, first divergent frame) with verify_rows identical as the veto; for a content ticket it is the item's own scene and trace at 0; interaction rules need a scripted-input scenario (one button log driving both sides). Order them by how much trace or row divergence they remove per dollar, against docs/SCOPE.md's milestones (M2 before content; a virus, chip or Navi is a port under the interpreters, never a re-creation). Read only what you need to write them: the open tickets' text from TODO.md, and grep tools/harness.py or TODO_ARCHIVE.md for a specific fact. Reply with the five tickets only." \
+Propose the next FIVE tickets, in the exact ticket format used in TODO.md, every part present or the ticket is refused by tools/judge_append.py: `### ID. title *(OPEN -- date)*` with a fresh ID, **Why.** with the measured facts, a **Files.** line naming the files the worker may touch, numbered **Do** steps each ending in a measurement, **Rules**, **Acceptance.** (what measured numbers close it) and **Measure and report.**, a **Coordinator:** note, and the docs/SCOPE.md milestone it advances (M1..M11). Keep each ticket under 5000 characters: name the facts and the measurements, do not narrate; every ticket is re-sent to a worker on every turn. Never continue an objective whose last ticket ended NEGATIVE or BLOCKED: that objective is closed until new evidence exists (a recon map or a measurement made after the close, which the ticket must quote under **New evidence.**); pick another item from the ladder instead. Two proposals in a row on one objective is the most you may make in a day. For an engine-core (M2) ticket the acceptance is a trace target (field, frames of the scene, first divergent frame) with verify_rows identical as the veto; for a content ticket it is the item's own scene and trace at 0; interaction rules need a scripted-input scenario (one button log driving both sides). Order them by how much trace or row divergence they remove per dollar, against docs/SCOPE.md's milestones (M2 before content; a virus, chip or Navi is a port under the interpreters, never a re-creation). Read only what you need to write them: the open tickets' text from TODO.md, and grep tools/harness.py or TODO_ARCHIVE.md for a specific fact. You are on a clock: the session is killed at 25 minutes and anything not yet written is lost, which happened to 9 of 37 judge runs on 2026-09-17 -- each one spent about nine cents reading files and produced nothing. Spend at most half your time reading. If you are not finished by then, write the tickets you do have, fewer than five if necessary: three usable tickets beat five that never get written. Reply with the tickets only." \
   > "$SESS/events.jsonl" 2> "$SESS/stderr.txt" < /dev/null || true
 python3 - "$SESS/events.jsonl" "$OUT" "$STAMP" "$MODEL" <<'EOF'
 import json, sys
@@ -48,4 +48,12 @@ for line in open(sys.argv[1]):
         if t: last = t
 open(sys.argv[2], "w").write("# Proposed tickets %s (%s, $%.4f)\n\n%s\n" % (sys.argv[3], sys.argv[4], cost, last or "(no output -- see the session's stderr)"))
 print("%s ($%.4f)" % (sys.argv[2], cost))
+print("EMPTY" if not last else "OK")
 EOF
+
+# A judge session that produces no text has spent real money and left the queue exactly as it was.
+# It used to look identical to a successful run in every log. 9 of 37 on 2026-09-17, all of them the
+# hard timeout firing while the model was still reading.
+if grep -q "no output -- see the session" "$OUT" 2>/dev/null; then
+  bash tools/incident.sh judge-timeout "$OUT: no ticket text written (session killed at the timeout); the batch is lost"
+fi

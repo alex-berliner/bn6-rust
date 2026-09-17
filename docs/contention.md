@@ -152,7 +152,21 @@ rebuilt ROM is byte-identical — a bad rename breaks the build for every run at
 is told to, and nothing does, but the only thing standing in the way is that no instruction asks for
 it. `skip-worktree` stops such a change being committed, not being made.
 
-## 10. Build output directories
+## 10. A run's worktree directory
+
+**What it is.** Each run works in its own directory under `/tmp/bnwt/`, and `land.sh` removes that
+directory after it merges the branch.
+
+**How it goes wrong.** Landing another run's finished branch is legitimate — the commits reach main
+either way — but removing its *directory* while that run's coordinator is standing in it takes the
+ground out from under it mid-turn. On 2026-09-17 the hyper run removed `/tmp/bnwt/t125-fullmap` while
+the zai run owned it. The commits survived; the run did not have a working directory any more.
+
+**What stops it.** Before removing, `land.sh` checks whether any process on the machine has that
+directory as its working directory, and if so leaves it alone and records an incident. A directory left
+behind costs nothing: `run_day.sh` prunes stale ones every tick.
+
+## 11. Build output directories
 
 **What it is.** Cargo builds from several worktrees at once.
 
@@ -160,7 +174,7 @@ it. `skip-worktree` stops such a change being committed, not being made.
 build serialises on one lock. The ROM built in a worktree is byte-identical to the main checkout's,
 which is verified, so numbers measured in a worktree are directly comparable.
 
-## 11. Benchmark scratch directories
+## 12. Benchmark scratch directories
 
 **What it is.** A replay benchmark re-runs an archived ticket with a candidate model and writes its
 events to a directory named by a timestamp.
@@ -171,7 +185,7 @@ their events together. Both reports had to be voided: the verdicts were artifact
 **What stops it.** The stamp now carries the model's name and the process id as well as the time, so
 two arms cannot collide even when started together.
 
-## 12. Provider budgets
+## 13. Provider budgets
 
 **What it is.** Several runs drawing on the same paid plan.
 
