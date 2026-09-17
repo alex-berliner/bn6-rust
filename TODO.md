@@ -382,8 +382,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T155. M3's hole, second half: the moved object LEAVING the hole — the exit arm canon's flag word also drives  *(OPEN -- 2026-09-29)*
+### T155. M3's hole, second half: the moved object LEAVING the hole — the exit arm canon's flag word also drives  *(BLOCKED -- 2026-09-17, NOT ATTEMPTED - same queue-integrity finding as T157 [grep-checked there, recorded in its stamp]: the h2b ladd)*
 
+**Result.** NOT ATTEMPTED - same queue-integrity finding as T157 (grep-checked there, recorded in its stamp): the h2b ladder's first rungs T152/T153/T154 were never admitted to TODO.md, no h2b scenario exists in tools/states.py, and T155's steps cite those rungs as predecessors. Re-dispatch refused until the ladder's first rung exists as a landed ticket or a new ticket builds it from the ROM.
 **Why.** The goal's rule is "every rung must make the previous rung's mechanism do work it previously refused": T152's branch makes the sterile box's item *register a hit*; nothing makes an object that has been moved *leave the hole it fell into*, which is the rung the goal names as "the moved object leaving the hole". The state is already there — `inventory.py`'s panel census records that type 0 is "skipped by every reader; flag word is the only one with bit 0x8000", and `_object_updatePanelParameters` (asm/asm38.s:4213-4219) re-ORs the word every frame, so an exit is a re-evaluation of the same bit under a different mask, not a new event. T130 proved the same shape is portable and landable: `object_panel_setPoison`'s masked template `(Flags & ~0x3f5f) | 0x114` on the type-4 write landed at fe9b8f3 with verify_rows PASS 9/9 — a mask read, not a fitted value. Advances **M3** ("flinch/knockback/drag", "every panel type and effect").
 
 **Files.** `src/field.rs`, `src/actor.rs`, `tools/states.py` (scenario `h2b_hole_exit`), `docs/coverage/panels.md` (append), `docs/worklog/T155.md`. **NOT** `tools/patch_sterile.py`, `src/battle.rs`, `tools/harness.py` row definitions, `reference/bn6f`, `assets/`.
