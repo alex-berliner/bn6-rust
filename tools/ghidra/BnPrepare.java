@@ -136,9 +136,11 @@ public class BnPrepare extends GhidraScript {
 			{ "Non-Returning Functions - Discovered", "true" },
 			{ "Stack", "true" },
 		};
-		// Off by default because it costs a second whole-program decompile pass;
-		// BN_DECOMP_PARAM_ID=1 turns it on for noticeably better parameter and
-		// return-type recovery.
+		// Costs a second whole-program decompile pass, so it is a decision the
+		// driver makes: on whenever the type pass runs, because BnTypes.java
+		// rewrites signatures with custom variable storage and that can only
+		// re-declare parameters analysis has already committed -- without this
+		// the r0-r3 parameters the decompiler found are lost when r5 is added.
 		boolean paramId = "1".equals(System.getenv("BN_DECOMP_PARAM_ID"));
 
 		for (String[] kv : off) {

@@ -5,7 +5,10 @@
 #
 #   tools/ghidra_decompile.sh            # full run: import, analyse, decompile
 #   tools/ghidra_decompile.sh --resume   # reuse the analysed project, decompile only
-#   tools/ghidra_decompile.sh --symbols-only   # just regenerate the symbol TSVs
+#   tools/ghidra_decompile.sh --retype   # reuse the analysis, re-apply the game's
+#                                        # types and prototypes, decompile
+#   tools/ghidra_decompile.sh --symbols-only   # regenerate the symbol and type
+#                                              # tables only, run no Ghidra
 #
 # Nothing here touches the repo except decomp/ (gitignored) and nothing here
 # writes inside reference/bn6f -- the submodule is read-only to this script.
@@ -21,10 +24,18 @@
 #   BN_DECOMP_OUT      output directory               (<repo>/decomp)
 #   BN_DECOMP_THREADS  decompiler threads             (cores - 1)
 #   BN_DECOMP_TIMEOUT  seconds per function           (120)
-#   BN_DECOMP_PARAM_ID 1 = run Decompiler Parameter ID: better parameter and
-#                      return types, at the cost of a second whole-program
-#                      decompile pass during analysis
+#   BN_DECOMP_PARAM_ID 1 = run Decompiler Parameter ID, 0 = do not.  Default 1
+#                      whenever the type pass runs, 0 without it.  It commits
+#                      the decompiler's own r0-r3 parameter findings into each
+#                      function's signature; the register prototypes applied
+#                      afterwards use custom storage, which has to re-declare
+#                      every parameter, and can only re-declare the ones that
+#                      are already recorded.  Without it 477 functions trade a
+#                      named `param_1` for an `in_r0` local.  Costs a second
+#                      whole-program decompile pass (4m20 -> 8m20 here)
 #   BN_ANALYSIS_TIMEOUT  seconds for auto-analysis    (7200)
+#   BN_NO_TYPES        1 = skip the type/prototype pass entirely, for a
+#                      before/after comparison against the untyped output
 
 set -euo pipefail
 
@@ -52,8 +63,9 @@ MODE=full
 for arg in "$@"; do
 	case "$arg" in
 		--resume) MODE=resume ;;
+		--retype) MODE=retype ;;
 		--symbols-only) MODE=symbols ;;
-		-h|--help) sed -n '2,32p' "${BASH_SOURCE[0]}"; exit 0 ;;
+		-h|--help) sed -n '2,38p' "${BASH_SOURCE[0]}"; exit 0 ;;
 		*) echo "ghidra_decompile: unknown argument $arg" >&2; exit 2 ;;
 	esac
 done
@@ -107,7 +119,33 @@ MEMMAP="$WORK/memmap.tsv"
 say "indexing reference/bn6f ..."
 python3 "$SCRIPTS/bnsyms.py" --ref "$REF" --rom "$BN_ROM" \
 	--out "$SYMBOLS" --out-mem "$MEMMAP"
-[[ "$MODE" == symbols ]] && { say "--symbols-only: stopping after $SYMBOLS"; exit 0; }
+
+# ---------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------
+# The disassembly declares the game's structs as assembler macros and proves,
+# in its own operands, which register holds which of them in which function.
+# bntypes.py turns both into something Ghidra can consume: a C header, and two
+# evidence tables.  Without this the decompiler has no names for any field and
+# no account of r5/r7, and every struct access reads as a raw offset.
+TYPES_H="$WORK/bn_types.h"
+TYPES_TSV="$WORK/bn_types.tsv"
+GLOBALS_TSV="$WORK/bn_globals.tsv"
+PROTOS_TSV="$WORK/bn_protos.tsv"
+if [[ "${BN_NO_TYPES:-0}" == 1 ]]; then
+	export BN_DECOMP_PARAM_ID="${BN_DECOMP_PARAM_ID:-0}"
+	say "BN_NO_TYPES=1: no types, no register prototypes (baseline run)"
+else
+	# See the note on BN_DECOMP_PARAM_ID above: custom storage can only keep
+	# the parameters analysis has already committed, so the type pass wants
+	# this on.
+	export BN_DECOMP_PARAM_ID="${BN_DECOMP_PARAM_ID:-1}"
+	say "converting reference/bn6f's struct macros to C ..."
+	python3 "$SCRIPTS/bntypes.py" --ref "$REF" --symbols "$SYMBOLS" \
+		--out-dir "$WORK"
+fi
+
+[[ "$MODE" == symbols ]] && { say "--symbols-only: stopping; tables are in $WORK"; exit 0; }
 
 # ---------------------------------------------------------------------------
 # Ghidra
@@ -119,7 +157,23 @@ LOG="$WORK/ghidra.log"
 SCRIPTLOG="$WORK/ghidra-script.log"
 start=$(date +%s)
 
-if [[ "$MODE" == resume ]]; then
+TYPES_SCRIPT=()
+if [[ "${BN_NO_TYPES:-0}" != 1 ]]; then
+	TYPES_SCRIPT=(-postScript BnTypes.java "$TYPES_H" "$TYPES_TSV" "$GLOBALS_TSV" "$PROTOS_TSV")
+fi
+
+if [[ "$MODE" == retype ]]; then
+	say "retyping: re-applying the game's types and prototypes to the existing"
+	say "          project, then decompiling (no re-import, no re-analysis)"
+	"$HEADLESS" "$BN_GHIDRA_PROJECTS" "$PROJECT_NAME" \
+		-process "$PROGRAM_NAME" \
+		-noanalysis \
+		-scriptPath "$SCRIPTS" \
+		"${TYPES_SCRIPT[@]}" \
+		-postScript BnDecompile.java "$SYMBOLS" "$BN_DECOMP_OUT" "${THREAD_ARG[@]}" \
+		-log "$LOG" -scriptlog "$SCRIPTLOG" \
+		-max-cpu "$(nproc)"
+elif [[ "$MODE" == resume ]]; then
 	say "resuming: decompiling from the existing project (no re-import, no re-analysis)"
 	"$HEADLESS" "$BN_GHIDRA_PROJECTS" "$PROJECT_NAME" \
 		-process "$PROGRAM_NAME" \
@@ -142,6 +196,7 @@ else
 		-loader-baseAddr "$ROM_BASE" \
 		-scriptPath "$SCRIPTS" \
 		-preScript BnPrepare.java "$MEMMAP" "$SYMBOLS" \
+		"${TYPES_SCRIPT[@]}" \
 		-postScript BnDecompile.java "$SYMBOLS" "$BN_DECOMP_OUT" "${THREAD_ARG[@]}" \
 		-analysisTimeoutPerFile "$BN_ANALYSIS_TIMEOUT" \
 		-log "$LOG" -scriptlog "$SCRIPTLOG" \
