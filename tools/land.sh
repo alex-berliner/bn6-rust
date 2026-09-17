@@ -49,7 +49,18 @@ fi
 name="${branch#wt/}"
 printf '%s\n\nverify_rows: %s\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\n' "$msg" \
   "$( [ "$verify" = 1 ] && grep -E '^  ' /tmp/land_verify.txt | tr -s ' ' | paste -sd';' || echo skipped )" > /tmp/land_msg.txt
-git merge --no-ff -q -F /tmp/land_msg.txt "$branch"
+# A conflicting merge used to kill the script under `set -e` mid-merge, leaving the SHARED checkout with
+# conflict markers in tracked files -- which then refuses every later landing until a human clears it.
+# One branch's bad day became every run's. Abort and leave main exactly as it was; the branch and its
+# worktree survive untouched so the work can be rebased and landed later.
+if ! git merge --no-ff -q -F /tmp/land_msg.txt "$branch"; then
+  conflicts="$(git diff --name-only --diff-filter=U || true)"
+  git merge --abort 2>/dev/null || git reset --hard HEAD >/dev/null
+  echo "merge of $branch conflicts with main; aborted, main is unchanged and clean" >&2
+  [ -n "$conflicts" ] && { echo "conflicting files:" >&2; echo "$conflicts" | sed 's/^/  /' >&2; }
+  echo "the branch and its worktree are kept: rebase it on main and land again" >&2
+  exit 1
+fi
 [ -d "/tmp/bnwt/$name" ] && git worktree remove --force "/tmp/bnwt/$name" || true
 git branch -d "$branch" >/dev/null 2>&1 || git branch -D "$branch" >/dev/null
 rm -rf "/tmp/ct_$name" "/tmp/bn-target-$name"
