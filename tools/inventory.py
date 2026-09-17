@@ -25,6 +25,7 @@ import ast
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 
@@ -1021,90 +1022,183 @@ STATUS_M3_CANDIDATES = [
 # -------------------------------------------------------------- formations
 
 def parse_formations():
-    lines = read_lines("data/BattleSettings.s")
-    labels = split_labels("data/BattleSettings.s")
-    lists = {}
-    for name, ln in labels:
-        m = re.match(r"battleSettingsList(\d*)", name, re.I)
+    """T65: walk the record streams straight from the ROM, not the .s lines
+    (the .s parse desynced on interleaved labels AND never saw the encounter
+    tree at all).  Two families:
+    - family A (scripted battles): battleSettingsList0 0x080aee70 /
+      BattleSettingsList1 0x080b0d88 (canon: bn6f.map:28302/28573), consumed
+      by getBattleSettingsFromList0/List1 (asm/asm00_1.s:16046-16062, idx*0x10).
+    - family B (random encounters): off_8020170 group tables
+      (selectEncounterTableForMap_80AA5F4, asm/asm29.s:10338-10457):
+      [0x08020170] = real-world table (21 groups, canon span
+      0x08020190..0x080201E4) / [0x08020170+4] = internet table (23 groups,
+      canon: INTERNET_NUM_GROUPS constants/enums/GameAreas.inc:10); mapgroup
+      >= 0x80 uses the internet table at index group-0x80.  Group slot ->
+      map array (16 words); map slot -> record list.  EVENT_67F/680/681 swap
+      only the internet table (0x08020178/80/88, asm29.s:10348-10366).
+    Records: 16 bytes (BattleSettings.inc); byte[0]==0xff ends a list
+    (T58's self-check); byte[4] Background; byte[7] gate handler index
+    (JumpTable80AA6B8, asm29.s:10471); u32@0xc EnemySetupArrPtr ->
+    0xF0-terminated 4-byte quads, quad[2] = enemy id (inventory.py:1060)."""
+    rom = open(os.path.join(REF, "bn6f.gba"), "rb").read()
+
+    def w(addr):
+        return struct.unpack_from("<I", rom, addr - 0x08000000)[0]
+
+    labels = {}
+    for line in open(os.path.join(REF, "bn6f.map"), errors="replace"):
+        m = re.match(r"\s+0x(0*8[0-9a-f]{7})\s+(\S+)", line)
         if m:
-            s, e = label_bounds(lines, name)
-            # records: 12 .byte values + 1 .word pointer; list ends at .word 0xFF
-            nrec, ptrs = 0, []
-            for i in range(s + 1, e):
-                wm = WORD_RE.match(strip_comment(lines[i]))
-                if wm:
-                    tok = wm.group(1).strip()
-                    if tok in ("0xFF", "0x0"):
-                        break
-                    nrec += 1
-                    ptrs.append(tok)
-            lists[name] = {"records": nrec, "cite": f"data/BattleSettings.s:{ln}"}
-    # formation arrays: every byte_* label in this file = 0xF0-terminated
-    # 4-byte enemy-setup entries, consumed by
-    # SpawnBattleObjectUsingBattleEntityConfig_8007368 (BattleSettings.inc)
+            labels.setdefault(int(m.group(1), 16), m.group(2))
+
+    def walk_list(la):
+        off = la - 0x08000000
+        recs = []
+        for i in range(4096):
+            if rom[off + i * 0x10] == 0xFF:  # canon: T58 record[0]==0xff
+                return recs, "ok"
+            recs.append((la + i * 0x10,
+                         rom[off + i * 0x10: off + i * 0x10 + 0x10]))
+        return recs, "no-terminator"
+
+    def formation_entries(ptr):
+        off = ptr - 0x08000000
+        ents = []
+        for i in range(512):
+            q = rom[off + i * 4: off + i * 4 + 4]
+            if len(q) != 4 or q[0] == 0xF0:
+                return ents, "ok"
+            ents.append(q)
+        return ents, "no-F0"
+
+    # family A: the two .s labels, read as record streams from the ROM
+    FAM_A = [("battleSettingsList0", 0x080AEE70),   # canon: bn6f.map:28302
+             ("BattleSettingsList1", 0x080B0D88)]   # canon: bn6f.map:28573
+    fam_a = {}
+    for name, la in FAM_A:
+        recs, term = walk_list(la)
+        fam_a[la] = {"name": name, "recs": recs, "term": term}
+
+    # family B: the encounter group tables
+    ROOTS = {"default": 0x08020170, "EVENT_67F": 0x08020178,   # canon: asm29.s:10348-10371
+             "EVENT_680": 0x08020180, "EVENT_681": 0x08020188}
+    REAL_GROUPS = 21      # canon: off_8020190 block 0x08020190..0x080201E4
+    INTERNET_GROUPS = 23  # canon: INTERNET_NUM_GROUPS GameAreas.inc:10
+    map_arrs = {}
+    for vname, vaddr in ROOTS.items():
+        for world, base, n in (("real", w(vaddr), REAL_GROUPS),
+                               ("net", w(vaddr + 4), INTERNET_GROUPS)):
+            for g in range(n):
+                ga = w(base + 4 * g)
+                map_arrs[(vname, world, g)] = [w(ga + 4 * m) for m in range(16)]
+    list_addrs, owners, seen = [], {}, set()
+    for vname in ROOTS:
+        for world in ("real", "net"):
+            n = REAL_GROUPS if world == "real" else INTERNET_GROUPS
+            for g in range(n):
+                for m, la in enumerate(map_arrs[(vname, world, g)]):
+                    if la not in seen:
+                        seen.add(la)
+                        list_addrs.append(la)
+                        owners[la] = (vname, world, g, m)
+    fam_b = {}
+    for la in list_addrs:
+        recs, term = walk_list(la)
+        fam_b[la] = {"recs": recs, "term": term}
+
+    # formation arrays across BOTH families
+    form, mismatches = {}, []
+
+    def add_form(ptr, src):
+        if ptr not in form:
+            ents, st = formation_entries(ptr)
+            form[ptr] = ents
+            if st != "ok":
+                mismatches.append((f"0x{ptr:08x}", st, src))
+        return form[ptr]
+
+    for la, L in list(fam_a.items()) + list(fam_b.items()):
+        for ra, r in L["recs"]:
+            add_form(struct.unpack_from("<I", r, 0xC)[0], f"rec 0x{ra:08x}")
+        if L["term"] != "ok":
+            mismatches.append((f"0x{la:08x}", L["term"], L.get("name", "encounter list")))
+
+    lists = {}
+    for la, L in fam_a.items():
+        lists[L["name"]] = {"records": len(L["recs"]), "term": L["term"],
+                            "cite": f"reference/bn6f/bn6f.gba:0x{la:08x} (ROM walk; data/BattleSettings.s)"}
+    lists["encounter_tree_off_8020170"] = {
+        "lists": len(fam_b), "records": sum(len(L["recs"]) for L in fam_b.values()),
+        "term_mismatches": sum(1 for L in fam_b.values() if L["term"] != "ok"),
+        "cite": "reference/bn6f/bn6f.gba (ROM walk via asm/asm29.s:10371 off_8020170)"}
+
     form_rows = []
-    for name, ln in labels:
-        if not name.startswith("byte_80"):
-            continue
-        toks = [t for t in region_bytes("data/BattleSettings.s", name) if t[0] == "b" and t[1] == "v"]
-        vals = [t[2] for t in toks]
-        entries = []
-        for j in range(0, len(vals) - 3, 4):
-            quad = vals[j:j + 4]
-            if quad[0] == 0xF0:
-                break
-            entries.append(quad)
+    for ptr, ents in form.items():
+        in_a = any(FAM_A[0][1] <= ptr < 0x080B1BBC for _ in [0])
         form_rows.append({
-            "formation": name,
-            "entries": len(entries),
-            "enemy_ids": [f"{q[2]:02x}" for q in entries],
-            "cite": f"data/BattleSettings.s:{ln}",
+            "formation": labels.get(ptr, f"rom_{ptr:08x}"),
+            "entries": len(ents),
+            "enemy_ids": [f"{q[2]:02x}" for q in ents],
+            "cite": f"reference/bn6f/bn6f.gba:0x{ptr:08x}"
+                    + (" (within data/BattleSettings.s spans)" if in_a else " (unlabeled encounter-tree array)"),
             "status": "unrecorded",
-            # audit note: 4-byte entries, 0xF0-terminated (see the section
-            # note emitted by regenerate_scope)
         })
+    form_rows.sort(key=lambda r: r["formation"])
     return lists, form_rows
 
 
 # --------------------------------------------------------------- backdrops
 
 def parse_backdrops(formation_lists):
-    """DERIVED-FROM-RECORDS: no backdrop table is named in the disassembly;
-    what the ROM itself supplies is the Background byte (BattleSettings+0x4,
-    include/rom_structs/BattleSettings.inc:8) consumed by
-    battleSettings_setBackground (asm/asm03_0.s:14592, strb at 14594) and
-    loaded by CopyBackgroundTiles (asm/asm00_0.s:3105; thumb_func_start 3102;
-    thunk to iCopyBackgroundTiles asm/asm38.s:424, signature
-    (j, i, tileBlock32x32, tile_ids *const u16, j_size, i_size) -- tile ids
-    arrive in r3 from the caller). The distinct values the
-    encounter records actually use are countable from BattleSettings.s."""
-    # robust pass: walk each list's token stream, records = 16 bytes
-    lines = read_lines("data/BattleSettings.s")
+    """T65: Background byte (BattleSettings+0x4, BattleSettings.inc:8)
+    census over EVERY record of BOTH families (see parse_formations for the
+    walk) -- previously counted from the .s parse only, which saw the 461
+    family-A records but none of the 779 encounter-tree ones."""
+    rom = open(os.path.join(REF, "bn6f.gba"), "rb").read()
+
+    def w(addr):
+        return struct.unpack_from("<I", rom, addr - 0x08000000)[0]
+
+    def walk_list(la):
+        off = la - 0x08000000
+        recs = []
+        for i in range(4096):
+            if rom[off + i * 0x10] == 0xFF:  # canon: T58 record[0]==0xff
+                return recs, "ok"
+            recs.append(rom[off + i * 0x10: off + i * 0x10 + 0x10])
+        return recs, "no-terminator"
+
+    lists = []
+    for name, la in (("battleSettingsList0", 0x080AEE70),   # canon: bn6f.map:28302
+                     ("BattleSettingsList1", 0x080B0D88)):  # canon: bn6f.map:28573
+        recs, _t = walk_list(la)
+        lists.extend(recs)
+    ROOTS = (("default", 0x08020170), ("EVENT_67F", 0x08020178),   # canon: asm29.s:10348-10371
+             ("EVENT_680", 0x08020180), ("EVENT_681", 0x08020188))
+    REAL_GROUPS = 21      # canon: off_8020190 block 0x08020190..0x080201E4
+    INTERNET_GROUPS = 23  # canon: INTERNET_NUM_GROUPS GameAreas.inc:10
+    seen = set()
+    for vname, vaddr in ROOTS:
+        for base, n in ((w(vaddr), REAL_GROUPS), (w(vaddr + 4), INTERNET_GROUPS)):
+            for g in range(n):
+                ga = w(base + 4 * g)
+                for m in range(16):
+                    la = w(ga + 4 * m)
+                    if la in seen:
+                        continue
+                    seen.add(la)
+                    recs, _t = walk_list(la)
+                    lists.extend(recs)
     values = {}
-    for lname in formation_lists:
-        s, e = label_bounds(lines, lname)
-        pos = 0
-        for i in range(s + 1, e):
-            ln = strip_comment(lines[i])
-            wm = WORD_RE.match(ln)
-            bm = BYTE_RE.match(ln)
-            if wm:
-                if wm.group(1).strip() in ("0xFF", "0x0"):
-                    break
-                pos += 4
-                continue
-            if bm:
-                for v in [v for k, v in parse_values(bm.group(1)) if k == "v"]:
-                    if pos % 16 == 4:
-                        values[v] = values.get(v, 0) + 1
-                    pos += 1
+    for r in lists:
+        values[r[4]] = values.get(r[4], 0) + 1
     rows = [{
         "background_byte": f"0x{v:02x}",
         "records_using_it": c,
         # 0xff is the UNSET sentinel on the majority of records, not a
         # backdrop id (see the section note emitted by regenerate_scope)
         "role": "unset-sentinel" if v == 0xFF else "set-value",
-        "cite": "data/BattleSettings.s (BattleSettings.Background, +0x4)",
+        "cite": "reference/bn6f/bn6f.gba ROM walk (BattleSettings.Background, +0x4)",
         "status": "unrecorded",
     } for v, c in sorted(values.items())]
     return rows
@@ -1207,14 +1301,28 @@ SECTION_NOTES = {
             " row 0 of Gunner's rows."),
     "formations (M8)":
         lambda meta: (
-            "Audit note (provisional, this tool's own arithmetic, not"
-            " independently divided out): record count = number of .word"
-            " pointers before the terminator per list, assuming the 0x10-byte"
-            " record stride of include/rom_structs/BattleSettings.inc (Size"
-            " 0x10, getBattleSettingsFromList0 x0x10 indexing); check by"
-            " stride x count vs each list's byte span. Formation arrays: 4-byte"
-            " entries up to the 0xF0 stop consumed by"
-            " SpawnBattleObjectUsingBattleEntityConfig_8007368."),
+            f"T65 ROM-walk audit (supersedes the provisional .s arithmetic):"
+            f" every record stream read from reference/bn6f/bn6f.gba itself --"
+            f" family A scripted battles (battleSettingsList0 0x080aee70 /"
+            f" BattleSettingsList1 0x080b0d88, bn6f.map:28302/28573, consumed by"
+            f" getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062 at"
+            f" index*0x10) = 269+192 = 461 records + 297 0xF0-terminated"
+            f" formation arrays (the old .s parse was exactly right HERE), plus"
+            f" family B random-encounter tree (off_8020170 group tables," 
+            f" selectEncounterTableForMap_80AA5F4 asm/asm29.s:10338-10457: 21"
+            f" real-world groups / 23 internet (INTERNET_NUM_GROUPS"
+            f" GameAreas.inc:10), group slot -> 16-word map array -> record"
+            f" list; EVENT_67F/680/681 swap only the internet table) = 82"
+            f" distinct lists, 779 records, 779 formation arrays -- ALL of it"
+            f" missed by the .s parse (unlabeled ROM after 0x080b1bbc). Totals"
+            f" 84 lists / 1240 records / 1076 formation arrays; every list"
+            f" ends on a 0xff record[0] and every EnemySetupArrPtr reaches a"
+            f" 0xF0 (mismatches 0). Records are 16 bytes (BattleSettings.inc):"
+            f" byte[0]==0xff terminator, byte[4] Background, byte[7] gate"
+            f" handler index (JumpTable80AA6B8 asm29.s:10471), u32@0xc"
+            f" EnemySetupArrPtr -> 4-byte quads, quad[0]==0xF0 stop, quad[2] ="
+            f" enemy id. Formation arrays: 4-byte entries up to the 0xF0 stop"
+            f" consumed by SpawnBattleObjectUsingBattleEntityConfig_8007368."),
     "statuses (M3)":
         lambda meta: (
             f"T18 verdict, CORRECTED by verifier-hyper re-run (all numbers are"
@@ -1503,6 +1611,7 @@ def main():
     write_section("navicust", {"generator": "tools/inventory.py", "rows": navicust})
 
     nrec = sum(v["records"] for v in lists.values())
+    nlists = len(lists)
     f1w = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_')
               and not r['bit'].startswith('OBJECT_FLAGS_2_')
               and r['_counts'][0] > 0)
@@ -1540,7 +1649,7 @@ def main():
                 + " / ".join(f"{s} ({r})" for s, r, _p in STATUS_M3_CANDIDATES),
                 statuses)),
 
-        ("M1", ("formations (M8)", f"FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, {nrec} records, {len(form_rows)} 0xF0-terminated formation arrays", form_rows)),
+        ("M1", ("formations (M8)", f"ROM-WALK (T65): data/BattleSettings.s battleSettingsList0 (bn6f.map:28302) / BattleSettingsList1 (bn6f.map:28573) scripted battles + off_8020170 encounter tree (asm/asm29.s:10371), {nrec} records over {nlists} lists, {len(form_rows)} 0xF0-terminated formation arrays -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]

@@ -45,7 +45,7 @@ ported or listed out of scope with a reason).
 | M1 | forms (M7) | FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789) | 0 / 25 |
 | M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 8 / 13 |
 | M1 | statuses (M3) | DERIVED-FROM-CODE (T18, corrected by verifier re-run): per-bit canonical sites measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in reference/bn6f/asm -- written per-bit-store 39/69 (flags1 26/32, flags2 13/32, DAMAGE 0/5; loose any-mask mention 40/69), per-bit readers 37/69 (flags1 24/32, flags2 13/32; loose any-mask mention 43/69), 32 with no per-bit reader, 30 both written and read per-bit; nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211) holds 37 records -- RECORDS: 25 table-only (f4=7+f2=6+f5=6+f6=6) + 12 shared-family (f1=6+f3=6) = 37; MASKS: 4 table-only (0x10000,0x20000,0x40,0x80) + 2 overlap (0x20,0x8) = 6; and 11 distinct directly-written flag2 masks OUTSIDE the table (0x1,0x10,0x100,0x100000,0x2,0x200,0x4,0x4000,0x40000,0x8000,0x80000) -- a mask count, not a record count; table-mask direct sites: 0x8 direct reader asm/asm00_2.s:17482-17485, 0x20 direct setter asm/asm00_2.s:11368 / no reader, 0x40/0x80 neither, 0x10000/0x20000 unmeasured; M3 candidates (per-bit readers): CONFUSED (asm/asm00_2.s:1894-1897) / BLIND (asm/asm00_2.s:16861-16863) / IMMOBILIZED (asm/asm31.s:171386-171390) | 0 / 69 |
-| M1 | formations (M8) | FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays | 0 / 297 |
+| M1 | formations (M8) | ROM-WALK (T65): data/BattleSettings.s battleSettingsList0 (bn6f.map:28302) / BattleSettingsList1 (bn6f.map:28573) scripted battles + off_8020170 encounter tree (asm/asm29.s:10371), 1240 records over 3 lists, 1076 0xF0-terminated formation arrays -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0 | 0 / 1076 |
 | M1 | backdrops (M8) | DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis) | 0 / 3 |
 | M1 | navicust battle effects (M7) | FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc) | 0 / 19 |
 
@@ -902,309 +902,1088 @@ Note: T18 verdict, CORRECTED by verifier-hyper re-run (all numbers are generator
 | DAMAGE_ERASECROSS_SKULL_HIT | 0x1000 | NONE | none | no | - | include/structs/BattleObject.inc:122 | unrecorded |
 | DAMAGE_NOTHING | 0x0800 | NONE | none | no | - | include/structs/BattleObject.inc:123 | unrecorded |
 
-### formations (M8) (FOUND: data/BattleSettings.s battleSettingsList0:2 / BattleSettingsList1:1505, 461 records, 297 0xF0-terminated formation arrays)
+### formations (M8) (ROM-WALK (T65): data/BattleSettings.s battleSettingsList0 (bn6f.map:28302) / BattleSettingsList1 (bn6f.map:28573) scripted battles + off_8020170 encounter tree (asm/asm29.s:10371), 1240 records over 3 lists, 1076 0xF0-terminated formation arrays -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0)
 
-Note: Audit note (provisional, this tool's own arithmetic, not independently divided out): record count = number of .word pointers before the terminator per list, assuming the 0x10-byte record stride of include/rom_structs/BattleSettings.inc (Size 0x10, getBattleSettingsFromList0 x0x10 indexing); check by stride x count vs each list's byte span. Formation arrays: 4-byte entries up to the 0xF0 stop consumed by SpawnBattleObjectUsingBattleEntityConfig_8007368.
+Note: T65 ROM-walk audit (supersedes the provisional .s arithmetic): every record stream read from reference/bn6f/bn6f.gba itself -- family A scripted battles (battleSettingsList0 0x080aee70 / BattleSettingsList1 0x080b0d88, bn6f.map:28302/28573, consumed by getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062 at index*0x10) = 269+192 = 461 records + 297 0xF0-terminated formation arrays (the old .s parse was exactly right HERE), plus family B random-encounter tree (off_8020170 group tables, selectEncounterTableForMap_80AA5F4 asm/asm29.s:10338-10457: 21 real-world groups / 23 internet (INTERNET_NUM_GROUPS GameAreas.inc:10), group slot -> 16-word map array -> record list; EVENT_67F/680/681 swap only the internet table) = 82 distinct lists, 779 records, 779 formation arrays -- ALL of it missed by the .s parse (unlabeled ROM after 0x080b1bbc). Totals 84 lists / 1240 records / 1076 formation arrays; every list ends on a 0xff record[0] and every EnemySetupArrPtr reaches a 0xF0 (mismatches 0). Records are 16 bytes (BattleSettings.inc): byte[0]==0xff terminator, byte[4] Background, byte[7] gate handler index (JumpTable80AA6B8 asm29.s:10471), u32@0xc EnemySetupArrPtr -> 4-byte quads, quad[0]==0xF0 stop, quad[2] = enemy id. Formation arrays: 4-byte entries up to the 0xF0 stop consumed by SpawnBattleObjectUsingBattleEntityConfig_8007368.
 
 | formation | entries | enemy_ids | cite | status |
 |---|---|---|---|---|
-| byte_80AFF44 | 2 | ['00', '7f'] | data/BattleSettings.s:797 | unrecorded |
-| byte_80AFF4D | 4 | ['00', '44', '00', '00'] | data/BattleSettings.s:799 | unrecorded |
-| byte_80AFF5E | 2 | ['00', '4a'] | data/BattleSettings.s:802 | unrecorded |
-| byte_80AFF67 | 2 | ['00', '50'] | data/BattleSettings.s:804 | unrecorded |
-| byte_80AFF70 | 2 | ['00', '56'] | data/BattleSettings.s:806 | unrecorded |
-| byte_80AFF79 | 2 | ['00', '5c'] | data/BattleSettings.s:808 | unrecorded |
-| byte_80AFF82 | 2 | ['00', '68'] | data/BattleSettings.s:810 | unrecorded |
-| byte_80AFF8B | 2 | ['00', '62'] | data/BattleSettings.s:812 | unrecorded |
-| byte_80AFF94 | 2 | ['00', '1f'] | data/BattleSettings.s:814 | unrecorded |
-| byte_80AFF9D | 2 | ['00', '20'] | data/BattleSettings.s:816 | unrecorded |
-| byte_80AFFA6 | 2 | ['00', '21'] | data/BattleSettings.s:818 | unrecorded |
-| byte_80AFFAF | 2 | ['00', '31'] | data/BattleSettings.s:820 | unrecorded |
-| byte_80AFFB8 | 2 | ['00', '32'] | data/BattleSettings.s:822 | unrecorded |
-| byte_80AFFC1 | 2 | ['00', '33'] | data/BattleSettings.s:824 | unrecorded |
-| byte_80AFFCA | 2 | ['00', '2b'] | data/BattleSettings.s:826 | unrecorded |
-| byte_80AFFD3 | 2 | ['00', '2c'] | data/BattleSettings.s:828 | unrecorded |
-| byte_80AFFDC | 2 | ['00', '2d'] | data/BattleSettings.s:830 | unrecorded |
-| byte_80AFFE5 | 2 | ['00', '25'] | data/BattleSettings.s:832 | unrecorded |
-| byte_80AFFEE | 2 | ['00', '26'] | data/BattleSettings.s:834 | unrecorded |
-| byte_80AFFF7 | 2 | ['00', '27'] | data/BattleSettings.s:836 | unrecorded |
-| byte_80B0000 | 2 | ['00', '37'] | data/BattleSettings.s:838 | unrecorded |
-| byte_80B0009 | 2 | ['00', '38'] | data/BattleSettings.s:840 | unrecorded |
-| byte_80B0012 | 2 | ['00', '39'] | data/BattleSettings.s:842 | unrecorded |
-| byte_80B001B | 2 | ['00', '3d'] | data/BattleSettings.s:844 | unrecorded |
-| byte_80B0024 | 2 | ['00', '3f'] | data/BattleSettings.s:846 | unrecorded |
-| byte_80B002D | 2 | ['00', '40'] | data/BattleSettings.s:848 | unrecorded |
-| byte_80B0036 | 2 | ['01', '85'] | data/BattleSettings.s:850 | unrecorded |
-| byte_80B003F | 2 | ['3d', '2b'] | data/BattleSettings.s:852 | unrecorded |
-| byte_80B0048 | 2 | ['01', '3d'] | data/BattleSettings.s:854 | unrecorded |
-| byte_80B0051 | 2 | ['07', '07'] | data/BattleSettings.s:856 | unrecorded |
-| byte_80B005A | 2 | ['1f', '4f'] | data/BattleSettings.s:858 | unrecorded |
-| byte_80B0063 | 2 | ['4f', '55'] | data/BattleSettings.s:860 | unrecorded |
-| byte_80B006C | 2 | ['07', '1f'] | data/BattleSettings.s:862 | unrecorded |
-| byte_80B0075 | 2 | ['4f', '55'] | data/BattleSettings.s:864 | unrecorded |
-| byte_80B007E | 2 | ['9d', '7f'] | data/BattleSettings.s:866 | unrecorded |
-| byte_80B0087 | 4 | ['7f', '79', '00', '00'] | data/BattleSettings.s:868 | unrecorded |
-| byte_80B0098 | 4 | ['73', '73', '00', '00'] | data/BattleSettings.s:871 | unrecorded |
-| byte_80B00A9 | 2 | ['73', '7f'] | data/BattleSettings.s:874 | unrecorded |
-| byte_80B00B2 | 2 | ['9d', '73'] | data/BattleSettings.s:876 | unrecorded |
-| byte_80B00BB | 2 | ['67', '8b'] | data/BattleSettings.s:878 | unrecorded |
-| byte_80B00C4 | 2 | ['67', '25'] | data/BattleSettings.s:880 | unrecorded |
-| byte_80B00CD | 2 | ['25', '25'] | data/BattleSettings.s:882 | unrecorded |
-| byte_80B00D6 | 2 | ['8b', '8b'] | data/BattleSettings.s:884 | unrecorded |
-| byte_80B00DF | 2 | ['67', '67'] | data/BattleSettings.s:886 | unrecorded |
-| byte_80B00E8 | 2 | ['25', '25'] | data/BattleSettings.s:888 | unrecorded |
-| byte_80B00F1 | 2 | ['8b', '25'] | data/BattleSettings.s:890 | unrecorded |
-| byte_80B00FA | 2 | ['8b', '8b'] | data/BattleSettings.s:892 | unrecorded |
-| byte_80B0103 | 2 | ['67', '8b'] | data/BattleSettings.s:894 | unrecorded |
-| byte_80B010C | 2 | ['67', '67'] | data/BattleSettings.s:896 | unrecorded |
-| byte_80B0115 | 2 | ['13', '97'] | data/BattleSettings.s:898 | unrecorded |
-| byte_80B011E | 2 | ['01', 'a9'] | data/BattleSettings.s:900 | unrecorded |
-| byte_80B0127 | 2 | ['91', '19'] | data/BattleSettings.s:902 | unrecorded |
-| byte_80B0130 | 2 | ['25', '5b'] | data/BattleSettings.s:904 | unrecorded |
-| byte_80B0139 | 2 | ['67', '7f'] | data/BattleSettings.s:906 | unrecorded |
-| byte_80B0142 | 2 | ['9d', '8b'] | data/BattleSettings.s:908 | unrecorded |
-| byte_80B014B | 2 | ['43', '3d'] | data/BattleSettings.s:910 | unrecorded |
-| byte_80B0154 | 2 | ['6d', '1f'] | data/BattleSettings.s:912 | unrecorded |
-| byte_80B015D | 2 | ['2b', '07'] | data/BattleSettings.s:914 | unrecorded |
-| byte_80B0166 | 2 | ['01', '43'] | data/BattleSettings.s:916 | unrecorded |
-| byte_80B016F | 3 | ['00', '01', '01'] | data/BattleSettings.s:918 | unrecorded |
-| byte_80B017C | 4 | ['00', '01', '01', '01'] | data/BattleSettings.s:921 | unrecorded |
-| byte_80B018D | 4 | ['00', '01', '01', '01'] | data/BattleSettings.s:924 | unrecorded |
-| byte_80B019E | 4 | ['00', '02', '86', '86'] | data/BattleSettings.s:927 | unrecorded |
-| byte_80B01AF | 4 | ['00', '01', '02', '02'] | data/BattleSettings.s:930 | unrecorded |
-| byte_80B01C0 | 3 | ['00', '3d', '3d'] | data/BattleSettings.s:933 | unrecorded |
-| byte_80B01CD | 4 | ['00', '43', '00', '00'] | data/BattleSettings.s:936 | unrecorded |
-| byte_80B01DE | 4 | ['00', '01', '02', '03'] | data/BattleSettings.s:939 | unrecorded |
-| byte_80B01EF | 2 | ['00', '49'] | data/BattleSettings.s:942 | unrecorded |
-| byte_80B01F8 | 4 | ['00', '03', '1f', '87'] | data/BattleSettings.s:944 | unrecorded |
-| byte_80B0209 | 2 | ['00', '4f'] | data/BattleSettings.s:947 | unrecorded |
-| byte_80B0212 | 4 | ['00', '07', '4f', '55'] | data/BattleSettings.s:949 | unrecorded |
-| byte_80B0223 | 2 | ['00', '01'] | data/BattleSettings.s:952 | unrecorded |
-| byte_80B022C | 2 | ['00', '1f'] | data/BattleSettings.s:954 | unrecorded |
-| byte_80B0235 | 4 | ['00', '01', '49', '01'] | data/BattleSettings.s:956 | unrecorded |
-| byte_80B0246 | 4 | ['00', '2b', '2b', '49'] | data/BattleSettings.s:959 | unrecorded |
-| byte_80B0257 | 4 | ['00', '49', '49', '3d'] | data/BattleSettings.s:962 | unrecorded |
-| byte_80B0268 | 4 | ['00', '49', '49', '49'] | data/BattleSettings.s:965 | unrecorded |
-| byte_80B0279 | 4 | ['00', '01', '07', '86'] | data/BattleSettings.s:968 | unrecorded |
-| byte_80B028A | 4 | ['00', '4f', '07', '86'] | data/BattleSettings.s:971 | unrecorded |
-| byte_80B029B | 4 | ['00', '03', '03', '4f'] | data/BattleSettings.s:974 | unrecorded |
-| byte_80B02AC | 4 | ['00', '74', '19', '74'] | data/BattleSettings.s:977 | unrecorded |
-| byte_80B02BD | 2 | ['00', '55'] | data/BattleSettings.s:980 | unrecorded |
-| byte_80B02C6 | 2 | ['00', '0d'] | data/BattleSettings.s:982 | unrecorded |
-| byte_80B02CF | 2 | ['00', '2b'] | data/BattleSettings.s:984 | unrecorded |
-| byte_80B02D8 | 3 | ['00', '3e', '3f'] | data/BattleSettings.s:986 | unrecorded |
-| byte_80B02E5 | 3 | ['00', '08', '09'] | data/BattleSettings.s:989 | unrecorded |
-| byte_80B02F2 | 3 | ['00', '74', '75'] | data/BattleSettings.s:992 | unrecorded |
-| byte_80B02FF | 3 | ['00', '3e', '2d'] | data/BattleSettings.s:995 | unrecorded |
-| byte_80B030C | 3 | ['00', '20', '51'] | data/BattleSettings.s:998 | unrecorded |
-| byte_80B0319 | 3 | ['00', '80', '7b'] | data/BattleSettings.s:1001 | unrecorded |
-| byte_80B0326 | 3 | ['00', '67', '69'] | data/BattleSettings.s:1004 | unrecorded |
-| byte_80B0333 | 3 | ['00', '3e', '81'] | data/BattleSettings.s:1007 | unrecorded |
-| byte_80B0340 | 3 | ['00', '04', '88'] | data/BattleSettings.s:1010 | unrecorded |
-| byte_80B034D | 3 | ['00', '22', '21'] | data/BattleSettings.s:1013 | unrecorded |
-| byte_80B035A | 3 | ['00', '81', 'a6'] | data/BattleSettings.s:1016 | unrecorded |
-| byte_80B0367 | 3 | ['00', '8d', '8e'] | data/BattleSettings.s:1019 | unrecorded |
-| byte_80B0374 | 3 | ['00', '9f', '56'] | data/BattleSettings.s:1022 | unrecorded |
-| byte_80B0381 | 3 | ['00', '04', '02'] | data/BattleSettings.s:1025 | unrecorded |
-| byte_80B038E | 3 | ['00', '3e', '86'] | data/BattleSettings.s:1028 | unrecorded |
-| byte_80B039B | 3 | ['00', '56', '20'] | data/BattleSettings.s:1031 | unrecorded |
-| byte_80B03A8 | 3 | ['00', '20', '50'] | data/BattleSettings.s:1034 | unrecorded |
-| byte_80B03B5 | 3 | ['00', '7b', 'a6'] | data/BattleSettings.s:1037 | unrecorded |
-| byte_80B03C2 | 3 | ['00', '64', '69'] | data/BattleSettings.s:1040 | unrecorded |
-| byte_80B03CF | 3 | ['00', '2e', '04'] | data/BattleSettings.s:1043 | unrecorded |
-| byte_80B03DC | 3 | ['00', '08', '52'] | data/BattleSettings.s:1046 | unrecorded |
-| byte_80B03E9 | 3 | ['00', 'a4', '74'] | data/BattleSettings.s:1049 | unrecorded |
-| byte_80B03F6 | 3 | ['00', '62', '8e'] | data/BattleSettings.s:1052 | unrecorded |
-| byte_80B0403 | 3 | ['00', '7b', '82'] | data/BattleSettings.s:1055 | unrecorded |
-| byte_80B0410 | 3 | ['00', '8b', '8e'] | data/BattleSettings.s:1058 | unrecorded |
-| byte_80B041D | 4 | ['00', '57', '09', '31'] | data/BattleSettings.s:1061 | unrecorded |
-| byte_80B042E | 4 | ['00', '3e', '3f', '40'] | data/BattleSettings.s:1064 | unrecorded |
-| byte_80B043F | 4 | ['00', '50', '51', '52'] | data/BattleSettings.s:1067 | unrecorded |
-| byte_80B0450 | 2 | ['00', '5b'] | data/BattleSettings.s:1070 | unrecorded |
-| byte_80B0459 | 2 | ['00', '07'] | data/BattleSettings.s:1072 | unrecorded |
-| byte_80B0462 | 2 | ['00', '25'] | data/BattleSettings.s:1074 | unrecorded |
-| byte_80B046B | 2 | ['00', 'b5'] | data/BattleSettings.s:1076 | unrecorded |
-| byte_80B0474 | 2 | ['00', 'b6'] | data/BattleSettings.s:1078 | unrecorded |
-| byte_80B047D | 2 | ['00', 'b7'] | data/BattleSettings.s:1080 | unrecorded |
-| byte_80B0486 | 2 | ['00', 'b8'] | data/BattleSettings.s:1082 | unrecorded |
-| byte_80B048F | 4 | ['00', '44', '00', '00'] | data/BattleSettings.s:1084 | unrecorded |
-| byte_80B04A0 | 2 | ['00', '4a'] | data/BattleSettings.s:1087 | unrecorded |
-| byte_80B04A9 | 2 | ['00', '85'] | data/BattleSettings.s:1089 | unrecorded |
-| byte_80B04B2 | 2 | ['00', '8b'] | data/BattleSettings.s:1091 | unrecorded |
-| byte_80B04BB | 2 | ['00', '67'] | data/BattleSettings.s:1093 | unrecorded |
-| byte_80B04C4 | 2 | ['00', '13'] | data/BattleSettings.s:1095 | unrecorded |
-| byte_80B04CD | 2 | ['00', '37'] | data/BattleSettings.s:1097 | unrecorded |
-| byte_80B04D6 | 2 | ['00', 'af'] | data/BattleSettings.s:1099 | unrecorded |
-| byte_80B04DF | 2 | ['00', 'b0'] | data/BattleSettings.s:1101 | unrecorded |
-| byte_80B04E8 | 2 | ['00', 'b1'] | data/BattleSettings.s:1103 | unrecorded |
-| byte_80B04F1 | 2 | ['00', '56'] | data/BattleSettings.s:1105 | unrecorded |
-| byte_80B04FA | 2 | ['00', '5c'] | data/BattleSettings.s:1107 | unrecorded |
-| byte_80B0503 | 2 | ['00', '50'] | data/BattleSettings.s:1109 | unrecorded |
-| byte_80B050C | 2 | ['00', '79'] | data/BattleSettings.s:1111 | unrecorded |
-| byte_80B0515 | 2 | ['00', '7b'] | data/BattleSettings.s:1113 | unrecorded |
-| byte_80B051E | 2 | ['00', '31'] | data/BattleSettings.s:1115 | unrecorded |
-| byte_80B0527 | 2 | ['00', '19'] | data/BattleSettings.s:1117 | unrecorded |
-| byte_80B0530 | 2 | ['00', '6d'] | data/BattleSettings.s:1119 | unrecorded |
-| byte_80B0539 | 2 | ['00', '70'] | data/BattleSettings.s:1121 | unrecorded |
-| byte_80B0542 | 2 | ['00', '61'] | data/BattleSettings.s:1123 | unrecorded |
-| byte_80B054B | 2 | ['00', '61'] | data/BattleSettings.s:1125 | unrecorded |
-| byte_80B0554 | 2 | ['00', '8d'] | data/BattleSettings.s:1127 | unrecorded |
-| byte_80B055D | 2 | ['00', '6e'] | data/BattleSettings.s:1129 | unrecorded |
-| byte_80B0566 | 4 | ['00', '46', '00', '00'] | data/BattleSettings.s:1131 | unrecorded |
-| byte_80B0577 | 2 | ['00', '4c'] | data/BattleSettings.s:1134 | unrecorded |
-| byte_80B0580 | 2 | ['00', '52'] | data/BattleSettings.s:1136 | unrecorded |
-| byte_80B0589 | 2 | ['00', '58'] | data/BattleSettings.s:1138 | unrecorded |
-| byte_80B0592 | 2 | ['00', '5e'] | data/BattleSettings.s:1140 | unrecorded |
-| byte_80B059B | 2 | ['00', '6a'] | data/BattleSettings.s:1142 | unrecorded |
-| byte_80B05A4 | 4 | ['00', '2e', '40', '40'] | data/BattleSettings.s:1144 | unrecorded |
-| byte_80B05B5 | 4 | ['00', '0a', '0a', '0a'] | data/BattleSettings.s:1147 | unrecorded |
-| byte_80B05C6 | 4 | ['00', '6a', '8e', '8e'] | data/BattleSettings.s:1150 | unrecorded |
-| byte_80B05D7 | 4 | ['00', '82', '7c', '7c'] | data/BattleSettings.s:1153 | unrecorded |
-| byte_80B05E8 | 4 | ['00', '46', '52', '22'] | data/BattleSettings.s:1156 | unrecorded |
-| byte_80B05F9 | 4 | ['00', '76', '64', '76'] | data/BattleSettings.s:1159 | unrecorded |
-| byte_80B060A | 4 | ['00', '94', '94', '2e'] | data/BattleSettings.s:1162 | unrecorded |
-| byte_80B061B | 4 | ['00', '0a', '58', '0a'] | data/BattleSettings.s:1165 | unrecorded |
-| byte_80B062C | 4 | ['00', '58', '8e', '8e'] | data/BattleSettings.s:1168 | unrecorded |
-| byte_80B063D | 4 | ['00', 'a0', '4c', '4c'] | data/BattleSettings.s:1171 | unrecorded |
-| byte_80B064E | 4 | ['00', '4c', '9a', '9a'] | data/BattleSettings.s:1174 | unrecorded |
-| byte_80B065F | 4 | ['00', '0e', '0f', '10'] | data/BattleSettings.s:1177 | unrecorded |
-| byte_80B0670 | 4 | ['00', 'ac', 'a6', '58'] | data/BattleSettings.s:1180 | unrecorded |
-| byte_80B0681 | 4 | ['00', '28', '28', '70'] | data/BattleSettings.s:1183 | unrecorded |
-| byte_80B0692 | 4 | ['00', '46', '46', '22'] | data/BattleSettings.s:1186 | unrecorded |
-| byte_80B06A3 | 4 | ['00', '88', '88', '16'] | data/BattleSettings.s:1189 | unrecorded |
-| byte_80B06B4 | 4 | ['00', '04', '04', '04'] | data/BattleSettings.s:1192 | unrecorded |
-| byte_80B06C5 | 4 | ['00', 'a0', 'a0', '1c'] | data/BattleSettings.s:1195 | unrecorded |
-| byte_80B06D6 | 4 | ['00', '52', '52', '6a'] | data/BattleSettings.s:1198 | unrecorded |
-| byte_80B06E7 | 4 | ['00', '82', '4c', '82'] | data/BattleSettings.s:1201 | unrecorded |
-| byte_80B06F8 | 4 | ['00', '40', '22', '40'] | data/BattleSettings.s:1204 | unrecorded |
-| byte_80B0709 | 4 | ['00', '2e', '40', '40'] | data/BattleSettings.s:1207 | unrecorded |
-| byte_80B071A | 4 | ['00', '0a', '0a', '0a'] | data/BattleSettings.s:1210 | unrecorded |
-| byte_80B072B | 4 | ['00', '6a', '8e', '8e'] | data/BattleSettings.s:1213 | unrecorded |
-| byte_80B073C | 4 | ['00', '82', '7c', '7c'] | data/BattleSettings.s:1216 | unrecorded |
-| byte_80B074D | 4 | ['00', '46', '52', '22'] | data/BattleSettings.s:1219 | unrecorded |
-| byte_80B075E | 4 | ['00', '94', '94', '2e'] | data/BattleSettings.s:1222 | unrecorded |
-| byte_80B076F | 4 | ['00', '0a', '58', '0a'] | data/BattleSettings.s:1225 | unrecorded |
-| byte_80B0780 | 4 | ['00', '58', '8e', '8e'] | data/BattleSettings.s:1228 | unrecorded |
-| byte_80B0791 | 4 | ['00', 'a0', '4c', '4c'] | data/BattleSettings.s:1231 | unrecorded |
-| byte_80B07A2 | 4 | ['00', '4c', '9a', '9a'] | data/BattleSettings.s:1234 | unrecorded |
-| byte_80B07B3 | 4 | ['00', '0e', '0f', '10'] | data/BattleSettings.s:1237 | unrecorded |
-| byte_80B07C4 | 4 | ['00', 'ac', 'a6', '58'] | data/BattleSettings.s:1240 | unrecorded |
-| byte_80B07D5 | 4 | ['00', '28', '28', '70'] | data/BattleSettings.s:1243 | unrecorded |
-| byte_80B07E6 | 4 | ['00', '46', '22', '22'] | data/BattleSettings.s:1246 | unrecorded |
-| byte_80B07F7 | 4 | ['00', '88', '88', '16'] | data/BattleSettings.s:1249 | unrecorded |
-| byte_80B0808 | 4 | ['00', '04', '04', '04'] | data/BattleSettings.s:1252 | unrecorded |
-| byte_80B0819 | 4 | ['00', 'a0', 'a0', '1c'] | data/BattleSettings.s:1255 | unrecorded |
-| byte_80B082A | 4 | ['00', '52', '52', '6a'] | data/BattleSettings.s:1258 | unrecorded |
-| byte_80B083F | 3 | ['82', '4c', '82'] | data/BattleSettings.s:1263 | unrecorded |
-| byte_80B084C | 4 | ['00', '40', '22', '22'] | data/BattleSettings.s:1266 | unrecorded |
-| byte_80B085D | 4 | ['00', '9e', '9e', '6f'] | data/BattleSettings.s:1269 | unrecorded |
-| byte_80B086E | 4 | ['00', '1a', '91', 'a9'] | data/BattleSettings.s:1272 | unrecorded |
-| byte_80B087F | 4 | ['00', '74', '74', '87'] | data/BattleSettings.s:1275 | unrecorded |
-| byte_80B0890 | 4 | ['00', '91', '97', '97'] | data/BattleSettings.s:1278 | unrecorded |
-| byte_80B08A1 | 4 | ['00', '5b', '04', '04'] | data/BattleSettings.s:1281 | unrecorded |
-| byte_80B08B2 | 4 | ['00', '14', '04', '46'] | data/BattleSettings.s:1284 | unrecorded |
-| byte_80B08C3 | 4 | ['00', '74', '74', '6d'] | data/BattleSettings.s:1287 | unrecorded |
-| byte_80B08D4 | 4 | ['00', '01', '01', '01'] | data/BattleSettings.s:1290 | unrecorded |
-| byte_80B08E5 | 4 | ['00', '04', '04', '6a'] | data/BattleSettings.s:1293 | unrecorded |
-| byte_80B08F6 | 4 | ['00', '04', '52', '8e'] | data/BattleSettings.s:1296 | unrecorded |
-| byte_80B0907 | 4 | ['00', '04', '04', '64'] | data/BattleSettings.s:1299 | unrecorded |
-| byte_80B0918 | 4 | ['00', '04', '75', '69'] | data/BattleSettings.s:1302 | unrecorded |
-| byte_80B0929 | 4 | ['00', '04', '04', '94'] | data/BattleSettings.s:1305 | unrecorded |
-| byte_80B093A | 4 | ['00', '9d', '9e', '9d'] | data/BattleSettings.s:1308 | unrecorded |
-| byte_80B094B | 4 | ['00', '9e', 'a0', '9e'] | data/BattleSettings.s:1311 | unrecorded |
-| byte_80B095C | 4 | ['00', '6f', '57', '3b'] | data/BattleSettings.s:1314 | unrecorded |
-| byte_80B096D | 4 | ['00', 'a3', '2c', '52'] | data/BattleSettings.s:1317 | unrecorded |
-| byte_80B097E | 4 | ['00', '91', '87', '3c'] | data/BattleSettings.s:1320 | unrecorded |
-| byte_80B098F | 4 | ['00', '43', '00', '00'] | data/BattleSettings.s:1323 | unrecorded |
-| byte_80B09A0 | 2 | ['00', '49'] | data/BattleSettings.s:1326 | unrecorded |
-| byte_80B09A9 | 2 | ['00', '4f'] | data/BattleSettings.s:1328 | unrecorded |
-| byte_80B09B2 | 2 | ['00', '55'] | data/BattleSettings.s:1330 | unrecorded |
-| byte_80B09BB | 2 | ['00', '5b'] | data/BattleSettings.s:1332 | unrecorded |
-| byte_80B09C4 | 4 | ['00', '04', '04', '6d'] | data/BattleSettings.s:1334 | unrecorded |
-| byte_80B09D5 | 4 | ['00', 'a0', 'a0', '6d'] | data/BattleSettings.s:1337 | unrecorded |
-| byte_80B09E6 | 4 | ['00', '52', '58', '6e'] | data/BattleSettings.s:1340 | unrecorded |
-| byte_80B09F7 | 4 | ['00', 'a6', '92', '6e'] | data/BattleSettings.s:1343 | unrecorded |
-| byte_80B0A08 | 4 | ['00', '10', '10', '6f'] | data/BattleSettings.s:1346 | unrecorded |
-| byte_80B0A19 | 4 | ['00', '16', '16', '6f'] | data/BattleSettings.s:1349 | unrecorded |
-| byte_80B0A2A | 4 | ['00', '5b', '5c', '70'] | data/BattleSettings.s:1352 | unrecorded |
-| byte_80B0A3B | 4 | ['00', '86', '86', '6f'] | data/BattleSettings.s:1355 | unrecorded |
-| byte_80B0A4C | 4 | ['00', '87', '87', '70'] | data/BattleSettings.s:1358 | unrecorded |
-| byte_80B0A5D | 4 | ['00', '02', '20', '86'] | data/BattleSettings.s:1361 | unrecorded |
-| byte_80B0A6E | 4 | ['00', '08', '08', '50'] | data/BattleSettings.s:1364 | unrecorded |
-| byte_80B0A7F | 4 | ['00', '20', '50', '56'] | data/BattleSettings.s:1367 | unrecorded |
-| byte_80B0A90 | 4 | ['00', '68', '62', '8c'] | data/BattleSettings.s:1370 | unrecorded |
-| byte_80B0AA1 | 4 | ['00', '10', '1c', '4d'] | data/BattleSettings.s:1373 | unrecorded |
-| byte_80B0AB2 | 4 | ['00', '02', '02', '02'] | data/BattleSettings.s:1376 | unrecorded |
-| byte_80B0AC3 | 4 | ['00', '02', '02', '02'] | data/BattleSettings.s:1379 | unrecorded |
-| byte_80B0AD4 | 4 | ['00', '02', '02', '02'] | data/BattleSettings.s:1382 | unrecorded |
-| byte_80B0AE5 | 4 | ['00', '02', '02', '02'] | data/BattleSettings.s:1385 | unrecorded |
-| byte_80B0AF6 | 4 | ['00', '02', '02', '49'] | data/BattleSettings.s:1388 | unrecorded |
-| byte_80B0B07 | 4 | ['00', '3e', '3e', '49'] | data/BattleSettings.s:1391 | unrecorded |
-| byte_80B0B18 | 4 | ['00', '2c', '3e', '49'] | data/BattleSettings.s:1394 | unrecorded |
-| byte_80B0B29 | 4 | ['00', '9e', '9e', '76'] | data/BattleSettings.s:1397 | unrecorded |
-| byte_80B0B3A | 4 | ['00', '02', '02', '03'] | data/BattleSettings.s:1400 | unrecorded |
-| byte_80B0B4B | 4 | ['00', '02', '02', 'a4'] | data/BattleSettings.s:1403 | unrecorded |
-| byte_80B0B5C | 4 | ['00', '74', '74', '15'] | data/BattleSettings.s:1406 | unrecorded |
-| byte_80B0B6D | 4 | ['00', '74', '74', '75'] | data/BattleSettings.s:1409 | unrecorded |
-| byte_80B0B7E | 4 | ['00', '0e', '0f', 'aa'] | data/BattleSettings.s:1412 | unrecorded |
-| byte_80B0B8F | 4 | ['00', '44', 'a4', '93'] | data/BattleSettings.s:1415 | unrecorded |
-| byte_80B0BA0 | 4 | ['00', '50', '56', '6f'] | data/BattleSettings.s:1418 | unrecorded |
-| byte_80B0BB1 | 4 | ['00', '20', '20', '88'] | data/BattleSettings.s:1421 | unrecorded |
-| byte_80B0BC2 | 4 | ['00', '80', '4b', '9a'] | data/BattleSettings.s:1424 | unrecorded |
-| byte_80B0BD3 | 4 | ['00', '0e', '92', '6f'] | data/BattleSettings.s:1427 | unrecorded |
-| byte_80B0BE4 | 4 | ['00', '01', '01', '01'] | data/BattleSettings.s:1430 | unrecorded |
-| byte_80B0BF5 | 4 | ['00', '85', '01', '01'] | data/BattleSettings.s:1433 | unrecorded |
-| byte_80B0C06 | 4 | ['00', '2b', '3d', '2c'] | data/BattleSettings.s:1436 | unrecorded |
-| byte_80B0C17 | 4 | ['00', '13', '4f', '50'] | data/BattleSettings.s:1439 | unrecorded |
-| byte_80B0C28 | 4 | ['00', '08', '07', '14'] | data/BattleSettings.s:1442 | unrecorded |
-| byte_80B0C39 | 4 | ['00', '56', '20', '1f'] | data/BattleSettings.s:1445 | unrecorded |
-| byte_80B0C4A | 4 | ['00', '74', '74', '80'] | data/BattleSettings.s:1448 | unrecorded |
-| byte_80B0C5B | 4 | ['00', '9e', '9e', '9e'] | data/BattleSettings.s:1451 | unrecorded |
-| byte_80B0C6C | 4 | ['00', '9f', 'a4', '02'] | data/BattleSettings.s:1454 | unrecorded |
-| byte_80B0C7D | 4 | ['00', '51', '8c', '62'] | data/BattleSettings.s:1457 | unrecorded |
-| byte_80B0C8E | 4 | ['00', '15', '63', '62'] | data/BattleSettings.s:1460 | unrecorded |
-| byte_80B0C9F | 4 | ['00', '87', '27', '86'] | data/BattleSettings.s:1463 | unrecorded |
-| byte_80B0CB0 | 4 | ['00', '87', '6f', '87'] | data/BattleSettings.s:1466 | unrecorded |
-| byte_80B0CC1 | 3 | ['00', '1b', '1b'] | data/BattleSettings.s:1469 | unrecorded |
-| byte_80B0CCE | 3 | ['00', '93', '76'] | data/BattleSettings.s:1472 | unrecorded |
-| byte_80B0CDB | 4 | ['00', '0f', '10', '0f'] | data/BattleSettings.s:1475 | unrecorded |
-| byte_80B0CEC | 4 | ['00', '0f', '1c', '46'] | data/BattleSettings.s:1478 | unrecorded |
-| byte_80B0CFD | 4 | ['00', '99', '04', '5e'] | data/BattleSettings.s:1481 | unrecorded |
-| byte_80B0D0E | 4 | ['00', '04', '04', '94'] | data/BattleSettings.s:1484 | unrecorded |
-| byte_80B0D1F | 4 | ['00', '4b', '4c', '4d'] | data/BattleSettings.s:1487 | unrecorded |
-| byte_80B0D30 | 4 | ['00', '02', '86', '3e'] | data/BattleSettings.s:1490 | unrecorded |
-| byte_80B0D41 | 4 | ['00', '20', '20', '50'] | data/BattleSettings.s:1493 | unrecorded |
-| byte_80B0D52 | 4 | ['00', '3e', '2c', '2c'] | data/BattleSettings.s:1496 | unrecorded |
-| byte_80B0D63 | 4 | ['00', '08', '08', '56'] | data/BattleSettings.s:1499 | unrecorded |
-| byte_80B0D74 | 4 | ['00', '20', '86', '3e'] | data/BattleSettings.s:1502 | unrecorded |
-| byte_80B1989 | 2 | ['00', '00'] | data/BattleSettings.s:1977 | unrecorded |
-| byte_80B1992 | 2 | ['00', '00'] | data/BattleSettings.s:1979 | unrecorded |
-| byte_80B19AD | 2 | ['00', '00'] | data/BattleSettings.s:1983 | unrecorded |
-| byte_80B19B6 | 2 | ['00', '00'] | data/BattleSettings.s:1985 | unrecorded |
-| byte_80B19BF | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:1987 | unrecorded |
-| byte_80B19D0 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:1990 | unrecorded |
-| byte_80B19E1 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:1993 | unrecorded |
-| byte_80B19F2 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:1996 | unrecorded |
-| byte_80B1A03 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:1999 | unrecorded |
-| byte_80B1A14 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:2002 | unrecorded |
-| byte_80B1A25 | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2005 | unrecorded |
-| byte_80B1A36 | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2008 | unrecorded |
-| byte_80B1A47 | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2011 | unrecorded |
-| byte_80B1A58 | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2014 | unrecorded |
-| byte_80B1A69 | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2017 | unrecorded |
-| byte_80B1A7A | 4 | ['00', '00', '01', '01'] | data/BattleSettings.s:2020 | unrecorded |
-| byte_80B1A8B | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2023 | unrecorded |
-| byte_80B1A9C | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2026 | unrecorded |
-| byte_80B1AAD | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2029 | unrecorded |
-| byte_80B1ABE | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2032 | unrecorded |
-| byte_80B1ACF | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2035 | unrecorded |
-| byte_80B1AE0 | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2038 | unrecorded |
-| byte_80B1AF1 | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2041 | unrecorded |
-| byte_80B1B02 | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2044 | unrecorded |
-| byte_80B1B13 | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2047 | unrecorded |
-| byte_80B1B24 | 4 | ['00', '00', '03', '03'] | data/BattleSettings.s:2050 | unrecorded |
-| byte_80B1B35 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:2053 | unrecorded |
-| byte_80B1B46 | 4 | ['00', '00', '00', '00'] | data/BattleSettings.s:2056 | unrecorded |
+| rom_080aff44 | 2 | ['00', '7f'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff4d | 4 | ['00', '44', '00', '00'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff5e | 2 | ['00', '4a'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff67 | 2 | ['00', '50'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff70 | 2 | ['00', '56'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff79 | 2 | ['00', '5c'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff82 | 2 | ['00', '68'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff8b | 2 | ['00', '62'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff94 | 2 | ['00', '1f'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080aff9d | 2 | ['00', '20'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affa6 | 2 | ['00', '21'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affaf | 2 | ['00', '31'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affb8 | 2 | ['00', '32'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affc1 | 2 | ['00', '33'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affca | 2 | ['00', '2b'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affd3 | 2 | ['00', '2c'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affdc | 2 | ['00', '2d'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affe5 | 2 | ['00', '25'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080affee | 2 | ['00', '26'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080afff7 | 2 | ['00', '27'] | reference/bn6f/bn6f.gba:0x080a | unrecorded |
+| rom_080b0000 | 2 | ['00', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0009 | 2 | ['00', '38'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0012 | 2 | ['00', '39'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b001b | 2 | ['00', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0024 | 2 | ['00', '3f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b002d | 2 | ['00', '40'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0036 | 2 | ['01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b003f | 2 | ['3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0048 | 2 | ['01', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0051 | 2 | ['07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b005a | 2 | ['1f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0063 | 2 | ['4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b006c | 2 | ['07', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0075 | 2 | ['4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b007e | 2 | ['9d', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0087 | 4 | ['7f', '79', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0098 | 4 | ['73', '73', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00a9 | 2 | ['73', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00b2 | 2 | ['9d', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00bb | 2 | ['67', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00c4 | 2 | ['67', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00cd | 2 | ['25', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00d6 | 2 | ['8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00df | 2 | ['67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00e8 | 2 | ['25', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00f1 | 2 | ['8b', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b00fa | 2 | ['8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0103 | 2 | ['67', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b010c | 2 | ['67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0115 | 2 | ['13', '97'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b011e | 2 | ['01', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0127 | 2 | ['91', '19'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0130 | 2 | ['25', '5b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0139 | 2 | ['67', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0142 | 2 | ['9d', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b014b | 2 | ['43', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0154 | 2 | ['6d', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b015d | 2 | ['2b', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0166 | 2 | ['01', '43'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b016f | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b017c | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b018d | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b019e | 4 | ['00', '02', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01af | 4 | ['00', '01', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01c0 | 3 | ['00', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01cd | 4 | ['00', '43', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01de | 4 | ['00', '01', '02', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01ef | 2 | ['00', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b01f8 | 4 | ['00', '03', '1f', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0209 | 2 | ['00', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0212 | 4 | ['00', '07', '4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0223 | 2 | ['00', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b022c | 2 | ['00', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0235 | 4 | ['00', '01', '49', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0246 | 4 | ['00', '2b', '2b', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0257 | 4 | ['00', '49', '49', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0268 | 4 | ['00', '49', '49', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0279 | 4 | ['00', '01', '07', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b028a | 4 | ['00', '4f', '07', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b029b | 4 | ['00', '03', '03', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02ac | 4 | ['00', '74', '19', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02bd | 2 | ['00', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02c6 | 2 | ['00', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02cf | 2 | ['00', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02d8 | 3 | ['00', '3e', '3f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02e5 | 3 | ['00', '08', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02f2 | 3 | ['00', '74', '75'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b02ff | 3 | ['00', '3e', '2d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b030c | 3 | ['00', '20', '51'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0319 | 3 | ['00', '80', '7b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0326 | 3 | ['00', '67', '69'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0333 | 3 | ['00', '3e', '81'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0340 | 3 | ['00', '04', '88'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b034d | 3 | ['00', '22', '21'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b035a | 3 | ['00', '81', 'a6'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0367 | 3 | ['00', '8d', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0374 | 3 | ['00', '9f', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0381 | 3 | ['00', '04', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b038e | 3 | ['00', '3e', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b039b | 3 | ['00', '56', '20'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03a8 | 3 | ['00', '20', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03b5 | 3 | ['00', '7b', 'a6'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03c2 | 3 | ['00', '64', '69'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03cf | 3 | ['00', '2e', '04'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03dc | 3 | ['00', '08', '52'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03e9 | 3 | ['00', 'a4', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b03f6 | 3 | ['00', '62', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0403 | 3 | ['00', '7b', '82'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0410 | 3 | ['00', '8b', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b041d | 4 | ['00', '57', '09', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b042e | 4 | ['00', '3e', '3f', '40'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b043f | 4 | ['00', '50', '51', '52'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0450 | 2 | ['00', '5b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0459 | 2 | ['00', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0462 | 2 | ['00', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b046b | 2 | ['00', 'b5'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0474 | 2 | ['00', 'b6'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b047d | 2 | ['00', 'b7'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0486 | 2 | ['00', 'b8'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b048f | 4 | ['00', '44', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04a0 | 2 | ['00', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04a9 | 2 | ['00', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04b2 | 2 | ['00', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04bb | 2 | ['00', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04c4 | 2 | ['00', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04cd | 2 | ['00', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04d6 | 2 | ['00', 'af'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04df | 2 | ['00', 'b0'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04e8 | 2 | ['00', 'b1'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04f1 | 2 | ['00', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b04fa | 2 | ['00', '5c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0503 | 2 | ['00', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b050c | 2 | ['00', '79'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0515 | 2 | ['00', '7b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b051e | 2 | ['00', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0527 | 2 | ['00', '19'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0530 | 2 | ['00', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0539 | 2 | ['00', '70'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0542 | 2 | ['00', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b054b | 2 | ['00', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0554 | 2 | ['00', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b055d | 2 | ['00', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0566 | 4 | ['00', '46', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0577 | 2 | ['00', '4c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0580 | 2 | ['00', '52'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0589 | 2 | ['00', '58'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0592 | 2 | ['00', '5e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b059b | 2 | ['00', '6a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05a4 | 4 | ['00', '2e', '40', '40'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05b5 | 4 | ['00', '0a', '0a', '0a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05c6 | 4 | ['00', '6a', '8e', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05d7 | 4 | ['00', '82', '7c', '7c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05e8 | 4 | ['00', '46', '52', '22'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b05f9 | 4 | ['00', '76', '64', '76'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b060a | 4 | ['00', '94', '94', '2e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b061b | 4 | ['00', '0a', '58', '0a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b062c | 4 | ['00', '58', '8e', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b063d | 4 | ['00', 'a0', '4c', '4c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b064e | 4 | ['00', '4c', '9a', '9a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b065f | 4 | ['00', '0e', '0f', '10'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0670 | 4 | ['00', 'ac', 'a6', '58'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0681 | 4 | ['00', '28', '28', '70'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0692 | 4 | ['00', '46', '46', '22'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06a3 | 4 | ['00', '88', '88', '16'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06b4 | 4 | ['00', '04', '04', '04'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06c5 | 4 | ['00', 'a0', 'a0', '1c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06d6 | 4 | ['00', '52', '52', '6a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06e7 | 4 | ['00', '82', '4c', '82'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b06f8 | 4 | ['00', '40', '22', '40'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0709 | 4 | ['00', '2e', '40', '40'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b071a | 4 | ['00', '0a', '0a', '0a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b072b | 4 | ['00', '6a', '8e', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b073c | 4 | ['00', '82', '7c', '7c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b074d | 4 | ['00', '46', '52', '22'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b075e | 4 | ['00', '94', '94', '2e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b076f | 4 | ['00', '0a', '58', '0a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0780 | 4 | ['00', '58', '8e', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0791 | 4 | ['00', 'a0', '4c', '4c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07a2 | 4 | ['00', '4c', '9a', '9a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07b3 | 4 | ['00', '0e', '0f', '10'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07c4 | 4 | ['00', 'ac', 'a6', '58'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07d5 | 4 | ['00', '28', '28', '70'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07e6 | 4 | ['00', '46', '22', '22'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b07f7 | 4 | ['00', '88', '88', '16'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0808 | 4 | ['00', '04', '04', '04'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0819 | 4 | ['00', 'a0', 'a0', '1c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b082a | 4 | ['00', '52', '52', '6a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b083b | 4 | ['00', '82', '4c', '82'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b084c | 4 | ['00', '40', '22', '22'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b085d | 4 | ['00', '9e', '9e', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b086e | 4 | ['00', '1a', '91', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b087f | 4 | ['00', '74', '74', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0890 | 4 | ['00', '91', '97', '97'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08a1 | 4 | ['00', '5b', '04', '04'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08b2 | 4 | ['00', '14', '04', '46'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08c3 | 4 | ['00', '74', '74', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08d4 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08e5 | 4 | ['00', '04', '04', '6a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b08f6 | 4 | ['00', '04', '52', '8e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0907 | 4 | ['00', '04', '04', '64'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0918 | 4 | ['00', '04', '75', '69'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0929 | 4 | ['00', '04', '04', '94'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b093a | 4 | ['00', '9d', '9e', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b094b | 4 | ['00', '9e', 'a0', '9e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b095c | 4 | ['00', '6f', '57', '3b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b096d | 4 | ['00', 'a3', '2c', '52'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b097e | 4 | ['00', '91', '87', '3c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b098f | 4 | ['00', '43', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09a0 | 2 | ['00', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09a9 | 2 | ['00', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09b2 | 2 | ['00', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09bb | 2 | ['00', '5b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09c4 | 4 | ['00', '04', '04', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09d5 | 4 | ['00', 'a0', 'a0', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09e6 | 4 | ['00', '52', '58', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b09f7 | 4 | ['00', 'a6', '92', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a08 | 4 | ['00', '10', '10', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a19 | 4 | ['00', '16', '16', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a2a | 4 | ['00', '5b', '5c', '70'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a3b | 4 | ['00', '86', '86', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a4c | 4 | ['00', '87', '87', '70'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a5d | 4 | ['00', '02', '20', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a6e | 4 | ['00', '08', '08', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a7f | 4 | ['00', '20', '50', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0a90 | 4 | ['00', '68', '62', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0aa1 | 4 | ['00', '10', '1c', '4d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0ab2 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0ac3 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0ad4 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0ae5 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0af6 | 4 | ['00', '02', '02', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b07 | 4 | ['00', '3e', '3e', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b18 | 4 | ['00', '2c', '3e', '49'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b29 | 4 | ['00', '9e', '9e', '76'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b3a | 4 | ['00', '02', '02', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b4b | 4 | ['00', '02', '02', 'a4'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b5c | 4 | ['00', '74', '74', '15'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b6d | 4 | ['00', '74', '74', '75'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b7e | 4 | ['00', '0e', '0f', 'aa'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0b8f | 4 | ['00', '44', 'a4', '93'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0ba0 | 4 | ['00', '50', '56', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0bb1 | 4 | ['00', '20', '20', '88'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0bc2 | 4 | ['00', '80', '4b', '9a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0bd3 | 4 | ['00', '0e', '92', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0be4 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0bf5 | 4 | ['00', '85', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c06 | 4 | ['00', '2b', '3d', '2c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c17 | 4 | ['00', '13', '4f', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c28 | 4 | ['00', '08', '07', '14'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c39 | 4 | ['00', '56', '20', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c4a | 4 | ['00', '74', '74', '80'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c5b | 4 | ['00', '9e', '9e', '9e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c6c | 4 | ['00', '9f', 'a4', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c7d | 4 | ['00', '51', '8c', '62'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c8e | 4 | ['00', '15', '63', '62'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0c9f | 4 | ['00', '87', '27', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cb0 | 4 | ['00', '87', '6f', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cc1 | 3 | ['00', '1b', '1b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cce | 3 | ['00', '93', '76'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cdb | 4 | ['00', '0f', '10', '0f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cec | 4 | ['00', '0f', '1c', '46'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0cfd | 4 | ['00', '99', '04', '5e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d0e | 4 | ['00', '04', '04', '94'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d1f | 4 | ['00', '4b', '4c', '4d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d30 | 4 | ['00', '02', '86', '3e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d41 | 4 | ['00', '20', '20', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d52 | 4 | ['00', '3e', '2c', '2c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d63 | 4 | ['00', '08', '08', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b0d74 | 4 | ['00', '20', '86', '3e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1989 | 2 | ['00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1992 | 2 | ['00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19ad | 2 | ['00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19b6 | 2 | ['00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19bf | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19d0 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19e1 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b19f2 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a03 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a14 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a25 | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a36 | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a47 | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a58 | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a69 | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a7a | 4 | ['00', '00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a8b | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1a9c | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1aad | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1abe | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1acf | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1ae0 | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1af1 | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1b02 | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1b13 | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1b24 | 4 | ['00', '00', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1b35 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1b46 | 4 | ['00', '00', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d41 | 3 | ['00', '2b', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d4e | 3 | ['00', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d5b | 5 | ['00', '2b', '01', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d70 | 3 | ['00', '2b', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d7d | 3 | ['00', '2b', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d8a | 3 | ['00', '85', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1d97 | 4 | ['00', '01', '2b', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1da8 | 5 | ['00', '2b', '01', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1dbd | 4 | ['00', '2b', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1dce | 4 | ['00', '2b', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1ddf | 5 | ['00', '01', '2b', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1df4 | 5 | ['00', '2b', '85', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e09 | 3 | ['00', '3d', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e16 | 3 | ['00', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e23 | 4 | ['00', '3d', '3d', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e34 | 5 | ['00', '3d', '01', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e49 | 3 | ['00', '3d', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e56 | 3 | ['00', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e63 | 4 | ['00', '01', '01', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e74 | 4 | ['00', '3d', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e85 | 4 | ['00', '3d', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1e96 | 4 | ['00', '01', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1ea7 | 6 | ['00', '3d', '01', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b1ec0 | 5 | ['00', '01', '01', '2b', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2181 | 3 | ['00', '1f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b218e | 3 | ['00', '85', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b219b | 3 | ['00', '4f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21a8 | 3 | ['00', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21b5 | 3 | ['00', '07', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21c2 | 3 | ['00', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21cf | 4 | ['00', '1f', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21e0 | 4 | ['00', '1f', '1f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b21f1 | 4 | ['00', '07', '85', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2202 | 4 | ['00', '07', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2213 | 4 | ['00', '07', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2224 | 5 | ['00', '1f', '07', '4f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2239 | 3 | ['00', '55', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2246 | 3 | ['00', '1f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2253 | 3 | ['00', '55', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2260 | 3 | ['00', '07', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b226d | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b227a | 3 | ['00', '1f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2287 | 4 | ['00', '07', '07', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2298 | 4 | ['00', '4f', '4f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22a9 | 4 | ['00', '4f', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22ba | 4 | ['00', '1f', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22cb | 4 | ['00', '1f', '55', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22dc | 5 | ['00', '4f', '55', '1f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22f1 | 3 | ['00', '55', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b22fe | 3 | ['00', '4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b230b | 3 | ['00', '1f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2318 | 3 | ['00', '07', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2325 | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2332 | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b233f | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b234c | 4 | ['00', '07', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b235d | 4 | ['00', '07', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b236e | 4 | ['00', '07', '1f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b237f | 4 | ['00', '1f', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2390 | 5 | ['00', '55', '55', '1f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b23a5 | 4 | ['00', '55', '55', '59'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b23b6 | 4 | ['00', '55', '55', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b26d1 | 3 | ['00', '9d', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b26de | 3 | ['00', '7f', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b26eb | 5 | ['00', '9d', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2700 | 5 | ['00', '02', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2715 | 3 | ['00', '9d', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2722 | 3 | ['00', 'a3', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b272f | 4 | ['00', '02', 'a3', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2740 | 4 | ['00', '9d', '9d', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2751 | 5 | ['00', 'a3', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2766 | 5 | ['00', '79', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b277b | 4 | ['00', '9d', '1f', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b278c | 6 | ['00', '79', '79', '02', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27a5 | 4 | ['00', '7f', '7f', '83'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27b6 | 4 | ['00', '7f', '7f', '84'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27c7 | 6 | ['00', '79', '85', '85', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27e0 | 3 | ['00', '9d', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27ed | 3 | ['00', 'a3', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b27fa | 3 | ['00', '73', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2807 | 3 | ['00', '7f', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2814 | 3 | ['00', '73', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2821 | 4 | ['00', '02', '02', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2832 | 4 | ['00', '9d', '9d', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2843 | 4 | ['00', '9d', '73', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2854 | 6 | ['00', '79', '79', '02', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b286d | 4 | ['00', '02', 'a3', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b287e | 5 | ['00', '02', '02', '02', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2893 | 4 | ['00', '73', '73', '77'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28a4 | 4 | ['00', '73', '73', '78'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28b5 | 4 | ['00', 'a3', 'a3', 'a7'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28c6 | 4 | ['00', 'a3', 'a3', 'a8'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28d7 | 3 | ['00', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28e4 | 3 | ['00', '73', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28f1 | 3 | ['00', '02', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b28fe | 4 | ['00', '73', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b290f | 4 | ['00', '7f', '9d', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2920 | 4 | ['00', 'a3', '85', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2931 | 4 | ['00', '1f', '1f', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2942 | 5 | ['00', '79', '73', '73', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2957 | 4 | ['00', '9d', '02', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2968 | 5 | ['00', '9d', '73', 'a3', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b297d | 5 | ['00', 'a3', '79', '79', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2992 | 5 | ['00', '73', '79', '02', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b29a7 | 4 | ['00', '79', '79', '7d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b29b8 | 4 | ['00', '79', '79', '7e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2c85 | 4 | ['00', '9e', '9e', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2c96 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2ca3 | 3 | ['00', '67', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2cb0 | 3 | ['00', '14', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2cbd | 3 | ['00', '9e', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2cca | 3 | ['00', '8b', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2cd7 | 4 | ['00', '8b', '34', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2ce8 | 4 | ['00', '25', '31', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2cf9 | 4 | ['00', '8b', '8b', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d0a | 4 | ['00', '8b', '8b', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d1b | 4 | ['00', '8b', '25', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d2c | 5 | ['00', '9e', '9e', '25', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d41 | 4 | ['00', '25', '25', '35'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d52 | 3 | ['00', '8b', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d5f | 3 | ['00', '67', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d6c | 3 | ['00', '67', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d79 | 3 | ['00', '9e', '9e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d86 | 3 | ['00', '61', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2d93 | 4 | ['00', '8b', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2da4 | 3 | ['00', '25', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2db1 | 4 | ['00', '9e', '9e', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2dc2 | 4 | ['00', '8b', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2dd3 | 4 | ['00', '50', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2de4 | 4 | ['00', '25', '8b', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2df5 | 5 | ['00', '9d', '8b', '32', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e0a | 3 | ['00', '67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e17 | 3 | ['00', '9e', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e24 | 3 | ['00', '67', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e31 | 3 | ['00', '8b', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e3e | 3 | ['00', '67', '9e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e4b | 3 | ['00', '8b', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e58 | 3 | ['00', '3e', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e65 | 4 | ['00', '85', '85', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e76 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e83 | 4 | ['00', '25', '25', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2e94 | 4 | ['00', '9e', '9e', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2ea5 | 5 | ['00', '8b', '61', '61', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2eba | 4 | ['00', '67', '67', '6b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b2ecb | 4 | ['00', '67', '67', '6c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b32ed | 3 | ['00', '09', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b32fa | 3 | ['00', '4b', '57'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3307 | 3 | ['00', '50', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3314 | 3 | ['00', '15', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3321 | 3 | ['00', '03', '57'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b332e | 4 | ['00', '09', '09', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b333f | 4 | ['00', '50', '09', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3350 | 4 | ['00', '09', '15', '15'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3361 | 4 | ['00', '03', '4b', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3372 | 4 | ['00', '57', '57', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3383 | 4 | ['00', '09', '09', '09'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3394 | 5 | ['00', '03', '03', '4b', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33a9 | 5 | ['00', '7a', '7a', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33be | 3 | ['00', '9e', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33cb | 3 | ['00', 'a4', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33d8 | 3 | ['00', '74', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33e5 | 3 | ['00', '80', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33f2 | 3 | ['00', '74', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b33ff | 4 | ['00', '03', '03', '80'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3410 | 4 | ['00', '9e', '9e', 'a4'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3421 | 4 | ['00', '9e', '74', '80'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3432 | 6 | ['00', '7a', '7a', '03', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b344b | 4 | ['00', '03', '80', 'a4'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b345c | 4 | ['00', '03', '74', '2f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b346d | 3 | ['00', '8c', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b347a | 3 | ['00', '62', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3487 | 3 | ['00', '86', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3494 | 3 | ['00', '26', '26'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34a1 | 3 | ['00', '8c', '62'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34ae | 4 | ['00', '26', '26', '33'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34bf | 3 | ['00', '8c', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34cc | 4 | ['00', '8c', '8c', '34'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34dd | 4 | ['00', '62', '34', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34ee | 4 | ['00', '86', '86', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b34ff | 4 | ['00', '8c', '8c', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3510 | 4 | ['00', '8c', 'a9', '5c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3521 | 3 | ['00', '92', '92'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b352e | 4 | ['00', '8c', '92', '8c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b353f | 4 | ['00', '92', '92', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3550 | 4 | ['00', '92', '62', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3561 | 5 | ['00', '5c', '3f', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3576 | 3 | ['00', '5c', '2d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3583 | 5 | ['00', '98', '3f', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3598 | 3 | ['00', '2d', '3f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35a5 | 3 | ['00', '5c', '43'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35b2 | 5 | ['00', '5c', '5c', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35c7 | 4 | ['00', '3f', '3f', '98'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35d8 | 4 | ['00', '2d', '2d', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35e9 | 4 | ['00', '98', '3f', '3f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b35fa | 6 | ['00', '98', '2d', '2d', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3613 | 4 | ['00', '43', '3f', '3f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3624 | 5 | ['00', '03', '5c', '03', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3639 | 4 | ['00', '2d', '2d', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b364a | 4 | ['00', '2d', '3f', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b365b | 4 | ['00', '5c', '87', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b366c | 6 | ['00', '43', '87', '3f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3685 | 3 | ['00', '91', '91'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3692 | 3 | ['00', '98', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b369f | 3 | ['00', '98', '15'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b36ac | 3 | ['00', '15', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b384d | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b385a | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3867 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3874 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3885 | 3 | ['00', '25', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3892 | 4 | ['00', '25', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38a3 | 4 | ['00', '03', '03', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38b4 | 4 | ['00', '25', '2c', '2c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38c5 | 3 | ['00', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38d2 | 3 | ['00', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38df | 3 | ['00', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38ec | 4 | ['00', '07', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b38fd | 3 | ['00', '7f', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b390a | 3 | ['00', '73', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3917 | 3 | ['00', '73', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3924 | 4 | ['00', '73', '7f', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3935 | 3 | ['00', '85', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3942 | 3 | ['00', '8b', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b394f | 3 | ['00', '85', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b395c | 4 | ['00', '8b', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e0d | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e1a | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e27 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e34 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e45 | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e52 | 3 | ['00', '3d', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e5f | 3 | ['00', '1f', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e6c | 4 | ['00', '1f', '3d', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e7d | 3 | ['00', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e8a | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3e97 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3ea4 | 4 | ['00', '85', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3eb5 | 3 | ['00', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3ec2 | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3ecf | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3edc | 4 | ['00', '85', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3eed | 3 | ['00', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3efa | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f07 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f14 | 4 | ['00', '01', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f25 | 4 | ['00', '85', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f36 | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f43 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f50 | 4 | ['00', '85', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f61 | 3 | ['00', '07', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f6e | 3 | ['00', '01', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f7b | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f88 | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3f95 | 3 | ['00', '67', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3fa2 | 3 | ['00', '67', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3faf | 3 | ['00', '67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3fbc | 4 | ['00', '02', '67', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3fcd | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3fda | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3fe7 | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b3ff4 | 4 | ['00', '07', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4005 | 3 | ['00', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4012 | 4 | ['00', '9d', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4023 | 4 | ['00', '9d', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4034 | 3 | ['00', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4041 | 5 | ['00', '79', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4056 | 3 | ['00', '79', '79'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4063 | 3 | ['00', '79', '79'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4070 | 6 | ['00', '79', '79', '79', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4089 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4096 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40a3 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40b0 | 4 | ['00', '8b', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40c1 | 4 | ['00', '02', '08', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40d2 | 4 | ['00', '08', '08', '33'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40e3 | 4 | ['00', '08', '02', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b40f4 | 4 | ['00', '08', '08', '08'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4105 | 4 | ['00', '3d', '3d', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4116 | 4 | ['00', '3d', '2b', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4127 | 4 | ['00', '3d', '2b', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4138 | 4 | ['00', '3d', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4149 | 4 | ['00', '2b', '2b', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b415a | 4 | ['00', '2b', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b416b | 3 | ['00', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4178 | 3 | ['00', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4185 | 3 | ['00', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4192 | 4 | ['00', '50', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b41a3 | 4 | ['00', '7f', '7f', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b41b4 | 4 | ['00', '67', '7f', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b41c5 | 3 | ['00', '67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b41d2 | 4 | ['00', '67', '67', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46a1 | 3 | ['00', '67', '32'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46ae | 3 | ['00', '8b', '31'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46bb | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46c8 | 4 | ['00', '8b', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46d9 | 3 | ['00', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46e6 | 3 | ['00', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b46f3 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4704 | 4 | ['00', '02', '4c', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4715 | 3 | ['00', 'a3', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4722 | 3 | ['00', 'a3', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b472f | 3 | ['00', 'a3', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b473c | 4 | ['00', 'a3', 'a3', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b474d | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b475a | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b476b | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b477c | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b478d | 3 | ['00', 'a3', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b479a | 3 | ['00', '13', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47a7 | 3 | ['00', 'a3', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47b4 | 4 | ['00', '13', '13', 'a3'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47c5 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47d2 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47df | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47ec | 4 | ['00', '85', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b47fd | 4 | ['00', '73', '73', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b480e | 5 | ['00', '73', '73', '73', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4823 | 6 | ['00', '73', '73', '73', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b483c | 6 | ['00', '73', '73', '73', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4855 | 4 | ['00', '2b', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4866 | 3 | ['00', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4873 | 3 | ['00', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4880 | 4 | ['00', '2b', '2b', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4891 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b489e | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48ab | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48b8 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48c5 | 3 | ['00', '67', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48d2 | 3 | ['00', '67', '67'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48df | 3 | ['00', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48ec | 3 | ['00', '67', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b48f9 | 3 | ['00', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4906 | 3 | ['00', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4913 | 3 | ['00', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4920 | 4 | ['00', '55', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4931 | 3 | ['00', '6e', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b493e | 3 | ['00', '74', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b494b | 3 | ['00', '6e', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4958 | 4 | ['00', '6e', '74', 'aa'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4969 | 5 | ['00', '79', '7a', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b497e | 5 | ['00', '7a', '7a', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4993 | 5 | ['00', '7a', '79', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b49a8 | 6 | ['00', '7a', '7a', '79', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b49c1 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b49d2 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b49e3 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b49f4 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a05 | 4 | ['00', '02', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a16 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a27 | 3 | ['00', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a34 | 3 | ['00', '02', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a41 | 4 | ['00', '02', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a52 | 3 | ['00', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a5f | 4 | ['00', '02', '86', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a70 | 3 | ['00', '02', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a7d | 3 | ['00', 'a9', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a8a | 3 | ['00', 'a9', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4a97 | 3 | ['00', 'a9', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b4aa4 | 4 | ['00', '02', '02', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b52f9 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5306 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5313 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5320 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b532d | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b533a | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5347 | 3 | ['00', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5354 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5365 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5376 | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5387 | 4 | ['00', '01', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5398 | 5 | ['00', '01', '01', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53ad | 4 | ['00', '01', '01', '05'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53be | 4 | ['00', '01', '01', '06'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53cf | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53dc | 3 | ['00', '01', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53e9 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b53f6 | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5403 | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5410 | 3 | ['00', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b541d | 3 | ['00', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b542a | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b543b | 4 | ['00', '85', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b544c | 4 | ['00', '85', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b545d | 4 | ['00', '01', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b546e | 5 | ['00', '85', '85', '85', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5483 | 4 | ['00', '85', '85', '89'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5494 | 4 | ['00', '85', '85', '8a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54a5 | 4 | ['00', '45', '00', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54b6 | 3 | ['00', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54c3 | 3 | ['00', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54d0 | 3 | ['00', '01', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54dd | 3 | ['00', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54ea | 3 | ['00', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b54f7 | 3 | ['00', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5504 | 4 | ['00', '3d', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5515 | 4 | ['00', '2b', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5526 | 4 | ['00', '2b', '2b', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5537 | 3 | ['00', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5544 | 3 | ['00', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5551 | 5 | ['00', '85', '85', '3d', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5566 | 4 | ['00', '3d', '3d', '41'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5577 | 4 | ['00', '3d', '3d', '42'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5588 | 4 | ['00', '2b', '2b', '2f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5599 | 4 | ['00', '2b', '2b', '30'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55aa | 2 | ['00', '51'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55b3 | 3 | ['00', '2b', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55c0 | 3 | ['00', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55cd | 3 | ['00', '85', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55da | 3 | ['00', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55e7 | 3 | ['00', '2b', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b55f4 | 3 | ['00', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5601 | 4 | ['00', '85', '2b', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5612 | 4 | ['00', '2b', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5623 | 4 | ['00', '3d', '2b', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5634 | 4 | ['00', '85', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5645 | 4 | ['00', '3d', '01', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5656 | 5 | ['00', '2b', '2b', '2b', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b566b | 3 | ['00', '3d', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5678 | 3 | ['00', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5685 | 3 | ['00', '85', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5692 | 3 | ['00', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b569f | 3 | ['00', '3d', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56ac | 3 | ['00', '01', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56b9 | 4 | ['00', '85', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56ca | 4 | ['00', '2b', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56db | 4 | ['00', '3d', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56ec | 4 | ['00', '85', '3d', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b56fd | 4 | ['00', '3d', '01', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b570e | 5 | ['00', '3d', '3d', '3d', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5723 | 3 | ['00', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5730 | 3 | ['00', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b573d | 3 | ['00', '85', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b574a | 3 | ['00', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5757 | 3 | ['00', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5764 | 3 | ['00', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5771 | 4 | ['00', '85', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5782 | 4 | ['00', '3d', '3d', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5793 | 4 | ['00', '3d', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57a4 | 4 | ['00', '85', '3d', '2b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57b5 | 4 | ['00', '3d', '2b', '3d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57c6 | 5 | ['00', '01', '2b', '2b', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57db | 4 | ['00', '01', '01', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57ec | 4 | ['00', '01', '85', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b57fd | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b580a | 3 | ['00', '85', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5817 | 3 | ['00', '1f', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5824 | 4 | ['00', '01', '01', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5835 | 4 | ['00', '01', '13', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5846 | 4 | ['00', '13', '13', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5857 | 3 | ['00', '13', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5864 | 3 | ['00', '13', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5871 | 4 | ['00', '13', '85', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5882 | 5 | ['00', '13', '01', '13', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5897 | 3 | ['00', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58a4 | 3 | ['00', '9d', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58b1 | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58be | 3 | ['00', '13', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58cb | 3 | ['00', '01', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58d8 | 3 | ['00', '13', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58e5 | 4 | ['00', '1f', '1f', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b58f6 | 4 | ['00', '01', '13', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5907 | 4 | ['00', '01', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5918 | 4 | ['00', '9d', '85', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5929 | 4 | ['00', '13', '01', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b593a | 5 | ['00', '01', '13', '85', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b594f | 3 | ['00', '9d', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b595c | 4 | ['00', '1f', '9d', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b596d | 4 | ['00', '13', '1f', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b597e | 4 | ['00', '13', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b598f | 3 | ['00', '13', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b599c | 3 | ['00', '13', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59a9 | 3 | ['00', '1f', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59b6 | 3 | ['00', '13', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59c3 | 4 | ['00', '01', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59d4 | 4 | ['00', '13', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59e5 | 4 | ['00', '9d', '9d', '85'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b59f6 | 5 | ['00', '01', '9d', '85', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5ed1 | 4 | ['00', '07', '07', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5ee2 | 4 | ['00', '07', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5ef3 | 3 | ['00', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f00 | 3 | ['00', '13', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f0d | 4 | ['00', '13', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f1e | 4 | ['00', '07', '13', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f2f | 4 | ['00', '13', '13', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f40 | 4 | ['00', '07', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f51 | 4 | ['00', '01', '01', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f62 | 3 | ['00', '07', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f6f | 4 | ['00', '01', '07', '01'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f80 | 4 | ['00', '07', '07', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5f91 | 4 | ['00', '07', '07', '0b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5fa2 | 4 | ['00', '07', '07', '0c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5fb3 | 2 | ['00', '4b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5fbc | 4 | ['00', '07', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5fcd | 3 | ['00', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5fda | 4 | ['00', '13', '13', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5feb | 3 | ['00', '13', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b5ff8 | 3 | ['00', '13', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6005 | 4 | ['00', '07', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6016 | 4 | ['00', '07', '13', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6027 | 4 | ['00', '4f', '4f', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6038 | 4 | ['00', '07', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6049 | 3 | ['00', '07', '13'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6056 | 3 | ['00', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6063 | 4 | ['00', '07', '07', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6074 | 4 | ['00', '4f', '4f', '53'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6085 | 4 | ['00', '4f', '4f', '54'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6096 | 5 | ['00', '07', '07', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60ab | 4 | ['00', '07', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60bc | 3 | ['00', '02', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60c9 | 3 | ['00', '4f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60d6 | 3 | ['00', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60e3 | 3 | ['00', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60f0 | 3 | ['00', '07', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b60fd | 6 | ['00', '07', '07', '07', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6116 | 4 | ['00', '02', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6127 | 5 | ['00', '4f', '02', '02', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b613c | 4 | ['00', '4f', '1f', '1f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b614d | 5 | ['00', '02', '4f', '4f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6162 | 4 | ['00', '1f', '1f', '23'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6173 | 4 | ['00', '1f', '1f', '24'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6184 | 3 | ['00', '02', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6191 | 3 | ['00', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b619e | 3 | ['00', '07', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b61ab | 3 | ['00', '4f', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b61b8 | 4 | ['00', '85', '07', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b61c9 | 4 | ['00', '07', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b61da | 4 | ['00', '4f', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b61eb | 5 | ['00', '07', '4f', '4f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6200 | 3 | ['00', '02', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b620d | 3 | ['00', '4f', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b621a | 3 | ['00', '55', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6227 | 3 | ['00', '4f', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6234 | 4 | ['00', '85', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6245 | 4 | ['00', '55', '4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6256 | 4 | ['00', '4f', '55', '4f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6267 | 5 | ['00', '55', '4f', '4f', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b627c | 3 | ['00', '07', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6289 | 3 | ['00', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6296 | 3 | ['00', '55', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b62a3 | 3 | ['00', '4f', '07'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b62b0 | 4 | ['00', '07', '55', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b62c1 | 4 | ['00', '07', '4f', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b62d2 | 4 | ['00', '4f', '07', '55'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b62e3 | 5 | ['00', '55', '07', '55', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b64ed | 4 | ['00', '73', '73', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b64fe | 4 | ['00', '02', '73', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b650f | 3 | ['00', '7f', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b651c | 3 | ['00', '9d', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6529 | 4 | ['00', '02', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b653a | 3 | ['00', '73', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6547 | 3 | ['00', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6554 | 4 | ['00', '02', '02', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6565 | 3 | ['00', '02', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6572 | 4 | ['00', '9d', '7f', '2a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6583 | 4 | ['00', '9d', '7f', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6594 | 4 | ['00', '73', '73', '2a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65a5 | 5 | ['00', '73', '73', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65ba | 3 | ['00', '9d', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65c7 | 4 | ['00', '9d', '9d', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65d8 | 4 | ['00', '73', '73', '00'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65e9 | 4 | ['00', '02', '02', '7f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b65fa | 6 | ['00', '7f', '73', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6613 | 4 | ['00', '9d', '9d', '9d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6624 | 4 | ['00', '9d', '7f', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6635 | 5 | ['00', '9d', '73', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b664a | 4 | ['00', '7f', '73', '73'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b665b | 4 | ['00', '73', '02', '02'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b666c | 4 | ['00', '9d', '73', '2a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b667d | 4 | ['00', '9d', '9d', 'a1'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b668e | 4 | ['00', '9d', '9d', 'a2'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b669f | 2 | ['00', '57'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b698d | 3 | ['00', '0d', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b699a | 4 | ['00', '0d', '43', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69ab | 4 | ['00', '03', '43', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69bc | 3 | ['00', '0e', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69c9 | 4 | ['00', '03', '43', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69da | 3 | ['00', '19', '19'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69e7 | 3 | ['00', '19', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b69f4 | 4 | ['00', '03', '03', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a05 | 4 | ['00', 'a9', '50', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a16 | 4 | ['00', '43', '03', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a27 | 4 | ['00', '0d', '0d', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a38 | 4 | ['00', '19', '19', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a49 | 4 | ['00', '13', '13', '17'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a5a | 4 | ['00', '13', '13', '18'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a6b | 4 | ['00', '0d', '0d', '11'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a7c | 4 | ['00', '0d', '0d', '12'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a8d | 3 | ['00', '5b', '5b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6a9a | 4 | ['00', '19', '5b', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6aab | 4 | ['00', '50', '50', '5b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6abc | 4 | ['00', '5b', '0d', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6acd | 2 | ['00', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6ad6 | 4 | ['00', '44', '4a', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6ae7 | 3 | ['00', '19', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6af4 | 4 | ['00', '0d', '0d', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b05 | 4 | ['00', '03', '15', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b16 | 3 | ['00', '19', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b23 | 3 | ['00', '4a', 'a9'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b30 | 4 | ['00', '50', 'a9', '4a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b41 | 3 | ['00', '15', '15'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b4e | 4 | ['00', '50', '03', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b5f | 4 | ['00', '0d', '0d', '44'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b70 | 4 | ['00', '14', '44', '15'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b81 | 4 | ['00', '0d', '19', '44'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6b92 | 4 | ['00', 'a9', 'a9', 'ad'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6ba3 | 4 | ['00', 'a9', 'a9', 'ae'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bb4 | 4 | ['00', '19', '19', '1d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bc5 | 4 | ['00', '19', '19', '1e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bd6 | 2 | ['00', '69'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bdf | 3 | ['00', '21', '21'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bec | 4 | ['00', '15', '14', '21'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6bfd | 4 | ['00', '21', '44', '44'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6c0e | 4 | ['00', '0d', '21', '0d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f19 | 3 | ['00', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f26 | 3 | ['00', '8b', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f33 | 4 | ['00', '14', '14', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f44 | 3 | ['00', '61', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f51 | 4 | ['00', '3e', '3e', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f62 | 3 | ['00', '3e', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f6f | 4 | ['00', '50', '8b', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f80 | 4 | ['00', '3e', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f91 | 3 | ['00', '8b', '3e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6f9e | 4 | ['00', '61', '50', '14'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6faf | 4 | ['00', '14', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6fc0 | 4 | ['00', '3e', '8b', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6fd1 | 4 | ['00', '8b', '8b', '8f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6fe2 | 4 | ['00', '8b', '8b', '90'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6ff3 | 2 | ['00', '5d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b6ffc | 4 | ['00', '20', '61', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b700d | 4 | ['00', '14', '61', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b701e | 3 | ['00', '14', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b702b | 3 | ['00', '14', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7038 | 4 | ['00', '20', '50', '20'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7049 | 4 | ['00', '3e', '50', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b705a | 3 | ['00', '20', '50'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7067 | 4 | ['00', '3e', '20', '61'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7078 | 4 | ['00', '61', '61', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7089 | 4 | ['00', '3e', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b709a | 4 | ['00', '20', '8b', '8b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b70ab | 4 | ['00', '61', '3e', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b70bc | 4 | ['00', '61', '61', '65'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b70cd | 4 | ['00', '61', '61', '66'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b70de | 4 | ['00', '86', '25', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b70ef | 4 | ['00', '14', '25', '25'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7100 | 5 | ['00', '9e', '86', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7115 | 6 | ['00', '14', '14', '38', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b712e | 4 | ['00', '25', '25', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b713f | 5 | ['00', '3e', '38', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7154 | 3 | ['00', '20', '20'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7161 | 3 | ['00', '3e', '3e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b716e | 4 | ['00', '20', '25', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b717f | 4 | ['00', '86', '14', '37'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7190 | 4 | ['00', '9e', '3e', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b71a1 | 4 | ['00', '25', '9e', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b71b2 | 4 | ['00', '25', '25', '29'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b71c3 | 4 | ['00', '25', '25', '2a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b75e1 | 3 | ['00', '2c', '14'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b75ee | 4 | ['00', '2c', '2c', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b75ff | 4 | ['00', '97', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7610 | 4 | ['00', '86', '6d', '97'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7621 | 4 | ['00', '08', '08', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7632 | 4 | ['00', '08', '08', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7643 | 4 | ['00', '14', '86', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7654 | 4 | ['00', '86', '6d', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7665 | 3 | ['00', '08', '97'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7672 | 4 | ['00', '2c', '6d', '2c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7683 | 4 | ['00', '08', '08', '08'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7694 | 5 | ['00', '08', '6d', '08', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76a9 | 4 | ['00', '6d', '6d', '71'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76ba | 4 | ['00', '6d', '6d', '72'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76cb | 4 | ['00', '02', '97', '39'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76dc | 4 | ['00', '86', '97', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76ed | 4 | ['00', '1a', '2c', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b76fe | 4 | ['00', '02', '14', '39'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b770f | 4 | ['00', '20', '68', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7720 | 4 | ['00', '86', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7731 | 3 | ['00', '14', '2c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b773e | 3 | ['00', '14', '68'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b774b | 4 | ['00', '20', '86', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b775c | 4 | ['00', '9f', '2c', '39'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b776d | 3 | ['00', '1a', '68'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b777a | 4 | ['00', '86', '2c', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b778b | 4 | ['00', '1a', '2c', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b779c | 4 | ['00', '02', '68', '9f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77ad | 3 | ['00', '9f', '68'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77ba | 4 | ['00', '9f', '9f', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77cb | 3 | ['00', '03', '91'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77d8 | 4 | ['00', '56', '86', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77e9 | 4 | ['00', '03', '6d', '86'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b77fa | 3 | ['00', '03', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7807 | 4 | ['00', '03', '03', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7818 | 4 | ['00', '1a', '03', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7829 | 3 | ['00', '74', '6d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7836 | 3 | ['00', '03', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7843 | 4 | ['00', '86', '74', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7854 | 4 | ['00', '1a', '1a', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7865 | 3 | ['00', '91', '74'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7872 | 4 | ['00', '1a', '56', '56'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7883 | 4 | ['00', '91', '91', '95'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7894 | 4 | ['00', '91', '91', '96'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78a5 | 3 | ['00', '43', '91'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78b2 | 4 | ['00', '43', '74', '1a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78c3 | 4 | ['00', '86', '43', '43'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78d4 | 4 | ['00', '91', '91', '43'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78e5 | 5 | ['00', '15', '7a', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b78fa | 5 | ['00', '62', '51', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b790f | 4 | ['00', '75', '75', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7920 | 4 | ['00', '9f', '9f', '51'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7931 | 4 | ['00', 'a4', '51', '5a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7942 | 4 | ['00', '9f', '9f', 'a4'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7953 | 5 | ['00', '7a', '51', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7968 | 5 | ['00', '75', '62', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b797d | 3 | ['00', '80', '98'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b798a | 4 | ['00', '62', '62', '98'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b799b | 4 | ['00', '9f', '80', 'a4'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b79ac | 4 | ['00', 'a4', '51', '75'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7df9 | 5 | ['00', '98', '7b', '01', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e0e | 4 | ['00', '98', '1a', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e1f | 4 | ['00', '6e', '21', '44'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e30 | 4 | ['00', '3f', '39', '87'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e41 | 3 | ['00', '0e', '0e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e4e | 4 | ['00', '3f', '21', '21'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e5f | 4 | ['00', '6e', '4b', '81'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e70 | 4 | ['00', '27', '27', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e81 | 3 | ['00', '44', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e8e | 4 | ['00', '1a', '1a', '7a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7e9f | 4 | ['00', '5d', 'ab', '7a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7eb0 | 3 | ['00', '0e', 'ab'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7ebd | 3 | ['00', '98', '5d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7eca | 6 | ['00', '81', '27', '7b', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7ee3 | 4 | ['00', '43', '43', '47'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7ef4 | 4 | ['00', '43', '43', '48'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f05 | 2 | ['00', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f0e | 5 | ['00', 'a5', '1b', '45', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f23 | 3 | ['00', '93', '27'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f30 | 5 | ['00', '81', '7b', '00', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f45 | 4 | ['00', '75', '5e', '27'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f56 | 4 | ['00', '69', '51', '7a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f67 | 4 | ['00', '81', 'a5', '51'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f78 | 3 | ['00', '0f', '51'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f85 | 3 | ['00', '0f', '69'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7f92 | 4 | ['00', '0f', '99', '6f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7fa3 | 4 | ['00', '03', '6f', '3a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7fb4 | 4 | ['00', '99', '03', '5e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7fc5 | 3 | ['00', '1b', '45'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7fd2 | 4 | ['00', '99', '99', '57'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7fe3 | 4 | ['00', '03', '03', '93'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b7ff4 | 4 | ['00', '97', '97', '9b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8005 | 4 | ['00', '97', '97', '9c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8016 | 4 | ['00', '4b', '5d', '5d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8027 | 4 | ['00', '63', '8d', '4b'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8038 | 4 | ['00', '5d', '63', '93'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8049 | 3 | ['00', '8d', '27'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8056 | 4 | ['00', '4b', '8d', '63'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8067 | 4 | ['00', '93', '5d', 'ab'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8078 | 4 | ['00', '8d', '63', 'ab'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8089 | 4 | ['00', '63', '5d', 'ab'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b809a | 2 | ['00', '6e'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80a3 | 4 | ['00', '43', '43', '47'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80b4 | 4 | ['00', '43', '43', '48'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80c5 | 4 | ['00', '5b', '5b', '5f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80d6 | 4 | ['00', '5b', '5b', '60'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80e7 | 5 | ['00', '03', '5c', '03', | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b80fc | 3 | ['00', '92', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8109 | 3 | ['00', '8d', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8116 | 4 | ['00', '8d', '57', '8d'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8127 | 3 | ['00', '92', '5c'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8134 | 4 | ['00', '63', '68', '6a'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8145 | 4 | ['00', '03', '57', '03'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8156 | 3 | ['00', '5c', '63'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8163 | 4 | ['00', '2d', '68', '68'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8174 | 3 | ['00', '92', '63'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8181 | 4 | ['00', '8d', '8d', '75'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b8192 | 3 | ['00', '68', '68'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b819f | 4 | ['00', '75', '8d', '75'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b81b0 | 4 | ['00', '9f', '9f', '57'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b81c1 | 4 | ['00', '5b', '5b', '5f'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b81d2 | 4 | ['00', '5b', '5b', '60'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
+| rom_080b81e3 | 2 | ['00', '63'] | reference/bn6f/bn6f.gba:0x080b | unrecorded |
 
 ### backdrops (M8) (DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis))
 
@@ -1212,9 +1991,9 @@ Note: Sentinel note: Background 0xff on 268 of 461 records is counted as an UNSE
 
 | background_byte | records_using_it | cite | status |
 |---|---|---|---|
-| 0x07 | 192 | data/BattleSettings.s (BattleSettings.Background, +0 | unrecorded |
-| 0x08 | 1 | data/BattleSettings.s (BattleSettings.Background, +0 | unrecorded |
-| 0xff | 268 | data/BattleSettings.s (BattleSettings.Background, +0 | unrecorded |
+| 0x07 | 192 | reference/bn6f/bn6f.gba ROM walk (BattleSettings.Bac | unrecorded |
+| 0x08 | 1 | reference/bn6f/bn6f.gba ROM walk (BattleSettings.Bac | unrecorded |
+| 0xff | 1047 | reference/bn6f/bn6f.gba ROM walk (BattleSettings.Bac | unrecorded |
 
 ### navicust battle effects (M7) (FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc))
 
