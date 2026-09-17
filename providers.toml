@@ -30,10 +30,10 @@ digest_writer = "claude:claude-opus-5"
 slides_writer = "claude:claude-opus-5"   # the learn feed too: readable content is Opus's job (the user, 2026-09-15)
 
 [schedule]
-runs = ["hyper", "minimax"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all
+runs = ["hyper", "minimax", "zai"]   # run profiles to keep going, in order; serial: the first that can start; parallel: all
 parallel = true               # 2026-09-14 evening: two independent runs, each self-sufficient (M3 coordinated a full
                               # cycle correctly: T7e landed 19:07); tickets are claimed per run
-reserve = ["openrouter", "opencode", "zai"]      # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
+reserve = ["openrouter", "opencode"]      # runs never started by the launcher; a human starts one by hand (BN_RUN=...)
 
 # ---------------------------------------------------------------- providers: one budget each
 [providers.hyper]
@@ -152,13 +152,14 @@ judge = ["opencode/qwen3.8-flash"]
 auditor = ["opencode/qwen3.8-flash"]
 digest = ["opencode/qwen3.8-flash"]
 
-[runs.zai]                                # Z.ai: the full GLM 5.3, not the Flash the other plans run. Its plan is
-workers = 1                               # metered in credits (2,000 per 5 hours, 10,000 a week: about 15 replay
-                                          # tickets), so it is the expensive seat -- roughly ten times Hyper's cost
-                                          # per solved ticket -- and it runs ONE worker on new tickets rather than
-                                          # re-measuring what the other plans already cover (the user, 2026-09-16).
-coordinator = ["zai/glm-5.3"]
-worker = ["zai/glm-5.3", "zai/glm-4.7"]
+[runs.zai]                                # Z.ai on GLM 5.3 Flash, the model Hyper runs, so its work costs the plan
+workers = 2                               # the least per ticket. The plan is metered in credits (2,000 per 5-hour
+                                          # window, 10,000 a week) and the window refills five times a day, so the
+                                          # launcher simply keeps it working whenever the window is open (the user,
+                                          # 2026-09-16: use it to capacity). The full 5.3 stays as the fallback for
+                                          # the seats where one call decides a lot.
+coordinator = ["zai/glm-5.3-flash", "zai/glm-5.3"]
+worker = ["zai/glm-5.3-flash", "zai/glm-5.3"]
 verifier = ["zai/glm-4.7"]
 recon = ["zai/glm-5.3-flash"]
 judge = ["zai/glm-5.3"]
