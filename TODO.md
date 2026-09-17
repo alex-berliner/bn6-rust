@@ -406,8 +406,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T156. M4/M3's box pass-through on a b+2 input: the second held-out item, engine-side only  *(OPEN -- 2026-09-29)*
+### T156. M4/M3's box pass-through on a b+2 input: the second held-out item, engine-side only  *(BLOCKED -- 2026-09-17, NOT ATTEMPTED - same queue-integrity finding as T157: cites T152/T153/T154 as rungs)*
 
+**Result.** NOT ATTEMPTED - same queue-integrity finding as T157: cites T152/T153/T154 as rungs; none exist in TODO.md; T156 additionally forbids landing while T152 is unmerged and T152 does not exist. Refused until the ladder's first rung lands or a ticket builds it from the ROM.
 **Why.** The goal's held-out item is a **b+2 input** — a second box item that was never in any recording — and its rule is "an object that moves into a box's hole passes through". Today's pass is bought: T152's objective exists because the hit on the sterile box's item is registered by an *input patch*, and T153 is auditing exactly what `set_unk_col_desc` patches (obj 382/387) at byte level. So the pass-through rung has to be demonstrated on an item the patch was never tuned for, with the patch out of the loop, or the ladder is one lucky fixture. Two measured facts make this cheap to attempt: the collision descriptor is per-object data (T153's own subject), and T142/T143 showed a *deeper* arm can ride the same dispatch and go from 3463/2296/203 to **0/0/20** on `buster`+`field`+`popup` with no patch change — the mechanism generalises when it is in the engine. Advances **M4** (chip/item objects as data) and **M3** (ownership/area steal, obstacles).
 
 **Files.** `src/objects.rs` (the collision-descriptor read path), `src/battle.rs` (the per-frame collision step), `src/field.rs` (only the hole-bit predicate T154 exported), `tools/states.py` (scenario `h2b_pass_b2`), `docs/coverage/objects.md` (append), `docs/worklog/T156.md`. **NOT** `tools/patch_sterile.py`, `tools/states.py`'s *existing* scenarios (read-only), `assets/`, `reference/bn6f`.
