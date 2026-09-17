@@ -1,3 +1,3 @@
-T67: the PAUSED+Start@10 9..0 Timer tail was not a fitted constant but playerAI_sub_80F0354's phase-arming countdown (Timer=0xa store on phase init, per-dispatch decrement); fitted POST_FLINCH_FRAMES=11 replaced by derived PHASE_ARM_FRAMES=10+SENTINEL_FRAMES=1, exports unchanged, every row identical.
+T87: the ai_index-4 virus rank previously unreachable by T58's frame-60 lever is now fielded - canon EVENT_681 flag poke swaps the encounter root to a 12-record ungated list and lever 0x37a picks rec3; slots populate at frame 69 with HP byte-matching off_8109150[4]; recording-only, all guard rows identical
 
-mettaur (isolated), before and after: canon on top; ours at 4062cfb (0 px over 70 frames, canon 140+k, rust offset 205); ours at 2d7ce09 (0 px, canon 140+k, rust offset 205). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
+mettaur (isolated), before and after: canon on top; ours at a3e6103 (0 px over 70 frames, canon 140+k, rust offset 205); ours at 6e493bc (0 px, canon 140+k, rust offset 205). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
