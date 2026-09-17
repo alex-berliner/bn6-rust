@@ -39,7 +39,8 @@ never measured), dated the day this ticket ran them.
 
 ALLOWLIST = {
     # tiles/gauge integrated (worst 3468/8 frames): TODO A8, the custom
-    # gauge's stripe-flow animation not yet modelled (TRANSFER.md 1270),
+    # gauge's stripe-flow animation not yet modelled (docs/provenance.md#7bl,
+    # the home of the line formerly cited as TRANSFER.md 1270),
     # PLUS the sprites (navi, enemy, hand icon) this ui variant turns back
     # on, over regress.py's old demo-hudmatch capture. tiles and gauge are
     # the SAME full-screen capture (see _tiles_gauge()'s own note) so they

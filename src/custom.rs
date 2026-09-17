@@ -469,7 +469,7 @@ pub struct Custom<'a> {
     /// pixels of it, on the frame after every cursor move. The real ROM
     /// changes the whole card on one frame; this build changed the picture's
     /// colours a frame before everything else. Same shape as the HP box's
-    /// orange flash (TRANSFER 7aj), same fix.
+    /// orange flash (docs/provenance.md#7aj), same fix.
     pending_palettes: Vec<(u8, Palette16)>,
     /// Counted while the window is open, as eS20364C0+0x40 is.
     frames: u32,

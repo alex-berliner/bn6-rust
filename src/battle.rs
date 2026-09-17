@@ -125,7 +125,7 @@ const BUSTER_BLIP_FRAMES: u8 = 2; // provenance: fitted -- stopped in software t
 /// and this build's, played immediately, was on the sixth.
 const BUSTER_BLIP_DELAY: u8 = 1; // provenance: fitted -- measures right (matches the captured onset frame), not computed from a cited mechanism
 const BUSTER_BLIP_FREQ: u16 = 2023; // provenance: peeked -- the measured onset frequency's register value, not a note-table guess
-// SOUND_HIT_6B (TRANSFER.md 7bb): the enemy's own hit-flash/HP-decrement
+// SOUND_HIT_6B (docs/provenance.md#7bb): the enemy's own hit-flash/HP-decrement
 // reaction, not the buster's fire -- soloing the harness's channels 4 and 5
 // (both FIFOs, its numbering, not the hardware's) and control-subtracting a
 // run with no press (residual RMS of press-minus-control, not the coarser
@@ -462,7 +462,7 @@ const THROW: actor::AttackSpec = actor::AttackSpec {
 /// The cannon pose: the counter runs to 0x1d (sub_80EBC28, asm31.s:109532,
 /// 109554), and the frame that reads 0x1d only queues the exit state, which
 /// runs the frame after, so the pose is on screen for 0x1e frames -- the real
-/// ROM shows the idle again 30 frames after the attack starts (TRANSFER.md).
+/// ROM shows the idle again 30 frames after the attack starts (docs/provenance.md).
 /// The barrel object lives exactly as long.
 const CANNON_FRAMES: u8 = 0x1d + 1; // provenance: derived -- sub_80EBC28, asm31.s:109532/109554
 /// Cannon and HiCannon (attack family 0x14, sub_80EBC28): the navi takes
@@ -470,7 +470,7 @@ const CANNON_FRAMES: u8 = 0x1d + 1; // provenance: derived -- sub_80EBC28, asm31
 /// frame counter reads 0xf, the pose exiting once it reads 0x1d
 /// (asm31.s:109454, 109532, 109549). Both subfamilies are under 4, so the
 /// illusions at counter 8 do not apply (asm31.s:109480).
-// provenance: derived -- sub_80EBC28, asm31.s:109454/109532/109549, recover/recover_anim peeked (TRANSFER.md).
+// provenance: derived -- sub_80EBC28, asm31.s:109454/109532/109549, recover/recover_anim peeked (docs/provenance.md).
 const CANNON: actor::AttackSpec = actor::AttackSpec {
     windup: None,
     anim: 8,
@@ -478,7 +478,7 @@ const CANNON: actor::AttackSpec = actor::AttackSpec {
     strike_at: 0xf,
     // After the pose the real ROM shows three frames of the arm coming
     // down -- animation 15, a single three-frame pose -- before the idle
-    // (TRANSFER.md: idle again 33 frames after the attack starts).
+    // (docs/provenance.md: idle again 33 frames after the attack starts).
     recover: 3,
     recover_anim: Some(15),
     pose: None,
@@ -1392,8 +1392,8 @@ pub struct Battle<'a> {
     /// frame 18, and the navi's own colours are on the enemy's column
     /// throughout. The real object is semi-transparent, which this is not:
     /// under `--disable-bg` mGBA mis-blends it to red-only, so the capture
-    /// cannot show what it should look like over a black field (TRANSFER.md
-    /// 7l).
+    /// cannot show what it should look like over a black field (docs/
+    /// provenance.md under the harness's `--disable-bg` note).
     step_ghost: Option<(spr::Player, (i32, i32), u8)>,
     /// The second afterimage, on the panel the navi stepped to, built from
     /// the navi's sprite frame of three frames ago, with the key it was built
@@ -3275,7 +3275,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // swing, its tip held), riding the navi's origin with no arm
         // offset, alive until the attack state exits; its frames run from
         // the pose's first frame (real ROM: spark c2-9, blade c10-11,
-        // 12-13, 14-15, 16-17, 18-19, tip from c20; TRANSFER.md 7b).
+        // 12-13, 14-15, 16-17, 18-19, tip from c20; docs/provenance.md#7b).
         if let Some(left) = self.sword_in {
             if left == 0 {
                 self.sword_in = None;
@@ -4258,7 +4258,7 @@ const FLASH_RAISE_DY: i32 = 24; // provenance: peeked -- measured off the real R
                 // over the shot at counter 0xf, the cyan discharge, then the
                 // plain barrel until the pose ends at 0x1d. Every frame of
                 // that sequence, at those counters, was confirmed against the
-                // real ROM's capture (TRANSFER.md), which is also where the
+                // real ROM's capture (docs/provenance.md), which is also where the
                 // anchor comes from: the barrel's box is x 74-96, y 75-90 on
                 // the navi at panel (2,2).
                 let (mc, mr) = self.megaman.panel();

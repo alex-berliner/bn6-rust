@@ -15,7 +15,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")); os.chdir(
 # the long handoff 35, FIXTURE 25, SCOPE 18; the coverage notes and work logs follow behind them).
 INSTRUCTIONS = ["AGENT_GUIDE.md", "AGENTS.md", "HANDOFF.md", "FIXTURE.md", ".pi/coordinator.md"] + sorted(glob.glob(".pi/roles/*.md"))
 SKIP = ("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/")
-SKIP_NAMES = ("config-log.md", "note_audits.md", "measurement-drift.md", "renames.md", "TRANSFER.md", "TODO.md", "TODO_ARCHIVE.md")
+SKIP_NAMES = ("config-log.md", "note_audits.md", "measurement-drift.md", "renames.md", "TRANSFER.md", "TODO.md", "TODO_ARCHIVE.md")  # TRANSFER.md = the historical journal; load-bearing facts now live in docs/provenance.md, but the journal file itself stays.
 
 
 def opened_by_agents(min_sessions=5):

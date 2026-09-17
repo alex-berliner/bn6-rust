@@ -40,9 +40,10 @@ come from a command you ran in that session.
   and every new name keeps the address as its suffix, so searching by address always works.
   `reference/bn6f/docs/decomp/*.c` is a different, older decompilation under the old names.
 - `reference/bn6f` is read-only for you: never edit it, never commit in it.
-- A comment that cites `TRANSFER 7aw` or `TRANSFER.md section 3` means the first phase's journal:
-  `python3 tools/transfer.py 7aw` prints that section and nothing else (`--cited` lists the ones the
-  code relies on). Never read that file whole; it is 2,900 lines of history.
+- A comment that cites a fact's provenance points at `docs/provenance.md#<id>` (e.g.
+  `#7aw` for the save-state-at-first-frame fact, `#7ao` for the read-arcs-out-of-the-object
+  fact); read only that section. The historical journal `TRANSFER.md` stays in place but its
+  load-bearing facts are now in `docs/provenance.md`.
 
 ## What this project is
 A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored agb).

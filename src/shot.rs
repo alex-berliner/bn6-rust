@@ -113,7 +113,7 @@ pub struct Shot {
     /// one departure last close to its own dwell, so letting a second one
     /// start before the first ends compounds the mismatch across the whole
     /// attack instead of fixing the one hop this ticket measured. Newest
-    /// wins; see `TRANSFER.md`.
+    /// wins; see `docs/provenance.md#7bj`.
     departure: Option<(spr::Player, (i32, i32))>,
 }
 

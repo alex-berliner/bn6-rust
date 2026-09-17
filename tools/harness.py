@@ -637,7 +637,7 @@ def _cannon_canon(ui: str) -> Side:
 #   (b) ROM PATCH. Found the actual gate: `sub_800938A` (asm00_1.s:13037,
 #       ROM 0x800938A) is MegaMan's own "process a chip-use request"
 #       handler. It calls `sub_800801C` (asm00_1.s:10361), which runs one
-#       step of the GENERIC BANNER SEQUENCER (TRANSFER.md 7bf's own prior
+#       step of the GENERIC BANNER SEQUENCER (docs/provenance.md#7bf's own prior
 #       finding: the same state machine drives BATTLE START!, TURN START!,
 #       ENEMY DELETED and the result messages, selected by
 #       `dword_203CA70`), then checks the result: `cmp r0, #6 / bne
@@ -999,7 +999,7 @@ CHECKS: List[Check] = [
             canon_ref=120,
             search=range(110, 131),
             note="canon: BATTLESTART is documented as the battle's real frame 0 "
-                 "(eBGScrollCBCounters read 0/0, TRANSFER.md 7aw) -- canon_ref=120 is just "
+                 "(eBGScrollCBCounters read 0/0, docs/provenance.md#7aw) -- canon_ref=120 is just "
                  "120 battle-frames past that known origin, nothing searched on this side. "
                  "rust: find_marker_origin() gives frame 8 for demo-open/OPEN_ROW; a 21-wide "
                  "band around it finds a UNIQUE zero at offset 119 (partial band shown in the "

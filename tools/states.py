@@ -32,7 +32,7 @@ turns out to be a question with a physical answer, not a guess:
     regenerate, and the two came out differently once tried:
 
       - NOENEMY has a working base to start from (PAUSED) and a documented
-        trigger (delete the enemy's HP, TRANSFER.md section 3 / 7bf). The
+        trigger (delete the enemy's HP, docs/provenance.md#3 / #7bf). The
         recipe below reproduces the RESULT window's arrival at the same
         place, frame for frame, but NOT the reward panel's content, and NOT
         how soon the "press to continue" prompt starts blinking afterward
@@ -66,7 +66,7 @@ from it. It is `root=False` and IS built by this file, into /tmp, on
 request.
 
 Needs /tmp/mgba_capture and the real ROM, which are never committed
-(TRANSFER.md). Every state this writes goes to /tmp -- never into the repo.
+(docs/provenance.md). Every state this writes goes to /tmp -- never into the repo.
 """
 
 import argparse
@@ -122,16 +122,16 @@ class State:
 
 
 #: Deleting the enemy's HP/MaxHP fields keeps them at 0 every frame, which is
-#: what makes the battle conclude (TRANSFER.md section 3, and the same pair
+#: what makes the battle conclude (docs/provenance.md#3, and the same pair
 #: check_banner in regress.py pokes). The addresses are BattleObject+0x24/26
-#: for the Mettaur at 0x0203ab60 (TRANSFER.md section 2).
+#: for the Mettaur at 0x0203ab60 (docs/provenance.md#2).
 DELETE_ENEMY = ("0x0203ab84:0", "0x0203ab86:0")
 
 #: BATTLESTART's own battle (fresh-state ticket) fields THREE Mettaurs, not
 #: PAUSED's one, in three more BattleObject slots -- found live, not by
 #: extrapolating the 0xd8 stride from section 2's two known addresses:
 #: `--dump 0x0203a9b0:0x500` at battlestart.state+200 frames (all three
-#: materialised, TRANSFER 7ba's frames 113/141/173) shows MegaMan at
+#: materialised, docs/provenance.md#7ba's frames 113/141/173) shows MegaMan at
 #: 0x0203a9b0 (panel 2,2, unchanged from section 2) and three enemy
 #: BattleObjects, each NameID 0x0001 (Mettaur), HP 40/40, at 0x0203aa88
 #: (panel 4,1), 0x0203ab60 (panel 5,2 -- the same address PAUSED's own
@@ -155,7 +155,7 @@ STATES = [
                      "other fixture (tools/chip_compare.py's STATE, "
                      "regress.py's ALIVE/PAUSED). RASTATE format -- made by "
                      "hand in mGBA-qt. Its own backdrop-scroll counters read "
-                     "7891 frames already elapsed (TRANSFER.md 7av) with "
+                     "7891 frames already elapsed (docs/provenance.md#7av) with "
                      "nothing in the state or this project explaining that "
                      "number, which is the other half of why it cannot be "
                      "replayed from a cold boot: the number is not just "
@@ -207,7 +207,7 @@ STATES = [
         poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),
         frames=79,
         description="A battle's real frame 0 -- eBGScrollCBCounters read "
-                     "0/0, TRANSFER.md 7aw. Used by harness.py's "
+                     "0/0, docs/provenance.md#7aw. Used by harness.py's "
                      "check_opening. Rebuilt by recipe from overworld_net.",
         note="VERIFIED (ticket R1). From overworld_net.state, cycle 4 directions "
              "one per frame; one-shot poke the encounter roll open at frame 60 "
@@ -257,7 +257,7 @@ STATES = [
         rom="/tmp/bn6f_sterile_emptynet.gba",  # STERILE_BASE + --empty-net-encounter (patch_sterile.py)
         base="/tmp/overworld_net.state",
         script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
-                         for i in range(79)),  # cycled one per frame, TRANSFER 7aw's own shape
+                         for i in range(79)),  # cycled one per frame, docs/provenance.md#7aw's own shape
         poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0"),  # ONE roll attempt, at frame 60
         cheats=DELETE_ENEMY_3,  # kill whichever slot(s) spawn, every frame from load
         frames=79,
@@ -268,7 +268,7 @@ STATES = [
              "poke at frame 60 opens encounter roll. Battle init triggers at frame 60 "
              "(SubsystemIndex 8); battle main loop at frame 76 (SubsystemIndex 12); "
              "SubsystemIndex 12 held throughout. eBGScrollCBCounters (0x02009690/0x02009694) "
-             "read 0x0000/0x0000 at frame 79 (battle frame 0, TRANSFER 7aw) -- verified "
+             "read 0x0000/0x0000 at frame 79 (battle frame 0, docs/provenance.md#7aw) -- verified "
              "by --peek immediately at reload. All three enemy HP fields held at 0 "
              "throughout by DELETE_ENEMY_3 (peeks at 0x0203aaac, 0x0203ab84, 0x0203ac5c "
              "all read 0x0000). Build time: ~0.12s. Determinism: 40 frames from two builds "
@@ -496,7 +496,7 @@ def build(name):
     if not state.rom or state.frames is None:
         raise SystemExit("%s has no runnable recipe" % state.name)
     if not os.path.exists(CAPTURE):
-        raise SystemExit("%s not found -- build it first (see TRANSFER.md section 1)" % CAPTURE)
+        raise SystemExit("%s not found -- build it first (see docs/provenance.md#1)" % CAPTURE)
     if state.save and not os.path.exists(state.save):
         raise SystemExit("%s not found -- restore it first (see tools/restore_inputs.sh)" % state.save)
     scratch = "/tmp/states_py_scratch_%s" % state.name

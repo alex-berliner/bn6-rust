@@ -209,7 +209,7 @@ pub struct Fixture {
     /// Seeds `HudTiles`'s own flow counter (`gauge_tick` there) directly, for
     /// a fixture compared against a save state where the CUSTOM gauge has
     /// already been full for an unknown time -- see `hudtiles::HudTiles::
-    /// seed_gauge`'s doc and TRANSFER.md 7ab ("two phases... cannot be
+    /// seed_gauge`'s doc and docs/provenance.md#7ab ("two phases... cannot be
     /// settled by one save state"). 0xFFFF ("default" throughout this
     /// contract) leaves `HudTiles::new`'s own fresh value (0), which is
     /// already right for every fixture verified so far -- see the table

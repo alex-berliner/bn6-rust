@@ -25,7 +25,7 @@ hiding: it costs one frame of every comparison and is what kept AreaGrab,
 Invisibl, Barrier, Barr100 and Barr200 off zero. All 43 are at zero as of
 2026-09-07: the last two, BugBomb and VDoll, came in when their arcs stopped
 being swept and were read out of the running game instead (tools/throw_dump.py,
-TRANSFER 7ao).
+docs/provenance.md#7ao).
 
 The frame counts are the length of each attack: too few misses its end, too
 many compares a second volley against an idle navi, because the sterile demo

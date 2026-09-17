@@ -1047,7 +1047,7 @@ impl Actor {
                 // slash state sets the animation and starts its counter in
                 // the same tick (sub_80EB862), and the real ROM's sword arc
                 // lands a frame earlier than a transition frame would allow
-                // (TRANSFER.md 7b). So tick the new pose at once.
+                // (docs/provenance.md#7b). So tick the new pose at once.
                 self.begin(next, false);
                 match self.action {
                     Action::Attacking {
