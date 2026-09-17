@@ -55,3 +55,15 @@ Measured this session (probe.py diff, 90 frames, sterile PAUSED route):
   rng_cadence) match 40/40.
 - `cursor` residue 29/28/170 (veto 1/1/170/186300): pre-existing from pass
   4's port, unchanged by this pass (identical before and after).
+
+## Known coupling (pass 6, 2026-09-17): the cursor row reads the binary footprint
+
+The cursor row's compared window contains mid-frame VRAM copy-drain frames
+(F3's seam at k=97; the 4->3 cursor-slot transition at k=37) whose pixel
+phases follow the ROM's physical layout. Main's binary lands them at (0, 1)
+px; every T105 variant re-rolls them: full branch (28, 1), field-only
+(19, 19), field removed + gate via enemy_action (56 @ k=7, 6). Measured
+per-frame in docs/worklog/T105.md (pass 6). The emotion feature is
+pixel-correct (emotion_syn 0/0/40, negative 644); the blocker is the cursor
+row's layout calibration, owned by the follow-up recalibration ticket
+proposed in the worklog.
