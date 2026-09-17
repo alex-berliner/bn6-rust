@@ -218,15 +218,23 @@ def chip_names():
 #     all swords and not behaviour-selecting. Stays in.
 #   0x21 AirShot -- id 4 read at src/battle.rs:4128 and :4468, both
 #     `chip.family == AIRSHOT_FAMILY`. Stays in.
-#   0x15 DROPPED (had Barrier/Barr100/Barr200 via T48): a family rule
-#     cannot express the dispatch -- the same family's other verified ids
-#     163 (AreaGrab, src/battle.rs:3434/:3459/:4348) and 177 (Invisibl,
-#     :3430/:4321) are consumed by `match chip.id`, and the barrier gate
-#     :3444/:4363 tests family 0x15 AND subfamily 0x04, so family 0x15
-#     alone selects nothing. The trio is still record-dispatched
-#     (barrier_hp(&chip) reads the record) but no AS_DATA_FAMILIES rule
-#     can carry it, so it falls back to verified-pixels.
-AS_DATA_FAMILIES = {0x13, 0x21}  # canon: T57 per-id audit; see block comment above
+#   0x15 Barrier family -- RE-ADMITTED (T61): the two id gates T57 found
+#     (AreaGrab 163 and Invisibl 177 consumed by `match chip.id`) are gone;
+#     every dispatch for the family now keys on the record -- attack_family
+#     0x15 (ChipDataArr.s:5065/:5499/:5530/:5561/:5592) AND the record's
+#     AttackSubFamily (0x00 AreaGrab :5066, 0x01 Invisibl :5500, 0x04
+#     Barriers :5531/:5562/:5593). Invisibl's timer reads the record's
+#     AttackParam1 (:5504, 0x68); the barriers' HP/palette already read
+#     AttackParam1 via barrier_hp/barrier_palette. The AreaGrab
+#     presentation quartet (77/47/4/3) has no record byte and stays
+#     fitted/peeked, but it times one behaviour arm -- it does not SELECT
+#     between behaviours, and the sword precedent (peeked timing consts
+#     under 0x13) keeps that from blocking as-data status. The record
+#     table itself carries two further 0x15/0x04 blocks (ids 181/182,
+#     ChipDataArr.s:5623/:5654) beyond the 48-record asset; the game only
+#     ever sees the asset, whose 0x15 records are exactly
+#     {163(0x00), 177(0x01), 178/179/180(0x04)}.
+AS_DATA_FAMILIES = {0x13, 0x15, 0x21}  # canon: T57 per-id audit; 0x15 re-admitted by T61; see block comment above
 
 
 def parse_chips():

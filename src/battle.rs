@@ -282,8 +282,6 @@ const CHIP_RECOV120: u16 = 158;
 const CHIP_RECOV150: u16 = 159;
 const CHIP_RECOV200: u16 = 160;
 const CHIP_RECOV300: u16 = 161;
-const CHIP_AREAGRAB: u16 = 163;
-const CHIP_INVISIBL: u16 = 177;
 const CHIP_ENERGBOM: u16 = 55;
 /// LilBolr1/2/3: bomb family, subfamily 3, which routes through sub_80D7A96
 /// rather than MiniBomb's sub_80C5DBC -- a fixed target ahead rather than the
@@ -645,8 +643,14 @@ const AIRSHOT_FAMILY: u8 = 0x21; // canon: ChipDataArr_8021DA8 AttackFamily of i
 const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- RecovHealBySubfamily_80EC870 (asm31.s:111132, body :111133-111134, reader sub_80EC844 :111110-111131, off_80EC86C :111130-111131, decomp asm31.c:86133, ROM offset 0x0EC870)
 /// The heal effect's animation length, from its frame durations.
 const HEAL_FRAMES: u8 = 14; // provenance: derived -- the sprite's own frame durations
-/// Invisibl's timer is its first parameter, 0x68 (ChipDataArr.s:5490).
-const INVISIBL_FRAMES: u16 = 0x68; // provenance: derived -- ChipDataArr.s:5490
+/// AreaGrab (163), Invisibl (177) and the Barriers (178-180) all carry
+/// attack_family 0x15 in their records; the subfamily splits the three
+/// behaviours: 0x00 AreaGrab (ChipDataArr.s:5066), 0x01 Invisibl
+/// (:5500), 0x04 Barrier/Barr100/Barr200 (:5531/:5562/:5593). These are
+/// the family's only records in the 48-record asset (assets/chips.bin
+/// census, T61): the dispatch below gates on family AND subfamily.
+const AREAGRAB_SUBFAMILY: u8 = 0x00; // canon: ChipDataArr_8021DA8 AttackSubFamily of id 163 (data/ChipDataArr.s:5066)
+const INVISIBL_SUBFAMILY: u8 = 0x01; // canon: ChipDataArr_8021DA8 AttackSubFamily of id 177 (data/ChipDataArr.s:5500)
 /// Barrier, Barr100 and Barr200 are one chip with one handler: family 0x15
 /// subfamily 4 (off_802CCB4[4] = sub_80E3B50), whose first attack parameter
 /// (chip.params[0] / ChipDataArr_8021DA8 AttackParam1 +0x10) indexes
@@ -658,10 +662,10 @@ const INVISIBL_FRAMES: u16 = 0x68; // provenance: derived -- ChipDataArr.s:5490
 /// (include/rom_structs/ChipData.inc; data/ChipDataArr.s:5521/5552/5583).
 const BARRIER_FAMILY: u8 = 0x15; // canon: ChipDataArr_8021DA8 AttackFamily of ids 178-180 (data/ChipDataArr.s:5530/5561/5592)
 /// The Barrier subfamily (off_802CCB4[4] = sub_80E3B50, asm03_0.s cited
-/// in the parity block above). Subfamily 0/0x01 also bear attack_family 0x15
-/// in the asset (AreaGrab sub 0x00, Invisibl sub 0x01), so the family check
-/// alone would over-match; the subfamily splits them.
-const BARRIER_SUBFAMILY: u8 = 0x04; // canon: BarrierHpByType_8020B2C's subfamily is the row index (`ldr asm00_2.s:22591 / .word :22602`, the subfamily identifies which byte_8020B2C row gets used)
+/// in the parity block above). Subfamilies 0x00/0x01 also bear
+/// attack_family 0x15 (AreaGrab sub 0x00, Invisibl sub 0x01), so the
+/// family check alone would over-match; the subfamily splits them.
+const BARRIER_SUBFAMILY: u8 = 0x04;
 /// Barrier's HP for type N is byte_8020B2C[N*6..N*6+2] as a little-endian
 /// u16 (rows :195-202 stride 6, the u16 is the HP and the next four bytes
 /// are 0x00 0x00 0xff 0xff -- the canon effect-row pad). Only the indices
@@ -3426,37 +3430,40 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         if let Some((chip, left)) = self.presentation {
             if left == 0 {
                 self.presentation = None;
-                match chip.id {
-                    CHIP_INVISIBL => self.megaman.set_invisible(INVISIBL_FRAMES),
+                match (chip.family, chip.subfamily) {
+                    // Invisibl's timer is its record's first attack
+                    // parameter, 0x68 for id 177 (ChipDataArr.s:5504;
+                    // assets/chips.bin t[3]=104) -- read, not a const.
+                    (BARRIER_FAMILY, INVISIBL_SUBFAMILY) => {
+                        self.megaman.set_invisible(chip.params[0] as u16)
+                    }
                     // AreaGrab steals nothing here: each orb stole its panel
                     // as it landed (see the orb update above), so by the time
                     // the presentation ends there is nothing left to take.
-                    CHIP_AREAGRAB => {}
-                    _ => {
-                        // Barrier (178/0xb2), Barr100 (179/0xb3) and
-                        // Barr200 (180/0xb4) all share attack_family 0x15
-                        // subfamily 0x04 -- the dispatcher is the record,
-                        // not the chip id (CHIP_BARRIER/CHIP_BARR100/
-                        // CHIP_BARR200 are intentionally deleted). No
-                        // other family-0x15 subfamily-0x04 chip is in
-                        // the 48-record asset, so this is data-driven
-                        // and stays correct under widening.
-                        if chip.family == BARRIER_FAMILY
-                            && chip.subfamily == BARRIER_SUBFAMILY
-                        {
-                            self.megaman.set_barrier(barrier_hp(&chip));
-                            let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
-                            bubble.set_offsets_follow_shift(true);
-                            bubble.set_palette_add(barrier_palette(&chip));
-                            self.bubble = Some(bubble);
-                        }
+                    (BARRIER_FAMILY, AREAGRAB_SUBFAMILY) => {}
+                    // Barrier (178/0xb2), Barr100 (179/0xb3) and Barr200
+                    // (180/0xb4) all share attack_family 0x15 subfamily 0x04
+                    // -- the dispatcher is the record, not the chip id
+                    // (CHIP_BARRIER/CHIP_BARR100/CHIP_BARR200 are
+                    // intentionally deleted). The record table itself
+                    // carries two further 0x15/0x04 blocks (ids 181/182,
+                    // data/ChipDataArr.s:5623/:5654) that the 48-record
+                    // asset does not; the game only ever sees the asset, so
+                    // this stays data-driven under widening.
+                    (BARRIER_FAMILY, BARRIER_SUBFAMILY) => {
+                        self.megaman.set_barrier(barrier_hp(&chip));
+                        let mut bubble = spr::Player::new(spr::Assets::new(BARRIER), 0);
+                        bubble.set_offsets_follow_shift(true);
+                        bubble.set_palette_add(barrier_palette(&chip));
+                        self.bubble = Some(bubble);
                     }
                     _ => {}
                 }
             } else {
                 // One orb per row at the enemy half's edge column, as the
                 // sub_80E0754 loop spawns them (PanelY 1..3).
-                if chip.id == CHIP_AREAGRAB
+                if chip.family == BARRIER_FAMILY
+                    && chip.subfamily == AREAGRAB_SUBFAMILY
                     && left == AREAGRAB_PRESENTATION - AREAGRAB_SPAWN_AGE
                 {
                     for row in 1..=field::ROWS {
@@ -4318,7 +4325,10 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     false,
                 ));
             }
-            CHIP_INVISIBL => {
+            // Invisibl (177) dispatches on the record, not the chip id:
+            // attack_family 0x15, subfamily 0x01 (data/ChipDataArr.s:5499/
+            // :5500).
+            _ if chip.family == BARRIER_FAMILY && chip.subfamily == INVISIBL_SUBFAMILY => {
                 self.presentation = Some((chip, INVISIBL_PRESENTATION));
                 // The name popup is a live-HUD presentation element (canon's builder
                 // sub_801E95C, reference/bn6f asm/asm00_2.s:31328, sharing the banner's
@@ -4340,41 +4350,41 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
-            // AreaGrab needs per-panel ownership, which the field does not
-            // track yet. The stand-in is nothing.
+            // AreaGrab (163) dispatches on the record, not the chip id:
+            // attack_family 0x15, subfamily 0x00 (data/ChipDataArr.s:5065/
+            // :5066). It needs per-panel ownership, which the field does
+            // not track yet. The stand-in is nothing.
             // AreaGrab takes the enemy's front-most column, a row at a time
             // (sub_80E0754, asm31.s:85444, with the chip's first parameter
             // set); it is a presentation chip, so the fight holds first.
-            CHIP_AREAGRAB => {
+            _ if chip.family == BARRIER_FAMILY && chip.subfamily == AREAGRAB_SUBFAMILY => {
                 self.presentation = Some((chip, AREAGRAB_PRESENTATION));
-                // Same live-HUD gate as CHIP_INVISIBL above: the name popup
+                // Same live-HUD gate as Invisibl above: the name popup
                 // shows only while the battle HUD is up (canon mask 0x4497
                 // live vs 0x8084 torn-down; builder sub_801E95C).
                 if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
                     self.popup = Some(NamePopup::new(chip.name()));
                 }
             }
-            _ => {
-                // Barrier family (Barrier 0xb2, Barr100 0xb3, Barr200 0xb4)
-                // dispatch on the record: attack_family 0x15, subfamily 0x04
-                // (ChipDataArr.s:5521/5530/5552/5561/5583/5592). No Barrier
-                // chip id is named here -- the three siblings share one
-                // presentation arm.
-                if chip.family == BARRIER_FAMILY
-                    && chip.subfamily == BARRIER_SUBFAMILY
-                {
-                    self.presentation = Some((chip, BARRIER_PRESENTATION));
-                    // Same live-HUD gate as CHIP_INVISIBL above: the name
-                    // popup shows only while the battle HUD is up (canon
-                    // mask 0x4497 live vs 0x8084 torn-down; builder
-                    // sub_801E95C).
-                    if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
-                        self.popup = Some(NamePopup::new(chip.name()));
-                    }
-                } else {
-                    self.chip_in_use = Some(chip);
-                    self.megaman.attack(actor::BUSTER);
+            // Barrier family (Barrier 0xb2, Barr100 0xb3, Barr200 0xb4)
+            // dispatch on the record: attack_family 0x15, subfamily 0x04
+            // (ChipDataArr.s:5530/:5531, :5561/:5562, :5592/:5593). No
+            // Barrier chip id is named here -- the three siblings share
+            // one presentation arm. Hoisted out of the catch-all so the
+            // default below stays reachable.
+            _ if chip.family == BARRIER_FAMILY && chip.subfamily == BARRIER_SUBFAMILY => {
+                self.presentation = Some((chip, BARRIER_PRESENTATION));
+                // Same live-HUD gate as Invisibl above: the name
+                // popup shows only while the battle HUD is up (canon
+                // mask 0x4497 live vs 0x8084 torn-down; builder
+                // sub_801E95C).
+                if self.fixture.map(|f| f.flags.hud_live()).unwrap_or(false) {
+                    self.popup = Some(NamePopup::new(chip.name()));
                 }
+            }
+            _ => {
+                self.chip_in_use = Some(chip);
+                self.megaman.attack(actor::BUSTER);
             }
         }
     }
