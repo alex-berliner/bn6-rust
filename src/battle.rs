@@ -55,6 +55,13 @@ const PLAYER_HP: u16 = 100; // provenance: derived -- byte_80210DD, data/dat01.s
 /// The real win reward, used until the actual roll is implemented (a
 /// captured save state's own displayed reward).
 const RESULTMATCH_ZENNY: u16 = 100; // provenance: peeked -- the capture's own displayed reward
+/// T112: canon's reward-halfword init (sub_802C9EA's 0xFFFF check,
+/// asm03_0.s:13316-13320; the live stats record 0x0203F4A4+8 watches 0xFFFF
+/// until the battle-end roll overwrites it). 0xFFFF = no reward word.
+const RESULT_REWARD_NONE: u16 = 0xFFFF; // provenance: derived -- sub_802C9EA's no-reward sentinel, asm03_0.s:13316-13320
+/// T112: sub_802C97E's no-record-slot rank (asm03_0.s:13232-13236: record
+/// index 0xFF leaves r4 = 0, stored to eS20364C0+0xe). See `battle_rank`.
+const BATTLE_RANK_NO_RECORD: u8 = 0; // provenance: derived -- sub_802C97E's idx==0xFF branch, asm03_0.s:13232-13236
 /// Where the RESULT window's corner badge lands, from OAM entry 0 of a live
 /// results screen.
 const RESULTS_MARK_AT: (i32, i32) = (37, 21); // provenance: peeked -- OAM entry 0 of a live results screen
@@ -1572,6 +1579,18 @@ pub struct Battle<'a> {
     /// The RESOLVE_OVER stand-in (death before frame 0) starts at Some(0).
     dissolve_in: Option<u8>,
     shown: Option<results::Shown>,
+    /// T112: the rank byte / busting level / zenny amount last fed to
+    /// `results.show` (see `show_results`), exported in the TRC2 block's
+    /// +60/+61/+62 for the results-window trace pair (tools/trace.py).
+    shown_rank: u8,
+    shown_level: u8,
+    shown_zenny: u16,
+    /// T112: the reward halfword, canon's stats-record +8 (0x0203F4AC live /
+    /// 0x02035268 results slot; watched: 0xFFFF until the battle-end roll,
+    /// then 0x4064 = 0x4000 flag | 100 on RESULT_ARRIVAL, probe frame 9).
+    /// The roll that writes it is UNPORTED, named -- see `battle_zenny` -- so
+    /// this stays at RESULT_REWARD_NONE in this build.
+    reward_word: u16,
     /// The regular-chip mark the RESULT window hangs at its top-left corner,
     /// held only while that window is up.
     results_mark: Option<agb::display::object::SpriteVram>,
@@ -1603,8 +1622,10 @@ pub(crate) const ORACLE_SNAPSHOT_LEN: usize = 40; // provenance: chosen -- this 
 /// table): this project's own protocol, so the length is chosen, not read.
 const TRACE_SNAPSHOT_LEN: usize = 64; // provenance: chosen -- this project's own trace protocol (see trace_snapshot's table)
 /// The state-trace block's version word (T1): bumped when the layout above
-/// changes, so tools/trace.py can refuse a stale ROM's block loudly.
-const TRACE_VERSION: u16 = 3; // provenance: chosen -- this project's own trace protocol version (v3: offset-42 exports the sequencer word's low half, T7; was the 0..3 banner-phase mapping)
+/// changes, so tools/trace.py can refuse a stale ROM's block loudly. v4 (T112):
+/// +60/+61/+62 stop being the dead GFX zeros and export the results window's
+/// rank byte, busting level and zenny amount (the trace pair).
+const TRACE_VERSION: u16 = 4; // provenance: chosen -- this project's own trace protocol version (v4: +60 rank, +61 level, +62 zenny, T112; was v3: offset-42 exports the sequencer word's low half, T7)
 /// A fixture field left at its default: 0xFFFF means "no seed"
 /// (art_entry), "default" (gauge_tick), "unset" (banner_at,
 /// result_elapsed) throughout this project's fixture contract.
@@ -1827,8 +1848,12 @@ fn put_oracle_u32(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u32)
 /// 20/19) and the F12 mechanism (this file's popup-gate attribution at
 /// :4345-46, "a pure-layout 64B used-static pad alongside it moves cursor
 /// -28") was the proven cure. Pads tried in ladder order 64 -> 96 -> 128 if
-/// this one does not close cursor (F12's documented ladder).
-static POPUP_GATE_PAD: [u8; 96] = [ // provenance: F12 pure-layout pad -- offset chosen to absorb the binary-shift tear from the family/subfamily gate change
+/// this one does not close cursor (F12's documented ladder). T112: the
+/// results-window words landed in trace_snapshot's +60..64 tail and the rank
+/// byte became computed (battle_rank), moving the binary: cursor tore
+/// 1/1/170/186279 -> 10/9/170/186276 on this branch before the pad grew, so
+/// the ladder's next rung applies -- 96 -> 128 bytes, measured below.
+static POPUP_GATE_PAD: [u8; 128] = [ // provenance: F12 pure-layout pad -- offset chosen to absorb the binary-shift tear from the family/subfamily gate change
     0xA5, 0x3C, 0x77, 0x1E, 0xB2, 0x69, 0xD4, 0x0F,
     0x88, 0x42, 0xC1, 0x55, 0x6A, 0x97, 0x30, 0xEB,
     0x14, 0x7F, 0x58, 0xA9, 0x2C, 0xB6, 0x4D, 0xE0,
@@ -1841,6 +1866,10 @@ static POPUP_GATE_PAD: [u8; 96] = [ // provenance: F12 pure-layout pad -- offset
     0xAB, 0x76, 0xE5, 0x42, 0xCD, 0x09, 0x94, 0x33,
     0x68, 0xBB, 0x2E, 0x91, 0x44, 0xF7, 0x1C, 0x6D,
     0x80, 0x35, 0xDA, 0x07, 0x52, 0x9E, 0x63, 0xCC,
+    0x1E, 0xC9, 0x7A, 0x0F, 0xB4, 0x5D, 0xE6, 0x28,
+    0x93, 0x4A, 0xDF, 0x16, 0x6B, 0xC2, 0x3F, 0xA8,
+    0xD7, 0x04, 0x59, 0xBE, 0x2C, 0x81, 0x36, 0xED,
+    0xF0, 0x6D, 0x92, 0x2B, 0xC8, 0x47, 0xAE, 0x13,
 ];
 impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
@@ -1929,7 +1958,8 @@ impl<'a> Battle<'a> {
     /// | 46  | u16 backdrop GFX entry, u16 GFX timer | 0x020094c0 eGFXAnimStates (ewram.s:596) | backdrop.trace_state() (0s when backdrop: None) |
     /// | 50  | u32 backdrop x_q, u32 backdrop y_q | 0x02009690 eBGScrollCBCounters (ewram.s:619) | as above (canon holds -8f/-4f there) |
     /// | 58  | u16 field_slide (own camera) | 0x020099b4 Camera Y (eCamera+0x34, Camera.inc:26) | self.field_slide (INFO-only: different mechanisms) |
-    /// | 60  | u16 GFX (0), u16 pad | 0x020094c0+4.. | unsupported on our side: 0, never compared |
+    /// | 60  | u8 rank, u8 level | eS20364C0+0xe rank (sub_802C97E, asm03_0.s:13256) / eS+8 level (sub_802C8FA asm03_0.s:13185 via stats 0x0203F4A5) | self.shown_rank/shown_level (T112: `battle_rank` = canon's 0xFF branch; level = the fed `results.show` value) |
+    /// | 62  | u16 zenny amount | eS20364C0+0x14 halfword (stats 0x0203F4AC, sub_802C54C decode asm03_0.s:12691) | self.shown_zenny (T112: the fed `results.show` value) |
     ///
     /// Export-only like oracle_snapshot: nothing reads it back, so it
     /// cannot change behaviour (the rerun rows prove that).
@@ -1978,9 +2008,84 @@ impl<'a> Battle<'a> {
         b[50..54].copy_from_slice(&bd_xq.to_le_bytes()); // trace snapshot layout, see the table above
         b[54..58].copy_from_slice(&bd_yq.to_le_bytes()); // trace snapshot layout, see the table above
         b[58..60].copy_from_slice(&self.field_slide.to_le_bytes()); // trace snapshot layout, see the table above
-        // +60 GFX word: unsupported on our side (no GFX-anim model) -- 0.
-        // +62 pad.
+        // +60..64: T112's results-window words (were the never-compared GFX
+        // zeros): rank byte, busting level byte, zenny amount halfword.
+        b[60] = self.shown_rank; // trace snapshot layout, see the table above
+        b[61] = self.shown_level; // trace snapshot layout, see the table above
+        b[62..64].copy_from_slice(&self.shown_zenny.to_le_bytes()); // trace snapshot layout, see the table above
         b
+    }
+
+    /// T112: canon's results rank byte -- the value `results.show`'s rank
+    /// parameter selects (TIME_BANK + rank recolours the time digits,
+    /// src/results.rs's `TIME_BANK + rank.min(RANK_MAX)`).
+    ///
+    /// Storage, all watched on the `result` route (probe capture
+    /// /tmp/t112/canon_probe, 64 frames, plus --watch-write on the same
+    /// load): the battle-stats record lives at 0x0203F4A4 (+1 level byte,
+    /// +4 clear-time word, +8 reward halfword), latched at the fade by the
+    /// battle-transcript transfer sub_801FF18 (asm01.s:170;
+    /// --watch-write: time 0x0203F4A8 0xFFFFFFFF -> 0x6E0 = 1760 at frame 10,
+    /// level word 0x0203F4A4 -> 0x01010200 at frame 11) and copied to the
+    /// results slot 0x02035260 (+variant*0xc) by sub_800B444
+    /// (asm00_1.s:17986-17991, watched at frame 12). showResultWindow_802C34E
+    /// copies the slot into the window struct eS20364C0 (asm03_0.s:12441-12455):
+    /// level byte -> eS+8 (drawn by drawResultLevel_802C6EC,
+    /// asm03_0.s:12906, called asm03_0.s:11724), reward halfword -> eS+0x14,
+    /// time word -> eS+0x1c.
+    ///
+    /// The RANK byte is eS20364C0+0xe: read by resultWindowSlideTick_802BE36
+    /// (asm03_0.s:11721) and fed to drawResultClearTime_802C4E8's bank select
+    /// (`add r1,#9`, asm03_0.s:12563-12565). It is written once, at the
+    /// window's first frame, by sub_802C97E (asm03_0.s:13232-13257;
+    /// --watch-write 0x020364CE frame 13, old 0 -> new 0): sub_802CA1E
+    /// (asm03_0.s:13324) scans the opponent actor slots for the first
+    /// whose byte_80182C4[3*enemy_idx] row (GetVerActorTyAndAIIdx_80182B4,
+    /// asm00_2.s:19965-19974) reads version 2 (= this ROM, Falzar),
+    /// actor_type 1 (virus) and ai_index 1..0x14, and returns ai_index-1 as
+    /// the record index, 0xFF when none qualifies. With an index the rank is
+    /// 2 when the clear time (eS+0x1c) beats the all-time best
+    /// unk_20018C0[idx], 1 when it beats only the session best
+    /// unk_2000260[idx] (tables maintained by sub_802C9B8,
+    /// asm03_0.s:13259-13290), else 0; index 0xFF leaves rank 0.
+    ///
+    /// UNPORTED, NAMED -- the ticket's missing input stat: our Actor carries
+    /// no canon enemy_idx/ai_index (FIXTURE.md's enemy_kind is two bits:
+    /// Mettaur/Gunner), so the qualifying byte_80182C4 row cannot be read,
+    /// and this build keeps no best-time tables; the scan therefore never
+    /// qualifies an opponent here, which IS canon's own 0xFF branch (rank 0,
+    /// BATTLE_RANK_NO_RECORD). The record branches are cited above, not
+    /// ported; porting them needs the AI tier in the enemy model first.
+    fn battle_rank(&self, time: u32) -> u8 {
+        let _ = time; // the record comparisons' other operand: eS+0x1c, the clear time
+        BATTLE_RANK_NO_RECORD
+    }
+
+    /// T112: the results zenny amount, decoded from the reward halfword
+    /// (`reward_word`, canon's stats-record +8: 0x0203F4AC live /
+    /// 0x02035268 results slot; watched 0xFFFF -> 0x4064 = 0x4000 flag | 100
+    /// on RESULT_ARRIVAL, probe frame 9), consumed as eS+0x14 by
+    /// showResultWindow_802C34E (asm03_0.s:12466-12469) and decoded for
+    /// display by sub_802C54C (asm03_0.s:12691): 0xFFFF = no reward;
+    /// bits 15-14 clear = a CHIP reward (id = word >> 9, count = word &
+    /// 0x1FF) -- not this pair's number, None here; bits 15-14 set = the
+    /// amount in word & 0x3FFF (drawn by revealResultReward_802C044's
+    /// chain, asm03_0.s:11963).
+    ///
+    /// UNPORTED, NAMED: the ROLL that writes the word -- sub_802C8FA's
+    /// sub_80AA8E0 / sub_80AAC8C calls (asm03_0.s:13213-13223;
+    /// asm29.s:10830, 11354: the enemy drop tables walked with
+    /// GetPositiveSignedRNG) -- is not in this build, so `reward_word` stays
+    /// at RESULT_REWARD_NONE and this returns None; every caller takes its
+    /// named fallback (RESULTMATCH_ZENNY at the real-play site, 0 at the
+    /// FIXTURE_UNSET site).
+    fn battle_zenny(&self) -> Option<u16> {
+        let w = self.reward_word;
+        if w == RESULT_REWARD_NONE || w >> 14 == 0 {
+            None
+        } else {
+            Some(w & 0x3FFF) // canon: sub_802C54C's amount mask (asm03_0.s:12705-12706 lsl/lsr #0x12; 12791-12793 is sub_802C5E6, the BCD display path)
+        }
     }
 
     pub fn new(
@@ -2388,6 +2493,10 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 Sequencer::battle()
             },
             shown,
+            shown_rank: 0,
+            shown_level: 0,
+            shown_zenny: 0,
+            reward_word: RESULT_REWARD_NONE,
             results_mark,
             buster_arm_in,
             chip_use_in,
@@ -2459,7 +2568,18 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             gfx.set_background_palette(custom::BANK + i as u8, p);
         }
         self.results_mark = Some(self.custom_assets.mark_sprite());
-        let mut shown = self.results.show(kind, time, level, 0, zenny);
+        // T112: the rank byte is COMPUTED here, never a literal: canon's is
+        // eS20364C0+0xe, written once at the window's first frame by
+        // sub_802C97E (asm03_0.s:13232-13257). Every branch of that routine
+        // is cited in `battle_rank`; the record-table branches stay unported
+        // there (the ticket's missing input stat), which lands on canon's own
+        // no-record-slot branch, rank 0 -- byte-equal to canon's watched
+        // eS+0xe = 0 on every frame of the result route.
+        let rank = self.battle_rank(time);
+        self.shown_rank = rank;
+        self.shown_level = level;
+        self.shown_zenny = zenny;
+        let mut shown = self.results.show(kind, time, level, rank, zenny);
         shown.fast_forward(elapsed);
         if shown.blit_needed {
             self.results.blit_slide(&mut shown);
@@ -3074,7 +3194,16 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 results::WIN,
                 f.result_frames as u32,
                 f.result_level,
-                f.result_zenny,
+                // T112: the descriptor's own +44 only when it carries one;
+                // FIXTURE_UNSET hands the window to `battle_zenny`'s decode
+                // of the (still-unported, see there) reward word -- 0 until
+                // the roll lands. Every existing row carries a real +44
+                // value and keeps its fixture path byte-for-byte.
+                if f.result_zenny == FIXTURE_UNSET {
+                    self.battle_zenny().unwrap_or(0)
+                } else {
+                    f.result_zenny
+                },
                 elapsed,
                 gfx,
             );
@@ -3101,7 +3230,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                     moves: self.moves,
                 });
                 let kind = if won { results::WIN } else { results::LOSE };
-                self.show_results(kind, self.clock, level, RESULTMATCH_ZENNY, 0, gfx);
+                // T112: the zenny amount is COMPUTED here, not the peeked
+                // literal: `battle_zenny` decodes canon's reward halfword
+                // (sub_802C54C, asm03_0.s:12691). The roll that fills
+                // the word is unported (named in `battle_zenny`), so this is
+                // always None today and RESULTMATCH_ZENNY stays as the named
+                // fallback -- byte-identical to the old literal on every row.
+                let zenny = self.battle_zenny().unwrap_or(RESULTMATCH_ZENNY);
+                self.show_results(kind, self.clock, level, zenny, 0, gfx);
             }
         }
         if let Some(window) = self.shown.as_mut() {

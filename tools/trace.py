@@ -58,9 +58,9 @@ ORCL_LEN = O.ORCL_BLOCK_LEN            # from docs/oracle_layout.json, generated
 TRC2_ADDR = 0x02000080
 TRC2_LEN = 64
 TRC2_MAGIC = 0x54524332
-TRC2_VERSION = 3
+TRC2_VERSION = 4  # T112: +60 rank, +61 level, +62 zenny (src/battle.rs trace_snapshot's table)
 
-#: Canon watch set: name -> (addr, len). 13 watches (mgba_capture takes 16).
+#: Canon watch set: name -> (addr, len). 14 watches (mgba_capture takes 16).
 CANON_WATCHES = {
     "rng": (0x020013F0, 4),
     "mm": (0x0203A9B8, 30),
@@ -74,6 +74,12 @@ CANON_WATCHES = {
     "backdrop": (0x02009690, 8),
     "gfx": (0x020094C0, 8),
     "mmbase": (0x0203A9B0, 0x60),
+    # T112: the RESULT window's own struct (showResultWindow_802C34E fills it
+    # from the results slot 0x02035260: level -> +8, reward halfword -> +0x14,
+    # time -> +0x1c; the rank byte at +0xe is sub_802C97E's store,
+    # asm03_0.s:13256). One watch covers rank byte (0xe), level byte (8) and
+    # the zenny halfword (0x14) for the T112 pair.
+    "results": (0x020364C0, 0x20),
 }
 #: Mercy is a pointer chase ([0x0203a9b0+0x54]+0x24 -- T1 probe: 0x02038514
 #: reads 119 on the mettaur hit frame, then counts down), so its address is
@@ -81,9 +87,21 @@ CANON_WATCHES = {
 #: the mmbase stream -- never assumed.
 
 
+def decode_result_reward(word: int) -> int:
+    """sub_802C54C (asm03_0.s:12782-12812), the T112 zenny halfword decode:
+    0xFFFF = no reward; bits 15-14 clear = a CHIP reward (id = word >> 9,
+    count = word & 0x1FF) -- not this pair's number, 0 here; bits 15-14 set =
+    the amount in word & 0x3FFF (0x4064 -> 100, watched on RESULT_ARRIVAL)."""
+    if word == 0xFFFF or word >> 14 == 0:
+        return 0
+    return word & 0x3FFF
+
+
 def parse_canon_frame(streams: dict, mercy_addr: int, i: int) -> dict:
     """One frame's field dict from the canon watch streams (row index i)."""
     g = lambda name: streams[name][i]  # noqa: E731
+    es = g("results")
+    reward = struct.unpack_from("<H", es, 0x14)[0]
     mm = O.canon_fields_mm(g("mm"))
     e1 = O.canon_fields_mm(g("e1"))
     e2 = O.canon_fields_mm(g("e2"))
@@ -117,6 +135,12 @@ def parse_canon_frame(streams: dict, mercy_addr: int, i: int) -> dict:
         camera_x=camx, camera_y=camy,
         backdrop0=bd0, backdrop1=bd1,
         gfx=g("gfx").hex(),
+        # T112: the results-window words. rank = eS20364C0+0xe (sub_802C97E's
+        # store, asm03_0.s:13256); zenny = the +0x14 reward halfword decoded
+        # by sub_802C54C (asm03_0.s:12782-12812); the raw halfword and the
+        # level byte (eS+8, drawResultLevel_802C6EC) ride as info.
+        rank=es[0x0E], results_level=es[8],
+        zenny=decode_result_reward(reward), results_reward_raw=reward,
     )
 
 
@@ -142,6 +166,9 @@ def parse_trc2_row(row: bytes) -> dict:
         backdrop_entry=u16(46), backdrop_timer=u16(48),
         backdrop_xq=u32(50), backdrop_yq=u32(54),
         field_slide=u16(58),
+        # T112: the results-window words (rank byte, level byte, zenny amount
+        # halfword) at +60/+61/+62 -- src/battle.rs trace_snapshot's table.
+        rank=row[60], results_level=row[61], zenny=u16(62),
     )
 
 
@@ -156,10 +183,17 @@ E1_SLOT = {"mettaur": "e2", "popup": None, "result": None, "battle_full": "e2"}
 #: Info fields: recorded and printed, never judged.
 INFO_RUST = ["mercy", "mm_hp", "e1_hp", "gauge", "rng",
              "sequencer", "hud_mask", "backdrop_entry", "backdrop_timer",
-             "backdrop_xq", "backdrop_yq", "field_slide"]
+             "backdrop_xq", "backdrop_yq", "field_slide", "results_level"]
 INFO_CANON = ["mercy", "mm_hp", "e1_hp", "gauge", "rng",
               "banner", "hud_update", "hud_draw",
-              "backdrop0", "backdrop1", "camera_x", "camera_y", "gfx"]
+              "backdrop0", "backdrop1", "camera_x", "camera_y", "gfx",
+              "results_level", "results_reward_raw"]
+
+#: T112: the results-window pair, judged with the PARITY fields (same loop,
+#: same report shape): the rank byte and the decoded zenny amount, ours from
+#: the TRC2 +60/+62 export (the values fed to results.show), canon's from the
+#: eS20364C0 watch (+0xe byte, +0x14 halfword through decode_result_reward).
+T112_PAIRS = ("rank", "zenny")
 
 
 def rows_of(path: str, width: int) -> list:
@@ -439,6 +473,8 @@ def cmd_diff(args) -> None:
         if name.startswith("enemy_") and not has_enemy:
             continue
         out[name] = dict(first=None, count=0, canon=None, rust=None)
+    for name in T112_PAIRS:  # T112: the results-window pair, judged like PARITY
+        out[name] = dict(first=None, count=0, canon=None, rust=None)
     out["rng_cadence"] = dict(first=None, count=0, canon=None, rust=None)
     prev_rrng = prev_crng = None
     for k in range(frames):
@@ -465,6 +501,15 @@ def cmd_diff(args) -> None:
                 rval, cval = rget(rmm), cget(cmm)
             rval = tuple(rval) if isinstance(rval, list) else rval
             cval = tuple(cval) if isinstance(cval, list) else cval
+            if rval != cval:
+                f = out[name]
+                if f["first"] is None:
+                    f["first"], f["canon"], f["rust"] = k, cval, rval
+                f["count"] += 1
+        # T112: the results-window pair -- plain exported/watched fields, same
+        # divergence tail as the PARITY loop above.
+        for name in T112_PAIRS:
+            rval, cval = r[name], c[name]
             if rval != cval:
                 f = out[name]
                 if f["first"] is None:
@@ -506,7 +551,7 @@ def cmd_diff(args) -> None:
             print("  %-18s   k=%-4d..%-4d (canon frame %d..%d) canon=%s rust=%s  %d frames"
                   % ("", k0, k1, c0 + k0, c0 + k1,
                      hex(cval), hex(rval), k1 - k0 + 1))
-    for name in [p[0] for p in PARITY if not (p[0].startswith("enemy_") and not has_enemy)] + ["rng_cadence"]:
+    for name in [p[0] for p in PARITY if not (p[0].startswith("enemy_") and not has_enemy)] + list(T112_PAIRS) + ["rng_cadence"]:
         f = out[name]
         if f["first"] is None:
             print("  %-18s match          %d/%d frames" % (name, frames, frames))
