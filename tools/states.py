@@ -439,6 +439,37 @@ STATES = [
              "which is what pair 4 asked for.",
     ),
     State(
+        name="buster_charge",
+        path="/tmp/buster_charge.state",
+        root=False,
+        rom=STERILE,
+        base=PAUSED,
+        script="Start@10",
+        cheats=DELETE_ENEMY,
+        frames=60,
+        description="T106: the charged-buster route -- the afterdissolve_0x0c state "
+                    "under another name (SAME recipe: PAUSED resumed, Mettaur held at "
+                    "HP 0, saved 60 frames in, banner sequencer in 0x0C). The ticket's "
+                    "'scripted HOLD-A' is NOT in the recipe because it cannot be: in "
+                    "0x0C nothing refreshes the alliance players' AIData from the "
+                    "joypad mirror (F31b's measured wall), so a scripted hold never "
+                    "reaches the pwrAtk handler. The hold is delivered per-capture "
+                    "instead -- a per-frame --cheat on oAIData_JoypadHeld (0x020340a2 "
+                    "= idle 0xfc00 | B) counts oAIData_PwrAtkCurChargeTime up from "
+                    "the state's own frame 0, and the release (released word "
+                    "0x020340a6) plus the shot kind (oAIData_BPwrAtk 0x02034087 = 0x06) "
+                    "are one-shot pokes the frame before -- see the buster_charge row "
+                    "in tools/harness.py.",
+        note="RECIPE-IDENTICAL to afterdissolve_0x0c by design (same base/script/"
+             "cheats/frames): the charge row's canon side needs exactly that scene, "
+             "and the hold cannot be baked into the state (the 0x0C AIData wall "
+             "above). Measured on this recipe's canon captures (T106): held from "
+             "capture frame 0, the charge counter (0x0203409b, watched) reads 1 at "
+             "frame 0 and caps at 100 from frame 99; a released-word poke at frame "
+             "130 is the frame CurAction 0x0203a9b9 is written 0x10 (the charged "
+             "attack, 130..159, back to 0x08 at 160).",
+    ),
+    State(
         name="afterdissolve_0x0c",
         path="/tmp/afterdissolve_0x0c.state",
         root=False,

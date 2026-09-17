@@ -860,6 +860,13 @@ def _aidata_tap_pokes(key_bits: int, first: int) -> Tuple[str, ...]:
 
 BUSTER_AIDATA_POKES = _aidata_tap_pokes(JOYPAD_B, BUSTER_PRESS_POKE)
 
+#: T106: the charged-buster row's release frame -- MEASURED, not chosen: with
+#: the held button forced from the state's own frame 0 (counter caps at 100 by
+#: capture frame 99, watched), the released-word poke at 130 is the frame
+#: CurAction is written 0x10 (the charged attack, 130..159). See the
+#: buster_charge row's Align note.
+CHARGE_RELEASE_FRAME = 130
+
 #: F12 chip-use (2026-09-14): the A press for the Cannon, delivered the F31b way.
 #: A = bit 0 (JOYPAD_A, include/structs/Joypad.inc), the same tap shape as the
 #: buster's: pressed+held on `first`, held on `first`+1, released on `first`+2.
@@ -2364,6 +2371,67 @@ PORTED_CHECKS: List[Check] = [
         ),
         rust=_zero_enemy_rust(held("B", 8 + 100, 2), desc=BUSTER_ZERO),
         canon=_zero_enemy_canon("Start@10", pokes_at=BUSTER_AIDATA_POKES),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="buster_charge",
+        ui="both",
+        frames=32,
+        align=Align(
+            canon_ref=CHARGE_RELEASE_FRAME,
+            search=range(198, 212),
+            note="T106: the CHARGED buster, on the afterdissolve_0x0c route. "
+                 "canon: STERILE + AFTER_DISSOLVE; the buster button is HELD by a "
+                 "per-frame cheat on oAIData_JoypadHeld (0x020340a2 = idle 0xfc00 | "
+                 "B, see BUSTER_AIDATA_POKES for why a scripted press cannot reach "
+                 "AIData in the 0x0C sequencer), so oAIData_PwrAtkCurChargeTime "
+                 "(0x0203409b) counts from the state's own frame 0 and caps at 100 "
+                 "(watched, T106: the counter reads 1 at capture frame 0, 100 from "
+                 "frame 99; DeterminePowerAttackChargeTime, asm00_2.s:9156). The "
+                 "release is a one-shot poke of the released word (0x020340a6) at "
+                 "frame 130. The state's own shot kind is BPwrAtk 0x01 (peeked, "
+                 "T106) -- the NORMAL charged-buster cell -- and the rust side "
+                 "is main's charged-shot path (the dispatch's default cell "
+                 "reproduces it exactly: damage BUSTER_DAMAGE*10 = CHARGED_DAMAGE, "
+                 "the plain buster bolt); the ported Cannon arm (0x06) sits in "
+                 "src/charge_shot.rs, not yet compiled in -- see that file's "
+                 "header for the cursor-veto timing find that held it back. "
+                 "Canon cell 0x01 vs 0x06 differ in 0 pixels over 170 frames of "
+                 "this arena -- the damage 20 vs 42 never shows on a zero-enemy "
+                 "field. Measured (T106): CurAction 0x0203a9b9 goes 0x08 -> "
+                 "0x10 ON the released frame, 130..159, back to 0x08 at 160 -- a "
+                 "30-frame charged attack, the plain buster's 0x11 being 132..159 "
+                 "after its tap. canon_ref is that measured event, not a script frame. "
+                 "rust: B held from battle-frame 100 for 105 frames (a full charge at "
+                 "CHARGE_FRAMES=101), release at 205 -- the charged strike walks the "
+                 "same dispatch in src/charge_shot.rs and fires the Cannon orb. The "
+                 "search band is +-7 marker frames around the predicted event lock 205 "
+                 "(release battle-frame 205 + origin 8 = capture 213, marker 205), wide "
+                 "enough to show the minimum is unique. The rust fixture is "
+                 "CHIPUSE_ZERO (the afterdissolve route's own rust pairing) with "
+                 "SceneFlags::RESOLVE_OVER (0x31): the afterdissolve state's canon "
+                 "side carries the // unnamed: post-shot indicator art (the buster "
+                 "row's (59,52) tile-0x350-pal-10 sighting) from its own frame 0 -- "
+                 "the battle had already fired before the state was saved -- which "
+                 "our side draws only with the resolve flag (flags 0x11: isolated "
+                 "8162 total, a static ~254 px/frame box x76-105 y48-64; 0x31: "
+                 "2498). The ticket's hold threshold "
+                 "prediction (hold >= 24 arms the dispatch) did NOT match measurement: "
+                 "canon's counter caps at 100 and the charged attack only follows a "
+                 "full charge; our arm uses CHARGE_FRAMES (101), the standing constant.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=dict(CHIPUSE_ZERO, flags=0x31),
+                             script=held("B", 8 + 100, 105),
+                             extra=("--disable-bg",) if ui == "isolated" else ()),
+        canon=lambda ui: Side(
+            rom=STERILE,
+            loadstate=AFTER_DISSOLVE,
+            cheats=("0x020340a2:0x%04x" % (AIDATA_HELD_IDLE | JOYPAD_B),),
+            pokes_at=(
+                "128:%s:0x%04x" % (AIDATA_PRESSED, JOYPAD_B),
+                "%d:%s:0x%04x" % (CHARGE_RELEASE_FRAME, AIDATA_RELEASED, JOYPAD_B),
+            ),
+            extra=("--disable-bg",) if ui == "isolated" else ()),
         canon_variant="canon (sterile)",
     ),
     Check(
