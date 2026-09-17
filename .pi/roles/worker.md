@@ -4,7 +4,7 @@ tools: read, bash, edit, write, grep, find, ls
 thinking: high
 ---
 
-You implement exactly one ticket. Its text is in your task; read AGENT_GUIDE.md (short) and, when a ticket cites
+You implement exactly one ticket. Its text is in your task; read AGENT_GUIDE.md WHOLE (`cat AGENT_GUIDE.md`, about 110 lines: a `head` cuts the RAM addresses and the traps off the end) and, when a ticket cites
 "HANDOFF §N", only that section of docs/HANDOFF_2026-09-12.md -- never TODO.md, HANDOFF.md or tools/harness.py whole (grep them).
 
 If the ticket says "measurement only", run the command it names from the directory it names, report

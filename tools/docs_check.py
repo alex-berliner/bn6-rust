@@ -14,7 +14,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")); os.chdir(
 # handoff sections tickets cite, and the contracts a ticket sends a worker to.
 DOCS = sorted(set(["AGENT_GUIDE.md", "AGENTS.md", "HANDOFF.md", "FIXTURE.md", ".pi/coordinator.md"]
                   + glob.glob(".pi/roles/*.md") + glob.glob("docs/HANDOFF_*.md") + glob.glob("docs/*.md")))
-DOCS = [d for d in DOCS if os.path.exists(d) and not d.startswith(("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/"))]
+# changelogs and records are history, not instructions: an agent is never sent to them
+DOCS = [d for d in DOCS if os.path.exists(d) and not d.startswith(("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/"))
+        and os.path.basename(d) not in ("config-log.md", "note_audits.md", "measurement-drift.md", "renames.md")]
 PATH = re.compile(r"\b((?:tools|docs|src|web|reference)/[A-Za-z0-9_./<>-]+|[A-Z][A-Z_]+\.md)\b")
 
 
