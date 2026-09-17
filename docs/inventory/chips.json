@@ -2131,7 +2131,7 @@
    "damage": 10,
    "mb": 8,
    "cite": "data/ChipDataArr.s:5056",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 164,
@@ -2313,7 +2313,7 @@
    "damage": 0,
    "mb": 30,
    "cite": "data/ChipDataArr.s:5490",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 178,
@@ -2326,7 +2326,7 @@
    "damage": 0,
    "mb": 7,
    "cite": "data/ChipDataArr.s:5521",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 179,
@@ -2339,7 +2339,7 @@
    "damage": 0,
    "mb": 30,
    "cite": "data/ChipDataArr.s:5552",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 180,
@@ -2352,7 +2352,7 @@
    "damage": 0,
    "mb": 52,
    "cite": "data/ChipDataArr.s:5583",
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 181,

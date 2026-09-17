@@ -216,7 +216,7 @@ ported or listed out of scope with a reason).
 | 160 | Recov200 | IQZ | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4963 | verified-pixels |
 | 161 | Recov300 | JOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4994 | verified-pixels |
 | 162 | PanlGrab | * | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5025 | unrecorded |
-| 163 | AreaGrab | BFS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5056 | verified-pixels |
+| 163 | AreaGrab | BFS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5056 | verified |
 | 164 | GrabBnsh | BMS | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:5087 | unrecorded |
 | 165 | GrabRvng | IQZ | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5118 | unrecorded |
 | 166 | PnlRetrn | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5149 | unrecorded |
@@ -230,10 +230,10 @@ ported or listed out of scope with a reason).
 | 174 | FullCust | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5397 | unrecorded |
 | 175 | BusterUp | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:5428 | unrecorded |
 | 176 | BugFix | KPZ* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5459 | unrecorded |
-| 177 | Invisibl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5490 | verified-pixels |
-| 178 | Barrier | AFR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5521 | verified-pixels |
-| 179 | Barr100 | HOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5552 | verified-pixels |
-| 180 | Barr200 | KUW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5583 | verified-pixels |
+| 177 | Invisibl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5490 | verified |
+| 178 | Barrier | AFR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5521 | verified |
+| 179 | Barr100 | HOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5552 | verified |
+| 180 | Barr200 | KUW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5583 | verified |
 | 181 | BblWrap | IQZ | standard | CHIP_ELEM_AQUA | 0 | data/ChipDataArr.s:5614 | unrecorded |
 | 182 | LifeAur | U | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5645 | unrecorded |
 | 183 | MagCoil | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5676 | unrecorded |
