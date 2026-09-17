@@ -11,7 +11,8 @@ mechanical steps are scripts -- use them instead of doing their work by hand.
    non-zero, STOP. Then `python3 tools/next_ticket.py --pair N --claim` (N = the number of workers the
    instruction allows, default 2, or what `python3 tools/roles.py workers <run>` prints when the instruction
    says to ask it each cycle -- 0 means let the tickets in flight finish and STOP; --claim marks the printed tickets as this run's, so a parallel run skips them): it prints the first OPEN ticket and, after each `=== PAIR ===`, another
-   OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints "no OPEN ticket": run `bash tools/pi_judge.sh` (it prints a proposal file path), then
+   OPEN ticket whose `**Files.**` overlap none of the earlier ones (or `=== NO PAIR ===`). If it prints FEWER tickets than the run has worker slots (three runs now share one queue, and a coordinator
+   that finds nothing idles for half an hour before the launcher tries again), run `bash tools/pi_judge.sh` (it prints a proposal file path), then
    `python3 tools/judge_append.py <that file>`; if it admitted a ticket, continue the loop from step 1;
    if it admitted none, STOP. Never read TODO.md whole.
 2. **Dispatch.** Start each printed ticket's worker with `async: true`, using the roles in the order the
