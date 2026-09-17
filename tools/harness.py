@@ -3454,6 +3454,55 @@ PORTED_CHECKS: List[Check] = [
                               script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
     ),
+    Check(
+        name="emotion_cross",
+        ui="isolated",
+        frames=40,
+        align=ALIGN_CHIP,
+        # T123: the cross-state face -- the slot-5 art canon reaches ONLY
+        # through the transformation table byte_801E700 (asm00_2.s:31049),
+        # not through the enum table byte_801E6F4 (whose enum 4 -> slot 5
+        # arm is unreachable, possiblyGetBattleEmotion_8015B64 never
+        # returns 4 -- asm00_2.s:15122-15174). transformation 1 -> base
+        # slot 5 (byte_801E700[1] = 5); the full-synchro +5 adjustment
+        # (sub_801E6A8 asm00_2.s:30975-31001) needs byte_801E6F4[enum] == 2
+        # and this route's enum is 0 (no AIData poke), so the slot stays 5.
+        #
+        # canon: the battle NaviStats.Transformation byte poked to 1 at
+        # load -- eBattleNaviStats0 = 0x0203ce00 (ewram.s:3109),
+        # oNaviStats_Transformation = 0x2c (include/structs/NaviStats.inc),
+        # read per frame by possiblyGetBattleEmotion_8015B64 via
+        # GetBattleNaviStatsAddr (asm00_2.s:10159). MEASURED (T123 step 1/2,
+        # probe.py watch, 100 capture frames, this recipe): the byte is
+        # 0x00 in the PAUSED state and --watch-write shows NOTHING writes
+        # it during the window, so the load poke survives; the resolved
+        # slot halfword eStruct2035280+0x10 (0x02035290) reads 0x0005 on
+        # every frame 38..99 and the blink countdown +0xf (0x0203528F)
+        # reads 0x00 throughout, so the face draws on all 40 compared
+        # frames (the countdown's 5/6 blanking phases never occur on this
+        # route). An Unk_32 poke ON TOP of it lands slot 10 (5+5 through
+        # the synchro adjustment, measured) -- that is why this row does
+        # NOT carry the Unk_32 poke its siblings do.
+        #
+        # rust: the same descriptor with emotion=5 (+63) -- the slot 5 art
+        # (FACE_INDEX[5] = 0x780) and slot 5's palette, which
+        # assets/emotion.bin carries (T122 verified its 0x1900 bank equals
+        # dword_872D814 and its palette run dword_872F114).
+        #
+        # NEGATIVE: the frame-shift control, same as its three siblings.
+        rust=_chip_rust("b1", flags=0x5F, emotion=5),
+        # emotion_syn's canon side verbatim with the Unk_32 halfword swapped
+        # for the transformation one -- the face poke is the ONLY delta.
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1") + ("0x0203ce2c:0x0001",),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
+                              script="Start@10,A@40", extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
+    ),
 ]
 
 CHECKS.extend(PORTED_CHECKS)
