@@ -347,3 +347,28 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
+### T106. M7 charge shot dispatch: port one shot_kind cell of off_80117D4 into a fresh `buster_charge` scenario  *(OPEN)*
+
+**Why.** SCOPE M7 prose lists "charge shots" with the M7 row at 0/25. T15 PARTIAL (LANDED 152ce3c) finds the charge-shot dispatch table off_80117D4 (asm/asm00_2.s:5789, 8 entries 0x06..0x0D by shot_kind) and the per-shot arm sub_8011818 (asm00_2.s:5801). Charge shots are reproducible from a F5b-pattern scripted input: HOLD A from f0 of the per-attack action state, NO window. The existing buster row uses TAP-A; a fresh `buster_charge` scenario builds on `afterdissolve_0x0c` with HOLD-A scripted. shot_kind=0x06 (Cannon) is the simplest cell — same Cannon attack power, only the held pose and palette differ. Success unblocks the other 7 shot_kinds. **No prior ticket on charge shots** (grep TODO/TODO_ARCHIVE for `charge_shot` returns nothing — T105 prose cites emotion only).
+
+**Files.** `src/charge_shot.rs` (NEW: per-shot_kind dispatch; CANNON case; const table from off_80117D4 with `// provenance: off_80117D4 asm00_2.s:5789`), `src/battle.rs` (wire HOLD-A observation into t1_player_entry so the per-attack state sees the hold timer), `tools/states.py` (ONE scenario `buster_charge` = `afterdissolve_0x0c` + scripted HOLD-A@chip_pick + L@open), `tools/harness.py` (ONE row `buster_charge`: canon=HOLD scripted, negative=TAP-A@chip_pick → matches the existing buster row TAP-A trace), `docs/coverage/forms.md` (NEW), `docs/worklog/T106.md`. **NOT** src/chips.rs, src/objects.rs, src/ai.rs, src/emotion.rs, src/fixture.rs, tools/trace.py, tools/oracle.py, tools/allowlist.py, tools/inventory.py, tools/mgba_capture.c, reference/bn6f.
+
+**Do.**
+1. **Recon:** cite every cell of off_80117D4 (asm00_2.s:5789) with its shot_kind; cite the per-shot OBP/palette table (off_81333B0 stride 0x10) with `// unnamed: <hold-pose palette table>` if the symbol is not in bn6f; cite sub_80118A4 (asm00_2.s:5837) palette-swap; cite the hold-timer counter file:line. **measurement.**
+2. Baseline, no edit: build ROM, sha256 + size; verify_rows 8-row guard set (opening/mettaur/cannon/buster/chip-use/wave/windowclose/cursor) PASS; capture `buster_charge` TAP-scripted → first 32 frames match the existing buster row pixel-for-pixel (negative confirms scenario = TAP). **measurement.**
+3. Add `buster_charge` scenario with HOLD scripted + the `buster_charge` row (canon=HOLD, negative=TAP). **code change + measurement.**
+4. Port one charge-shot cell: src/charge_shot.rs `ChargeShot::update(shot_kind=0x06, hold_timer)` arm; src/battle.rs invokes from t1_player_entry when hold_A ≥ 24 frames. Rebuild, sha256+size. **code change + measurement.**
+5. Re-run: `buster_charge` 0/0/32 with non-blind negative; OAM byte at the shot position first divergence **none**; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. **measurement.**
+
+**Rules.** Art from canon bytes, not redrawn. One const table per shot_kind, cited. Scripted HOLD carries `peeked` provenance. Cursor veto ≤1/1/170/186300. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `buster_charge` 0/0/32 with non-blind negative; OAM byte at shot position first divergence **none**; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. NEGATIVE naming canon's measured no-charge behavior (frames + bytes + cite) closes it.
+
+**Measure and report.** rows: buster_charge + 8-row guard set; frames 32 each. Charge-shot cite + OBP/palette per shot_kind, before/after pixel totals, OAM byte trace, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the other 7 shot_kinds).
+
+**Coordinator:** owns src/charge_shot.rs + the row; runs alone (owns tools/states.py + tools/harness.py). Free tier: verify_rows from a clean checkout on the 9-row set; verifier for step 1's off_80117D4 + off_81333B0 cites. ≤$0.20 expected, ≤$0.40 cap.
+
+**Milestone advanced:** M7 (forms charge-shot 0/25 → 1/25 first port).
+
+---
+
