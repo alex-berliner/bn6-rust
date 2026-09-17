@@ -61,12 +61,16 @@ TRC2_MAGIC = 0x54524332
 TRC2_VERSION = 4  # T112: +60 rank, +61 level, +62 zenny (src/battle.rs trace_snapshot's table)
 
 #: Canon watch set: name -> (addr, len). 14 watches (mgba_capture takes 16).
+#: e1/e2/e3 are 34 bytes: +0x08..+0x29 of the BattleObject -- the extra 4
+#: reach NameID (+0x28, BattleObject.inc:109), which T131's byte-equality
+#: check reads at row 0x20; the pre-T131 30-byte len stopped at +0x25 and
+#: all fields parse_canon_frame consumes sit at row offsets <= 0x1c.
 CANON_WATCHES = {
     "rng": (0x020013F0, 4),
     "mm": (0x0203A9B8, 30),
-    "e1": (0x0203AA90, 30),
-    "e2": (0x0203AB68, 30),
-    "e3": (0x0203AC40, 30),
+    "e1": (0x0203AA90, 34),
+    "e2": (0x0203AB68, 34),
+    "e3": (0x0203AC40, 34),
     "banner": (0x0203CA70, 4),
     "hud": (0x020352C0, 8),
     "gauge": (0x020352A0, 2),
@@ -125,6 +129,15 @@ def parse_canon_frame(streams: dict, mercy_addr: int, i: int) -> dict:
             "(re-resolve tools/trace.py's recipe, not the table)" % (mercy_addr, i, ptr))
     return dict(
         rng=struct.unpack("<I", g("rng"))[0],
+        # T131: the chosen BattleSettings record pointer (canon:
+        # oGameState_CurBattleDataPtr 0x02001b9c = BattleState+0x38), watched
+        # only on scenarios declaring extra_watches {"settings": ...}.
+        settings=struct.unpack("<I", g("settings"))[0] if "settings" in streams else None,
+        # T131: BattleObject.NameID (+0x28, BattleObject.inc:109) rides inside
+        # the existing 30-byte e-watches (watch base = object+0x08 -> row 0x20).
+        e1_name_id=struct.unpack_from("<H", g("e1"), 0x20)[0],
+        e2_name_id=struct.unpack_from("<H", g("e2"), 0x20)[0],
+        e3_name_id=struct.unpack_from("<H", g("e3"), 0x20)[0],
         mm_state_action=(mm["state"], mm["action"]),
         mm_anim=mm["anim"], mm_panel_x=mm["panel_x"], mm_panel_y=mm["panel_y"],
         mm_timer=mm["timer"], mm_hp=mm["hp"],
@@ -256,6 +269,12 @@ def cmd_record(args) -> None:
     side = scenario_side(scen, args.side)
     os.makedirs(args.out, exist_ok=True)
     if args.side == "canon":
+        # T131: a scenario may carry extra_watches (same --watch mechanism,
+        # per-scenario so the 16-watch capture budget stays intact).
+        watches = dict(CANON_WATCHES)
+        watches.update(scen.get("extra_watches", {}))
+        for name in scen.get("drop_watches", ()):
+            watches.pop(name, None)  # T131: keep the scenario inside mgba's 16-watch cap
         # The compared window starts at canon_ref: capture through its end.
         count = scen["canon_ref"] + scen["frames"] + 4
     else:
@@ -264,7 +283,7 @@ def cmd_record(args) -> None:
         count = scen["rust_base"] + scen["frames"] + 32
     cmd = [CAPTURE, side.resolved_rom(), args.out, str(count)] + side.args()
     if args.side == "canon":
-        for name, (addr, ln) in CANON_WATCHES.items():
+        for name, (addr, ln) in watches.items():
             cmd += ["--watch", "%#x:%d:%s" % (addr, ln, os.path.join(args.out, name + ".bin"))]
         mercy_addr = scen["mercy_addr"]
         cmd += ["--watch", "%#x:2:%s" % (mercy_addr, os.path.join(args.out, "mercy.bin"))]
@@ -277,7 +296,7 @@ def cmd_record(args) -> None:
         raise SystemExit("capture failed: %s" % r.stderr[-2000:])
     if args.side == "canon":
         streams = {n: rows_of(os.path.join(args.out, n + ".bin"), ln)
-                   for n, (_, ln) in CANON_WATCHES.items()}
+                   for n, (_, ln) in watches.items()}
         streams["mercy"] = rows_of(os.path.join(args.out, "mercy.bin"), 2)
         table = [parse_canon_frame(streams, scen["mercy_addr"], i) for i in range(count)]
     else:

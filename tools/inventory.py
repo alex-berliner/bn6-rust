@@ -1350,18 +1350,34 @@ def parse_formations():
             "note": "outside every span (record lists incl. full 4-byte terminator slot, 16-word map arrays, referenced arrays incl. 0xF0) fall 80 bytes = 52 orphan-run bytes (orphan_quad_runs) + 28 align-pad/sliver bytes (residual_pad_bytes, 0x00/0xff fill); none of the orphan runs is named by any ROM word",
         }}
 
+    # T131: formations fielded by a canon capture, keyed by the RECORD whose
+    # pointer the game carried in GameState.CurBattleDataPtr 0x02001b9c
+    # (battleSettingsList0 rec163 = 0x080aee70 + 163*0x10,
+    # getBattleSettingsFromList0 asm/asm00_1.s:16048-16056; adopted by the
+    # roll's OPT path asm/asm29.s:10216-10234 in the battlestart_scripted
+    # state). A row referenced by such a record moves off "unrecorded" to
+    # "recorded (canon)" with the scenario name.
+    recorded_canon = {
+        0x080af8a0: "battlestart_scripted",
+    }
     form_rows = []
     for ptr, ents in form.items():
         in_a = any(FAM_A[0][1] <= ptr < 0x080B1BBC for _ in [0])
-        form_rows.append({
+        rec_addrs = refs.get(ptr, [])
+        scenario = next((scn for rec, scn in recorded_canon.items()
+                         if any(x.startswith("rec 0x%08x" % rec) for x in rec_addrs)), None)
+        row = {
             "formation": labels.get(ptr, f"rom_{ptr:08x}"),
             "entries": len(ents),
             "enemy_ids": [f"{q[2]:02x}" for q in ents],
             "referenced_by": refs.get(ptr, []),
             "cite": f"reference/bn6f/bn6f.gba:0x{ptr:08x}"
                     + (" (within data/BattleSettings.s spans)" if in_a else " (unlabeled encounter-tree array)"),
-            "status": "unrecorded",
-        })
+            "status": "recorded (canon)" if scenario else "unrecorded",
+        }
+        if scenario:
+            row["scenario"] = scenario
+        form_rows.append(row)
     form_rows.sort(key=lambda r: r["formation"])
     return lists, form_rows
 
@@ -2062,7 +2078,7 @@ def main():
                 + " / ".join(f"{s} ({r})" for s, r, _p in STATUS_M3_CANDIDATES),
                 statuses)),
 
-        ("M1", ("formations (M8)", f"ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), {nrec} records over {nlists} lists (2 scripted + {nlists - 2} encounter-tree), {len(form_rows)} 0xF0-terminated formation arrays (section denominator = {len(form_rows)} arrays, all rows status unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
+        ("M1", ("formations (M8)", f"ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), {nrec} records over {nlists} lists (2 scripted + {nlists - 2} encounter-tree), {len(form_rows)} 0xF0-terminated formation arrays (section denominator = {len(form_rows)} arrays, {sum(1 for r in form_rows if r['status'] != 'unrecorded')} recorded (canon) via the referencing record, rest unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS, byte->art CLOSED (T65 pass 3; mapping verified + poked T70): BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592; for scripted battles also sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599); the byte is read at battle init by sub_8081308 (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] :473-475, called from sub_8080DA0 asm/asm21.s:15-45 via initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435) and indexes off_8080F98[r] -> LoadBGAnimData (asm/asm03_0.s:21209) = explicit LZ77 tiles/tilemap/palette pointers: 0x07/0x08 = the Comps1/Comps2 bg art in its two palette variants (id 6 is the RobotControlComp art), 0xff = map default (real 7, net pt_808139C[group-0x80][map] asm/asm21.s:548-564, weather-puzzle maps 0x15/0x10) -- census in rows below; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
