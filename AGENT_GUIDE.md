@@ -39,7 +39,9 @@ come from a command you ran in that session.
   `sub_8109EF4` became `ForMettaur_8109EF4` and so on). `reference/bn6f/docs/renames.md` maps old to new,
   and every new name keeps the address as its suffix, so searching by address always works.
   `reference/bn6f/docs/decomp/*.c` is a different, older decompilation under the old names.
-- `reference/bn6f` is read-only for you: never edit it, never commit in it.
+- `reference/bn6f` is improved as we learn (Monday: 321 symbols renamed), but not by you mid-ticket: the gate is a
+  rebuild to the ROM's sha1. If you work out what an `Unk_` field or an unnamed routine is, say so in your report
+  and work log with the evidence; the morning pass carries it into the disassembly and the decompiled C.
 - A comment that cites a fact's provenance points at `docs/provenance.md#<id>` (e.g.
   `#7aw` for the save-state-at-first-frame fact, `#7ao` for the read-arcs-out-of-the-object
   fact); read only that section. The historical journal `TRANSFER.md` stays in place but its

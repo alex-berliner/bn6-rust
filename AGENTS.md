@@ -21,7 +21,9 @@ Keep this file short and stable: it is loaded into every child's context.
   stage by path (`git add -u <path>`); never `git add -A`; never push (the coordinator pushes). Never commit
   on main: work happens on your worktree branch, and only `tools/land.sh` merges it, after `verify_rows`
   reproduces your numbers from a clean checkout. `--no-verify` is refused for any branch that changes code.
-- `reference/bn6f` is read-only for agents. Copyrighted inputs (ROMs, save states, saves) are never
+- `reference/bn6f` is the project's own disassembly and it does get improved (names, struct fields), but never
+  by you inside a ticket: its gate is a full rebuild to the ROM's sha1, which is not part of your loop. Read it,
+  cite it, and put what you learned in your report or work log; a tooling pass propagates it. Copyrighted inputs (ROMs, save states, saves) are never
   tracked; never `git add -f` anything gitignored.
 - Captures are bounded by a machine-wide semaphore (3 slots, `BN_CAPTURE_SLOTS`), so a row's captures
   overlap and two processes cannot overload the box; still run one harness command at a time yourself.
