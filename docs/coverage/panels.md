@@ -117,20 +117,32 @@ finding itself. Canon-side observation only; no row semantics changed.
   `Flags = (Flags & ~0x3f0f) + 3` (asm/object.s:2215-2218) clears exactly the table's per-type
   low bits (0-3, 8-13); normal's word 0x10010 has no bit inside that mask, so crack = OR 0x40 →
   0x10050 = the type-3 word exactly.
-- **Live measurement** (canon, chip-poisseed route, `--watch 0x02039C00:0x320`, 260 frames):
-  canon frame 52 the seed object appears over its target panel (that panel's flags gain the
-  0x80000000 ally-attack bit); frame 53 `object_panel_setPoison` (object.s:2540-2563) runs on
-  SIX panels — cols 4-6 × rows 1-2: flags 0x00010032 → 0x00010134, which is setPoison's own
+- **Live measurement** (canon, chip-poisseed route, `--watch 0x02039C00:0x320`, 260 frames;
+  raw capture preserved at `/tmp/t121b_wide.txt` and re-parsed by T130 2026-09-18 — the file
+  DOES carry values, see docs/worklog/T130.md step 0): canon frame 52 the seed object appears
+  over its target panel (that panel's flags gain the 0x80000000 ally-attack bit); frame 53
+  `object_panel_setPoison` (object.s:2540-2563) runs on **NINE panels — cols 4-6 × rows 1-3,
+  the enemy half 3x3** (T121b's original "six, rows 1-2" missed the back row; re-parsed from
+  the preserved capture): flags 0x00010032 → 0x00010134, which is setPoison's own
   masked template `(Flags & ~0x3f5f) | 0x114` measured byte-for-byte, with `Type` 02→04 and
-  `Animation` 02→04 (its two `strb #4` stores, :2552-2554). The 3x2 area loop is the seed
-  gimmick's per-CurState writer table `byte_80E2588` (asm31.s:89654-89667: crack/break/poison
-  writers, each entry gated by the 0x10 guard byte setPoison tests at :2544-2546), dispatched by
-  `t4_0x1e_80E25D0` (asm31.s:89669-89682).
+  `Animation` 02→04 (its two `strb #4` stores, :2552-2554). The area is the seed
+  gimmick's writer table `byte_80E2588` (asm31.s:89651-89667: 3 entries × 0x18, crack /
+  break / poison writers at entry+0x14, **Param1 picks the entry** (`Param1*0x18`,
+  sub_80E25F0 asm31.s:89683-89711) while **CurState picks the routine** (off_80E25E4,
+  t4_0x1e_80E25D0 asm31.s:89665-89681)); the per-entry `0x10` bytes are check words fed to
+  `object_checkPanelParameters` (object.s:2688-2713) by the collector sub_80E269A
+  (asm31.s:89775-89810) — an unrelated 0x10 to setPoison's own immediate `#0x10` guard
+  against the panel's Flags (:2544-2546).
 - **Writer map for M3's first rule**: the live poison route does NOT go through the setter path
   (`_object_setPanelType` → `_object_updatePanelParameters`, the table-OR path): setPoison
   writes its own template 0x114 = the table's 0x110 + an unnamed 0x4 bit it sets itself, and the
   mask clears 0x2 (blocks movement) while OR-ing 0x100. The table's type-4 word and the live
-  writer's template differ only in that 0x4. Aside: `Unk_12` measured 0x0708 on fresh NORMAL
+  writer's template differ only in that 0x4. **Guard polarity (corrected by T130):**
+  `tst r1,#0x10; beq` branches to the return-0 tail when the bit is CLEAR (object.s:2544-2546),
+  so a panel is poisoned only when `Flags & 0x10` IS SET — normal panels carry it
+  (0x00010032/0x00010012), the hole (0x18000) and broken (0x14000) words do not: poison cannot
+  land on a hole or broken panel. Same guard shape across the crack/break family
+  (object.s:2215-2563). Aside: `Unk_12` measured 0x0708 on fresh NORMAL
   panels (frame-0 dump) — the 9..0xC setter arm is not that value's only writer; tickPanels'
   regen writes it too (asm/object.s:1430-1434).
 - **Bounded NEGATIVE (row not built)**: a `panel_poison` fixture row needs a type change driven
