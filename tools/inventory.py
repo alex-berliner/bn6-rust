@@ -1040,7 +1040,27 @@ def parse_formations():
     +0x4 proven by asm/asm03_0.s:14591-14593); byte[0]==0xff ends a list
     (T58's self-check); byte[4] Background; byte[7] gate handler index
     (JumpTable80AA6B8, asm29.s:10471); u32@0xc EnemySetupArrPtr ->
-    0xF0-terminated 4-byte quads, quad[2] = enemy id (inventory.py:1060)."""
+    0xF0-terminated 4-byte quads, quad[2] = enemy id (inventory.py:1060).
+
+    T65 PASS 3 -- spawn dispatch and the 0x00 quad id.  Each quad dispatches
+    on quad[0]>>4 into off_80073A0 (SpawnBattleObjectUsingBattleEntityConfig_
+    8007368, asm/asm00_1.s:8569-8599: test (quad[0]&0xF0)==0xF0 ends the
+    array, `lsr r0,#2` then `ldr r1,[table+r0]` = nibble*4 = entry n):
+    0=spawnMegaMan_80073CC (asm00_1.s:8635-8648), 1=spawnEnemy_80073E2
+    (enemy_idx = quad[2], asm00_1.s:8727), 2=spawnMysteryData_8007424,
+    3=spawnRock_8007450, 8=spawnRockCube_80074FA, 9=spawnGuardian_800751C,
+    10=spawnMetalCube_800748A.  quad[1] = panel x|y<<4, quad[3] low nibble =
+    version.  So the "0x00 quad id" flagged uninterpreted in pass 1+2 is the
+    PLAYER-SPAWN slot: 1045/1076 arrays carry quad[2]==0, and in 991 of them
+    every such quad is the dispatch-0 (player) entry whose quad[2] is unused;
+    the other 54 arrays carry quad[2]==0 only in mystery-data/rock/guardian
+    quads (nibbles 2/3/9/10), which do not read an enemy id.  ZERO dispatch-1
+    (enemy) quads have enemy_idx 0 in the whole census, so enemy_idx 0 never
+    spawns from a formation.  PASS 3 residue: every byte of the data region
+    0x080aff44..0x080b81e3 is accounted by record lists (terminator 0xFF +
+    3-byte align pad), 16-word map arrays and referenced arrays (incl. 0xF0),
+    except the four unreferenced quad runs reported in the residue_pass3 key
+    (all merges/addresses recomputed here, not assumed)."""
     rom = open(os.path.join(REF, "bn6f.gba"), "rb").read()
 
     def w(addr):
@@ -1051,12 +1071,16 @@ def parse_formations():
         m = re.match(r"\s+0x(0*8[0-9a-f]{7})\s+(\S+)", line)
         if m:
             labels.setdefault(int(m.group(1), 16), m.group(2))
-    for m2 in re.finditer(r"(?m)^(byte_[0-9A-Fa-f]+)::", open(
+    for m2 in re.finditer(r"(?m)^((?:byte|dword)_[0-9A-Fa-f]+)::", open(
             os.path.join(REF, "data", "BattleSettings.s"), errors="replace").read()):
-        # byte_* labels live only in data/BattleSettings.s (address embedded
-        # in the name), not in bn6f.map -- carry them so family-A formation
-        # arrays keep the label names the T50 baseline had
-        labels.setdefault(int(m2.group(1)[5:], 16), m2.group(1))
+        # byte_*/dword_* labels live only in data/BattleSettings.s (address
+        # embedded in the name), not in bn6f.map -- carry them so family-A
+        # formation arrays keep the label names the T50 baseline had.  The
+        # file's single dword_ label (dword_80B083B) NAMES a referenced array
+        # start whose first quad the old parse labeled separately as
+        # byte_80B083F (an interior continuation label at +4 -- that overlap
+        # is why the .s parse counted 297 arrays for 296 referenced starts).
+        labels.setdefault(int(m2.group(1).split("_")[1], 16), m2.group(1))
 
     def walk_list(la):
         off = la - 0x08000000
@@ -1091,12 +1115,13 @@ def parse_formations():
              "EVENT_680": 0x08020180, "EVENT_681": 0x08020188}
     REAL_GROUPS = 21      # canon: off_8020190 block 0x08020190..0x080201E4
     INTERNET_GROUPS = 23  # canon: 0x080201E4 + 23*4 = 0x08020240 = pt_8020240 (asm/asm01.s:555-580)
-    map_arrs = {}
+    map_arrs, gas = {}, set()
     for vname, vaddr in ROOTS.items():
         for world, base, n in (("real", w(vaddr), REAL_GROUPS),
                                ("net", w(vaddr + 4), INTERNET_GROUPS)):
             for g in range(n):
                 ga = w(base + 4 * g)
+                gas.add(ga)
                 map_arrs[(vname, world, g)] = [w(ga + 4 * m) for m in range(16)]
     list_addrs, owners, seen = [], {}, set()
     for vname in ROOTS:
@@ -1113,8 +1138,9 @@ def parse_formations():
         recs, term = walk_list(la)
         fam_b[la] = {"recs": recs, "term": term}
 
-    # formation arrays across BOTH families
-    form, mismatches = {}, []
+    # formation arrays across BOTH families, with the census records that
+    # reference each (PASS 3: every array is named by its referencing records)
+    form, mismatches, refs = {}, [], {}
 
     def add_form(ptr, src):
         if ptr not in form:
@@ -1122,13 +1148,64 @@ def parse_formations():
             form[ptr] = ents
             if st != "ok":
                 mismatches.append((f"0x{ptr:08x}", st, src))
+        refs.setdefault(ptr, []).append(src)
         return form[ptr]
 
     for la, L in list(fam_a.items()) + list(fam_b.items()):
+        lname = L.get("name", f"0x{la:08x}")
         for ra, r in L["recs"]:
-            add_form(struct.unpack_from("<I", r, 0xC)[0], f"rec 0x{ra:08x}")
+            add_form(struct.unpack_from("<I", r, 0xC)[0], f"rec 0x{ra:08x} ({lname})")
         if L["term"] != "ok":
             mismatches.append((f"0x{la:08x}", L["term"], L.get("name", "encounter list")))
+
+    # PASS-3 residue scan: interval-account the whole data region.  Explained
+    # = record lists (0xFF terminator + the 3-byte align pad to the next
+    # record slot), the 16-word map arrays, and every referenced formation
+    # array (quads + 0xF0).  What survives is a true orphan, not a parse gap.
+    spans = [(la, la + 0x10 * len(L["recs"]) + 1)
+             for la, L in list(fam_a.items()) + list(fam_b.items())]
+    spans += [(ga, ga + 0x40) for ga in gas]
+    for ptr, ents in form.items():
+        spans.append((ptr, ptr + 4 * len(ents) + 1))
+    merged = []
+    for a, b in sorted(spans):
+        if merged and a <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    lo, hi = merged[0][0], max(b for _a, b in merged)
+    residue = []
+    for i, (a, b) in enumerate(merged):
+        gb = merged[i + 1][0] if i + 1 < len(merged) else hi
+        ga_ = b
+        while ga_ < gb:
+            # scan each unexplained byte range for 0xF0-terminated quad runs
+            off = ga_ - 0x08000000
+            j, ok = 0, True
+            while True:
+                if ga_ + 4 * j >= gb or j > 64:
+                    ok = False
+                    break
+                if rom[off + 4 * j] >> 4 == 0xF:
+                    break
+                j += 1
+            if not ok or j == 0:
+                ga_ += 1
+                continue
+            end = ga_ + 4 * j
+            tgt = struct.pack("<I", ga_)
+            word_refs, pos = [], rom.find(tgt)
+            while pos != -1:  # unaligned-inclusive: ANY word equal to the address
+                if not (ga_ <= 0x08000000 + pos < end):
+                    word_refs.append(f"0x{0x08000000 + pos:08x}")
+                pos = rom.find(tgt, pos + 1)
+            residue.append({
+                "addr": f"0x{ga_:08x}", "end": f"0x{end:08x}", "quads": j,
+                "bytes": end - ga_ + 1,
+                "word_refs_in_rom": word_refs,
+                "cite": f"reference/bn6f/bn6f.gba:0x{ga_:08x}..0x{end:08x} (unreferenced by any census record or ROM word)",
+            })
+            ga_ = end + 1
 
     lists = {}
     for la, L in fam_a.items():
@@ -1137,7 +1214,13 @@ def parse_formations():
     lists["encounter_tree_off_8020170"] = {
         "lists": len(fam_b), "records": sum(len(L["recs"]) for L in fam_b.values()),
         "term_mismatches": sum(1 for L in fam_b.values() if L["term"] != "ok"),
-        "cite": "reference/bn6f/bn6f.gba (ROM walk via asm/asm29.s:10371 off_8020170)"}
+        "cite": "reference/bn6f/bn6f.gba (ROM walk via asm/asm29.s:10371 off_8020170)",
+        # PASS 3 (kept inside this entry so the section's list count stays 84)
+        "residue_pass3": {
+            "region": f"0x{lo:08x}..0x{hi - 1:08x}",
+            "orphan_quad_runs": residue,
+            "note": "every byte of the region is otherwise covered by record lists (+0xFF terminator +3-byte align pad), 16-word map arrays, or referenced arrays (incl. 0xF0); none of the orphan runs is named by any ROM word",
+        }}
 
     form_rows = []
     for ptr, ents in form.items():
@@ -1146,6 +1229,7 @@ def parse_formations():
             "formation": labels.get(ptr, f"rom_{ptr:08x}"),
             "entries": len(ents),
             "enemy_ids": [f"{q[2]:02x}" for q in ents],
+            "referenced_by": refs.get(ptr, []),
             "cite": f"reference/bn6f/bn6f.gba:0x{ptr:08x}"
                     + (" (within data/BattleSettings.s spans)" if in_a else " (unlabeled encounter-tree array)"),
             "status": "unrecorded",
@@ -1162,7 +1246,24 @@ def parse_backdrops(formation_lists):
     r0,[BattleSettings_200AF60+0x4])
     census over EVERY record of BOTH families (see parse_formations for the
     walk) -- previously counted from the .s parse only, which saw the 461
-    family-A records but none of the 779 encounter-tree ones."""
+    family-A records but none of the 779 encounter-tree ones.
+
+    T65 PASS 3 closes the byte->art gap: battle init sub_8080DA0
+    (asm/asm21.s:15-45, reached from initBattleStructsAndVram_80071D4 at
+    asm/asm00_1.s:8435 after the record/ROM pointer lands in
+    oBattleState_BattleSettings) reads the byte via sub_8081308
+    (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] at :473-475) and indexes
+    THREE parallel tables by it: off_8080E34[r*0x10] scroll callbacks + LCD
+    flags (asm21.s:79), off_8080F98[r] -> LoadBGAnimData
+    (asm/asm03_0.s:21209; BGAnimData {gfx_src LZ77, gfx_dest 0x6000020,
+    tilemap_src (+0xc offset), tilemap_dest_offset, palette_src,
+    palette_dest 0x03001960, palette_size 0x20}) and off_8081220[r] ->
+    LoadGFXAnims (asm21.s:389).  0xff is NOT an unset sentinel: sub_8081308
+    turns it into the map default -- real-world 7 (asm21.s:515-516), net
+    pt_808139C[group-0x80][map] byte (23-word table asm21.s:548-564),
+    weather-puzzle maps (word_8081368, asm21.s:524-530) 0x15 flag-clear else
+    0x10.  Explicit values in the census: 0x07/0x08 = the Comps1/Comps2 bg
+    art in its two palette variants (id 6 is the RobotControlComp art)."""
     rom = open(os.path.join(REF, "bn6f.gba"), "rb").read()
 
     def w(addr):
@@ -1201,16 +1302,37 @@ def parse_backdrops(formation_lists):
     values = {}
     for r in lists:
         values[r[4]] = values.get(r[4], 0) + 1
-    rows = [{
-        "background_byte": f"0x{v:02x}",
-        "records_using_it": c,
-        # 0xff is the UNSET sentinel on the majority of records, not a
-        # backdrop id (see the section note emitted by regenerate_scope)
-        "role": "unset-sentinel" if v == 0xFF else "set-value",
-        "cite": "asm/asm03_0.s:14591-14593 battleSettings_setBackground strb r0,[BattleSettings_200AF60+0x4]; reference/bn6f/bn6f.gba ROM walk"
-                + ("; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)" if v == 0x08 else ""),
-        "status": "unrecorded",
-    } for v, c in sorted(values.items())]
+    BGANIM_TBL = 0x08080F98  # canon: off_8080F98, asm/asm21.s:213
+
+    def art_of(v):
+        p = w(BGANIM_TBL + 4 * v)
+        if not p:
+            return f"unused id (off_8080F98[{v}] = 0)"
+        gfx, tmap, pal = w(p), w(p + 8), w(p + 0x10)
+        s = (f"BGAnimData 0x{p:08x}: LZ77 tiles 0x{gfx:08x}, tilemap 0x{tmap:08x}, "
+             f"palette 0x{pal:08x}")
+        if v == 0x07:  # provenance: peeked -- same asset maps/Comps1/loader.s:236-245 (off_806DBD4) loads
+            s += " = the Comps1/Comps2 maps' own bg art (palette byte_8616760)"
+        if v == 0x08:  # provenance: peeked -- same asset maps/Comps1/loader.s:246-250 (off_806DBF0) loads
+            s += " = the Comps1/Comps2 art's alternate-palette variant (same tiles/tilemap, palette byte_8616EC4)"
+        return s
+
+    rows = []
+    for v, c in sorted(values.items()):
+        rows.append({
+            "background_byte": f"0x{v:02x}",
+            "records_using_it": c,
+            "role": "map-default" if v == 0xFF else "explicit-id",
+            "art": ("map default, resolved by sub_8081308 asm/asm21.s:469-523: "
+                    "real-world lists -> 7 (same art as explicit 0x07); net lists -> "
+                    "pt_808139C[group-0x80][map] byte (measured family-B distribution: "
+                    "ids 0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20 and 55 records "
+                    "on weather-puzzle maps resolving 0x10-or-0x15)"
+                    if v == 0xFF else art_of(v)),
+            "cite": "asm/asm21.s:469-523 sub_8081308 ldrb [BattleSettings+0x4] -> off_8080F98[r] LoadBGAnimData (asm/asm03_0.s:21209) via sub_8080DA0 asm/asm21.s:15-45 (from initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435); writer battleSettings_setBackground asm/asm03_0.s:14591-14593; reference/bn6f/bn6f.gba ROM walk"
+                    + ("; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)" if v == 0x08 else ""),
+            "status": "unrecorded",
+        })
     return rows
 
 
@@ -1665,7 +1787,7 @@ def main():
                 statuses)),
 
         ("M1", ("formations (M8)", f"ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), {nrec} records over {nlists} lists (2 scripted + {nlists - 2} encounter-tree), {len(form_rows)} 0xF0-terminated formation arrays (section denominator = {len(form_rows)} arrays, all rows status unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
-        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
+        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS, byte->art CLOSED (T65 pass 3): BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592; for scripted battles also sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599); the byte is read at battle init by sub_8081308 (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] :473-475, called from sub_8080DA0 asm/asm21.s:15-45 via initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435) and indexes off_8080F98[r] -> LoadBGAnimData (asm/asm03_0.s:21209) = explicit LZ77 tiles/tilemap/palette pointers: 0x07/0x08 = the Comps1/Comps2 bg art in its two palette variants (id 6 is the RobotControlComp art), 0xff = map default (real 7, net pt_808139C[group-0x80][map] asm/asm21.s:548-564, weather-puzzle maps 0x15/0x10) -- census in rows below; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
     regenerate_scope(sections, pa_meta={

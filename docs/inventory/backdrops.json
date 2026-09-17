@@ -4,22 +4,25 @@
   {
    "background_byte": "0x07",
    "records_using_it": 192,
-   "role": "set-value",
-   "cite": "asm/asm03_0.s:14591-14593 battleSettings_setBackground strb r0,[BattleSettings_200AF60+0x4]; reference/bn6f/bn6f.gba ROM walk",
+   "role": "explicit-id",
+   "art": "BGAnimData 0x08081098: LZ77 tiles 0x08616598, tilemap 0x08616634, palette 0x08616760 = the Comps1/Comps2 maps' own bg art (palette byte_8616760)",
+   "cite": "asm/asm21.s:469-523 sub_8081308 ldrb [BattleSettings+0x4] -> off_8080F98[r] LoadBGAnimData (asm/asm03_0.s:21209) via sub_8080DA0 asm/asm21.s:15-45 (from initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435); writer battleSettings_setBackground asm/asm03_0.s:14591-14593; reference/bn6f/bn6f.gba ROM walk",
    "status": "unrecorded"
   },
   {
    "background_byte": "0x08",
    "records_using_it": 1,
-   "role": "set-value",
-   "cite": "asm/asm03_0.s:14591-14593 battleSettings_setBackground strb r0,[BattleSettings_200AF60+0x4]; reference/bn6f/bn6f.gba ROM walk; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)",
+   "role": "explicit-id",
+   "art": "BGAnimData 0x080810b4: LZ77 tiles 0x08616598, tilemap 0x08616634, palette 0x08616ec4 = the Comps1/Comps2 art's alternate-palette variant (same tiles/tilemap, palette byte_8616EC4)",
+   "cite": "asm/asm21.s:469-523 sub_8081308 ldrb [BattleSettings+0x4] -> off_8080F98[r] LoadBGAnimData (asm/asm03_0.s:21209) via sub_8080DA0 asm/asm21.s:15-45 (from initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435); writer battleSettings_setBackground asm/asm03_0.s:14591-14593; reference/bn6f/bn6f.gba ROM walk; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)",
    "status": "unrecorded"
   },
   {
    "background_byte": "0xff",
    "records_using_it": 1047,
-   "role": "unset-sentinel",
-   "cite": "asm/asm03_0.s:14591-14593 battleSettings_setBackground strb r0,[BattleSettings_200AF60+0x4]; reference/bn6f/bn6f.gba ROM walk",
+   "role": "map-default",
+   "art": "map default, resolved by sub_8081308 asm/asm21.s:469-523: real-world lists -> 7 (same art as explicit 0x07); net lists -> pt_808139C[group-0x80][map] byte (measured family-B distribution: ids 0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20 and 55 records on weather-puzzle maps resolving 0x10-or-0x15)",
+   "cite": "asm/asm21.s:469-523 sub_8081308 ldrb [BattleSettings+0x4] -> off_8080F98[r] LoadBGAnimData (asm/asm03_0.s:21209) via sub_8080DA0 asm/asm21.s:15-45 (from initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435); writer battleSettings_setBackground asm/asm03_0.s:14591-14593; reference/bn6f/bn6f.gba ROM walk",
    "status": "unrecorded"
   }
  ]
