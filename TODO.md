@@ -317,3 +317,29 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 - T95 DONE -- M9 — Audio comparison tool: dump-side CLI that diffs two mgba audio captures sample-exact. Landed DONE on wt/t95 @ 915164a
 - T96 NEGATIVE -- M9 — Audio parity first scenario: chip-cannon audio on the existing chip-cannon row, diffed via T95. Closed NEGATIVE on wt/t96 @ 961f24c (branch stays unmerged)
 - T97 DONE -- M10 — Netbattle recon: handshake + chip-trade routines + UI state field + two-instance scenario design. Landed supplement on wt/t97 @ e828e88 (now d63a3c7 on main)
+
+### T105. M7 emotion window: pick one reachable emotion state (Full Synchro via Counter Hit, or any pre-battle-set state) and port its face-selection gate *(OPEN -- 2026-09-17)*
+
+**Why.** src/emotion.rs:11 explicitly says **"Only the calm face is drawn. The ROM's bank continues past it with one window per emotion, which this build has no state to choose between yet."** The draw routine is `sub_801CDEC` (asm00_2.s:27554-27583, HUD element 14) handing `sub_802FE28` packed pairs `0x80004012 / 0xCBB4` and `0x40200012 / 0xCBBC` — two OBJ tiles, palette bank 12, priority 2, positions `(0,18)` and `(32,18)`; the art+palette export is `tools/emotion_export.py` writing `assets/emotion.bin` (BNEM header at +0x00..+0x0c, face data at offset named by header). SCOPE M7 emotion reads 0/25 (the form row is 0/25 separately; emotion is its own sub-row in M7 prose). The emotion value byte lives near the navi's stat block (cite-able through `GetCurPETNaviStatsByte` callers in asm37_0.s). **No ticket has ported a non-calm face** (grep TODO/TODO_ARCHIVE for "emotion" returns only the T102 prose cite and existing row notes). T102 (proposed) targets the counter-hit grant; this ticket is the render gate's complement: a +1NCP-style poke to the emotion byte is enough to flip the face in a scenario with no hand-played input (the poke is the fixture, canon never changes — F5b's rule).
+
+**Files.** `src/emotion.rs` (the face-selection gate, choose face index from emotion value; one const table per reachable state), `assets/emotion.bin` (verify face offsets per emotion value; no redraw, only re-layout), `src/fixture.rs` (descriptor emotion field), `tools/states.py` (ONE scenario `emotion_syn_full` = `battlestart.state` + poke `60:<emotion_addr>:0xNN` + scripted none), `tools/harness.py` (ONE row `emotion_syn`: canon_ref=40, negative = same scenario WITHOUT poke), `docs/coverage/emotion.md` (NEW), `docs/worklog/T105.md`. **NOT** src/battle.rs, src/objects.rs, src/ai.rs, src/chips.rs, tools/trace.py, tools/oracle.py, tools/allowlist.py, tools/inventory.py, tools/mgba_capture.c, reference/bn6f.
+
+**Do.**
+1. **Recon:** read the BNEM header at `assets/emotion.bin` + every face's offset/width/height (currently 1 face, calm); cite each face's data start; find the emotion-state byte (cite file:line — likely one of the NCP-settable stats or a separate byte near the navi struct); confirm the emotion byte's reachable value list from canon's NCP set or from sub_801CADC (asm00_2.s:25577 updater). **measurement.**
+2. Baseline, no edit: build ROM, sha256 + size; verify_rows 7-row guard set + cursor → 0/0/N ×6, cursor 1/1/170; capture the existing chip-cannon scenario, read OBJ tiles at (0,18) and (32,18) — both sides should be the calm face. **measurement.**
+3. Add `emotion_syn_full` + the `emotion_syn` row (canon = REAL + emotion poke; rust = plain_rom; negative = same scenario WITHOUT poke → both sides stay calm, pixels match step 2). **code change + measurement.**
+4. Port the face-selection gate in src/emotion.rs: read emotion-state byte (peeked address), index into a `const FACE_INDEX: [u8; N]` table keyed by emotion value; rebuild, sha256. **code change + measurement.**
+5. Re-run: `emotion_syn` 0/0/40 with non-blind negative (no poke → calm face, both sides match step 2; poke → non-calm face, both sides render it); trace `emotion_syn_full`: the emotion byte AND the OBJ tile at (0,18)/(32,18) first divergence **none** over the row's frames; guard set + cursor identical to step 2. **measurement.**
+
+**Rules.** Art from canon bytes, not redrawn (the BNEM export is already data). The FACE_INDEX table is cited from canon's per-emotion draw site. State/descriptor poke carries `peeked` provenance. Cursor veto ≤1/1/170/186300. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `emotion_syn` 0/0/40 with non-blind negative; OBJ tiles at (0,18)/(32,18) match between canon and rust; trace `emotion_syn_full`: emotion byte + OBJ tile first divergence **none** over the scene's frames; 7-row guard set + cursor identical to step 2; verify_rows PASS is the veto. NEGATIVE naming canon's measured no-face-change behavior (frames + bytes + cite) closes it.
+
+**Measure and report.** rows: emotion_syn + 7-row guard set; frames 40 each (cursor 170). Emotion byte cite + face offset per value, before/after pixel totals, OBJ tile counts at the emotion positions both sides, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the other ~24 emotion states, by value).
+
+**Coordinator:** owns src/emotion.rs + asset layout + the row; runs alone (owns tools/states.py + tools/harness.py). Free tier: verify_rows from a clean checkout on the 8-row set; verifier for step 1's BNEM header + emotion-byte cites. ≤$0.20 expected, ≤$0.40 cap.
+
+**Milestone advanced:** M7 (emotion window 0/25 → 1/25 first port).
+
+---
+
