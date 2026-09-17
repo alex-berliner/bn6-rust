@@ -8,7 +8,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-MODEL="$(python3 tools/roles.py model "${BN_RUN:-${BN_PROVIDER:-$(python3 tools/roles.py first)}}" judge --tail)"
+MODEL="${BN_MODEL:-$(python3 tools/roles.py pick judge --tail)}"   # the first scheduled run with budget, not always the first run
 mkdir -p docs/proposals /tmp/bn-pi/judge
 STAMP="$(date +%Y%m%d-%H%M%S)"; OUT="docs/proposals/$STAMP.md"; SESS="/tmp/bn-pi/judge/$STAMP"
 mkdir -p "$SESS"

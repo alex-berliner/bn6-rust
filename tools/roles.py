@@ -8,6 +8,8 @@ files, checks a provider's budget, and prints a run's instruction.
                                           is skipped); exit 1 if the coordinator or worker resolves to nothing
   roles.py model <run> <role> [--tail]    one resolved model id; --tail accepts any provider above its
                                           stop_below (a one-shot session's need), not only start_above
+  roles.py pick <role> [--tail]           the first SCHEDULED run (then the reserve) whose candidate for that
+                                          job has budget right now: what a judge, auditor or digest should use
   roles.py render [<run> ...]             write .pi/agents/<role>-<run>.md (worker, verifier, recon) from
                                           .pi/roles/<role>.md with the resolved models, plus bare <role>.md
                                           aliases for the first scheduled run; default: every run
@@ -219,6 +221,14 @@ def main():
         if not m: sys.exit("no candidate for %s of run %s has budget now" % (a[2], a[1]))
         print(m)
     elif cmd == "workers": print(workers(cfg, a[1]))
+    elif cmd == "pick":
+        # the first scheduled run whose candidate for this job has budget now: what a one-shot session should use
+        job = a[1]; tail = "--tail" if "--tail" in a else "--start"
+        for run in cfg["schedule"]["runs"] + cfg["schedule"].get("reserve", []):
+            if run not in cfg["runs"]: continue
+            m = resolve(cfg, run, tail).get(job)
+            if m: print(m); return
+        sys.exit("no scheduled run has a %s with budget" % job)
     elif cmd == "providers":
         res = resolve(cfg, a[1]); print(" ".join(sorted({provider_of(m) for m in (res["coordinator"], res["worker"]) if m})))
     elif cmd == "render": render(cfg, a[1:] or list(cfg["runs"]))

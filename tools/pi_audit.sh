@@ -8,7 +8,7 @@
 # usage: bash tools/pi_audit.sh [review file]      -> prints the proposal file path
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; cd "$ROOT"
-MODEL="$(python3 tools/roles.py model "${BN_RUN:-${BN_PROVIDER:-$(python3 tools/roles.py first)}}" auditor --tail)"
+MODEL="${BN_MODEL:-$(python3 tools/roles.py pick auditor --tail)}"   # the first scheduled run with budget, not always the first run
 REVIEW="${1:-$(ls -t docs/reviews/*.md 2>/dev/null | head -1)}"
 STAMP="$(date +%Y%m%d-%H%M%S)"; OUT="docs/audits/$STAMP.md"; SESS="/tmp/bn-pi/audit/$STAMP"; mkdir -p docs/audits "$SESS"
 DIGEST="$(
