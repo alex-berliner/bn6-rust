@@ -305,21 +305,27 @@ pub fn fixture_ptr() -> *const u8 {
     (&raw const BATTLE_MARKER).cast::<u8>().wrapping_add(64)
 }
 
-/// T111 cursor-seam recalibration: the cursor row's pass class is set by the
+/// T118b seam-phase anchor: the cursor row's pass class is set by the
 /// mid-frame tile-copy seam (docs/coverage/cursor.md): agb's `commit()` waits
 /// for vblank and then copies the WHOLE screenblock into VRAM
 /// (vendor/agb/agb/src/display/tiled/screenblock.rs:42, `copy_tiles` over
-/// `size.num_tiles()`), which spills past vblank into the first visible
-/// scanlines every frame; on frames where tile contents changed (the custom
-/// screen's card replace, T105 pass 6's k=37/k=97 cursor-move frames) the cut
-/// shows as stale-vs-new pixels. The cut's phase is a function of the binary
-/// footprint (T105 pass 6 bisect: any feature-sized delta re-rolls it), and
-/// the only user code inside the wait window is the vblank interrupt closure
-/// (interrupt_handler.s runs `__RUST_INTERRUPT_HANDLER` before returning to
-/// the BIOS's VBlankIntrWait, and commit's copies start after it returns),
-/// so the pad lives here: a busy-wait that reads and writes nothing,
-/// delaying every frame's copy start by a measured constant.
-const SEAM_PHASE_PAD_ITERS: u32 = 17; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout
+/// `size.num_tiles()`), and on frames where tile contents changed (the custom
+/// screen's card replace, the cursor-move frames k=37/k=97) the cut shows as
+/// stale-vs-new pixels whose phase is a function of the binary's footprint.
+/// T118 (NEGATIVE, docs/worklog/T118.md) measured that the copy never
+/// overruns the vblank budget (2048 B ~= 4.1k cycles ~= 3.3 scanlines against
+/// 68 vblank lines), so the class is a phase alignment, not a volume problem;
+/// and T118b's footprint x pad sweep (docs/coverage/cursor.md) measured that
+/// T111's fitted cycle-count pad is what BREAKS a re-rolled footprint (pad 13
+/// or 17 pushes a perturbed binary out of class while the unpadded copy start
+/// stays in class on all three measured footprints, spanning 3.6 KB). So the
+/// copy start is anchored to the hardware scanline counter instead: the
+/// VBlank interrupt fires at LCD scanline 160 (GBATEK DISPSTAT/Y: lines
+/// 0..159 visible, 160..227 vblank), and this closure -- which
+/// interrupt_handler.s runs before returning to the BIOS's VBlankIntrWait,
+/// ahead of commit's copies -- pins the copy start to that scanline by
+/// spinning on the scanline count rather than on a fitted iteration count.
+const SEAM_ANCHOR_LY: u16 = 160; // provenance: derived -- GBATEK: the VBlank interrupt fires at scanline 160 (LCD 160..227 vblank); verified by measurement, T118b docs/worklog/T118b.md: with the copy start at this scanline cursor reads <=1/1/170 on three footprints spanning 3.6 KB and on wt/T112 and wt/T117
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
@@ -379,14 +385,18 @@ fn main(mut gba: agb::Gba) -> ! {
     // byte_81597A0 dat37.s (see BUSTER_HIT's own doc comment above).
     let mut mixer = gba.mixer.mixer(Frequency::Hz10512);
 
-    // T111 seam-phase pad: runs inside the vblank interrupt, before the BIOS
-    // returns to `commit()`'s copy path (see SEAM_PHASE_PAD_ITERS's doc).
-    // Timing-only: it reads and writes nothing; the rows are the proof.
-    let _seam_phase_pad = unsafe {
+    // T118b seam-phase anchor: runs inside the vblank interrupt, before the
+    // BIOS returns to `commit()`'s copy path (see SEAM_ANCHOR_LY's doc).
+    // Reads-only (no loads or stores to memory): at the VBlank interrupt the
+    // scanline counter already reads SEAM_ANCHOR_LY, so the spin exits on its
+    // first test and costs one 16-bit register read; its job is to pin the
+    // copy start to a scanline rather than to a fitted cycle count.
+    let _seam_phase_anchor = unsafe {
         agb::interrupt::add_interrupt_handler(agb::interrupt::Interrupt::VBlank, |_| {
-            for _ in 0..SEAM_PHASE_PAD_ITERS {
-                unsafe { core::arch::asm!("nop") };
-            }
+            // REG_VCOUNT (GBATEK): the current LCD scanline, 0..227, at
+            // 0x04000006 -- the same register agb's own display code reads
+            // (vendor/agb/agb/src/display/mod.rs:98).
+            while unsafe { (0x0400_0006 as *const u16).read_volatile() } < SEAM_ANCHOR_LY {}
         })
     };
 
