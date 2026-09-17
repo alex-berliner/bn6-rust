@@ -450,3 +450,122 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Milestone advanced:** unblocks M7 landing (T105 emotion port 0/25 -> 1/25).
 
 ---
+
+### T112. M2 end of battle: the rank byte and the zenny reward become computed, not fixture-supplied — trace target `rank` + `zenny`, first divergence none *(OPEN -- 2026-09-18)*
+
+**Why.** SCOPE M2 lists "end of battle with rank and rewards" and no part of it is computed in our build: `src/battle.rs:2452` calls `self.results.show(kind, time, level, 0, zenny)` with a literal `0` for rank, and the money comes from the descriptor (`src/fixture.rs:243-244` `result_zenny` at +44, consumed at `src/battle.rs:3067` through `f.result_zenny`). The display is real and cited (`src/results.rs:104-105` `RANK_MAX: u8 = 2`, `:527` `TIME_BANK + rank.min(RANK_MAX)` recolors the time digits, `:191` "level 0xb is the S rank", reward chain `sub_802C34E->sub_802BE36->sub_802C044` 42 tiles, cooldown `sub_802C0A4`, driver `sub_802BD60`, `asm03_0.s:11959/:12558/:13017-13029`) — but the number that selects it has never been ported, so every results variant we can reach is pinned to one rank and one payout. Canon stores its own rank/zenny words in RAM, which makes this a trace question with a zero.
+
+**Files.** `src/battle.rs` (the two calcs + the call site at :2452/:3067; the oracle/trace export of the two values), `src/results.rs` (signature only if rank stops being a parameter literal), `tools/trace.py` (two new canon watches + the pair), `docs/coverage/end-of-battle.md` (NEW), `docs/worklog/T112.md`. **NOT** tools/harness.py (row semantics frozen), tools/states.py, tools/oracle.py, tools/allowlist.py, assets/, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Find canon's storage: walk the results setup ahead of `sub_802BD60` in `asm03_0.s` and name the addresses holding the rank byte, the zenny halfword and the level byte; confirm with one canon-side capture on the `result` route (`--watch` at those addresses, 40 frames) and report the values per frame. **measurement.**
+2. Baseline ours: print our current rank (literal 0) and zenny (descriptor +44) against canon's watched values from step 1 — the divergence stated as field, value, frames. **measurement.**
+3. Port the calcs: locate the routine that writes those words (the battle-stats reader), port it cited into `src/battle.rs` (`fn battle_rank`, `fn battle_zenny`, each `// provenance:` tagged per site), feed them at :2452/:3067 only when the descriptor carries `FIXTURE_UNSET` (`src/battle.rs:1611`) so every existing row keeps its fixture path. **code change + measurement.**
+4. Add the two pairs to `tools/trace.py` and re-run: `rank` and `zenny` over the `result` scenario's 40 frames, first divergent frame **none**; then on a second ending scenario you can reach (report which) and state its first divergence. **measurement.**
+5. Re-run the 8-row guard set + `result` + `cursor`; if the cursor class moves with the binary, the sanctioned absorber is the F12 pure-layout pad (`src/battle.rs:1819-1831`) — restore ≤1/1/170 by pad size and report the tear's frame, do not chase it. **measurement.**
+
+**Rules.** No fitted rank/zenny values: every term of both calcs carries a disassembly cite or stays unported and is named. Fixture-supplied values remain legal only where a row already compares against them. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** Trace target: `rank` byte and `zenny` halfword, 40 frames of the `result` scenario, first divergence **none**, with both values produced by ported cited routines (not the descriptor); byte-equality with canon's stored words on at least one further ending scenario, or that scenario's first divergent frame and field named. `result` isolated 0/0/40 unchanged, 8-row guard set + cursor identical to step 2, verify_rows PASS from a clean checkout as the veto. NEGATIVE naming canon's stored addresses and the missing input stat closes it.
+
+**Measure and report.** rows: result + 8-row guard set; frames 40 (cursor 170). Canon's rank/zenny/level addresses with cites, the watched values, our before/after values, the two calcs' cite lists, trace first-divergence before/after, pixel totals unchanged, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the reward *items* — chips/PAs granted — are not in this ticket's two words).
+
+**Coordinator:** owns src/ + trace.py; runs alone (pairs with nothing that touches src/battle.rs). Free tier: verify_rows on the 9-row set; verifier for step 1's addresses and step 3's cites. ≤$0.30 expected, ≤$0.60 cap. **Advances M2.**
+
+---
+
+### T113. M5: the AIIndex-4 family onto the scoreboard — the virus T87 already fields, its think entry ported through the ROM's own AI table, one row plus its trace *(OPEN -- 2026-09-18)*
+
+**Why.** SCOPE M5 is one virus deep (Mettaur) of 187 (ai_index, version) pairs, and T58's census (PARTIAL, 0302084) says why the next one is nearly free: ai 1-31 carry exactly 6 ranks each, the identity rows come from `byte_80182C4` via `GetVerActorTyAndAIIdx_80182B4` (`asm/asm00_2.s:19965-19974`) and the behaviour from `AIThinkTables_8109050[ai_index]` (T76's chain), so a family needs a port once per ai_index, not per rank. T87 (LANDED 6e493bc) already put a non-Mettaur virus on screen and proved it: the EVENT_681 flag poke `60:0x02001d58:0x0240` swaps the encounter root to `0x080b50b0` (12 ungated records), lever `60:0x0200a210:0x37a` → 891 mod 12 = 3 → rec3 `0x080b50e0`, fields **ai_index-4 rank v0, NameID 0x0013 at frame 69, slot1 HP 0x5a byte-matching `off_8109150[4]` elem_hp** (`0x0810ae4c`, stride 6), 40-frame determinism 0 px on two builds, guard 7 rows identical. `docs/inventory/enemies.md:196-207` shows that ai 0x04 covers `0x13..0x18` (virus) **and `0x113..0x118` (the same AI as a Navi)**, act `nullsub_13`, think table `off_810B2D0` (`asm/asm31.s:173608`) — one port, and M6's first Navi rides it.
+
+**New evidence.** T87's landed state is the measurement this ticket needs and it postdates every earlier attempt: no `src/` change and no harness row has been made for ai 0x04 since, and the two stamps that closed the ai-4 recording line carry no worklog at all (`docs/worklog/` holds T90, T91, T95 — not T92, not T93), i.e. they are error records, not measurements.
+
+**Files.** `src/ai.rs` (the ai_index-4 think arm, cited to `off_810B2D0`/`AIThinkTables_8109050`, no hand-written behaviour), `src/actor.rs` (the enemy's art entry if the sprite category is missing), `tools/harness.py` (ONE new row `ai4`: canon = T87's `battlestart_ai4_rank0` route, rust = plain_rom, negative = the same route WITHOUT the `0x02001d58` poke so a different formation is fielded), `tools/inventory.py` (recognise the ai-4 rank row by its identity-row bytes, not by an id list), `docs/coverage/ai4.md` (NEW), `docs/worklog/T113.md`. **NOT** `src/battle.rs` (if the spawn needs a new entry kind, stop and name it as the follow-up), tools/states.py (T87's state is the fixture), tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f, canon.
+
+**Do.**
+1. Report what our build already does for ai 0x04: the arm table in `src/ai.rs` keyed by `AIThinkTables_8109050[ai_index]`, and whether index 4 is ported, absent or silently shared with Mettaur (ai 1). **measurement.**
+2. Add the `ai4` row and run it unmodified by src: total, worst, frames, region — the divergence this ticket exists to remove — plus the negative's total (must be non-zero) and the row's determinism. **code change + measurement.**
+3. Port the think arm cited from `off_810B2D0` (`asm/asm31.s:173608`) and the identity/Struct2 bytes (`00 00 04` at `byte_80182C4+3*0x13`, elem_hp 0x005a); rebuild, ROM sha256+size. **code change + measurement.**
+4. Re-run the row: report the residue per frame and per region before/after, and the trace fields that own what is left (`enemy_state_action`, `enemy_anim`, `enemy_hp`: first divergent frame each). **measurement.**
+5. Guard set + `cursor` against step 2's baseline; if the cursor class moved with the binary, the F12 pure-layout pad (`src/battle.rs:1819`) is the sanctioned absorber and is *reported*, not chased. **measurement.**
+
+**Rules.** A virus is a port under the interpreters, never a re-creation: each arm cites a ROM address or stays unported and is named. Poke provenance `peeked`. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `ai4` 0/0/40 with a non-blind negative, `enemy_state_action`/`enemy_anim` first divergence **none** over the row's frames, 8-row guard set + cursor unchanged, verify_rows PASS from a clean checkout as the veto — then M1 viruses 1/187 → 2/187 with the new row keyed on the identity-row bytes. If the residue is not 0, the ticket closes only with the residue attributed frame-by-frame and region-by-region and the first divergent trace field named; the count does not move.
+
+**Measure and report.** rows: ai4 + 8-row guard set; frames 40. Before/after totals, worst, region, the negative's total, the ai-4 arm's cites, the identity/Struct2 bytes checked, first divergent frame per field, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the other five ai-4 ranks and the `0x113..0x118` Navi rows that share the think table).
+
+**Coordinator:** owns harness.py + inventory.py + ai.rs; runs alone (no pair while T112 holds src/battle.rs). Free tier: verify_rows on the 9-row set; verifier for step 1's arm audit and step 3's cites. ≤$0.35 expected, ≤$0.70 cap. **Advances M5 (M1 viruses line).**
+
+---
+
+### T114. M7: bring the landed `buster_charge` row from 2498/188/32 to 0 — attribute the y158 sliver and fix it with exported data, not a fitted colour *(OPEN -- 2026-09-18)*
+
+**Why.** T106 (PARTIAL, LANDED c9c50b7) put the charge-shot dispatch on the board with its cells named (`ChargeShotHandlersByTransformation_80117D4`, `asm00_2.s:5809-5957`; verifier-corrected: `0x8011818` is cell 0x11, `0x80118A4` cell 0x34, damage `0x1e + 0x14*min(getBusterDamage(),5)` with `getBusterDamage_801265A` still unported) and its row `buster_charge` (`tools/harness.py:2377`) reads **isolated FAILED 2498/188/32, negative 5113, not blind**. The shape is already narrowed by that pass: a ~22 px/frame dithered sliver on y158 — canon multicolour (12,24,8)/(16,5,29) against our red-only — plus a k=0 transient, with k1..k5 at 0. y158 is the CUSTOM gauge strip (`src/hudtiles.rs`: `GAUGE_BANK` :144, `BAR` :135 still tagged `fitted -- NOT VERIFIED`, `INTERIOR` :161 `peeked`, `BAR_CYCLE`/`gauge_palette` :231-245, `set_gauge` :301), whose canon flow routine `sub_801C4E4` (`asm00_2.s:26351-26423`) reads the gauge word `eStruct2035280+0x20` (`word_20352A0`) against its 0x4000 cap. The fixture already carries two named knobs for that strip's phase — `gauge` (descriptor +32) and `gauge_tick` (+28, `src/fixture.rs:203-218`) — so the first question is phase or mechanism, and it is answerable without touching src.
+
+**Files.** `src/hudtiles.rs` (the gauge's not-full/dither arm and its palette, each cited), `tools/hud_tiles_export.py` (carry the measured palette entries/tiles from canon's bytes), `assets/` (the regenerated hud-tile blob only), `tools/states.py` (the scenario's descriptor seeds if step 2 names one), `docs/coverage/charge-gauge.md` (NEW), `docs/worklog/T114.md`. **NOT** `src/battle.rs`, `src/charge_shot.rs` (stays undeclared until T111's pad exists), `tools/harness.py` (row, canon side and negative frozen), tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f, canon.
+
+**Do.**
+1. At the diverging frames, dump both sides' y158 BG map cell, tile index and palette index, name which gauge element owns those 22 px (bar body / end caps / CUSTOM label / marker text) and which 16-colour slots canon writes — cite the ROM bytes and the writing arm of `sub_801C4E4`. **measurement.**
+2. Test phase without mechanism: sweep the scenario's `gauge_tick` and `gauge` seeds (the two descriptor knobs), table of seed → row total/worst. If a seed reaches 0 the residue is fixture phase and gets a provenance comment; if none does, it is a mechanism. ≤2 captures. **measurement.**
+3. Fix by data or by the cited arm: extend the exporter with the measured palette/tile bytes (never a redrawn colour, never a fitted triple), and port the named `sub_801C4E4` branch for the case step 1 found; retire `BAR`'s `fitted -- NOT VERIFIED` tag with a cite or leave the tag and say so. Rebuild, ROM sha256+size. **code change + measurement.**
+4. Re-run: `buster_charge` 0/0/32 with its negative still non-zero, and `buster` (the TAP row) identical to baseline. **measurement.**
+5. 8-row guard set + `cursor`; any cursor class move from the footprint change is absorbed with the F12 pure-layout pad (`src/battle.rs:1819`) and reported, not chased. **measurement.**
+
+**Rules.** Art and palette from canon bytes only. No fitted colour and no new fitted const: the hygiene count must not rise. Row semantics, canon side and negative byte-identical. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `buster_charge` isolated 0/0/32 with non-blind negative (baseline 5113), `buster` 0/0/28 unchanged, 8-row guard set + cursor identical to step 2's baseline, verify_rows PASS from a clean checkout as the veto. A bounded NEGATIVE closes it too: the seed→residue table of step 2 plus the per-frame/per-region attribution of the surviving residue and the cite of the mechanism still unported.
+
+**Measure and report.** rows: buster_charge, buster + 8-row guard set; frames 32/28/40 (cursor 170). Before/after totals and worst, the y158 cell/tile/palette table both sides, the seed sweep, palette slot cites, ROM sha256+size, fitted count before/after, commit; one line of mechanism; one line unverified (the other seven shot_kinds and the module's declaration, which waits on T111).
+
+**Coordinator:** owns hudtiles + the exporter + the scenario seed; pairable with T112 or T113 (disjoint files). Free tier: verify_rows on the 9-row set; verifier for step 1's palette/element identification. ≤$0.25 expected, ≤$0.50 cap. **Advances M7.**
+
+---
+
+### T115. M1/M3: the five panel types still marked GAP get their writers out of a direct-store and data-stream walk — the method T33's call-site sweep could not see *(OPEN -- 2026-09-18)*
+
+**Why.** M3's foundation is 13 panel types, and M1 reads 8/13. The table is found and cited: `word_3007924` (IWRAM copy of `0x081D7E24`, `bn6f.map:34342`, copied by `start.s:57-63`), 13 words stride 4, one per type 0x0..0xC, OR-ed into `oPanelData_Flags` by `_object_updatePanelParameters` (`asm/asm38.s:4213-4219`), setter `_object_setPanelType` (`asm/asm38.s:4315-4326`). What is missing is the *writer* for five of them — 0x0 hole, 0x5 holy, 0x8, 0x9, 0xA — so their rows print `bounded-GAP` and count zero (`tools/inventory.py:646-651` gives a row `verified` the moment its writer cite is a site, not a GAP), and no status/panel behaviour can be traced until the type is known to be reachable at all.
+
+**New evidence.** Two landed things postdate the earlier call-site sweep. (1) The method precedent: T18 (DONE, 3f09aa7) found the status bits only because it walked **inline field stores** — "every object_setFlag/clearFlag/getFlag call **and inline flags-field orr/str/tst**" — a class a call-site sweep structurally misses; the same routine that writes 0xB/0xC from an object's CurState (`t3_0x0_80C4E58`, `asm/asm31.s:27855-27872`) and the stage writer `sub_80BAE16` (`asm/asm31.s:6104-6170`, types 4/6/7) both have un-walked arms. (2) T65 (DONE, PASS 3 landed 79da4ed) delivered the record stream nobody had: **1240 records over 84 lists / 1076 0xF0-terminated formation arrays**, referrer-checked with 0 mismatches, plus T70's stage-pair table `byte_203CA50` (`asm/asm21.s:548-564`) — the data side where a stage or encounter would seed panels, which no writer sweep examined.
+
+**Files.** `tools/inventory.py` (`PANEL_TYPE_ROWS` writer cites + `SECTION_NOTES` line for panels), `docs/coverage/panels.md` (NEW: per type, the sites walked and the ruled-out addresses), `docs/inventory/panels.md` if the generator wants it, `docs/worklog/T115.md`. **NOT** any `src/` file (the ROM hash must not move), tools/harness.py, tools/states.py, tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Walk the *field*, not the helper: every store to the panel type byte/word (direct `strb`/`str` and the inline orr/bic forms, T18's method) plus every constant argument at `_object_setPanelType` sites, and every arm of `sub_80BAE16` and `t3_0x0_80C4E58`; report a per-type table 0x0/0x5/0x8/0x9/0xA → sites (file:line), dispatch condition, and the count of sites examined. **measurement.**
+2. Walk the data: T65's 1076 arrays/1240 records and T70's stage pairs — do any bytes seed panel types? Report the table with its stride and the known-answer check (the 8 verified types must be predicted where they already appear), or the rule-out with the bytes examined. **measurement.**
+3. For each writer found, prove it live on canon only: one `--watch` capture per type, max 2, on the scenario where it should fire, reporting the flip frame and value. **measurement.**
+4. Re-cite `tools/inventory.py` and re-run `python3 tools/inventory.py`: M1 panels 8/13 → N/13; every surviving GAP row states its site count and the addresses ruled out. Confirm the ROM sha256 is unchanged (zero src). **measurement.**
+
+**Rules.** Zero `src/` edits and zero rebuild; the product is cites and the regenerated table. No capture of ours is compared — this is canon-side observation, so no row semantics change. Every emitted cite carries file:line or the row stays bounded-GAP. No allowlist, no patch_sterile, canon never changes. ≤3 captures, tool budget ≤70.
+
+**Acceptance.** `python3 tools/inventory.py` prints M1 panels at N/13 with N>8, each converted row carrying a writer cite **and** (where step 3 could observe it) the flip frame and value; and the ROM sha256 before = after (no rebuild). A NEGATIVE closes it if all five stay GAPs, with the per-type table of every site and data byte examined.
+
+**Measure and report.** rows: none (no harness change); frames: the watch captures only. Panels 8/13 → N/13, the per-type site table, the data-stream verdict, the ROM sha256 before/after identical, capture count, fitted count unchanged, commit; one line of mechanism (which routine sets which type); one line unverified (the panel *effects* — those need scenarios and src, and are the next ticket).
+
+**Coordinator:** docs/tools-only, so it pairs with T112 or T114; runs next to anything. Free tier: nothing to reproduce (no row moves); verifier for step 1's cites and step 3's watches. ≤$0.15 expected, ≤$0.35 cap. **Advances M1 and M3.**
+
+---
+
+### T116. M4/M1: name the chip set a battle can actually reach, measured from the ROM, and put our 48-record asset against it *(OPEN -- 2026-09-18)*
+
+**Why.** M4 reads "every standard chip, mega, giga, secret; Program Advances" and M1's chips line is 43/411 — a denominator nobody can plan against, because our build's chips come from a hand-sized asset: `assets/chips.bin`, a BNCH v2 blob of **48 records** exported by `tools/chip_export.py` from `data/ChipDataArr.s` (`ChipDataArr_8021DA8`, 411 records, stride 0x2c, `include/rom_structs/ChipData.inc`), with `src/chips.rs:66-70` asserting the version before locating the tail. So "368 chips to go" may be 5, or 368, and the queue order is currently a guess. The pieces to settle it are landed and cheap to combine: T57 (DONE, 954ed81) audited all 43 pixel-verified ids against the record, `AS_DATA_FAMILIES = {0x13, 0x15, 0x21}` (`tools/inventory.py:237`); T61 (PARTIAL) verified the asset's 0x15 records are exactly {163(0x00),177(0x01),178/179/180(0x04)} while the table holds 84; T76 (DONE) walks the identity→AI chain for enemies and shows the same enumeration pattern works in `tools/inventory.py`.
+
+**New evidence.** The reachability census is now on disk as a measurement, not a guess: T75's landing report (`REPORT_T75.md`) tabulated table-vs-asset-vs-name per family — 0x13: 17 ids in table / 11 in asset / 11 named; 0x15: 84 / 5 / 38 named; 0x21: 1 / 1 / 1 — and recorded that `TextScriptChipNames0.s` carries only 238 names (ids 0..237) while six 0x13 ids (286/339/370/374/376/410) have neither a name nor an asset record. That is the shape of the answer; it has never been produced for all 411 ids, and no ticket has ever asked what the game can reach.
+
+**Files.** `tools/chip_export.py` (the record set it exports, plus a printed per-id cite), `tools/inventory.py` (a second chips count on the reachable set, keeping the 411 line), `src/chips.rs` (bounds/version/assertion only if the asset grows), `docs/coverage/chips.md` (NEW: the reachable set and how it was derived), `docs/worklog/T116.md`. **NOT** `src/battle.rs` (no dispatch changes here), tools/harness.py, tools/states.py, tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Cite canon's own reader of `ChipDataArr_8021DA8`: the routine(s) that index it by chip id at chip use and at the custom-screen draw, the index math and the stride; verify two ids live on canon by `--dump` of the record at the computed address. **measurement.**
+2. Derive the reachable id set from the ROM and the battery save (never tracked, read only): the ids the game can put in a folder and use in battle, with each id's name from `TextScriptChipNames0.s`; report the count and the list. **measurement.**
+3. Produce the three-way table over all 411 rows: in-asset / reachable / verified-on-the-scoreboard, and the gap list (reachable but not in the asset; in the asset but unverified; in neither). Report the counts that M4's queue should be. **measurement.**
+4. If the gap list is bounded: extend `tools/chip_export.py` to export the reachable set, rebuild, and run the full chip class of rows plus the 8-row guard set — every row must read exactly its baseline value with the bigger asset. Report the ROM sha256+size before/after. **code change + measurement.**
+5. If the asset grows and the cursor class moves: report it as the footprint coupling it is (T111's knob), do not chase the tear, and leave the asset change unmerged. **measurement.**
+
+**Rules.** `src/battle.rs` untouched so no dispatch changes ride along. No allowlist, no patch_sterile, canon never changes, names/descriptions come from the ROM's own strings, and every generated row carries file:line. ≤6 captures, tool budget ≤70.
+
+**Acceptance.** `tools/inventory.py` prints the chips line as `verified / 411` **and** `verified / R` with R the measured reachable count, each reachable id carrying its cite (ChipDataArr line + asset index + name string line); the gap list produced; and either the asset extended to the reachable set with all 43 chip rows and the 8-row guard set byte-identical to baseline (verify_rows PASS as the veto), or a NEGATIVE naming why the extension is unsafe, id by id.
+
+**Measure and report.** rows: the 43 chip rows + 8-row guard set, frames as today per row (cursor 170). Reachable count R, the three-way table, the gap lists, asset record count 48 → M, row totals unchanged before/after, ROM sha256+size, fitted count, commit; one line of mechanism (which table the game indexes to build the chip list); one line unverified (the behaviour of each newly-exported chip — export is not parity).
+
+**Coordinator:** docs/tools + chips.rs only, pairable with T113; runs alone if step 4 grows the asset. Free tier: verify_rows on the 9-row set; verifier for steps 1-2's cites and the reachable-set derivation. ≤$0.20 expected, ≤$0.45 cap. **Advances M4 and M1.**
+
