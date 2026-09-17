@@ -317,6 +317,42 @@ STATES = [
              "pixels identical. Build time: ~0.2s.",
     ),
     State(
+        name="battlestart_scripted",
+        path="/tmp/battlestart_scripted.state",
+        root=False,
+        rom=REAL,
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),
+        # battlestart_ai4_rank0's four pokes PLUS T131's OPT-path lever
+        # (asm/asm29.s:10216-10234): three one-shot frame-59 halfword writes
+        # arming the roll's pre-chosen-record path -- oS2001c04_Unk_28 word
+        # 0x02001c2c := 0x0001 (tst r1,r1 nonzero; high half already 0 RAM),
+        # oS2001c04_OptCurBattleDataPtr 0x02001c30/0x02001c32 := 0x080af8a0
+        # (battleSettingsList0 rec163 = 0x080aee70 + 163*0x10,
+        # getBattleSettingsFromList0 asm/asm00_1.s:16048-16056). With Unk_28
+        # set and GetPositiveSignedRNG bit0==0 the roll does
+        # str OptCurBattleDataPtr -> GameState.CurBattleDataPtr 0x02001b9c
+        # (asm29.s:10233): the family-A record is adopted with no root walk,
+        # no rec7 gate, no count -- "fielded at all" for the scripted entry
+        # type. The frame-60 EVENT_681 + iCurrFrame levers stay in BOTH arms
+        # (they only feed the table path the OPT branch skips) so the sole
+        # delta vs the battlestart_ai4_rank0 negative arm is the OPT lever.
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0",
+                 "60:0x02001d58:0x0240", "60:0x0200a210:0x37a",
+                 "59:0x02001c2c:0x0001", "59:0x02001c30:0xf8a0",
+                 "59:0x02001c32:0x080a"),
+        frames=79,
+        description="A battle's real frame 0 whose encounter roll adopted "
+                    "family-A record rec163 0x080af8a0 (battleSettingsList0: "
+                    "enemy_idx 0x16 = ai_index-4 rank v3 + two Gunner v3; "
+                    "T131).",
+        note="Recipe mechanism (T131): see the poke_at comment; measurements "
+             "and the byte-equality check live in docs/worklog/T131.md and "
+             "docs/coverage/entries.md. Negative arm = battlestart_ai4_rank0 "
+             "(identical route, OPT words absent). Build time: ~0.2s.",
+    ),
+    State(
         name="emptyfield_start",
         path="/tmp/emptyfield_start.state",
         root=False,
@@ -819,5 +855,23 @@ TRACE_SCENARIOS = {
         "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, same recipe family as emotion_syn
         "frames": 40,
         "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
+    },
+    # T131: the scripted-entry (family-A) scenario. Canon side rides the
+    # battlestart_scripted state (battlestart_ai4_rank0's route + the roll's
+    # OPT-path pokes, asm/asm29.s:10216-10234). The settings word (0x02001b9c,
+    # canon: oGameState_CurBattleDataPtr / BattleState+0x38, the chosen
+    # BattleSettings record pointer) rides the scenario's own extra watch so
+    # the 16-watch capture budget (CANON_WATCHES 15 + mercy) stays intact;
+    # trace.py merges extra_watches into the same --watch mechanism.
+    "battlestart_scripted": {
+        "frames": 40,
+        "canon_ref": 69,  # provenance: peeked -- populate frame on the ai4_rank0 route's own capture (T87; re-checked on T131's)
+        "rust_base": 0,  # provenance: derived -- canon-only scenario, no rust side exists
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same battle-object family as mettaur/popup, T1 probe
+        "extra_watches": {"settings": (0x02001b9c, 4)},
+        "canon": {
+            "rom": REAL,
+            "loadstate": "/tmp/battlestart_scripted.state",
+        },
     },
 }
