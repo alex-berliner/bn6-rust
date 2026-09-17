@@ -11,6 +11,7 @@ bash tools/check_inputs.sh >/dev/null 2>&1 || bash tools/restore_inputs.sh >/dev
 find /tmp/bnwt -maxdepth 1 -name "verify-*" -mtime +1 -exec git worktree remove --force {} \; 2>/dev/null; git worktree prune
 find /tmp -maxdepth 1 -name "ct_verify*" -mtime +2 -exec rm -rf {} + 2>/dev/null
 python3 tools/roles.py check >/dev/null || { python3 tools/roles.py check; exit 1; }
+bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly's types within half an hour
 eval "$(python3 tools/roles.py schedule)"
 running=0; tailed=""
 for name in $RUNS; do
