@@ -555,3 +555,75 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** owns tools/states.py + tools/harness.py + docs/coverage/chips.md — pair with T90 (M8 disjoint). Free tier: verify_rows from clean checkout on 12-row set. ≤$0.10 expected, ≤$0.20 cap. Advances **M4**.
 
+### T92. M5 — T87 PARTIAL redo: AIIndex-4 rank recording via the frame-60 lever  *(OPEN)*
+
+**Why.** T58 PARTIAL (2026-09-16, branch wt/t58 tip 0302084) closed steps 1-4: 452 identity rows → 257 virus rows → 187 distinct (ai_index, version) pairs; ai 0 = 1 pair, ai 1-31 = exactly 6 pairs each; the Mettaur routine rides byte offset 0x04 = ai_index 1, and the live trio NameIDs 0x0001/0x0085/0x2000 are ai 1/7/17 — NOT ai 4. T58 step 5 NEGATIVE for Mettaur v4/v5: CentralArea1 record list at **0x080b4b78** (data/dat30.s:2463), records 12/13 carry record[7]==1 gated by sub_80AA6EC (label at asm29.s:10493), so the lever alone cannot field them. **T58's NEGATIVE closed Mettaur v4/v5 specifically, NOT every ai_index 4 rank.** 5 other ranks at ai_index 4 exist (v0..v5); some in T65's 1076 0xF0-terminated arrays lack the gate and ARE fieldable. T87 OPEN defines the work; this re-proposes it with a fresh ID. M5 advances **1/187 → 2/187**.
+
+**Files.** `tools/states.py` (ONE new `State` recipe `battlestart_ai4_rank<N>` for an N with record[7]==0 — base `/tmp/overworld_net.state` + T58's frame-60 lever at step-2-derived value), `docs/coverage/mettaur.md` (append the AIIndex-4 rank census + lever values), `docs/worklog/T92.md`. **NOT** src/ (zero changes), tools/harness.py (no row added — recording-only), tools/rom_enemy_tables.py, tools/trace.py, tools/oracle.py, tools/allowlist.py, assets/, reference/ (read-only).
+
+**Do.**
+1. `python3 tools/rom_enemy_tables.py` → group the 187 (ai_index, version) pairs by ai_index 4; report the six (ai=4, v=0..5) ranks' identity rows + the first BattleSettings record each one appears in, with each record's record[7] gate byte. **measurement.**
+2. For each AIIndex-4 rank whose first record has record[7]==0, walk `data/BattleSettings.s` lists and report the record address whose formation names that rank, with bytes read and the lever value the frame-60 must take. **measurement.**
+3. Add ONE `State` recipe (base `/tmp/overworld_net.state`, frame-60 lever at step 2's value), build via `python3 tools/states.py build all`. **measurement.**
+4. `--watch` it: report chosen BattleSettings pointer, the three populated slots' NameID/version/HP at populating frame, and compare each HP against that version's `off_8109150` `elem_hp` row. **measurement.**
+5. 40 frames from two independent builds of the new state diff to **0** pixels; report pixel count and both state hashes. **measurement.**
+6. Record the frame at which canon's new enemy first arms an attack (trace/peek read-only); quote field and frame as the alignment event for a follow-up port ticket. **measurement.**
+
+**Rules.** Recording-only: no src/ change, no harness row, no allowlist, no patch_sterile, canon never changes. Only a NEW State entry — no existing recipe's rom/base/script/pokes/frames change, no root state touched (inputs guard stays green). The new state must be rebuildable by `tools/states.py build all`. Every claimed byte cites reference/bn6f file:line or the ROM table. ≤5 captures, tool budget ≤60.
+
+**Acceptance.** At least one NEW `State` recipe (`battlestart_ai4_rank<N>`) builds and fields a non-Mettaur-v0..v3 ai_index-4 rank whose off_8109150 elem_hp matches the populating-frame HP byte-for-byte; 40-frame determinism reads **0 px** across two independent builds; alignment event frame named. docs/coverage/mettaur.md carries the AIIndex-4 rank census + lever values.
+
+**Measure and report.** rows: 7-row guard set unchanged; frames 40 (recording only); two state hashes, both ROM sha256+size, lever value, AIIndex-4 rank identity row, populated slots NameID/version/HP, off_8109150 elem_hp row, alignment event frame, fitted count, commit; one line of mechanism; one line unverified.
+
+**Coordinator:** owns tools/states.py + docs only — pair with T94 (M4, src/battle.rs disjoint); T93 (M8) touches tools/states.py, sequential. Free tier: `python3 tools/states.py build all` from clean checkout, byte-identity of ROM. ≤$0.05 expected, ≤$0.10 cap. Advances **M5**.
+
+---
+
+### T93. M8 — T90a follow-up: formation scenario + harness row from T65 census  *(OPEN)*
+
+**Why.** T90 PARTIAL (2026-09-17, landed 98ddac0) closed steps 1-2 (docs-only); the recommended next ticket is T90a with budget ≤150 for the full implementation. T65 PASS 3 (landed 79da4ed) closed M1's formations GAP with **1240 records over 84 lists / 1076 0xF0-terminated formation arrays**; all **0/1076** scenarios recorded. T58 PARTIAL census: **187 distinct (ai_index, version) pairs**; lever model reproduced (60:0x0200a210:0x371 → 886 → mod 12 → record 0x080b4c18, formation Mettaur/Gunner/Mettaur; slots populate at frame 148 with NameID 0x0001/0x0085/0x2000 matching off_8109150 byte-for-byte; **40-frame determinism 0 px across two builds**). **T93 ports one of those 1076 formations to the harness** as the first scenario recording for M8. SCOPE **M8** advance: formations count `0/1076 → 1/1076`.
+
+**New evidence.** T90 PARTIAL result: T87 ai4 rank0 rec0 = 0x080b4334 bytes 00141500ff003800 e2490000 8d470b08 (rec7=0, gate free); formation ptr 0x080b478d quads 00/22/00/00, 11/14/a3/00, 11/26/13/00, f0/00/00/00 (3 quads, matches T87 byte-for-byte); lever 0x373; ROM sha256 a37c1028adb7…0d455ad670 (8 388 608 B). 7 guard rows identical to HEAD (wave/window/opening/chip-cannon/mettaur/windowclose/popup all 0/0/N).
+
+**Files.** `tools/states.py` (NEW `battlestart_<rank>` recipe using T87's lever value + the cited BattleSettings record; base `/tmp/overworld_net.state` + frame-60 lever at T87-derived value), `tools/harness.py` (NEW row `<rank>_formation`: canon_ref=40, `search range(<lever>-2, <lever>+2)`, negative = same route WITHOUT the lever poke), `docs/coverage/formations.md` (NEW — first entry carrying the cited BattleSettings record address + bytes), `docs/worklog/T93.md`. **NOT** tools/allowlist.py, tools/trace.py, tools/oracle.py, tools/inventory.py (only re-run for M8 line update), src/, reference/bn6f.
+
+**Do.**
+1. From T87's recipe byte, extract the BattleSettings record address + the chosen `<rank>`'s three-slot formation word (NameID/version/HP triplet) and the record[7] gate byte. **measurement.**
+2. Read `data/BattleSettings.s` near the cited address; confirm the record's formation matches T87's byte-for-byte reading and no `match formation_id` arm in src/ exists. **measurement.**
+3. Add `tools/states.py:battlestart_<rank>` with base `/tmp/overworld_net.state` + lever value at frame 60 + any required unlock poke; build via `python3 tools/states.py build all`. **measurement.**
+4. Add `<rank>_formation` row in tools/harness.py; run it; expect 0/0/40 with non-blind negative (no-lever route produces a different formation). **measurement.**
+5. verify_rows on 8-row guard set + `<rank>_formation`; expect guard identical, `<rank>_formation` 0/0/40. **measurement.**
+
+**Rules.** Recording-only at the harness row layer — src/ stays untouched. State file patches are `peeked` provenance. No allowlist, no patch_sterile, canon never changes. The `<rank>` chosen must have record[7]==0 (per T87 + T58). ≤5 captures, tool budget ≤80.
+
+**Acceptance.** `<rank>_formation` 0/0/40 with non-blind negative (frame-shift negative non-zero); 8-row guard set identical; SCOPE M8 formations count `0/1076 → 1/1076`. Cited BattleSettings record address + bytes each carry `file:line` provenance; formation byte-exact vs T58's census + T87's recipe.
+
+**Measure and report.** rows: `<rank>_formation` + 8-row guard set; frames 40 each. Before/after pixel totals, worst, region, lever value, BattleSettings record address, formation triplet, gate byte, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified.
+
+**Coordinator:** owns tools/states.py + tools/harness.py + docs only; pair with T92 (M5, both touch tools/states.py — sequential). Free tier: verify_rows + `python3 tools/states.py build all` byte-identity of ROM. Verifier for step 1's formation-bytes vs T87 cite. ≤$0.10 expected, ≤$0.20 cap. Advances **M8**.
+
+---
+
+### T94. M4 — T91a split: TrnArrw1+2 (ids 24-25) as data via family-0x28 arm  *(OPEN)*
+
+**Why.** T91 NEGATIVE (2026-09-17, worklog only) refuted the family-shared premise: chip 24/25 share family 0x28 attack_power 40/50; chip 26 TrnArrw3 is family 0x2D (Muramasa's), so it cannot ride the same arm without over-triggering. T91's recommendation is TrnArrw1+2 land with family-0x28 arm (2 ids verified); TrnArrw3 deferred until the Muramasa conflict is resolved. T46 DONE (Bomb family reads AttackPower +0x1a, merged 85f021c), T48 DONE (Barrier family, merged 079531c), T52 DONE (AirShot id 4, family 0x21). **3 chip families ported as data** out of the 411 record rows; SCOPE M4 record-driven total = **43/411 → 45/411** on landing.
+
+**New evidence.** T91 NEGATIVE refutation read (data/ChipDataArr.s:747..871): chip 24 TrnArrw1 codes=GMZ? family 0x28 attack_power 40; chip 25 TrnArrw2 codes=MSY? family 0x28 attack_power 50; chip 26 TrnArrw3 codes=BET? family 0x2D (Muramasa's family) attack_power 60. T46's Bomb-family port shape (cite data/ChipDataArr.s per id, +0x1a offset) is the proven mechanism. Cannon (T36/T38/T51 NEGATIVE) and Vulcan (T54 NEGATIVE) families are closed; TrnArrw is a fresh angle with no prior attempts except T91. Cursor veto is the binding constraint (T51's lesson).
+
+**Files.** `src/battle.rs` (extend T46's `match chip.family` site with a TrnArrw arm reading +0x18 Element + +0x1a AttackPower — ONLY IF no record-driven arm exists for family 0x28), `tools/states.py` (NEW scenarios `trnarrw_select_24` and `trnarrw_select_25`), `tools/harness.py` (NEW 2 rows `chip-trnarrw1`, `chip-trnarrw2` canon_ref=40, negative = no-chip-fire path; reuse `chip-cannon` fixture base), `docs/coverage/chips.md` (NEW entries for ids 24-25 with the `data/ChipDataArr.s` cite), `docs/worklog/T94.md`. **NOT** tools/allowlist.py, tools/trace.py, tools/inventory.py (re-run for M4 chip row count only), src/chips.rs, reference/bn6f; **no `match chip.id { 24 | 25 => ... }` arm**.
+
+**Do.**
+1. Baseline, no edit: build ROM, sha256; verify_rows HEAD on 8-row guard set + chip-cannon + chip-bomb → expect all 0/0/N. **measurement.**
+2. Read `data/ChipDataArr.s:747..871` for ids 24-25; confirm family byte = 0x28, Element byte +0x18 = 0x02 (CHIP_ELEM_AQUA), AttackPower +0x1a = 40/50. Confirm no `match chip.id { 24 | 25 => ... }` arm in src/battle.rs. **measurement.**
+3. If no record-driven arm for family 0x28: extend T46's `match chip.family` site with a 0x28 → (power, element) arm. Build 2 `trnarrw_select_<id>` recipes in tools/states.py with chip-id 24/25 in the picked slot + a fire-cue. Add 2 chip-trnarrw rows in tools/harness.py. **measurement.**
+4. Build ROM; run each chip-trnarrw row; expect 0/0/40 with non-blind negative (no-chip-fire path); re-run cursor row from a clean detached checkout (cursor 1/1/170/186279 unchanged). **measurement.**
+5. verify_rows on 8-row guard set + chip-cannon + chip-bomb + 2 chip-trnarrw rows; expect all identical to step 1, 2 chip-trnarrw rows 0/0/40, cursor 1/1/170 unchanged. **measurement.**
+
+**Rules.** **No `match chip.id { 24 | 25 => ... }` for these ids.** If `src/battle.rs` already has a record-driven arm for the chip-data Bomb dispatch (T46) AND no TrnArrw-specific arm remains, this is harness-row only. If a per-id arm exists, port to `match chip.family == 0x28` reading +0x18 (Element) + +0x1a (AttackPower), per T46's pattern. No allowlist, no patch_sterile, no F47-style scroll broadening. Cursor veto: ≤1/1/170/186300. ≤5 captures, tool budget ≤80.
+
+**Acceptance.** 2 chip-trnarrw rows 0/0/40 with non-blind negatives; 8-row guard set + chip-cannon + chip-bomb identical; cursor 1/1/170/186279 unchanged; SCOPE M4 chip row count **43/411 → 45/411**. Cite `data/ChipDataArr.s:747..871` for each id's record bytes + the dispatch path; if a src/battle.rs edit is required, it carries `file:line` provenance per arm and the regression-on-cursor clause closes the ticket NEGATIVE.
+
+**Measure and report.** rows: 2 chip-trnarrw + chip-cannon + chip-bomb + 8-row guard set + cursor; frames 40 each (cursor 170). Before/after pixel totals, worst, region, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified.
+
+**Coordinator:** owns src/battle.rs (if edit needed) + tools/states.py + tools/harness.py + docs/coverage/chips.md — pair with T92 (M5, src/battle.rs disjoint from T92's tools-only path). T93 (M8) touches tools/states.py + tools/harness.py, sequential. Free tier: verify_rows from clean checkout on 11-row set. ≤$0.10 expected, ≤$0.20 cap. Advances **M4**.
+
