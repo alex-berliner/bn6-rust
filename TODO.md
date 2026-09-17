@@ -390,3 +390,58 @@ docs/worklog/T63.md names only docs/worklog/T63.md and docs/coverage/battle_full
 **Measure and report.** The harness lines before and after, the count of citations moved, and the answer to the dangling one.
 **Coordinator:** a docs ticket; no verifier needed when verify_rows is identical.
 
+
+### T66. Replace the fitted POST_FLINCH_FRAMES shadow with the measured Timer hold (M2, model quality)
+
+**Why.** `src/actor.rs:429` carries `const POST_FLINCH_FRAMES: u8 = 11;` tagged
+`// provenance: fitted -- read off the PAUSED+Start@10 watch capture`, and the export at
+`src/actor.rs:727-735` emits `0xffff` on the first idle frame, then a 9..0 countdown, then 0 (the
+`measured 137..147` comment sits at `src/actor.rs:660`). T63's verifier (87d802ec, verdict in the
+T63 Result) measured what canon actually does in `battle_full`: the flinch handler
+`playerFlinchAction_80174FE` (`reference/bn6f/asm/asm00_2.s:18300-18378`) writes Timer `0x17` at
+k=269 (PC `0x0801757C`, same-frame decrement `0x08017586`), and at k=292 (capture frame 303) writes
+`0x00 -> 0xFFFFFFFF` (PC `0x08017598`, with `CurAnim 1 -> 0` and `CurAction 0x03 -> 0x08` in the same
+tail) and then **holds 0xFFFF for 248 frames to k=539** -- a real hold, since no store to
+`0x0203a9d0` occurs after frame 303 in the 67-store table. An 11-frame fitted shadow cannot represent
+that. This is the only M2-side defect T63 proved that is fixable without touching a fixture or a
+fire-frame, both of which the row rules forbid and which need a user ruling.
+
+**Do.** Read `docs/worklog/T63.md` first (store table, all numbers).
+1. Re-derive the post-flinch Timer behaviour from the ROM, not from the fitted constant: after the
+   countdown reaches 0, Timer stays at the `0xFFFF` sentinel until some *other* writer touches it.
+   Find the writers in the disassembly (`grep -n "oBattleObject_Timer" reference/bn6f/asm/*.s` and
+   the flinch tail above) and state which ones can end the hold; if none can, the hold is open-ended
+   and the model must say so.
+2. Change `src/actor.rs` so the exported `mm_timer`/`Timer` value follows that rule. If the old shadow
+   is still needed to keep a passing row passing, keep it behind a named constant whose provenance tag
+   cites a measurement (file:line + frame range), never `fitted`, and say which row forced it.
+3. Baseline first, same script twice: `python3 tools/oracle.py battle_full --both` before and after,
+   and the guard set `python3 tools/verify_rows.py wt/t66 wave,window,opening,chip-cannon,mettaur,windowclose,cursor
+   --expect ...`. The shadow is shared by rows that pass today, so this is the risk of the ticket, not
+   step 1.
+4. Note honestly what this ticket can and cannot move: on `battle_full` OUR navi is never hit (hp set
+   {60}, mercy {120}, timer {0} over k=0..539), so `mm_timer`'s 270 divergent frames are NOT expected
+   to move here; the fire-alignment gap (canon fires at k=250 from a scripted `A@260`, we fire at
+   k=352 from AUTO-FIRE with `fire_frame: 180`) is a separate, un-ticketed blocker awaiting a ruling.
+
+**Files.** `src/actor.rs` (the shadow and its export), `docs/coverage/battle_full.md` (record the
+248-frame 0xFFFF hold and the writer list), `docs/worklog/T66.md`. `src/battle.rs` only if the Timer
+export path forces it; no fixture, no `tools/states.py`, no `tools/harness.py` row config.
+
+**Rules.** Do not change any fixture, script, `fire_frame`, compared region or comparison start; do not
+widen `tools/allowlist.py`; `reference/bn6f` is read-only. A fresh worktree has an EMPTY
+`reference/bn6f` submodule -- read the disassembly from `/home/box/Code/bn/reference/bn6f` (or export
+`BN6F_REF` to it) or you will "refute" live cites. `cargo build --release` emits no `.gba`; the ROM
+comes from `python3 tools/gbafix.py $CARGO_TARGET_DIR/thumbv4t-none-eabi/release/bn <out>.gba`, so
+quote that if you report a hash. Report in the AGENTS.md shape (row, frames, total, worst, region,
+commit, one line of mechanism, one line of what is unverified).
+
+**Acceptance.** `POST_FLINCH_FRAMES` is either gone or carries a provenance tag naming a measurement
+and a frame range; the hold rule is stated in `docs/coverage/battle_full.md` with the ROM writers that
+can end it; every named guard row is identical or better, and any row that moves is reported with its
+numbers (a row that gets worse means keep the branch unmerged and report). `cursor` measures 1 frame
+and 1 px of total <= 186300 (it moves with ROM layout: report, do not chase; > 1/1 or total > 186300
+with the same ROM sha256 as main's `5b46337aa27da9ca881f2321fe1e210f54717285b4dfa5256c1680bac4b985ef`
+means unmerged). If the change turns out to be unobservable anywhere today, that is a valid outcome --
+report it as a model-quality change with the rows unchanged, and name the trace that would show it once
+the hit lands.
