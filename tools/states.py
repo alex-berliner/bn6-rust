@@ -799,4 +799,25 @@ TRACE_SCENARIOS = {
         "frames": 40,
         "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
     },
+    # T122: the two new emotion rows' trace scenarios -- same shape as
+    # emotion_syn_full (they ride the row's own sides via harness_row), so
+    # the state fields over each new window can be diffed without touching
+    # trace.py. The canon pokes differ per row (Unk_36 0x020340B6 for the
+    # slot-4 face; the gate byte 0x0203528F for the skip arm) -- both live
+    # outside trace.py's fixed CANON_WATCHES, measured per row in
+    # docs/worklog/T122.md.
+    "emotion_face_b_full": {
+        "harness_row": "emotion_face_b",
+        "canon_ref": 43,  # provenance: derived -- ALIGN_CHIP's own canon_ref, the row's pairing
+        "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, same recipe family as emotion_syn
+        "frames": 40,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
+    },
+    "emotion_skip_full": {
+        "harness_row": "emotion_skip",
+        "canon_ref": 43,  # provenance: derived -- ALIGN_CHIP's own canon_ref, the row's pairing
+        "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, same recipe family as emotion_syn
+        "frames": 40,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
+    },
 }

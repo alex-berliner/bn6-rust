@@ -3363,6 +3363,94 @@ PORTED_CHECKS: List[Check] = [
                               script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
     ),
+    Check(
+        name="emotion_face_b",
+        ui="isolated",
+        frames=40,
+        align=ALIGN_CHIP,
+        # T122: a SECOND drawn face through the landed FACE_INDEX -- slot 4,
+        # so the port's per-face palette upload is under test too (slot 4's
+        # palette differs from slot 2's in the ROM: dword_872F114+4*32 vs
+        # +2*32, read straight from the sterile ROM this session), not just
+        # the slot-2 art slot emotion_syn already proves.
+        #
+        # canon: AIData.Unk_36 poked to 1 at load (0x020340B6, halfword, the
+        # T105 route's third byte): possiblyGetBattleEmotion_8015B64 returns
+        # enum 5 when Unk_36 != 0 (asm00_2.s:15142-15144), and
+        # byte_801E6F4[5] = 4 (asm00_2.s:31045, table read from ROM) picks
+        # face slot 4; sub_801CB38 uploads slot 4's left half
+        # (off_801CD08[4] = bank +0x600) with slot 4's OWN palette every
+        # frame. MEASURED this session (T122 step 2, 40-frame window canon
+        # 43..82, same recipe minus the face poke as the no-poke base):
+        # face-ONLY -- 27760 total = 694 px/frame flat in the face box
+        # x0..48/y18..34 and 0 px everywhere else, exactly the Unk_32
+        # profile T105 measured. (Unk_36 is also the full-synchro check in
+        # sub_801E660's +5 branch, asm00_2.s:30993-31001, but that path
+        # needs a non-zero transformation byte -- zero here -- so the poke
+        # cannot reach it on this route; T105's 90-frame probe already read
+        # this poke face-only.)
+        #
+        # rust: the same descriptor with emotion=4 (+63, src/fixture.rs's
+        # `emotion`); src/emotion.rs indexes FACE_INDEX[4] = 0x600 and
+        # uploads slot 4's left half + the shared right half + slot 4's
+        # palette.
+        rust=_chip_rust("b1", flags=0x5F, emotion=4),
+        # emotion_syn's canon side verbatim with the Unk_32 halfword swapped
+        # for the Unk_36 one -- the face poke is the ONLY delta.
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1") + ("0x020340b6:0x0001",),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
+                              script="Start@10,A@40", extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="emotion_skip",
+        ui="isolated",
+        frames=40,
+        align=ALIGN_CHIP,
+        # T122: the skip arm -- canon's face gone entirely. NO enum can land
+        # a skip slot: byte_801E6F4 (read from ROM, asm00_2.s:31045) maps
+        # enum 4 -> slot 5, but possiblyGetBattleEmotion_8015B64 never
+        # returns 4 (its own arms are 5/3/1/2/0, asm00_2.s:15140-15166), and
+        # the 25-entry transformation table byte_801E700 (asm00_2.s:31049,
+        # entries 1/2 -> slots 5/6) is only reachable with a non-zero
+        # transformation byte, not a poke on this route. The draw gate is
+        # the thing the skip range lives on: drawEmotionWindow_801CDEC reads
+        # eStruct2035280+0xf = 0x0203528F and emits NO OBJ for 5 or 6
+        # (asm00_2.s:27647-27652; T108 measured byte=5 -> face gone, 694
+        # px/frame) -- and on this route NOTHING writes that byte in the
+        # window (its only writers are the blink updater sub_801CC94,
+        # asm00_2.s:27551/27560/27566; T105 pass-4 watch read 0x00 for 80
+        # frames), so a load poke survives it. MEASURED this session (T122
+        # step 2, 40-frame window canon 43..82): the aligned halfword poke
+        # 0x0203528E:0x0500 -- bytes 0x0203528E=0x00 (eStruct+0xe, the
+        # stored transformation, 0 = its calm value) and 0x0203528F=0x05
+        # (the gate byte) -- is face-ONLY: 27760 total = 694 px/frame flat
+        # in the face box x0..48/y18..34, 0 px everywhere else, i.e. the
+        # calm face vanishes and stays gone for the whole window.
+        #
+        # rust: the same descriptor with emotion=5 (+63) -- src/emotion.rs
+        # builds NO sprites for slots 5/6, mirroring the gate's own
+        # `beq locret_801CE14` (asm00_2.s:27648-27652), so BOTH sides draw
+        # no face OBJ and the row reads 0 only if the port's skip is also
+        # silent.
+        rust=_chip_rust("b1", flags=0x5F, emotion=5),
+        # emotion_syn's canon side verbatim with the Unk_32 halfword swapped
+        # for the gate-byte one -- the face poke is the ONLY delta.
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1") + ("0x0203528e:0x0500",),
+                              zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
+                                    ENEMY_DISSOLVE_FIRST_PHASE),
+                              pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
+                                       + ENEMY_DISSOLVE_QUEUE_KILL,
+                              script="Start@10,A@40", extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
+    ),
 ]
 
 CHECKS.extend(PORTED_CHECKS)
