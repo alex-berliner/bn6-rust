@@ -1453,6 +1453,97 @@ NAVICUST_FIELDS = [
 ]
 
 
+# ------------------------------------------------------------------
+# T110: per-handler enumeration of navicust_jt_NCPs itself. Every entry
+# walked in reference/bn6f/asm/asm37_0.s (labels at the cited lines; the
+# jump-table entry for index k sits at asm37_0.s:2112+k). Effect column =
+# what the body does: Set(slot,val)/Get-then-Set(slot) with the
+# SetCurPETNaviStatsByte slot, or the composed calls it makes.
+# `battle_relevant` = the handler writes at least one NaviStats slot that
+# appears in the 19-slot DERIVED-FROM-HEADERS list above (the
+# include/structs/NaviStats.inc named u8 slots this section counts).
+# MEASURED COUNTS (T110): 47 entries = 1 no-op stub + 46 real handlers;
+# 24 handlers are battle-relevant over 13 distinct slots
+# (0x1 Attack, 0x2 Speed, 0x3 Charge, 0x6 FstBarr, 0x7 BLeftAbility,
+# 0xa CustomLevel, 0xb MegaLevel, 0xc GigaLevel, 0x1b FloatShoes,
+# 0x1c AirShoes, 0x1d UnderShirt, 0x23 SuperArmor, 0x35 SlipRun);
+# 6 of the 19 slots have NO handler writing them (BButton 0x4, BPwrAtk 0x5,
+# Mood 0xe, CustHPBug 0x19, EmotionBug 0x24, ProcessingBug 0x31); the
+# other 22 handlers write 11 distinct slots NOT in the 19 (0x26, 0x27,
+# 0x1e, 0x1f, 0x25 Humor, 0x33, 0x36, 0x5f Poem, 0x60, 0x61, 0xd) plus
+# direct-r10 HP writes (0x3e..0x42). The SCOPE
+# denominator 19 counts SLOTS, not handlers -- restated counts are in
+# docs/coverage/navicust.md; the slot table above is unchanged.
+NAVICUST_HANDLER_EFFECTS = [
+    ("sub_813C808", 2162, "no-op stub (push {lr}; pop {pc})", "", False),
+    ("navicust_NCP_SuperArmor", 2168, "Set(0x23,1)", "SuperArmor", True),
+    ("navicust_NCP_Custom1", 2180, "Get(0xa)+1, max 8", "CustomLevel", True),
+    ("navicust_NCP_Custom2", 2197, "Get(0xa)+2, max 8", "CustomLevel", True),
+    ("navicust_NCP_MegFldr1", 2214, "Get(0xb)+1, max 10", "MegaLevel", True),
+    ("navicust_NCP_MegFldr2", 2231, "Get(0xb)+2, max 10", "MegaLevel", True),
+    ("navicust_GigFldr1", 2248, "Get(0xc)+1, max 10", "GigaLevel", True),
+    ("navicust_NCP_FstBarr", 2265, "Set(6,1)", "FstBarr", True),
+    ("navicust_NCP_Shield", 2276, "Set(7,0x3b)", "BLeftAbility", True),
+    ("navicust_NCP_Reflect", 2287, "Set(7,0x8b)", "BLeftAbility", True),
+    ("navicust_NCP_AntiDmg", 2298, "Set(7,0x3d)", "BLeftAbility", True),
+    ("navicust_NCP_FlotShoe", 2309, "Set(0x1b,1)", "FloatShoes", True),
+    ("navicust_NCP_AirShoes", 2320, "Set(0x1c,1)", "AirShoes", True),
+    ("navicust_NCP_UnderSht", 2331, "Set(0x1d,1)", "UnderShirt", True),
+    ("navicust_NCP_ChpShufl", 2342, "Set(0x60,1)", "unnamed 0x60", False),
+    ("navicust_NCP_NumbrOpn", 2353, "Set(0x61,1)", "unnamed 0x61", False),
+    ("navicust_NCP_SneakRun", 2364, "Set(0x1e,1)", "unnamed 0x1e", False),
+    ("navicust_NCP_OilBody", 2375, "Set(0x27,2)", "unnamed 0x27", False),
+    ("navicust_NCP_Fish", 2388, "Set(0x27,4)", "unnamed 0x27", False),
+    ("navicust_NCP_Battery", 2401, "Set(0x27,8)", "unnamed 0x27", False),
+    ("navicust_NCP_Jungle", 2414, "Set(0x27,0x10)", "unnamed 0x27", False),
+    ("navicust_NCP_Collect", 2427, "Get(0x26)|2", "unnamed 0x26", False),
+    ("navicust_NCP_Millions", 2441, "Set(0x33,1)", "unnamed 0x33", False),
+    ("navicust_NCP_Humor", 2452, "Set(0x25,1)", "Humor (not in 19)", False),
+    ("navicust_NCP_Poem", 2463, "Set(0x5f,1)", "Poem (not in 19)", False),
+    ("navicust_NCP_SlipRunr", 2474, "Set(0x35,1)", "SlipRun", True),
+    ("navicust_NCP_AutoHeal", 2485, "Set(0x36,1)", "unnamed 0x36", False),
+    ("navicust_NCP_BustPack", 2496, "Get+3 max 4 for slots 1,2,3",
+     "Attack+Speed+Charge", True),
+    ("navicust_NCP_BodyPack", 2535, "calls SuperArmor+FlotShoe+AirShoes+UnderSht",
+     "SuperArmor+FloatShoes+AirShoes+UnderShirt", True),
+    ("navicust_NCP_FldrPak1", 2545, "calls MegFldr1+Custom1",
+     "MegaLevel+CustomLevel", True),
+    ("navicust_NCP_FldrPak2", 2553, "calls MegFldr2+Custom2",
+     "MegaLevel+CustomLevel", True),
+    ("navicust_NCP_BugStop", 2561, "Set(0x1f,1)", "unnamed 0x1f", False),
+    ("navicust_NCP_Rush", 2572, "Get(0xd)|1", "unnamed 0xd", False),
+    ("navicust_NCP_Beat", 2588, "Get(0xd)|2", "unnamed 0xd", False),
+    ("navicust_NCP_Tango", 2604, "Get(0xd)|4", "unnamed 0xd", False),
+    ("navicust_NCP_AttackPlus1", 2620, "Get(1)|4", "Attack", True),
+    ("navicust_NCP_SpeedPlus1", 2637, "Get(2)|4", "Speed", True),
+    ("navicust_NCP_ChargePlus1", 2654, "Get(3)|4", "Charge", True),
+    ("navicust_NCP_AttckMAX", 2671, "Set(1,4)", "Attack", True),
+    ("navicust_NCP_SpeedMAX", 2682, "Set(2,4)", "Speed", True),
+    ("navicust_NCP_ChargMAX", 2693, "Set(3,4)", "Charge", True),
+    ("navicust_NCP_HPPlus50", 2704, "r10 direct +50 max HP", "unnamed HP 0x3e..", False),
+    ("navicust_NCP_HPPlus100", 2716, "r10 direct +100 max HP", "unnamed HP 0x3e..", False),
+    ("navicust_NCP_HPPlus200", 2728, "r10 direct +200 max HP", "unnamed HP 0x3e..", False),
+    ("navicust_NCP_HPPlus300", 2740, "r10 direct +300 max HP", "unnamed HP 0x3e..", False),
+    ("navicust_NCP_HPPlus400", 2754, "r10 direct +400 max HP", "unnamed HP 0x3e..", False),
+    ("navicust_NCP_HPPlus500", 2768, "r10 direct +500 max HP", "unnamed HP 0x3e..", False),
+]
+
+
+def parse_navicust_handlers():
+    rows = []
+    for idx, (sym, line, effect, slot, battle) in enumerate(NAVICUST_HANDLER_EFFECTS):
+        rows.append({
+            "index": idx,
+            "handler": sym,
+            "cite": f"asm/asm37_0.s:{line} (jt entry {2112 + idx})",
+            "effect": effect,
+            "slot": slot,
+            "battle_relevant": battle,
+            "status": "unrecorded",
+        })
+    return rows
+
+
 def parse_navicust():
     rows = []
     for i, ln in enumerate(read_lines("include/structs/NaviStats.inc"), 1):
@@ -1817,6 +1908,7 @@ def main():
     lists, form_rows = parse_formations()
     backdrops = parse_backdrops(lists)
     navicust = parse_navicust()
+    navicust_handlers = parse_navicust_handlers()
 
     write_section("chips", {"generator": "tools/inventory.py", "rows": chips})
     write_section("program_advances", {"generator": "tools/inventory.py", "rows": pas})
@@ -1857,6 +1949,12 @@ def main():
                                  "battle_settings_lists": lists, "rows": form_rows})
     write_section("backdrops", {"generator": "tools/inventory.py", "rows": backdrops})
     write_section("navicust", {"generator": "tools/inventory.py", "rows": navicust})
+    # T110: per-handler enumeration as its OWN section JSON -- deliberately
+    # NOT folded into the navicust slot rows, so the published SCOPE M1
+    # denominator (0/19 slots) is unchanged until the human restates it
+    # (measured counts: 24/47 handlers battle-relevant over 13 slots).
+    write_section("navicust_handlers", {"generator": "tools/inventory.py",
+                                        "rows": navicust_handlers})
 
     nrec = sum(v["records"] for v in lists.values())
     # computed, not a literal: 2 scripted lists + the encounter tree's lists
