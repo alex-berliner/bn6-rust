@@ -319,7 +319,7 @@ pub fn fixture_ptr() -> *const u8 {
 /// the BIOS's VBlankIntrWait, and commit's copies start after it returns),
 /// so the pad lives here: a busy-wait that reads and writes nothing,
 /// delaying every frame's copy start by a measured constant.
-const SEAM_PHASE_PAD_ITERS: u32 = 17; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout
+const SEAM_PHASE_PAD_ITERS: u32 = 25; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
