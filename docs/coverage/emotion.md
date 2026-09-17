@@ -1,23 +1,123 @@
 # emotion window -- the navi's face in the battle HUD
 
-Row: `emotion_syn` (isolated, frames 40, ALIGN_CHIP).
+Rows: `emotion_syn` (isolated, frames 40, ALIGN_CHIP), plus T122's
+`emotion_face_b` (slot 4 through AIData.Unk_36) and `emotion_skip` (canon's
+blink countdown byte pinned to 5 -- face gone on BOTH sides; pairing evidence
+for the align window, not face coverage -- see below).
 
-## What the row proves
+## What the rows prove
 
-Canon's face-selection gate is reproduced for face slot 2: canon with the
-player's `AIData.Unk_32` poked to 1 (0x020340B2 = base 0x02034080) draws the
-slot-2 face from `off_801CD08[2]` (dword_872DB14) with slot 2's own palette
-every frame, and our port -- `src/emotion.rs`, descriptor `emotion` at +63,
-`FACE_INDEX[2] = 0x300` -- renders the same 40 frames byte-exactly
-(PASS 0/0/40, frame-shift negative not blind, 644).
+Canon's face-selection gate is reproduced for THREE states, all via the
+landed `assets/emotion.bin` bank and `src/emotion.rs`'s per-face palettes:
+
+- `emotion_syn`: canon with `AIData.Unk_32` poked to 1 (0x020340B2) draws the
+  slot-2 face from `off_801CD08[2]` (dword_872DB14) with slot 2's own palette;
+  ours (descriptor `emotion=2`, `FACE_INDEX[2] = 0x300`) renders the same 40
+  frames byte-exactly (PASS 0/0/40, frame-shift negative not blind, 644).
+- `emotion_face_b` (T122): canon with `AIData.Unk_36` poked to 1 (0x020340B6)
+  -> enum 5 -> slot 4 (`off_801CD08[4]` = bank +0x600, slot 4's palette, which
+  DIFFERS from slot 2's in the ROM); ours (`emotion=4`) reads 0/0/40, negative
+  not blind (644). The port's per-face PALETTE upload is under test here, not
+  just slot 2's art.
+- `emotion_skip` (T122): the blink countdown byte pinned to 5. eStruct2035280+0xf
+  (0x0203528F) is NOT the face slot and NOT a "skip" flag: it is the 12-step
+  blink countdown owned by sub_801CC94 -- asm00_2.s:27550-27551 loads 0xc into
+  it, :27557-27566 decrements it once per frame and reloads at 0, and
+  :27567-27574 copies the 0x20-byte blink pattern byte_801CDA4 ->
+  byte_30016D0 off bit 1 of that same byte. The face slot lives at +0x10/+0x11
+  (asm00_2.s:27341-27342, read back at :27403). The draw gate's `cmp #6` /
+  `cmp #5` (asm00_2.s:27648-27652) are therefore two phases of a 12-frame blink
+  cycle: canon suppresses the face window about 2 frames per cycle -- that IS
+  the blink. The row pins 0x0203528F = 5 (aligned halfword poke
+  0x0203528E:0x0500; the other byte of that poke lands on +0xe, the
+  beast-out counter -- see the chain section -- which reads 0 on this route, so
+  the poke is harmless), and `drawEmotionWindow_801CDEC` emits NO OBJ for
+  countdown 5/6 (asm00_2.s:27647-27652; T108 measured byte=5 -> face gone).
+  Ours (descriptor `emotion=5`) builds no sprites for slots 5/6. Row reads
+  0/0/40, negative not blind (644): BOTH worlds show an empty face box over
+  all 40 frames -- an empty box against an empty box, pairing evidence for
+  the align window, NOT face coverage.
+
+Measured poke effects (T122 step 2, canon 43..82, each poke against the same
+recipe with no face poke): both pokes are face-ONLY -- 27760 total = 694
+px/frame flat in the face box x0..48/y18..34, 0 px everywhere else.
+
+## The tables (T122, read straight out of the ROM bytes --
+## /tmp/bn6f_sterile.gba af13c206…, file offset = addr - 0x08000000)
+
+**`byte_801E6F4` @ 0x0801E6F4** (asm00_2.s:31045) — the emotion ENUM → face
+slot table, **6 entries + 2 pad** (the ticket's "23-entry" premise was wrong:
+this table is 8 bytes). Indexed with the enum from
+`possiblyGetBattleEmotion_8015B64` (asm00_2.s:15122-15174, stride 1, e.g.
+asm00_2.s:30970/30997/31033):
+
+| enum | 0 | 1 | 2 | 3 | 4 | 5 | (6, 7 pad) |
+| slot | 0 | 2 | 3 | 1 | 5 | 4 | 0, 0 |
+
+- enum 0 = calm; 1 = Unk_32≠0; 2 = Mood==0xff; 3 = Anger≠0; 5 = Unk_36≠0 or
+  Mood==0 (check order asm00_2.s:15140-15166).
+- **enum 4 → slot 5 is UNREACHABLE**: the routine never returns 4. So no
+  AIData poke can land a slot in the skip range through the ENUM table --
+  but the transformation table below does reach 5/6 (a cross state's own
+  faces), and the draw gate does not block them: see the skip-range note.
+
+**`byte_801E700` @ 0x0801E700** (asm00_2.s:31049) — the TRANSFORMATION → base
+face slot table, **25 entries + 3 pad**, indexed by the second return
+(oNaviStats_Transformation) of possiblyGetBattleEmotion, consumed by
+sub_801E6A8/sub_801E660 (asm00_2.s:30962-31001). This is the 23+-entry table
+the ticket was after:
+
+| transformation | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | (25..27 pad) |
+| base slot | 0 | 5 | 6 | 7 | 8 | 9 | 5 | 6 | 7 | 8 | 9 | 20 | 20 | 15 | 16 | 17 | 18 | 19 | 15 | 16 | 17 | 18 | 19 | 22 | 22 | 0, 0, 0 |
+
+Post-adjustments (asm00_2.s:30975-31001): transformation 1..10 → +5 when
+`byte_801E6F4[enum] == 2` (full synchro: cross faces 5..9 become 10..14);
+transformation 11/12 → +1 when `byte_801E6F4[enum] == 3` (beast out with
+Mood==0xff: the test at asm00_2.s:31022-31025 is on the RESOLVED SLOT value 3,
+and slot 3 comes from enum 2 = Mood==0xff, `byte_801E6F4[2] = 3` -- Anger is
+enum 3 → `byte_801E6F4[3] = 1`, a different arm). Slot 20 becomes 21.
+
+**Skip range (5/6) entries**: `byte_801E6F4[4] = 5` (unreachable enum, above)
+and `byte_801E700[1] = 5`, `[2] = 6` -- reachable via a non-zero
+transformation byte, i.e. a cross/beast state. The upload path's `cmp #5`
+(asm00_2.s:27390, `bge loc_801CBBE`) only skips the blink *bookkeeping* --
+`loc_801CBBE` (asm00_2.s:27404) IS the upload -- so a transformation-resolved
+slot 5 (e.g. `byte_801E700[1] = 5`, a cross state) is uploaded and drawn
+whenever the blink countdown is not sitting at 5/6. Our `emotion_skip` row
+does NOT exercise this path; it pins the blink countdown byte 0x0203528F = 5
+instead (an empty box against an empty box).
+
+**Slot coverage**: `off_801CD08` @ 0x0801CD08 (asm00_2.s:27580-27603), 23
+pointer words read from ROM, deltas from dword_872D814:
+`[0x0000, 0x0180, 0x0300, 0x0480, 0x0600, 0x0780, 0x0880, 0x0980, 0x0a80,
+0x0b80, 0x0c80, 0x0d80, 0x0e80, 0x0f80, 0x1080, 0x0780, 0x0880, 0x0980,
+0x0a80, 0x0b80, 0x1700, 0x1700, 0x1800]` — byte-identical to the landed
+`src/emotion.rs` FACE_INDEX. Slots 15..19 alias 5..9 and 21 aliases 20 in the
+table itself; slots 5/6 DO have distinct art (0x780/0x880) and ARE drawn --
+a transformation-resolved slot 5/6 uploads through loc_801CBBE
+(asm00_2.s:27404) and reaches the screen except during the ~2-frames-per-
+cycle blink phases 5/6 (see the skip-range note above). The landed `assets/emotion.bin` covers all 23
+slots (bank 0x1900) and all 23 palettes (0x2e0); per-face palette check from
+dword_872F114 + slot*32: slot 4's palette differs from slot 2's, as does
+every other slot's.
 
 ## The chain (cites)
 
 - Draw gate: `drawEmotionWindow_801CDEC` (asm00_2.s:27646-27676) reads
-  eStruct2035280+0xf = 0x0203528F only to SKIP values 5/6; it is not the
-  face source (poking it changes no pixels -- pass 4).
+  eStruct2035280+0xf = 0x0203528F and emits NO OBJ for countdown values 5/6.
+  +0xf is the blink countdown (sub_801CC94, asm00_2.s:27550-27574), not the
+  face source (that is +0x10/+0x11, asm00_2.s:27341-27342, read back at
+  :27403). Both things people have measured here are true at different
+  countdown phases: on pass 4's route the poke lands mid-cycle and only
+  shifts WHICH ~2 frames per blink cycle are blank ("changes no pixels"),
+  while pinned at 5/6 the window blanks ~2 frames per cycle continuously
+  (T122 step 2: 694 px/frame face-only).
+- Upload: sub_801CB38 (asm00_2.s:27404-27406, `loc_801CBBE`) uploads the
+  face every updater frame from off_801CD08; its `cmp #5` at :27390
+  (`bge loc_801CBBE`) skips only the blink bookkeeping, not the upload.
 - Face source: `sub_801CB38` (asm00_2.s:27332-27464) re-uploads the face
-  every updater frame, slot from `possiblyGetBattleEmotion_8015B64`
+  every updater frame, resolved slot stored to +0x10/+0x11 (:27341-27342),
+  slot from `possiblyGetBattleEmotion_8015B64`
   (asm00_2.s:15122-15174): Unk_36!=0 or Mood==0 -> enum 5; Anger!=0 -> enum
   3; Unk_32!=0 -> enum 1; Mood==0xff -> enum 2; else 0.
   `byte_801E6F4` (asm00_2.s:31044) = [0,2,3,1,5,4] maps enum to slot.
@@ -55,6 +155,11 @@ Measured this session (probe.py diff, 90 frames, sterile PAUSED route):
   rng_cadence) match 40/40.
 - `cursor` residue 29/28/170 (veto 1/1/170/186300): pre-existing from pass
   4's port, unchanged by this pass (identical before and after).
+- Coverage arithmetic (corrected after the verifier pass): M7 emotion goes
+  **1/25 → 2/25** with T122 (`emotion_syn` + `emotion_face_b`); the
+  `emotion_skip` row is WITHDRAWN from coverage pending the follow-up -- it
+  pairs an empty box against an empty box, which proves the align window,
+  not a face.
 
 ## Known coupling (pass 6, 2026-09-17): the cursor row reads the binary footprint
 
