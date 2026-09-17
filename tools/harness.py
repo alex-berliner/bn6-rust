@@ -3233,82 +3233,66 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=40,
         align=ALIGN_CHIP,
-        # T105 (2026-09-17): the emotion window's face-selection gate. The
-        # popup row's own recipe -- the ONE route whose canon side draws the
-        # emotion window at all (element mask 0x4497, bit14 set, live HUD;
-        # the 43-chip afterdissolve_0x0c route has it torn down, 0x8084) --
-        # with the face flipped from calm to slot 1 (the anger face) on BOTH
-        # sides:
+        # T105 (2026-09-17, pass 5): the emotion window's face-selection
+        # gate. The popup row's own recipe -- the ONE route whose canon side
+        # draws the emotion window at all (element mask 0x4497, bit14 set,
+        # live HUD; the 43-chip afterdissolve_0x0c route has it torn down,
+        # 0x8084) -- with the face flipped from calm to slot 2 on BOTH
+        # sides and NOTHING else changed: the popup pair (0/0/80 this
+        # session) already proves every non-face pixel of this window, so
+        # the face gate is the only thing under test.
         #
-        # canon: the player's AIData.Anger poked to 1 at load
-        # (0x020340B4 = AIData base 0x02034080 + oAIData_Anger 0x34).
-        # possiblyGetBattleEmotion_8015B64 (asm00_2.s:15149-15155) turns a
-        # nonzero Anger into emotion enum 3 while Unk_36==0/Mood!=0 hold
-        # (peeked at frame 4: 0x020340b0:8 = 0000000000000000), and
-        # byte_801E6F4 (asm00_2.s:31044) maps enum 3 -> face slot 1.
-        # sub_801CB38 (asm00_2.s:27332-27464) then re-uploads slot 1's art
-        # from off_801CD08[1] (dword_872D994) + the shared right half
-        # dword_872D914, and slot 1's OWN palette (dword_872F114 + 1*0x20,
-        # asm00_2.s:27449-27452) every frame. MEASURED: --poke
-        # 0x020340B4:0x0001 is stable over 80 frames (probe.py watch:
-        # 0x0001 on every sampled frame, no decay) and the draw-gate byte
-        # r5[0xf] = 0x0203528F stays 0x00 the whole window, so the 5/6 skip
-        # never fires and no flash animation arms (the updater's flash
-        # timer r5[0x14] tracks r5[0x17]/stats, not Anger).
+        # canon: the player's AIData.Unk_32 poked to 1 at load
+        # (0x020340B2 = AIData base 0x02034080 + oAIData_Unk_32).
+        # possiblyGetBattleEmotion_8015B64 (asm00_2.s:15122-15174, check
+        # order: Unk_36!=0 or Mood==0 -> enum 5, Anger!=0 -> enum 3 at
+        # :15149-15153, Unk_32!=0 -> enum 1 at :15155-15159, Mood==0xff ->
+        # enum 2, else 0) and byte_801E6F4 (asm00_2.s:31044, [0,2,3,1,5,4])
+        # take that to face slot 2; sub_801CB38 (asm00_2.s:27332-27464)
+        # re-uploads slot 2's art (off_801CD08[2] = dword_872DB14) + the
+        # shared right half + slot 2's OWN palette every frame.
+        # MEASURED this session (probe.py diff over 90 captures): the
+        # Unk_32 poke is FACE-ONLY -- canon-poke vs canon-calm is 694 px in
+        # the face box x0..48/y18..34 and 0 pixels everywhere else (total
+        # 29148 = 42x694, all inside the box). The pass-4 Anger poke (slot
+        # 1, 0x020340B4) is NOT face-only: it tints the field panels
+        # (766 px/frame decaying to 635, y92..150) and is CONSUMED by the
+        # resumed chip's resolution at canon 43 -- the angry face reverts
+        # to calm mid-window, which is a second reason v2 could not read 0
+        # (the row's align is ALIGN_CHIP, canon_ref 43). Unk_32 is not
+        # consumed; slot 2's face holds through the whole window (694 at
+        # every frame 12..47 sampled). The blink frames canon 2..11 (face
+        # box reads 0 there: the blink overlay is shared by every face, so
+        # poked and calm coincide) sit before canon_ref 43 and never enter
+        # the window. The draw-gate byte r5[0xf] = 0x0203528F stays 0x00
+        # the whole window on both worlds (pass 4's 80-frame watch).
         #
-        # The old poke target named by earlier passes, 0x0203528F itself,
-        # is only the DRAW GATE byte -- the face's art is picked from live
-        # battle data, so poking it changes no pixels. The workaround for
-        # its 16-bit rounding (--poke 0x0203528E:0x0100) is still what sets
-        # the byte cleanly, but nothing reads it for the face.
-        #
-        # rust: the same descriptor with emotion=1 (+63, src/fixture.rs's
+        # rust: the same descriptor with emotion=2 (+63, src/fixture.rs's
         # `emotion`); src/emotion.rs indexes its FACE_INDEX table (canon's
-        # off_801CD08 deltas) and uploads slot 1's left half + shared right
-        # half + slot 1's palette.
+        # off_801CD08 deltas: slot 2 = +0x300) and uploads slot 2's left
+        # half + shared right half + slot 2's palette.
         #
-        # NEGATIVE: the no-poke pair IS the `cannon` row's own recipe shape
-        # (this row minus the Anger poke and the emotion byte) -- on this
-        # route with the calm face the same 40-frame window is measured 0
-        # today (cannon isolated PASS total 0 worst 0 frames 40, this
-        # session), so the poke + descriptor are the only difference
-        # between the two worlds; a rust side that ignored the emotion byte
-        # would read this row as canon-anger vs rust-calm, i.e. the face
-        # region alone (~2-3k px), not 0. The harness's own frame-shift
-        # negative rides along (the cannon fire at canon 43 gives the window
-        # motion to catch a dead alignment).
-        # NEGATIVE: this window has no motion of its own -- no chip is
-        # fired (the A@40 press of the popup/cannon recipes is DROPPED and
-        # AUTO_FIRE is clear on our side), and per F12's measurement an
-        # idle navi carries no timing, so the harness's frame-shift negative
-        # would read 0 (BLIND). Same documented case as the `window` and
-        # chip-invisibl rows: negative="pixel", a one-column shift, tests
-        # that the diff is live on real content. The no-poke calm world is
-        # itself measured: this same recipe minus the Anger poke and the
-        # emotion byte is the popup row's (0/0/80, this session), so the
-        # poke + descriptor are the only difference between the two worlds.
-        #
-        # WHY NO FIRE: the anger state is not pixel-neutral behind the face
-        # -- canon's angry shots render with their own tint and damage, so
-        # a fired-cannon window compares canon-anger-shot vs rust-normal-shot
-        # and reads ~2166 px/frame (measured 86662/40, worst 2825) with the
-        # face identical. The ticket's subject is the FACE gate; the shot
-        # tint is a separate feature and deliberately not widened into.
-        rust=_chip_rust("01", flags=0x57, emotion=1),
-        # The popup row's own canon side verbatim (chip b1 -> 01, plus the
-        # Anger poke, minus the A press): the same DELETE + ENEMY_TILES/
-        # dissolve zeroing that keeps the deleted Mettaur's OBJ dissolve
-        # out of the compared window there. flags 0x57 on our side = that
-        # row's 0x5F minus AUTO_FIRE, to match the dropped A press.
-        negative="pixel",
+        # NEGATIVE (frame shift): the chip cast at canon 43 gives the
+        # window its motion (popup's own frame negative read 1288 this
+        # session), so the standard control applies. Pass 4's "pixel"
+        # negative existed only because that version dropped the A press
+        # and AUTO_FIRE to dodge the anger shot tint -- unnecessary for
+        # slot 2, which has no tint (measured face-only, above), so the
+        # fire rides along and both sides cast identically.
+        rust=_chip_rust("b1", flags=0x5F, emotion=2),
+        # The popup row's own canon side verbatim, PLUS the Unk_32 poke:
+        # the same chip b1, the same A@40 cast, the same DELETE +
+        # ENEMY_TILES/dissolve zeroing that keeps the deleted Mettaur's
+        # OBJ dissolve out of the compared window there. The face poke is
+        # the ONLY delta from the row above (0/0/80, this session).
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
-                              cheats=DELETE_ENEMY + ("%s:0x01" % cc.HAND_SLOT,),
-                              pokes=_chip_pokes("01") + ("0x020340b4:0x0001",),
+                              cheats=DELETE_ENEMY + ("%s:0xb1" % cc.HAND_SLOT,),
+                              pokes=_chip_pokes("b1") + ("0x020340b2:0x0001",),
                               zero=(cc.ENEMY_TILES, ENEMY_DISSOLVE_TAIL,
                                     ENEMY_DISSOLVE_FIRST_PHASE),
                               pokes_at=(ENEMY_DISSOLVE_SLOT_SIZE,)
                                        + ENEMY_DISSOLVE_QUEUE_KILL,
-                              script="Start@10", extra=("--disable-bg",)),
+                              script="Start@10,A@40", extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
     ),
 ]

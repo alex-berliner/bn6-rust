@@ -16,9 +16,11 @@
 //! possiblyGetBattleEmotion_8015B64 computes from live battle data -- anger,
 //! mood and the like, mapped through byte_801E6F4 (asm00_2.s:31044). This
 //! port takes the already-resolved slot from the descriptor: the harness's
-//! canon side reaches slot 1 by poking the player's AIData.Anger
-//! (0x020340B4, measured stable over 80 frames), slot 1 = enum 3 via
-//! byte_801E6F4 = the anger face.
+//! canon side reaches slot 2 by poking the player's AIData.Unk_32
+//! (0x020340B2, measured face-only over 90 frames -- unlike Anger at
+//! 0x020340B4, which also tints the field panels and is consumed by the
+//! resumed chip's resolution at canon 43); enum 1 via byte_801E6F4 =
+//! face slot 2.
 
 use agb::display::object::{DynamicSprite16, Object, PaletteVramSingle, Size, SpriteVram};
 use agb::display::{GraphicsFrame, Palette16, Priority, Rgb15};
