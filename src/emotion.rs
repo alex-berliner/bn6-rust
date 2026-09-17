@@ -86,13 +86,6 @@ impl Emotion {
         let pal_len = u32::from_le_bytes(data[pal_off..pal_off + 4].try_into().unwrap()) as usize;
         let palettes = &data[pal_off + 4..pal_off + 4 + pal_len];
 
-        if emotion == 5 || emotion == 6 {
-            // canon: drawEmotionWindow_801CDEC's own skip (asm00_2.s:27648-27652)
-            return Self {
-                wide: None,
-                narrow: None,
-            };
-        }
         let slot = usize::from(emotion);
         let face = if slot < FACE_SLOTS {
             FACE_INDEX[slot] as usize
