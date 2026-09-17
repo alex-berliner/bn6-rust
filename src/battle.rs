@@ -1959,7 +1959,7 @@ impl<'a> Battle<'a> {
     /// | 50  | u32 backdrop x_q, u32 backdrop y_q | 0x02009690 eBGScrollCBCounters (ewram.s:619) | as above (canon holds -8f/-4f there) |
     /// | 58  | u16 field_slide (own camera) | 0x020099b4 Camera Y (eCamera+0x34, Camera.inc:26) | self.field_slide (INFO-only: different mechanisms) |
     /// | 60  | u8 rank, u8 level | eS20364C0+0xe rank (sub_802C97E, asm03_0.s:13256) / eS+8 level (sub_802C8FA asm03_0.s:13185 via stats 0x0203F4A5) | self.shown_rank/shown_level (T112: `battle_rank` = canon's 0xFF branch; level = the fed `results.show` value) |
-    /// | 62  | u16 zenny amount | eS20364C0+0x14 halfword (stats 0x0203F4AC, sub_802C54C decode asm03_0.s:12782-12812) | self.shown_zenny (T112: the fed `results.show` value) |
+    /// | 62  | u16 zenny amount | eS20364C0+0x14 halfword (stats 0x0203F4AC, sub_802C54C decode asm03_0.s:12691) | self.shown_zenny (T112: the fed `results.show` value) |
     ///
     /// Export-only like oracle_snapshot: nothing reads it back, so it
     /// cannot change behaviour (the rerun rows prove that).
@@ -2024,7 +2024,7 @@ impl<'a> Battle<'a> {
     /// /tmp/t112/canon_probe, 64 frames, plus --watch-write on the same
     /// load): the battle-stats record lives at 0x0203F4A4 (+1 level byte,
     /// +4 clear-time word, +8 reward halfword), latched at the fade by the
-    /// battle-transcript transfer sub_801FF18 (asm01.s:49-60;
+    /// battle-transcript transfer sub_801FF18 (asm01.s:170;
     /// --watch-write: time 0x0203F4A8 0xFFFFFFFF -> 0x6E0 = 1760 at frame 10,
     /// level word 0x0203F4A4 -> 0x01010200 at frame 11) and copied to the
     /// results slot 0x02035260 (+variant*0xc) by sub_800B444
@@ -2039,7 +2039,7 @@ impl<'a> Battle<'a> {
     /// (`add r1,#9`, asm03_0.s:12563-12565). It is written once, at the
     /// window's first frame, by sub_802C97E (asm03_0.s:13232-13257;
     /// --watch-write 0x020364CE frame 13, old 0 -> new 0): sub_802CA1E
-    /// (asm03_0.s:13260-13286) scans the opponent actor slots for the first
+    /// (asm03_0.s:13324) scans the opponent actor slots for the first
     /// whose byte_80182C4[3*enemy_idx] row (GetVerActorTyAndAIIdx_80182B4,
     /// asm00_2.s:19965-19974) reads version 2 (= this ROM, Falzar),
     /// actor_type 1 (virus) and ai_index 1..0x14, and returns ai_index-1 as
@@ -2066,7 +2066,7 @@ impl<'a> Battle<'a> {
     /// 0x02035268 results slot; watched 0xFFFF -> 0x4064 = 0x4000 flag | 100
     /// on RESULT_ARRIVAL, probe frame 9), consumed as eS+0x14 by
     /// showResultWindow_802C34E (asm03_0.s:12466-12469) and decoded for
-    /// display by sub_802C54C (asm03_0.s:12782-12812): 0xFFFF = no reward;
+    /// display by sub_802C54C (asm03_0.s:12691): 0xFFFF = no reward;
     /// bits 15-14 clear = a CHIP reward (id = word >> 9, count = word &
     /// 0x1FF) -- not this pair's number, None here; bits 15-14 set = the
     /// amount in word & 0x3FFF (drawn by revealResultReward_802C044's
@@ -2084,7 +2084,7 @@ impl<'a> Battle<'a> {
         if w == RESULT_REWARD_NONE || w >> 14 == 0 {
             None
         } else {
-            Some(w & 0x3FFF) // canon: sub_802C54C's amount mask (asm03_0.s:12791-12793)
+            Some(w & 0x3FFF) // canon: sub_802C54C's amount mask (asm03_0.s:12705-12706 lsl/lsr #0x12; 12791-12793 is sub_802C5E6, the BCD display path)
         }
     }
 
@@ -3232,7 +3232,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 let kind = if won { results::WIN } else { results::LOSE };
                 // T112: the zenny amount is COMPUTED here, not the peeked
                 // literal: `battle_zenny` decodes canon's reward halfword
-                // (sub_802C54C, asm03_0.s:12782-12812). The roll that fills
+                // (sub_802C54C, asm03_0.s:12691). The roll that fills
                 // the word is unported (named in `battle_zenny`), so this is
                 // always None today and RESULTMATCH_ZENNY stays as the named
                 // fallback -- byte-identical to the old literal on every row.
