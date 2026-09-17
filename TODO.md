@@ -425,3 +425,26 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
+### T111: cursor seam recalibration — one measured, named phase pad at the custom-screen tile drain, restoring the cursor class so the T105 emotion port can land *(OPEN -- 2026-09-17)*
+
+**Result.** T105 pass 6 bisected the cursor regression on the T105 branch (wt/t105-emotion e0c35c9, port verified there: emotion_syn PASS 0/0/40/644, guard set + popup all 0/0/N) to the binary footprint itself: pure main = 1/1/170 (single 1px frame k=97; origin 8, offset 237); main + fixture.rs emotion field alone = 38/19/170; full branch = 29/28/170 (NEW 28px damage at k=37, x49..238/y1..7, main's k=97 tear intact; canon<->rust pairing +-1 frame checked at 4698/2502px); fixture byte-identical to main + battle.rs gate reading enemy_action at enemies==0 (the +63 disambiguation FIXED) = 62/56/170 with the seam moved to NEW frame k=7 (56px). Tools exonerated (S1a==S1; OR-write byte-identity). Mechanism: the cursor window's mid-frame VRAM copy-drain seam frames (k=97 = F3's documented sub-frame seam; k=37 = the 4->3 slot transition; k=7) re-roll pixel phases with ANY binary-footprint change, and the row's 1/1 class is a layout-calibrated coincidence (F26b already saw 2/2<->1/1 across trees). Full step table and per-frame detail: docs/worklog/T105.md pass 6. No fix exists inside T105's file list; this ticket owns the one measured knob.
+
+**Files.** `src/battle.rs` (the custom-screen tile-drain replace/queue path: ONE measured, named phase pad), `src/cust.rs`, `src/main.rs` (only if the drain lives there), `docs/coverage/cursor.md` (NEW: coupling note -- row class vs binary footprint, the k-frame table), `docs/worklog/T111.md`. Branch starts from `wt/t105-emotion` (merge it: it carries the verified T105 port; one landing lands both). **NOT** tools/harness.py (row semantics frozen: same canon side, same negative, same compare), tools/states.py, tools/oracle.py, tools/allowlist.py, tools/trace.py, reference/bn6f, canon or canon (sterile).
+
+**Do.**
+1. **Recon:** locate the tile-drain path (battle.rs replace/queue), cite file:line for where the pad goes; rebuild the merged tree; reproduce branch cursor 29/28/170 (k=37 28px + k=97 1px) and, on pure main in the same tree, 1/1/170 (k=97 1px) -- environment calibration. **measurement.**
+2. Add the pad as one named constant (`// unnamed: seam-phase pad, sized by measurement` until its meaning is known; size in cycles or iterations, whichever the drain speaks) and sweep sizes: each size = rebuild + cursor row only; table of size -> cursor total/worst/seam frame; stop at the first size hitting the target shape (k=37: 0 px, k=97: 1 px). ≤8 pad sizes, ≤2 captures each. **code change + measurement.**
+3. Full re-run on the padded T105 tree: 7-row guard set + popup + emotion_syn (must hold 0/0/40/644 with its non-blind negative) + cursor ≤1-class; ROM sha256+size. **measurement.**
+4. If NO size in the sweep reaches ≤1-class: STOP, report the size table as a measured NEGATIVE with the best shape reached, and name the next knob (do not widen the sweep silently).
+
+**Rules.** The pad is timing-only: no behaviour change (the rows are the proof -- every row stays at its branch value). Canon never changes; the row's canon side, negative and compare stay byte-identical. No allowlist, no patch_sterile. The pad constant carries provenance per AGENTS.md. Cursor target: total ≤1, worst ≤1, frames 170; the tear's frame may move with layout -- reported, not chased. ≤10 captures, tool budget ≤80.
+
+**Acceptance.** cursor ≤1-class on the padded T105 branch with the pad sized and named; emotion_syn 0/0/40/644 and guard set + popup all 0/0/N from a clean checkout; verify_rows PASS is the veto; the coordinator then lands T111+T105 in ONE merge. A NEGATIVE (bounded sweep, size table, best shape, named next knob) closes it BLOCKED.
+
+**Measure and report.** size sweep table (size -> cursor total/worst/seam frame k), final 10-row set, ROM sha256+size, fitted count, commit; one line of mechanism (why the chosen size lands the seams); one line unverified (whether the class holds across future merges -- that is every later landing's check, not this ticket's).
+
+**Coordinator:** owns src/battle.rs (drain path) + the pad; runs alone. Free tier: verify_rows from a clean checkout on the 10-row set; verifier at landing for the pad-is-timing-only claim. ≤$0.25 expected, ≤$0.50 cap.
+
+**Milestone advanced:** unblocks M7 landing (T105 emotion port 0/25 -> 1/25).
+
+---
