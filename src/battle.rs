@@ -1795,7 +1795,7 @@ fn put_oracle_u32(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u32)
     /// | 14  | 1 | MegaMan CurAnim | 0x0203a9c0 (+0x10) | identity, see `oracle_fields` |
     /// | 15  | 1 | MegaMan PanelX | 0x0203a9c2 (+0x12) | `Actor::panel()`, same units as the descriptor's col |
     /// | 16  | 1 | MegaMan PanelY | 0x0203a9c3 (+0x13) | as above |
-    /// | 18  | 2 | MegaMan Timer | 0x0203a9d0 (+0x20) | flinch countdown + `post_flinch` shadow |
+    /// | 18  | 2 | MegaMan Timer | 0x0203a9d0 (+0x20) | flinch countdown + `phase_arm_shadow` (T67) |
     /// | 20  | 2 | MegaMan HP | 0x0203a9d4 (+0x24) | `Actor::hp()` |
     /// | 22  | 2 | enemy CurState\|CurAction<<8 | the POPULATED enemy slot -- 0x0203ab60 for the PAUSED-based rows (the ALIVE cheat's own address 0x0203ab84 = +0x24 proves the base), NOT 0x0203aa88, which is an empty slot (HP 0) | `Actor::oracle_fields` + `Ai::oracle_is_wait` |
     /// | 24  | 1 | enemy CurAnim | slot+0x10 | identity |
