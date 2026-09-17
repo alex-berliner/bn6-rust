@@ -7,8 +7,11 @@ Method = T18's field walk applied to `oPanelData_Type` + T65/T70's data streams.
 
 - `object_setPanelType` (asm/object.s:2601-2611) is a **trampoline**
   (`ldr r4, =_object_setPanelType+1; bx r4`) to `_object_setPanelType`
-  (asm/asm38.s:4309-4315). One routine, **36 `bl` sites**: asm38.s ×4 (T33's sweep),
-  asm31.s ×28, asm32.s ×2, asm00_2.s ×2.
+  (asm/asm38.s:4309-4315). One routine, **29 `bl` sites**: asm38.s ×4 (T33's sweep),
+  asm31.s ×21, asm32.s ×2, asm00_2.s ×2. (An earlier T115 draft counted 36: the grep
+  had also matched 7 `bl object_setPanelTypeBlink` sites — asm31.s:88706/88759/88827/
+  88892/88909/90014/90042 — which stage `oPanelData_Unk_08` via
+  `object_setPanelTypeBlink` (object.s:2651-2663) and never write `Type`.)
 - The setter **refuses type-0 targets**: `ldrb r3,[r0,#oPanelData_Type]; tst; beq skip`
   (asm38.s:4316-4317). Types 9..0xC additionally get `Unk_12=0x708` (asm38.s:4318-4326).
 - Companion `object_setPanelTypeBlink` (object.s:2651-2663) stages the intended type
@@ -23,12 +26,12 @@ Method = T18's field walk applied to `oPanelData_Type` + T65/T70's data streams.
 
 | type | verdict | sites (file:line) → dispatch condition → value source |
 |---|---|---|
-| 0x0 hole | **zero-writer** (init-only) | setter protect asm38.s:4316-4317 makes 0 unwritable by any helper; 36 bl sites + 13 strb sites + 4 data tables + 1240 records + 1076 arrays produce no 0. Default-zero from battle-init memset. |
+| 0x0 hole | **zero-writer** (init-only) | setter protect asm38.s:4316-4317 makes 0 unwritable by any helper; 29 bl sites + 13 strb sites + 4 data tables + 1240 records + 1076 arrays produce no 0. Default-zero from battle-init memset. |
 | 0x1 broken | verified (T33) | object.s:2323 breakPanel; crackPanel 2nd arm object.s:2235; regen object.s:1503-1504 |
 | 0x2 normal | verified (T33) | object.s:1471-1472 regen; asm00_2.s:8306 (sub_8012792 #2); asm31.s:38397-38398; fire melt asm38.s:3575-3582 |
 | 0x3 cracked | verified (T33) | object.s:2218-2222 crackPanel 1st arm; also t4_0x16 enemy-half arm asm31.s:88780-88781 (`mov r2,#3`); navi event 0xf5 asm00_2.s:10805-10810 |
 | 0x4 poison | verified (T33) | asm31.s:6146-6147 (sub_80BAE16); navi events 0xfe/0xfa/0xf9 asm00_2.s:10776-10800 (byte12=4) replayed by sub_8013CC4 |
-| 0x5 holy | **zero-writer** | no constant arg (36 sites), no strb site, no table byte (byte_80E6D0C {2,3,6,7,8}; byte_80CE41E {4,7,6}; dword_80DE79C {FF,3,7,6}; navi events {3,4}), no record/array byte. Reader rule lives: object.s:4831-4833 + asm00_2.s:22788-22791. |
+| 0x5 holy | **zero-writer** | no constant arg (29 sites), no strb site, no table byte (byte_80E6D0C {2,3,6,7,8}; byte_80CE41E {4,7,6}; dword_80DE79C {FF,3,7,6}; navi events {3,4}), no record/array byte. Reader rule lives: object.s:4831-4833 + asm00_2.s:22788-22791. |
 | 0x6 grass | verified (T33) | asm31.s:6168-6169 (sub_80BAE16); :30843-30844 cornfiesta; byte_80CE41E[2]=6 via sub_80CE424; dword_80DE79C[3]=6 |
 | 0x7 ice candidate | verified (T33) | asm31.s:6104-6105 (sub_80BAE16); byte_80CE41E[1]=7; dword_80DE79C[2]=7 |
 | **0x8** | **WRITER FOUND (T115)** | asm31.s:99515-99529 `sub_80E6CAA` (in t4_0x56_80E6BDC): base = `byte_80E6D0C + Param1*0xc + alliance*0x78`; per panel `ldr word / lsr (row-1)*4 / and #0xf` → type = **packed 4-bit nibble**; table `byte_80E6D0C` asm31.s:99543-99566 = 240 bytes (2 alliances × 10 Param1 entries × 12), nibble set {2,3,6,7,8} — 8 in Param1 2/3/4 own-side rows and 0x82/0x28 bytes in both halves. Update-handler vtable asm00_1.s:2491. Spawner sub_80E6C8C asm31.s:99473-99489 is **unreferenced in the whole ROM** (no `bl`, no pointer word 0x080E6C8C/D — byte search) → no live capture. |
@@ -63,12 +66,14 @@ Method = T18's field walk applied to `oPanelData_Type` + T65/T70's data streams.
 
 - **1240 BattleSettings records** (16 bytes, include/rom_structs/BattleSettings.inc):
   family A scripted (0x080aee70: 269 + 0x080b0d88: 192 = 461), family B encounter tree
-  (off_8020170 → 44 groups → map arrays → lists). Byte histograms: byte[0] Battlefield
-  (family A: 251×0 + scattered ids up to 236; family B: all 0), byte[4] Background
-  {7:192, 8:1, 255:268} family A / all 255 family B — **known-answer check passes**
-  (reproduces T65's backdrop census: Comps art 0x07/0x08, 0xff = map default),
-  byte[6] SidesModifier {0:7, 56:454} family A / all 56 family B. No record byte
-  flows to any panel writer.
+  (off_8020170 → 44 groups → 82 lists / 779 records). Byte census (T115 family-A scan
+  corrected by the verifier's family-B re-census): byte[0] Battlefield — family A
+  251×0 + scattered ids up to 236, family B also carries many ids (verifier census:
+  e.g. 189×23, 21×14); byte[4] Background — family A {7:192, 8:1, 255:268}, family B
+  all 255 — **known-answer check passes** (reproduces T65's backdrop census: Comps
+  art 0x07/0x08, 0xff = map default); byte[6] SidesModifier — family A {0:7, 56:454},
+  family B {56:779}. No record field flows to any panel writer (byte[4] = background,
+  byte[6] = sides modifier, byte[0] Battlefield has no panel-type reader).
 - **1076 formation arrays**: quad[0]&0xFC dispatch ∈ {0,0x10,0x20,0x30,0x80,0x90,0xA0}
   → only the 11 spawners of `SpawnBattleObjectUsingBattleEntityConfig_8007368`
   (asm00_1.s:8588-8621: MegaMan/enemy/mystery data/rocks/cubes/guardian). asm00_1.s
