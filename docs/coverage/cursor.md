@@ -1,59 +1,61 @@
-# Cursor row — coverage notes
+# cursor row -- seam-phase coupling (T111)
 
-## State at F37h (2026-09-14, branch wt/f37h)
+Row: `cursor` (isolated, frames 170, canon_ref 15, align search 225..250,
+`--only-bg 3` on both sides). Row semantics frozen: same canon side, same
+negative, same compare -- T111 changes none of them.
 
-Cursor isolated row: total 10 / worst 9 over 170 frames (FAILED).
-The two non-zero frames:
-- k=37 (canon 52, rust 282): 9 px
-- k=97 (canon 112, rust 342): 1 px
+## The coupling: row class vs binary footprint
 
-(The ticket predicted 3/3/170 from F37g; the live measurement is
-10/9/170. 0fb54d4 T7b also reported "60 isolated rows 0 except
-cursor 10/9/170", so the current state matches T7b's reading.
-F37g's archived 3/3/170 was either momentary or measured under
-slightly different conditions.)
+The cursor row's pass class (main: total 1 / worst 1 / 170) is NOT a stable
+property of the game logic -- it is a layout-calibrated coincidence. agb's
+`GraphicsFrame::commit` waits for vblank and then copies the WHOLE screenblock
+into VRAM (`vendor/agb/agb/src/display/tiled/screenblock.rs:42`, `copy_tiles`
+over `size.num_tiles()`), which always spills past vblank into the first
+visible scanlines. On frames where tile contents change mid-copy, the cut
+shows as stale-vs-new pixels at a phase (scanline/column of the cut) that is a
+pure timing function of the binary's footprint: code addresses, loop code
+alignment in ROM, struct sizes. T105 pass 6 bisected it: ANY feature-sized
+delta re-rolls the phase (observed shapes (28,1), (19,19), (56@k7,6) across
+footprint variants, all deterministic in their binary).
 
-## Attribution (composite 10 px)
+The cursor row's five cursor moves (rust frames 252/282/312/342/372 = k=7/37/
+67/97/127: OK->4, 4->3, 3->2, 2->1, 1->0, CURSOR_DELAY=2) each run
+`Custom::draw_card`'s card-replace burst, whose shadow writes land in
+commit's copy; k=37 (the 4->3 transition) and k=97 (the 2->1 transition) are
+the frames where the seam shows. k=97 carries main's own historical 1 px tear
+(the "documented sub-frame seam" F3 saw).
 
-BG-only diff == composite diff at these two frames: every differing
-pixel sits on BG1 (backdrop), NOT on OBJ. Per-layer captures
-(--disable-obj, --only-bg 1/2/3):
+## The pad (T111)
 
-| layer  | k=37 px | k=97 px | location                   |
-|--------|---------|---------|----------------------------|
-| BG1    |   18    |    2    | y=0..5, x=55..237 (x+128 repeats) |
-| BG2    |    0    |    0    | --                          |
-| BG3    |    0    |    0    | --                          |
-| OBJ    |  155    |  155    | y=75..84, x=56..71 — HIDDEN by BG3 in composite |
+`SEAM_PHASE_PAD_ITERS` in src/main.rs: a busy-wait (`nop` loop) inside a
+VBlank interrupt handler registered in `main`. interrupt_handler.s runs
+`__RUST_INTERRUPT_HANDLER` (user closures included) before returning to the
+BIOS's VBlankIntrWait, and commit's copies start after that return -- so each
+iteration delays the copy START by ~5-8 cycles (~1.5 px of scanline),
+every frame, identically. It reads and writes nothing; the rows are the
+proof that it is timing-only.
 
-The OBJ residue (155 px chip-window mark, rust has it, canon does
-not) is occluded by BG3 in the composite and does not contribute
-to the harness count. The composite 9 + 1 px residue IS BG1.
+Sized on the cursor row (2 captures per size, k table from the same captures):
 
-## Mechanism (per F37's own analysis)
+| pad iters | total/worst | k=37 px | k=97 px |
+|-----------|-------------|---------|---------|
+| 0 (branch) | 29/28 | 28 | 1 |
+| 1 | 26/25 | 25 | 1 |
+| 8 | 16/15 | 15 | 1 |
+| 16 | 7/6 | 6 | 1 |
+| **17** | **1/1** | **0** | **1** |
+| 18 | 18/17 | 17 | 1 |
+| 20 | 26/25 | 25 | 1 |
 
-The BG1 residue matches F37d's documented "sub-frame tile transfer"
-residue at the same k=37 / k=97 frames: canon's QueueEightWordAlignedGFXTransfer
-(sub_8001C94, asm/asm00_0.s:3752) queues the copy and drains it
-mid-frame, so rows 0..5 still carry the previous step; our
-backdrop.rs's `replace_tile` (src/backdrop.rs:263) lands before
-scanline 0, so the whole frame shows the new tile. The seam is the
-5-pixel-wide top-edge of a tile, and the four clusters at k=37
-are the x+128 repeats of one tile (89-93, 106-109, 217-221, 234-237).
+V-bottom at 17: 17 iterations (~90-140 cycles) re-phases the copy cut onto
+canon's on the k=37 frame, restoring the (0,1) shape -- k=37: 0 px, k=97:
+1 px, i.e. main's own tear exactly, total <=1 / worst <=1.
 
-cite: src/backdrop.rs:230, src/backdrop.rs:259-263 (the replace_tile
-call). canon: sub_8001C94, asm/asm00_0.s:3752.
+## What every later landing must check
 
-## Scope conflict
-
-The fix lives in src/backdrop.rs (the replace_tile call timing).
-The ticket names src/custom.rs and src/battle.rs as the only
-modifiable src files. The OBJ mark residue (155 px, hidden by BG3)
-lives in src/custom.rs but does not affect the composite count.
-
-This is a scope conflict — the ticket's premise (OAM/window-mark
-residue) does not match the actual residue (BG1 backdrop phase).
-Worker cannot close the k=37 / k=97 composite residue within the
-named-files scope.
-
-Escalated to supervisor.
+Any merge that moves code can re-roll the seam phases and move cursor off the
+<=1 class. That is the landing's own check, not this ticket's: after any
+landing, run the cursor row and compare against the class (total <=1, worst
+<=1, frames 170; the tear's frame may move with layout). If it re-rolls,
+T111's sweep protocol (one named const, V-table, ~6 sizes) re-fits the pad on
+one ticket-sized loop.
