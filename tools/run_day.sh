@@ -22,7 +22,7 @@ bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly'
 #
 # MGMT_OPEN is when the window opens (the review's cron slot). MGMT_DEADLINE is when work proceeds
 # anyway, so a broken roundup costs one window rather than the whole day; that case is an incident.
-MGMT_OPEN="${BN_MGMT_OPEN:-0600}"; MGMT_DEADLINE="${BN_MGMT_DEADLINE:-0900}"
+MGMT_OPEN="${BN_MGMT_OPEN:-1036}"; MGMT_DEADLINE="${BN_MGMT_DEADLINE:-1330}"
 NOW="$(date +%H%M)"; MARK="/tmp/bn-pi/mgmt-done-$(date +%F)"
 if [ ! -f "$MARK" ] && [ "$((10#$NOW))" -ge "$((10#$MGMT_OPEN))" ]; then
   if [ "$((10#$NOW))" -lt "$((10#$MGMT_DEADLINE))" ]; then

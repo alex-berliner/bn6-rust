@@ -27,8 +27,8 @@ So the day is now staged. Work does not start until management has finished.
 `run_day.sh` will not start a worker run between the management window opening and the window
 reporting itself finished. Two settings control it, both overridable by environment variable:
 
-- `BN_MGMT_OPEN` (default `0600`) — when the window opens.
-- `BN_MGMT_DEADLINE` (default `0900`) — when work proceeds regardless.
+- `BN_MGMT_OPEN` (default `1036`) — when the window opens.
+- `BN_MGMT_DEADLINE` (default `1330`) — when work proceeds regardless.
 
 If the marker has not appeared by the deadline, work starts anyway and an incident is recorded. A
 broken roundup should cost one management window, never the whole day.
@@ -67,10 +67,20 @@ Kinds recorded today: `land-refused`, `land-conflict`, `verify-failed`, `lock-ti
 `rename-reverted`, `asm-refused`, `judge-discarded`, `auditor-blocked`, `audit-unapplied`,
 `mgmt-window-missed`.
 
-## The open question: when the window should be
+## When the window is, and why
 
-The window is at 06:00 because that is when the blog post wants to exist. It is not where the budget
-wants it. The main provider's credits reset at about 10:35, so a 06:00 management window spends
-whatever last night's runs left behind — which on most days is very little, and is the direct cause of
-the auditor starving. Moving the window to just after the reset would fix the budget problem and move
-the morning blog post to mid-morning. See `docs/contention.md` for the resources these stages share.
+10:36, one minute after the main provider's credits reset.
+
+It used to be 06:00, because that is when the blog post wanted to exist. That put it in the worst
+possible budget position: a 06:00 window spends whatever the night's runs left behind, which on a busy
+night is almost nothing, and that is precisely why the auditor kept dying on "no candidate has budget
+now". Decided on 2026-09-17 to move the whole window rather than split it, so that every managerial job
+— the review, the auditor, the auto-apply, the judge, the digest, the slides, the disassembly notes and
+the site build — runs together on fresh credits, before a single worker starts.
+
+The cost of the move is that the daily blog post and the review now appear mid-morning instead of at
+breakfast.
+
+The cron is two lines: `*/30 * * * *` runs `tools/run_day.sh`, which holds at the gate; `36 10 * * *`
+runs `tools/daily_review.sh`, which is the window. See `docs/contention.md` for the resources these
+stages share.
