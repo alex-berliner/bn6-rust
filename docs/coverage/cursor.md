@@ -70,7 +70,12 @@ origin(8)+237+k; the cut on every measured out-of-class pair lives at
 scanlines 0..4, x~217..238 (top-right corner), deepening by scanlines as the
 phase moves off canon's.
 
-### Footprint x pad (T111's knob, re-measured on today's main)
+### Footprint x pad (T111's knob, re-measured on 2026-09-19 at base a8bd3d3)
+
+**Caveat (T124): this table's numbers were taken at base a8bd3d3, before
+T119's rank/zenny code landed. Its pad-0 column died with that base — see
+the T124 section below. The table stands as a record of that day's binaries,
+not as a guide to any future one.**
 
 | footprint | ROM B | pad 0 | pad 13 | pad 17 | pad 21 |
 |-----------|-------|-------|--------|--------|--------|
@@ -117,3 +122,44 @@ footprint), not an LY anchor, not LY+trim. The pad (fitted 17) stays on main;
 any landing that moves code must re-run the cursor row (the existing rule at
 the top of this file). A footprint-stable fix needs the copy placed at
 canon's phase by construction (content/timing), not re-fitted after the fact.
+
+## The pad deleted (T124, 2026-09-19) — bounded NEGATIVE: no footprint-stable value at all, including 0
+
+T118b's last hope was that the UNPADDED copy start (pad 0) was the
+footprint-stable in-class configuration (its 0/1 column on three footprints,
+spanning 3.6 KB). T124 tested the deletion as a landing on main at 9df624f —
+after T119's rank/zenny code had re-rolled the footprint:
+
+- baseline (pad 17): cursor **1/1/170**, negative 186279, fitted 17/436/146,
+  ROM c1ead4cd… 592752 B.
+- `SEAM_PHASE_PAD_ITERS` and its VBlank closure deleted entirely (no user
+  handler registered, commit runs at the interrupt's natural phase): cursor
+  **31/25/170**, negative 186277, fitted **16**/436/146, ROM b5b59a08…
+  592544 B. All 12 other rows of the guard set byte-identical to baseline.
+- restored tip: cursor 1/1/170 again, ROM sha identical to main's — the 31/25
+  was the deletion, not machine drift.
+
+So on the same day, the same source: pad 0 → 31/25, pad 17 → 1/1 on main,
+while a8bd3d3's binaries read 0/1 at pad 0. The in-class integer MOVES WITH
+THE BINARY, and there is no integer — 0 included — that holds across a
+footprint change. T118b's 0/1 column was a coincidence of its base, not a
+mechanism.
+
+### The project rule (as of T124)
+
+Every landing that changes the binary re-fits the pad per this file and
+reports the tear's frame; a branch whose re-fit cannot reach <=1/1 stays
+unmerged. That is why wt/T117's charged flash and wt/T112's rank+zenny are
+gated, not failed.
+
+### What the fix actually needs (next ticket's spec)
+
+The seam is a PLACEMENT problem (T118), not a volume problem (T118's census:
+changed-chunk copy fits in vblank on every frame) and not an integer-pad
+problem (T118b's anchor, T124's deletion). The missing measurement is canon's
+own mid-frame write scanline: `mgba_capture --watch-write` on the screenblock
+during the cursor scenario, on the canon side. Only after that number exists
+is a timed writer worth writing. Known hazards for that attempt: VRAM takes
+no 8-bit stores (T118's first census corrupted the screenblock — write
+u16/u32 only), and the failed mid-frame placement attempts F35b/T21/F37j are
+the prior art to read first.
