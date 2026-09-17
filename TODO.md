@@ -606,8 +606,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T94. M4 — T91a split: TrnArrw1+2 (ids 24-25) as data via family-0x28 arm  *(OPEN)*
+### T94. M4 — T91a split: TrnArrw1+2 (ids 24-25) as data via family-0x28 arm  *(NEGATIVE -- 2026-09-17, Closed NEGATIVE on wt/t94 [worklog only, worker errored])*
 
+**Result.** Closed NEGATIVE on wt/t94 (worklog only, worker errored). Subagent failed twice (resume also failed); bash exit 1 with no output. No code change to src/battle.rs, no harness rows, no inventory edit. Recommended next ticket: T94a with explicit instruction to read the existing T46/T48 family arm at src/battle.rs (the Bomb/Barrier record-driven arm pattern) and use it as a template for the new family-0x28 arm.
 **Why.** T91 NEGATIVE (2026-09-17, worklog only) refuted the family-shared premise: chip 24/25 share family 0x28 attack_power 40/50; chip 26 TrnArrw3 is family 0x2D (Muramasa's), so it cannot ride the same arm without over-triggering. T91's recommendation is TrnArrw1+2 land with family-0x28 arm (2 ids verified); TrnArrw3 deferred until the Muramasa conflict is resolved. T46 DONE (Bomb family reads AttackPower +0x1a, merged 85f021c), T48 DONE (Barrier family, merged 079531c), T52 DONE (AirShot id 4, family 0x21). **3 chip families ported as data** out of the 411 record rows; SCOPE M4 record-driven total = **43/411 → 45/411** on landing.
 
 **New evidence.** T91 NEGATIVE refutation read (data/ChipDataArr.s:747..871): chip 24 TrnArrw1 codes=GMZ? family 0x28 attack_power 40; chip 25 TrnArrw2 codes=MSY? family 0x28 attack_power 50; chip 26 TrnArrw3 codes=BET? family 0x2D (Muramasa's family) attack_power 60. T46's Bomb-family port shape (cite data/ChipDataArr.s per id, +0x1a offset) is the proven mechanism. Cannon (T36/T38/T51 NEGATIVE) and Vulcan (T54 NEGATIVE) families are closed; TrnArrw is a fresh angle with no prior attempts except T91. Cursor veto is the binding constraint (T51's lesson).
