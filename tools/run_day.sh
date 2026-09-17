@@ -12,6 +12,26 @@ find /tmp/bnwt -maxdepth 1 -name "verify-*" -mtime +1 -exec git worktree remove 
 find /tmp -maxdepth 1 -name "ct_verify*" -mtime +2 -exec rm -rf {} + 2>/dev/null
 python3 tools/roles.py check >/dev/null || { python3 tools/roles.py check; exit 1; }
 bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly's types within half an hour
+# --- the stage gate: management before work ------------------------------------------------------
+# Managerial jobs (the review, the auditor, the judge, the digest, the slides, the disassembly notes,
+# the site) all spend the same provider budget the workers do, and they run at the START of a cycle
+# when they have the least of it left: six workers had already been running all night. That is how the
+# auditor came to have no model with budget on 2026-09-17, which is why it had produced two audits in
+# four days. From that date the day is staged: no worker run starts between the management window
+# opening and the window reporting itself finished.
+#
+# MGMT_OPEN is when the window opens (the review's cron slot). MGMT_DEADLINE is when work proceeds
+# anyway, so a broken roundup costs one window rather than the whole day; that case is an incident.
+MGMT_OPEN="${BN_MGMT_OPEN:-0600}"; MGMT_DEADLINE="${BN_MGMT_DEADLINE:-0900}"
+NOW="$(date +%H%M)"; MARK="/tmp/bn-pi/mgmt-done-$(date +%F)"
+if [ ! -f "$MARK" ] && [ "$((10#$NOW))" -ge "$((10#$MGMT_OPEN))" ]; then
+  if [ "$((10#$NOW))" -lt "$((10#$MGMT_DEADLINE))" ]; then
+    echo "stage gate: the management window is open and has not finished; no worker run this tick"; exit 0
+  fi
+  bash tools/incident.sh mgmt-window-missed "no $MARK by $NOW; starting workers anyway"
+  echo "stage gate: management never reported finished by $MGMT_DEADLINE; proceeding and recording it"
+fi
+
 eval "$(python3 tools/roles.py schedule)"
 running=0; tailed=""
 for name in $RUNS; do

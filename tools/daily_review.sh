@@ -107,6 +107,11 @@ INC
     echo "- TRIGGERED:$TRIG"; echo
     echo "## Auditor"
     bash tools/pi_audit.sh "$OUT" 2>&1 | tail -3
+    # The auditor proposes; this applies the subset that cannot break anything (instruction text only,
+    # invariants guarded, one item per cycle) and records the rest as incidents so they reach a person.
+    # Two audits had ever been written and neither was applied the same day (2026-09-17).
+    echo; echo "### Auditor changes applied automatically"
+    python3 tools/audit_apply.py 2>&1 | tail -5
   else
     echo "- not triggered"
   fi
@@ -132,3 +137,11 @@ CARGO_BUILD_JOBS=2 bash tools/publish_site.sh 2>&1 | tail -2
 ( exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add web/captures web/blog web/build.txt 2>/dev/null; git diff --cached --quiet || git commit -q -m 'roundup: rebuilt captures manifest, progress GIFs and site index
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>' && git push -q origin main )
+
+# --- stage marker -------------------------------------------------------------------------------
+# The management window is finished. tools/run_day.sh holds worker runs until this exists, so the
+# managerial jobs (review, auditor, judge, digest, slides, notes, site) get first call on the day's
+# budget instead of competing with six workers for it -- which is how the auditor ended up with no
+# model to run on (2026-09-17).
+mkdir -p /tmp/bn-pi && date -Is > "/tmp/bn-pi/mgmt-done-$(date +%F)"
+echo "management window complete: /tmp/bn-pi/mgmt-done-$(date +%F)"
