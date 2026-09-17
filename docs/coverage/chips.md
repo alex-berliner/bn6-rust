@@ -10,7 +10,7 @@ gates, each cited:
 2. **the record has at least one code** -- a folder item is an (id, code)
    pair; the pack quantity lookup matches the code against the record's four
    code bytes (`getOffsetToQuantityOfChipCodeMaybe_8021c7c`,
-   `asm/asm03_0.s:305-333`). Exactly one named id has no code at all:
+   `asm/asm02.s:305-333`). Exactly one named id has no code at all:
    MegaBstr (id 0, codes 0xFFFFFFFF).
 3. **a display name** -- `data/textscript/TextScriptChipNames0.s` holds 256
    `def_text_script` blocks (ids 0..255) but only 238 `.string` entries;
@@ -38,9 +38,10 @@ inside R: a soundness check, not the universe.
 Canon's own reader of the table (step 1, measurement): `getChip8021DA8`
 (`asm/asm02.s:2-14`) computes `ChipDataArr_8021DA8 + id*44` (stride 0x2c) --
 called at chip use by `useChipFromHand_800FB54` (`asm/asm00_2.s:2037/:2107`)
-and at the chip-select/custom-screen draw by `sub_8027D10`
-(`asm/asm03_0.s:3780-8832`; the card renderer's 0x540 copy at :4399-4409,
-its `getChip8021DA8` call at :4427). Two ids dumped live from
+and at the chip-select/custom-screen draw through `drawChipCardPicture_80284E2`
+(label `asm/asm03_0.s:4403`, which calls `sub_8027D10` at `:4408`; the
+`getChip8021DA8` call is at `:4427`; `:4399-4409` brackets the end of
+`drawChipCard_8028476`). Two ids dumped live from
 `/tmp/bn6f_real.gba` (`--dump 0x8021DD4:0x2c`, `--dump 0x8022B94:0x2c`) are
 byte-identical to the `.s` table:
 
@@ -81,7 +82,7 @@ carries the reachable set:
 192(Atk+10), 193(Navi+20), 194(ColorPt), 195(Atk+30), 196(DblPoint), 197(ElemTrap), 198(ColArmy), 199(BlzrdBal), 200(TimeBom2), 201(TimeBom3), 221(Roll), 222(Roll2)
 223(Roll3), 224(ProtoMan), 225(ProtoMn[EX]), 226(ProtoMn[SP]), 227(HeatMan), 228(HeatMan[EX]), 229(HeatMan[SP]), 230(ElecMan), 231(ElecMan[EX]), 232(ElecMan[SP]), 233(SlashMan), 234(SlashMn[EX])
 235(SlashMn[SP]), 236(EraseMan), 237(EraseMn[EX]), 238(EraseMn[SP]), 239(ChrgeMan), 240(ChrgeMn[EX]), 241(ChrgeMn[SP]), 242(SpoutMan), 243(SpoutMn[EX]), 244(SpoutMn[SP]), 245(TmhkMan), 246(TmhkMan[EX])
-247(TmhkMan[SP]), 248(TenguMan), 249(TenguMn[EX]), 250(TenguMn[SP]), 251(GrndMan), 252(GrndMan[EX]), 253(GrndMan[SP]), 254(DustMan), 255(DustMan[EX]@ )
+247(TmhkMan[SP]), 248(TenguMan), 249(TenguMn[EX]), 250(TenguMn[SP]), 251(GrndMan), 252(GrndMan[EX]), 253(GrndMan[SP]), 254(DustMan), 255(DustMan[EX])
 
 **In the asset but not pixel-verified (5)**: 58(FlshBom2), 59(FlshBom3), 81(StepSwrd), 99(LilBolr2), 100(LilBolr3)
 
@@ -346,4 +347,4 @@ plus the def-less block 256..410 (139 of the 174 carry codes but no name):
 | 252 | GrndMan[EX] | data/ChipDataArr.s:7815 | -- | data/textscript/TextScriptChipNames0.s:760 |
 | 253 | GrndMan[SP] | data/ChipDataArr.s:7846 | -- | data/textscript/TextScriptChipNames0.s:763 |
 | 254 | DustMan | data/ChipDataArr.s:7877 | -- | data/textscript/TextScriptChipNames0.s:766 |
-| 255 | DustMan[EX]@  | data/ChipDataArr.s:7908 | -- | data/textscript/TextScriptChipNames0.s:769 |
+| 255 | DustMan[EX] | data/ChipDataArr.s:7908 | -- | data/textscript/TextScriptChipNames0.s:769 |

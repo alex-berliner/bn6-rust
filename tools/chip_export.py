@@ -1,6 +1,13 @@
 """Export battle chip data and card art for the ROM.
 
-usage: python3 chip_export.py <out.bin>
+usage: python3 chip_export.py [--reachable] [<out.bin>]
+
+Default: the landed 48-record hand list (the CHIPS list below) -- this must
+reproduce the shipped assets/chips.bin byte for byte. --reachable: the
+237-id folder-reachable set (reachable_ids below; T116), which is NOT what
+the shipped blob carries -- the asset extension was measured and reverted
+(footprint coupling, docs/worklog/T116.md), so --reachable writes a
+different, unlanded asset.
 
 Chips are the 411 chip_data_struct records of ChipDataArr_8021DA8
 (data/ChipDataArr.s), one per chip id in order (id 0 is MegaBstr, id 1
@@ -29,12 +36,12 @@ which matches the fixed 0x540 transfer in sub_80284E2. Chip families
 share an image block (Cannon and HiCannon share byte_86F60F4) but keep
 their own palette and icon, so image blobs are stored once.
 
-The 13 chips below are looked up by name in TextScriptChipNames0. The
-ROM's display names are at most 8 letters, so three requested names are
-aliased to the table's spellings: WideSwd -> WideSwrd (id 72), LongSwd ->
-LongSwrd (id 73), Invis -> Invisibl (id 177). ShotGun, CrossGun and
-Spreader are not in bn6f's names at all and are skipped (the spreader
-family there is Spreadr1..3).
+The default export is the hand list below, looked up by name in
+TextScriptChipNames0. The ROM's display names are at most 8 letters, so
+three requested names are aliased to the table's spellings: WideSwd ->
+WideSwrd (id 72), LongSwd -> LongSwrd (id 73), Invis -> Invisibl (id 177).
+ShotGun, CrossGun and Spreader are not in bn6f's names at all and are
+skipped (the spreader family there is Spreadr1..3).
 
 Format (little-endian):
   0x00  magic "BNCH"
@@ -95,16 +102,18 @@ CHIPS = [
 #   the record has at least one code -- a folder item is an (id, code) pair
 #     and the pack quantity lookup matches the code against the record's
 #     four code bytes (getOffsetToQuantityOfChipCodeMaybe_8021c7c,
-#     asm/asm03_0.s:305-333); exactly one named id (MegaBstr, id 0) has none,
-#   and a display name exists -- TextScriptChipNames0.s carries 238 strings
-#     indexed by chip id (ids 0..237); ids 238..410 render no name.
+#     asm/asm02.s:305-333); exactly one named id (MegaBstr, id 0) has none,
+#   and a display name exists -- TextScriptChipNames0.s holds 256
+#     def_text_script blocks (ids 0..255) but only 238 .string entries:
+#     TextScriptChipNames0_unkN names chip id N, ids 203..220 carry no
+#     string (placeholder rows) and ids 256..410 have no def at all.
 REACHABLE_MAX_ID = 256  # provenance: derived -- TextScriptChipNames0.s holds 256 def_text_script blocks (ids 0..255)
 
 
 def reachable_ids(chips, names):
     """The folder-reachable chip ids (T116): a def-number-keyed name (so ids
     203..220, which carry no .string, drop out), plus the gates above.
-    Returns ids 1..202 + 221..255 -- 220 ids. See the gate block above."""
+    Returns 237 ids: 1..202 + 221..255. See the gate block above."""
     out = []
     for cid, c in enumerate(chips):
         if not 0 < cid < REACHABLE_MAX_ID:
@@ -119,7 +128,7 @@ def reachable_ids(chips, names):
     return out
 
 
-ALIASES = {}  # (T116: unused -- the reachable set is derived by id, not by name)
+ALIASES = {"WideSwd": "WideSwrd", "LongSwd": "LongSwrd", "Invis": "Invisibl"}
 ICON_BASE = 0x8725894  # data/dat38_86.s:22229; sub_80281E4 indexes id*0x80
 FIELD = re.compile(r"\s*(\w+):\s*((?:0x[0-9A-Fa-f]+)|(?:[A-Za-z_]\w*)),?")
 
@@ -168,7 +177,7 @@ def chip_names():
             continue
         m = re.search(r'\.string "([^"]*)"', line)
         if m:
-            names[cur] = m.group(1)[:-1]
+            names[cur] = m.group(1).split("@")[0]  # the '@' terminator, and any padding after it, are not the name
             cur = None
     return names
 
@@ -217,7 +226,8 @@ def label_offsets(path):
 
 
 def main():
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "chips.bin"
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    out_path = args[0] if args else "chips.bin"
     chips = chip_data()
     names = chip_names()
     offs = label_offsets(DAT)
@@ -231,8 +241,17 @@ def main():
             image_pos[sym] = offs[sym]
     order = sorted(image_pos, key=image_pos.get)
 
-    # T116 step 4: the reachable set replaces the hand list.
-    wanted = reachable_ids(chips, names)
+    # Default (verifier follow-up): the landed CHIPS hand list, which must
+    # reproduce the shipped 48-record assets/chips.bin byte for byte. The
+    # 237-record reachable set is opt-in via --reachable and is NOT what the
+    # shipped blob carries (T116 step 4 measured it; reverted, footprint
+    # coupling -- docs/worklog/T116.md).
+    if "--reachable" in sys.argv[1:]:
+        wanted = reachable_ids(chips, names)
+    else:
+        hand = [ALIASES.get(n, n) for n in CHIPS]
+        by_name = {v: k for k, v in names.items()}
+        wanted = [by_name[n] for n in hand if n in by_name]
     nlines = chip_name_lines()
 
     def resolve(sym):

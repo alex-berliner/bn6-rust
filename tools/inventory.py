@@ -208,7 +208,7 @@ def chip_names():
             continue
         m = STRING_RE.match(strip_comment(ln))
         if m and cur is not None:
-            by_id[cur] = m.group(1).rstrip("@")
+            by_id[cur] = m.group(1).split("@")[0]  # the '@' terminator and any padding after it are not the name (id 255 was 'DustMan[EX]@ ' under .rstrip("@"))
             cur = None
     return [by_id.get(i, "") for i in range(max(by_id) + 1)]
 
@@ -292,7 +292,7 @@ def parse_chips():
         # T116's reachable gate (cites in docs/coverage/chips.md): id < 0x19B
         # (folder validation, asm/asm00_1.s:17513), >=1 code (the pack matches
         # the item code against the record's code bytes,
-        # getOffsetToQuantityOfChipCodeMaybe_8021c7c, asm/asm03_0.s:305-333),
+        # getOffsetToQuantityOfChipCodeMaybe_8021c7c, asm/asm02.s:305-333),
         # and a name string (TextScriptChipNames0.s; ids 203..220 and 256..410
         # have none). R = 237: ids 1..202 + 221..255.
         reachable = (0 < i < 256 and name != ""
@@ -316,9 +316,11 @@ def parse_chips():
             "damage": int(f["attack_power"], 16),
             "mb": int(f["mb"], 16),
             "cite": (f"data/ChipDataArr.s:{line}"
-                     + (f"; asset idx {asset_idx[i]}; name "
-                        f"data/textscript/TextScriptChipNames0.s:{nlines[i]}"
-                        if reachable else "")),
+                     + ("" if not reachable else
+                        (f"; asset idx {asset_idx[i]}" if i in asset_idx
+                         else "; not in the shipped 48-record asset")
+                        + f"; name "
+                          f"data/textscript/TextScriptChipNames0.s:{nlines[i]}")),
             "reachable": reachable,
             "status": status,
         })
