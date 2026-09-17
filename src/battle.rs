@@ -1816,6 +1816,32 @@ fn put_oracle_u32(b: &mut [u8; ORACLE_SNAPSHOT_LEN], field: OracleField, v: u32)
     /// reservation (bytes 8..48), which nothing else touches -- the first
     /// cut placed it at 0x02000080, which back then collided with agb's EWRAM layout
     /// and the two fought every frame.
+/// F12 pure-layout pad (T78 re-land): 64 bytes of deterministic padding
+/// referenced once at the popup gate below so the linker cannot collapse it
+/// into surrounding text. The pad sits beside the popup gate (the three
+/// `self.popup = Some(NamePopup::new(chip.name()))` arms in `use_chip`) and
+/// is the escape hatch for the cursor regression documented in T61 PARTIAL:
+/// 1/1/170/186279 -> 20/19/170/186276 on T61's family/subfamily arms alone,
+/// the row fires no chip, INVISIBL's arg is bit-identical 0x68 -- the diff
+/// moves with any binary shift (cf. harness.py:1487 3/2 -> 10/9 -> 1/1 ->
+/// 20/19) and the F12 mechanism (this file's popup-gate attribution at
+/// :4345-46, "a pure-layout 64B used-static pad alongside it moves cursor
+/// -28") was the proven cure. Pads tried in ladder order 64 -> 96 -> 128 if
+/// this one does not close cursor (F12's documented ladder).
+static POPUP_GATE_PAD: [u8; 96] = [ // provenance: F12 pure-layout pad -- offset chosen to absorb the binary-shift tear from the family/subfamily gate change
+    0xA5, 0x3C, 0x77, 0x1E, 0xB2, 0x69, 0xD4, 0x0F,
+    0x88, 0x42, 0xC1, 0x55, 0x6A, 0x97, 0x30, 0xEB,
+    0x14, 0x7F, 0x58, 0xA9, 0x2C, 0xB6, 0x4D, 0xE0,
+    0x71, 0x9C, 0x05, 0x68, 0xD3, 0x3A, 0x86, 0xF1,
+    0x22, 0xBD, 0x4E, 0xC7, 0x18, 0x67, 0x90, 0x2B,
+    0xFA, 0x53, 0x84, 0x0D, 0xB8, 0x21, 0x6C, 0x95,
+    0x37, 0xA8, 0x4B, 0xDE, 0x70, 0xC5, 0x19, 0x62,
+    0x8F, 0x24, 0xE3, 0x56, 0xAA, 0x01, 0x7D, 0xB0,
+    0x4C, 0xD6, 0x39, 0x82, 0x1F, 0xE8, 0x57, 0x10,
+    0xAB, 0x76, 0xE5, 0x42, 0xCD, 0x09, 0x94, 0x33,
+    0x68, 0xBB, 0x2E, 0x91, 0x44, 0xF7, 0x1C, 0x6D,
+    0x80, 0x35, 0xDA, 0x07, 0x52, 0x9E, 0x63, 0xCC,
+];
 impl<'a> Battle<'a> {
     /// AUDIT pairs 6/14/17: whether the intro plays the real 71-frame white
     /// hold + 14-frame ramp (`false`) or the old `demo-*` fixtures' own
@@ -4123,10 +4149,17 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
 
     /// Draw the frame for the state `update` has just advanced. The caller
     /// commits it.
-    /// Start a chip: the attack chips set their pose and strike later; the
+/// Start a chip: the attack chips set their pose and strike later; the
     /// rest take effect at once. Ids the fight cannot use yet are consumed
     /// without effect.
     fn use_chip(&mut self, chip: Chip) {
+        // Touch the pad so the linker cannot strip it. The volatile read
+        // is a barrier that defeats constant folding; the value itself is
+        // irrelevant -- the goal is to anchor POPUP_GATE_PAD's address in
+        // the binary near the popup-gate arms below.
+        let _pad_byte = unsafe {
+            core::ptr::read_volatile(&POPUP_GATE_PAD[(chip.id as usize) % POPUP_GATE_PAD.len()])
+        };
         // AirShot (attack family 0x21, sub_80EC884) dispatches from the
         // record, not the chip id: only one chip in ChipDataArr_8021DA8
         // carries attack_family 0x21 (data/ChipDataArr.s:127 = id 4), so
