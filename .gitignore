@@ -1,28 +1,31 @@
-
-.claude/
-# Claude Code session scratch
-decomp/
-# Derived from the copyrighted ROM, so it is a local reading aid only and must
-docs/tickets/
-# generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible
-# Ghidra's decompilation of the real cartridge (tools/ghidra_decompile.sh).
-# never be committed.  The Ghidra install and its project database live outside
+/target
+target/
+__pycache__/
+web/bn6-rust.gba
+web/build.txt
+web/*.sav
+web/roms/
+# The canon MMBN6F ROM and its saves are copyrighted binaries; keep them
 # out of git (only served locally).
+web/real-bn6f.gba
+web/*.state
+web/*.sav
+web/roms/*.sav
+web/real-bn6f.srm
+web/*.srm
+
+# Claude Code session scratch
+.claude/
+
+# pi session state (goal ledger, snapshots); .pi/agents, prompts, settings are tracked
 .pi/goals/
 .pi/.goals-pool-snapshot.json
 .pi/npm/
-# pi session state (goal ledger, snapshots); .pi/agents, prompts, settings are tracked
-__pycache__/
-/target
-target/
-# The canon MMBN6F ROM and its saves are copyrighted binaries; keep them
+
+# Ghidra's decompilation of the real cartridge (tools/ghidra_decompile.sh).
+# Derived from the copyrighted ROM, so it is a local reading aid only and must
+# never be committed.  The Ghidra install and its project database live outside
 # the repo, under /home/box/opt, so they need no rule here.
-web/bn6-rust.gba
-web/build.txt
-web/real-bn6f.gba
-web/real-bn6f.srm
-web/roms/
-web/roms/*.sav
-web/*.sav
-web/*.srm
-web/*.state
+decomp/
+# ticket traces: generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible
+docs/tickets/
