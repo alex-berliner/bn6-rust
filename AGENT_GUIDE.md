@@ -76,18 +76,17 @@ python3 tools/trace.py record rust  <scenario> --out /tmp/tr_r         # ours (T
 python3 tools/trace.py diff /tmp/tr_c /tmp/tr_r --align row:<scenario> # first divergent field and frame, then the list
 python3 tools/scoreboard.py                       # the whole table at a glance
 ```
-Extraction and dumps the tickets use: `tools/spr_export.py` and `tools/spr.py` (sprites), `tools/spr_dump.py`
+Every tool's one-line purpose is in `tools/README.md` (generated). The extraction and dump tools tickets use most: `tools/spr_export.py` and `tools/spr.py` (sprites), `tools/spr_dump.py`
 and `tools/spr_export_range.py` (sheets), `tools/throw_dump.py` (thrown-object arcs), `tools/text_font_export.py`
 (glyphs), `tools/chip_export.py` (chip records), `tools/sample_export.py` (audio). `tools/web_rom.sh` and `tools/serve.py` build and serve the
 browser ROM; you rarely need either.
 
-`mgba_capture <rom> <outdir> <count>` then: `--loadstate F` · `--loadsave F.srm` · `--script "A@40,Start@10"`
-· `--cheat addr:val16` (every frame) · `--poke addr:val16` (once at load) · `--poke-at frame:addr:val16`
-(once, before that frame; max 32) · `--zero addr:len` · `--watch addr:len:file` · `--watch-write addr[:len]`
-(every write: frame, old->new, writing instruction) · `--dump addr:len:file` · `--peek addr` (at load) ·
-`--only-bg N` · `--disable-obj` · `--disable-bg` · `--trace-pc addr --trace-steps N` (perturbs timing).
-Frames are `frame.#####.rgb`; `tools/mgba_frames.py <dir> --at i` renders a PNG; `tools/diffmask.py` shows
-where a diff is.
+`mgba_capture <rom> <outdir> <count>` then: `--loadstate F` · `--loadsave F.srm` · `--script "A@40,Start@10"` ·
+`--cheat addr:val16` (every frame) · `--poke addr:val16` (at load) · `--poke-at frame:addr:val16` (once, max 32)
+· `--zero addr:len` · `--watch addr:len:file` · `--watch-write addr[:len]` (frame, old->new, instruction) ·
+`--dump addr:len:file` · `--peek addr` (at load) · `--only-bg N` · `--disable-obj` · `--disable-bg` ·
+`--trace-pc addr --trace-steps N` (perturbs timing). Frames are `frame.#####.rgb`; `tools/mgba_frames.py <dir>
+--at i` renders a PNG; `tools/diffmask.py` shows where a diff is.
 
 ## Traps that cost a day each
 - Forcing the encounter roll's accumulator EVERY frame freezes the generator's draw (orbit trap): use a
@@ -103,8 +102,7 @@ where a diff is.
 
 ## RAM you will meet
 GameState 0x02001b80 (SubsystemIndex: 4 map, 8 battle_init, 12 battle main) · CurBattleDataPtr 0x02001b9c ·
-RNG seed 0x020013f0 (seed = rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan's BattleObject 0x0203a9b0 (CurState +8,
-CurAction +9, timer +0x20, HP +0x24) · enemy slots 0x0203aa88 / 0x0203ab60 / 0x0203ac38 · his AIData
-JoypadPressed 0x020340a4, Held 0x020340a2 (input reaches him only while the sequencer word 0x0203CA70 is in
-state 0x08; in 0x0C a one-shot poke here delivers a press) · joypad mirror 0x02036822 · scroll counters
-0x02009690/94, both 0 at a battle's frame 0.
+RNG seed 0x020013f0 (rotl(seed,1)+1 ^ 0x873ca9e5) · MegaMan 0x0203a9b0 (CurState +8, CurAction +9, timer
++0x20, HP +0x24) · enemies 0x0203aa88 / 0x0203ab60 / 0x0203ac38 · his AIData JoypadPressed 0x020340a4, Held
+0x020340a2 (input reaches him only while the sequencer word 0x0203CA70 is in 0x08; in 0x0C a one-shot poke
+here delivers a press) · joypad mirror 0x02036822 · scroll counters 0x02009690/94, both 0 at frame 0.

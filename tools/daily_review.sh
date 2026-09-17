@@ -50,6 +50,7 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo "## Switch rule (docs/config-log.md)"
   echo "A role's model changes only if, over at least 10 tickets, its cost per landed ticket is twice an alternative's on the replay benchmark (tools/replay_bench.py), and never on one day's numbers."
   echo
+  python3 tools/index.py >/dev/null 2>&1   # keep the tool index current before checking the instructions against it
   echo "## Do the instructions still match the project (tools/docs_check.py)"
   python3 tools/docs_check.py --since-days 7 2>&1 | tee "$TMP/docs.txt"
   echo

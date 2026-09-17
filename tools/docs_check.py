@@ -10,7 +10,11 @@ Printed by tools/daily_review.sh; a finding trips the auditor the way the blocke
 import argparse, collections, glob, json, os, re, subprocess, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")); os.chdir(ROOT)
-DOCS = ["AGENT_GUIDE.md", "AGENTS.md", ".pi/coordinator.md"] + sorted(glob.glob(".pi/roles/*.md"))
+# every file an agent is told to read: the shared rules, the worker guide, the role and loop texts, the
+# handoff sections tickets cite, and the contracts a ticket sends a worker to.
+DOCS = sorted(set(["AGENT_GUIDE.md", "AGENTS.md", "HANDOFF.md", "FIXTURE.md", ".pi/coordinator.md"]
+                  + glob.glob(".pi/roles/*.md") + glob.glob("docs/HANDOFF_*.md") + glob.glob("docs/*.md")))
+DOCS = [d for d in DOCS if os.path.exists(d) and not d.startswith(("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/"))]
 PATH = re.compile(r"\b((?:tools|docs|src|web|reference)/[A-Za-z0-9_./<>-]+|[A-Z][A-Z_]+\.md)\b")
 
 
@@ -24,6 +28,7 @@ def main():
     a = ap.parse_args()
     text = {d: open(d).read() for d in DOCS if os.path.exists(d)}
     all_text = "\n".join(text.values())
+    index = open("tools/README.md").read() if os.path.exists("tools/README.md") else ""   # the generated index counts as documentation
     findings = []
 
     # 1. a cited path that does not exist (placeholders such as <ID> are skipped)
@@ -45,7 +50,7 @@ def main():
             used["tools/" + m.group(1)] += 1
     for t in sorted(glob.glob("tools/*.py") + glob.glob("tools/*.sh")):
         base = os.path.basename(t)
-        if base in all_text or t in all_text: continue
+        if base in all_text or t in all_text or t in index: continue
         by_ticket = t in tickets or base in tickets
         by_worker = used.get(t, 0) >= 3
         if by_ticket or by_worker:
@@ -61,7 +66,17 @@ def main():
             newest = max([int(x) for x in re.findall(r"%s v(\d+)" % name, sh("grep -rho '%s v[0-9]' tools/ src/ || true" % name))] or [ver])
             if newest > ver: findings.append("%s says %s v%d; the code writes v%d" % (d, name, ver, newest))
 
-    # 4. are workers reading the guide whole?
+    # 4. a rule spliced by an earlier edit: a lower-case word followed by a capitalised clause and a colon,
+    #    which is what "edit only the files the Never commit on main:" looked like (2026-09-16)
+    for d, s in text.items():
+        for m in re.finditer(r"[a-z]{3,} ((?:Never|Always|Do not|Only|Every|The) [a-z][^.:\n]{0,60}:)", s):
+            findings.append("%s may have a spliced rule near %r" % (d, m.group(0)[:70]))
+
+    if os.path.exists("tools/index.py"):
+        r = subprocess.run("python3 tools/index.py --check", shell=True, capture_output=True, text=True)
+        if r.returncode != 0: findings.append("tools/README.md is out of date (python3 tools/index.py rewrites it)")
+
+    # 5. are workers reading the guide whole?
     lines = len(open("AGENT_GUIDE.md").read().splitlines()) if os.path.exists("AGENT_GUIDE.md") else 0
     heads = collections.Counter()
     for f in glob.glob("/tmp/bn-pi/*/session/subagent-artifacts/*_transcript.jsonl"):

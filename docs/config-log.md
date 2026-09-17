@@ -34,7 +34,7 @@ reshape of a working one:
 2. **Verified partials land.** A branch whose verify_rows PASS shows improvement and nothing worse, with any
    claim beyond harness lines confirmed, lands and is stamped PARTIAL; kept-unmerged is reserved for a
    regression, a refuted claim or numbers that did not reproduce (.pi/coordinator.md).
-3. **Watchdog.** `tools/hyper_day.sh` runs from cron every 30 minutes: restores the /tmp inputs from
+3. **Watchdog.** `tools/hyper_day.sh (since replaced by tools/run_day.sh)` runs from cron every 30 minutes: restores the /tmp inputs from
    /home/box/bn-backup after a reboot, prunes verify checkouts older than a day, and starts the all-Hyper
    run when none is active and at least 100 credits remain (hyperwatch still stops it at exhaustion).
 4. **Daily digest.** `tools/digest_post.py`, run at the end of `tools/daily_review.sh` (cron 09:15): one blog
