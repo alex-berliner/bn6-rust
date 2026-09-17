@@ -70,12 +70,27 @@ def executed(path):
     return out
 
 
-def cited():
-    """Every disassembly symbol named anywhere in our Rust sources."""
-    pat = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*_[0-9A-Fa-f]{4,8}\b")
+SYM = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*_[0-9A-Fa-f]{4,8}\b")
+
+
+def cited(rev=None):
+    """Every disassembly symbol named in our Rust sources -- on disk, or at a git revision.
+
+    The revision form is what makes a back-dated trend possible. Canon's execution profile is a
+    constant of the game, so the denominator does not move; only which routines we had cited on a
+    given day does, and git remembers that exactly."""
     got = set()
-    for f in glob.glob(os.path.join(ROOT, "src", "**", "*.rs"), recursive=True):
-        got |= set(pat.findall(open(f, errors="replace").read()))
+    if rev:
+        import subprocess
+        files = subprocess.run(["git", "-C", ROOT, "ls-tree", "-r", "--name-only", rev, "--", "src"],
+                               capture_output=True, text=True).stdout.split()
+        for f in (f for f in files if f.endswith(".rs")):
+            txt = subprocess.run(["git", "-C", ROOT, "show", "%s:%s" % (rev, f)],
+                                 capture_output=True, text=True).stdout
+            got |= set(SYM.findall(txt))
+    else:
+        for f in glob.glob(os.path.join(ROOT, "src", "**", "*.rs"), recursive=True):
+            got |= set(SYM.findall(open(f, errors="replace").read()))
     return {s.lower() for s in got}          # the disassembly is inconsistent about hex case
 
 
@@ -124,6 +139,7 @@ def main():
     ap.add_argument("--all", action="store_true", help="every scenario in docs/coverage, plus their union")
     ap.add_argument("--missing", type=int, default=10, help="list the N heaviest unported routines")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--rev", help="score the sources as they were at this git revision, against today's profile")
     ap.add_argument("--record", action="store_true",
                     help="append today's union figure to docs/inventory/coverage-history.json and print it")
     ap.add_argument("--headline", action="store_true",
@@ -132,7 +148,7 @@ def main():
     if a.headline or a.record:
         a.all = True
 
-    ours = cited()
+    ours = cited(a.rev)
     files = sorted(glob.glob(os.path.join(ROOT, "docs/coverage/*.md"))) if a.all else \
         [os.path.join(ROOT, "docs/coverage/%s.md" % a.scenario)]
     out, union = [], {}
