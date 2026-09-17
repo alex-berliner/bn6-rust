@@ -273,6 +273,8 @@ def cmd_record(args) -> None:
         # per-scenario so the 16-watch capture budget stays intact).
         watches = dict(CANON_WATCHES)
         watches.update(scen.get("extra_watches", {}))
+        for name in scen.get("drop_watches", ()):
+            watches.pop(name, None)  # T131: keep the scenario inside mgba's 16-watch cap
         # The compared window starts at canon_ref: capture through its end.
         count = scen["canon_ref"] + scen["frames"] + 4
     else:

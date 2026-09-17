@@ -880,6 +880,7 @@ TRACE_SCENARIOS = {
         "rust_base": 0,  # provenance: derived -- canon-only scenario, no rust side exists
         "mercy_addr": 0x02038514,  # provenance: peeked -- same battle-object family as mettaur/popup, T1 probe
         "extra_watches": {"settings": (0x02001b9c, 4)},
+        "drop_watches": ("panel_type", "panel_flags"),  # T130's raw-bin-only watches (never parsed); dropped here so 13 + mercy + settings <= 16
         "canon": {
             "rom": REAL,
             "loadstate": "/tmp/battlestart_scripted.state",
