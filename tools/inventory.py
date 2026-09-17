@@ -1362,7 +1362,20 @@ def parse_backdrops(formation_lists):
                     if v == 0xFF else art_of(v)),
             "cite": "asm/asm21.s:469-523 sub_8081308 ldrb [BattleSettings+0x4] -> off_8080F98[r] LoadBGAnimData (asm/asm03_0.s:21209) via sub_8080DA0 asm/asm21.s:15-45 (from initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435); writer battleSettings_setBackground asm/asm03_0.s:14591-14593; reference/bn6f/bn6f.gba ROM walk"
                     + ("; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)" if v == 0x08 else ""),
-            "status": "unrecorded",
+            "status": {
+                0x07: ("verified (T70 static: same gfx/tilemap wrappers as the poked 0x08 art "
+                       "(0x08616598/0x08616634), palette wrapper byte_8616760 -- variant 1, 0x08's is "
+                       "byte_8616EC4; records carrying 0x07 are fetched by getBattleSettingsFromList1 "
+                       "asm/asm00_1.s:16046-16062, e.g. 0x080b0d88+4 = 0x07 measured)"),
+                0x08: ("verified (T70 poke on the battlestart route: [0x02001b9c] pinned 0x080aee70 "
+                       "-> [ptr]+0x4 = 0x08; BG1 slot k=5 = tile 3 of the id-8 anim blob 0x08616904, "
+                       "16/36 slots hold its tiles = script 0x0807FAC0 (off_8081220[8]) ran)"),
+                0xFF: ("verified (T70: resolution branches asm/asm21.s:475-516 -- non-0xff passes "
+                       "through (bne :476); 0xff -> net pt_808139C[group-0x80][map] ldrb :489, weather "
+                       "override 0x15 :508, real-world 7 :516; battlestart route default = "
+                       "pt_808139C[0x10][0] = 9, off_8081220[9] first script = "
+                       "BattleBackdropGFXAnimScript_807FB98 = T22's byte-exact default-arena anim)"),
+            }[v],
         })
     return rows
 
@@ -1551,29 +1564,42 @@ SECTION_NOTES = {
             " asm31.s per-attack effect routines) -- that pinning is M4 work."),
     "backdrops (M8)":
         lambda meta: (
-            "Sentinel note: Background 0xff on 268 of 461 records is counted as"
-            " an UNSET sentinel, not backdrop id 255. What this section counts"
-            " after excluding 0xff: 2 set values (0x07 on 192 records, 0x08 on"
+            "Sentinel note: Background 0xff on 1047 of 1240 records (T65 ROM walk) is"
+            " counted as an UNSET sentinel, not backdrop id 255. What this section"
+            " counts after excluding 0xff: 2 set values (0x07 on 192 records, 0x08 on"
             " 1 record); the distinct-value denominator 3 includes the"
             " sentinel row so the sentinel itself stays auditable."
-            " T15 mapping trail: battleSettings_setBackground"
-            " (asm/asm03_0.s:14592-14595) stores the byte at"
-            " BattleSettings_200AF60+0x4; battleSettings_802D2B2"
-            " (asm/asm03_0.s:14599-14618) sources it from byte_203CA50"
-            " stage-pair rows (byte_203CA50[2*(stage-1)+1]);"
-            " CopyBackgroundTiles (asm/asm00_0.s:3105, thumb_func_start 3102;"
-            " thunk to iCopyBackgroundTiles asm/asm38.s:424) takes tile ids"
-            " from its caller, not from the byte. Verifier search endpoint"
-            " (T15): repo-wide grep for readers of BattleSettings+0x4 finds"
-            " NONE in asm/ beyond the 14594 store;"
-            " battleSettings_setBackground has exactly two callers"
-            " (asm03_0.s:14617, asm33.s:16529); CopyBackgroundTiles' call"
-            " sites pick per-scene tile arrays by compare chains, not"
-            " indexing (asm33.s:4168-4195: ldr r0,[r7,#0x74] then sub"
-            " #0x82/#0x70/#0x5e dispatching to byte_812489C/81248C0/"
-            " 81248E4/812492C) -- so the byte->art mapping is a per-scene"
-            " compare chain over four tile arrays, not a table. Still a"
-            " GAP for a table."
+            " T70 measured mapping (closes the T15 GAP): the byte's readers are"
+            " battleSettings_setBackground (asm/asm03_0.s:14592 strb"
+            " r0,[BattleSettings_200AF60+0x4]; callers asm03_0.s:14617"
+            " battleSettings_802D2B2 -- its argument is byte_203CA50[2*(stage-1)+1],"
+            " ldrb [r6,#1] :14615, the stage-pair word copied from dword_203F568 by"
+            " battle_copyStructsIncludingBattleStats_800b2d8 asm/asm00_1.s:17871-17874 --"
+            " and asm33.s:16529 sub_812B768, caller-supplied) and battle init"
+            " sub_8080DA0 (asm/asm21.s:17 bl sub_8081308; r ="
+            " [r10->BattleState.BattleSettings]+4 ldrb :474, cmp #0xff :475, bne"
+            " passthrough :476). The art SELECT is the table load asm/asm21.s:32"
+            " ldr r0,[r6,r1] = off_8080F98[r] -> LoadBGAnimData :33, plus :36"
+            " off_8081220[r] -> LoadGFXAnims :37; 0xff resolves BEFORE the index: net"
+            " pt_808139C[group-0x80][map] ldrb :489, weather override 0x15 :508,"
+            " real-world 7 :516. Per byte, the BGAnimData {gfx wrapper"
+            " (sz_words,LZ77_off); dest 0x6000020; tilemap wrapper (w,h,LZ77@+0xc);"
+            " palette wrapper (data@+4)} decodes as: 0x07 and 0x08 share gfx 0x08616598"
+            " (17 tiles, LZ77 at 0x086165b0) and tilemap 0x08616634 (32x32), differing"
+            " only in palette (0x08616760 vs 0x08616EC4) = the Comps1/Comps2 map bg art"
+            " (the maps' own BGAnimData off_806DBD4/off_806DBF0 -- cited by"
+            " reference/bn6f/maps/Comps1/loader.s:224-227 -- reuse the same"
+            " gfx/tilemap wrappers; id 6's gfx 0x08610b04 is cited by"
+            " reference/bn6f/maps/RobotControlComp/loader.s:133); 0xff on the battlestart"
+            " route resolves to id 9 = the default net arena: anim off_8081220[9] first"
+            " script = BattleBackdropGFXAnimScript_807FB98 = T22's byte-exact art."
+            " Poked fielding (one capture): [0x02001b9c] pinned 0x080aee70 on the"
+            " battlestart route (watch: natural 0x080b4be8 at frame 60 only), byte at"
+            " [ptr]+0x4 = 0x08, BG1 VRAM slot k=5 (0x060000A0) = tile 3 of the id-8 anim"
+            " blob 0x08616904, 16/36 slots holding its tiles -- script 0x0807FAC0"
+            " (off_8081220[8]) ran. UNVERIFIED: the palette leg (bank 0 read white at the"
+            " dump frame -- the poked scripted record's battle repainted palettes) and no"
+            " live poke of 0x07 itself."
             " T22 art-content chain (verified as data, settled F47's open"
             " (c)): BattleBackdropGFXAnimScript_807FB98 (data/dat20.s:148;"
             " initial gfx_anim_4bit_tile_copy gfx_dest=unk_6000040"
@@ -1613,9 +1639,10 @@ SECTION_NOTES = {
             " the next reader gets the same figure. FORWARD-BLOCKING LIMITS:"
             " (i) do not extend 37/37 x 7 to the palette -- bank 0 rests only"
             " on the exporter's 'read from a live battle' comment, no palette"
-            " watch in the kept dumps; (ii) byte->art mapping stays 0/3, a"
-            " per-scene compare chain at asm33.s:4168-4195 -- nothing here"
-            " proves byte 0x07 is the field stage's byte; (iii) the typed"
+            " watch in the kept dumps; (ii) byte->art mapping CLOSED by T70"
+            " (mapping note above + row statuses; the asm33.s:4168-4195"
+            " compare chain is a different, per-scene loader, not this"
+            " table); (iii) the typed"
             " constants in this note (29/7/36/37/37) are NOT re-verified by"
             " the generator -- if FRAMES ever changes, SCOPE keeps asserting"
             " 37/37 forever ('generated' here is assembled prose, not"
@@ -1818,7 +1845,7 @@ def main():
                 statuses)),
 
         ("M1", ("formations (M8)", f"ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), {nrec} records over {nlists} lists (2 scripted + {nlists - 2} encounter-tree), {len(form_rows)} 0xF0-terminated formation arrays (section denominator = {len(form_rows)} arrays, all rows status unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
-        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS, byte->art CLOSED (T65 pass 3): BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592; for scripted battles also sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599); the byte is read at battle init by sub_8081308 (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] :473-475, called from sub_8080DA0 asm/asm21.s:15-45 via initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435) and indexes off_8080F98[r] -> LoadBGAnimData (asm/asm03_0.s:21209) = explicit LZ77 tiles/tilemap/palette pointers: 0x07/0x08 = the Comps1/Comps2 bg art in its two palette variants (id 6 is the RobotControlComp art), 0xff = map default (real 7, net pt_808139C[group-0x80][map] asm/asm21.s:548-564, weather-puzzle maps 0x15/0x10) -- census in rows below; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
+        ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS, byte->art CLOSED (T65 pass 3; mapping verified + poked T70): BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592; for scripted battles also sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599); the byte is read at battle init by sub_8081308 (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] :473-475, called from sub_8080DA0 asm/asm21.s:15-45 via initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435) and indexes off_8080F98[r] -> LoadBGAnimData (asm/asm03_0.s:21209) = explicit LZ77 tiles/tilemap/palette pointers: 0x07/0x08 = the Comps1/Comps2 bg art in its two palette variants (id 6 is the RobotControlComp art), 0xff = map default (real 7, net pt_808139C[group-0x80][map] asm/asm21.s:548-564, weather-puzzle maps 0x15/0x10) -- census in rows below; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
     regenerate_scope(sections, pa_meta={
