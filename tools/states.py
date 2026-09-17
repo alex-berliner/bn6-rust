@@ -820,16 +820,4 @@ TRACE_SCENARIOS = {
         "frames": 40,
         "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
     },
-    # T123: the cross-state row's trace scenario -- same shape as the other
-    # three emotion scenarios (rides the row's own sides via harness_row).
-    # The transformation poke 0x0203ce2c (battle NaviStats.Transformation)
-    # is NOT in trace.py's fixed CANON_WATCHES; measured per row in
-    # docs/worklog/T123.md.
-    "emotion_cross_full": {
-        "harness_row": "emotion_cross",
-        "canon_ref": 43,  # provenance: derived -- ALIGN_CHIP's own canon_ref, the row's pairing
-        "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, same recipe family as emotion_syn
-        "frames": 40,
-        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
-    },
 }
