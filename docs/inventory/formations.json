@@ -52,7 +52,81 @@
       "cite": "reference/bn6f/bn6f.gba:0x080b1b68..0x080b1b78 (unreferenced by any census record or ROM word)"
      }
     ],
-    "note": "every byte of the region is otherwise covered by record lists (+0xFF terminator +3-byte align pad), 16-word map arrays, or referenced arrays (incl. 0xF0); none of the orphan runs is named by any ROM word"
+    "residual_pad_bytes": [
+     {
+      "addr": "0x080b0d85",
+      "end": "0x080b0d88",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b1b79",
+      "end": "0x080b1b7c",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b1ed5",
+      "end": "0x080b1ed8",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b23c7",
+      "end": "0x080b23c8",
+      "bytes": 1,
+      "byte_values": "00"
+     },
+     {
+      "addr": "0x080b29c9",
+      "end": "0x080b29cc",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b36b9",
+      "end": "0x080b36bc",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b396d",
+      "end": "0x080b3970",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b41e3",
+      "end": "0x080b41e4",
+      "bytes": 1,
+      "byte_values": "00"
+     },
+     {
+      "addr": "0x080b4ab5",
+      "end": "0x080b4ab8",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     },
+     {
+      "addr": "0x080b5a0b",
+      "end": "0x080b5a0c",
+      "bytes": 1,
+      "byte_values": "00"
+     },
+     {
+      "addr": "0x080b6c1f",
+      "end": "0x080b6c20",
+      "bytes": 1,
+      "byte_values": "00"
+     },
+     {
+      "addr": "0x080b79bd",
+      "end": "0x080b79c0",
+      "bytes": 3,
+      "byte_values": "00 00 00"
+     }
+    ],
+    "note": "outside every span (record lists incl. full 4-byte terminator slot, 16-word map arrays, referenced arrays incl. 0xF0) fall 80 bytes = 52 orphan-run bytes (orphan_quad_runs) + 28 align-pad/sliver bytes (residual_pad_bytes, 0x00/0xff fill); none of the orphan runs is named by any ROM word"
    }
   }
  },

@@ -175,9 +175,12 @@ at +4) -- that array is referenced by battleSettingsList0 record **0x080afa20**.
 referenced array starts + 1 interior label.
 
 Interval-accounting the whole data region **0x080aee70..0x080b81eb** (generator `residue_pass3` key in
-docs/inventory/formations.json): every byte is covered by a record list (16-byte records, 0xFF terminator
-+ 3-byte align pad), a 16-word encounter map array, or a referenced formation array (quads + 0xF0), except
-four quad runs that NO census record and NO 4-aligned or unaligned ROM word refers to:
+docs/inventory/formations.json; a record-list span covers its full 4-byte terminator slot: 0xFF + the
+3-byte align pad): **80 bytes fall outside every span** -- the four quad runs below (52 bytes) that NO
+census record and NO 4-aligned or unaligned ROM word refers to, plus **28 residual align-pad/sliver bytes**
+(`residual_pad_bytes`, values emitted): 3-byte 00-pads at 0x080b0d85, 0x080b1b79, 0x080b1ed5, 0x080b29c9,
+0x080b36b9, 0x080b396d, 0x080b4ab5, 0x080b79bd and 1-byte 00-slivers at 0x080b23c7, 0x080b41e3, 0x080b5a0b,
+0x080b6c1f. The four orphan runs:
 
 | run | end | quads | content (dispatch nibble / panel / id) |
 |---|---|---|---|
@@ -186,8 +189,9 @@ four quad runs that NO census record and NO 4-aligned or unaligned ROM word refe
 | 0x080b1b57 | 0x080b1b67 | 4 | ids 0x22,0x25,0x21,0x26 (nibbles 0,0,3,3) |
 | 0x080b1b68 | 0x080b1b78 | 4 | ids 0x25,0x22,0x26,0x21 (mirror) |
 
-**Residue = 4 runs, 52 bytes, zero ROM refs** (development leftovers; the 0x080b1b57/0x080b1b68 pair uses
-dispatch nibble 3 = spawnRock_8007450). All other 1-byte gaps are 0xF0 terminators / align pads.
+**Residue = 4 orphan runs (52 bytes) + 28 residual align-pad bytes, 80 outside every span in total**; the
+orphan runs are development leftovers (the 0x080b1b57/0x080b1b68 pair uses dispatch nibble 3 =
+spawnRock_8007450) and the 28 are 0x00 fill.
 
 ### Spawn dispatch and the 0x00 "quad id" (bonus, resolved)
 
@@ -199,9 +203,12 @@ asm/asm00_1.s:8569-8599; the loop tests `(quad[0]&0xF0)==0xF0` for the terminato
 histogram over all quads: {0:1071, 1:2546, 2:61, 3:74, 8:53, 9:4, 10:21}.
 
 So the "0x00 quad id, flagged uninterpreted" from pass 1+2 is **the player-spawn slot, not an enemy**:
-1045/1076 arrays carry quad[2]==0; in 991 of them every such quad is the dispatch-0 (player) entry whose
-quad[2] is unused; the other 54 carry quad[2]==0 only in mystery-data/rock/guardian quads, which do not
-read an enemy id. **Zero dispatch-1 quads have enemy_idx 0 anywhere in the census** -- enemy_idx 0 never
+1045/1076 arrays carry quad[2]==0. Measured per-array sets of the zero-id quads' dispatch nibbles:
+**{0}:991, {0,3}:38, {0,10}:12, {3}:2, {0,9}:2** -- so 52 of the 54 arrays with a non-player zero-id quad
+ALSO carry the dispatch-0 (player) zero-id quad, and only 2 (both {3}) are exclusively non-player; the
+non-player nibbles present are 3 (spawnRock_8007450), 9 (spawnGuardian_800751C) and 10
+(spawnMetalCube_800748A) -- dispatch nibble 2 (spawnMysteryData) never appears. The quad[2] of the
+dispatch-0 player entry is unused by spawnMegaMan_80073CC. **Zero dispatch-1 quads have enemy_idx 0 anywhere in the census** -- enemy_idx 0 never
 spawns from a formation.
 
 ### Background byte -> art chain (0x07/0x08 mapped)
@@ -211,10 +218,10 @@ Chain (every cite on disk): battle init `sub_8080DA0` (asm/asm21.s:15-45), reach
 `oBattleState_BattleSettings`, calls `sub_8081308` (asm/asm21.s:17), which reads the byte as
 `ldrb r0,[BattleSettings+0x4]` (asm/asm21.s:473-475). If the byte is **0xff**, `sub_8081308` substitutes
 the map default: real-world maps (group<0x80) get **7** (asm/asm21.s:515-516); net maps (group>=0x80) get
-the byte `pt_808139C[group-0x80][map]` (23-word table asm/asm21.s:548-564; per-map bytes 0x00,0x01,0x03,
+the byte `pt_808139C[group-0x80][map]` (23-word table asm/asm21.s:548-572; per-map bytes 0x00,0x01,0x03,
 0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0c,0x10,0x12 over the 16 entries of groups 0x80..0x88); a map on the
 weather-puzzle list `word_8081368` (asm/asm21.s:524-530, Mr Weather comps 1-3 + Pavilion comp 3) gets
-**0x15** flag-clear else 0x10 (asm/asm21.s:508-514). If the byte is anything else it is used as-is.
+**0x15** flag-clear else 0x10 (override at asm/asm21.s:502-509). If the byte is anything else it is used as-is.
 
 The resolved id indexes three parallel tables (sub_8080DA0 asm/asm21.s:18-45): `off_8080E34[id*0x10]` =
 scroll callbacks + LCD flags (asm21.s:79), **`off_8080F98[id]`** -> `LoadBGAnimData` (asm/asm03_0.s:21209;
@@ -223,11 +230,11 @@ palette_dest 0x03001960, palette_size 0x20}), and `off_8081220[id]` -> `LoadGFXA
 
 - **0x07** (192 records, ALL battleSettingsList1 family-A) -> `off_8081098` (asm21.s:221): LZ77 tiles
   `off_8616598`, tilemap `byte_8616634`, palette `byte_8616760` -- **the Comps1/Comps2 maps' own bg art**
-  (byte-identical asset triple to maps/Comps1/loader.s:236-245 `off_806DBD4`).
+  (byte-identical asset triple to maps/Comps1/loader.s:240-246 `off_806DBD4`).
 - **0x08** (1 record: battleSettingsList0 record 0 @0x080aee70) -> `off_80810B4` (asm21.s:222): same tiles
   + tilemap, palette `byte_8616EC4` -- **the Comps art's alternate-palette variant** (Comps1's
-  `off_806DBF0`). Id 6 is the RobotControlComp art (`off_808107C`: off_8610B04/byte_8610C18/byte_8610D64 =
-  maps/RobotControlComp/loader.s:133-141).
+  `off_806DBF0`, maps/Comps1/loader.s:247-253). Id 6 is the RobotControlComp art (`off_808107C`:
+  off_8610B04/byte_8610C18/byte_8610D64 = maps/RobotControlComp/loader.s:131-141).
 - **0xff default** for the 1047 other records: the 24 family-B real-world records resolve to id 7 (same
   art as explicit 0x07); the 755 family-B net records resolve per-map through pt_808139C to ids {0,1,3,
   4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20} with 55 records on weather-puzzle maps resolving 0x10-or-0x15

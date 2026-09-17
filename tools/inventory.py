@@ -1051,16 +1051,22 @@ def parse_formations():
     3=spawnRock_8007450, 8=spawnRockCube_80074FA, 9=spawnGuardian_800751C,
     10=spawnMetalCube_800748A.  quad[1] = panel x|y<<4, quad[3] low nibble =
     version.  So the "0x00 quad id" flagged uninterpreted in pass 1+2 is the
-    PLAYER-SPAWN slot: 1045/1076 arrays carry quad[2]==0, and in 991 of them
-    every such quad is the dispatch-0 (player) entry whose quad[2] is unused;
-    the other 54 arrays carry quad[2]==0 only in mystery-data/rock/guardian
-    quads (nibbles 2/3/9/10), which do not read an enemy id.  ZERO dispatch-1
-    (enemy) quads have enemy_idx 0 in the whole census, so enemy_idx 0 never
-    spawns from a formation.  PASS 3 residue: every byte of the data region
-    0x080aff44..0x080b81e3 is accounted by record lists (terminator 0xFF +
-    3-byte align pad), 16-word map arrays and referenced arrays (incl. 0xF0),
-    except the four unreferenced quad runs reported in the residue_pass3 key
-    (all merges/addresses recomputed here, not assumed)."""
+    PLAYER-SPAWN slot: 1045/1076 arrays carry quad[2]==0.  Per-array sets of
+    the zero-id quads' dispatch nibbles, measured: {0}:991, {0,3}:38,
+    {0,10}:12, {3}:2, {0,9}:2 -- i.e. 52 of the 54 arrays with a non-player
+    zero-id quad ALSO carry the dispatch-0 (player) zero-id quad and only 2
+    ({3}) are exclusively non-player; the non-player nibbles present are 3
+    (spawnRock_8007450), 9 (spawnGuardian_800751C) and 10
+    (spawnMetalCube_800748A) -- dispatch nibble 2 (spawnMysteryData) never
+    appears.  ZERO dispatch-1 (enemy) quads have enemy_idx 0 in the whole
+    census, so enemy_idx 0 never spawns from a formation.  PASS 3 residue:
+    of the data region 0x080aee70..0x080b81eb, 80 bytes fall outside every
+    record-list span (terminator 0xFF + 3-byte align pad = full 4-byte
+    slot), 16-word map array, or referenced array (incl. 0xF0): the four
+    unreferenced quad runs (52 bytes, residue_pass3.orphan_quad_runs) plus
+    28 residual align-pad/sliver bytes (residue_pass3.residual_pad_bytes,
+    addresses and byte values emitted) (all merges/addresses recomputed
+    here, not assumed)."""
     rom = open(os.path.join(REF, "bn6f.gba"), "rb").read()
 
     def w(addr):
@@ -1159,10 +1165,11 @@ def parse_formations():
             mismatches.append((f"0x{la:08x}", L["term"], L.get("name", "encounter list")))
 
     # PASS-3 residue scan: interval-account the whole data region.  Explained
-    # = record lists (0xFF terminator + the 3-byte align pad to the next
-    # record slot), the 16-word map arrays, and every referenced formation
-    # array (quads + 0xF0).  What survives is a true orphan, not a parse gap.
-    spans = [(la, la + 0x10 * len(L["recs"]) + 1)
+    # = record lists (the full 4-byte terminator slot: 0xFF + 3-byte align
+    # pad), the 16-word map arrays, and every referenced formation array
+    # (quads + 0xF0).  What survives is 80 bytes: the four true orphan quad
+    # runs (52) and residual align-pad/sliver bytes (28), both emitted.
+    spans = [(la, la + 0x10 * len(L["recs"]) + 4)
              for la, L in list(fam_a.items()) + list(fam_b.items())]
     spans += [(ga, ga + 0x40) for ga in gas]
     for ptr, ents in form.items():
@@ -1206,6 +1213,29 @@ def parse_formations():
                 "cite": f"reference/bn6f/bn6f.gba:0x{ga_:08x}..0x{end:08x} (unreferenced by any census record or ROM word)",
             })
             ga_ = end + 1
+    # the non-orphan unaccounted bytes: align pads / 1-byte slivers, named
+    # (the orphan-run ranges themselves are excluded here, not double-counted)
+    orphan_iv = sorted((r["addr"], r["end"]) for r in residue)
+    resid_pad = []
+    for i, (a, b) in enumerate(merged):
+        gb = merged[i + 1][0] if i + 1 < len(merged) else hi
+        cur = b
+        for oa, oe in orphan_iv:
+            oa = int(oa, 16)
+            oe = int(oe, 16) + 1  # include the run's 0xF0 terminator byte
+            if oe <= cur or oa >= gb:
+                continue
+            if oa > cur:
+                resid_pad.append({
+                    "addr": f"0x{cur:08x}", "end": f"0x{oa:08x}", "bytes": oa - cur,
+                    "byte_values": rom[cur - 0x08000000:oa - 0x08000000].hex(" "),
+                })
+            cur = max(cur, oe)
+        if gb > cur:
+            resid_pad.append({
+                "addr": f"0x{cur:08x}", "end": f"0x{gb:08x}", "bytes": gb - cur,
+                "byte_values": rom[cur - 0x08000000:gb - 0x08000000].hex(" "),
+            })
 
     lists = {}
     for la, L in fam_a.items():
@@ -1219,7 +1249,8 @@ def parse_formations():
         "residue_pass3": {
             "region": f"0x{lo:08x}..0x{hi - 1:08x}",
             "orphan_quad_runs": residue,
-            "note": "every byte of the region is otherwise covered by record lists (+0xFF terminator +3-byte align pad), 16-word map arrays, or referenced arrays (incl. 0xF0); none of the orphan runs is named by any ROM word",
+            "residual_pad_bytes": resid_pad,
+            "note": "outside every span (record lists incl. full 4-byte terminator slot, 16-word map arrays, referenced arrays incl. 0xF0) fall 80 bytes = 52 orphan-run bytes (orphan_quad_runs) + 28 align-pad/sliver bytes (residual_pad_bytes, 0x00/0xff fill); none of the orphan runs is named by any ROM word",
         }}
 
     form_rows = []
@@ -1311,9 +1342,9 @@ def parse_backdrops(formation_lists):
         gfx, tmap, pal = w(p), w(p + 8), w(p + 0x10)
         s = (f"BGAnimData 0x{p:08x}: LZ77 tiles 0x{gfx:08x}, tilemap 0x{tmap:08x}, "
              f"palette 0x{pal:08x}")
-        if v == 0x07:  # provenance: peeked -- same asset maps/Comps1/loader.s:236-245 (off_806DBD4) loads
+        if v == 0x07:  # provenance: peeked -- same asset maps/Comps1/loader.s:240-246 (off_806DBD4) loads
             s += " = the Comps1/Comps2 maps' own bg art (palette byte_8616760)"
-        if v == 0x08:  # provenance: peeked -- same asset maps/Comps1/loader.s:246-250 (off_806DBF0) loads
+        if v == 0x08:  # provenance: peeked -- same asset maps/Comps1/loader.s:247-253 (off_806DBF0) loads
             s += " = the Comps1/Comps2 art's alternate-palette variant (same tiles/tilemap, palette byte_8616EC4)"
         return s
 
