@@ -8,6 +8,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/api_pacer.py` — A local pacing proxy in front of a provider's API, so a subscription's short-term rate limit is never seen
 - `tools/apply_renames.py` — Apply the disassembly's symbol renames (reference/bn6f/docs/renames.md, `old -> new` lines) to this repo's own
 - `tools/archive_tickets.py` — Move closed tickets out of TODO.md into TODO_ARCHIVE.md, leaving a one-line index entry each, so
+- `tools/audio_diff.py` — tools/audio_diff.py -- T95: sample-exact diff of two mgba --dump-audio trees.
 - `tools/audio_probe.py` — tools/audio_probe.py -- T13: sample-exact comparison of two per-frame PCM
 - `tools/backdrop_export.py` — Export the battle backdrop's tileset, tilemap and palette for the ROM.
 - `tools/banner_export.py` — Export the battle BANNER -- "BATTLE START!", "ENEMY DELETED" and the rest.
@@ -38,6 +39,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/f16_slot_probe.py` — F16 one-off probe: for every row whose fixture has enemies, capture the
 - `tools/field_dump.py` — Render the bn6f 6x3 battle field to a PNG.
 - `tools/field_export.py` — Export the bn6f battle field tileset, tilemap and palette for the ROM.
+- `tools/field_names.py` — tools/field_names.py — apply the field renames whose evidence we already hold.
 - `tools/font_export.py` — Export the battle HP digit font for the ROM.
 - `tools/gbafix.py` — Turn the linked ELF into a bootable .gba: raw binary plus a valid header.
 - `tools/ghidra_decompile.sh` — Decompile the real MMBN6F cartridge image with Ghidra, headlessly, using the
@@ -73,6 +75,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/replay_bench.py` — Replay benchmark: re-run an archived ticket with a candidate model from the ticket's base commit and
 - `tools/restore_inputs.sh` — Restore the /tmp working set after a reboot. /tmp is not durable (HANDOFF.md §1); this has
 - `tools/results_export.py` — Export the battle results windows for the ROM.
+- `tools/retype_if_stale.sh` — Keep the decompiled C in step with what we have learned about the original game. Its field names come from
 - `tools/roles.py` — providers.toml as a tool: resolves a run profile's jobs to models by current budget, renders the pi agent
 - `tools/rom_enemy_tables.py` — T12: enemy roster out of the ROM's own index tables (bn6f).
 - `tools/run_day.sh` — The launcher, run by cron every 30 minutes. Reads providers.toml's schedule: for each run profile in order,
@@ -92,6 +95,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/ticket_result.py` — Stamp a ticket's status in TODO.md and add its **Result.** paragraph, then commit TODO.md alone.
 - `tools/ticket_trace.py` — Everything that happened on one ticket, as one readable timeline: which model played which part, what it
 - `tools/trace.py` — The state trace (T1): record canon's battle state per frame, replay ours,
+- `tools/transfer.py` — Print one section of TRANSFER.md, the first phase's journal. The tools cite it for the provenance of a
 - `tools/verify_rows.py` — Reproduce a report's harness lines from a clean detached checkout -- the free, model-less tier of
 - `tools/waste_report.py` — What the day's model usage spent on nothing: the waste the outcome ledger cannot see.
 - `tools/watch_run.py` — A live, readable view of a coordinator run for a human at a terminal (the "view" window of the run's tmux
