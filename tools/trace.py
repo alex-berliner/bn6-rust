@@ -486,6 +486,11 @@ def cmd_diff(args) -> None:
         out[name] = dict(first=None, count=0, canon=None, rust=None)
     out["rng_cadence"] = dict(first=None, count=0, canon=None, rust=None)
     prev_rrng = prev_crng = None
+    #: T125: union over every judged field (PARITY + the T112 results words +
+    #: rng_cadence + sequencer) -- the frames where ANY of them diverge. Report
+    #: shape only: no new watch, no new capture; the per-field counts above are
+    #: unchanged.
+    div_any = [False] * frames
     for k in range(frames):
         c, r = ctab[c0 + k], rtab[rbase + k]
         rmm = dict(state=r["mm_state_action"][0], action=r["mm_state_action"][1],
@@ -515,6 +520,7 @@ def cmd_diff(args) -> None:
                 if f["first"] is None:
                     f["first"], f["canon"], f["rust"] = k, cval, rval
                 f["count"] += 1
+                div_any[k] = True
         # T112: the results-window pair -- plain exported/watched fields, same
         # divergence tail as the PARITY loop above.
         for name in T112_PAIRS:
@@ -524,6 +530,7 @@ def cmd_diff(args) -> None:
                 if f["first"] is None:
                     f["first"], f["canon"], f["rust"] = k, cval, rval
                 f["count"] += 1
+                div_any[k] = True
         crng = c["rng"]
         if prev_rrng is not None:
             if r["rng"] != O.rng_step(prev_rrng) or crng != O.rng_step(prev_crng):
@@ -532,6 +539,7 @@ def cmd_diff(args) -> None:
                     f["first"] = k
                     f["canon"], f["rust"] = (prev_crng, crng), (prev_rrng, r["rng"])
                 f["count"] += 1
+                div_any[k] = True
         prev_rrng, prev_crng = r["rng"], crng
     print("trace diff %s vs %s -- %s, %d compared frames (shift %d)"
           % (args.canon_dir, args.rust_dir, how, frames, args.shift))
@@ -548,6 +556,7 @@ def cmd_diff(args) -> None:
                 seq["first"], seq["canon"], seq["rust"] = k, hex(cval), hex(rval)
             seq["count"] += 1
             seq_runs.append((k, cval, rval))
+            div_any[k] = True
     if seq["first"] is None:
         print("  %-18s match          %d/%d frames" % ("sequencer", frames, frames))
     else:
@@ -575,6 +584,19 @@ def cmd_diff(args) -> None:
         k, n = firsts[0]
         print("FIRST DIVERGENCE: %s at k=%d (canon frame %d) canon=%s rust=%s"
               % (n, k, c0 + k, out[n]["canon"], out[n]["rust"]))
+    # T125: the total the M2 objective tracks -- the frames where ANY judged
+    # field diverges, with its own first divergent field and frame (each
+    # per-field line above can name a different first frame). Includes the
+    # sequencer, which FIRST DIVERGENCE deliberately does not.
+    union_firsts = list(firsts)
+    if seq["first"] is not None:
+        union_firsts.append((seq["first"], "sequencer"))
+    if union_firsts:
+        uk, un = min(union_firsts)
+        print("TOTAL: %d/%d frames carry a judged divergence (first: %s at k=%d, canon frame %d)"
+              % (sum(div_any), frames, un, uk, c0 + uk))
+    else:
+        print("TOTAL: 0/%d frames carry a judged divergence" % frames)
 
 
 def main() -> None:

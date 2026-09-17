@@ -1691,3 +1691,122 @@ src/actor.rs models the tail unconditionally after every flinch exit (PHASE_ARM_
 derived from asm31.s:118977's `mov r0,#0xa`), which matches canon on every measured surface:
 battle_full's rust player never flinches, so the path is dead there (oracle mm_timer 270/540
 unchanged), and the PAUSED-route rows see the tail on both sides.
+
+## T125 — the field map on 2026-09-18 main (measurement only, base 5cccf09)
+
+This section is the current state; every dated section above it is history labelled with its own
+base. Zero src/ or assets/ edits: the ROM built from this tree hashes
+13a674e4bb8a76668cce903d01b2369685d6cc4ff0498ef448fdfb7c7717072f / 592748 B before and after —
+NOT the c1ead4cd / 592752 B the ticket expected, because T130's authorized pad re-fit (5ac9227,
+SEAM_PHASE_PAD_ITERS 17→25, in main's history) moved src/main.rs after the ticket was written;
+the before = after contract itself holds. Both sides re-recorded, fixture as it stands (T7r's
+gauge=1 + scripted A@170), 2 captures of the ≤4 budget: `tools/trace.py record canon
+battle_full --out /tmp/t125/c_bf`, `... rust ... --out /tmp/t125/r_bf`, 540 frames each side;
+diff offline (`--align row:battle_full`, canon frame 11+k ↔ rust export frame 0+k).
+tools/trace.py gained exactly one report-shape change: a TOTAL line (the union of the judged
+fields, sequencer and rng_cadence included). No new watch, no new capture.
+
+### Per-field table (this run's own capture)
+
+| field | divergent | first k (canon frame) | canon | rust |
+|---|---|---|---|---|
+| sequencer (0x0203CA70 low half) | **273/540** | k=31 (42) | 0x20 | 0x08 |
+| enemy_state_action (canon e2 ↔ rust e1) | 458/540 | k=17 (28) | (4,8) | (4,10) |
+| enemy_anim | 474/540 | k=21 (32) | 1 | 0 |
+| enemy_panel_x / enemy_panel_y | 0/540 | — | — | — |
+| mm_state_action | 76/540 | k=250 (261) | (4,20) | (4,8) |
+| mm_anim | 78/540 | k=251 (262) | 8 | 0 |
+| mm_panel_x / mm_panel_y | 0/540 | — | — | — |
+| mm_timer | 270/540 | k=269 (280) | 22 | 0 |
+| rank | 0/540 | — | — | — |
+| zenny | 113/540 | k=406 (417) | 100 | 0 |
+| rng_cadence | 14/540 | k=124 (135) | (1471317999→676963898) | (1938926046→1938926046, repeats) |
+
+**TOTAL 507/540** frames carry a judged divergence; first: enemy_state_action at k=17 (canon
+frame 28). Negative control (`--shift 1`): TOTAL 509/540, first enemy_state_action k=16 — the
+alignment is event-anchored, the map is not blind.
+
+Movement since T49's map (base 34a4dd8, docs/trace/t7b/battle_full.diff.txt — labelled with its
+base): first divergence k=0 → k=17 (T50's SPAWN arm fixed the k=0 pair: both sides now read
+(4,10) there); mm 101/86/302 first k=179 → 76/78/270 first k=250/251/269 (the k=179 banner-wait
+group is gone; today's mm divergence starts only at the firing gap); rng_cadence 10/540 first
+k=271 → 14/540 first k=124; the enemy fields got WORSE (344→458, 409→474) because our enemy now
+enters its hop but completes entry ~200 frames late (timeline below). Provenance warning for the
+next reader: the ticket's "T49's 273/540 total" conflates the sequencer FIELD count with a union
+headline — 273/540 is what T26/T7x/T7y/T50 all measured for the sequencer word on the post-T7r
+fixture, and t7b's own file (T49's base) reads sequencer 174/540 with enemy_anim ALONE at
+409/540, so 273 cannot be that map's union. Today the sequencer field reads exactly 273/540
+again — the same figure, a different base.
+
+### Sequencer spans (today, k on the compared window)
+
+canon: 0x08 0..30, 0x20 31..32, 0x24 33..132, 0x00 133..135, 0x04 136..195, 0x08 196..304,
+0x0C 305..539. ours: 0x08 0..124, 0x24 125..171, 0x00 172..173, 0x04 174..233, 0x08 234..404,
+0x0C 405..539. Identical to T26's re-measure above: the sequencer word has not moved since the
+T7r fixture.
+
+### Groups (step 3) — one line and one cite each, ranked
+
+| group | frames (unique to group) | cite (reference/bn6f) | candidate routine |
+|---|---|---|---|
+| enemy entry/hop | 478/540 (43) | MettaurHopExec_8109CE6's 4-stage step table (asm31.s:170717-170732; T49's sub_8109CE6, renamed) + ForMettaur_8109EF4 (asm31.s:170982) | MettaurHopExec_8109CE6 hop-stage pacing (oAIAttackVars_AttackStage) |
+| sequencer states | 273/540 (29) | gauge-full arm sub_800855E (asm00_1.s:11267-11274), twin sub_80089CC (:11870-11878), table BannerSequencerStates_8008038 (:10484) | bannerSeqState08Fight's arm loc_800819A (asm00_1.s:10681-10684) behind isCustGaugeFullAndBattleLive_800A21C (:15305) |
+| mm action+timer | 290/540 (0) | playerObject_main_80EA460 (asm31.s:107131) / playerObject_update_80EA484 (:107147) | none named — footprint starts at the firing gap (canon script A@260 vs our fixture fire), 0 unique frames |
+| results words | 113/540 (0) | rank store sub_802C97E (asm03_0.s:13256); zenny decode sub_802C54C (asm03_0.s:12782-12812) | sub_802C54C's reward decode (zenny only; rank already 540/540) |
+| rng cadence | 14/540 (0) | cbGameState_80050EC (asm00_1.s:4179-4180); sub_80C7EC8 (asm31.s:34036) | none — first break is k=124, our own 0x08→0x24 edge (rust value repeats = our stall) |
+| HUD mask | unjudged (info both sides) | isBannerBusy_801E754 reads dword_20352C0 & 0x8000 (asm00_1.s:10569 callsite; renames.md) | — |
+
+Ranked top two by the frames a full fix would remove today (frames where the group is the ONLY
+divergent group): **1) enemy entry/hop — 43 unique of a 478 footprint**, candidate
+MettaurHopExec_8109CE6's hop-stage table; **2) sequencer states — 29 unique of 273**, candidate
+the gauge-full arm behind loc_800819A. Honest caveat: "unique frames" is the lower bound under
+independence; if the enemy's late entry cascades (its AI drives draws the cadence compares) the
+real yield of 1) is larger — not provable from this table alone.
+
+### Step 4 — custom-screen sequencer coverage (the same 540 compared frames)
+
+| state | canon frames | rust frames |
+|---|---|---|
+| 0x1C (pre-fight) | 0 | 0 |
+| 0x20 (window opening) | 2 | **0** |
+| 0x24 (window open) | 100 | 47 |
+| 0x00 (settle) | 3 | 2 |
+| 0x04 (banner wait) | 60 | 60 |
+| 0x08 (fight) | 140 | 296 |
+| 0x0C (end) | 235 | 135 |
+
+M2's custom-screen clause IS exercised: both sides traverse the open (0x24) and settle (0x00)
+states. But canon's 0x20 opening arm never occurs on ours (we jump 0x08→0x24 directly), and the
+same-state overlap inside the custom screen proper is only 8/540 frames (0x24 at k=125..132;
+0x04's 22 shared frames are banner wait, not the custom screen). The dwell asymmetry (canon
+0x24 for 100 frames vs ours 47) is the scripts' own doing — canon's script idles in the window
+~100 frames, ours auto-closes at A@170 — a fixture artefact, not a port gap. The missing 0x20
+on our side is the real signal, and it is what the group table's sequencer candidate must
+produce.
+
+### Enemy entry timeline (the new mechanism datum)
+
+k=0..16: both sides (4,10) — T49's k=0 pair is fixed. k=17 (cf 28): canon lands the hop →
+(4,8), reads (4,11) with anim 1 from cf 31 — BEFORE canon's own window opens (cf 42) — and
+holds that state. Ours stays (4,10)/anim 0 to k=171, reads (4,9) at k=172..232, and reaches
+canon's bounce state (4,11)/1 only at k=233 — exactly our SEQ_00 start (172) and SEQ_04 end
+(233) edges. Canon's entry reads e2_timer=2 throughout; ours 0. So our entry machine is paced
+by OUR sequencer edges where canon's is paced by its own hop timer — the question for
+MettaurHopExec_8109CE6's stage machine, not a gauge or timer re-fit.
+
+### No-code contract (step 5)
+
+git diff --stat on the branch names exactly docs/coverage/battle_full.md, tools/trace.py,
+docs/worklog/T125.md. ROM sha256 before = after = 13a674e4… 592748 B (header note above).
+verify_rows on the 10-row guard set from a clean checkout of this branch (wt/t125-fullmap,
+5cccf09): opening 0/0/40/86591, mettaur 0/0/70/41734, cannon 0/0/40/9505, buster 0/0/28/3167,
+chip-use 0/0/30/7768, wave 0/0/90/3840, windowclose 0/0/40/207166, popup 0/0/80/1288, result
+0/0/40/111839 — all PASS at 0; cursor FAILED 1/1/170/186279 which IS main's own pre-existing
+tear (T124/T130's line, byte-for-byte) — overall verdict `verify_rows: PASS`, every row at
+main's line, the veto holds. fitted count unchanged (main prints 17).
+
+UNVERIFIED: which groups are fixture artefacts rather than port gaps — step 4's census is the
+only evidence either way, and it settles only the dwell lengths (fixture) and the 0x20 gap
+(port). The mm group's entire 290-frame footprint starts at a script-vs-fixture firing gap
+(A@260 vs fire_frame), so those frames are suspect as fixture artefact; the enemy's 478 and our
+missing 0x20 are not explained by the fixture.
