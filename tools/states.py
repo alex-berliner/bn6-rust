@@ -258,6 +258,65 @@ STATES = [
              "~0.15s.",
     ),
     State(
+        name="battlestart_ai4_rank0",
+        path="/tmp/battlestart_ai4_rank0.state",
+        root=False,
+        rom=REAL,
+        base="/tmp/overworld_net.state",
+        script=",".join("%s@%d" % (("Right", "Down", "Left", "Up")[i % 4], i)
+                         for i in range(79)),
+        # battlestart_gunner's roll-open pokes, then T87's unlock + lever.
+        # Unlock: a ONE-SHOT frame-60 write of the event-flag byte
+        # 0x02001d58 (canon: eEventFlags + 0xd0, bn6f.map:253; flag N lives
+        # at eEventFlags+(N>>3) bit 0x80>>(N&7), asm/asm03_0.s:18558-18577)
+        # sets EVENT_681 (1665 -> byte+0xd0 bit 0x40) and keeps the
+        # neighbour byte (events 1672..1679, reads 0x02) intact. Overworld
+        # MapGroup/MapNumber stay EXACTLY as overworld_net has them:
+        # selectEncounterTableForMap_80AA5F4 swaps the whole internet
+        # group-table root on EVENT_681 (asm/asm29.s:10362-10371, root
+        # 0x08020188), and its (net group 0x10, map 0) slot -- map 0 =
+        # CentralArea1's own map number, UNTOUCHED -- is encounter list
+        # 0x080b50b0 (12 records, ALL rec7==0) instead of CentralArea1's
+        # 0x080b4b78 (which names NO ai_index-4 rank). Writing the map
+        # bytes instead (0x02001b84, oGameState_MapId) WEDGED the
+        # overworld: iCurrFrame froze, rollRandomEncounter_80AA4C0 was
+        # never entered again (its Unk_14 step accumulator 0x02001c18
+        # stayed 0) and no battle ever started -- the flag flip touches
+        # only the roll's own table pick. The iCurrFrame lever (canon:
+        # iCurrFrame, 0x0200a210; the roll reads it one tick after the
+        # poke, T58 model) 0x37a makes the roll read 0x37b = 891,
+        # 891 mod 12 = 3 -> record 0x080b50e0 (formation 0x080b580a,
+        # enemy ids 00/85/13 = ai_index-4 rank v0, enemy_idx 0x13).
+        poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0",
+                 "60:0x02001d58:0x0240", "60:0x0200a210:0x37a"),
+        frames=79,
+        description="A battle's real frame 0 whose encounter roll picked "
+                    "record 0x080b50e0 (CentralArea1's net area read through "
+                    "EVENT_681's table swap: list 0x080b50b0 rec3) naming the "
+                    "ai_index-4 rank v0 (enemy_idx 0x13; T87).",
+        note="VERIFIED (ticket T87). Recipe = battlestart_gunner's base/script/"
+             "roll-open pokes PLUS the frame-60 EVENT_681 flag set "
+             "(0x02001d58:0x0240; eEventFlags=0x02001c88, flag 1665 -> byte +0xd0 "
+             "bit 0x40, neighbour byte 0x02 preserved) and the iCurrFrame lever "
+             "0x37a (read 0x37b=891, 891 mod 12 = 3 -> rec3 0x080b50e0 of list "
+             "0x080b50b0, whose 12 records are ALL rec7==0). --watch on the built "
+             "state: chosen BattleSettings ptr 0x02001b9c reads 0x080b50e0 from "
+             "frame 0; slots populate at capture frame 69 (= frame 148 from "
+             "overworld_net, T9c's offset) -- slot0 NameID 0x0085 (Gunner) / HP "
+             "0x003c (0x0203aab0/aaac), slot1 NameID 0x0013 (ai_index-4 rank v0, "
+             "enemy_idx 0x13) / HP 0x005a (0x0203ab88/ab84), byte-equal to "
+             "off_8109150[4] = 0x0810ae4c Struct2 row-0 elem_hp 0x005a (6-byte "
+             "rows; stride verified on ai 1 = 0x28/0x50/0x78/0xA0/0x78/0xB4 and "
+             "ai 0x17 row 0 = 0x3c); slot2 NameID/HP stay 0 (the id-00 quad spawns "
+             "a shell, ai 0's act = nullsub_13). CurState_CurAction 0x0203aa90/"
+             "0x0203ab68: 0x0004 at 69 -> 0x0104 at 151, never an action >= 0x20 "
+             "through 330 frames; sequencer 0x0203CA70 = 0 at frame 320 (T58's "
+             "stuck-sequencer blocker). Determinism: 40 frames from two "
+             "independent builds diff to 0 pixels (worst 0); state hashes "
+             "10cdd201.../f70f298d... differ byte-wise (serialized screenshot), "
+             "pixels identical. Build time: ~0.2s.",
+    ),
+    State(
         name="emptyfield_start",
         path="/tmp/emptyfield_start.state",
         root=False,
