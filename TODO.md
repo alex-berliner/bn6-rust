@@ -579,8 +579,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T93. M8 — T90a follow-up: formation scenario + harness row from T65 census  *(OPEN)*
+### T93. M8 — T90a follow-up: formation scenario + harness row from T65 census  *(NEGATIVE -- 2026-09-17, Closed NEGATIVE on wt/t93 [worklog only, worker errored])*
 
+**Result.** Closed NEGATIVE on wt/t93 (worklog only, worker errored). Subagent kept hitting 'read failed' errors on docs/worklog/T87.md (T87 is OPEN, no worklog exists) and failed to recover. No code change, no harness row, no docs/coverage/formations.md. Recommended next ticket: T93a with explicit instruction to read docs/worklog/T90.md (not T87.md) for the BattleSettings + formation + lever measurements.
 **Why.** T90 PARTIAL (2026-09-17, landed 98ddac0) closed steps 1-2 (docs-only); the recommended next ticket is T90a with budget ≤150 for the full implementation. T65 PASS 3 (landed 79da4ed) closed M1's formations GAP with **1240 records over 84 lists / 1076 0xF0-terminated formation arrays**; all **0/1076** scenarios recorded. T58 PARTIAL census: **187 distinct (ai_index, version) pairs**; lever model reproduced (60:0x0200a210:0x371 → 886 → mod 12 → record 0x080b4c18, formation Mettaur/Gunner/Mettaur; slots populate at frame 148 with NameID 0x0001/0x0085/0x2000 matching off_8109150 byte-for-byte; **40-frame determinism 0 px across two builds**). **T93 ports one of those 1076 formations to the harness** as the first scenario recording for M8. SCOPE **M8** advance: formations count `0/1076 → 1/1076`.
 
 **New evidence.** T90 PARTIAL result: T87 ai4 rank0 rec0 = 0x080b4334 bytes 00141500ff003800 e2490000 8d470b08 (rec7=0, gate free); formation ptr 0x080b478d quads 00/22/00/00, 11/14/a3/00, 11/26/13/00, f0/00/00/00 (3 quads, matches T87 byte-for-byte); lever 0x373; ROM sha256 a37c1028adb7…0d455ad670 (8 388 608 B). 7 guard rows identical to HEAD (wave/window/opening/chip-cannon/mettaur/windowclose/popup all 0/0/N).
