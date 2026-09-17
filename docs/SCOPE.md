@@ -40,7 +40,7 @@ ported or listed out of scope with a reason).
 | M1 | chips (M4) | FOUND: data/ChipDataArr.s:2 ChipDataArr_8021DA8 (411 x chip_data_struct, stride 0x2c, include/rom_structs/ChipData.inc) | 43 / 411 |
 | M1 | program advances (M4) | FOUND: asm/asm03_0.s off_802BCB0 + off_802BC60 recipe-pointer tables (records [count][matcher][result u16][chip,code]*n) | 0 / 63 |
 | M1 | viruses (M5) | FOUND via T12: byte_80182C4 identity rows + off_8109150 Struct2 (tools/rom_enemy_tables.py) | 1 / 187 |
-| M1 | navis + cybeasts (M6) | FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0 | 0 / 25 |
+| M1 | navis + cybeasts (M6) | FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0 | 25 / 25 |
 | M1 | cybeasts (M6) | FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18) | 0 / 14 |
 | M1 | forms (M7) | FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789) | 0 / 25 |
 | M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 8 / 13 |
@@ -731,33 +731,33 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 ### navis + cybeasts (M6) (FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0)
 
-| index | navi | struct2_row0_raw | act | cite | status |
-|---|---|---|---|---|---|
-| 0 | NAVI_MEGAMAN |  | sub_80F2A1E (asm/asm31 | asm/asm31.s:123447,123498,123548 | unrecorded |
-| 1 | NAVI_HEATMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123549 | unrecorded |
-| 2 | NAVI_ELECMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123451,123502,123550 | unrecorded |
-| 3 | NAVI_SLASHMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123551 | unrecorded |
-| 4 | NAVI_ERASEMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123552 | unrecorded |
-| 5 | NAVI_CHARGEMAN |  | sub_80F650A (asm/asm31 | asm/asm31.s:123457,123508,123553 | unrecorded |
-| 6 | NAVI_SPOUTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123554 | unrecorded |
-| 7 | NAVI_TOMAHAWKMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123555 | unrecorded |
-| 8 | NAVI_TENGUMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123556 | unrecorded |
-| 9 | NAVI_GROUNDMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123557 | unrecorded |
-| 10 | NAVI_DUSTMAN |  | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123558 | unrecorded |
-| 11 | NAVI_PROTOMAN | 0x0708 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123559 | unrecorded |
-| 12 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123560 | unrecorded |
-| 13 | // unnamed: navi-table i |  | sub_80FDEFC (asm/asm31 | asm/asm31.s:123473,123524,123561 | unrecorded |
-| 14 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123562 | unrecorded |
-| 15 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123563 | unrecorded |
-| 16 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123564 | unrecorded |
-| 17 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123565 | unrecorded |
-| 18 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123566 | unrecorded |
-| 19 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123567 | unrecorded |
-| 20 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123568 | unrecorded |
-| 21 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123569 | unrecorded |
-| 22 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123570 | unrecorded |
-| 23 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123571 | unrecorded |
-| 24 | // unnamed: navi-table i |  | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123572 | unrecorded |
+| index | navi | ai_arm | pattern | act | cite | status |
+|---|---|---|---|---|---|---|
+| 0 | NAVI_MEGAMAN | off_8109B74 (asm/asm31.s:16944 | nullsub_106 (asm/asm31 | sub_80F2A1E (asm/asm31 | asm/asm31.s:123447,123498,123548,123420,169446 | per-ai routine named |
+| 1 | NAVI_HEATMAN | ForMettaur_8109EF4 (asm/asm31. | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123549,123421,169448 | named-via-NAVI-enum (per-type work in ai |
+| 2 | NAVI_ELECMAN | off_810A550 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123451,123502,123550,123422,169450 | named-via-NAVI-enum (per-type work in ai |
+| 3 | NAVI_SLASHMAN | off_810A9EC (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123551,123423,169452 | named-via-NAVI-enum (per-type work in ai |
+| 4 | NAVI_ERASEMAN | off_810B2D0 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123552,123424,169454 | named-via-NAVI-enum (per-type work in ai |
+| 5 | NAVI_CHARGEMAN | off_810BB94 (asm/asm31.s:16945 | sub_80F651C (asm/asm31 | sub_80F650A (asm/asm31 | asm/asm31.s:123457,123508,123553,123425,169456 | per-ai routine named |
+| 6 | NAVI_SPOUTMAN | off_810C170 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123554,123426,169458 | named-via-NAVI-enum (per-type work in ai |
+| 7 | NAVI_TOMAHAWKMAN | off_810C6F0 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123555,123427,169460 | named-via-NAVI-enum (per-type work in ai |
+| 8 | NAVI_TENGUMAN | off_810CD60 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123556,123428,169462 | named-via-NAVI-enum (per-type work in ai |
+| 9 | NAVI_GROUNDMAN | off_810D0F4 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123557,123429,169464 | named-via-NAVI-enum (per-type work in ai |
+| 10 | NAVI_DUSTMAN | off_810D554 (asm/asm31.s:16946 | sub_80FAE5C (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123558,123430,169466 | per-ai routine named |
+| 11 | NAVI_PROTOMAN | off_810D910 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123559,123431,169468 | named-via-NAVI-enum (per-type work in ai |
+| 12 | // unnamed: navi-table i | off_810E120 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123560,123432,169470 | GAP: no NAVI_* enum match + ai_pattern a |
+| 13 | // unnamed: navi-table i | off_810E7B0 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | sub_80FDEFC (asm/asm31 | asm/asm31.s:123473,123524,123561,123433,169472 | per-ai routine named |
+| 14 | // unnamed: navi-table i | off_810F010 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123562,123434,169474 | GAP: no NAVI_* enum match + ai_pattern a |
+| 15 | // unnamed: navi-table i | off_810F39C (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123563,123435,169476 | GAP: no NAVI_* enum match + ai_pattern a |
+| 16 | // unnamed: navi-table i | off_810FCE0 (asm/asm31.s:16947 | sub_81003A8 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123564,123436,169478 | per-ai routine named |
+| 17 | // unnamed: navi-table i | off_81104D4 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123565,123437,169480 | GAP: no NAVI_* enum match + ai_pattern a |
+| 18 | // unnamed: navi-table i | off_8110DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123566,123438,169482 | GAP: no NAVI_* enum match + ai_pattern a |
+| 19 | // unnamed: navi-table i | off_8111330 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123567,123439,169484 | GAP: no NAVI_* enum match + ai_pattern a |
+| 20 | // unnamed: navi-table i | off_8111DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123568,123440,169486 | GAP: no NAVI_* enum match + ai_pattern a |
+| 21 | // unnamed: navi-table i | off_81121F0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123569,123441,169488 | GAP: no NAVI_* enum match + ai_pattern a |
+| 22 | // unnamed: navi-table i | off_81129A0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123570,123442,169490 | GAP: no NAVI_* enum match + ai_pattern a |
+| 23 | // unnamed: navi-table i | ForGunner_8113078 (asm/asm31.s | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123571,123443,169492 | GAP: no NAVI_* enum match + ai_pattern a |
+| 24 | // unnamed: navi-table i | off_81135CC (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123572,123444,169494 | GAP: no NAVI_* enum match + ai_pattern a |
 
 ### cybeasts (M6) (FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18))
 

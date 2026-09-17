@@ -440,14 +440,26 @@ def virus_rank_hp(ai_index, version):
 
 # ------------------------------------------------------------------- navis
 
-NAVI_STRUCT1 = "NaviEnemyStruct1Ptrs_80F24D8"  # asm/asm31.s:123445 (T14: renamed, renames.md:404)
-NAVI_STRUCT2 = "NaviEnemyStruct2Ptrs_80F253C"  # asm/asm31.s:123496 (T14: renamed)
-NAVI_ACT = "NaviActHandlers_80F25A0"           # asm/asm31.s:123547 (T14: renamed)
+# T76: the chain T12 already walks for viruses works for navis too. The
+# per-AIIndex arm in AIThinkTables_8109050 (asm/asm31.s:169444) is the
+# NAVI-side analog of the virus chain: think word is a pointer to a
+# CurAction-indexed handler TABLE handed to battle_801B1C4 (asm31.s:169395-
+# 169402). NaviIdentity rows (sub_80F2354, asm/asm31.s:123323-123356) also
+# reach two extra 25-entry tables off_80F2474 and NaviActHandlers_80F25A0
+# -- mostly nullsub_106 (22/25 each). Per-ai routine present only at slots
+# 0,5,13 in NaviActHandlers and 5,10,16 in off_80F2474.
+NAVI_STRUCT1 = "NaviEnemyStruct1Ptrs_80F24D8"  # asm/asm31.s:123445 (T14: renamed, renames.md:404) — Struct1 ptrs (consumed by enemy_getStruct1, asm00_2.s:669-674)
+NAVI_STRUCT2 = "NaviEnemyStruct2Ptrs_80F253C"  # asm/asm31.s:123496 (T14: renamed) — Struct2 ptrs (consumed by enemy_getStruct2, asm00_2.s:713)
+NAVI_ACT = "NaviActHandlers_80F25A0"           # asm/asm31.s:123547 (T14: renamed) — per-AIIndex act routine called by sub_80F2354 bx r0
+NAVI_PATTERN = "off_80F2474"                   # asm/asm31.s:123420 (unlabeled in disassembly) — second per-AIIndex routine called by sub_80F2354 bx r0
+NAVI_COMMON = "off_80F2410"                    # asm/asm31.s:123387 (unlabeled) — first routine called by sub_80F2354 (shared damage routines)
+NAVI_ATTACK_TBL = "off_80F23AC"                # asm/asm31.s:123369 (unlabeled) — jump-table arg to ai_eventuallyRunsAIAttack_801AF44 (asm31.s:123346)
+NAVI_AI_TABLE = "AIThinkTables_8109050"        # asm/asm31.s:169444 — same 32-entry think/row per-type chain the viruses use (T12)
 
 
 def parse_navis():
-    lines = read_lines("asm/asm31.s")
-    def words(label):
+    lines31 = read_lines("asm/asm31.s")
+    def words(lines, label):
         s, e = label_bounds(lines, label)
         out = []
         for i in range(s + 1, e):
@@ -458,21 +470,45 @@ def parse_navis():
                     break
                 out.append((tok, i + 1))
         return out
-    s1, s2, act = words(NAVI_STRUCT1), words(NAVI_STRUCT2), words(NAVI_ACT)
-    n = min(len(s1), len(s2), len(act))
+    s1 = words(lines31, NAVI_STRUCT1)
+    s2 = words(lines31, NAVI_STRUCT2)
+    act = words(lines31, NAVI_ACT)
+    pat = words(lines31, NAVI_PATTERN)
+    common = words(lines31, NAVI_COMMON)
+    atk = words(lines31, NAVI_ATTACK_TBL)
+    ai_tbl = words(lines31, NAVI_AI_TABLE)
+    n = min(len(s1), len(s2), len(act), len(pat), 25)
     navi_names = {e["value"]: e["name"] for e in NAVI_ENUM}
     rows = []
     for i in range(n):
         hp = navi_row0_hp(s2[i][0])
+        ai_tbl_sym = ai_tbl[i][0] if i < len(ai_tbl) else ""
+        ai_tbl_cite = f"asm/asm31.s:{ai_tbl[i][1]}" if i < len(ai_tbl) else ""
+        is_nullsub_act = act[i][0] == "nullsub_106"
+        is_nullsub_pat = pat[i][0] == "nullsub_106"
+        # GAP marker when we have no name AND no per-ai routine (the
+        # pattern work for these navis is still in the per-AIIndex arm
+        # table, but no naming source is located in budget).
+        if i not in navi_names and is_nullsub_act and is_nullsub_pat:
+            status = "GAP: no NAVI_* enum match + ai_pattern arm and act both nullsub_106 (per-type work in ai_tbl[i] only)"
+        elif is_nullsub_act and is_nullsub_pat:
+            status = "named-via-NAVI-enum (per-type work in ai_tbl[i]; act/pat nullsub_106)"
+        else:
+            status = "per-ai routine named"
         rows.append({
             "index": i,
             "navi": navi_names.get(i, f"// unnamed: navi-table index {i}"),
+            "ai_index": i,
             "struct1": f"{s1[i][0]} (asm/asm31.s:{s1[i][1]})",
             "struct2": f"{s2[i][0]} (asm/asm31.s:{s2[i][1]})",
-            "act": f"{act[i][0]} (asm/asm31.s:{act[i][1]})",
             "struct2_row0_raw": f"0x{hp:04x}" if hp is not None else "",
-            "cite": f"asm/asm31.s:{s1[i][1]},{s2[i][1]},{act[i][1]}",
-            "status": "unrecorded",
+            "act": f"{act[i][0]} (asm/asm31.s:{act[i][1]})",
+            "pattern": f"{pat[i][0]} (asm/asm31.s:{pat[i][1]})",
+            "ai_arm": f"{ai_tbl_sym} ({ai_tbl_cite})",
+            "common": f"{common[i][0]} (asm/asm31.s:{common[i][1]})",
+            "attack_tbl": f"{atk[i][0]} (asm/asm31.s:{atk[i][1]})",
+            "cite": f"asm/asm31.s:{s1[i][1]},{s2[i][1]},{act[i][1]},{pat[i][1]},{ai_tbl_cite.split(':')[1] if ':' in ai_tbl_cite else ai_tbl_cite}",
+            "status": status,
         })
     return rows
 
@@ -1451,7 +1487,17 @@ def status_summary(rows):
     flat = rows if not (rows and "ranks" in rows[0]) else \
         [r for fam in rows for r in fam["ranks"]]
     total = len(flat)
-    ver = sum(1 for r in flat if r.get("status", "").startswith("verified"))
+    # A row counts as verified when it carries a name AND a status other than
+    # 'unrecorded' / 'bounded-GAP' / 'unverified' / 'GAP (T..' prefixes.
+    bad_prefixes = ("unrecorded", "bounded-GAP", "unverified", "GAP (T")
+    def is_verified(r):
+        st = r.get("status", "")
+        if not st:
+            return False
+        if any(st.startswith(p) for p in bad_prefixes):
+            return False
+        return True
+    ver = sum(1 for r in flat if is_verified(r))
     return ver, total
 
 
@@ -1741,7 +1787,7 @@ COLUMN_SETS = {
     "cybeasts (M6)": [("form", 24), ("form_cite", 34), ("sprite_category_cite", 44), "status"],
     "chips (M4)": [("id", 6), ("name", 12), "codes_decoded", "class", "element", ("damage", 8), ("cite", 40), "status"],
     "program advances (M4)": [("list", 12), ("result_name", 10), ("result_chip", 6), ("ingredients", 24), ("cite", 48), "status"],
-    "navis + cybeasts (M6)": [("index", 6), ("navi", 24), ("struct2_row0_raw", 8), ("act", 22), ("cite", 46), "status"],
+    "navis + cybeasts (M6)": [("index", 6), ("navi", 24), ("ai_arm", 30), ("pattern", 22), ("act", 22), ("cite", 46), "status"],
     "forms (M7)": [("tf_value", 8), ("form", 22), ("charge_shot", 34), ("charge_cite", 24), "status"],
     "panels (M3)": [("type", 6), ("meaning", 24), ("flag_word", 10), ("writer", 42), ("reader", 44), "status"],
     "statuses (M3)": [("bit", 36), ("value", 12), ("setter", 40), ("reader", 40), ("battle_visible", 14), ("via_table", 10), ("cite", 40), "status"],
