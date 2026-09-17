@@ -20,7 +20,21 @@ cd "$ROOT"
 bash tools/check_inputs.sh || exit 1
 # landings are serialized machine-wide: two concurrent merges into the same checkout would corrupt it
 exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
-git diff --quiet && git diff --cached --quiet || { echo "main checkout is dirty; refusing" >&2; exit 1; }
+# The main checkout is shared by every run, the roundup and the human session, so one uncommitted generated
+# file used to block every landing: 158 refusals in two days (2026-09-17). Generated paths are committed here
+# rather than refused; anything else still refuses, with the list, because it is someone's unfinished work.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  dirty="$(git diff --name-only; git diff --cached --name-only)"
+  generated="$(echo "$dirty" | grep -E '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/SCOPE\.md)' || true)"
+  other="$(echo "$dirty" | grep -vE '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/SCOPE\.md)' || true)"
+  if [ -n "$other" ]; then
+    echo "main checkout is dirty with work that is not generated; refusing:" >&2; echo "$other" | sed 's/^/  /' >&2; exit 1
+  fi
+  echo "committing generated files that would otherwise block this landing:"; echo "$generated" | sed 's/^/  /'
+  git add $generated && git commit -q -m "generated files committed by a landing (they block every run while they sit uncommitted)
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>" || true
+fi
 sha="$(git rev-parse --short "$branch")"
 if [ "$verify" = 0 ] && git diff --name-only "$(git merge-base HEAD "$branch")" "$branch" | grep -qE '^(src/|vendor/|Cargo|build\.rs|assets/)'; then
   echo "--no-verify refused: $branch changes code (src/, vendor/, Cargo, assets); only docs/web/tools landings may skip verify_rows (F38f, 2026-09-15)" >&2; exit 1

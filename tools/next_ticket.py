@@ -80,6 +80,19 @@ def run_alive(run):
     return subprocess.run(["pgrep", "-f", "session-dir %s/session" % run], capture_output=True).returncode == 0
 
 
+def has_live_branch(tid):
+    """a ticket whose branch is still unmerged and whose worktree exists is somebody's work in flight or a
+    landing owed: picking it again duplicates effort (T65 was re-picked by four runs, 2026-09-17)"""
+    import glob
+    low = tid.lower()
+    for wt in glob.glob("/tmp/bnwt/*"):
+        base = os.path.basename(wt).lower()
+        if base.startswith(low + "-") or base == low:
+            r = subprocess.run(["git", "-C", ROOT, "branch", "--list", "wt/" + os.path.basename(wt)], capture_output=True, text=True).stdout
+            if r.strip(): return True
+    return False
+
+
 def claimed_by_other(tid, me):
     """the ticket is claimed by another run that is still alive (a dead run's claims expire)"""
     p = os.path.join(CLAIMS, tid)
@@ -115,8 +128,8 @@ def main():
     ts = tickets(text)
     if me is not None:
         for t in ts:
-            if t["status"] == "OPEN" and claimed_by_other(t["id"], me):
-                t["status"] = "CLAIMED"          # another live run's; invisible to this one
+            if t["status"] == "OPEN" and (claimed_by_other(t["id"], me) or has_live_branch(t["id"])):
+                t["status"] = "CLAIMED"          # another live run's, or a branch of its own still in flight
     if a.list:
         for t in ts:
             print("%-5s %-9s %s" % (t["id"], t["status"], t["title"]))
