@@ -454,8 +454,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T158. M3's h2b rows become harness rows: promote the ladder to the scoreboard and close the collision routine's coverage  *(OPEN -- 2026-09-29)*
+### T158. M3's h2b rows become harness rows: promote the ladder to the scoreboard and close the collision routine's coverage  *(BLOCKED -- 2026-09-17, NOT ATTEMPTED - same queue-integrity finding as T157: cites the phantom h2b rungs T152/T153/T154 which were ne)*
 
+**Result.** NOT ATTEMPTED - same queue-integrity finding as T157: cites the phantom h2b rungs T152/T153/T154 which were never admitted. Refused until the ladder's first rung lands or a ticket builds it from the ROM.
 **Why.** Every rung above is measured on a comparison that only exists inside a worktree — the `box2plus` ladder's rows are not in the harness, so the daily review cannot see whether the ladder moved, and a regression in the hole or box path is invisible to the veto that stops other landings. The precedent is T140: the `super_armor` row went from nothing to **PASS 0/0/70, negative not blind 29640** by *writing the scenario into `tools/states.py` and the row into `tools/harness.py`*, and that row is now what gates T138/T141's landing. SCOPE's standard says "done" needs a canon recording, a port with citations, trace parity and pixel parity *per item*, and the item must be on the scoreboard or it is not an item. Advances **M3**, and it is the ticket that lets me keep gating on these rows.
 
 **Files.** `tools/harness.py` (add the `h2b_*` rows and their negatives — no existing row's frames/align/pairing may change), `tools/states.py` (register the scenarios T154–T157 built), `tools/trace.py` (add the hole/push fields to the judged set), `docs/coverage/panels.md` and `docs/coverage/objects.md` (append), `docs/worklog/T158.md`. **NOT** any `src/` file, `reference/bn6f`, `assets/`, `tools/patch_sterile.py`, `tools/allowlist.py`.
