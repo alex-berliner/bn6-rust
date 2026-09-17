@@ -189,15 +189,48 @@ def decode_codes(u32):
 # ------------------------------------------------------------------- chips
 
 def chip_names():
-    """Ordered .string entries of TextScriptChipNames0.s (index = chip id,
-    index 0 is the 'MegaBstr' placeholder)."""
+    """Chip id -> display name, keyed by the def_text_script number
+    (TextScriptChipNames0_unkN names chip id N). Corrected in T116: the file
+    holds 256 defs (ids 0..255) but only 238 .string entries -- ids
+    203..220 carry no string (placeholder rows, e.g. fam 0x14 sharing
+    Cannon's image), so the previous order-of-appearance list shifted every
+    name from id 203 on (its index 221 was 'ChrgeMan', the real def 221 is
+    'Roll'). Index 0 is the 'MegaBstr' placeholder. Ids with no string map
+    to "".
+    """
     lines = read_lines("data/textscript/TextScriptChipNames0.s")
-    names = []
+    by_id = {}
+    cur = None
     for ln in lines:
-        m = STRING_RE.match(strip_comment(ln))
+        m = re.match(r"\s*def_text_script TextScriptChipNames0_unk(\d+)", strip_comment(ln))
         if m:
-            names.append(m.group(1).rstrip("@"))
-    return names
+            cur = int(m.group(1))
+            continue
+        m = STRING_RE.match(strip_comment(ln))
+        if m and cur is not None:
+            by_id[cur] = m.group(1).rstrip("@")
+            cur = None
+    return [by_id.get(i, "") for i in range(max(by_id) + 1)]
+
+
+def chip_name_lines():
+    """Chip id -> line of its def_text_script in TextScriptChipNames0.s
+    (the def number IS the chip id; ids without a .string have no entry)."""
+    out = {}
+    for n, ln in enumerate(read_lines("data/textscript/TextScriptChipNames0.s"), 1):
+        m = re.match(r"\s*def_text_script TextScriptChipNames0_unk(\d+)", ln)
+        if m:
+            out[int(m.group(1))] = n
+    return out
+
+
+def chip_asset_index():
+    """Chip id -> record index in assets/chips.bin (BNCH v2: u32 count at 8,
+    36-byte records, id u16 at 0 -- tools/chip_export.py's format)."""
+    data = open(os.path.join(REPO, "assets", "chips.bin"), "rb").read()
+    count = int.from_bytes(data[8:12], "little")
+    return {int.from_bytes(data[12 + j * 36:14 + j * 36], "little"): j
+            for j in range(count)}
 
 
 # canon: ChipDataArr_8021DA8's AttackFamily (+0xb) -- the sword/blade family
@@ -247,12 +280,23 @@ def parse_chips():
         blocks.append((line, fields))
     names = chip_names()
     verified_ids = set(verified_chip_ids())
+    asset_idx = chip_asset_index()
+    nlines = chip_name_lines()
     rows = []
     for i, (line, f) in enumerate(blocks):
         codes = int(f["codes"], 16)
         libtype = int(f["library_type"], 16)
+        libnum = int(f["library_num"], 16)
         elem = int(f["chip_element"], 16)
         name = names[i] if 0 < i < len(names) else ""
+        # T116's reachable gate (cites in docs/coverage/chips.md): id < 0x19B
+        # (folder validation, asm/asm00_1.s:17513), >=1 code (the pack matches
+        # the item code against the record's code bytes,
+        # getOffsetToQuantityOfChipCodeMaybe_8021c7c, asm/asm03_0.s:305-333),
+        # and a name string (TextScriptChipNames0.s; ids 203..220 and 256..410
+        # have none). R = 237: ids 1..202 + 221..255.
+        reachable = (0 < i < 256 and name != ""
+                     and codes != 0xFFFFFFFF and libnum != 0)
         # "verified" (trace + pixel parity AS DATA) beats "verified-pixels"
         # (pixel-verified through our own code): the eleven sword/blade
         # chips crossed over in T19 when the strike started dispatching on
@@ -271,7 +315,11 @@ def parse_chips():
             "element": ELEM_BY_VAL.get(elem, f"elem_{elem:02x}"),
             "damage": int(f["attack_power"], 16),
             "mb": int(f["mb"], 16),
-            "cite": f"data/ChipDataArr.s:{line}",
+            "cite": (f"data/ChipDataArr.s:{line}"
+                     + (f"; asset idx {asset_idx[i]}; name "
+                        f"data/textscript/TextScriptChipNames0.s:{nlines[i]}"
+                        if reachable else "")),
+            "reachable": reachable,
             "status": status,
         })
     return rows
@@ -2009,6 +2057,12 @@ def main():
     for m, (name, state, rows) in sections:
         ver, total = status_summary(rows)
         print(f"{name}: {state} -- verified {ver}/{total}")
+    rch = [r for r in chips if r["reachable"]]
+    ver_r = sum(1 for r in rch if r["status"] != "unrecorded")
+    print(f"chips (M4) reachable set: verified {ver_r}/{len(rch)} "
+          f"(R={len(rch)}: ids 1..202+221..255, the folder-reachable gate -- "
+          f"id<0x19B, >=1 code, a TextScriptChipNames0 name; "
+          f"docs/coverage/chips.md)")
 
 
 if __name__ == "__main__":

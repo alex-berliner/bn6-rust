@@ -12,17 +12,28 @@ gates, each cited:
    code bytes (`getOffsetToQuantityOfChipCodeMaybe_8021c7c`,
    `asm/asm03_0.s:305-333`). Exactly one named id has no code at all:
    MegaBstr (id 0, codes 0xFFFFFFFF).
-3. **a display name** -- `data/textscript/TextScriptChipNames0.s` carries 238
-   strings indexed by chip id (ids 0..237); ids 238..410 render no name. The
-   DarkChips 320..349 are named from `TextScriptChipNames1.s` through a
-   separate render path (asm32.s:35325/:35412) and are excluded here; M4's
-   line covers standard/mega/giga/secret.
+3. **a display name** -- `data/textscript/TextScriptChipNames0.s` holds 256
+   `def_text_script` blocks (ids 0..255) but only 238 `.string` entries;
+   `TextScriptChipNames0_unkN` names chip id N, and ids 203..220 carry no
+   string (placeholder rows: family 0x14, sharing Cannon's image block and
+   the byte_8725914 icon). Ids 256..410 have no def at all. CORRECTION over
+   T75's shape: "238 names = ids 0..237" was wrong -- the strings are ids
+   0..202 + 221..255 (T75's name-based conclusions only touched ids < 203
+   and stand). The DarkChips 320..349 are named from
+   `TextScriptChipNames1.s` through a separate render path
+   (asm32.s:35325/:35412) and are excluded here; M4's line covers
+   standard/mega/giga/secret. NOTE: R also contains no giga id -- the 13
+   giga rows (301..319) are named through the same untraced
+   TextScriptChipNames1 path, so a follow-up that traces it should expect
+   R to grow by 13.
 
-**R = 237: chip ids 1..237.** The battery save (`/tmp/bn6f_real.srm`, read
-only, never tracked) is a minimal demo save; its EWRAM pack, dumped live
-(`mgba_capture --loadsave /tmp/bn6f_real.srm --dump 0x2002230:0x1400`, 400
-frames), owns 12 chip types (ids 1, 4, 5, 54, 71, 72, 89, 154, 163, 175,
-184, 192) -- all inside R: a soundness check, not the universe.
+**R = 237: chip ids 1..202 and 221..255.** The battery save
+(`/tmp/bn6f_real.srm`, read only, never tracked) is a minimal demo save; its
+EWRAM pack, dumped live (`mgba_capture --loadsave /tmp/bn6f_real.srm` + 400
+frames, then `--dump 0x2002230:0x1400` --
+`getOffsetToQuantityOfChipCodeMaybe_8021c7c`'s 12-bytes-per-id region) owns
+12 chip types (ids 1, 4, 5, 54, 71, 72, 89, 154, 163, 175, 184, 192) -- all
+inside R: a soundness check, not the universe.
 
 Canon's own reader of the table (step 1, measurement): `getChip8021DA8`
 (`asm/asm02.s:2-14`) computes `ChipDataArr_8021DA8 + id*44` (stride 0x2c) --
@@ -43,12 +54,12 @@ in MY address math, not in the table: 81*44 = 0xDEC, not 0xDCC.)
 
 | set | count |
 |---|---|
-| in `assets/chips.bin` (the 48-record asset) | 48 |
+| in `assets/chips.bin` (the pre-T116 48-record asset) | 48 |
 | reachable (R) | 237 |
 | pixel-verified on the scoreboard (`tools/scoreboard.py` CHIPS) | 43 |
 | reachable AND in asset | 48 (the asset is a subset of R) |
 | verified AND in asset | 43 |
-| classes of R | {'standard': 219, 'secret': 1, 'mega': 17} |
+| classes of R | {'standard': 201, 'secret': 1, 'mega': 35} |
 
 ## Gap lists
 
@@ -67,18 +78,18 @@ carries the reachable set:
 142(CircGun), 143(RockCube), 144(TimeBom1), 145(Mine), 146(Fanfare), 147(Discord), 148(Timpani), 149(Silence), 151(Guardian), 152(Anubis), 153(Otenko), 162(PanlGrab)
 164(GrabBnsh), 165(GrabRvng), 166(PnlRetrn), 167(Geddon), 168(HolyPanl), 169(Snctuary), 170(ComingRd), 171(GoingRd), 172(SloGauge), 173(FstGauge), 174(FullCust), 175(BusterUp)
 176(BugFix), 181(BblWrap), 182(LifeAur), 183(MagCoil), 184(WhiCapsl), 185(Uninstll), 186(AntiNavi), 187(AntiDmg), 188(AntiSwrd), 189(AntiRecv), 190(CopyDmg), 191(LifeSync)
-192(Atk+10), 193(Navi+20), 194(ColorPt), 195(Atk+30), 196(DblPoint), 197(ElemTrap), 198(ColArmy), 199(BlzrdBal), 200(TimeBom2), 201(TimeBom3), 203(Roll), 204(Roll2)
-205(Roll3), 206(ProtoMan), 207(ProtoMn[EX]), 208(ProtoMn[SP]), 209(HeatMan), 210(HeatMan[EX]), 211(HeatMan[SP]), 212(ElecMan), 213(ElecMan[EX]), 214(ElecMan[SP]), 215(SlashMan), 216(SlashMn[EX])
-217(SlashMn[SP]), 218(EraseMan), 219(EraseMn[EX]), 220(EraseMn[SP]), 221(ChrgeMan), 222(ChrgeMn[EX]), 223(ChrgeMn[SP]), 224(SpoutMan), 225(SpoutMn[EX]), 226(SpoutMn[SP]), 227(TmhkMan), 228(TmhkMan[EX])
-229(TmhkMan[SP]), 230(TenguMan), 231(TenguMn[EX]), 232(TenguMn[SP]), 233(GrndMan), 234(GrndMan[EX]), 235(GrndMan[SP]), 236(DustMan), 237(DustMan[EX]@ )
+192(Atk+10), 193(Navi+20), 194(ColorPt), 195(Atk+30), 196(DblPoint), 197(ElemTrap), 198(ColArmy), 199(BlzrdBal), 200(TimeBom2), 201(TimeBom3), 221(Roll), 222(Roll2)
+223(Roll3), 224(ProtoMan), 225(ProtoMn[EX]), 226(ProtoMn[SP]), 227(HeatMan), 228(HeatMan[EX]), 229(HeatMan[SP]), 230(ElecMan), 231(ElecMan[EX]), 232(ElecMan[SP]), 233(SlashMan), 234(SlashMn[EX])
+235(SlashMn[SP]), 236(EraseMan), 237(EraseMn[EX]), 238(EraseMn[SP]), 239(ChrgeMan), 240(ChrgeMn[EX]), 241(ChrgeMn[SP]), 242(SpoutMan), 243(SpoutMn[EX]), 244(SpoutMn[SP]), 245(TmhkMan), 246(TmhkMan[EX])
+247(TmhkMan[SP]), 248(TenguMan), 249(TenguMn[EX]), 250(TenguMn[SP]), 251(GrndMan), 252(GrndMan[EX]), 253(GrndMan[SP]), 254(DustMan), 255(DustMan[EX]@ )
 
 **In the asset but not pixel-verified (5)**: 58(FlshBom2), 59(FlshBom3), 81(StepSwrd), 99(LilBolr2), 100(LilBolr3)
 
-**In neither (174)** -- the unnamed block 238..410 (139 carry
-codes but no name string; library_num 0 or placeholder rows):
+**In neither (174)** -- the nameless placeholder block 203..220
+plus the def-less block 256..410 (139 of the 174 carry codes but no name):
 
-0(MegaBstr), 238((unnamed)), 239((unnamed)), 240((unnamed)), 241((unnamed)), 242((unnamed)), 243((unnamed)), 244((unnamed)), 245((unnamed)), 246((unnamed)), 247((unnamed)), 248((unnamed))
-249((unnamed)), 250((unnamed)), 251((unnamed)), 252((unnamed)), 253((unnamed)), 254((unnamed)), 255((unnamed)), 256((unnamed)), 257((unnamed)), 258((unnamed)), 259((unnamed)), 260((unnamed))
+0(MegaBstr), 203(), 204(), 205(), 206(), 207(), 208(), 209(), 210(), 211(), 212(), 213()
+214(), 215(), 216(), 217(), 218(), 219(), 220(), 256((unnamed)), 257((unnamed)), 258((unnamed)), 259((unnamed)), 260((unnamed))
 261((unnamed)), 262((unnamed)), 263((unnamed)), 264((unnamed)), 265((unnamed)), 266((unnamed)), 267((unnamed)), 268((unnamed)), 269((unnamed)), 270((unnamed)), 271((unnamed)), 272((unnamed))
 273((unnamed)), 274((unnamed)), 275((unnamed)), 276((unnamed)), 277((unnamed)), 278((unnamed)), 279((unnamed)), 280((unnamed)), 281((unnamed)), 282((unnamed)), 283((unnamed)), 284((unnamed))
 285((unnamed)), 286((unnamed)), 287((unnamed)), 288((unnamed)), 289((unnamed)), 290((unnamed)), 291((unnamed)), 292((unnamed)), 293((unnamed)), 294((unnamed)), 295((unnamed)), 296((unnamed))
@@ -97,7 +108,7 @@ codes but no name string; library_num 0 or placeholder rows):
 
 ## Per-id cites (all 237 reachable ids)
 
-| id | name | ChipDataArr line | asset index | name string line |
+| id | name | ChipDataArr line | asset index (pre-T116) | name string line |
 |---|---|---|---|---|
 | 1 | Cannon | data/ChipDataArr.s:34 | 0 | data/textscript/TextScriptChipNames0.s:7 |
 | 2 | HiCannon | data/ChipDataArr.s:65 | 1 | data/textscript/TextScriptChipNames0.s:10 |
@@ -301,38 +312,38 @@ codes but no name string; library_num 0 or placeholder rows):
 | 200 | TimeBom2 | data/ChipDataArr.s:6203 | -- | data/textscript/TextScriptChipNames0.s:604 |
 | 201 | TimeBom3 | data/ChipDataArr.s:6234 | -- | data/textscript/TextScriptChipNames0.s:607 |
 | 202 | BigBomb | data/ChipDataArr.s:6265 | 24 | data/textscript/TextScriptChipNames0.s:610 |
-| 203 | Roll | data/ChipDataArr.s:6296 | -- | data/textscript/TextScriptChipNames0.s:613 |
-| 204 | Roll2 | data/ChipDataArr.s:6327 | -- | data/textscript/TextScriptChipNames0.s:616 |
-| 205 | Roll3 | data/ChipDataArr.s:6358 | -- | data/textscript/TextScriptChipNames0.s:619 |
-| 206 | ProtoMan | data/ChipDataArr.s:6389 | -- | data/textscript/TextScriptChipNames0.s:622 |
-| 207 | ProtoMn[EX] | data/ChipDataArr.s:6420 | -- | data/textscript/TextScriptChipNames0.s:625 |
-| 208 | ProtoMn[SP] | data/ChipDataArr.s:6451 | -- | data/textscript/TextScriptChipNames0.s:628 |
-| 209 | HeatMan | data/ChipDataArr.s:6482 | -- | data/textscript/TextScriptChipNames0.s:631 |
-| 210 | HeatMan[EX] | data/ChipDataArr.s:6513 | -- | data/textscript/TextScriptChipNames0.s:634 |
-| 211 | HeatMan[SP] | data/ChipDataArr.s:6544 | -- | data/textscript/TextScriptChipNames0.s:637 |
-| 212 | ElecMan | data/ChipDataArr.s:6575 | -- | data/textscript/TextScriptChipNames0.s:640 |
-| 213 | ElecMan[EX] | data/ChipDataArr.s:6606 | -- | data/textscript/TextScriptChipNames0.s:643 |
-| 214 | ElecMan[SP] | data/ChipDataArr.s:6637 | -- | data/textscript/TextScriptChipNames0.s:646 |
-| 215 | SlashMan | data/ChipDataArr.s:6668 | -- | data/textscript/TextScriptChipNames0.s:649 |
-| 216 | SlashMn[EX] | data/ChipDataArr.s:6699 | -- | data/textscript/TextScriptChipNames0.s:652 |
-| 217 | SlashMn[SP] | data/ChipDataArr.s:6730 | -- | data/textscript/TextScriptChipNames0.s:655 |
-| 218 | EraseMan | data/ChipDataArr.s:6761 | -- | data/textscript/TextScriptChipNames0.s:658 |
-| 219 | EraseMn[EX] | data/ChipDataArr.s:6792 | -- | data/textscript/TextScriptChipNames0.s:661 |
-| 220 | EraseMn[SP] | data/ChipDataArr.s:6823 | -- | data/textscript/TextScriptChipNames0.s:664 |
-| 221 | ChrgeMan | data/ChipDataArr.s:6854 | -- | data/textscript/TextScriptChipNames0.s:667 |
-| 222 | ChrgeMn[EX] | data/ChipDataArr.s:6885 | -- | data/textscript/TextScriptChipNames0.s:670 |
-| 223 | ChrgeMn[SP] | data/ChipDataArr.s:6916 | -- | data/textscript/TextScriptChipNames0.s:673 |
-| 224 | SpoutMan | data/ChipDataArr.s:6947 | -- | data/textscript/TextScriptChipNames0.s:676 |
-| 225 | SpoutMn[EX] | data/ChipDataArr.s:6978 | -- | data/textscript/TextScriptChipNames0.s:679 |
-| 226 | SpoutMn[SP] | data/ChipDataArr.s:7009 | -- | data/textscript/TextScriptChipNames0.s:682 |
-| 227 | TmhkMan | data/ChipDataArr.s:7040 | -- | data/textscript/TextScriptChipNames0.s:685 |
-| 228 | TmhkMan[EX] | data/ChipDataArr.s:7071 | -- | data/textscript/TextScriptChipNames0.s:688 |
-| 229 | TmhkMan[SP] | data/ChipDataArr.s:7102 | -- | data/textscript/TextScriptChipNames0.s:691 |
-| 230 | TenguMan | data/ChipDataArr.s:7133 | -- | data/textscript/TextScriptChipNames0.s:694 |
-| 231 | TenguMn[EX] | data/ChipDataArr.s:7164 | -- | data/textscript/TextScriptChipNames0.s:697 |
-| 232 | TenguMn[SP] | data/ChipDataArr.s:7195 | -- | data/textscript/TextScriptChipNames0.s:700 |
-| 233 | GrndMan | data/ChipDataArr.s:7226 | -- | data/textscript/TextScriptChipNames0.s:703 |
-| 234 | GrndMan[EX] | data/ChipDataArr.s:7257 | -- | data/textscript/TextScriptChipNames0.s:706 |
-| 235 | GrndMan[SP] | data/ChipDataArr.s:7288 | -- | data/textscript/TextScriptChipNames0.s:709 |
-| 236 | DustMan | data/ChipDataArr.s:7319 | -- | data/textscript/TextScriptChipNames0.s:712 |
-| 237 | DustMan[EX]@  | data/ChipDataArr.s:7350 | -- | data/textscript/TextScriptChipNames0.s:715 |
+| 221 | Roll | data/ChipDataArr.s:6854 | -- | data/textscript/TextScriptChipNames0.s:667 |
+| 222 | Roll2 | data/ChipDataArr.s:6885 | -- | data/textscript/TextScriptChipNames0.s:670 |
+| 223 | Roll3 | data/ChipDataArr.s:6916 | -- | data/textscript/TextScriptChipNames0.s:673 |
+| 224 | ProtoMan | data/ChipDataArr.s:6947 | -- | data/textscript/TextScriptChipNames0.s:676 |
+| 225 | ProtoMn[EX] | data/ChipDataArr.s:6978 | -- | data/textscript/TextScriptChipNames0.s:679 |
+| 226 | ProtoMn[SP] | data/ChipDataArr.s:7009 | -- | data/textscript/TextScriptChipNames0.s:682 |
+| 227 | HeatMan | data/ChipDataArr.s:7040 | -- | data/textscript/TextScriptChipNames0.s:685 |
+| 228 | HeatMan[EX] | data/ChipDataArr.s:7071 | -- | data/textscript/TextScriptChipNames0.s:688 |
+| 229 | HeatMan[SP] | data/ChipDataArr.s:7102 | -- | data/textscript/TextScriptChipNames0.s:691 |
+| 230 | ElecMan | data/ChipDataArr.s:7133 | -- | data/textscript/TextScriptChipNames0.s:694 |
+| 231 | ElecMan[EX] | data/ChipDataArr.s:7164 | -- | data/textscript/TextScriptChipNames0.s:697 |
+| 232 | ElecMan[SP] | data/ChipDataArr.s:7195 | -- | data/textscript/TextScriptChipNames0.s:700 |
+| 233 | SlashMan | data/ChipDataArr.s:7226 | -- | data/textscript/TextScriptChipNames0.s:703 |
+| 234 | SlashMn[EX] | data/ChipDataArr.s:7257 | -- | data/textscript/TextScriptChipNames0.s:706 |
+| 235 | SlashMn[SP] | data/ChipDataArr.s:7288 | -- | data/textscript/TextScriptChipNames0.s:709 |
+| 236 | EraseMan | data/ChipDataArr.s:7319 | -- | data/textscript/TextScriptChipNames0.s:712 |
+| 237 | EraseMn[EX] | data/ChipDataArr.s:7350 | -- | data/textscript/TextScriptChipNames0.s:715 |
+| 238 | EraseMn[SP] | data/ChipDataArr.s:7381 | -- | data/textscript/TextScriptChipNames0.s:718 |
+| 239 | ChrgeMan | data/ChipDataArr.s:7412 | -- | data/textscript/TextScriptChipNames0.s:721 |
+| 240 | ChrgeMn[EX] | data/ChipDataArr.s:7443 | -- | data/textscript/TextScriptChipNames0.s:724 |
+| 241 | ChrgeMn[SP] | data/ChipDataArr.s:7474 | -- | data/textscript/TextScriptChipNames0.s:727 |
+| 242 | SpoutMan | data/ChipDataArr.s:7505 | -- | data/textscript/TextScriptChipNames0.s:730 |
+| 243 | SpoutMn[EX] | data/ChipDataArr.s:7536 | -- | data/textscript/TextScriptChipNames0.s:733 |
+| 244 | SpoutMn[SP] | data/ChipDataArr.s:7567 | -- | data/textscript/TextScriptChipNames0.s:736 |
+| 245 | TmhkMan | data/ChipDataArr.s:7598 | -- | data/textscript/TextScriptChipNames0.s:739 |
+| 246 | TmhkMan[EX] | data/ChipDataArr.s:7629 | -- | data/textscript/TextScriptChipNames0.s:742 |
+| 247 | TmhkMan[SP] | data/ChipDataArr.s:7660 | -- | data/textscript/TextScriptChipNames0.s:745 |
+| 248 | TenguMan | data/ChipDataArr.s:7691 | -- | data/textscript/TextScriptChipNames0.s:748 |
+| 249 | TenguMn[EX] | data/ChipDataArr.s:7722 | -- | data/textscript/TextScriptChipNames0.s:751 |
+| 250 | TenguMn[SP] | data/ChipDataArr.s:7753 | -- | data/textscript/TextScriptChipNames0.s:754 |
+| 251 | GrndMan | data/ChipDataArr.s:7784 | -- | data/textscript/TextScriptChipNames0.s:757 |
+| 252 | GrndMan[EX] | data/ChipDataArr.s:7815 | -- | data/textscript/TextScriptChipNames0.s:760 |
+| 253 | GrndMan[SP] | data/ChipDataArr.s:7846 | -- | data/textscript/TextScriptChipNames0.s:763 |
+| 254 | DustMan | data/ChipDataArr.s:7877 | -- | data/textscript/TextScriptChipNames0.s:766 |
+| 255 | DustMan[EX]@  | data/ChipDataArr.s:7908 | -- | data/textscript/TextScriptChipNames0.s:769 |
