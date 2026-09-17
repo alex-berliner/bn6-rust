@@ -665,7 +665,7 @@ const BARRIER_FAMILY: u8 = 0x15; // canon: ChipDataArr_8021DA8 AttackFamily of i
 /// in the parity block above). Subfamilies 0x00/0x01 also bear
 /// attack_family 0x15 (AreaGrab sub 0x00, Invisibl sub 0x01), so the
 /// family check alone would over-match; the subfamily splits them.
-const BARRIER_SUBFAMILY: u8 = 0x04;
+const BARRIER_SUBFAMILY: u8 = 0x04; // canon: BarrierHpByType_8020B2C's subfamily is the row index (`ldr asm00_2.s:22591 / .word :22602`, the subfamily identifies which byte_8020B2C row gets used)
 /// Barrier's HP for type N is byte_8020B2C[N*6..N*6+2] as a little-endian
 /// u16 (rows :195-202 stride 6, the u16 is the HP and the next four bytes
 /// are 0x00 0x00 0xff 0xff -- the canon effect-row pad). Only the indices
