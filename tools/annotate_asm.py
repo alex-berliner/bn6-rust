@@ -71,6 +71,12 @@ def main():
     ap.add_argument("--post", action="store_true")
     a = ap.parse_args()
     if sh("git -C %s status --porcelain" % SUB).strip(): sys.exit("annotate_asm: the submodule has uncommitted changes; refusing")
+    # A submodule checkout is detached by default. Committing there and then pushing `fork bn-notes`
+    # pushes the STALE local branch and silently succeeds, leaving the new commit reachable only by the
+    # superproject pointer -- unpushed, one `git gc` from gone. That happened on 2026-09-17 (92705e0d).
+    if sh("git -C %s rev-parse --abbrev-ref HEAD" % SUB).strip() != "bn-notes":
+        sys.exit("annotate_asm: the submodule is not on bn-notes (detached or another branch); refusing -- "
+                 "run: git -C %s checkout bn-notes" % SUB)
     found = results(a.since)
     if not found: print("annotate_asm: no ticket result with an assembly citation in the last %dh" % a.since); return
     model = pick_model(a.model)
