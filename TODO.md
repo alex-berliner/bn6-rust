@@ -425,7 +425,7 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T111: cursor seam recalibration — one measured, named phase pad at the custom-screen tile drain, restoring the cursor class so the T105 emotion port can land *(OPEN -- 2026-09-17)*
+### T111. cursor seam recalibration — one measured, named phase pad at the custom-screen tile drain, restoring the cursor class so the T105 emotion port can land *(OPEN -- 2026-09-17)*
 
 **Result.** T105 pass 6 bisected the cursor regression on the T105 branch (wt/t105-emotion e0c35c9, port verified there: emotion_syn PASS 0/0/40/644, guard set + popup all 0/0/N) to the binary footprint itself: pure main = 1/1/170 (single 1px frame k=97; origin 8, offset 237); main + fixture.rs emotion field alone = 38/19/170; full branch = 29/28/170 (NEW 28px damage at k=37, x49..238/y1..7, main's k=97 tear intact; canon<->rust pairing +-1 frame checked at 4698/2502px); fixture byte-identical to main + battle.rs gate reading enemy_action at enemies==0 (the +63 disambiguation FIXED) = 62/56/170 with the seam moved to NEW frame k=7 (56px). Tools exonerated (S1a==S1; OR-write byte-identity). Mechanism: the cursor window's mid-frame VRAM copy-drain seam frames (k=97 = F3's documented sub-frame seam; k=37 = the 4->3 slot transition; k=7) re-roll pixel phases with ANY binary-footprint change, and the row's 1/1 class is a layout-calibrated coincidence (F26b already saw 2/2<->1/1 across trees). Full step table and per-frame detail: docs/worklog/T105.md pass 6. No fix exists inside T105's file list; this ticket owns the one measured knob.
 
