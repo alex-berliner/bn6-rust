@@ -43,10 +43,12 @@ come from a command you ran in that session.
 
 ## What this project is
 A Rust reimplementation of BN6 Falzar's battle system as a real GBA ROM (`no_std`, thumbv4t, vendored agb).
-The standard is per-pixel parity with the original ROM ("canon"), full 240x160, every compared frame, zero
-differing pixels: a non-zero is a defect with a frame and a region. No boxes in space or time, no subtracted
-baselines, no "inherent" residues; every check has a negative fixture that must fail. For engine-core work
-the state trace is the primary number and the pixels are the veto.
+Parity means the original's behaviour reproduced exactly, on three surfaces that each have a zero: pixels
+over every compared frame of the full 240x160 screen, the state trace field by field, and audio sample for
+sample. A non-zero is a defect with a frame and a place, never a tolerance; no boxes in space or time, no
+subtracted baselines, no "inherent" residues, and every check has a negative fixture that must fail. Your
+landing may not make any surface worse. Engine-core progress shows in the trace first, with the pixels as
+the veto; a chip, a virus or a Navi is done when its own scene reads zero on pixels AND trace.
 
 ## How a row works
 One plain ROM, told what to be: the harness writes a 64-byte descriptor at `0x02000040` every frame

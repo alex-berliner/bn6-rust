@@ -5,9 +5,10 @@ Keep this file short and stable: it is loaded into every child's context.
 - Read `AGENT_GUIDE.md` for how to build, measure and align. A ticket that cites "HANDOFF §N" means
   that section of `docs/HANDOFF_2026-09-12.md`; read only that section. Never `TRANSFER.md` (a journal). Never read TODO.md, HANDOFF.md or tools/harness.py
   whole -- your ticket text is in your task, and grep does the rest.
-- The standard is per-pixel parity with the real ROM: zero differing pixels over the full
-  screen for every compared frame. A non-zero is a defect with a frame and region, never a
-  tolerance. No boxes, no subtracted baselines, no "inherent" residues.
+- Parity means the original's behaviour reproduced exactly, measured on three surfaces, each with a zero:
+  pixels over every compared frame of the full screen, the state trace field by field, and audio sample for
+  sample. A non-zero on any of them is a defect with a frame and a place, never a tolerance: no boxes, no
+  subtracted baselines, no "inherent" residues. A landing may not make any surface worse.
 - The harness (`python3 tools/harness.py --only <row>`) is the veto: no landing may make a row worse, and a
   check whose negative fixture also reads 0 is BLIND and proves nothing. For engine-core work the state
   trace (`tools/trace.py`: which field, how many of the scene's frames, the first divergent frame) is the
