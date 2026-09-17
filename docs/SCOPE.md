@@ -54,261 +54,261 @@ ported or listed out of scope with a reason).
 | id | name | codes_decoded | class | element | damage | cite | status |
 |---|---|---|---|---|---|---|---|
 | 0 |  |  | secret | CHIP_ELEM_NONE | 1 | data/ChipDataArr.s:3 | unrecorded |
-| 1 | Cannon | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:34 | verified-pixels |
-| 2 | HiCannon | LMN* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:65 | verified-pixels |
-| 3 | M-Cannon | RST* | standard | CHIP_ELEM_NONE | 180 | data/ChipDataArr.s:96 | verified-pixels |
-| 4 | AirShot | * | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:127 | verified |
-| 5 | Vulcan1 | BDS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:158 | verified-pixels |
-| 6 | Vulcan2 | DFL | standard | CHIP_ELEM_NONE | 15 | data/ChipDataArr.s:189 | verified-pixels |
-| 7 | Vulcan3 | AGR | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:220 | verified-pixels |
-| 8 | SuprVulc | V | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:251 | verified-pixels |
-| 9 | Spreadr1 | LMN* | standard | CHIP_ELEM_NONE | 30 | data/ChipDataArr.s:282 | unrecorded |
-| 10 | Spreadr2 | ABC* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:313 | unrecorded |
-| 11 | Spreadr3 | QRS* | standard | CHIP_ELEM_NONE | 90 | data/ChipDataArr.s:344 | unrecorded |
-| 12 | TankCan1 | AGR | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:375 | unrecorded |
-| 13 | TankCan2 | LSV | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:406 | unrecorded |
-| 14 | TankCan3 | BMP | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:437 | unrecorded |
-| 15 | GunDelS1 | CMT* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:468 | unrecorded |
-| 16 | GunDelS2 | BER | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:499 | unrecorded |
-| 17 | GunDelS3 | NQW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:530 | unrecorded |
-| 18 | GunDelEX | G | secret | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:561 | unrecorded |
-| 19 | YoYo | LMN* | standard | CHIP_ELEM_NONE | 50 | data/ChipDataArr.s:592 | unrecorded |
-| 20 | FireBrn1 | FGH* | standard | CHIP_ELEM_FIRE | 70 | data/ChipDataArr.s:623 | unrecorded |
-| 21 | FireBrn2 | STU | standard | CHIP_ELEM_FIRE | 110 | data/ChipDataArr.s:654 | unrecorded |
-| 22 | FireBrn3 | CDE | standard | CHIP_ELEM_FIRE | 150 | data/ChipDataArr.s:685 | unrecorded |
-| 23 | WideSht | PQR | standard | CHIP_ELEM_AQUA | 100 | data/ChipDataArr.s:716 | unrecorded |
-| 24 | TrnArrw1 | AFK | standard | CHIP_ELEM_AQUA | 30 | data/ChipDataArr.s:747 | unrecorded |
-| 25 | TrnArrw2 | GMZ | standard | CHIP_ELEM_AQUA | 40 | data/ChipDataArr.s:778 | unrecorded |
-| 26 | TrnArrw3 | MSY | standard | CHIP_ELEM_AQUA | 50 | data/ChipDataArr.s:809 | unrecorded |
-| 27 | BblStar1 | BET | standard | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:840 | unrecorded |
-| 28 | BblStar2 | CLV | standard | CHIP_ELEM_AQUA | 80 | data/ChipDataArr.s:871 | unrecorded |
-| 29 | BblStar3 | GRS | standard | CHIP_ELEM_AQUA | 100 | data/ChipDataArr.s:902 | unrecorded |
-| 30 | Thunder | BRS* | standard | CHIP_ELEM_ELEC | 40 | data/ChipDataArr.s:933 | unrecorded |
-| 31 | DolThdr1 | AEQ | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:964 | unrecorded |
-| 32 | DolThdr2 | CLP | standard | CHIP_ELEM_ELEC | 150 | data/ChipDataArr.s:995 | unrecorded |
-| 33 | DolThdr3 | BRV | standard | CHIP_ELEM_ELEC | 180 | data/ChipDataArr.s:1026 | unrecorded |
-| 34 | ElcPuls1 | JLS | standard | CHIP_ELEM_ELEC | 100 | data/ChipDataArr.s:1057 | unrecorded |
-| 35 | ElcPuls2 | AEJ | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:1088 | unrecorded |
-| 36 | ElcPuls3 | AJS | standard | CHIP_ELEM_ELEC | 140 | data/ChipDataArr.s:1119 | unrecorded |
-| 37 | RskyHny1 | BGS | standard | CHIP_ELEM_WOOD | 10 | data/ChipDataArr.s:1150 | unrecorded |
-| 38 | RskyHny2 | CRV | standard | CHIP_ELEM_WOOD | 15 | data/ChipDataArr.s:1181 | unrecorded |
-| 39 | RskyHny3 | ADM | standard | CHIP_ELEM_WOOD | 20 | data/ChipDataArr.s:1212 | unrecorded |
-| 40 | RlngLog1 | IKP | standard | CHIP_ELEM_WOOD | 50 | data/ChipDataArr.s:1243 | unrecorded |
-| 41 | RlngLog2 | EQZ | standard | CHIP_ELEM_WOOD | 70 | data/ChipDataArr.s:1274 | unrecorded |
-| 42 | RlngLog3 | FNW | standard | CHIP_ELEM_WOOD | 90 | data/ChipDataArr.s:1305 | unrecorded |
-| 43 | MachGun1 | ART* | standard | CHIP_ELEM_CURSOR | 30 | data/ChipDataArr.s:1336 | unrecorded |
-| 44 | MachGun2 | EGS | standard | CHIP_ELEM_CURSOR | 50 | data/ChipDataArr.s:1367 | unrecorded |
-| 45 | MachGun3 | BFM | standard | CHIP_ELEM_CURSOR | 70 | data/ChipDataArr.s:1398 | unrecorded |
-| 46 | HeatDrgn | GRT | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:1429 | unrecorded |
-| 47 | ElecDrgn | ALV | standard | CHIP_ELEM_ELEC | 150 | data/ChipDataArr.s:1460 | unrecorded |
-| 48 | AquaDrgn | HPS | standard | CHIP_ELEM_AQUA | 120 | data/ChipDataArr.s:1491 | unrecorded |
-| 49 | WoodDrgn | GTV | standard | CHIP_ELEM_WOOD | 130 | data/ChipDataArr.s:1522 | unrecorded |
-| 50 | AirHocky | LMN | standard | CHIP_ELEM_BREAK | 60 | data/ChipDataArr.s:1553 | unrecorded |
-| 51 | DrilArm | GMW | standard | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:1584 | unrecorded |
-| 52 | Tornado | LRT | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:1615 | unrecorded |
-| 53 | Static | GSV | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:1646 | unrecorded |
-| 54 | MiniBomb | BLR* | standard | CHIP_ELEM_NONE | 50 | data/ChipDataArr.s:1677 | verified-pixels |
-| 55 | EnergBom | CKV* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:1708 | verified-pixels |
-| 56 | MegEnBom | GMO* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:1739 | verified-pixels |
-| 57 | FlshBom1 | JLQ* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:1770 | verified-pixels |
-| 58 | FlshBom2 | GKR | standard | CHIP_ELEM_NONE | 70 | data/ChipDataArr.s:1801 | unrecorded |
-| 59 | FlshBom3 | HPS | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:1832 | unrecorded |
-| 60 | BlkBomb | BFO | standard | CHIP_ELEM_FIRE | 250 | data/ChipDataArr.s:1863 | verified-pixels |
-| 61 | AquaNdl1 | CJP | standard | CHIP_ELEM_AQUA | 40 | data/ChipDataArr.s:1894 | unrecorded |
-| 62 | AquaNdl2 | FKT | standard | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:1925 | unrecorded |
-| 63 | AquaNdl3 | ALU | standard | CHIP_ELEM_AQUA | 80 | data/ChipDataArr.s:1956 | unrecorded |
-| 64 | CornSht1 | JKL | standard | CHIP_ELEM_WOOD | 50 | data/ChipDataArr.s:1987 | unrecorded |
-| 65 | CornSht2 | CDE | standard | CHIP_ELEM_WOOD | 60 | data/ChipDataArr.s:2018 | unrecorded |
-| 66 | CornSht3 | PQR | standard | CHIP_ELEM_WOOD | 70 | data/ChipDataArr.s:2049 | unrecorded |
-| 67 | BugBomb | GSV | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:2080 | verified-pixels |
-| 68 | GrasSeed | AFS* | standard | CHIP_ELEM_WOOD | 10 | data/ChipDataArr.s:2111 | verified-pixels |
-| 69 | IceSeed | ALR* | standard | CHIP_ELEM_AQUA | 10 | data/ChipDataArr.s:2142 | verified-pixels |
-| 70 | PoisSeed | HNP* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:2173 | verified-pixels |
-| 71 | Sword | HLS* | standard | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:2204 | verified |
-| 72 | WideSwrd | HLS* | standard | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:2235 | verified |
-| 73 | LongSwrd | HLS* | standard | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:2266 | verified |
-| 74 | WideBlde | BRW | standard | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:2297 | verified |
-| 75 | LongBlde | BMV | standard | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:2328 | verified |
-| 76 | FireSwrd | FOZ | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:2359 | verified |
-| 77 | AquaSwrd | AIY | standard | CHIP_ELEM_AQUA | 160 | data/ChipDataArr.s:2390 | verified |
-| 78 | ElecSwrd | EKN | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:2421 | verified |
-| 79 | BambSwrd | HSW | standard | CHIP_ELEM_WOOD | 150 | data/ChipDataArr.s:2452 | verified |
-| 80 | WindRack | FJR* | standard | CHIP_ELEM_WIND | 140 | data/ChipDataArr.s:2483 | unrecorded |
-| 81 | StepSwrd | BLP | standard | CHIP_ELEM_SWORD | 160 | data/ChipDataArr.s:2514 | unrecorded |
-| 82 | VarSwrd | KVW | standard | CHIP_ELEM_SWORD | 160 | data/ChipDataArr.s:2545 | unrecorded |
-| 83 | NeoVari | N | standard | CHIP_ELEM_SWORD | 220 | data/ChipDataArr.s:2576 | unrecorded |
-| 84 | MoonBld | AMT | standard | CHIP_ELEM_SWORD | 130 | data/ChipDataArr.s:2607 | unrecorded |
-| 85 | Muramasa | M | standard | CHIP_ELEM_SWORD | 1020 | data/ChipDataArr.s:2638 | verified |
-| 86 | MchnSwrd | HLQ | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:2669 | unrecorded |
-| 87 | ElemSwrd | JMU | standard | CHIP_ELEM_NONE | 220 | data/ChipDataArr.s:2700 | unrecorded |
-| 88 | AssnSwrd | NRY | standard | CHIP_ELEM_NONE | 240 | data/ChipDataArr.s:2731 | unrecorded |
-| 89 | CrakShot | AGT* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:2762 | unrecorded |
-| 90 | DublShot | CRU* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:2793 | unrecorded |
-| 91 | TrplShot | JLV* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:2824 | unrecorded |
-| 92 | WaveArm1 | EFG | standard | CHIP_ELEM_NONE | 80 | data/ChipDataArr.s:2855 | unrecorded |
-| 93 | WaveArm2 | LMN | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:2886 | unrecorded |
-| 94 | WaveArm3 | RST | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:2917 | unrecorded |
-| 95 | AuraHed1 | BCD | standard | CHIP_ELEM_BREAK | 130 | data/ChipDataArr.s:2948 | unrecorded |
-| 96 | AuraHed2 | DEF | standard | CHIP_ELEM_BREAK | 150 | data/ChipDataArr.s:2979 | unrecorded |
-| 97 | AuraHed3 | FGH | standard | CHIP_ELEM_BREAK | 170 | data/ChipDataArr.s:3010 | unrecorded |
-| 98 | LilBolr1 | FKL | standard | CHIP_ELEM_OBSTACLE | 100 | data/ChipDataArr.s:3041 | verified-pixels |
-| 99 | LilBolr2 | EMV | standard | CHIP_ELEM_OBSTACLE | 140 | data/ChipDataArr.s:3072 | unrecorded |
-| 100 | LilBolr3 | GSZ | standard | CHIP_ELEM_OBSTACLE | 180 | data/ChipDataArr.s:3103 | unrecorded |
-| 101 | SandWrm1 | AGL | standard | CHIP_ELEM_NONE | 130 | data/ChipDataArr.s:3134 | unrecorded |
-| 102 | SandWrm2 | BRY | standard | CHIP_ELEM_NONE | 150 | data/ChipDataArr.s:3165 | unrecorded |
-| 103 | SandWrm3 | HJS | standard | CHIP_ELEM_NONE | 170 | data/ChipDataArr.s:3196 | unrecorded |
-| 104 | AirRaid1 | GKR | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3227 | unrecorded |
-| 105 | AirRaid2 | OTY | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3258 | unrecorded |
-| 106 | AirRaid3 | NUZ | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3289 | unrecorded |
-| 107 | FireHit1 | DEF | standard | CHIP_ELEM_FIRE | 60 | data/ChipDataArr.s:3320 | unrecorded |
-| 108 | FireHit2 | RST | standard | CHIP_ELEM_FIRE | 120 | data/ChipDataArr.s:3351 | unrecorded |
-| 109 | FireHit3 | ABC | standard | CHIP_ELEM_FIRE | 180 | data/ChipDataArr.s:3382 | unrecorded |
-| 110 | BurnSqr1 | HPV | standard | CHIP_ELEM_FIRE | 100 | data/ChipDataArr.s:3413 | unrecorded |
-| 111 | BurnSqr2 | DMT | standard | CHIP_ELEM_FIRE | 120 | data/ChipDataArr.s:3444 | unrecorded |
-| 112 | BurnSqr3 | EOZ | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:3475 | unrecorded |
-| 113 | Sensor1 | JOW | standard | CHIP_ELEM_ELEC | 100 | data/ChipDataArr.s:3506 | unrecorded |
-| 114 | Sensor2 | NUY | standard | CHIP_ELEM_ELEC | 130 | data/ChipDataArr.s:3537 | unrecorded |
-| 115 | Sensor3 | IKQ | standard | CHIP_ELEM_ELEC | 160 | data/ChipDataArr.s:3568 | unrecorded |
-| 116 | Boomer | JKT | standard | CHIP_ELEM_WOOD | 100 | data/ChipDataArr.s:3599 | unrecorded |
-| 117 | HiBoomer | BLV | standard | CHIP_ELEM_WOOD | 140 | data/ChipDataArr.s:3630 | unrecorded |
-| 118 | M-Boomer | IMW | standard | CHIP_ELEM_WOOD | 170 | data/ChipDataArr.s:3661 | unrecorded |
-| 119 | Lance | ARW* | standard | CHIP_ELEM_WOOD | 150 | data/ChipDataArr.s:3692 | unrecorded |
-| 120 | GolmHit1 | IKY | standard | CHIP_ELEM_BREAK | 140 | data/ChipDataArr.s:3723 | unrecorded |
-| 121 | GolmHit2 | DPU | standard | CHIP_ELEM_BREAK | 190 | data/ChipDataArr.s:3754 | unrecorded |
-| 122 | GolmHit3 | HMV | standard | CHIP_ELEM_BREAK | 250 | data/ChipDataArr.s:3785 | unrecorded |
-| 123 | IronShl1 | JKL | standard | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:3816 | unrecorded |
-| 124 | IronShl2 | CDE | standard | CHIP_ELEM_BREAK | 100 | data/ChipDataArr.s:3847 | unrecorded |
-| 125 | IronShl3 | LMN | standard | CHIP_ELEM_BREAK | 130 | data/ChipDataArr.s:3878 | unrecorded |
-| 126 | AirSpin1 | FGR | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3909 | unrecorded |
-| 127 | AirSpin2 | ALT | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3940 | unrecorded |
-| 128 | AirSpin3 | NOT | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3971 | unrecorded |
-| 129 | Wind | * | standard | CHIP_ELEM_WIND | 0 | data/ChipDataArr.s:4002 | unrecorded |
-| 130 | Fan | * | standard | CHIP_ELEM_WIND | 0 | data/ChipDataArr.s:4033 | unrecorded |
-| 131 | Rflectr1 | ACP* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:4064 | unrecorded |
-| 132 | Rflectr2 | BGY* | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:4095 | unrecorded |
-| 133 | Rflectr3 | EFO* | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:4126 | unrecorded |
-| 134 | Snake | HML | standard | CHIP_ELEM_NONE | 30 | data/ChipDataArr.s:4157 | unrecorded |
-| 135 | SumnBlk1 | EIP | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:4188 | unrecorded |
-| 136 | SumnBlk2 | HOV | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:4219 | unrecorded |
-| 137 | SumnBlk3 | WYZ | standard | CHIP_ELEM_NONE | 260 | data/ChipDataArr.s:4250 | unrecorded |
-| 138 | NumbrBl | N | standard | CHIP_ELEM_NONE | 1021 | data/ChipDataArr.s:4281 | unrecorded |
-| 139 | Meteors | R | standard | CHIP_ELEM_FIRE | 40 | data/ChipDataArr.s:4312 | unrecorded |
-| 140 | JustcOne | J | standard | CHIP_ELEM_BREAK | 220 | data/ChipDataArr.s:4343 | unrecorded |
-| 141 | Magnum | FLW | standard | CHIP_ELEM_CURSOR | 130 | data/ChipDataArr.s:4374 | unrecorded |
-| 142 | CircGun | PTV | standard | CHIP_ELEM_CURSOR | 150 | data/ChipDataArr.s:4405 | unrecorded |
-| 143 | RockCube | * | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4436 | unrecorded |
-| 144 | TimeBom1 | FGH | standard | CHIP_ELEM_OBSTACLE | 150 | data/ChipDataArr.s:4467 | unrecorded |
-| 145 | Mine | AST | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4498 | unrecorded |
-| 146 | Fanfare | PSZ* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4529 | unrecorded |
-| 147 | Discord | AGS* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4560 | unrecorded |
-| 148 | Timpani | IOT* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4591 | unrecorded |
-| 149 | Silence | BRW* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4622 | unrecorded |
-| 150 | VDoll | FNS* | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:4653 | verified-pixels |
-| 151 | Guardian | O | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4684 | unrecorded |
-| 152 | Anubis | P | standard | CHIP_ELEM_OBSTACLE | 1 | data/ChipDataArr.s:4715 | unrecorded |
-| 153 | Otenko | O | standard | CHIP_ELEM_OBSTACLE | 1 | data/ChipDataArr.s:4746 | unrecorded |
-| 154 | Recov10 | ADL* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4777 | verified-pixels |
-| 155 | Recov30 | ELQ* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4808 | verified-pixels |
-| 156 | Recov50 | CMP* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4839 | verified-pixels |
-| 157 | Recov80 | HKV* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4870 | verified-pixels |
-| 158 | Recov120 | FPS | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4901 | verified-pixels |
-| 159 | Recov150 | JMT | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4932 | verified-pixels |
-| 160 | Recov200 | IQZ | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4963 | verified-pixels |
-| 161 | Recov300 | JOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4994 | verified-pixels |
-| 162 | PanlGrab | * | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5025 | unrecorded |
-| 163 | AreaGrab | BFS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5056 | verified |
-| 164 | GrabBnsh | BMS | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:5087 | unrecorded |
-| 165 | GrabRvng | IQZ | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5118 | unrecorded |
-| 166 | PnlRetrn | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5149 | unrecorded |
-| 167 | Geddon | ALR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5180 | unrecorded |
-| 168 | HolyPanl | ABS* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5211 | unrecorded |
-| 169 | Snctuary | Z | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5242 | unrecorded |
-| 170 | ComingRd | * | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5273 | unrecorded |
-| 171 | GoingRd | * | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5304 | unrecorded |
-| 172 | SloGauge | ABG* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5335 | unrecorded |
-| 173 | FstGauge | EMR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5366 | unrecorded |
-| 174 | FullCust | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5397 | unrecorded |
-| 175 | BusterUp | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:5428 | unrecorded |
-| 176 | BugFix | KPZ* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5459 | unrecorded |
-| 177 | Invisibl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5490 | verified |
-| 178 | Barrier | AFR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5521 | verified |
-| 179 | Barr100 | HOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5552 | verified |
-| 180 | Barr200 | KUW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5583 | verified |
-| 181 | BblWrap | IQZ | standard | CHIP_ELEM_AQUA | 0 | data/ChipDataArr.s:5614 | unrecorded |
-| 182 | LifeAur | U | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5645 | unrecorded |
-| 183 | MagCoil | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5676 | unrecorded |
-| 184 | WhiCapsl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5707 | unrecorded |
-| 185 | Uninstll | GLR | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5738 | unrecorded |
-| 186 | AntiNavi | FLT* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5769 | unrecorded |
-| 187 | AntiDmg | GRV* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:5800 | unrecorded |
-| 188 | AntiSwrd | ARZ* | standard | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:5831 | unrecorded |
-| 189 | AntiRecv | AFV* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5862 | unrecorded |
-| 190 | CopyDmg | * | standard | CHIP_ELEM_CURSOR | 0 | data/ChipDataArr.s:5893 | unrecorded |
-| 191 | LifeSync | * | standard | CHIP_ELEM_CURSOR | 0 | data/ChipDataArr.s:5924 | unrecorded |
-| 192 | Atk+10 | * | standard | CHIP_ELEM_PLUS | 10 | data/ChipDataArr.s:5955 | unrecorded |
-| 193 | Navi+20 | * | standard | CHIP_ELEM_PLUS | 20 | data/ChipDataArr.s:5986 | unrecorded |
-| 194 | ColorPt | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:6017 | unrecorded |
-| 195 | Atk+30 | * | standard | CHIP_ELEM_PLUS | 30 | data/ChipDataArr.s:6048 | unrecorded |
-| 196 | DblPoint | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:6079 | unrecorded |
-| 197 | ElemTrap | GSU* | standard | CHIP_ELEM_NONE | 240 | data/ChipDataArr.s:6110 | unrecorded |
-| 198 | ColArmy | BGR* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6141 | unrecorded |
-| 199 | BlzrdBal | HNT | standard | CHIP_ELEM_AQUA | 150 | data/ChipDataArr.s:6172 | unrecorded |
-| 200 | TimeBom2 | CDE | standard | CHIP_ELEM_OBSTACLE | 190 | data/ChipDataArr.s:6203 | unrecorded |
-| 201 | TimeBom3 | LMN | standard | CHIP_ELEM_OBSTACLE | 230 | data/ChipDataArr.s:6234 | unrecorded |
-| 202 | BigBomb | OPV | standard | CHIP_ELEM_NONE | 140 | data/ChipDataArr.s:6265 | verified-pixels |
-| 203 | Roll | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6296 | unrecorded |
-| 204 | Roll2 | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6327 | unrecorded |
-| 205 | Roll3 | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6358 | unrecorded |
-| 206 | ProtoMan | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6389 | unrecorded |
-| 207 | ProtoMn[EX] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6420 | unrecorded |
-| 208 | ProtoMn[SP] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6451 | unrecorded |
-| 209 | HeatMan | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6482 | unrecorded |
-| 210 | HeatMan[EX] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6513 | unrecorded |
-| 211 | HeatMan[SP] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6544 | unrecorded |
-| 212 | ElecMan | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6575 | unrecorded |
-| 213 | ElecMan[EX] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6606 | unrecorded |
-| 214 | ElecMan[SP] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6637 | unrecorded |
-| 215 | SlashMan | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6668 | unrecorded |
-| 216 | SlashMn[EX] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6699 | unrecorded |
-| 217 | SlashMn[SP] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6730 | unrecorded |
-| 218 | EraseMan | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6761 | unrecorded |
-| 219 | EraseMn[EX] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6792 | unrecorded |
-| 220 | EraseMn[SP] | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6823 | unrecorded |
-| 221 | ChrgeMan | R* | mega | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:6854 | unrecorded |
-| 222 | ChrgeMn[EX] | R | mega | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6885 | unrecorded |
-| 223 | ChrgeMn[SP] | R | mega | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:6916 | unrecorded |
-| 224 | SpoutMan | B* | mega | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:6947 | unrecorded |
-| 225 | SpoutMn[EX] | B | mega | CHIP_ELEM_SWORD | 170 | data/ChipDataArr.s:6978 | unrecorded |
-| 226 | SpoutMn[SP] | B | mega | CHIP_ELEM_SWORD | 1011 | data/ChipDataArr.s:7009 | unrecorded |
-| 227 | TmhkMan | H* | mega | CHIP_ELEM_FIRE | 100 | data/ChipDataArr.s:7040 | unrecorded |
-| 228 | TmhkMan[EX] | H | mega | CHIP_ELEM_FIRE | 130 | data/ChipDataArr.s:7071 | unrecorded |
-| 229 | TmhkMan[SP] | H | mega | CHIP_ELEM_FIRE | 1001 | data/ChipDataArr.s:7102 | unrecorded |
-| 230 | TenguMan | E* | mega | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:7133 | unrecorded |
-| 231 | TenguMn[EX] | E | mega | CHIP_ELEM_ELEC | 140 | data/ChipDataArr.s:7164 | unrecorded |
-| 232 | TenguMn[SP] | E | mega | CHIP_ELEM_ELEC | 1002 | data/ChipDataArr.s:7195 | unrecorded |
-| 233 | GrndMan | S* | mega | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:7226 | unrecorded |
-| 234 | GrndMan[EX] | S | mega | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:7257 | unrecorded |
-| 235 | GrndMan[SP] | S | mega | CHIP_ELEM_SWORD | 1003 | data/ChipDataArr.s:7288 | unrecorded |
-| 236 | DustMan | K* | mega | CHIP_ELEM_CURSOR | 120 | data/ChipDataArr.s:7319 | unrecorded |
-| 237 | DustMan[EX]@ | K | mega | CHIP_ELEM_CURSOR | 140 | data/ChipDataArr.s:7350 | unrecorded |
-| 238 |  | K | mega | CHIP_ELEM_CURSOR | 1004 | data/ChipDataArr.s:7381 | unrecorded |
-| 239 |  | C* | mega | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:7412 | unrecorded |
-| 240 |  | C | mega | CHIP_ELEM_NONE | 70 | data/ChipDataArr.s:7443 | unrecorded |
-| 241 |  | C | mega | CHIP_ELEM_NONE | 1005 | data/ChipDataArr.s:7474 | unrecorded |
-| 242 |  | A* | mega | CHIP_ELEM_AQUA | 50 | data/ChipDataArr.s:7505 | unrecorded |
-| 243 |  | A | mega | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:7536 | unrecorded |
-| 244 |  | A | mega | CHIP_ELEM_AQUA | 1006 | data/ChipDataArr.s:7567 | unrecorded |
-| 245 |  | T* | mega | CHIP_ELEM_WOOD | 140 | data/ChipDataArr.s:7598 | unrecorded |
-| 246 |  | T | mega | CHIP_ELEM_WOOD | 160 | data/ChipDataArr.s:7629 | unrecorded |
-| 247 |  | T | mega | CHIP_ELEM_WOOD | 1007 | data/ChipDataArr.s:7660 | unrecorded |
-| 248 |  | T* | mega | CHIP_ELEM_WIND | 70 | data/ChipDataArr.s:7691 | unrecorded |
-| 249 |  | T | mega | CHIP_ELEM_WIND | 90 | data/ChipDataArr.s:7722 | unrecorded |
-| 250 |  | T | mega | CHIP_ELEM_WIND | 1008 | data/ChipDataArr.s:7753 | unrecorded |
-| 251 |  | G* | mega | CHIP_ELEM_BREAK | 60 | data/ChipDataArr.s:7784 | unrecorded |
-| 252 |  | G | mega | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:7815 | unrecorded |
-| 253 |  | G | mega | CHIP_ELEM_BREAK | 1009 | data/ChipDataArr.s:7846 | unrecorded |
-| 254 |  | D* | mega | CHIP_ELEM_NONE | 110 | data/ChipDataArr.s:7877 | unrecorded |
-| 255 |  | D | mega | CHIP_ELEM_NONE | 130 | data/ChipDataArr.s:7908 | unrecorded |
+| 1 | Cannon | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:34; asset idx 0; name | verified-pixels |
+| 2 | HiCannon | LMN* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:65; asset idx 1; name | verified-pixels |
+| 3 | M-Cannon | RST* | standard | CHIP_ELEM_NONE | 180 | data/ChipDataArr.s:96; asset idx 2; name | verified-pixels |
+| 4 | AirShot | * | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:127; asset idx 3; nam | verified |
+| 5 | Vulcan1 | BDS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:158; asset idx 4; nam | verified-pixels |
+| 6 | Vulcan2 | DFL | standard | CHIP_ELEM_NONE | 15 | data/ChipDataArr.s:189; asset idx 14; na | verified-pixels |
+| 7 | Vulcan3 | AGR | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:220; asset idx 15; na | verified-pixels |
+| 8 | SuprVulc | V | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:251; asset idx 30; na | verified-pixels |
+| 9 | Spreadr1 | LMN* | standard | CHIP_ELEM_NONE | 30 | data/ChipDataArr.s:282; not in the shipp | unrecorded |
+| 10 | Spreadr2 | ABC* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:313; not in the shipp | unrecorded |
+| 11 | Spreadr3 | QRS* | standard | CHIP_ELEM_NONE | 90 | data/ChipDataArr.s:344; not in the shipp | unrecorded |
+| 12 | TankCan1 | AGR | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:375; not in the shipp | unrecorded |
+| 13 | TankCan2 | LSV | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:406; not in the shipp | unrecorded |
+| 14 | TankCan3 | BMP | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:437; not in the shipp | unrecorded |
+| 15 | GunDelS1 | CMT* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:468; not in the shipp | unrecorded |
+| 16 | GunDelS2 | BER | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:499; not in the shipp | unrecorded |
+| 17 | GunDelS3 | NQW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:530; not in the shipp | unrecorded |
+| 18 | GunDelEX | G | secret | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:561; not in the shipp | unrecorded |
+| 19 | YoYo | LMN* | standard | CHIP_ELEM_NONE | 50 | data/ChipDataArr.s:592; not in the shipp | unrecorded |
+| 20 | FireBrn1 | FGH* | standard | CHIP_ELEM_FIRE | 70 | data/ChipDataArr.s:623; not in the shipp | unrecorded |
+| 21 | FireBrn2 | STU | standard | CHIP_ELEM_FIRE | 110 | data/ChipDataArr.s:654; not in the shipp | unrecorded |
+| 22 | FireBrn3 | CDE | standard | CHIP_ELEM_FIRE | 150 | data/ChipDataArr.s:685; not in the shipp | unrecorded |
+| 23 | WideSht | PQR | standard | CHIP_ELEM_AQUA | 100 | data/ChipDataArr.s:716; not in the shipp | unrecorded |
+| 24 | TrnArrw1 | AFK | standard | CHIP_ELEM_AQUA | 30 | data/ChipDataArr.s:747; not in the shipp | unrecorded |
+| 25 | TrnArrw2 | GMZ | standard | CHIP_ELEM_AQUA | 40 | data/ChipDataArr.s:778; not in the shipp | unrecorded |
+| 26 | TrnArrw3 | MSY | standard | CHIP_ELEM_AQUA | 50 | data/ChipDataArr.s:809; not in the shipp | unrecorded |
+| 27 | BblStar1 | BET | standard | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:840; not in the shipp | unrecorded |
+| 28 | BblStar2 | CLV | standard | CHIP_ELEM_AQUA | 80 | data/ChipDataArr.s:871; not in the shipp | unrecorded |
+| 29 | BblStar3 | GRS | standard | CHIP_ELEM_AQUA | 100 | data/ChipDataArr.s:902; not in the shipp | unrecorded |
+| 30 | Thunder | BRS* | standard | CHIP_ELEM_ELEC | 40 | data/ChipDataArr.s:933; not in the shipp | unrecorded |
+| 31 | DolThdr1 | AEQ | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:964; not in the shipp | unrecorded |
+| 32 | DolThdr2 | CLP | standard | CHIP_ELEM_ELEC | 150 | data/ChipDataArr.s:995; not in the shipp | unrecorded |
+| 33 | DolThdr3 | BRV | standard | CHIP_ELEM_ELEC | 180 | data/ChipDataArr.s:1026; not in the ship | unrecorded |
+| 34 | ElcPuls1 | JLS | standard | CHIP_ELEM_ELEC | 100 | data/ChipDataArr.s:1057; not in the ship | unrecorded |
+| 35 | ElcPuls2 | AEJ | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:1088; not in the ship | unrecorded |
+| 36 | ElcPuls3 | AJS | standard | CHIP_ELEM_ELEC | 140 | data/ChipDataArr.s:1119; not in the ship | unrecorded |
+| 37 | RskyHny1 | BGS | standard | CHIP_ELEM_WOOD | 10 | data/ChipDataArr.s:1150; not in the ship | unrecorded |
+| 38 | RskyHny2 | CRV | standard | CHIP_ELEM_WOOD | 15 | data/ChipDataArr.s:1181; not in the ship | unrecorded |
+| 39 | RskyHny3 | ADM | standard | CHIP_ELEM_WOOD | 20 | data/ChipDataArr.s:1212; not in the ship | unrecorded |
+| 40 | RlngLog1 | IKP | standard | CHIP_ELEM_WOOD | 50 | data/ChipDataArr.s:1243; not in the ship | unrecorded |
+| 41 | RlngLog2 | EQZ | standard | CHIP_ELEM_WOOD | 70 | data/ChipDataArr.s:1274; not in the ship | unrecorded |
+| 42 | RlngLog3 | FNW | standard | CHIP_ELEM_WOOD | 90 | data/ChipDataArr.s:1305; not in the ship | unrecorded |
+| 43 | MachGun1 | ART* | standard | CHIP_ELEM_CURSOR | 30 | data/ChipDataArr.s:1336; not in the ship | unrecorded |
+| 44 | MachGun2 | EGS | standard | CHIP_ELEM_CURSOR | 50 | data/ChipDataArr.s:1367; not in the ship | unrecorded |
+| 45 | MachGun3 | BFM | standard | CHIP_ELEM_CURSOR | 70 | data/ChipDataArr.s:1398; not in the ship | unrecorded |
+| 46 | HeatDrgn | GRT | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:1429; not in the ship | unrecorded |
+| 47 | ElecDrgn | ALV | standard | CHIP_ELEM_ELEC | 150 | data/ChipDataArr.s:1460; not in the ship | unrecorded |
+| 48 | AquaDrgn | HPS | standard | CHIP_ELEM_AQUA | 120 | data/ChipDataArr.s:1491; not in the ship | unrecorded |
+| 49 | WoodDrgn | GTV | standard | CHIP_ELEM_WOOD | 130 | data/ChipDataArr.s:1522; not in the ship | unrecorded |
+| 50 | AirHocky | LMN | standard | CHIP_ELEM_BREAK | 60 | data/ChipDataArr.s:1553; not in the ship | unrecorded |
+| 51 | DrilArm | GMW | standard | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:1584; not in the ship | unrecorded |
+| 52 | Tornado | LRT | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:1615; not in the ship | unrecorded |
+| 53 | Static | GSV | standard | CHIP_ELEM_WIND | 20 | data/ChipDataArr.s:1646; not in the ship | unrecorded |
+| 54 | MiniBomb | BLR* | standard | CHIP_ELEM_NONE | 50 | data/ChipDataArr.s:1677; asset idx 8; na | verified-pixels |
+| 55 | EnergBom | CKV* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:1708; asset idx 35; n | verified-pixels |
+| 56 | MegEnBom | GMO* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:1739; asset idx 36; n | verified-pixels |
+| 57 | FlshBom1 | JLQ* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:1770; asset idx 40; n | verified-pixels |
+| 58 | FlshBom2 | GKR | standard | CHIP_ELEM_NONE | 70 | data/ChipDataArr.s:1801; asset idx 41; n | unrecorded |
+| 59 | FlshBom3 | HPS | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:1832; asset idx 42; n | unrecorded |
+| 60 | BlkBomb | BFO | standard | CHIP_ELEM_FIRE | 250 | data/ChipDataArr.s:1863; asset idx 23; n | verified-pixels |
+| 61 | AquaNdl1 | CJP | standard | CHIP_ELEM_AQUA | 40 | data/ChipDataArr.s:1894; not in the ship | unrecorded |
+| 62 | AquaNdl2 | FKT | standard | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:1925; not in the ship | unrecorded |
+| 63 | AquaNdl3 | ALU | standard | CHIP_ELEM_AQUA | 80 | data/ChipDataArr.s:1956; not in the ship | unrecorded |
+| 64 | CornSht1 | JKL | standard | CHIP_ELEM_WOOD | 50 | data/ChipDataArr.s:1987; not in the ship | unrecorded |
+| 65 | CornSht2 | CDE | standard | CHIP_ELEM_WOOD | 60 | data/ChipDataArr.s:2018; not in the ship | unrecorded |
+| 66 | CornSht3 | PQR | standard | CHIP_ELEM_WOOD | 70 | data/ChipDataArr.s:2049; not in the ship | unrecorded |
+| 67 | BugBomb | GSV | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:2080; asset idx 46; n | verified-pixels |
+| 68 | GrasSeed | AFS* | standard | CHIP_ELEM_WOOD | 10 | data/ChipDataArr.s:2111; asset idx 45; n | verified-pixels |
+| 69 | IceSeed | ALR* | standard | CHIP_ELEM_AQUA | 10 | data/ChipDataArr.s:2142; asset idx 44; n | verified-pixels |
+| 70 | PoisSeed | HNP* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:2173; asset idx 43; n | verified-pixels |
+| 71 | Sword | HLS* | standard | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:2204; asset idx 5; na | verified |
+| 72 | WideSwrd | HLS* | standard | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:2235; asset idx 6; na | verified |
+| 73 | LongSwrd | HLS* | standard | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:2266; asset idx 7; na | verified |
+| 74 | WideBlde | BRW | standard | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:2297; asset idx 25; n | verified |
+| 75 | LongBlde | BMV | standard | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:2328; asset idx 26; n | verified |
+| 76 | FireSwrd | FOZ | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:2359; asset idx 19; n | verified |
+| 77 | AquaSwrd | AIY | standard | CHIP_ELEM_AQUA | 160 | data/ChipDataArr.s:2390; asset idx 20; n | verified |
+| 78 | ElecSwrd | EKN | standard | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:2421; asset idx 21; n | verified |
+| 79 | BambSwrd | HSW | standard | CHIP_ELEM_WOOD | 150 | data/ChipDataArr.s:2452; asset idx 22; n | verified |
+| 80 | WindRack | FJR* | standard | CHIP_ELEM_WIND | 140 | data/ChipDataArr.s:2483; not in the ship | unrecorded |
+| 81 | StepSwrd | BLP | standard | CHIP_ELEM_SWORD | 160 | data/ChipDataArr.s:2514; asset idx 32; n | unrecorded |
+| 82 | VarSwrd | KVW | standard | CHIP_ELEM_SWORD | 160 | data/ChipDataArr.s:2545; not in the ship | unrecorded |
+| 83 | NeoVari | N | standard | CHIP_ELEM_SWORD | 220 | data/ChipDataArr.s:2576; not in the ship | unrecorded |
+| 84 | MoonBld | AMT | standard | CHIP_ELEM_SWORD | 130 | data/ChipDataArr.s:2607; not in the ship | unrecorded |
+| 85 | Muramasa | M | standard | CHIP_ELEM_SWORD | 1020 | data/ChipDataArr.s:2638; asset idx 31; n | verified |
+| 86 | MchnSwrd | HLQ | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:2669; not in the ship | unrecorded |
+| 87 | ElemSwrd | JMU | standard | CHIP_ELEM_NONE | 220 | data/ChipDataArr.s:2700; not in the ship | unrecorded |
+| 88 | AssnSwrd | NRY | standard | CHIP_ELEM_NONE | 240 | data/ChipDataArr.s:2731; not in the ship | unrecorded |
+| 89 | CrakShot | AGT* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:2762; not in the ship | unrecorded |
+| 90 | DublShot | CRU* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:2793; not in the ship | unrecorded |
+| 91 | TrplShot | JLV* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:2824; not in the ship | unrecorded |
+| 92 | WaveArm1 | EFG | standard | CHIP_ELEM_NONE | 80 | data/ChipDataArr.s:2855; not in the ship | unrecorded |
+| 93 | WaveArm2 | LMN | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:2886; not in the ship | unrecorded |
+| 94 | WaveArm3 | RST | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:2917; not in the ship | unrecorded |
+| 95 | AuraHed1 | BCD | standard | CHIP_ELEM_BREAK | 130 | data/ChipDataArr.s:2948; not in the ship | unrecorded |
+| 96 | AuraHed2 | DEF | standard | CHIP_ELEM_BREAK | 150 | data/ChipDataArr.s:2979; not in the ship | unrecorded |
+| 97 | AuraHed3 | FGH | standard | CHIP_ELEM_BREAK | 170 | data/ChipDataArr.s:3010; not in the ship | unrecorded |
+| 98 | LilBolr1 | FKL | standard | CHIP_ELEM_OBSTACLE | 100 | data/ChipDataArr.s:3041; asset idx 37; n | verified-pixels |
+| 99 | LilBolr2 | EMV | standard | CHIP_ELEM_OBSTACLE | 140 | data/ChipDataArr.s:3072; asset idx 38; n | unrecorded |
+| 100 | LilBolr3 | GSZ | standard | CHIP_ELEM_OBSTACLE | 180 | data/ChipDataArr.s:3103; asset idx 39; n | unrecorded |
+| 101 | SandWrm1 | AGL | standard | CHIP_ELEM_NONE | 130 | data/ChipDataArr.s:3134; not in the ship | unrecorded |
+| 102 | SandWrm2 | BRY | standard | CHIP_ELEM_NONE | 150 | data/ChipDataArr.s:3165; not in the ship | unrecorded |
+| 103 | SandWrm3 | HJS | standard | CHIP_ELEM_NONE | 170 | data/ChipDataArr.s:3196; not in the ship | unrecorded |
+| 104 | AirRaid1 | GKR | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3227; not in the ship | unrecorded |
+| 105 | AirRaid2 | OTY | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3258; not in the ship | unrecorded |
+| 106 | AirRaid3 | NUZ | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:3289; not in the ship | unrecorded |
+| 107 | FireHit1 | DEF | standard | CHIP_ELEM_FIRE | 60 | data/ChipDataArr.s:3320; not in the ship | unrecorded |
+| 108 | FireHit2 | RST | standard | CHIP_ELEM_FIRE | 120 | data/ChipDataArr.s:3351; not in the ship | unrecorded |
+| 109 | FireHit3 | ABC | standard | CHIP_ELEM_FIRE | 180 | data/ChipDataArr.s:3382; not in the ship | unrecorded |
+| 110 | BurnSqr1 | HPV | standard | CHIP_ELEM_FIRE | 100 | data/ChipDataArr.s:3413; not in the ship | unrecorded |
+| 111 | BurnSqr2 | DMT | standard | CHIP_ELEM_FIRE | 120 | data/ChipDataArr.s:3444; not in the ship | unrecorded |
+| 112 | BurnSqr3 | EOZ | standard | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:3475; not in the ship | unrecorded |
+| 113 | Sensor1 | JOW | standard | CHIP_ELEM_ELEC | 100 | data/ChipDataArr.s:3506; not in the ship | unrecorded |
+| 114 | Sensor2 | NUY | standard | CHIP_ELEM_ELEC | 130 | data/ChipDataArr.s:3537; not in the ship | unrecorded |
+| 115 | Sensor3 | IKQ | standard | CHIP_ELEM_ELEC | 160 | data/ChipDataArr.s:3568; not in the ship | unrecorded |
+| 116 | Boomer | JKT | standard | CHIP_ELEM_WOOD | 100 | data/ChipDataArr.s:3599; not in the ship | unrecorded |
+| 117 | HiBoomer | BLV | standard | CHIP_ELEM_WOOD | 140 | data/ChipDataArr.s:3630; not in the ship | unrecorded |
+| 118 | M-Boomer | IMW | standard | CHIP_ELEM_WOOD | 170 | data/ChipDataArr.s:3661; not in the ship | unrecorded |
+| 119 | Lance | ARW* | standard | CHIP_ELEM_WOOD | 150 | data/ChipDataArr.s:3692; not in the ship | unrecorded |
+| 120 | GolmHit1 | IKY | standard | CHIP_ELEM_BREAK | 140 | data/ChipDataArr.s:3723; not in the ship | unrecorded |
+| 121 | GolmHit2 | DPU | standard | CHIP_ELEM_BREAK | 190 | data/ChipDataArr.s:3754; not in the ship | unrecorded |
+| 122 | GolmHit3 | HMV | standard | CHIP_ELEM_BREAK | 250 | data/ChipDataArr.s:3785; not in the ship | unrecorded |
+| 123 | IronShl1 | JKL | standard | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:3816; not in the ship | unrecorded |
+| 124 | IronShl2 | CDE | standard | CHIP_ELEM_BREAK | 100 | data/ChipDataArr.s:3847; not in the ship | unrecorded |
+| 125 | IronShl3 | LMN | standard | CHIP_ELEM_BREAK | 130 | data/ChipDataArr.s:3878; not in the ship | unrecorded |
+| 126 | AirSpin1 | FGR | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3909; not in the ship | unrecorded |
+| 127 | AirSpin2 | ALT | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3940; not in the ship | unrecorded |
+| 128 | AirSpin3 | NOT | standard | CHIP_ELEM_WIND | 50 | data/ChipDataArr.s:3971; not in the ship | unrecorded |
+| 129 | Wind | * | standard | CHIP_ELEM_WIND | 0 | data/ChipDataArr.s:4002; not in the ship | unrecorded |
+| 130 | Fan | * | standard | CHIP_ELEM_WIND | 0 | data/ChipDataArr.s:4033; not in the ship | unrecorded |
+| 131 | Rflectr1 | ACP* | standard | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:4064; not in the ship | unrecorded |
+| 132 | Rflectr2 | BGY* | standard | CHIP_ELEM_NONE | 120 | data/ChipDataArr.s:4095; not in the ship | unrecorded |
+| 133 | Rflectr3 | EFO* | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:4126; not in the ship | unrecorded |
+| 134 | Snake | HML | standard | CHIP_ELEM_NONE | 30 | data/ChipDataArr.s:4157; not in the ship | unrecorded |
+| 135 | SumnBlk1 | EIP | standard | CHIP_ELEM_NONE | 160 | data/ChipDataArr.s:4188; not in the ship | unrecorded |
+| 136 | SumnBlk2 | HOV | standard | CHIP_ELEM_NONE | 200 | data/ChipDataArr.s:4219; not in the ship | unrecorded |
+| 137 | SumnBlk3 | WYZ | standard | CHIP_ELEM_NONE | 260 | data/ChipDataArr.s:4250; not in the ship | unrecorded |
+| 138 | NumbrBl | N | standard | CHIP_ELEM_NONE | 1021 | data/ChipDataArr.s:4281; not in the ship | unrecorded |
+| 139 | Meteors | R | standard | CHIP_ELEM_FIRE | 40 | data/ChipDataArr.s:4312; not in the ship | unrecorded |
+| 140 | JustcOne | J | standard | CHIP_ELEM_BREAK | 220 | data/ChipDataArr.s:4343; not in the ship | unrecorded |
+| 141 | Magnum | FLW | standard | CHIP_ELEM_CURSOR | 130 | data/ChipDataArr.s:4374; not in the ship | unrecorded |
+| 142 | CircGun | PTV | standard | CHIP_ELEM_CURSOR | 150 | data/ChipDataArr.s:4405; not in the ship | unrecorded |
+| 143 | RockCube | * | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4436; not in the ship | unrecorded |
+| 144 | TimeBom1 | FGH | standard | CHIP_ELEM_OBSTACLE | 150 | data/ChipDataArr.s:4467; not in the ship | unrecorded |
+| 145 | Mine | AST | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4498; not in the ship | unrecorded |
+| 146 | Fanfare | PSZ* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4529; not in the ship | unrecorded |
+| 147 | Discord | AGS* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4560; not in the ship | unrecorded |
+| 148 | Timpani | IOT* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4591; not in the ship | unrecorded |
+| 149 | Silence | BRW* | standard | CHIP_ELEM_OBSTACLE | 0 | data/ChipDataArr.s:4622; not in the ship | unrecorded |
+| 150 | VDoll | FNS* | standard | CHIP_ELEM_OBSTACLE | 10 | data/ChipDataArr.s:4653; asset idx 47; n | verified-pixels |
+| 151 | Guardian | O | standard | CHIP_ELEM_OBSTACLE | 200 | data/ChipDataArr.s:4684; not in the ship | unrecorded |
+| 152 | Anubis | P | standard | CHIP_ELEM_OBSTACLE | 1 | data/ChipDataArr.s:4715; not in the ship | unrecorded |
+| 153 | Otenko | O | standard | CHIP_ELEM_OBSTACLE | 1 | data/ChipDataArr.s:4746; not in the ship | unrecorded |
+| 154 | Recov10 | ADL* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4777; asset idx 9; na | verified-pixels |
+| 155 | Recov30 | ELQ* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4808; asset idx 10; n | verified-pixels |
+| 156 | Recov50 | CMP* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4839; asset idx 16; n | verified-pixels |
+| 157 | Recov80 | HKV* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4870; asset idx 17; n | verified-pixels |
+| 158 | Recov120 | FPS | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4901; asset idx 18; n | verified-pixels |
+| 159 | Recov150 | JMT | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4932; asset idx 27; n | verified-pixels |
+| 160 | Recov200 | IQZ | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4963; asset idx 28; n | verified-pixels |
+| 161 | Recov300 | JOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:4994; asset idx 29; n | verified-pixels |
+| 162 | PanlGrab | * | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5025; not in the ship | unrecorded |
+| 163 | AreaGrab | BFS* | standard | CHIP_ELEM_NONE | 10 | data/ChipDataArr.s:5056; asset idx 12; n | verified |
+| 164 | GrabBnsh | BMS | standard | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:5087; not in the ship | unrecorded |
+| 165 | GrabRvng | IQZ | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5118; not in the ship | unrecorded |
+| 166 | PnlRetrn | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5149; not in the ship | unrecorded |
+| 167 | Geddon | ALR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5180; not in the ship | unrecorded |
+| 168 | HolyPanl | ABS* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5211; not in the ship | unrecorded |
+| 169 | Snctuary | Z | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5242; not in the ship | unrecorded |
+| 170 | ComingRd | * | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5273; not in the ship | unrecorded |
+| 171 | GoingRd | * | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:5304; not in the ship | unrecorded |
+| 172 | SloGauge | ABG* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5335; not in the ship | unrecorded |
+| 173 | FstGauge | EMR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5366; not in the ship | unrecorded |
+| 174 | FullCust | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5397; not in the ship | unrecorded |
+| 175 | BusterUp | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:5428; not in the ship | unrecorded |
+| 176 | BugFix | KPZ* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5459; not in the ship | unrecorded |
+| 177 | Invisibl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5490; asset idx 13; n | verified |
+| 178 | Barrier | AFR* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5521; asset idx 11; n | verified |
+| 179 | Barr100 | HOY | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5552; asset idx 33; n | verified |
+| 180 | Barr200 | KUW | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5583; asset idx 34; n | verified |
+| 181 | BblWrap | IQZ | standard | CHIP_ELEM_AQUA | 0 | data/ChipDataArr.s:5614; not in the ship | unrecorded |
+| 182 | LifeAur | U | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5645; not in the ship | unrecorded |
+| 183 | MagCoil | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5676; not in the ship | unrecorded |
+| 184 | WhiCapsl | * | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5707; not in the ship | unrecorded |
+| 185 | Uninstll | GLR | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5738; not in the ship | unrecorded |
+| 186 | AntiNavi | FLT* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5769; not in the ship | unrecorded |
+| 187 | AntiDmg | GRV* | standard | CHIP_ELEM_NONE | 100 | data/ChipDataArr.s:5800; not in the ship | unrecorded |
+| 188 | AntiSwrd | ARZ* | standard | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:5831; not in the ship | unrecorded |
+| 189 | AntiRecv | AFV* | standard | CHIP_ELEM_NONE | 0 | data/ChipDataArr.s:5862; not in the ship | unrecorded |
+| 190 | CopyDmg | * | standard | CHIP_ELEM_CURSOR | 0 | data/ChipDataArr.s:5893; not in the ship | unrecorded |
+| 191 | LifeSync | * | standard | CHIP_ELEM_CURSOR | 0 | data/ChipDataArr.s:5924; not in the ship | unrecorded |
+| 192 | Atk+10 | * | standard | CHIP_ELEM_PLUS | 10 | data/ChipDataArr.s:5955; not in the ship | unrecorded |
+| 193 | Navi+20 | * | standard | CHIP_ELEM_PLUS | 20 | data/ChipDataArr.s:5986; not in the ship | unrecorded |
+| 194 | ColorPt | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:6017; not in the ship | unrecorded |
+| 195 | Atk+30 | * | standard | CHIP_ELEM_PLUS | 30 | data/ChipDataArr.s:6048; not in the ship | unrecorded |
+| 196 | DblPoint | * | standard | CHIP_ELEM_PLUS | 0 | data/ChipDataArr.s:6079; not in the ship | unrecorded |
+| 197 | ElemTrap | GSU* | standard | CHIP_ELEM_NONE | 240 | data/ChipDataArr.s:6110; not in the ship | unrecorded |
+| 198 | ColArmy | BGR* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6141; not in the ship | unrecorded |
+| 199 | BlzrdBal | HNT | standard | CHIP_ELEM_AQUA | 150 | data/ChipDataArr.s:6172; not in the ship | unrecorded |
+| 200 | TimeBom2 | CDE | standard | CHIP_ELEM_OBSTACLE | 190 | data/ChipDataArr.s:6203; not in the ship | unrecorded |
+| 201 | TimeBom3 | LMN | standard | CHIP_ELEM_OBSTACLE | 230 | data/ChipDataArr.s:6234; not in the ship | unrecorded |
+| 202 | BigBomb | OPV | standard | CHIP_ELEM_NONE | 140 | data/ChipDataArr.s:6265; asset idx 24; n | verified-pixels |
+| 203 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6296 | unrecorded |
+| 204 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6327 | unrecorded |
+| 205 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6358 | unrecorded |
+| 206 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6389 | unrecorded |
+| 207 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6420 | unrecorded |
+| 208 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6451 | unrecorded |
+| 209 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6482 | unrecorded |
+| 210 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6513 | unrecorded |
+| 211 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6544 | unrecorded |
+| 212 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6575 | unrecorded |
+| 213 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6606 | unrecorded |
+| 214 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6637 | unrecorded |
+| 215 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6668 | unrecorded |
+| 216 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6699 | unrecorded |
+| 217 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6730 | unrecorded |
+| 218 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6761 | unrecorded |
+| 219 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6792 | unrecorded |
+| 220 |  | ABC* | standard | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6823 | unrecorded |
+| 221 | Roll | R* | mega | CHIP_ELEM_NONE | 20 | data/ChipDataArr.s:6854; not in the ship | unrecorded |
+| 222 | Roll2 | R | mega | CHIP_ELEM_NONE | 40 | data/ChipDataArr.s:6885; not in the ship | unrecorded |
+| 223 | Roll3 | R | mega | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:6916; not in the ship | unrecorded |
+| 224 | ProtoMan | B* | mega | CHIP_ELEM_SWORD | 150 | data/ChipDataArr.s:6947; not in the ship | unrecorded |
+| 225 | ProtoMn[EX] | B | mega | CHIP_ELEM_SWORD | 170 | data/ChipDataArr.s:6978; not in the ship | unrecorded |
+| 226 | ProtoMn[SP] | B | mega | CHIP_ELEM_SWORD | 1011 | data/ChipDataArr.s:7009; not in the ship | unrecorded |
+| 227 | HeatMan | H* | mega | CHIP_ELEM_FIRE | 100 | data/ChipDataArr.s:7040; not in the ship | unrecorded |
+| 228 | HeatMan[EX] | H | mega | CHIP_ELEM_FIRE | 130 | data/ChipDataArr.s:7071; not in the ship | unrecorded |
+| 229 | HeatMan[SP] | H | mega | CHIP_ELEM_FIRE | 1001 | data/ChipDataArr.s:7102; not in the ship | unrecorded |
+| 230 | ElecMan | E* | mega | CHIP_ELEM_ELEC | 120 | data/ChipDataArr.s:7133; not in the ship | unrecorded |
+| 231 | ElecMan[EX] | E | mega | CHIP_ELEM_ELEC | 140 | data/ChipDataArr.s:7164; not in the ship | unrecorded |
+| 232 | ElecMan[SP] | E | mega | CHIP_ELEM_ELEC | 1002 | data/ChipDataArr.s:7195; not in the ship | unrecorded |
+| 233 | SlashMan | S* | mega | CHIP_ELEM_SWORD | 80 | data/ChipDataArr.s:7226; not in the ship | unrecorded |
+| 234 | SlashMn[EX] | S | mega | CHIP_ELEM_SWORD | 100 | data/ChipDataArr.s:7257; not in the ship | unrecorded |
+| 235 | SlashMn[SP] | S | mega | CHIP_ELEM_SWORD | 1003 | data/ChipDataArr.s:7288; not in the ship | unrecorded |
+| 236 | EraseMan | K* | mega | CHIP_ELEM_CURSOR | 120 | data/ChipDataArr.s:7319; not in the ship | unrecorded |
+| 237 | EraseMn[EX] | K | mega | CHIP_ELEM_CURSOR | 140 | data/ChipDataArr.s:7350; not in the ship | unrecorded |
+| 238 | EraseMn[SP] | K | mega | CHIP_ELEM_CURSOR | 1004 | data/ChipDataArr.s:7381; not in the ship | unrecorded |
+| 239 | ChrgeMan | C* | mega | CHIP_ELEM_NONE | 60 | data/ChipDataArr.s:7412; not in the ship | unrecorded |
+| 240 | ChrgeMn[EX] | C | mega | CHIP_ELEM_NONE | 70 | data/ChipDataArr.s:7443; not in the ship | unrecorded |
+| 241 | ChrgeMn[SP] | C | mega | CHIP_ELEM_NONE | 1005 | data/ChipDataArr.s:7474; not in the ship | unrecorded |
+| 242 | SpoutMan | A* | mega | CHIP_ELEM_AQUA | 50 | data/ChipDataArr.s:7505; not in the ship | unrecorded |
+| 243 | SpoutMn[EX] | A | mega | CHIP_ELEM_AQUA | 60 | data/ChipDataArr.s:7536; not in the ship | unrecorded |
+| 244 | SpoutMn[SP] | A | mega | CHIP_ELEM_AQUA | 1006 | data/ChipDataArr.s:7567; not in the ship | unrecorded |
+| 245 | TmhkMan | T* | mega | CHIP_ELEM_WOOD | 140 | data/ChipDataArr.s:7598; not in the ship | unrecorded |
+| 246 | TmhkMan[EX] | T | mega | CHIP_ELEM_WOOD | 160 | data/ChipDataArr.s:7629; not in the ship | unrecorded |
+| 247 | TmhkMan[SP] | T | mega | CHIP_ELEM_WOOD | 1007 | data/ChipDataArr.s:7660; not in the ship | unrecorded |
+| 248 | TenguMan | T* | mega | CHIP_ELEM_WIND | 70 | data/ChipDataArr.s:7691; not in the ship | unrecorded |
+| 249 | TenguMn[EX] | T | mega | CHIP_ELEM_WIND | 90 | data/ChipDataArr.s:7722; not in the ship | unrecorded |
+| 250 | TenguMn[SP] | T | mega | CHIP_ELEM_WIND | 1008 | data/ChipDataArr.s:7753; not in the ship | unrecorded |
+| 251 | GrndMan | G* | mega | CHIP_ELEM_BREAK | 60 | data/ChipDataArr.s:7784; not in the ship | unrecorded |
+| 252 | GrndMan[EX] | G | mega | CHIP_ELEM_BREAK | 70 | data/ChipDataArr.s:7815; not in the ship | unrecorded |
+| 253 | GrndMan[SP] | G | mega | CHIP_ELEM_BREAK | 1009 | data/ChipDataArr.s:7846; not in the ship | unrecorded |
+| 254 | DustMan | D* | mega | CHIP_ELEM_NONE | 110 | data/ChipDataArr.s:7877; not in the ship | unrecorded |
+| 255 | DustMan[EX] | D | mega | CHIP_ELEM_NONE | 130 | data/ChipDataArr.s:7908; not in the ship | unrecorded |
 | 256 |  | D | mega | CHIP_ELEM_NONE | 1010 | data/ChipDataArr.s:7939 | unrecorded |
 | 257 |  | B* | mega | CHIP_ELEM_FIRE | 120 | data/ChipDataArr.s:7970 | unrecorded |
 | 258 |  | B | mega | CHIP_ELEM_FIRE | 140 | data/ChipDataArr.s:8001 | unrecorded |
@@ -733,31 +733,31 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | index | navi | ai_arm | pattern | act | cite | status |
 |---|---|---|---|---|---|---|
-| 0 | NAVI_MEGAMAN | off_8109B74 (asm/asm31.s:16944 | nullsub_106 (asm/asm31 | sub_80F2A1E (asm/asm31 | asm/asm31.s:123447,123498,123548,123420,169446 | per-ai routine named |
-| 1 | NAVI_HEATMAN | ForMettaur_8109EF4 (asm/asm31. | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123549,123421,169448 | named-via-NAVI-enum (per-type work in ai |
-| 2 | NAVI_ELECMAN | off_810A550 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123451,123502,123550,123422,169450 | named-via-NAVI-enum (per-type work in ai |
-| 3 | NAVI_SLASHMAN | off_810A9EC (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123551,123423,169452 | named-via-NAVI-enum (per-type work in ai |
-| 4 | NAVI_ERASEMAN | off_810B2D0 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123552,123424,169454 | named-via-NAVI-enum (per-type work in ai |
-| 5 | NAVI_CHARGEMAN | off_810BB94 (asm/asm31.s:16945 | sub_80F651C (asm/asm31 | sub_80F650A (asm/asm31 | asm/asm31.s:123457,123508,123553,123425,169456 | per-ai routine named |
-| 6 | NAVI_SPOUTMAN | off_810C170 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123554,123426,169458 | named-via-NAVI-enum (per-type work in ai |
-| 7 | NAVI_TOMAHAWKMAN | off_810C6F0 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123555,123427,169460 | named-via-NAVI-enum (per-type work in ai |
-| 8 | NAVI_TENGUMAN | off_810CD60 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123556,123428,169462 | named-via-NAVI-enum (per-type work in ai |
-| 9 | NAVI_GROUNDMAN | off_810D0F4 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123557,123429,169464 | named-via-NAVI-enum (per-type work in ai |
-| 10 | NAVI_DUSTMAN | off_810D554 (asm/asm31.s:16946 | sub_80FAE5C (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123558,123430,169466 | per-ai routine named |
-| 11 | NAVI_PROTOMAN | off_810D910 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123559,123431,169468 | named-via-NAVI-enum (per-type work in ai |
-| 12 | // unnamed: navi-table i | off_810E120 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123560,123432,169470 | GAP: no NAVI_* enum match + ai_pattern a |
-| 13 | // unnamed: navi-table i | off_810E7B0 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | sub_80FDEFC (asm/asm31 | asm/asm31.s:123473,123524,123561,123433,169472 | per-ai routine named |
-| 14 | // unnamed: navi-table i | off_810F010 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123562,123434,169474 | GAP: no NAVI_* enum match + ai_pattern a |
-| 15 | // unnamed: navi-table i | off_810F39C (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123563,123435,169476 | GAP: no NAVI_* enum match + ai_pattern a |
-| 16 | // unnamed: navi-table i | off_810FCE0 (asm/asm31.s:16947 | sub_81003A8 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123564,123436,169478 | per-ai routine named |
-| 17 | // unnamed: navi-table i | off_81104D4 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123565,123437,169480 | GAP: no NAVI_* enum match + ai_pattern a |
-| 18 | // unnamed: navi-table i | off_8110DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123566,123438,169482 | GAP: no NAVI_* enum match + ai_pattern a |
-| 19 | // unnamed: navi-table i | off_8111330 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123567,123439,169484 | GAP: no NAVI_* enum match + ai_pattern a |
-| 20 | // unnamed: navi-table i | off_8111DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123568,123440,169486 | GAP: no NAVI_* enum match + ai_pattern a |
-| 21 | // unnamed: navi-table i | off_81121F0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123569,123441,169488 | GAP: no NAVI_* enum match + ai_pattern a |
-| 22 | // unnamed: navi-table i | off_81129A0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123570,123442,169490 | GAP: no NAVI_* enum match + ai_pattern a |
-| 23 | // unnamed: navi-table i | ForGunner_8113078 (asm/asm31.s | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123571,123443,169492 | GAP: no NAVI_* enum match + ai_pattern a |
-| 24 | // unnamed: navi-table i | off_81135CC (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123572,123444,169494 | GAP: no NAVI_* enum match + ai_pattern a |
+| 0 | NAVI_MEGAMAN | off_8109B74 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | sub_80F2A1E (asm/asm31 | asm/asm31.s:123451,123502,123552,123424,169450 | per-ai routine named |
+| 1 | NAVI_HEATMAN | ForMettaur_8109EF4 (asm/asm31. | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123553,123425,169452 | named-via-NAVI-enum (per-type work in ai |
+| 2 | NAVI_ELECMAN | off_810A550 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123554,123426,169454 | named-via-NAVI-enum (per-type work in ai |
+| 3 | NAVI_SLASHMAN | off_810A9EC (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123457,123508,123555,123427,169456 | named-via-NAVI-enum (per-type work in ai |
+| 4 | NAVI_ERASEMAN | off_810B2D0 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123556,123428,169458 | named-via-NAVI-enum (per-type work in ai |
+| 5 | NAVI_CHARGEMAN | off_810BB94 (asm/asm31.s:16946 | sub_80F651C (asm/asm31 | sub_80F650A (asm/asm31 | asm/asm31.s:123461,123512,123557,123429,169460 | per-ai routine named |
+| 6 | NAVI_SPOUTMAN | off_810C170 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123558,123430,169462 | named-via-NAVI-enum (per-type work in ai |
+| 7 | NAVI_TOMAHAWKMAN | off_810C6F0 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123559,123431,169464 | named-via-NAVI-enum (per-type work in ai |
+| 8 | NAVI_TENGUMAN | off_810CD60 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123560,123432,169466 | named-via-NAVI-enum (per-type work in ai |
+| 9 | NAVI_GROUNDMAN | off_810D0F4 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123561,123433,169468 | named-via-NAVI-enum (per-type work in ai |
+| 10 | NAVI_DUSTMAN | off_810D554 (asm/asm31.s:16947 | sub_80FAE5C (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123562,123434,169470 | per-ai routine named |
+| 11 | NAVI_PROTOMAN | off_810D910 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123473,123524,123563,123435,169472 | named-via-NAVI-enum (per-type work in ai |
+| 12 | // unnamed: navi-table i | off_810E120 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123564,123436,169474 | GAP: no NAVI_* enum match + ai_pattern a |
+| 13 | // unnamed: navi-table i | off_810E7B0 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | sub_80FDEFC (asm/asm31 | asm/asm31.s:123477,123528,123565,123437,169476 | per-ai routine named |
+| 14 | // unnamed: navi-table i | off_810F010 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123566,123438,169478 | GAP: no NAVI_* enum match + ai_pattern a |
+| 15 | // unnamed: navi-table i | off_810F39C (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123567,123439,169480 | GAP: no NAVI_* enum match + ai_pattern a |
+| 16 | // unnamed: navi-table i | off_810FCE0 (asm/asm31.s:16948 | sub_81003A8 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123568,123440,169482 | per-ai routine named |
+| 17 | // unnamed: navi-table i | off_81104D4 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123569,123441,169484 | GAP: no NAVI_* enum match + ai_pattern a |
+| 18 | // unnamed: navi-table i | off_8110DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123570,123442,169486 | GAP: no NAVI_* enum match + ai_pattern a |
+| 19 | // unnamed: navi-table i | off_8111330 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123571,123443,169488 | GAP: no NAVI_* enum match + ai_pattern a |
+| 20 | // unnamed: navi-table i | off_8111DC0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123572,123444,169490 | GAP: no NAVI_* enum match + ai_pattern a |
+| 21 | // unnamed: navi-table i | off_81121F0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123573,123445,169492 | GAP: no NAVI_* enum match + ai_pattern a |
+| 22 | // unnamed: navi-table i | off_81129A0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123574,123446,169494 | GAP: no NAVI_* enum match + ai_pattern a |
+| 23 | // unnamed: navi-table i | ForGunner_8113078 (asm/asm31.s | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123497,123548,123575,123447,169496 | GAP: no NAVI_* enum match + ai_pattern a |
+| 24 | // unnamed: navi-table i | off_81135CC (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123499,123550,123576,123448,169498 | GAP: no NAVI_* enum match + ai_pattern a |
 
 ### cybeasts (M6) (FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18))
 
@@ -782,31 +782,31 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | tf_value | form | charge_shot | charge_cite | status |
 |---|---|---|---|---|
-| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5805 | unrecorded |
-| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5806 | unrecorded |
-| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5807 | unrecorded |
-| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5808 | unrecorded |
-| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5809 | unrecorded |
-| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5810 | unrecorded |
-| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5811 | unrecorded |
-| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5812 | unrecorded |
-| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5813 | unrecorded |
-| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5814 | unrecorded |
-| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5815 | unrecorded |
-| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5816 | unrecorded |
-| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5817 | unrecorded |
-| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5818 | unrecorded |
-| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5819 | unrecorded |
-| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5820 | unrecorded |
-| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5821 | unrecorded |
-| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5822 | unrecorded |
-| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5823 | unrecorded |
-| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5824 | unrecorded |
-| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5825 | unrecorded |
-| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5826 | unrecorded |
-| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5827 | unrecorded |
-| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5828 | unrecorded |
-| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5829 | unrecorded |
+| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5810 | unrecorded |
+| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5811 | unrecorded |
+| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5812 | unrecorded |
+| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5813 | unrecorded |
+| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5814 | unrecorded |
+| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5815 | unrecorded |
+| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5816 | unrecorded |
+| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5817 | unrecorded |
+| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5818 | unrecorded |
+| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5819 | unrecorded |
+| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5820 | unrecorded |
+| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5821 | unrecorded |
+| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5822 | unrecorded |
+| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5823 | unrecorded |
+| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5824 | unrecorded |
+| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5825 | unrecorded |
+| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5826 | unrecorded |
+| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5827 | unrecorded |
+| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5828 | unrecorded |
+| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5829 | unrecorded |
+| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5830 | unrecorded |
+| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5831 | unrecorded |
+| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5832 | unrecorded |
+| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5833 | unrecorded |
+| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5834 | unrecorded |
 
 ### panels (M3) (FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219))
 
@@ -833,53 +833,53 @@ Note: T18 verdict, CORRECTED by verifier-hyper re-run (all numbers are generator
 | bit | value | setter | reader | battle_visible | via_table | cite | status |
 |---|---|---|---|---|---|---|---|
 | OBJECT_FLAGS_GUARD | 0x00000001 | asm/asm31.s:112363 (+8) | none | no | - | include/structs/CollisionData.inc:3 | unrecorded |
-| OBJECT_FLAGS_INVIS | 0x00000002 | asm/asm00_2.s:3315 | asm/asm00_2.s:22325 | yes | - | include/structs/CollisionData.inc:4 | unrecorded |
-| OBJECT_FLAGS_UNK_4 | 0x00000004 | asm/asm00_2.s:2875 (+2) | asm/asm00_2.s:2829 (+2) | yes | - | include/structs/CollisionData.inc:5 | unrecorded |
-| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | asm/asm31.s:68375 (+2) | asm/asm00_2.s:16729 | yes | - | include/structs/CollisionData.inc:6 | unrecorded |
-| OBJECT_FLAGS_AIRSHOE | 0x00000010 | asm/asm00_2.s:10661 (+3) | asm/asm00_2.s:3163 (+4) | yes | - | include/structs/CollisionData.inc:7 | unrecorded |
-| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | asm/asm00_2.s:10644 (+2) | asm/asm38.s:3905 | yes | - | include/structs/CollisionData.inc:8 | unrecorded |
-| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | asm/asm31.s:32325 (+143) | asm/asm00_2.s:23084 (+3) | yes | - | include/structs/CollisionData.inc:9 | unrecorded |
+| OBJECT_FLAGS_INVIS | 0x00000002 | asm/asm00_2.s:3320 | asm/asm00_2.s:22353 | yes | - | include/structs/CollisionData.inc:4 | unrecorded |
+| OBJECT_FLAGS_UNK_4 | 0x00000004 | asm/asm00_2.s:2880 (+2) | asm/asm00_2.s:2834 (+2) | yes | - | include/structs/CollisionData.inc:5 | unrecorded |
+| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | asm/asm31.s:68375 (+2) | asm/asm00_2.s:16740 | yes | - | include/structs/CollisionData.inc:6 | unrecorded |
+| OBJECT_FLAGS_AIRSHOE | 0x00000010 | asm/asm00_2.s:10666 (+3) | asm/asm00_2.s:3168 (+4) | yes | - | include/structs/CollisionData.inc:7 | unrecorded |
+| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | asm/asm00_2.s:10649 (+2) | asm/asm38.s:3905 | yes | - | include/structs/CollisionData.inc:8 | unrecorded |
+| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | asm/asm31.s:32325 (+143) | asm/asm00_2.s:23112 (+3) | yes | - | include/structs/CollisionData.inc:9 | unrecorded |
 | OBJECT_FLAGS_UNK_8 | 0x00000080 | NONE | none | no | - | include/structs/CollisionData.inc:10 | unrecorded |
-| OBJECT_FLAGS_DEAD | 0x00000100 | asm/asm00_2.s:23485 (+7) | asm/asm00_2.s:16761 (+23) | yes | - | include/structs/CollisionData.inc:11 | unrecorded |
-| OBJECT_FLAGS_FLASHING | 0x00000200 | asm/asm00_2.s:22338 (+2) | asm/asm03_0.s:14697 (+1) | yes | - | include/structs/CollisionData.inc:12 | unrecorded |
-| OBJECT_FLAGS_FLINCHING | 0x00000400 | asm/asm00_2.s:18308 (combined-mask only) | asm/asm00_2.s:12088 (combined-mask only) | no | - | include/structs/CollisionData.inc:13 | unrecorded |
-| OBJECT_FLAGS_PARALYZED | 0x00000800 | asm/object.s:5333 | asm/asm00_2.s:17033 (+6) | yes | - | include/structs/CollisionData.inc:14 | unrecorded |
-| OBJECT_FLAGS_SLIDING | 0x00001000 | asm/asm00_2.s:16515 (+1) | asm/asm00_2.s:1745 (+11) | yes | - | include/structs/CollisionData.inc:15 | unrecorded |
-| OBJECT_FLAGS_BLIND | 0x00002000 | asm/object.s:5530 | asm/asm00_2.s:16861 (+11) | yes | - | include/structs/CollisionData.inc:16 | unrecorded |
-| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | asm/object.s:5510 (+1) | asm/asm31.s:171386 | yes | - | include/structs/CollisionData.inc:17 | unrecorded |
-| OBJECT_FLAGS_CONFUSED | 0x00008000 | asm/object.s:5483 | asm/asm00_2.s:1894 (+10) | yes | - | include/structs/CollisionData.inc:18 | unrecorded |
-| OBJECT_FLAGS_FROZEN | 0x00010000 | asm/object.s:5383 | asm/asm00_2.s:16784 (+5) | yes | - | include/structs/CollisionData.inc:19 | unrecorded |
-| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | asm/asm00_2.s:10684 (+9) | asm/asm00_2.s:23375 (combined-mask only) | no | - | include/structs/CollisionData.inc:20 | unrecorded |
-| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | asm/asm00_2.s:10673 | asm/asm00_2.s:24874 | yes | - | include/structs/CollisionData.inc:21 | unrecorded |
-| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | asm/asm31.s:42478 (+117) | asm/asm00_2.s:21962 | yes | - | include/structs/CollisionData.inc:22 | unrecorded |
-| OBJECT_FLAGS_DRAG | 0x00100000 | asm/asm00_2.s:17289 (+2) | asm/asm00_2.s:23606 (+6) | yes | - | include/structs/CollisionData.inc:23 | unrecorded |
-| OBJECT_FLAGS_ANGER | 0x00200000 | asm/asm00_2.s:11994 | asm/asm00_2.s:11942 (+1) | yes | - | include/structs/CollisionData.inc:24 | unrecorded |
-| OBJECT_FLAGS_USING_ACTION | 0x00400000 | asm/asm00_2.s:18388 (+89) | asm/asm00_2.s:2870 | yes | - | include/structs/CollisionData.inc:25 | unrecorded |
+| OBJECT_FLAGS_DEAD | 0x00000100 | asm/asm00_2.s:23513 (+7) | asm/asm00_2.s:16772 (+23) | yes | - | include/structs/CollisionData.inc:11 | unrecorded |
+| OBJECT_FLAGS_FLASHING | 0x00000200 | asm/asm00_2.s:22366 (+2) | asm/asm03_0.s:14700 (+1) | yes | - | include/structs/CollisionData.inc:12 | unrecorded |
+| OBJECT_FLAGS_FLINCHING | 0x00000400 | asm/asm00_2.s:18319 (combined-mask only) | asm/asm00_2.s:12099 (combined-mask only) | no | - | include/structs/CollisionData.inc:13 | unrecorded |
+| OBJECT_FLAGS_PARALYZED | 0x00000800 | asm/object.s:5333 | asm/asm00_2.s:17044 (+6) | yes | - | include/structs/CollisionData.inc:14 | unrecorded |
+| OBJECT_FLAGS_SLIDING | 0x00001000 | asm/asm00_2.s:16526 (+1) | asm/asm00_2.s:1745 (+11) | yes | - | include/structs/CollisionData.inc:15 | unrecorded |
+| OBJECT_FLAGS_BLIND | 0x00002000 | asm/object.s:5530 | asm/asm00_2.s:16872 (+11) | yes | - | include/structs/CollisionData.inc:16 | unrecorded |
+| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | asm/object.s:5510 (+1) | asm/asm31.s:171390 | yes | - | include/structs/CollisionData.inc:17 | unrecorded |
+| OBJECT_FLAGS_CONFUSED | 0x00008000 | asm/object.s:5483 | asm/asm00_2.s:1899 (+10) | yes | - | include/structs/CollisionData.inc:18 | unrecorded |
+| OBJECT_FLAGS_FROZEN | 0x00010000 | asm/object.s:5383 | asm/asm00_2.s:16795 (+5) | yes | - | include/structs/CollisionData.inc:19 | unrecorded |
+| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | asm/asm00_2.s:10689 (+9) | asm/asm00_2.s:23403 (combined-mask only) | no | - | include/structs/CollisionData.inc:20 | unrecorded |
+| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | asm/asm00_2.s:10678 | asm/asm00_2.s:24907 | yes | - | include/structs/CollisionData.inc:21 | unrecorded |
+| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | asm/asm31.s:42478 (+117) | asm/asm00_2.s:21990 | yes | - | include/structs/CollisionData.inc:22 | unrecorded |
+| OBJECT_FLAGS_DRAG | 0x00100000 | asm/asm00_2.s:17300 (+2) | asm/asm00_2.s:23634 (+6) | yes | - | include/structs/CollisionData.inc:23 | unrecorded |
+| OBJECT_FLAGS_ANGER | 0x00200000 | asm/asm00_2.s:12005 | asm/asm00_2.s:11953 (+1) | yes | - | include/structs/CollisionData.inc:24 | unrecorded |
+| OBJECT_FLAGS_USING_ACTION | 0x00400000 | asm/asm00_2.s:18405 (+89) | asm/asm00_2.s:2875 | yes | - | include/structs/CollisionData.inc:25 | unrecorded |
 | OBJECT_FLAGS_UNK_24 | 0x00800000 | asm/asm32.s:15970 | none | no | - | include/structs/CollisionData.inc:26 | unrecorded |
 | OBJECT_FLAGS_UNK_25 | 0x01000000 | asm/asm31.s:46667 | asm/asm38.s:3243 | yes | - | include/structs/CollisionData.inc:27 | unrecorded |
-| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | asm/asm00_2.s:17693 | none | no | - | include/structs/CollisionData.inc:28 | unrecorded |
+| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | asm/asm00_2.s:17704 | none | no | - | include/structs/CollisionData.inc:28 | unrecorded |
 | OBJECT_FLAGS_UNK_26 | 0x04000000 | NONE | asm/asm31.s:60669 | yes | - | include/structs/CollisionData.inc:29 | unrecorded |
-| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | asm/asm00_2.s:12678 (+1) | none | no | - | include/structs/CollisionData.inc:30 | unrecorded |
-| OBJECT_FLAGS_UNK_28 | 0x10000000 | NONE | asm/asm00_2.s:19868 | yes | - | include/structs/CollisionData.inc:31 | unrecorded |
-| OBJECT_FLAGS_UNK_29 | 0x20000000 | NONE | asm/asm00_2.s:24101 (combined-mask only) | no | - | include/structs/CollisionData.inc:32 | unrecorded |
-| OBJECT_FLAGS_UNK_30 | 0x40000000 | NONE | asm/asm00_2.s:16374 (+3) | yes | - | include/structs/CollisionData.inc:33 | unrecorded |
-| OBJECT_FLAGS_BUBBLED | 0x80000000 | asm/object.s:5440 | asm/asm00_2.s:17107 (+7) | yes | - | include/structs/CollisionData.inc:34 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | asm/asm00_2.s:23824 (+6) | asm/asm00_2.s:23477 (+6) | yes | - | include/structs/CollisionData.inc:48 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | asm/asm00_2.s:23389 (+1) | asm/asm00_2.s:22310 (+2) | yes | - | include/structs/CollisionData.inc:49 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | asm/asm00_2.s:23383 (+2) | asm/asm00_2.s:23637 | yes | - | include/structs/CollisionData.inc:50 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | asm/asm00_2.s:22545 | asm/asm00_2.s:17482 | yes | 1 | include/structs/CollisionData.inc:51 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | asm/asm00_2.s:22000 (+3) | asm/asm00_2.s:23617 (+1) | yes | - | include/structs/CollisionData.inc:52 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | asm/asm00_2.s:11368 (+2) | none | no | 3 | include/structs/CollisionData.inc:53 | unrecorded |
+| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | asm/asm00_2.s:12689 (+1) | none | no | - | include/structs/CollisionData.inc:30 | unrecorded |
+| OBJECT_FLAGS_UNK_28 | 0x10000000 | NONE | asm/asm00_2.s:19885 | yes | - | include/structs/CollisionData.inc:31 | unrecorded |
+| OBJECT_FLAGS_UNK_29 | 0x20000000 | NONE | asm/asm00_2.s:24134 (combined-mask only) | no | - | include/structs/CollisionData.inc:32 | unrecorded |
+| OBJECT_FLAGS_UNK_30 | 0x40000000 | NONE | asm/asm00_2.s:16385 (+3) | yes | - | include/structs/CollisionData.inc:33 | unrecorded |
+| OBJECT_FLAGS_BUBBLED | 0x80000000 | asm/object.s:5440 | asm/asm00_2.s:17118 (+7) | yes | - | include/structs/CollisionData.inc:34 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | asm/asm00_2.s:23852 (+6) | asm/asm00_2.s:23505 (+6) | yes | - | include/structs/CollisionData.inc:48 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | asm/asm00_2.s:23417 (+1) | asm/asm00_2.s:22338 (+2) | yes | - | include/structs/CollisionData.inc:49 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | asm/asm00_2.s:23411 (+2) | asm/asm00_2.s:23665 | yes | - | include/structs/CollisionData.inc:50 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | asm/asm00_2.s:22573 | asm/asm00_2.s:17493 | yes | 1 | include/structs/CollisionData.inc:51 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | asm/asm00_2.s:22028 (+3) | asm/asm00_2.s:23645 (+1) | yes | - | include/structs/CollisionData.inc:52 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | asm/asm00_2.s:11379 (+2) | none | no | 3 | include/structs/CollisionData.inc:53 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_06 | 0x00000040 | NONE | none | no | 4 | include/structs/CollisionData.inc:54 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_07 | 0x00000080 | NONE | none | no | 2 | include/structs/CollisionData.inc:55 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | asm/asm00_2.s:23090 (+4) | asm/asm00_2.s:23566 (+6) | yes | - | include/structs/CollisionData.inc:56 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | asm/asm00_2.s:11960 (+1) | asm/asm00_2.s:11985 | yes | - | include/structs/CollisionData.inc:57 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | NONE | asm/asm00_2.s:19645 | yes | - | include/structs/CollisionData.inc:58 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | NONE | asm/asm00_2.s:24077 (combined-mask only) | no | - | include/structs/CollisionData.inc:59 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | NONE | asm/asm00_2.s:19814 | yes | - | include/structs/CollisionData.inc:60 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | NONE | asm/asm00_2.s:24093 (combined-mask only) | no | - | include/structs/CollisionData.inc:61 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | asm/object.s:5859 (+1) | asm/asm00_2.s:23582 (+1) | yes | - | include/structs/CollisionData.inc:62 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | asm/asm00_2.s:1622 (+1) | asm/asm00_2.s:24046 (+19) | yes | - | include/structs/CollisionData.inc:63 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | asm/asm00_2.s:23118 (+4) | asm/asm00_2.s:23594 (+6) | yes | - | include/structs/CollisionData.inc:56 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | asm/asm00_2.s:11971 (+1) | asm/asm00_2.s:11996 | yes | - | include/structs/CollisionData.inc:57 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | NONE | asm/asm00_2.s:19662 | yes | - | include/structs/CollisionData.inc:58 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | NONE | asm/asm00_2.s:24110 (combined-mask only) | no | - | include/structs/CollisionData.inc:59 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | NONE | asm/asm00_2.s:19831 | yes | - | include/structs/CollisionData.inc:60 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | NONE | asm/asm00_2.s:24126 (combined-mask only) | no | - | include/structs/CollisionData.inc:61 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | asm/object.s:5859 (+1) | asm/asm00_2.s:23610 (+1) | yes | - | include/structs/CollisionData.inc:62 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | asm/asm00_2.s:1622 (+1) | asm/asm00_2.s:24079 (+19) | yes | - | include/structs/CollisionData.inc:63 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_16 | 0x00010000 | NONE | none | no | 5 | include/structs/CollisionData.inc:64 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_17 | 0x00020000 | NONE | none | no | 6 | include/structs/CollisionData.inc:65 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_18 | 0x00040000 | asm/asm00_2.s:1637 | none | no | - | include/structs/CollisionData.inc:66 | unrecorded |

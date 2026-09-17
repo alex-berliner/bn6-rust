@@ -6,7 +6,7 @@
    "form": "TF_NONE",
    "form_cite": "constants/constants.inc:90",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "charge_cite": "asm/asm00_2.s:5805",
+   "charge_cite": "asm/asm00_2.s:5810",
    "status": "unrecorded"
   },
   {
@@ -14,7 +14,7 @@
    "form": "TF_HEATCROSS",
    "form_cite": "constants/constants.inc:91",
    "charge_shot": "busterBugChargeShotDamageCalcHappensHere_8011A7E",
-   "charge_cite": "asm/asm00_2.s:5806",
+   "charge_cite": "asm/asm00_2.s:5811",
    "status": "unrecorded"
   },
   {
@@ -22,7 +22,7 @@
    "form": "TF_ELECCROSS",
    "form_cite": "constants/constants.inc:92",
    "charge_shot": "sub_8011ADA",
-   "charge_cite": "asm/asm00_2.s:5807",
+   "charge_cite": "asm/asm00_2.s:5812",
    "status": "unrecorded"
   },
   {
@@ -30,7 +30,7 @@
    "form": "TF_SLASHCROSS",
    "form_cite": "constants/constants.inc:93",
    "charge_shot": "sub_8011AF2",
-   "charge_cite": "asm/asm00_2.s:5808",
+   "charge_cite": "asm/asm00_2.s:5813",
    "status": "unrecorded"
   },
   {
@@ -38,7 +38,7 @@
    "form": "TF_ERASECROSS",
    "form_cite": "constants/constants.inc:94",
    "charge_shot": "sub_8011B4A",
-   "charge_cite": "asm/asm00_2.s:5809",
+   "charge_cite": "asm/asm00_2.s:5814",
    "status": "unrecorded"
   },
   {
@@ -46,7 +46,7 @@
    "form": "TF_CHARGECROSS",
    "form_cite": "constants/constants.inc:95",
    "charge_shot": "nullsub_44",
-   "charge_cite": "asm/asm00_2.s:5810",
+   "charge_cite": "asm/asm00_2.s:5815",
    "status": "unrecorded"
   },
   {
@@ -54,7 +54,7 @@
    "form": "TF_SPOUTCROSS",
    "form_cite": "constants/constants.inc:96",
    "charge_shot": "sub_8011BA2",
-   "charge_cite": "asm/asm00_2.s:5811",
+   "charge_cite": "asm/asm00_2.s:5816",
    "status": "unrecorded"
   },
   {
@@ -62,7 +62,7 @@
    "form": "TF_TOMAHAWKCROSS",
    "form_cite": "constants/constants.inc:97",
    "charge_shot": "greatfireAPwrAtk_init_8011BD0",
-   "charge_cite": "asm/asm00_2.s:5812",
+   "charge_cite": "asm/asm00_2.s:5817",
    "status": "unrecorded"
   },
   {
@@ -70,7 +70,7 @@
    "form": "TF_TENGUCROSS",
    "form_cite": "constants/constants.inc:98",
    "charge_shot": "sub_8011BE8",
-   "charge_cite": "asm/asm00_2.s:5813",
+   "charge_cite": "asm/asm00_2.s:5818",
    "status": "unrecorded"
   },
   {
@@ -78,7 +78,7 @@
    "form": "TF_GROUNDCROSS",
    "form_cite": "constants/constants.inc:99",
    "charge_shot": "sub_8011C00",
-   "charge_cite": "asm/asm00_2.s:5814",
+   "charge_cite": "asm/asm00_2.s:5819",
    "status": "unrecorded"
   },
   {
@@ -86,7 +86,7 @@
    "form": "TF_DUSTCROSS",
    "form_cite": "constants/constants.inc:100",
    "charge_shot": "sub_8011C18",
-   "charge_cite": "asm/asm00_2.s:5815",
+   "charge_cite": "asm/asm00_2.s:5820",
    "status": "unrecorded"
   },
   {
@@ -94,7 +94,7 @@
    "form": "TF_GREGARBEAST",
    "form_cite": "constants/constants.inc:101",
    "charge_shot": "sub_8011C38",
-   "charge_cite": "asm/asm00_2.s:5816",
+   "charge_cite": "asm/asm00_2.s:5821",
    "status": "unrecorded"
   },
   {
@@ -102,7 +102,7 @@
    "form": "TF_FALZARBEAST",
    "form_cite": "constants/constants.inc:102",
    "charge_shot": "spoutcrossBPwrAtk_init_8011C5E",
-   "charge_cite": "asm/asm00_2.s:5817",
+   "charge_cite": "asm/asm00_2.s:5822",
    "status": "unrecorded"
   },
   {
@@ -110,7 +110,7 @@
    "form": "TF_HEATBEAST",
    "form_cite": "constants/constants.inc:103",
    "charge_shot": "nullsub_44",
-   "charge_cite": "asm/asm00_2.s:5818",
+   "charge_cite": "asm/asm00_2.s:5823",
    "status": "unrecorded"
   },
   {
@@ -118,7 +118,7 @@
    "form": "TF_ELECBEAST",
    "form_cite": "constants/constants.inc:104",
    "charge_shot": "nullsub_44",
-   "charge_cite": "asm/asm00_2.s:5819",
+   "charge_cite": "asm/asm00_2.s:5824",
    "status": "unrecorded"
   },
   {
@@ -126,7 +126,7 @@
    "form": "TF_SLASHBEAST",
    "form_cite": "constants/constants.inc:105",
    "charge_shot": "sub_8011C88",
-   "charge_cite": "asm/asm00_2.s:5820",
+   "charge_cite": "asm/asm00_2.s:5825",
    "status": "unrecorded"
   },
   {
@@ -134,7 +134,7 @@
    "form": "TF_ERASEBEAST",
    "form_cite": "constants/constants.inc:106",
    "charge_shot": "sub_8011CA8",
-   "charge_cite": "asm/asm00_2.s:5821",
+   "charge_cite": "asm/asm00_2.s:5826",
    "status": "unrecorded"
   },
   {
@@ -142,7 +142,7 @@
    "form": "TF_CHARGEBEAST",
    "form_cite": "constants/constants.inc:107",
    "charge_shot": "sub_8011CB4",
-   "charge_cite": "asm/asm00_2.s:5822",
+   "charge_cite": "asm/asm00_2.s:5827",
    "status": "unrecorded"
   },
   {
@@ -150,7 +150,7 @@
    "form": "TF_SPOUTBEAST",
    "form_cite": "constants/constants.inc:108",
    "charge_shot": "slashcrossBPwrAtk_init_8011CD6",
-   "charge_cite": "asm/asm00_2.s:5823",
+   "charge_cite": "asm/asm00_2.s:5828",
    "status": "unrecorded"
   },
   {
@@ -158,7 +158,7 @@
    "form": "TF_TOMAHAWKBEAST",
    "form_cite": "constants/constants.inc:109",
    "charge_shot": "nullsub_44",
-   "charge_cite": "asm/asm00_2.s:5824",
+   "charge_cite": "asm/asm00_2.s:5829",
    "status": "unrecorded"
   },
   {
@@ -166,7 +166,7 @@
    "form": "TF_TENGUBEAST",
    "form_cite": "constants/constants.inc:110",
    "charge_shot": "sub_8011CF8",
-   "charge_cite": "asm/asm00_2.s:5825",
+   "charge_cite": "asm/asm00_2.s:5830",
    "status": "unrecorded"
   },
   {
@@ -174,7 +174,7 @@
    "form": "TF_GROUNDBEAST",
    "form_cite": "constants/constants.inc:111",
    "charge_shot": "sub_8011D20",
-   "charge_cite": "asm/asm00_2.s:5826",
+   "charge_cite": "asm/asm00_2.s:5831",
    "status": "unrecorded"
   },
   {
@@ -182,7 +182,7 @@
    "form": "TF_DUSTBEAST",
    "form_cite": "constants/constants.inc:112",
    "charge_shot": "sub_8011D38",
-   "charge_cite": "asm/asm00_2.s:5827",
+   "charge_cite": "asm/asm00_2.s:5832",
    "status": "unrecorded"
   },
   {
@@ -190,7 +190,7 @@
    "form": "TF_GREGARBEASTOVER",
    "form_cite": "constants/constants.inc:113",
    "charge_shot": "sub_8011D54",
-   "charge_cite": "asm/asm00_2.s:5828",
+   "charge_cite": "asm/asm00_2.s:5833",
    "status": "unrecorded"
   },
   {
@@ -198,7 +198,7 @@
    "form": "TF_FALZARBEASTOVER",
    "form_cite": "constants/constants.inc:114",
    "charge_shot": "nullsub_44",
-   "charge_cite": "asm/asm00_2.s:5829",
+   "charge_cite": "asm/asm00_2.s:5834",
    "status": "unrecorded"
   }
  ],
@@ -206,617 +206,617 @@
   {
    "index": "0x19",
    "charge_shot": "sub_8011D74",
-   "cite": "asm/asm00_2.s:5830"
+   "cite": "asm/asm00_2.s:5835"
   },
   {
    "index": "0x1a",
    "charge_shot": "sub_8011D9C",
-   "cite": "asm/asm00_2.s:5831"
+   "cite": "asm/asm00_2.s:5836"
   },
   {
    "index": "0x1b",
    "charge_shot": "sub_8011DBC",
-   "cite": "asm/asm00_2.s:5832"
+   "cite": "asm/asm00_2.s:5837"
   },
   {
    "index": "0x1c",
    "charge_shot": "sub_8011DDC",
-   "cite": "asm/asm00_2.s:5833"
+   "cite": "asm/asm00_2.s:5838"
   },
   {
    "index": "0x1d",
    "charge_shot": "sub_8011DFC",
-   "cite": "asm/asm00_2.s:5834"
+   "cite": "asm/asm00_2.s:5839"
   },
   {
    "index": "0x1e",
    "charge_shot": "sub_8011E1C",
-   "cite": "asm/asm00_2.s:5835"
+   "cite": "asm/asm00_2.s:5840"
   },
   {
    "index": "0x1f",
    "charge_shot": "nullsub_44",
-   "cite": "asm/asm00_2.s:5836"
+   "cite": "asm/asm00_2.s:5841"
   },
   {
    "index": "0x20",
    "charge_shot": "nullsub_44",
-   "cite": "asm/asm00_2.s:5837"
+   "cite": "asm/asm00_2.s:5842"
   },
   {
    "index": "0x21",
    "charge_shot": "sub_8011E40",
-   "cite": "asm/asm00_2.s:5838"
+   "cite": "asm/asm00_2.s:5843"
   },
   {
    "index": "0x22",
    "charge_shot": "sub_8011E78",
-   "cite": "asm/asm00_2.s:5839"
+   "cite": "asm/asm00_2.s:5844"
   },
   {
    "index": "0x23",
    "charge_shot": "sub_8011EAC",
-   "cite": "asm/asm00_2.s:5840"
+   "cite": "asm/asm00_2.s:5845"
   },
   {
    "index": "0x24",
    "charge_shot": "sub_8011ED0",
-   "cite": "asm/asm00_2.s:5841"
+   "cite": "asm/asm00_2.s:5846"
   },
   {
    "index": "0x25",
    "charge_shot": "sub_8011EF0",
-   "cite": "asm/asm00_2.s:5842"
+   "cite": "asm/asm00_2.s:5847"
   },
   {
    "index": "0x26",
    "charge_shot": "sub_8011F10",
-   "cite": "asm/asm00_2.s:5843"
+   "cite": "asm/asm00_2.s:5848"
   },
   {
    "index": "0x27",
    "charge_shot": "sub_8011F44",
-   "cite": "asm/asm00_2.s:5844"
+   "cite": "asm/asm00_2.s:5849"
   },
   {
    "index": "0x28",
    "charge_shot": "sub_8011F64",
-   "cite": "asm/asm00_2.s:5845"
+   "cite": "asm/asm00_2.s:5850"
   },
   {
    "index": "0x29",
    "charge_shot": "nullsub_44",
-   "cite": "asm/asm00_2.s:5846"
+   "cite": "asm/asm00_2.s:5851"
   },
   {
    "index": "0x2a",
    "charge_shot": "sub_8011F84",
-   "cite": "asm/asm00_2.s:5847"
+   "cite": "asm/asm00_2.s:5852"
   },
   {
    "index": "0x2b",
    "charge_shot": "sub_8011F8C",
-   "cite": "asm/asm00_2.s:5848"
+   "cite": "asm/asm00_2.s:5853"
   },
   {
    "index": "0x2c",
    "charge_shot": "sub_8011FCE",
-   "cite": "asm/asm00_2.s:5849"
+   "cite": "asm/asm00_2.s:5854"
   },
   {
    "index": "0x2d",
    "charge_shot": "nullsub_44",
-   "cite": "asm/asm00_2.s:5850"
+   "cite": "asm/asm00_2.s:5855"
   },
   {
    "index": "0x2e",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5851"
+   "cite": "asm/asm00_2.s:5856"
   },
   {
    "index": "0x2f",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5852"
+   "cite": "asm/asm00_2.s:5857"
   },
   {
    "index": "0x30",
    "charge_shot": "sub_8012018",
-   "cite": "asm/asm00_2.s:5853"
+   "cite": "asm/asm00_2.s:5858"
   },
   {
    "index": "0x31",
    "charge_shot": "sub_8012044",
-   "cite": "asm/asm00_2.s:5854"
+   "cite": "asm/asm00_2.s:5859"
   },
   {
    "index": "0x32",
    "charge_shot": "sub_801206E",
-   "cite": "asm/asm00_2.s:5855"
+   "cite": "asm/asm00_2.s:5860"
   },
   {
    "index": "0x33",
    "charge_shot": "sub_801208A",
-   "cite": "asm/asm00_2.s:5856"
+   "cite": "asm/asm00_2.s:5861"
   },
   {
    "index": "0x34",
    "charge_shot": "sub_80120A6",
-   "cite": "asm/asm00_2.s:5857"
+   "cite": "asm/asm00_2.s:5862"
   },
   {
    "index": "0x35",
    "charge_shot": "sub_80120CC",
-   "cite": "asm/asm00_2.s:5858"
+   "cite": "asm/asm00_2.s:5863"
   },
   {
    "index": "0x36",
    "charge_shot": "sub_80120D6",
-   "cite": "asm/asm00_2.s:5859"
+   "cite": "asm/asm00_2.s:5864"
   },
   {
    "index": "0x37",
    "charge_shot": "sub_80120FE",
-   "cite": "asm/asm00_2.s:5860"
+   "cite": "asm/asm00_2.s:5865"
   },
   {
    "index": "0x38",
    "charge_shot": "nullsub_44",
-   "cite": "asm/asm00_2.s:5861"
+   "cite": "asm/asm00_2.s:5866"
   },
   {
    "index": "0x39",
    "charge_shot": "sub_8012124",
-   "cite": "asm/asm00_2.s:5862"
+   "cite": "asm/asm00_2.s:5867"
   },
   {
    "index": "0x3a",
    "charge_shot": "sub_8012144",
-   "cite": "asm/asm00_2.s:5863"
+   "cite": "asm/asm00_2.s:5868"
   },
   {
    "index": "0x3b",
    "charge_shot": "sub_801216E",
-   "cite": "asm/asm00_2.s:5864"
+   "cite": "asm/asm00_2.s:5869"
   },
   {
    "index": "0x3c",
    "charge_shot": "sub_8012194",
-   "cite": "asm/asm00_2.s:5865"
+   "cite": "asm/asm00_2.s:5870"
   },
   {
    "index": "0x3d",
    "charge_shot": "sub_80121BC",
-   "cite": "asm/asm00_2.s:5866"
+   "cite": "asm/asm00_2.s:5871"
   },
   {
    "index": "0x3e",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5867"
+   "cite": "asm/asm00_2.s:5872"
   },
   {
    "index": "0x3f",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5868"
+   "cite": "asm/asm00_2.s:5873"
   },
   {
    "index": "0x40",
    "charge_shot": "sub_80121DC",
-   "cite": "asm/asm00_2.s:5869"
+   "cite": "asm/asm00_2.s:5874"
   },
   {
    "index": "0x41",
    "charge_shot": "sub_80121F8",
-   "cite": "asm/asm00_2.s:5870"
+   "cite": "asm/asm00_2.s:5875"
   },
   {
    "index": "0x42",
    "charge_shot": "sub_8012210",
-   "cite": "asm/asm00_2.s:5871"
+   "cite": "asm/asm00_2.s:5876"
   },
   {
    "index": "0x43",
    "charge_shot": "sub_8012228",
-   "cite": "asm/asm00_2.s:5872"
+   "cite": "asm/asm00_2.s:5877"
   },
   {
    "index": "0x44",
    "charge_shot": "sub_8012240",
-   "cite": "asm/asm00_2.s:5873"
+   "cite": "asm/asm00_2.s:5878"
   },
   {
    "index": "0x45",
    "charge_shot": "tomahawkmanBPwrAtk_init_8012258",
-   "cite": "asm/asm00_2.s:5874"
+   "cite": "asm/asm00_2.s:5879"
   },
   {
    "index": "0x46",
    "charge_shot": "sub_8012278",
-   "cite": "asm/asm00_2.s:5875"
+   "cite": "asm/asm00_2.s:5880"
   },
   {
    "index": "0x47",
    "charge_shot": "sub_8012292",
-   "cite": "asm/asm00_2.s:5876"
+   "cite": "asm/asm00_2.s:5881"
   },
   {
    "index": "0x48",
    "charge_shot": "sub_80122AA",
-   "cite": "asm/asm00_2.s:5877"
+   "cite": "asm/asm00_2.s:5882"
   },
   {
    "index": "0x49",
    "charge_shot": "sub_80122C2",
-   "cite": "asm/asm00_2.s:5878"
+   "cite": "asm/asm00_2.s:5883"
   },
   {
    "index": "0x4a",
    "charge_shot": "sub_80122DA",
-   "cite": "asm/asm00_2.s:5879"
+   "cite": "asm/asm00_2.s:5884"
   },
   {
    "index": "0x4b",
    "charge_shot": "sub_80122F2",
-   "cite": "asm/asm00_2.s:5880"
+   "cite": "asm/asm00_2.s:5885"
   },
   {
    "index": "0x4c",
    "charge_shot": "sub_801230C",
-   "cite": "asm/asm00_2.s:5881"
+   "cite": "asm/asm00_2.s:5886"
   },
   {
    "index": "0x4d",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5882"
+   "cite": "asm/asm00_2.s:5887"
   },
   {
    "index": "0x4e",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5883"
+   "cite": "asm/asm00_2.s:5888"
   },
   {
    "index": "0x4f",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5884"
+   "cite": "asm/asm00_2.s:5889"
   },
   {
    "index": "0x50",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5885"
+   "cite": "asm/asm00_2.s:5890"
   },
   {
    "index": "0x51",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5886"
+   "cite": "asm/asm00_2.s:5891"
   },
   {
    "index": "0x52",
    "charge_shot": "sub_8012326",
-   "cite": "asm/asm00_2.s:5887"
+   "cite": "asm/asm00_2.s:5892"
   },
   {
    "index": "0x53",
    "charge_shot": "loc_801232A",
-   "cite": "asm/asm00_2.s:5888"
+   "cite": "asm/asm00_2.s:5893"
   },
   {
    "index": "0x54",
    "charge_shot": "sub_801233C",
-   "cite": "asm/asm00_2.s:5889"
+   "cite": "asm/asm00_2.s:5894"
   },
   {
    "index": "0x55",
    "charge_shot": "sub_8012346",
-   "cite": "asm/asm00_2.s:5890"
+   "cite": "asm/asm00_2.s:5895"
   },
   {
    "index": "0x56",
    "charge_shot": "sub_8012350",
-   "cite": "asm/asm00_2.s:5891"
+   "cite": "asm/asm00_2.s:5896"
   },
   {
    "index": "0x57",
    "charge_shot": "sub_801235A",
-   "cite": "asm/asm00_2.s:5892"
+   "cite": "asm/asm00_2.s:5897"
   },
   {
    "index": "0x58",
    "charge_shot": "sub_8012364",
-   "cite": "asm/asm00_2.s:5893"
+   "cite": "asm/asm00_2.s:5898"
   },
   {
    "index": "0x59",
    "charge_shot": "sub_801236E",
-   "cite": "asm/asm00_2.s:5894"
+   "cite": "asm/asm00_2.s:5899"
   },
   {
    "index": "0x5a",
    "charge_shot": "sub_8012378",
-   "cite": "asm/asm00_2.s:5895"
+   "cite": "asm/asm00_2.s:5900"
   },
   {
    "index": "0x5b",
    "charge_shot": "sub_8012382",
-   "cite": "asm/asm00_2.s:5896"
+   "cite": "asm/asm00_2.s:5901"
   },
   {
    "index": "0x5c",
    "charge_shot": "sub_801238C",
-   "cite": "asm/asm00_2.s:5897"
+   "cite": "asm/asm00_2.s:5902"
   },
   {
    "index": "0x5d",
    "charge_shot": "sub_8012396",
-   "cite": "asm/asm00_2.s:5898"
+   "cite": "asm/asm00_2.s:5903"
   },
   {
    "index": "0x5e",
    "charge_shot": "sub_80123A0",
-   "cite": "asm/asm00_2.s:5899"
+   "cite": "asm/asm00_2.s:5904"
   },
   {
    "index": "0x5f",
    "charge_shot": "bubbleSpreadBPwrAtk_init_80123AA",
-   "cite": "asm/asm00_2.s:5900"
+   "cite": "asm/asm00_2.s:5905"
   },
   {
    "index": "0x60",
    "charge_shot": "sub_80123C8",
-   "cite": "asm/asm00_2.s:5901"
+   "cite": "asm/asm00_2.s:5906"
   },
   {
    "index": "0x61",
    "charge_shot": "sub_80123D2",
-   "cite": "asm/asm00_2.s:5902"
+   "cite": "asm/asm00_2.s:5907"
   },
   {
    "index": "0x62",
    "charge_shot": "sub_80123DC",
-   "cite": "asm/asm00_2.s:5903"
+   "cite": "asm/asm00_2.s:5908"
   },
   {
    "index": "0x63",
    "charge_shot": "sub_80123E6",
-   "cite": "asm/asm00_2.s:5904"
+   "cite": "asm/asm00_2.s:5909"
   },
   {
    "index": "0x64",
    "charge_shot": "sub_80123F0",
-   "cite": "asm/asm00_2.s:5905"
+   "cite": "asm/asm00_2.s:5910"
   },
   {
    "index": "0x65",
    "charge_shot": "sub_80123FA",
-   "cite": "asm/asm00_2.s:5906"
+   "cite": "asm/asm00_2.s:5911"
   },
   {
    "index": "0x66",
    "charge_shot": "sub_8012404",
-   "cite": "asm/asm00_2.s:5907"
+   "cite": "asm/asm00_2.s:5912"
   },
   {
    "index": "0x67",
    "charge_shot": "sub_801240E",
-   "cite": "asm/asm00_2.s:5908"
+   "cite": "asm/asm00_2.s:5913"
   },
   {
    "index": "0x68",
    "charge_shot": "sub_8012418",
-   "cite": "asm/asm00_2.s:5909"
+   "cite": "asm/asm00_2.s:5914"
   },
   {
    "index": "0x69",
    "charge_shot": "sub_8012422",
-   "cite": "asm/asm00_2.s:5910"
+   "cite": "asm/asm00_2.s:5915"
   },
   {
    "index": "0x6a",
    "charge_shot": "sub_801242C",
-   "cite": "asm/asm00_2.s:5911"
+   "cite": "asm/asm00_2.s:5916"
   },
   {
    "index": "0x6b",
    "charge_shot": "sub_8012436",
-   "cite": "asm/asm00_2.s:5912"
+   "cite": "asm/asm00_2.s:5917"
   },
   {
    "index": "0x6c",
    "charge_shot": "sub_8012440",
-   "cite": "asm/asm00_2.s:5913"
+   "cite": "asm/asm00_2.s:5918"
   },
   {
    "index": "0x6d",
    "charge_shot": "sub_801244A",
-   "cite": "asm/asm00_2.s:5914"
+   "cite": "asm/asm00_2.s:5919"
   },
   {
    "index": "0x6e",
    "charge_shot": "sub_801245A",
-   "cite": "asm/asm00_2.s:5915"
+   "cite": "asm/asm00_2.s:5920"
   },
   {
    "index": "0x6f",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5916"
+   "cite": "asm/asm00_2.s:5921"
   },
   {
    "index": "0x70",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5917"
+   "cite": "asm/asm00_2.s:5922"
   },
   {
    "index": "0x71",
    "charge_shot": "sub_8012464",
-   "cite": "asm/asm00_2.s:5918"
+   "cite": "asm/asm00_2.s:5923"
   },
   {
    "index": "0x72",
    "charge_shot": "sub_8012484",
-   "cite": "asm/asm00_2.s:5919"
+   "cite": "asm/asm00_2.s:5924"
   },
   {
    "index": "0x73",
    "charge_shot": "sub_801248E",
-   "cite": "asm/asm00_2.s:5920"
+   "cite": "asm/asm00_2.s:5925"
   },
   {
    "index": "0x74",
    "charge_shot": "sub_8012498",
-   "cite": "asm/asm00_2.s:5921"
+   "cite": "asm/asm00_2.s:5926"
   },
   {
    "index": "0x75",
    "charge_shot": "sub_80124B8",
-   "cite": "asm/asm00_2.s:5922"
+   "cite": "asm/asm00_2.s:5927"
   },
   {
    "index": "0x76",
    "charge_shot": "sub_80124C2",
-   "cite": "asm/asm00_2.s:5923"
+   "cite": "asm/asm00_2.s:5928"
   },
   {
    "index": "0x77",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5924"
+   "cite": "asm/asm00_2.s:5929"
   },
   {
    "index": "0x78",
    "charge_shot": "sub_80124CC",
-   "cite": "asm/asm00_2.s:5925"
+   "cite": "asm/asm00_2.s:5930"
   },
   {
    "index": "0x79",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5926"
+   "cite": "asm/asm00_2.s:5931"
   },
   {
    "index": "0x7a",
    "charge_shot": "sub_80124D6",
-   "cite": "asm/asm00_2.s:5927"
+   "cite": "asm/asm00_2.s:5932"
   },
   {
    "index": "0x7b",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5928"
+   "cite": "asm/asm00_2.s:5933"
   },
   {
    "index": "0x7c",
    "charge_shot": "sub_80124E0",
-   "cite": "asm/asm00_2.s:5929"
+   "cite": "asm/asm00_2.s:5934"
   },
   {
    "index": "0x7d",
    "charge_shot": "sub_80124EA",
-   "cite": "asm/asm00_2.s:5930"
+   "cite": "asm/asm00_2.s:5935"
   },
   {
    "index": "0x7e",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5931"
+   "cite": "asm/asm00_2.s:5936"
   },
   {
    "index": "0x7f",
    "charge_shot": "sub_80124F4",
-   "cite": "asm/asm00_2.s:5932"
+   "cite": "asm/asm00_2.s:5937"
   },
   {
    "index": "0x80",
    "charge_shot": "sub_80124FE",
-   "cite": "asm/asm00_2.s:5933"
+   "cite": "asm/asm00_2.s:5938"
   },
   {
    "index": "0x81",
    "charge_shot": "sub_801251C",
-   "cite": "asm/asm00_2.s:5934"
+   "cite": "asm/asm00_2.s:5939"
   },
   {
    "index": "0x82",
    "charge_shot": "megamanChargeShotBPwrAtk_init_8011A26",
-   "cite": "asm/asm00_2.s:5935"
+   "cite": "asm/asm00_2.s:5940"
   },
   {
    "index": "0x83",
    "charge_shot": "sub_8012526",
-   "cite": "asm/asm00_2.s:5936"
+   "cite": "asm/asm00_2.s:5941"
   },
   {
    "index": "0x84",
    "charge_shot": "sub_8012536",
-   "cite": "asm/asm00_2.s:5937"
+   "cite": "asm/asm00_2.s:5942"
   },
   {
    "index": "0x85",
    "charge_shot": "sub_8012540",
-   "cite": "asm/asm00_2.s:5938"
+   "cite": "asm/asm00_2.s:5943"
   },
   {
    "index": "0x86",
    "charge_shot": "sub_801254A",
-   "cite": "asm/asm00_2.s:5939"
+   "cite": "asm/asm00_2.s:5944"
   },
   {
    "index": "0x87",
    "charge_shot": "sub_8012552",
-   "cite": "asm/asm00_2.s:5940"
+   "cite": "asm/asm00_2.s:5945"
   },
   {
    "index": "0x88",
    "charge_shot": "sub_801255C",
-   "cite": "asm/asm00_2.s:5941"
+   "cite": "asm/asm00_2.s:5946"
   },
   {
    "index": "0x89",
    "charge_shot": "sub_8012572",
-   "cite": "asm/asm00_2.s:5942"
+   "cite": "asm/asm00_2.s:5947"
   },
   {
    "index": "0x8a",
    "charge_shot": "sub_801257C",
-   "cite": "asm/asm00_2.s:5943"
+   "cite": "asm/asm00_2.s:5948"
   },
   {
    "index": "0x8b",
    "charge_shot": "sub_8012586",
-   "cite": "asm/asm00_2.s:5944"
+   "cite": "asm/asm00_2.s:5949"
   },
   {
    "index": "0x8c",
    "charge_shot": "sub_80125AC",
-   "cite": "asm/asm00_2.s:5945"
+   "cite": "asm/asm00_2.s:5950"
   },
   {
    "index": "0x8d",
    "charge_shot": "sub_80125D0",
-   "cite": "asm/asm00_2.s:5946"
+   "cite": "asm/asm00_2.s:5951"
   },
   {
    "index": "0x8e",
    "charge_shot": "sub_8012608",
-   "cite": "asm/asm00_2.s:5947"
+   "cite": "asm/asm00_2.s:5952"
   },
   {
    "index": "0x8f",
    "charge_shot": "sub_8012612",
-   "cite": "asm/asm00_2.s:5948"
+   "cite": "asm/asm00_2.s:5953"
   },
   {
    "index": "0x90",
    "charge_shot": "sub_801261E",
-   "cite": "asm/asm00_2.s:5949"
+   "cite": "asm/asm00_2.s:5954"
   },
   {
    "index": "0x91",
    "charge_shot": "sub_8012628",
-   "cite": "asm/asm00_2.s:5950"
+   "cite": "asm/asm00_2.s:5955"
   },
   {
    "index": "0x92",
    "charge_shot": "sub_8012632",
-   "cite": "asm/asm00_2.s:5951"
+   "cite": "asm/asm00_2.s:5956"
   },
   {
    "index": "0x93",
    "charge_shot": "sub_801263A",
-   "cite": "asm/asm00_2.s:5952"
+   "cite": "asm/asm00_2.s:5957"
   }
  ],
  "charge_shot_table_cite": "asm/asm00_2.s:5789 off_80117D4"
