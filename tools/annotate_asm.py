@@ -4,7 +4,9 @@ way the September 6-8 notes were written by hand: for every ticket result record
 cites a line of the assembly, a model adds a `// bn <ticket> (<date>): ...` note at the cited site saying what
 was found and where it lives in this repo's source; then a mechanical check keeps only comment lines added to
 *.s files (anything else is reverted), the submodule commits on bn-notes and pushes to the fork, and the
-main repo records the new submodule commit. Part of the 09:15 roundup. usage:
+main repo records the new submodule commit. Part of the roundup. Comments only: naming (a struct field that stops being Unk_, a routine that gets its
+role in its name) is a separate pass gated by a rebuild to the ROM's sha1, since 2026-09-17 when the
+disassembly stopped being read-only. usage:
   python3 tools/annotate_asm.py [--since 24] [--model provider/model] [--dry-run] [--post]
 """
 import argparse, json, os, re, subprocess, sys, datetime
