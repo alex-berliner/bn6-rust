@@ -320,7 +320,7 @@
   {
     "file": "captures/chip-cannon-progress.gif",
     "name": "chip-cannon-progress",
-    "label": "The Cannon chip, and the shared artifact behind 27 chip rows. On the canon side, the save state every chip row started from had a stray portrait box and the deleted Mettaur's corpse inside the window (visible at the right of the field in the middle pane's canon frames of the old build's run). F5b starts canon from a state past the dissolve instead; because the game stops reading the joypad in that state, the chip press is written straight into MegaMan's input record. Every chip row lost the same 14388 px; 27 of them went to 0.\n\nchip-cannon (isolated), before and after: canon on top; ours at b21fce8 (14388 px over 40 frames, canon 43+k, rust offset 122); ours at 3fa1eba (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "T57 audited which verified AS DATA chips really share a record's bytes: family 0x15 (Barrier et al.) was dispatching on chip id for AreaGrab/Invisibl while its three barriers were already record-driven, so tools/inventory.py's AS_DATA_FAMILIES dropped 0x15 (14 -> 11 verified-as-data chips). Canon keys chip behaviour off the ChipDataArr record (family/subfamily/params); the ROM and every pixel row are byte-identical before and after -- this landing changed the classification, not the picture.\n\nchip-cannon (isolated), before and after: canon on top; ours at 86a5b18 (0 px over 40 frames, canon 5+k, rust offset 122); ours at 954ed81 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-13"
   },
   {
@@ -374,7 +374,7 @@
   {
     "file": "captures/mettaur-progress.gif",
     "name": "mettaur-progress",
-    "label": "The Mettaur row across F2. Both sides run the same 106-frame attack cycle, but the row had been comparing canon's second attack with our third, so the two MegaMen were in different situations for the whole window. F2 pairs the attacks by measured events (same attack index, same post-hit invincibility state), which is why the total went slightly up: the correct pairing, not the lowest score. What remains visible here: canon's MegaMan blinking through his invincibility while ours is solid -- fixed in F14b (canon tests bit 1 of the timer, we tested bit 2).\n\nmettaur (isolated), before and after: canon on top; ours at 41b5d47 (30864 px over 70 frames, canon 140+k, rust offset 309); ours at cc61979 (31075 px, canon 140+k, rust offset 203). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
+    "label": "T67: the PAUSED+Start@10 9..0 Timer tail was not a fitted constant but playerAI_sub_80F0354's phase-arming countdown (Timer=0xa store on phase init, per-dispatch decrement); fitted POST_FLINCH_FRAMES=11 replaced by derived PHASE_ARM_FRAMES=10+SENTINEL_FRAMES=1, exports unchanged, every row identical.\n\nmettaur (isolated), before and after: canon on top; ours at 4062cfb (0 px over 70 frames, canon 140+k, rust offset 205); ours at 2d7ce09 (0 px, canon 140+k, rust offset 205). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).",
     "added": "2026-09-12"
   },
   {
