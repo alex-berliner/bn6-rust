@@ -53,3 +53,10 @@ if admitted:
     subprocess.run(["git", "-C", ROOT, "add", "TODO.md"], check=True)
     subprocess.run(["git", "-C", ROOT, "commit", "-q", "-m", "TODO: judge-admitted %s (tools/judge_append.py)\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" % ", ".join(t for t, _, _ in admitted)], check=True)
 print("admitted:", [t for t, _, _ in admitted]); print("refused:", [(t, w) for t, w, _ in refused])
+# A batch that admits nothing is the loop failing to feed itself, and it is silent otherwise: the judge
+# reports success, the file is written, and the queue stays empty. That is how a heading-format bug threw
+# away whole proposals for days (2026-09-17).
+if not admitted:
+    subprocess.run(["bash", os.path.join(ROOT, "tools", "incident.sh"), "judge-discarded",
+                    "%s admitted 0 of %d proposed: %s" % (os.path.basename(p), len(refused),
+                                                          "; ".join("%s %s" % (t, w) for t, w, _ in refused)[:400])])

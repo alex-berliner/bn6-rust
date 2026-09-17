@@ -19,7 +19,8 @@ done
 cd "$ROOT"
 bash tools/check_inputs.sh || exit 1
 # landings are serialized machine-wide: two concurrent merges into the same checkout would corrupt it
-exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
+exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2
+  bash tools/incident.sh lock-timeout "landing lock held >30 min while $branch waited"; exit 1; }
 # The main checkout is shared by every run, the roundup and the human session, so one uncommitted generated
 # file used to block every landing. (An earlier version of this comment claimed "158 refusals in two days";
 # that number came from a grep matching this script's own text inside command logs, and a second count of 51
@@ -31,7 +32,8 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   generated="$(echo "$dirty" | grep -E '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/benchmarks/|docs/worklog/|docs/SCOPE\.md)' || true)"
   other="$(echo "$dirty" | grep -vE '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/benchmarks/|docs/worklog/|docs/SCOPE\.md)' || true)"
   if [ -n "$other" ]; then
-    echo "main checkout is dirty with work that is not generated; refusing:" >&2; echo "$other" | sed 's/^/  /' >&2; exit 1
+    echo "main checkout is dirty with work that is not generated; refusing:" >&2; echo "$other" | sed 's/^/  /' >&2
+    bash tools/incident.sh land-refused "$branch: main dirty with $(echo "$other" | tr '\n' ' ')"; exit 1
   fi
   echo "committing generated files that would otherwise block this landing:"; echo "$generated" | sed 's/^/  /'
   git add $generated && git commit -q -m "generated files committed by a landing (they block every run while they sit uncommitted)
@@ -47,7 +49,8 @@ if [ "$verify" = 1 ] && [ -f "/tmp/land_verify_$sha.pass" ] && [ -z "$(find "/tm
   printf 'verify_rows: PASS (reused, %s)\n' "$(cat "/tmp/land_verify_$sha.pass")" > /tmp/land_verify.txt
 elif [ "$verify" = 1 ]; then
   python3 tools/verify_rows.py "$branch" "$rows" "${expects[@]}" | tee /tmp/land_verify.txt
-  grep -q '^verify_rows: PASS' /tmp/land_verify.txt || { echo "verify_rows FAILED; not merging" >&2; exit 1; }
+  grep -q '^verify_rows: PASS' /tmp/land_verify.txt || { echo "verify_rows FAILED; not merging" >&2
+    bash tools/incident.sh verify-failed "$branch rows $rows"; exit 1; }
 fi
 name="${branch#wt/}"
 printf '%s\n\nverify_rows: %s\n\nCo-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\n' "$msg" \
@@ -62,6 +65,7 @@ if ! git merge --no-ff -q -F /tmp/land_msg.txt "$branch"; then
   echo "merge of $branch conflicts with main; aborted, main is unchanged and clean" >&2
   [ -n "$conflicts" ] && { echo "conflicting files:" >&2; echo "$conflicts" | sed 's/^/  /' >&2; }
   echo "the branch and its worktree are kept: rebase it on main and land again" >&2
+  bash tools/incident.sh land-conflict "$branch conflicts with main in: $(echo "$conflicts" | tr '\n' ' ')"
   exit 1
 fi
 [ -d "/tmp/bnwt/$name" ] && git worktree remove --force "/tmp/bnwt/$name" || true

@@ -69,11 +69,13 @@ echo; echo "== files touched"; git -C "$SUB" diff --stat | tail -12
 echo; echo "== rebuilding (the gate: the ROM must stay byte-identical to canon)"
 if ! make -C "$SUB" >/tmp/rename_build.log 2>&1; then
   echo "BUILD FAILED -- reverting. Last lines:" >&2; tail -15 /tmp/rename_build.log >&2
+  bash tools/incident.sh rename-reverted "build failed: $(tail -3 /tmp/rename_build.log | tr '\n' ' ')"
   revert; echo "submodule restored to $(git -C "$SUB" rev-parse --short HEAD)" >&2; exit 1
 fi
 got="$(sha1sum "$SUB/bn6f.gba" | cut -d' ' -f1)"
 if [ "$got" != "$CANON_SHA1" ]; then
   echo "SHA1 MISMATCH -- reverting. built $got, canon $CANON_SHA1" >&2
+  bash tools/incident.sh rename-reverted "sha1 $got != canon $CANON_SHA1"
   revert; echo "submodule restored to $(git -C "$SUB" rev-parse --short HEAD)" >&2; exit 1
 fi
 echo "sha1 OK: $got -- the rename changed names only, not one byte of the ROM"

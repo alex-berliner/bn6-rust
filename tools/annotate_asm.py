@@ -70,11 +70,16 @@ def main():
     ap.add_argument("--since", type=int, default=24); ap.add_argument("--model"); ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--post", action="store_true")
     a = ap.parse_args()
-    if sh("git -C %s status --porcelain" % SUB).strip(): sys.exit("annotate_asm: the submodule has uncommitted changes; refusing")
+    def incident(kind, msg):
+        subprocess.run(["bash", os.path.join(os.path.dirname(os.path.abspath(__file__)), "incident.sh"), kind, msg])
+    if sh("git -C %s status --porcelain" % SUB).strip():
+        incident("asm-refused", "submodule has uncommitted changes")
+        sys.exit("annotate_asm: the submodule has uncommitted changes; refusing")
     # A submodule checkout is detached by default. Committing there and then pushing `fork bn-notes`
     # pushes the STALE local branch and silently succeeds, leaving the new commit reachable only by the
     # superproject pointer -- unpushed, one `git gc` from gone. That happened on 2026-09-17 (92705e0d).
     if sh("git -C %s rev-parse --abbrev-ref HEAD" % SUB).strip() != "bn-notes":
+        incident("asm-refused", "submodule not on bn-notes (detached?) -- notes would be orphaned")
         sys.exit("annotate_asm: the submodule is not on bn-notes (detached or another branch); refusing -- "
                  "run: git -C %s checkout bn-notes" % SUB)
     found = results(a.since)

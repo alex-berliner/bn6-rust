@@ -62,6 +62,33 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo "What the model usage spent on nothing: time and tokens in sessions, provider errors, repeated calls."
   python3 tools/waste_report.py --since "$SINCE" 2>&1 | tee "$TMP/waste.txt"
   echo
+  echo "## Operational incidents"
+  # The machinery failing at itself: refusals, conflicts, discarded batches, a blocked auditor. None of
+  # these produce a ticket Result, so before tools/incident.sh existed none of them reached this review
+  # or the auditor, and every one had to be found by a human reading tmux panes (2026-09-17).
+  python3 - > "$TMP/incidents.txt" <<'INC'
+import json, collections, datetime, os
+p = "/tmp/bn-incidents.jsonl"
+kinds, samples = collections.Counter(), {}
+if os.path.exists(p):
+    cut = datetime.datetime.now().astimezone() - datetime.timedelta(hours=24)
+    for line in open(p, errors="replace"):
+        try: e = json.loads(line)
+        except ValueError: continue
+        try:
+            if datetime.datetime.fromisoformat(e["t"]) < cut: continue
+        except Exception: pass
+        kinds[e.get("kind", "?")] += 1
+        samples.setdefault(e.get("kind", "?"), e.get("msg", ""))
+for k, n in kinds.most_common():
+    print("- %s: %d (e.g. %s)" % (k, n, str(samples[k])[:140]))
+if not kinds: print("- none recorded in 24h")
+# Any incident at all is worth the auditor's attention; it is a cent a run and these are the failures
+# nobody else is watching.
+print("INCIDENT-TRIGGER: %s" % ("yes" if sum(kinds.values()) else "no"))
+INC
+  grep -v '^INCIDENT-TRIGGER' "$TMP/incidents.txt"
+  echo
   echo "## Auditor triggers"
   NEGRATE=$(python3 tools/ticket_ledger.py --since "$SINCE" 2>/dev/null | grep -oE 'NEGATIVE\+BLOCKED [0-9]+ \([0-9]+%\)' | grep -oE '[0-9]+%' | tr -d '%'); NEGRATE=${NEGRATE:-0}
   NT=$(python3 tools/ticket_ledger.py --since "$SINCE" 2>/dev/null | grep -oE '^tickets [0-9]+' | grep -oE '[0-9]+'); NT=${NT:-0}
@@ -72,6 +99,7 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   [ "$AUDIT" = 1 ] && TRIG="$TRIG forced;"
   grep -q "^QUEUE-TRIGGER: yes" "$TMP/queue.txt" 2>/dev/null && TRIG="$TRIG ticket supply behind demand;"
   grep -q "^DOCS-TRIGGER: yes" "$TMP/docs.txt" 2>/dev/null && TRIG="$TRIG instructions behind the tools ($(grep -c '^- ' "$TMP/docs.txt") findings);"
+  grep -q "^INCIDENT-TRIGGER: yes" "$TMP/incidents.txt" 2>/dev/null && TRIG="$TRIG operational incidents ($(grep -c '^- ' "$TMP/incidents.txt") kinds);"
   grep -q "^WASTE-TRIGGER: yes" "$TMP/waste.txt" 2>/dev/null && TRIG="$TRIG waste: $(grep -oE 'provider errors per 100 turns: [0-9.]+' "$TMP/waste.txt" | head -1), or a repeated-call loop;"
   echo "$PHASE" > "$TMP/last_phase"
   echo "- phase: $PHASE; negative-or-blocked rate: ${NEGRATE}% over $NT tickets; no-pair dispatches: $NOPAIR"
