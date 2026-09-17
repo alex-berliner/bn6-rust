@@ -1326,3 +1326,93 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
+### T155. M3's hole, second half: the moved object LEAVING the hole — the exit arm canon's flag word also drives  *(OPEN -- 2026-09-29)*
+
+**Why.** The goal's rule is "every rung must make the previous rung's mechanism do work it previously refused": T152's branch makes the sterile box's item *register a hit*; nothing makes an object that has been moved *leave the hole it fell into*, which is the rung the goal names as "the moved object leaving the hole". The state is already there — `inventory.py`'s panel census records that type 0 is "skipped by every reader; flag word is the only one with bit 0x8000", and `_object_updatePanelParameters` (asm/asm38.s:4213-4219) re-ORs the word every frame, so an exit is a re-evaluation of the same bit under a different mask, not a new event. T130 proved the same shape is portable and landable: `object_panel_setPoison`'s masked template `(Flags & ~0x3f5f) | 0x114` on the type-4 write landed at fe9b8f3 with verify_rows PASS 9/9 — a mask read, not a fitted value. Advances **M3** ("flinch/knockback/drag", "every panel type and effect").
+
+**Files.** `src/field.rs`, `src/actor.rs`, `tools/states.py` (scenario `h2b_hole_exit`), `docs/coverage/panels.md` (append), `docs/worklog/T155.md`. **NOT** `tools/patch_sterile.py`, `src/battle.rs`, `tools/harness.py` row definitions, `reference/bn6f`, `assets/`.
+
+**Do.** Own worktree via `tools/worktree.sh t155`. Commit `docs/worklog/T155.md` with step 1 as your FIRST commit. If T154 has landed, build on it; if not, work on the state *as if* the enter arm exists and say so explicitly in the report — do not re-port the enter arm.
+1. Baseline: on today's main, capture `h2b_hole_exit`'s window and record the frame where canon puts the object back on the field and what our side does at that frame (both x/y, both flags words). **measurement.**
+2. Find canon's exit arm by walking the same flag word to its *other* reader(s) — the compare that clears or bypasses the hole bit for an object already in the hole; cite `file:line` and the exact mask it tests. If the exit is driven by a *different* field (a timer, an owner flag), name that field and cite it. **doc + measurement.**
+3. Port the arm behind the same named `const` mask family step 2 cites — masks only, no per-scene values. **measurement.**
+4. Re-run step 1's capture with the port: report the exit frame's object state delta before/after, and the pixel total/worst over the full compared window. Target 0. **measurement.**
+5. Guard rows (`chips`, `wave`, `buster`, `field`, `popup`, `cursor`) + `battle_full` trace, verbatim lines. **measurement.**
+
+**Rules.** The exit must be produced by state, not by a scripted frame count — a `EXIT_FRAMES = N` constant with no canon cite is a fitted constant and refuses the ticket. Do not touch the enter arm's code if T154 landed it. Do not compare inside a cropped region. Tool budget <=80, captures <=12.
+
+**Acceptance.** `h2b_hole_exit` at **0 differing pixels on all its frames** with the object's position field matching canon on the exit frame (field named, frame named), `chips` unmoved and `wave`/`buster` at 0; or a bounded NEGATIVE naming the field that actually drives the exit and the routine that must be ported first.
+
+**Measure and report.** row · frames · total · worst · region · commit · one line of mechanism · one line unverified; ROM sha256+size+delta; `cursor`'s line.
+
+**Coordinator:** the free tier is the pair of captures at step 4 (before/after) on the exit frame — I re-run it on the tip. Cross-family verifier required for step 2's citation (it is a memory finding, and T153 is already auditing one of these patch/cite claims). <=$0.35 expected, <=$0.70 cap. **Depends on T154 landing; if T154 came back NEGATIVE, this ticket is not dispatched.**
+
+---
+
+### T156. M4/M3's box pass-through on a b+2 input: the second held-out item, engine-side only  *(OPEN -- 2026-09-29)*
+
+**Why.** The goal's held-out item is a **b+2 input** — a second box item that was never in any recording — and its rule is "an object that moves into a box's hole passes through". Today's pass is bought: T152's objective exists because the hit on the sterile box's item is registered by an *input patch*, and T153 is auditing exactly what `set_unk_col_desc` patches (obj 382/387) at byte level. So the pass-through rung has to be demonstrated on an item the patch was never tuned for, with the patch out of the loop, or the ladder is one lucky fixture. Two measured facts make this cheap to attempt: the collision descriptor is per-object data (T153's own subject), and T142/T143 showed a *deeper* arm can ride the same dispatch and go from 3463/2296/203 to **0/0/20** on `buster`+`field`+`popup` with no patch change — the mechanism generalises when it is in the engine. Advances **M4** (chip/item objects as data) and **M3** (ownership/area steal, obstacles).
+
+**Files.** `src/objects.rs` (the collision-descriptor read path), `src/battle.rs` (the per-frame collision step), `src/field.rs` (only the hole-bit predicate T154 exported), `tools/states.py` (scenario `h2b_pass_b2`), `docs/coverage/objects.md` (append), `docs/worklog/T156.md`. **NOT** `tools/patch_sterile.py`, `tools/states.py`'s *existing* scenarios (read-only), `assets/`, `reference/bn6f`.
+
+**Do.** Own worktree (`tools/worktree.sh t156`), its own `CARGO_TARGET_DIR`. Commit `docs/worklog/T156.md` with step 1 as your FIRST commit.
+1. Build `h2b_pass_b2` **without looking at any existing box recording**: derive the item's descriptor from the ROM's own table, not from a capture; record what canon does with it and what our engine does, patch OFF. Both numbers, both first-divergence frames. **measurement.**
+2. Read the pass-through predicate in canon — the compare on the descriptor + the hole bit that lets an object continue instead of stopping — cite `file:line`, and name which of the two masks our build is missing. **doc + measurement.**
+3. Port the missing mask into our collision step as data (descriptor field + panel flag), no per-item literals. **measurement.**
+4. Re-run step 1's comparison; the pass-through frame's object state and the full-window pixel total must both move to canon's value. Report before/after per frame. **measurement.**
+5. Negative fixture: perturb the item's descriptor by one value the ROM never uses and show the row fails (not blind). Then guard rows + `battle_full` trace. **measurement.**
+
+**Rules.** Patch OFF is the only admissible measurement on this ticket; a number that needs `patch_sterile.py` to pass is reported as a failure, not a pass. No allowlist, no boxed diff, no subtracted baseline. If the descriptor's *source* table is not yet exported, that is a legitimate NEGATIVE: name the table and its `file:line`, stop. Tool budget <=80, captures <=14.
+
+**Acceptance.** `h2b_pass_b2` at **0 differing pixels over its whole compared window with no sterile patch applied**, the pass-through frame named, the negative fixture non-zero, `chips` unmoved; or a bounded NEGATIVE with the byte-level reason the descriptor cannot be read engine-side yet (which table, which missing export, which obj slot).
+
+**Measure and report.** row · frames · total · worst · region · commit · one line of mechanism · one line unverified; the ROM sha256+size+delta; `cursor`'s exact line.
+
+**Coordinator:** step 1's patch-off baseline is the ticket's spine and I re-measure it myself; a verifier pass is mandatory here because the claim is "no patch was used" and T153 has already found one such claim soft. Do not land while T152 is unmerged — its `Files.` overlap is `src/objects.rs`. <=$0.40 expected, <=$0.80 cap. **This is the rung that turns T152's pass into an engine pass.**
+
+---
+
+### T157. M3's pushed box: a box that is pushed moves — the push and the hit share one ported arm  *(OPEN -- 2026-09-29)*
+
+**Why.** The ladder's remaining rung is "a box that is pushed moves" and the goal's anti-victory rule is that each rung must make the previous mechanism *refuse less*: T152 makes the hit register, T154/T156 make holes behave, and the push is the one object response that canon drives from the same collision descriptor plus an ownership byte we already carry as a stand-in — SCOPE's M3 row still lists "ownership/area steal" as unmet, T129's Alliance-byte work is PARTIAL and **kept UNMERGED at f28efe3** because its new row did not pass. So the push is where two half-lands meet: the alliance/ownership mask (`src/field.rs:60`, the only reason holes and broken panels are excluded today) and the descriptor. Advances **M3**.
+
+**Files.** `src/field.rs` (the alliance/ownership mask), `src/actor.rs` (the object's response to a hit), `src/objects.rs` (descriptor read), `tools/states.py` (scenario `h2b_push`), `docs/coverage/panels.md` (append), `docs/worklog/T157.md`. **NOT** `src/battle.rs`, `tools/patch_sterile.py`, `tools/harness.py` row definitions, T129's branch (read it, do not cherry-pick it).
+
+**Do.** Own worktree (`tools/worktree.sh t157`). Commit the worklog with step 1 first.
+1. Baseline: with the push not yet ported, capture `h2b_push` and record, frame by frame, the first frame where canon's box position changes and what our side does; plus the object's flags word at that frame. **measurement.**
+2. Read T129's unmerged alliance work (branch at f28efe3) and report in one paragraph whether its mask is the predicate canon's push arm needs, citing both `file:line`s. If it is not, say so and continue with canon's own predicate. **doc + measurement.**
+3. Port the push: displacement from the descriptor and the ownership test, all values from exported data or existing consts. **measurement.**
+4. Re-run step 1: box position field and the full-window pixels must both reach canon's values; state the frame count that moved. **measurement.**
+5. Guard rows + `battle_full` trace + the negative fixture (same push with an unowned box must be non-zero). **measurement.**
+
+**Rules.** Reuse, never re-derive, T129's mask wording — and if you need to change its semantics, report that instead of editing it. No displacement constant without a cite. Tool budget <=80, captures <=12.
+
+**Acceptance.** `h2b_push` at **0 differing pixels on all frames** with the box's position field diverging on **0 frames** of the window (trace: field, frames, first divergent frame), non-blind negative fixture, `chips`/`wave`/`buster` unmoved; or a bounded NEGATIVE naming which owner-side routine must land first.
+
+**Measure and report.** row · frames · total · worst · region · commit · one line of mechanism · one line unverified · ROM sha256+size+delta · `cursor`'s line.
+
+**Coordinator:** cheap because T129 already paid the reconnaissance; free tier is step 4's before/after pair. If your step-2 paragraph says T129's mask is load-bearing, tell me — that changes which branch I land first. <=$0.35 expected, <=$0.70 cap. **Pairs with T156 but files-disjoint, so it can run alongside it.**
+
+---
+
+### T158. M3's h2b rows become harness rows: promote the ladder to the scoreboard and close the collision routine's coverage  *(OPEN -- 2026-09-29)*
+
+**Why.** Every rung above is measured on a comparison that only exists inside a worktree — the `box2plus` ladder's rows are not in the harness, so the daily review cannot see whether the ladder moved, and a regression in the hole or box path is invisible to the veto that stops other landings. The precedent is T140: the `super_armor` row went from nothing to **PASS 0/0/70, negative not blind 29640** by *writing the scenario into `tools/states.py` and the row into `tools/harness.py`*, and that row is now what gates T138/T141's landing. SCOPE's standard says "done" needs a canon recording, a port with citations, trace parity and pixel parity *per item*, and the item must be on the scoreboard or it is not an item. Advances **M3**, and it is the ticket that lets me keep gating on these rows.
+
+**Files.** `tools/harness.py` (add the `h2b_*` rows and their negatives — no existing row's frames/align/pairing may change), `tools/states.py` (register the scenarios T154–T157 built), `tools/trace.py` (add the hole/push fields to the judged set), `docs/coverage/panels.md` and `docs/coverage/objects.md` (append), `docs/worklog/T158.md`. **NOT** any `src/` file, `reference/bn6f`, `assets/`, `tools/patch_sterile.py`, `tools/allowlist.py`.
+
+**Do.** Own worktree (`tools/worktree.sh t158`). Commit the worklog first. `src/` is READ-ONLY on this ticket: if a row cannot read 0 without a code change, that is a finding, not a reason to edit.
+1. `python3 tools/harness.py --list` and record which of the h2b rungs are already rows; for each missing one, add it with the frames of the recording and its own negative fixture. Report the table: row → total/worst/frames/negative. **measurement.**
+2. Prove the negatives are not blind: for each new row, run its negative fixture and report the non-zero it produces, plus what you perturbed. A row whose negative reads 0 stays out of the harness and you say so. **measurement.**
+3. Add the hole/box fields to `tools/trace.py`'s judged set and re-run `battle_full`; report the field-by-field map (which field, how many of the scene's frames, first divergent frame) and whether these fields diverge on any h2b scenario. **measurement.**
+4. Coverage closure for the collision path: for canon's object/collision routine family, list every executed routine in the h2b windows as ported or out-of-scope-with-a-reason, at `file:line`. Report the counts before and after. **doc + measurement.**
+5. Full-table regression on main vs your tip: `python3 tools/harness.py` and paste every changed line; the row set must be strictly non-worse. **measurement.**
+
+**Rules.** No src edits, no tolerance, no allowlist, no re-framing of an existing row's window to make it pass; a new row that only passes with a patch applied does not go in — say that instead. Tool budget <=70.
+
+**Acceptance.** The h2b rungs present as harness rows with **non-blind negatives** and their numbers reproducible by `tools/verify_rows.py` from a clean checkout; `battle_full`'s line unchanged or better; and the coverage table showing the collision family's executed routines each ported or scoped out with a reason. If a rung is not yet at 0 because T154/T156/T157 left residue, the row is still added with its real number and named as the gate — that is the deliverable, not a failure.
+
+**Measure and report.** every new row: frames · total · worst · negative; rows changed elsewhere and their before/after; the trace field map; commit; one line of mechanism; one line unverified.
+
+**Coordinator:** docs/tools-only landings go in with `--no-verify` only when `git diff --stat` against base names no `src/`, `vendor/`, `Cargo` or `assets/` path — I check that myself, as I did for T126/T127/T133. This is the cheapest ticket in the batch and the one that makes the other four permanent. <=$0.25 expected, <=$0.50 cap.
+
