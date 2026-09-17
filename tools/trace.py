@@ -61,12 +61,16 @@ TRC2_MAGIC = 0x54524332
 TRC2_VERSION = 4  # T112: +60 rank, +61 level, +62 zenny (src/battle.rs trace_snapshot's table)
 
 #: Canon watch set: name -> (addr, len). 14 watches (mgba_capture takes 16).
+#: e1/e2/e3 are 34 bytes: +0x08..+0x29 of the BattleObject -- the extra 4
+#: reach NameID (+0x28, BattleObject.inc:109), which T131's byte-equality
+#: check reads at row 0x20; the pre-T131 30-byte len stopped at +0x25 and
+#: all fields parse_canon_frame consumes sit at row offsets <= 0x1c.
 CANON_WATCHES = {
     "rng": (0x020013F0, 4),
     "mm": (0x0203A9B8, 30),
-    "e1": (0x0203AA90, 30),
-    "e2": (0x0203AB68, 30),
-    "e3": (0x0203AC40, 30),
+    "e1": (0x0203AA90, 34),
+    "e2": (0x0203AB68, 34),
+    "e3": (0x0203AC40, 34),
     "banner": (0x0203CA70, 4),
     "hud": (0x020352C0, 8),
     "gauge": (0x020352A0, 2),
