@@ -445,3 +445,68 @@ with the same ROM sha256 as main's `5b46337aa27da9ca881f2321fe1e210f54717285b4df
 means unmerged). If the change turns out to be unobservable anywhere today, that is a valid outcome --
 report it as a model-quality change with the rows unchanged, and name the trace that would show it once
 the hit lands.
+
+### T67. Attribute the PAUSED+Start@10 Timer tail -- which player-slot writer decrements Timer after a flinch? (M2, model audit)
+
+**Why.** T66 deleted `const POST_FLINCH_FRAMES: u8 = 11; // provenance: fitted` and replaced the
+9..0 countdown shadow with an open-ended `TIMER_SENTINEL` hold (`src/actor.rs`, branch wt/t66). Its
+verifier (54b8a0d9, verdict in the T66 Result) CONFIRMED the derivation -- the underflow store is
+`asm00_2.s:18356-18358` at PC `0x08017586`, the flinch exit tail writes no Timer, and the
+CurAction 0x08 handler `playerAI_update_80EA734` (`asm31.s:107357-107447`) has ZERO
+`oBattleObject_Timer` stores -- but left one item open, quoted here because it is the whole ticket:
+**"the old PAUSED+Start@10 9..0 tail is still unattributed -- the deleted fitted constant's
+observation is explained away rather than explained; whichever writer produced it is by definition a
+player-slot Timer writer missing from the census."** So either that older capture's 9..0 tail was a
+different field/offset read, a different object, or a real player-slot Timer writer that T66's hold
+model does not represent. All three are answerable from ROM text plus ONE watch capture; no row is
+expected to move (rows compare pixels, and `mm_timer` is in no row's compared region --
+`tools/verify_rows.py`'s row regex carries total/worst/frames/negative only).
+
+**Do.**
+1. Reproduce the reading the deleted constant was fitted to. The provenance tag named a
+   `PAUSED+Start@10 watch capture` -- find that scenario: `grep -rn "PAUSED\|Start@" tools/states.py`
+   (read the section that defines it, not the whole file) and re-run its canon side with
+   `--watch-write 0x0203a9d0:2` on the player object, long enough to cover the post-flinch frames.
+   Report the frame window and the values. If it cannot be reproduced, that IS the result: record it
+   and the fitted tag was fitting a phantom.
+2. Census the candidates: `grep -n "oBattleObject_Timer" reference/bn6f/asm/*.s` (T66's verifier
+   counted `[r5]` Timer stores in asm00_2.s at 1381, 1674, 1691, 16135, 16142, 16250, 16287, 16454,
+   16460, 18259, 18262, 18274, 18812, 18888, 18903 plus `object.s:143/172/785` incrementors, ~1807
+   store sites tree-wide, and `oBattleObject_Timer` is a UNION member so a `+0x20` store is not the
+   same field -- that distinction is what refuted T66's first writer list, keep it). For each store
+   that can reach the PLAYER slot, name the routine, the register base and what event reaches it.
+   Then answer: does any of them run per-frame after the flinch exit? That is the only shape that can
+   produce a 9..0 tail.
+3. Decide the model. If a real per-frame player-slot decrementor exists, T66's hold is wrong for that
+   window: the fix goes in `src/actor.rs` ONLY if the census names a reachable writer, in which case
+   model the writer (countdown length from the disassembly, never a fitted count) and re-run
+   step 1's capture to show the trace matches. If none is reachable, the hold stands and
+   `docs/coverage/battle_full.md` plus the `TIMER_SENTINEL` provenance tag must say so explicitly --
+   "open-ended hold, provisional on battle_full's 248-frame store table; the PAUSED+Start@10 tail is
+   attributed to <finding>" -- with the unattributed-forever case written as a negative, not left as a
+   loose end.
+
+**Files.** `docs/coverage/battle_full.md`, `docs/worklog/T67.md`, `src/actor.rs` (only if step 3 finds
+a reachable writer), `src/battle.rs` (comment lines only, if they repeat a cite you correct). No
+fixture, no `tools/states.py`, no `tools/harness.py` row config, no allowlist change.
+
+**Rules.** `reference/bn6f` is read-only, and a FRESH worktree has an EMPTY `reference/bn6f` submodule
+(gitlink) -- read the disassembly from `/home/box/Code/bn/reference/bn6f` or export `BN6F_REF` to it,
+otherwise you will "refute" live cites (this has now burned two verifier rounds this run).
+`cargo build --release` emits no `.gba`: the hashed ROM is
+`python3 tools/gbafix.py $CARGO_TARGET_DIR/thumbv4t-none-eabi/release/bn <out>.gba`, so quote that if
+you report a hash. Work only in your own worktree; do not touch main's checkout, which carries a
+foreign uncommitted edit to `docs/tickets/Q3.md`. Never rename or move a value you did not need to
+understand. Report in the AGENTS.md shape (row, frames, total, worst, region, commit, one line of
+mechanism, one line of what is unverified).
+
+**Acceptance.** The 9..0 tail is either attributed to a named ROM writer with its reachability argued
+from the disassembly, or closed as unattributable with the reproduction attempt's frame window and
+values -- one or the other, not "still open". If `src/actor.rs` changed, the guard set
+`wave,window,opening,chip-cannon,mettaur,windowclose,cursor` is identical or better at the new tip and
+`mm_timer` on battle_full is reported before/after from `python3 tools/oracle.py battle_full --both`;
+if only docs changed, say so and give `git diff --name-only` to prove no src/. `cursor` measures 1
+frame and 1 px of total <= 186300 (it moves with ROM layout: report, do not chase; > 1/1 or total >
+186300 on the same ROM sha256 as main's `5b46337aa27da9ca881f2321fe1e210f54717285b4dfa5256c1680bac4b985ef`
+means unmerged). A precise negative is a good outcome here: T66 merges either way, and this ticket
+only tightens what its provenance tag is allowed to claim.
