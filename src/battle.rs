@@ -1693,7 +1693,7 @@ pub const ORACLE_LAYOUT: [(&str, usize, usize); 19] = [ // provenance: chosen --
     ("mm_panel_x", 15, 1),         // MegaMan PanelX
     ("mm_panel_y", 16, 1),         // MegaMan PanelY
     ("mm_gap", 17, 1),             // unwritten: kept 0 (was implicit before)
-    ("mm_timer", 18, 2),           // MegaMan Timer (flinch + post_flinch shadow)
+    ("mm_timer", 18, 2),           // MegaMan Timer (flinch + phase_arm_shadow, T67)
     ("mm_hp", 20, 2),              // MegaMan HP
     ("enemy_state_action", 22, 2), // first populated enemy slot, CurState|CurAction<<8
     ("enemy_anim", 24, 1),         // enemy CurAnim
