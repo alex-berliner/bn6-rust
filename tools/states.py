@@ -785,4 +785,18 @@ TRACE_SCENARIOS = {
             "script": "A@170",
         },
     },
+    # T105: the emotion row's own trace scenario -- rides the emotion_syn
+    # Check's sides via harness_row (trace.py resolves it), so the state
+    # fields over the row's window prove the Anger poke disturbs nothing
+    # outside the face. The emotion byte itself (0x020340B4, the poked
+    # AIData.Anger) and the face OBJ tiles are NOT in trace.py's fixed
+    # CANON_WATCHES set -- they are measured with probe.py watch on both
+    # sides, reported in docs/worklog/T105.md.
+    "emotion_syn_full": {
+        "harness_row": "emotion_syn",
+        "canon_ref": 43,  # provenance: derived -- ALIGN_CHIP's own canon_ref, the row's pairing
+        "rust_base": 122,  # provenance: derived -- ALIGN_CHIP's unique-zero offset, the popup scenario's own peeked base (same recipe family)
+        "frames": 40,
+        "mercy_addr": 0x02038514,  # provenance: peeked -- same PAUSED battle as mettaur/popup, T1 probe
+    },
 }
