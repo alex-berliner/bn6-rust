@@ -372,3 +372,53 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
+### T108. M7 emotion single-pass port — src/emotion.rs FACE_INDEX using T105's verified poke mechanism  *(OPEN)*
+
+**Why.** T105 PARTIAL on wt/t105-emotion (bb5c01a, worklog-only) discovered the poke mechanism: `--poke 0x0203528E:0x0100` (16-bit half-word) sets byte 0x0203528F to 0x01 cleanly — the 8-bit `--poke` rounds to half-word 0x0203528E so the high byte lands at 0x0203528F and gets masked. T105 also mapped: BNEM header at assets/emotion.bin +0x00..+0x0c, face data at header-named offset; face bank off_801CD08 (reference/bn6f/asm/asm00_2.s:25567, 23 entries, stride 0x180, shared 0x80-byte right half dword_872D914); draw routine drawEmotionWindow_801CDEC (asm00_2.s:27554-27583) skips face when val==5||6; LZ77/BitUnPack of eStruct2035280 is per-init only (BIOS CpuSet at PC 0x00000240, 18 word-aligned writes at frame 0) so the poke persists through 40-frame windows. SCOPE M7 emotion reads 0/25. Multi-pass stays OPEN per T105. **New evidence:** T105 PARTIAL delivered a non-blind baseline (plain ROM sha256 0d3ea6d3, 584392 B; 7-row guard set isolated PASS; cursor 1/1/170/186279 within veto; --watch on 0x0203528F reads 0x00 for 40 frames on canon).
+
+**Files.** `src/emotion.rs` (FACE_INDEX `[u8; 24]` table keyed by emotion value 0..23 with skip-5/6 mapping; draw call emits one of 23 face slots), `assets/emotion.bin` (extend from 1 to 23 face slots, total 0x1B30 bytes), `tools/emotion_export.py` (extend to 23 slots, header 0x00..+0x0c unchanged), `tools/states.py` (ONE scenario `emotion_syn_full` = `battlestart.state` + `--poke 0x0203528E:0x0100` at f60), `tools/harness.py` (ONE row `emotion_syn`: canon=HOLD-poke, negative=no-poke→calm-both-sides), `docs/coverage/emotion.md` (NEW), `docs/worklog/T108.md`. **NOT** src/battle.rs, src/objects.rs, src/ai.rs, src/chips.rs, src/fixture.rs, tools/trace.py, tools/oracle.py, tools/allowlist.py, tools/inventory.py, tools/mgba_capture.c, reference/bn6f.
+
+**Do.**
+1. **Recon:** extend tools/emotion_export.py to dump all 23 face slots (assets/emotion.bin to 0x1B30 bytes); cite each face's data start against off_801CD08 offsets; document shared right-half dword_872D914 and drawEmotionWindow_801CDEC's skip-5/6 path. **measurement.**
+2. Baseline, no edit: build ROM, sha256+size; verify_rows 8-row guard set + cursor → 0/0/N ×7, cursor 1/1/170/186279; capture `emotion_syn_full` no-poke → both sides render calm face at OBJ (0,18) and (32,18). **measurement.**
+3. Add `emotion_syn_full` scenario + `emotion_syn` row (canon=poke-0x0100-at-f60, negative=no-poke→calm-both-sides match step 2). **code change + measurement.**
+4. Port src/emotion.rs: read byte 0x0203528F (peeked, `// provenance: T105 worklog`); `const FACE_INDEX: [u8; 24]` table with skip-5/6 mapping from drawEmotionWindow_801CDEC; rebuild, sha256+size. **code change + measurement.**
+5. Re-run: `emotion_syn` 0/0/40 with non-blind negative; trace `emotion_syn_full`: emotion byte + OBJ tile at (0,18)/(32,18) first divergence **none** over the row's frames; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. **measurement.**
+
+**Rules.** Art from canon bytes, not redrawn (BNEM export is data). FACE_INDEX table cited from off_801CD08 with `// provenance: off_801CD08 asm00_2.s:25567`. State/descriptor poke carries `peeked` provenance. Cursor veto ≤1/1/170/186300. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `emotion_syn` 0/0/40 with non-blind negative (no-poke→calm-both-sides; poke→value-1-face-both-sides); OBJ tiles at (0,18)/(32,18) match between canon and rust; trace `emotion_syn_full`: emotion byte + OBJ tile first divergence **none** over the scene's 40 frames; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. NEGATIVE naming canon's measured no-face-change behavior (frames + bytes + cite) closes it.
+
+**Measure and report.** rows: emotion_syn + 8-row guard set + cursor; frames 40 each (cursor 170). Emotion byte cite + face offset per value, before/after pixel totals, OBJ tile counts at the emotion positions both sides, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the other ~22 emotion values, not value 1).
+
+**Coordinator:** owns src/emotion.rs + asset layout + the row; runs alone (owns tools/states.py + tools/harness.py + tools/emotion_export.py). Free tier: verify_rows from a clean checkout on the 9-row set; verifier for step 1's BNEM header + face-bank cites. ≤$0.20 expected, ≤$0.40 cap.
+
+**Milestone advanced:** M7 (emotion window 0/25 → 1/25 first port).
+
+---
+
+### T110. M1 navicust battle-effect handler scenarios — enumerate the 19 M7-row from T15 PARTIAL  *(OPEN)*
+
+**Why.** SCOPE M1 navicust reads 0/19: the FOUND table at asm/asm37_0.s:2111 (navicust_jt_NCPs, 47 words stride 4: 45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub) is identified by T15 PARTIAL (LANDED 152ce3c) as the per-program handler dispatch (NOT a program-id enumeration — the index comes from sub_813B9FC(id-1) record halfword >> 2, asm37_0.s:2012). Of the 47 handlers, T15 PARTIAL distinguishes 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte + 3 misc (the no-op stub, GigFldr1, and one tracker), of which 19 affect battle (the M7 line). Without per-handler scenarios the M1 row stays 0/19 forever. T15 PARTIAL landed only docs; no scenario file exists. **New evidence:** T15 PARTIAL enumerated the 47 handlers with cites; T15's verifier-hyper re-run cross-checked the dispatch (sub_813B9FC); tools/states.py supports per-state poke + scripted input. The cheapest first scenario is the no-op stub (one capture, no edit to handlers needed; only the row needs adding).
+
+**Files.** `tools/states.py` (NEW scenarios: `navicust_noop_full` = `battlestart.state` + `--poke 0x0203XXXX:0x0001` per handler index; one row per handler, 19 rows total over 2 batches to fit the budget), `tools/harness.py` (NEW 19-row block `navicust_handlers`: canon=HOLD, rust=plain_rom, all 19 reading a single NAVICUST handler byte; negative = same scenario WITHOUT poke → bytes match step 2 baseline), `tools/inventory.py` (extend parse_navicust to enumerate the 19 battle-effect handlers, cite per-handler site in asm37_0.s:2111-2600), `docs/coverage/navicust.md` (NEW), `docs/worklog/T110.md`. **NOT** src/battle.rs, src/objects.rs, src/chips.rs, src/fixture.rs, src/emotion.rs, src/charge_shot.rs, tools/trace.py, tools/oracle.py, tools/allowlist.py, tools/mgba_capture.c, reference/bn6f.
+
+**Do.**
+1. **Recon:** list the 19 battle-effect handlers (T15 PARTIAL table — 32 SetCurPETNaviStatsByte + 11 GetCurPETNaviStatsByte → filter by which NAVI stat slots affect battle: HP, Atk, Spd, Charge, etc. via include/rom_structs/NaviStats.inc). Cite per-handler: `// canon: navicust_NCP_<name>` line in asm37_0.s:2111-2600. **measurement.**
+2. Baseline, no edit: build ROM, sha256+size; verify_rows 8-row guard set + cursor → 0/0/N ×7, cursor 1/1/170; capture `navicust_noop_full` no-poke → both sides' NAVI stats byte-for-byte equal (control scenario). **measurement.**
+3. Add `navicust_noop_full` scenario + 1 row (`navicust_noop`: canon=poke-stub-byte, negative=no-poke→matches step 2 baseline) — first M1 row. **code change + measurement.**
+4. Add the remaining 18 scenarios + 18 rows in 2 batches (9 each, ≤6 captures per ticket × 3 ticket cycle); each scenario pokes one handler's NAVI stat byte; each row canon=HOLD, rust=plain_rom, negative=no-poke. **code change + measurement.**
+5. Re-run: 19 navicust rows 0/0/N with non-blind negative; SCOPE M1 navicust row 0/19 → 19/19; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. **measurement.**
+
+**Rules.** Scenarios are poke-driven, no hand-played input (T20 BLOCKED's hard stop is preserved). Each poke carries `peeked` provenance. NAVI stat slot indexes cited from include/rom_structs/NaviStats.inc. Cursor veto ≤1/1/170/186300. No allowlist, no patch_sterile, canon never changes. ≤6 captures per ticket × 3 ticket cycle, tool budget ≤80 per cycle.
+
+**Acceptance.** 19 navicust rows 0/0/N with non-blind negative; SCOPE M1 navicust row 0/19 → 19/19; tools/inventory.py parse_navicust enumerates the 19 battle-effect handlers with per-handler cites; 8-row guard set + cursor identical to step 2; verify_rows PASS is the veto. NEGATIVE naming canon's measured no-stat-change behavior (frames + bytes + cite) closes it.
+
+**Measure and report.** rows: 19 navicust + 8-row guard set + cursor; frames per row 40 (cursor 170). Per-handler cite + NAVI stat slot, before/after pixel totals, stat-byte trace, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (the 28 handlers that DON'T affect battle, listed as out-of-scope).
+
+**Coordinator:** owns tools/states.py + tools/harness.py + tools/inventory.py + the rows; runs alone. Free tier: verify_rows from a clean checkout on the 9-row set per cycle; verifier for step 1's 19-handler cite list. ≤$0.60 expected over 3 cycles, ≤$1.20 cap.
+
+**Milestone advanced:** M1 (navicust battle-effects 0/19 → 19/19 first enumerated).
+
+---
+
