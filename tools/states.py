@@ -83,6 +83,7 @@ SRM = "/tmp/bn6f_real.srm"
 
 PAUSED = "/tmp/pausedwithcannon.state"
 BATTLESTART = "/tmp/battlestart.state"
+CHIPSELECT = "/tmp/chipselect.state"
 
 
 @dataclass
@@ -109,6 +110,12 @@ class State:
     #: load, before frame 0) -- chip_compare.py's own library-ownership
     #: technique (library_pokes()), used by "chip_ready_empty" below.
     pokes: Tuple[str, ...] = field(default_factory=tuple)
+    #: Each (file_offset, byte_value) pair to apply to `state.path` byte-wise
+    #: BEFORE any mgba_capture run -- a cheap "state built from another state
+    #: by patching N bytes" recipe, used by "pa_chipselect_state" (one byte
+    #: patched from /tmp/chipselect.state at file offset 0x5DDC0 to swap the
+    #: hand-slot-0 chip, T71's recipe).
+    patches: Tuple[Tuple[int, int], ...] = field(default_factory=tuple)
     #: Frames to run before --savestate fires. NOTE THE OFF-BY-ONE THAT
     #: ISN'T ONE: mgba_capture's loop runs frame indices 0..frames-1 and
     #: writes the state AFTER the last of them, so the state is poised to
@@ -462,6 +469,24 @@ STATES = [
              "reported honestly, not silently carried by a state that "
              "looks like a fix but is not one.",
     ),
+    State(
+        name="pa_chipselect_state",
+        path="/tmp/pa_chipselect.state",
+        root=False,
+        base=CHIPSELECT,
+        patches=((0x5DDC0, 0x01),),  # provenance: derived -- T71's one-byte patch over /tmp/chipselect.state, swaps deck-slot-0 high byte 0x05 -> 0x01 so the window's first offer is Cannon-A (chip id 1, code A) instead of the original chip id 5. Verified byte-by-byte vs the source: this is the ONLY differing byte. The state file's EWRAM (file base 0x51000) is preserved verbatim from /tmp/chipselect.state, so the state byte at 0x020366F2 + 0x02036660 (selection/hand buffers) is canonical (chipselect.state itself was made by hand at a real BattleSettings + eBattleFolder read).
+        description="T80 step 3: chipselect.state with hand-slot-0's high byte patched from 0x05 to 0x01 -- "
+                     "the smallest patch that turns the offered-window's first row into Cannon-A while "
+                     "leaving the rest of the deck (slots 1..4) and the live EWRAM untouched. Built by "
+                     "copying /tmp/chipselect.state (the canonical chip-select menu root) + 1 byte; no "
+                     "mgba_capture invocation (frames=None default). Used by harness.py's pa_recog row "
+                     "(the new PA-recognition harness row) as its base state on BOTH sides -- canon with "
+                     "the same /tmp/pa_chipselect.state, rust with the same + the T80 walk in src/custom.rs.",
+        note="VERIFIED (T80): the only differing byte vs /tmp/chipselect.state is at file offset 0x5DDC0 "
+             "(0x05 -> 0x01), reconfirmed by byte-by-byte diff. The RASTATE header + every other EWRAM "
+             "byte matches /tmp/chipselect.state byte-for-byte, so the chipselect menu root's canonical "
+             "0x020366F2 selection-byte stream and 0x02036660 hand-buffer are preserved.",
+    ),
 ]
 
 BY_NAME = {s.name: s for s in STATES}
@@ -485,6 +510,28 @@ def run_capture(state, out_dir, count, extra=()):
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def _apply_state_patches(state):
+    """Copy `state.base` to `state.path` and apply `state.patches`
+    byte-wise. Raises if either is missing or if a patch offset is
+    out of range for the source. The base file's other contents are
+    preserved verbatim, so a one-byte patch on a RASTATE keeps every
+    mGBA header byte unchanged (T80)."""
+    if not state.base or not state.patches:
+        return False
+    if not os.path.exists(state.base):
+        raise SystemExit("%s source missing -- restore it first" % state.base)
+    with open(state.base, "rb") as f:
+        data = bytearray(f.read())
+    for off, byte in state.patches:
+        if off < 0 or off >= len(data):
+            raise SystemExit("patch offset 0x%x outside source state (len 0x%x)"
+                             % (off, len(data)))
+        data[off] = byte & 0xff
+    with open(state.path, "wb") as f:
+        f.write(bytes(data))
+    return True
+
+
 def build(name):
     state = BY_NAME.get(name)
     if state is None:
@@ -493,6 +540,11 @@ def build(name):
         raise SystemExit(
             "%s (%s) is a ROOT state -- refusing to overwrite it.\n%s"
             % (state.name, state.path, state.description))
+    if _apply_state_patches(state):
+        # A "copy + N-byte patch" recipe (T80 pa_chipselect_state): no ROM,
+        # no script, no capture run -- the source state file IS the input.
+        print("built %s -> %s (patches from %s)" % (state.name, state.path, state.base))
+        return
     if not state.rom or state.frames is None:
         raise SystemExit("%s has no runnable recipe" % state.name)
     if not os.path.exists(CAPTURE):
