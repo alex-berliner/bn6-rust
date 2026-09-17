@@ -1658,3 +1658,36 @@ at :285-287) — which is why the traced sequencer field alone cannot see the ch
 holder of the observed 0x00: the second dispatcher's state-0x00 handler `sub_8008528` (:11189,
 arms 0x1e :11188, waits isBannerBusy :11196). (Writer cite is by table position;
 the gunner capture itself was not re-run — T7y's measurement stands.)
+
+## T67 — the player +0x20 Timer after a flinch: tail attributed, hold conditional (2026-09-16)
+
+The flinch underflow's 0xFFFF sentinel (`playerFlinchAction_80174FE`, 0x08017586,
+asm00_2.s:18353-18355) is NOT an unconditional open-ended hold. On THIS scenario's canon side
+(REAL+PAUSED, script `Start@10,L@40,Start@70,A@80,A@260,A@440,A@470`) it does hold: re-measured
+this ticket with `--watch-write 0x0203a9d0:2` plus a value watch, the underflow lands at frame
+303 (k=292, the T63 store table's last 0x0203a9d0 store) and +0x20 reads 0xFFFF from 303 through
+339+ with CurAction 0x0804 throughout; T63's "no store to 0x0203a9d0 after canon frame 303"
+covers the rest of the 540-frame window. Within this trace the hold is open-ended — provisional
+on that window, not a law.
+
+On the PAUSED route (STERILE+PAUSED+ALIVE, plain `Start@10` — the mettaur row's canon family) the
+same flinch exit behaves DIFFERENTLY, measured this ticket: +0x20 reads 0xffff for exactly ONE
+frame (137), then 9..0 over frames 138..147, then 0. The tail writer is ATTRIBUTED: the player AI
+phase-arming countdown in `playerAI_sub_80F0354` (asm31.s:118969-118990). The flinch exit zeroes
+CurPhaseAndPhaseInitialized (asm00_2.s:18365-18366); the next `playerAI_update_80EA734` dispatch
+through JumpTable80EA7B0 (asm31.s:107419+, every slot) takes the init branch: Timer=0xa
+(asm31.s:118977-118978), -1 per dispatch at 0x080F03A4 (asm31.s:118985-118987), completion writes
+CurPhase=4 (asm31.s:118989-118990). T66's writer census missed this by attributing every asm31.s
+Timer store to non-player objects; the write PCs above were measured ON 0x0203a9d0 (the player
+slot, r5) in this ticket's WP logs.
+
+NEGATIVE (stated as one, not left open): the GATE that suppresses the phase init in battle_full
+while allowing it on the PAUSED route is NOT identified. The only branch sites on the dispatch
+path before JumpTable80EA7B0 are `playerAI_update_80EA734`'s early-outs (asm31.s:107357-107447):
+battle_isBattleOver; AIData+0x44 & 0x8600 -> sub_801056A(0,0)+return (no dispatch); & 0x80000 ->
+object_setAttack0(0x49)+return. Follow-up idea: capture the player AIData+0x44 word on both
+scenes (player AIData block ~0x020340xx), or --trace-pc the dispatch site 0x080EA764.
+src/actor.rs models the tail unconditionally after every flinch exit (PHASE_ARM_FRAMES=10,
+derived from asm31.s:118977's `mov r0,#0xa`), which matches canon on every measured surface:
+battle_full's rust player never flinches, so the path is dead there (oracle mm_timer 270/540
+unchanged), and the PAUSED-route rows see the tail on both sides.

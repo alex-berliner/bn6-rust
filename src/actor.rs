@@ -386,11 +386,17 @@ pub struct Actor {
     /// State-oracle shadow counters (TODO R6). Written only so the export
     /// block (`oracle_fields`) can name what canon's own +0x20 word reads;
     /// no branch below ever reads them, so they cannot change behaviour.
-    /// `post_flinch`: 11 counting down once a flinch has exited -- canon's
-    /// MegaMan object reads +0x20 = 0xffff on the first idle frame after a
-    /// flinch and then 9..0 over the next ten (PAUSED+Start@10 watch
-    /// capture, TODO R6 probe), which no behaviour field tracks.
-    post_flinch: u8,
+    /// `phase_arm_shadow`: SENTINEL_FRAMES + PHASE_ARM_FRAMES counting down
+    /// once a flinch has exited -- it shadows canon's player AI
+    /// phase-arming countdown in `playerAI_sub_80F0354`
+    /// (asm31.s:118969-118990): the flinch exit zeroes
+    /// CurPhaseAndPhaseInitialized (asm00_2.s:18365-18366), so the next
+    /// `playerAI_update_80EA734` dispatch through JumpTable80EA7B0
+    /// (asm31.s:107419+, every slot) takes the init branch: Timer=0xa,
+    /// then -1 per dispatch at 0x080F03A4 until it reads 0. Measured
+    /// (PAUSED+Start@10 canon): +0x20 = 0xffff on the underflow frame 137,
+    /// 9..0 over frames 138..147, 0 afterwards (T67).
+    phase_arm_shadow: u8,
     /// True while a Recovering entered from a Hopping runs: canon keeps the
     /// enemy in CurAction 0x0a (the hop executor, whose own cooldown
     /// `byte_8109F46` the recovery models) through it, while a recovery
@@ -424,9 +430,17 @@ const INVIS_HIDE_BIT: u16 = 2; // provenance: derived -- blindVisualHandledHere_
 const CUR_STATE_UPDATE: u16 = 0x04; // provenance: derived -- BattleObject.inc:40-52, idle reads 0x0804
 /// CurAction rides in the high byte of the +0x8 word (see `oracle_fields`).
 const CUR_ACTION_SHIFT: u8 = 8; // provenance: derived -- BattleObject.inc:40-52
-/// Idle frames after a flinch whose +0x20 tail the export models: 1 sentinel
-/// frame (0xffff) + 10 counted down (see `oracle_fields`).
-const POST_FLINCH_FRAMES: u8 = 11; // provenance: fitted -- read off the PAUSED+Start@10 watch capture (see below)
+/// Player AI phase-arming countdown the export models after a flinch exit:
+/// SENTINEL_FRAMES (the underflow frame itself, Timer=0xffff) plus the
+/// 10-frame countdown (see `oracle_fields`).
+const PHASE_ARM_FRAMES: u8 = 10; // provenance: derived -- playerAI_sub_80F0354 phase init `mov r0,#0xa` / `strh r0,[r5,#oBattleObject_Timer]` (asm31.s:118977-118978), per-dispatch decrement at 0x080F03A4 (asm31.s:118985-118987), completion writes CurPhase=4 (asm31.s:118989-118990)
+/// The underflow frame: canon's flinch handler leaves Timer=0xffff there
+/// before the phase init overwrites it (PAUSED route) or indefinitely
+/// (battle_full, where the phase init is gated off --
+/// docs/coverage/battle_full.md T67).
+const SENTINEL_FRAMES: u8 = 1; // provenance: derived -- flinch underflow store 0x0000->0xffff at 0x08017586 (asm00_2.s:18353-18355), measured PAUSED canon frame 137 and battle_full canon frame 303
+/// Canon's BattleObject Timer sentinel at +0x20.
+const TIMER_SENTINEL: u16 = 0xffff; // provenance: derived -- flinch underflow, asm00_2.s:18353-18355; measured one frame on the PAUSED route (canon 137), holding 303..339+ in battle_full (T63 store table: no store to 0x0203a9d0 after canon frame 303)
 
 impl Actor {
     pub fn new(
@@ -455,7 +469,7 @@ impl Actor {
             barrier: 0,
             hits_taken: 0,
             pose_len: 0,
-            post_flinch: 0,
+            phase_arm_shadow: 0,
             hop_recovery: false,
         }
     }
@@ -656,11 +670,19 @@ impl Actor {
     ///   decision loop -- all ForMettaur_8109EF4 entries, asm31.s:170979.
     /// - Timer (+0x20), player: the flinch countdown 0x16..0x00, measured
     ///   (canon 0x0203a9d0 reads 0x16..0 through a 23-frame flinch); our
-    ///   `ticks` runs 23..1, so -1. The exit frame's 0xffff and the 9..0
-    ///   tail after it are the `post_flinch` shadow (measured 137..147 of
-    ///   the same capture; no behaviour field tracks them). fitted -- the
-    ///   tail's length 10 and the 0xffff sentinel are read off the capture,
-    ///   not derived from a cited instruction.
+    ///   `ticks` runs 23..1, so -1. The underflow frame's 0xffff and the
+    ///   9..0 tail after it are the `phase_arm_shadow`: canon's player AI
+    ///   phase-arming countdown in `playerAI_sub_80F0354` -- the flinch
+    ///   exit zeroes CurPhaseAndPhaseInitialized (asm00_2.s:18365-18366),
+    ///   the next JumpTable80EA7B0 dispatch stores Timer=0xa
+    ///   (asm31.s:118977-118978) and decrements it per dispatch at
+    ///   0x080F03A4 (asm31.s:118985-118987) until the completion writes
+    ///   CurPhase=4 (asm31.s:118989-118990). derived -- the tail length 10
+    ///   IS the disassembly's `mov r0,#0xa`; the sentinel is the underflow
+    ///   store (asm00_2.s:18353-18355). Measured: PAUSED canon 0xffff at
+    ///   frame 137, 9..0 at 138..147 (T67). battle_full gates the init off
+    ///   and the sentinel holds there (canon 303..539, T63 store table;
+    ///   303..339 re-measured this ticket); the gate is unidentified.
     /// - Timer, enemy: canon reads a CONSTANT 0x0002 here for the whole
     ///   window (measured); the swing countdown lives outside +0x00..0x2f
     ///   (only +0x9/+0x10/+0x11 change in that range), so there is nothing
@@ -724,13 +746,13 @@ impl Actor {
                 // this frame's update, F1). No offset either way.
                 Action::Flinching { ticks } => (*ticks as u16),
                 _
-                    if self.post_flinch > 0
+                    if self.phase_arm_shadow > 0
                         && matches!(self.action, Action::Idle) =>
                 {
-                    if self.post_flinch == POST_FLINCH_FRAMES {
-                        0xffff // provenance: fitted -- canon's own +0x20 sentinel on the first idle frame after a flinch, read off the PAUSED+Start@10 watch capture
+                    if self.phase_arm_shadow == SENTINEL_FRAMES + PHASE_ARM_FRAMES {
+                        TIMER_SENTINEL // canon: flinch underflow frame, asm00_2.s:18353-18355 (see `phase_arm_shadow`)
                     } else {
-                        (self.post_flinch - 1) as u16
+                        (self.phase_arm_shadow - SENTINEL_FRAMES) as u16
                     }
                 }
                 _ => 0,
@@ -930,8 +952,8 @@ impl Actor {
     pub fn update(&mut self) -> Update {
         self.invisible = self.invisible.saturating_sub(1);
         self.invulnerable = self.invulnerable.saturating_sub(1);
-        // Export-only shadow decrement (TODO R6): see `post_flinch`'s doc.
-        self.post_flinch = self.post_flinch.saturating_sub(1);
+        // Export-only shadow decrement: see `phase_arm_shadow`'s doc.
+        self.phase_arm_shadow = self.phase_arm_shadow.saturating_sub(1);
         if self.pale > 0 {
             self.pale -= 1;
             if self.pale == 0 {
@@ -1119,11 +1141,14 @@ impl Actor {
             Action::Flinching { ticks } if ticks > 0 => Action::Flinching { ticks: ticks - 1 },
             Action::Flinching { .. } => {
                 self.select(anim::IDLE);
-                // Export-only shadow (TODO R6): canon's MegaMan object
-                // reads +0x20 = 0xffff on this first idle frame and 9..0
-                // over the ten after (PAUSED+Start@10 watch capture).
-                // provenance: fitted -- 1 sentinel frame + 10 counted off that capture, not derived from a cited instruction
-                self.post_flinch = POST_FLINCH_FRAMES;
+                // Export-only shadow: arms the phase-arming countdown model.
+                // Canon: the flinch exit zeroes CurPhaseAndPhaseInitialized
+                // (asm00_2.s:18365-18366) and the next idle dispatch stores
+                // Timer=0xa and counts it down (asm31.s:118977-118990);
+                // measured PAUSED canon 0xffff at frame 137 then 9..0 at
+                // 138..147. The dispatch gate that suppresses this in
+                // battle_full is unidentified (battle_full.md T67).
+                self.phase_arm_shadow = SENTINEL_FRAMES + PHASE_ARM_FRAMES;
                 Action::Idle
             }
             Action::Dying { ticks } if ticks == self.death_frames => {
