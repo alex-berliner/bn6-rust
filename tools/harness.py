@@ -3412,32 +3412,35 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=40,
         align=ALIGN_CHIP,
-        # T122: the skip arm -- canon's face gone entirely. NO enum can land
-        # a skip slot: byte_801E6F4 (read from ROM, asm00_2.s:31045) maps
-        # enum 4 -> slot 5, but possiblyGetBattleEmotion_8015B64 never
-        # returns 4 (its own arms are 5/3/1/2/0, asm00_2.s:15140-15166), and
-        # the 25-entry transformation table byte_801E700 (asm00_2.s:31049,
-        # entries 1/2 -> slots 5/6) is only reachable with a non-zero
-        # transformation byte, not a poke on this route. The draw gate is
-        # the thing the skip range lives on: drawEmotionWindow_801CDEC reads
-        # eStruct2035280+0xf = 0x0203528F and emits NO OBJ for 5 or 6
-        # (asm00_2.s:27647-27652; T108 measured byte=5 -> face gone, 694
-        # px/frame) -- and on this route NOTHING writes that byte in the
-        # window (its only writers are the blink updater sub_801CC94,
-        # asm00_2.s:27551/27560/27566; T105 pass-4 watch read 0x00 for 80
-        # frames), so a load poke survives it. MEASURED this session (T122
+        # T122: pairing row -- canon's BLINK blanking vs our emotion 5/6
+        # arm, an empty box against an empty box. This is pairing evidence
+        # for the align window, NOT face coverage and NOT skip-arm
+        # coverage: eStruct2035280+0xf = 0x0203528F is the 12-step blink
+        # countdown owned by sub_801CC94 (asm00_2.s:27550-27551 loads 0xc,
+        # :27557-27566 decrements per frame, :27567-27574 copies the blink
+        # pattern off bit 1), and drawEmotionWindow_801CDEC emits NO OBJ
+        # when that countdown sits at 5/6 (asm00_2.s:27648-27652; T108
+        # measured byte=5 -> face gone, 694 px/frame) -- the `cmp #6`/
+        # `cmp #5` are two phases of the blink cycle, ~2 blank frames per
+        # cycle on canon. The row pins the countdown byte to 5 (nothing
+        # else writes it on this route -- T105 pass-4 watch read 0x00 for
+        # 80 frames -- so a load poke survives). MEASURED this session (T122
         # step 2, 40-frame window canon 43..82): the aligned halfword poke
         # 0x0203528E:0x0500 -- bytes 0x0203528E=0x00 (eStruct+0xe, the
-        # stored transformation, 0 = its calm value) and 0x0203528F=0x05
-        # (the gate byte) -- is face-ONLY: 27760 total = 694 px/frame flat
-        # in the face box x0..48/y18..34, 0 px everywhere else, i.e. the
-        # calm face vanishes and stays gone for the whole window.
+        # beast-out counter, sub_801CB38:27343-27344 stores the emotion
+        # call's second return; reads 0 on this route so the poke is
+        # harmless) and 0x0203528F=0x05 (the countdown byte) -- is
+        # face-ONLY: 27760 total = 694 px/frame flat in the face box
+        # x0..48/y18..34, 0 px everywhere else, i.e. the calm face vanishes
+        # and stays gone for the whole window.
         #
         # rust: the same descriptor with emotion=5 (+63) -- src/emotion.rs
-        # builds NO sprites for slots 5/6, mirroring the gate's own
-        # `beq locret_801CE14` (asm00_2.s:27648-27652), so BOTH sides draw
-        # no face OBJ and the row reads 0 only if the port's skip is also
-        # silent.
+        # builds NO sprites for slots 5/6, so BOTH sides show an empty face
+        # box for the whole window. (That makes this a blink-vs-empty
+        # pairing row, per the comment above -- the cross-state slot 5/6
+        # faces canon DOES draw via the transformation table are a separate,
+        # untested path and likely missing from our port; see
+        # docs/worklog/T122.md "for the next ticket".)
         rust=_chip_rust("b1", flags=0x5F, emotion=5),
         # emotion_syn's canon side verbatim with the Unk_32 halfword swapped
         # for the gate-byte one -- the face poke is the ONLY delta.
