@@ -84,7 +84,7 @@ const DIVIDE_PAUSE: u16 = 150; // provenance: fitted -- Colonel's real planner (
 /// main.rs (which constructs `deck::Rng`) belong to the parallel agent.
 ///
 /// VERIFIED against the real ROM (this ticket, standalone script in the
-/// worktree's scratch dir, not committed -- TRANSFER.md/AUDIT pair on real
+/// worktree's scratch dir, not committed -- docs/provenance.md#7aw / AUDIT pair on real
 /// ROM assets applies): `--watch 0x020013f0:4` over 220 frames from
 /// /tmp/pausedwithcannon.state (STERILE+PAUSED+ALIVE, Start@10) gives a
 /// sequence where EVERY one of 219 consecutive transitions equals

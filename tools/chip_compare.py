@@ -41,7 +41,7 @@ frames past the attack's end compare a second volley against an idle navi.
 SuprVulc, at 112 frames the longest, needs --frames 113.
 
 Needs /tmp/mgba_capture (tools/mgba_capture.c) and the real ROM/state, which
-are never committed (TRANSFER.md).
+are never committed (docs/provenance.md).
 """
 
 import hashlib

@@ -1,5 +1,11 @@
 # Transfer Doc: Battle Captures, the Sterile Arena, and the Cannon Comparison
 
+> **The load-bearing facts this journal used to be cited for now live in
+> [docs/provenance.md](docs/provenance.md) (e.g. `[#7aw]` for the save-state-at-first-frame
+> fact, `[#7ao]` for the read-arcs-out-of-the-object fact). This file remains as the
+> historical journal; do not cite it for a number.** New work adds a section to
+> `docs/provenance.md`, not a journal entry here.
+
 This is the working knowledge from the "make the Rust `bn` reimplementation match the real
 MMBN6F ROM frame-for-frame" effort. It records what was built, the reverse-engineering
 insights, the failures, and the open items. Read this first if you are picking this up.

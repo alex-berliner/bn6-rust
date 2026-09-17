@@ -476,7 +476,7 @@ int main(int argc, char** argv) {
 	 * evaluated or, if that first draw loses, keeps losing every frame after
 	 * (nothing else appears to perturb GetRNG's state on this code path
 	 * between successive per-frame draws when the accumulator itself is
-	 * pinned open every frame) -- which is TRANSFER 7aw's own
+	 * pinned open every frame) -- which is docs/provenance.md#7aw's own
 	 * held-direction orbit trap, just walked through the accumulator cheat
 	 * instead of through input. A one-shot poke lets the frame count leading
 	 * up to it run untouched (real per-frame movement, real intervening

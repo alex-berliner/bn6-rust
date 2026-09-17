@@ -3,7 +3,7 @@
 Keep this file short and stable: it is loaded into every child's context.
 
 - Read `AGENT_GUIDE.md` for how to build, measure and align. A ticket that cites "HANDOFF §N" means
-  that section of `docs/HANDOFF_2026-09-12.md`; read only that section. `TRANSFER.md` is a journal you never read whole; when a comment or a ticket cites a section of it ("TRANSFER 7aw", "TRANSFER.md section 3"), read that section only: `python3 tools/transfer.py 7aw`. Never read TODO.md, HANDOFF.md or tools/harness.py
+  that section of `docs/HANDOFF_2026-09-12.md`; read only that section. A comment or a doc that cites a fact's provenance points at `docs/provenance.md#<id>` (e.g. `#7aw` for the save-state-at-first-frame fact, `#7ao` for the read-arcs-out-of-the-object fact); read only that section. The historical journal `TRANSFER.md` stays in place but its load-bearing facts are now in `docs/provenance.md`. Never read TODO.md, HANDOFF.md or tools/harness.py
   whole -- your ticket text is in your task, and grep does the rest.
 - Parity means the original's behaviour reproduced exactly, measured on three surfaces, each with a zero:
   pixels over every compared frame of the full screen, the state trace field by field, and audio sample for

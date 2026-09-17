@@ -197,7 +197,7 @@ def main():
     #
     # FATAL, measured (AUDIT wave 3c "fresh-state" ticket): a save is not
     # the only way to reach a fresh spawn. Walking a real forced encounter
-    # (TRANSFER 7aw's step-accumulator cheat) into a battle that actually
+    # (docs/provenance.md#7aw's step-accumulator cheat) into a battle that actually
     # STARTS on a --never-spawn ROM crashes the console to its own cold-boot
     # logo 9-13 frames in, isolated by A/B test to this patch specifically
     # (a control ROM with only the first two patches runs the identical,
@@ -275,8 +275,8 @@ def main():
     # left surprised (unlike --never-spawn above, this does not crash).
     #
     # This targets ONE SPECIFIC encounter: the one tools/states.py's
-    # "overworld_net" state's own walk (a forced encounter roll, TRANSFER
-    # 7aw, held direction cycled Right/Down/Left/Up one per frame from that
+    # "overworld_net" state's own walk (a forced encounter roll, docs/
+    # provenance.md#7aw, held direction cycled Right/Down/Left/Up one per frame from that
     # state) deterministically reaches at frame 93 of the walk, every time
     # (confirmed with a second, differently-phased direction cycle -- same
     # frame, same result). Found by walking the live pointer chain
@@ -321,7 +321,7 @@ def main():
     # GetRNG's state between one frame's draw and the next, so the roll's
     # outcome -- and, downstream, WHICH EnemySetup table entry a success
     # reaches -- is fixed at load and does not change with more frames or a
-    # different held/cycled direction: TRANSFER 7aw's own held-direction
+    # different held/cycled direction: docs/provenance.md#7aw's own held-direction
     # orbit trap again, just walked through the forced accumulator instead
     # of through input. On this session's build the very first evaluated
     # frame draws masked value 6 against threshold 12 (row 16, category 5 --

@@ -277,7 +277,7 @@ impl HudTiles {
 
     /// AUDIT pairs 6/14/17: seed the flow counter directly, for a fixture
     /// compared against a save state where the CUSTOM gauge has already
-    /// been full (and flowing) for an unknown time -- see TRANSFER.md 7ab,
+    /// been full (and flowing) for an unknown time -- see docs/provenance.md#7ab,
     /// "two phases in that screen CANNOT be settled by one save state". A
     /// fresh `new()` leaves this at 0, which is right for every fixture
     /// verified against a save state so far (`gauge_tick`'s own doc in

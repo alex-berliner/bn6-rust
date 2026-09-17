@@ -97,12 +97,12 @@ static TEXT_FONT: &[u8] = &Aligned(*include_bytes!("../assets/text_font.bin")).0
 static EMOTION: &[u8] = &Aligned(*include_bytes!("../assets/emotion.bin")).0;
 static HAND_ICON: &[u8] = &Aligned(*include_bytes!("../assets/hand_icon.bin")).0;
 // SOUND_HIT_6B's sample (byte_81597A0, dat37.s): the buster's HIT, not its
-// fire -- see TRANSFER.md 7bb. Exported by tools/sample_export.py, 1881
+// fire -- see docs/provenance.md#7bb. Exported by tools/sample_export.py, 1881
 // samples at 10512 Hz, no loop. The mixer frequency below must match exactly
 // (agb::include_wav! does no resampling).
 static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/buster_hit.wav");
 
-/// AUDIT pair 1 / TRANSFER 7bj: the harness used to align a real capture
+/// AUDIT pair 1 / docs/provenance.md#7bj: the harness used to align a real capture
 /// against ours by a frame count from power-on, and our boot length moves
 /// with the compiler, so a fixed offset breaks on unrelated edits. This is
 /// the fix -- an event the harness can read out of RAM instead of counting
@@ -115,7 +115,7 @@ static BUSTER_HIT: agb::sound::mixer::SoundData = agb::include_wav!("assets/bust
 ///   +4  u32 battle frame counter: 0 on the battle's first frame (the same
 ///       frame `Battle::new`'s backdrop and gauge begin counting from --
 ///       for a non-demo build and `demo-open`, the first frame of the white
-///       intro; see TRANSFER 7ba), +1 every battle frame after.
+///       intro; see docs/provenance.md#7ba), +1 every battle frame after.
 ///
 /// `#[link_section = ".ewram.marker"]` is a dedicated input section that
 /// `vendor/agb/agb/src/gba.ld`'s `.ewram : { *(.ewram .ewram.*); ... }` rule
