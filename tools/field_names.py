@@ -140,6 +140,14 @@ def _rewrite_field_in_macro(struct_path, macro_name, old_field, new_field):
             lines[i] = new_line
             n += k
     if n == 0:
+        # Already applied is not a failure. The table is a permanent record of every rename this
+        # project has evidence for, so re-running it must be a no-op rather than an abort -- before
+        # this, a second run died on the first row and the lane around it died with it (2026-09-17).
+        done_pat = re.compile(
+            r'(^\s*(?:u[0-9]+|ptr|bool[0-9]*|enum[0-9]+|flags[0-9]+|u8_arr)\s+)' +
+            re.escape(new_field) + r'(\b)')
+        if any(done_pat.search(lines[i]) for i in range(lo, hi + 1)):
+            return -1
         raise SystemExit(
             f"no rename matched in {struct_path}/{macro_name} for {old_field}")
     with open(full, 'w') as fp:
@@ -183,6 +191,10 @@ def _apply_one(struct_path, macro_name, old_field, new_field):
     inc_count = _rewrite_field_in_macro(struct_path, macro_name, old_field, new_field)
     old_use = f"{prefix}_{old_field}"
     new_use = f"{prefix}_{new_field}"
+    if inc_count == -1:
+        print(f"  {struct_path}::{macro_name}  {old_field} -> {new_field}  "
+              f"(already applied, skipped)")
+        return None
     used = _rewrite_uses(old_use, new_use)
     print(f"  {struct_path}::{macro_name}  {old_field} -> {new_field}  "
           f"({used} use sites)")
@@ -202,7 +214,12 @@ def cmd_apply(args):
     results = []
     print("Applying renames:")
     for struct_path, macro, old, new, evidence in RENAMES:
-        results.append(_apply_one(struct_path, macro, old, new))
+        r = _apply_one(struct_path, macro, old, new)
+        if r is not None:
+            results.append(r)
+    if not results:
+        print("\nevery rename in the table is already applied; nothing written")
+        return
     # Append to docs/renames.md
     md_path = os.path.join(BN6F, 'docs/renames.md')
     with open(md_path) as fp:
