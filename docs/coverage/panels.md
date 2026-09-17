@@ -100,3 +100,44 @@ finding itself. Canon-side observation only; no row semantics changed.
 - What spawns t4_0x56 / t4_0x16 / t4_0x1f in a real battle (the wrappers are
   unreferenced; likely a computed dispatch or data-driven spawn path outside the
   labeled disassembly).
+
+## T121b (2026-09-18) — the 13 words verified from ROM bytes; the poison writer measured live
+
+- **Export**: `tools/panel_flags_export.py` → `assets/panels.bin` (52 raw bytes, one LE u32 per
+  type 0x0..0xC) from the ROM file at offset 0x1D7E24 (`reference/bn6f/bn6f.gba`;
+  `/tmp/bn6f_real.gba` cmp-identical). The words match `PANEL_TYPE_FLAG_WORDS` above
+  (independent read, no row changed).
+- **Bit names**: none of the table's bits is named by `PanelData.inc` (it names only 0x2,
+  0x20 and the 0x00800000.. group — none in the table). Each of 0x40 cracked / 0x100 poison /
+  0x2000 holy / 0x400 grass / 0x800 ice / 0x1000 type-8 / 0x4000 broken / 0x8000 hole is set by
+  exactly one type's word and is named after it; 0x10 (every type but hole/broken) and 0x10000
+  (all 13) stay unnamed; 0x200 marks exactly the 9..0xC group the setter gives
+  `Unk_12=0x708` (asm38.s:4318-4326).
+- **Table corroboration, NOT a live rule**: `object_crackPanel`'s flags rewrite
+  `Flags = (Flags & ~0x3f0f) + 3` (asm/object.s:2215-2218) clears exactly the table's per-type
+  low bits (0-3, 8-13); normal's word 0x10010 has no bit inside that mask, so crack = OR 0x40 →
+  0x10050 = the type-3 word exactly.
+- **Live measurement** (canon, chip-poisseed route, `--watch 0x02039C00:0x320`, 260 frames):
+  canon frame 52 the seed object appears over its target panel (that panel's flags gain the
+  0x80000000 ally-attack bit); frame 53 `object_panel_setPoison` (object.s:2540-2563) runs on
+  SIX panels — cols 4-6 × rows 1-2: flags 0x00010032 → 0x00010134, which is setPoison's own
+  masked template `(Flags & ~0x3f5f) | 0x114` measured byte-for-byte, with `Type` 02→04 and
+  `Animation` 02→04 (its two `strb #4` stores, :2552-2554). The 3x2 area loop is the seed
+  gimmick's per-CurState writer table `byte_80E2588` (asm31.s:89654-89667: crack/break/poison
+  writers, each entry gated by the 0x10 guard byte setPoison tests at :2544-2546), dispatched by
+  `t4_0x1e_80E25D0` (asm31.s:89669-89682).
+- **Writer map for M3's first rule**: the live poison route does NOT go through the setter path
+  (`_object_setPanelType` → `_object_updatePanelParameters`, the table-OR path): setPoison
+  writes its own template 0x114 = the table's 0x110 + an unnamed 0x4 bit it sets itself, and the
+  mask clears 0x2 (blocks movement) while OR-ing 0x100. The table's type-4 word and the live
+  writer's template differ only in that 0x4. Aside: `Unk_12` measured 0x0708 on fresh NORMAL
+  panels (frame-0 dump) — the 9..0xC setter arm is not that value's only writer; tickPanels'
+  regen writes it too (asm/object.s:1430-1434).
+- **Bounded NEGATIVE (row not built)**: a `panel_poison` fixture row needs a type change driven
+  at a chosen frame. The fixture descriptor has no panel-type field (+62/+63 are contested
+  overlays), `src/fixture.rs`/`src/battle.rs` are outside the ticket's files, and the only
+  in-scope reception path would be a bespoke poke-box/watch static pair in `src/field.rs` — a
+  new test-only input channel with no precedent — plus a new negative kind (a one-sided no-poke
+  comparison; `negative_counts` only shifts frames/pixels). Rejected by the coordinator
+  2026-09-18: the row would fixture code the ticket excludes. Note a live type change IS
+  reachable (above), so no live-change GAP is claimed — the gap is the fixture/harness plumbing.
