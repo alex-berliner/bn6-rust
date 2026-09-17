@@ -328,3 +328,77 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 ---
 
 - T82 NEGATIVE -- M7: Forms recon — TF enum + charge-shot dispatch + emotion window states. Closed NEGATIVE on wt/t82 @ c90a451 (docs-only)
+
+### T83. M3: CONFUSED-Mettaur — flip the const, add a Mettaur-only harness row *(OPEN -- 2026-09-17)*
+
+**Why.** T81 NEGATIVE proved the per-AIIndex navi confused routine is NOT ported, but the Mettaur per-AIIndex confused routine IS ported at src/objects.rs:352 — gated by `const BLIND_OR_CONFUSED: bool = false;` with the `else if BLIND_OR_CONFUSED` arm at src/objects.rs:430. The single-byte gate is the only thing standing between the port and the per-frame effect. SCOPE M3 status count advances **0/69 → 1/69**.
+
+**New evidence.** T81 NEGATIVE (2026-09-17, wt/t81 @ 8566903, worklog-only): T72's per-AIIndex navi confused (off_810AA84..off_810AB38) is unported; T72's scaffolding claim REFUTED by grep — worklog-only commit 462ccda added no `Style::Confused`. Mettaur per-AIIndex confused routine is ported at src/objects.rs:352 with `BLIND_OR_CONFUSED = false`; the `else if BLIND_OR_CONFUSED` arm at src/objects.rs:430 sets `self.decide = METTAUR_WANDER` but never fires. Navi confuse requires T82 prereqs (navi Style/kind) that T82 NEGATIVE rejected — Mettaur route is the only viable surface. T81's own recommendation: "one-byte BLIND_OR_CONFUSED to runtime read + Mettaur-only confused harness row."
+
+**Files.** `src/objects.rs` (BLIND_OR_CONFUSED → runtime read of bits `0x4000|0x8000` from `oBattleObject_StatusFlags2` at src/objects.rs:352+430; **no other src/ edit**), `tools/anchor.rs` (NEW — exposes the runtime read of the flag-word for harness read-back), `tools/harness.py` (add `confused_mettaur` row against the existing `confused` scenario: canon_ref=40, search range(100,111), negative = frame shift; **no row-config change** to the `confused` row), `docs/coverage/statuses.md`, `docs/worklog/T83.md`. **NOT** tools/allowlist.py, tools/trace.py, tools/inventory.py, src/ai.rs, src/battle.rs, src/fixture.rs, tools/states.py (state exists), reference/bn6f.
+
+**Do.**
+1. Baseline, no edit: build ROM, sha256; verify_rows HEAD on 8-row guard set + blind + confused → expect all identical to T81 step 1. **measurement.**
+2. Re-read `MettaurEntry` per-AIIndex routine at src/objects.rs:430 + the bit cite at include/structs/CollisionData.inc:16-18; name the `oBattleObject_StatusFlags2` offset the gate would read. **measurement.**
+3. Add `tools/anchor.rs` exposing the runtime read; flip `BLIND_OR_CONFUSED` from `false` to a runtime read of the bit (file:line tag). **code change.**
+4. Add `confused_mettaur` row in tools/harness.py using the SAME scenario as `confused` but bound onto the Mettaur slot via a battle with one Mettaur and a confused-source chip firing on MegaMan; build ROM; re-run `confused` + `confused_mettaur`. Expect `confused_mettaur` 0/0/90 with non-blind negative (frame shift); `confused` row identical to step 1 (gate still false in non-Mettaur path). **measurement.**
+5. verify_rows on the 8-row guard set + blind + confused + confused_mettaur from a clean detached checkout; expect guard set + blind + confused identical, confused_mettaur 0/0/90. **measurement.**
+
+**Rules.** Gate flip must be a runtime read of the named bit, not a fitted `true`. `confused_mettaur` row uses the SAME scenario as `confused` (offset only). No allowlist, no patch_sterile, no src/ change outside src/objects.rs:352+430 + the new anchor. ≤5 captures, tool budget ≤60.
+
+**Acceptance.** `confused_mettaur` 0/0/90 with non-blind negative (frame shift); `confused` row identical to baseline; 8-row guard set + blind identical; SCOPE M3 status-bit count **0/69 → 1/69**. Cited bit at include/structs/CollisionData.inc:16-18 + Mettaur slot arm at src/objects.rs:430 each carry file:line provenance. NEGATIVE naming the ring's per-orbit pixel source closes it.
+
+**Measure and report.** rows: confused_mettaur + confused + 8-row guard set + blind; frames 90 each. Before/after pixel totals, worst, region, ring anchor coords if it fires, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified.
+
+**Coordinator:** owns src/objects.rs:352+430, tools/anchor.rs (new), tools/harness.py:confused_mettaur row; pair with T85 (disjoint, tools/inventory.py + tools/states.py only). Free tier: verify_rows from clean checkout on 11-row set. ≤$0.25 expected, ≤$0.50 cap. Advances **M3**.
+
+---
+
+### T84. M3: IMMOBILIZED — first status bit, no closure candidates left *(OPEN -- 2026-09-17)*
+
+**Why.** T18 DERIVED-FROM-CODE status table (landed 3f09aa7): 32 of 69 flag bits have a per-bit reader, and SCOPE names three M3 candidates (CONFUSED, BLIND, IMMOBILIZED). CONFUSED: T83 in flight. BLIND: T69 BLOCKED on scope (render gate reshape). **IMMOBILIZED is the only candidate without an open follow-up** — its reader is at asm/asm31.s:171386-171390 (per SCOPE), the bit field is `OBJECT_FLAGS_IMMOBILIZED` (asm/asm00_2.s:23901 lsl r1,r1,#0x14), and there's no recent ticket touching it. M3 status-bit count advances **0/69 → 1/69** (or 2/69 if T83 lands first).
+
+**New evidence.** T81 NEGATIVE (2026-09-17) closed CONFUSED's last follow-up; T69 BLOCKED (still UNMERGED) closes BLIND's narrative; T18 status table (landed 3f09aa7, verifier-re-run corrected) lists IMMOBILIZED's per-bit reader site at asm/asm31.s:171386-171390 outside the off_80209EC table — a directly-written flag2 mask test on the Mettaur/player slot's navi-side routine. The bit field source is at include/structs/CollisionData.inc (`OBJECT_FLAGS_IMMOBILIZED` #0x14 — slide-left-by-0x14 ⇒ mask `0x10` in flag2 stride; flag2 lives at `+0x4` of the same word per the struct), with object_setFlag/clearFlag sites to be enumerated at the Mettaur/player slot.
+
+**Files.** `src/objects.rs` (read+gate path for `OBJECT_FLAGS_IMMOBILIZED` at the per-bit-reader-equivalent site; **no gate addition beyond a single bit-test**), `tools/states.py` (NEW scenario `immobilized_check` — battle with one Mettaur triggered into an immobilize-source condition and a frame window where it must NOT move), `tools/harness.py` (add `immobilized` row: canon_ref=40, negative = Mettaur moves at the held frame; no allowlist), `docs/coverage/statuses.md`, `docs/worklog/T84.md`. **NOT** tools/allowlist.py, tools/trace.py, tools/inventory.py, src/ai.rs, src/battle.rs (only status-tick hook if needed), src/fixture.rs, reference/bn6f.
+
+**Do.**
+1. Baseline, no edit: build ROM, sha256; verify_rows HEAD on 8-row guard set + blind + confused → expect all identical to T81 step 1. **measurement.**
+2. Walk the per-bit-reader cite at asm/asm31.s:171386-171390; name the gate condition (which action the bit prevents — e.g. decider-store, action-tick). Walk the per-bit-set sites by grep-ing `OBJECT_FLAGS_IMMOBILIZED` references in asm31.s. Report reader site + at least one known setter site with `file:line`. **measurement.**
+3. Wire the bit-test in src/objects.rs at the citation site; add `tools/states.py:immobilized_check` scenario that places a fresh-Mettaur into the cited immobilize-source condition. **code change.**
+4. Build ROM; run `immobilized` row only; expect 0/0/40 with a non-blind negative (Mettaur moves at the held frame). **measurement.**
+5. verify_rows on 8-row guard set + blind + confused + immobilized; expect guard + blind + confused identical, immobilized 0/0/40. **measurement.**
+
+**Rules.** Bit-test MUST be derived from the cited reader site, not a fitted constant. The `immobilized` row's scenario must trigger the cited condition; if no Mettaur-side trigger exists in 40 frames, narrow the assertion to "no positional diff on the held frames". No allowlist, no patch_sterile. ≤5 captures, tool budget ≤60.
+
+**Acceptance.** `immobilized` 0/0/40 with non-blind negative; 8-row guard set + blind + confused identical to step 1; SCOPE M3 status-bit count **0/69 → 1/69** (or 2/69 if T83 lands first). Reader cite at asm/asm31.s:171386-171390 + setter cite at the strongest grep hit both carry `file:line` provenance. NEGATIVE naming which action was gated (vs which action canon held) closes it.
+
+**Measure and report.** rows: immobilized + confused + blind + 8-row guard set; frames 40 each. Before/after pixel totals, worst, region, ROM sha256+size, fitted count, commit; one line of mechanism (which action the bit gates); one line unverified.
+
+**Coordinator:** owns src/objects.rs bit-test + tools/states.py:immobilized_check + tools/harness.py:immobilized row; pair with T85 (disjoint). Free tier: verify_rows from clean checkout on 11-row set. ≤$0.20 expected, ≤$0.40 cap. Advances **M3**.
+
+---
+
+### T85. M4: StepSwrd (id 81) pixel row — close the family-0x13 row gap *(OPEN -- 2026-09-17)*
+
+**Why.** SCOPE: "StepSwrd (81) rides the same record dispatch without a pixel row of its own (tools/inventory.py AS_DATA_FAMILIES={0x13,0x15,0x21})". T17 landed family 0x13 for Sword..BambSwrd (71-79) + Muramasa (85) — 10 rows verified-pixels. StepSwrd's row would be the 11th sword family pixel row at no record-dispatch change (the dispatch already covers its family/subfamily bytes per SCOPE); the only open question is whether its one-frame-longer recovery pose at src/battle.rs:428-431 (`// StepSwrd holds its recovery pose one frame longer than the other swords.`) is record-driven or fitted — both outcomes need pixel verification. SCOPE M4 chip row count advances **43/411 → 44/411**.
+
+**New evidence.** T75 NEGATIVE (docs-only on main): "the record-driven chip families' unprobed ids onto the scoreboard" — StepSwrd offset = `data/ChipDataArr.s:2514`, family/subfamily bytes are within the 0x13 / matching-subfamily envelope so the existing record dispatch CAN route id 81. T57 DONE census (verifier-hyper confirmed 14 record rows; 43 of 411 verified total). T78 DONE pattern shows the port shape — a per-record-byte dispatch with no separate `match id` arm. The src/battle.rs:428-431 doc-comment is the only cited divergence from sibling swords.
+
+**Files.** `tools/states.py` (NEW scenario `stepswrd_select` — chip-select state with id 81 in the picked slot, fire it, compare pixels), `tools/harness.py` (add `chip-stepswrd` row: canon_ref=40, negative = fire-different-chip or no-chip; reuse the chip-cannon fixture base), `docs/coverage/chips.md`, `docs/worklog/T85.md`. **NOT** tools/allowlist.py, tools/trace.py, tools/inventory.py, src/battle.rs (T17 record dispatch already routes id 81; if the recovery-frame offset is fitted and the row red, escalate to a port ticket — do NOT silently port in this scope), src/chips.rs, reference/bn6f.
+
+**Do.**
+1. Baseline, no edit: build ROM, sha256; verify_rows HEAD on 8-row guard set + each sword/blade row (sword, longsword, wideswrd, wideblde, longblde, fireswrd, aquaswrd, elecswrd, bambswrd, muramasa) → expect all 0/0/N. **measurement.**
+2. Read `data/ChipDataArr.s:2514` (StepSwrd record bytes) and the 10 sibling offsets (Sword..BambSwrd 71-79 + Muramasa 85) to confirm the family-0x13 + matching-subfamily envelope covers id 81 with no `match id { 81 => ... }` arm remaining in src/battle.rs. Re-read src/battle.rs:428-431 to classify the recovery-pose offset as either record-driven or fitted. **measurement.**
+3. Add `tools/states.py:stepswrd_select` with chip-id 81 in the picked slot and a fire-cue matched to the sword-family scenario. Add `chip-stepswrd` row in tools/harness.py using the stepswrd_select scenario. **code change.** *If src/battle.rs:428-431 is fitted, do not edit it here — report the fitted constant as the ticket's NEGATIVE outcome.*
+4. Build ROM; run `chip-stepswrd` row only; expect 0/0/40 with non-blind negative (different-chip fire). **measurement.**
+5. verify_rows on the 8-row guard set + 10 sword/blade rows + chip-stepswrd; expect all identical to step 1, chip-stepswrd 0/0/40. **measurement.**
+
+**Rules.** No src/battle.rs edit unless the recovery-pose offset is proven record-driven — src/battle.rs is owned by T17's family port and may NOT be re-opened for this ticket. No allowlist, no patch_sterile, no src/ change outside tools/. ≤5 captures, tool budget ≤60.
+
+**Acceptance.** `chip-stepswrd` 0/0/40 with non-blind negative; 10 sword/blade rows identical to step 1; 8-row guard set identical; SCOPE M4 chip row count advances **43/411 → 44/411**. Cite `data/ChipDataArr.s:2514` for StepSwrd record bytes + the dispatch path; if src/battle.rs:428-431 is fitted, the ticket closes NEGATIVE with the named constant + cited site rather than landing a row.
+
+**Measure and report.** rows: chip-stepswrd + 10 sword/blade family rows + 8-row guard set; frames 40 each. Before/after pixel totals, worst, region, ROM sha256+size, fitted count, commit; one line of mechanism (record dispatch vs fitted); one line unverified.
+
+**Coordinator:** owns tools/states.py:stepswrd_select + tools/harness.py:chip-stepswrd row; pair with T83 OR T84 (disjoint with both — T83 owns tools/anchor.rs + src/objects.rs + tools/harness.py:confused_mettaur row, T84 owns src/objects.rs + tools/states.py:immobilized_check + tools/harness.py:immobilized row; pair with whichever lands first). Free tier: verify_rows from clean checkout on 19-row set. ≤$0.20 expected, ≤$0.40 cap. Advances **M4**.
+
