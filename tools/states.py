@@ -341,7 +341,18 @@ STATES = [
         poke_at=("60:0x02001c16:0x2000", "60:0x02001c18:0",
                  "60:0x02001d58:0x0240", "60:0x0200a210:0x37a",
                  "59:0x02001c2c:0x0001", "59:0x02001c30:0xf8a0",
-                 "59:0x02001c32:0x080a"),
+                 "59:0x02001c32:0x080a",
+                 "59:0x020013f0:0xd7c1", "59:0x020013f2:0x7734"),
+        # The seed halfwords are the admission half of the lever: the roll's
+        # OPT branch also needs GetPositiveSignedRNG bit0==0 (asm29.s:10220-
+        # 10222). Measured on the negative arm's own seed watch (T131 C1):
+        # frame 60 holds exactly 3 draws and the natural chain's candidate
+        # bits at the OPT position all read 1 (reject), so the seed at frame
+        # 59 is set to 0x7734d7c1 -- for which the roll's ADJACENT draws
+        # (threshold GetRNG asm29.s:10204 then OPT GetPositiveSignedRNG
+        # :10220, no call between) satisfy (draw&0x1f)<12 (the CentralArea1
+        # rate-5 threshold byte_8020C5C[0x85]=12) and bit0==0 (adopt) for
+        # either draw ordering.
         frames=79,
         description="A battle's real frame 0 whose encounter roll adopted "
                     "family-A record rec163 0x080af8a0 (battleSettingsList0: "
