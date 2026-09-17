@@ -589,7 +589,7 @@ PANEL_TYPE_FLAG_WORDS = {
 PANEL_TYPE_ROWS = [
     # (type, meaning, writer cite, reader cite)
     (0x0, "hole (skipped by every reader; flag word is the only one with bit 0x8000)",
-     "GAP (T33): no writer in bn6f disassembly -- walked 4 sites of bl _object_setPanelType (asm38.s:3581/3969/3980/3993, all pass r2=#2), 14 sites of inline strb ... oPanelData_Type (asm38.s:4318 inside _object_setPanelType itself + object.s:2220/2235/2272/2287/2323/2357/2371/2405/2419/2455/2469/2505/2519 all store mov r2,#1 or #3), and object_panel_setPoison (object.s:2540-2563, literal-offset strb r2,[r0,#2] with r2=#4). None writes 0. Type 0 = default-zero state of oPanelData_Type, set by init / memset, never re-written",
+     "GAP confirmed zero-writer (T33 4-site sweep widened by T115 to the whole field, 42+ sites examined): object_setPanelType (object.s:2601-2611) is a trampoline to _object_setPanelType (asm38.s:4309-4315), so 29 bl sites total (asm38.s:3581/3969/3980/3993 all r2=#2; asm31.s x21, asm32.s x2, asm00_2.s x2 -- constant args only 2/3/4/6/7/0xb/0xc, rest data-fed) + 13 direct strb oPanelData_Type sites (asm38.s:4318 inside the setter + object.s:2220/2235/2272/2287/2323/2357/2371/2405/2419/2455/2469/2505/2519, all store 1/3) + object_panel_setPoison (object.s:2540-2563, literal-offset strb with r2=#4). The setter REFUSES type-0 targets (asm38.s:4316-4317 ldrb/tst r3/beq skip), so 0 is only the init/memset default, never re-written; T115 data walk (byte_80E6D0C/byte_80CE41E/dword_80DE79C/1240 BattleSettings records/1076 formation arrays) found no other 0 producer",
      "asm/asm38.s:4315-4317 (_object_setPanelType tst->skip) + asm/object.s:1426-1428 (tickPanels skip)"),
     (0x1, "broken",
      "asm/object.s:2323 (object_breakPanel); also object_crackPanel 2nd arm asm/object.s:2235; cracked regen asm/object.s:1503-1504",
@@ -604,7 +604,7 @@ PANEL_TYPE_ROWS = [
      "asm/asm31.s:6146-6147 (sub_80BAE16 local arm)",
      "asm/asm00_2.s:21674-21689 (sub_801A186 ticks oCollisionData_PoisonPanelTimer)"),
     (0x5, "holy",
-     "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). Holy panel is a live M3 damage rule (object.s:4831-4833 'cmp r1,#5 // holy panel?' + asm00_2.s:22788-22791 halves the damage sum), but no bl _object_setPanelType nor inline strb produces it. Stage-terrain data, not code",
+     "GAP confirmed zero-writer (T115 full walk, same 42+ sites as the 0x0 row: 29 bl sites with constant args only 2/3/4/6/7/0xb/0xc, 13 direct strb sites all 1/3, poison 4) plus every data-fed writer: t4_0x56 whole-field nibbles byte_80E6D0C (asm31.s:99543-99566) hold only {2,3,6,7,8}; t3_0x4f area types byte_80CE41E (asm31.s:47201) {4,7,6}; t3_0xc9 dword_80DE79C (asm31.s:81488) {FF,3,7,6}; t4_0x16 arms (asm31.s:88662-88960) are Param1-fed with constant-3 enemy-half arm and unreferenced spawners; t4_0x1f (asm31.s:89990-90045) type comes from ExtraVars[0], also unreferenced; navi-byte events asm00_2.s:10776-10810 write only {3,4} into the byte sub_8013CC4 (asm00_2.s:11109-11160) replays onto panels; shockwave dispatch asm31.s:31640-31653 {skip,crack,break,variable}. Holy stays a live reader rule (object.s:4831-4833 'cmp r1,#5 // holy panel?' + asm00_2.s:22788-22791 halves the damage sum) with no producer in this ROM's code or data",
      "asm/object.s:4831-4833 (object_calculateFinalDamage1 'cmp r1,#5 // holy panel?') + asm/asm00_2.s:22788-22791 (sub_801A7F4 halves the damage sum)"),
     (0x6, "grass",
      "asm/asm31.s:6168-6169 (sub_80BAE16 local arm) + asm/asm31.s:30843-30844 (cornfiestaRelatedObject_80C6580)",
@@ -612,14 +612,14 @@ PANEL_TYPE_ROWS = [
     (0x7, "unnamed: stage terrain melted to normal(2) by fire (sub_3007460); ice candidate",
      "asm/asm31.s:6104-6105 (sub_80BAE16 local arm)",
      "asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> setPanelType 2); readers asm/asm00_2.s:16573/17376/18848/19321/19552"),
-    (0x8, "unnamed: regen like broken, no writer located",
-     "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). sub_3007708 (asm38.s:3942-3994) KNOWS type 8 (cmp r0,#8 then setPanelType 2 on Elec), but no bl _object_setPanelType nor inline strb produces it. Stage-record / chip-spawn write",
+    (0x8, "unnamed: ice candidate; whole-field pattern seeder t4_0x56 (regen like broken, Elec melts to 2)",
+     "asm31.s:99515-99529 (sub_80E6CAA in t4_0x56_80E6BDC: base = byte_80E6D0C + Param1*0xc + alliance*0x78, then per panel ldr word / lsr (row-1)*4 / and #0xf -> type = packed 4-bit nibble) + packed pattern table byte_80E6D0C asm31.s:99543-99566 (240 bytes = 2 alliances x 10 Param1 entries x 12 bytes; nibble set {2,3,6,7,8} -- the ONLY producer of 8: Param1 2/3/4 own-side rows, 0x82/0x28 bytes in both alliance halves). Update-handler vtable entry asm00_1.s:2491; spawner sub_80E6C8C asm31.s:99473-99489 is unreferenced in the whole ROM (no bl, no pointer word 0x080E6C8C/D -- byte search) so no live capture (T115 step 3: 0 captures)",
      "asm/object.s:1444-1450 (tickPanels regen 0x258/0x708) + asm/asm38.s:3960-3983 (sub_3007708 cmp #8 + Elec melts to 2)"),
     (0x9, "unnamed: 9..0xC share flag word 0x10210; regen without the 0x708 blink timer",
-     "GAP (T33): no writer in bn6f disassembly -- walked same 4 call sites of _object_setPanelType (all r2=#2) + 14 inline strb sites (all types 1/3) + object_panel_setPoison (type 4). _object_setPanelType itself has special-case arms for 9..0xC (asm38.s:4318-4326, sets oPanelData_Unk_12=0x708), but the upstream write is in stage/chip-spawn data, not in code. sub_3007708 (asm38.s:3993) melts 9..0xC + element 4 to type 2",
+     "GAP confirmed zero-writer (T115 full walk, same 42+ sites as the 0x5 row). _object_setPanelType itself has special-case arms for 9..0xC (asm38.s:4318-4326, sets oPanelData_Unk_12=0x708), sub_3007708 melts 9..0xC + element 4 to type 2 (asm38.s:3993), but no producer: no constant arg, no direct strb, and none of the data tables (byte_80E6D0C {2,3,6,7,8}, byte_80CE41E {4,7,6}, dword_80DE79C {FF,3,7,6}, navi-byte events {3,4}, 1240 records, 1076 formation arrays) holds a 9",
      "asm/asm38.s:4318-4326 (_object_setPanelType: 9..0xC get Unk_12=0x708) + asm/object.s:1452-1458 + asm/asm00_2.s:21953-21960"),
     (0xA, "unnamed: same regen group as 9",
-     "GAP (T33): no writer in bn6f disassembly -- same walk as 0x9 (T33). 9..0xC share flag word 0x10210; the in-code handles (asm38.s:4318-4326 _object_setPanelType Unk_12=0x708, sub_3007708 asm38.s:3993 melt on element 4) confirm the type exists in code, but no bl _object_setPanelType nor inline strb produces 0xA",
+     "GAP confirmed zero-writer (T115 full walk, same sites as 0x9): the in-code handles (asm38.s:4318-4326 _object_setPanelType Unk_12=0x708, sub_3007708 asm38.s:3993 melt on element 4) confirm the type exists in code, but no constant arg, direct strb, or data-table byte anywhere in the ROM produces 0xA",
      "asm/asm38.s:4318-4326 + asm/object.s:1452-1458 (9..0xC range) + asm/asm38.s:3993 (sub_3007708 melt)"),
     (0xB, "unnamed: stage type written from the hit object's CurState (alliance arm)",
      "asm/asm31.s:27871-27872 (t3_0x0_80C4E58, alliance != 0 arm)",
@@ -1620,6 +1620,19 @@ SECTION_NOTES = {
             " Mettaur's rows read 0x0028/0x0050/0x0078/0x00A0. Never read"
             " 0x003C as 'the Gunner's HP constant': it is element 0, hp 60,"
             " row 0 of Gunner's rows."),
+    "panels (M3)":
+        lambda meta: (
+            "T115 field walk (supersedes T33's 4-site sweep): object_setPanelType"
+            " (object.s:2601) is a trampoline to _object_setPanelType, so 29 bl"
+            " sites (asm31 x21, asm32 x2, asm00_2 x2, asm38 x4) + 13 direct strb"
+            " oPanelData_Type sites + 4 data-fed writers (t4_0x56 whole-field"
+            " nibble table byte_80E6D0C {2,3,6,7,8}; t3_0x4f area byte_80CE41E"
+            " {4,7,6}; t3_0xc9 dword_80DE79C {FF,3,7,6}; navi-byte replay"
+            " asm00_2.s:10776-10810 + sub_8013CC4 {3,4}) walked; BattleSettings"
+            " records (1240) and formation arrays (1076) carry no panel-type"
+            " byte (quad[0] dispatches only the 11 non-panel spawners asm00_1.s:8588-8621),"
+            " and T70's byte_203CA50 pairs stages to BACKGROUNDS only. 0x8 is"
+            " written by byte_80E6D0C nibbles; 0x0/0x5/0x9/0xA have no producer"),
     "formations (M8)":
         lambda meta: (
             f"T65 ROM-walk audit (supersedes the provisional .s arithmetic):"
