@@ -246,3 +246,16 @@ Caveat (measured, not assumed): for scripted battles the RAM copy path can overr
 `copyBattleSettingsTo_200AF60`; the record's own +0x4 is the fallback that reaches `sub_8081308` when no
 override fires. For random encounters the record pointer itself is `oBattleState_BattleSettings` (live
 evidence in asm00_1.s:8548-8557 note + T58 step 3-5), so its +0x4 is read directly.
+
+### T131 (wt/t131-scriptedentry): first family-A record fielded on canon -- 0/1076 -> 1/1076
+
+rec163 0x080af8a0 (battleSettingsList0 + 163*0x10) is fielded by state `battlestart_scripted`
+through the roll's OPT path (asm/asm29.s:10216-10234: Unk_28 0x02001c2c nonzero + OptCurBattleDataPtr
+0x02001c30/32 = the record pointer + GetPositiveSignedRNG bit0==0). Slots byte-equal the record's
+quads (formation 0x080b06a3): e1 0x0088/0x00fa/(4,3), e2 0x0088/0x00fa/(5,1), e3 0x0016/0x00c8/(6,2)
+-- HPs are Struct2 row 3 (version 3) of the Gunner (0x08112b9c) and ai4 (0x0810ae4c) tables.
+Determinism 0 across two canon captures; negative (lever absent) first diverges at the populate
+frame. Full lever census, the 0x02001b9c writer verdict and the unverified remainder:
+docs/coverage/entries.md and docs/worklog/T131.md. The row is keyed `recorded (canon)` in
+tools/inventory.py's parse_formations by its REFERENCING RECORD (rec 0x080af8a0 ...), so the
+section arithmetic reads verified 1/1076.
