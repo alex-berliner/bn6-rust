@@ -12,6 +12,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:3",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -24,7 +25,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 6,
-   "cite": "data/ChipDataArr.s:34",
+   "cite": "data/ChipDataArr.s:34; asset idx 0; name data/textscript/TextScriptChipNames0.s:7",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -37,7 +39,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 100,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:65",
+   "cite": "data/ChipDataArr.s:65; asset idx 1; name data/textscript/TextScriptChipNames0.s:10",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -50,7 +53,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 180,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:96",
+   "cite": "data/ChipDataArr.s:96; asset idx 2; name data/textscript/TextScriptChipNames0.s:13",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -63,7 +67,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 20,
    "mb": 4,
-   "cite": "data/ChipDataArr.s:127",
+   "cite": "data/ChipDataArr.s:127; asset idx 3; name data/textscript/TextScriptChipNames0.s:16",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -76,7 +81,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 10,
    "mb": 5,
-   "cite": "data/ChipDataArr.s:158",
+   "cite": "data/ChipDataArr.s:158; asset idx 4; name data/textscript/TextScriptChipNames0.s:19",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -89,7 +95,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 15,
    "mb": 18,
-   "cite": "data/ChipDataArr.s:189",
+   "cite": "data/ChipDataArr.s:189; asset idx 14; name data/textscript/TextScriptChipNames0.s:22",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -102,7 +109,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 20,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:220",
+   "cite": "data/ChipDataArr.s:220; asset idx 15; name data/textscript/TextScriptChipNames0.s:25",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -115,7 +123,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 20,
    "mb": 75,
-   "cite": "data/ChipDataArr.s:251",
+   "cite": "data/ChipDataArr.s:251; asset idx 30; name data/textscript/TextScriptChipNames0.s:28",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -128,7 +137,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 30,
    "mb": 10,
-   "cite": "data/ChipDataArr.s:282",
+   "cite": "data/ChipDataArr.s:282; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:31",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -141,7 +151,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 18,
-   "cite": "data/ChipDataArr.s:313",
+   "cite": "data/ChipDataArr.s:313; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:34",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -154,7 +165,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 90,
    "mb": 26,
-   "cite": "data/ChipDataArr.s:344",
+   "cite": "data/ChipDataArr.s:344; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:37",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -167,7 +179,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 120,
    "mb": 17,
-   "cite": "data/ChipDataArr.s:375",
+   "cite": "data/ChipDataArr.s:375; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:40",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -180,7 +193,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 160,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:406",
+   "cite": "data/ChipDataArr.s:406; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:43",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -193,7 +207,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 200,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:437",
+   "cite": "data/ChipDataArr.s:437; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:46",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -206,7 +221,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 15,
-   "cite": "data/ChipDataArr.s:468",
+   "cite": "data/ChipDataArr.s:468; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:49",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -219,7 +235,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:499",
+   "cite": "data/ChipDataArr.s:499; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:52",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -232,7 +249,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:530",
+   "cite": "data/ChipDataArr.s:530; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:55",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -245,7 +263,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 80,
-   "cite": "data/ChipDataArr.s:561",
+   "cite": "data/ChipDataArr.s:561; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:58",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -258,7 +277,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 50,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:592",
+   "cite": "data/ChipDataArr.s:592; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:61",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -271,7 +291,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 70,
    "mb": 8,
-   "cite": "data/ChipDataArr.s:623",
+   "cite": "data/ChipDataArr.s:623; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:64",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -284,7 +305,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 110,
    "mb": 21,
-   "cite": "data/ChipDataArr.s:654",
+   "cite": "data/ChipDataArr.s:654; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:67",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -297,7 +319,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 150,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:685",
+   "cite": "data/ChipDataArr.s:685; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:70",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -310,7 +333,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 100,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:716",
+   "cite": "data/ChipDataArr.s:716; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:73",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -323,7 +347,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 30,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:747",
+   "cite": "data/ChipDataArr.s:747; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:76",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -336,7 +361,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 40,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:778",
+   "cite": "data/ChipDataArr.s:778; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:79",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -349,7 +375,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 50,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:809",
+   "cite": "data/ChipDataArr.s:809; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:82",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -362,7 +389,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 60,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:840",
+   "cite": "data/ChipDataArr.s:840; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:85",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -375,7 +403,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 80,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:871",
+   "cite": "data/ChipDataArr.s:871; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:88",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -388,7 +417,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 100,
    "mb": 46,
-   "cite": "data/ChipDataArr.s:902",
+   "cite": "data/ChipDataArr.s:902; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:91",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -401,7 +431,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 40,
    "mb": 7,
-   "cite": "data/ChipDataArr.s:933",
+   "cite": "data/ChipDataArr.s:933; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:94",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -414,7 +445,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 120,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:964",
+   "cite": "data/ChipDataArr.s:964; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:97",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -427,7 +459,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 150,
    "mb": 31,
-   "cite": "data/ChipDataArr.s:995",
+   "cite": "data/ChipDataArr.s:995; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:100",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -440,7 +473,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 180,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:1026",
+   "cite": "data/ChipDataArr.s:1026; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:103",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -453,7 +487,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 100,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:1057",
+   "cite": "data/ChipDataArr.s:1057; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:106",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -466,7 +501,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 120,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:1088",
+   "cite": "data/ChipDataArr.s:1088; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:109",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -479,7 +515,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 140,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:1119",
+   "cite": "data/ChipDataArr.s:1119; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:112",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -492,7 +529,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 10,
    "mb": 21,
-   "cite": "data/ChipDataArr.s:1150",
+   "cite": "data/ChipDataArr.s:1150; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:115",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -505,7 +543,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 15,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:1181",
+   "cite": "data/ChipDataArr.s:1181; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:118",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -518,7 +557,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 20,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:1212",
+   "cite": "data/ChipDataArr.s:1212; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:121",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -531,7 +571,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 50,
    "mb": 14,
-   "cite": "data/ChipDataArr.s:1243",
+   "cite": "data/ChipDataArr.s:1243; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:124",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -544,7 +585,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 70,
    "mb": 26,
-   "cite": "data/ChipDataArr.s:1274",
+   "cite": "data/ChipDataArr.s:1274; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:127",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -557,7 +599,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 90,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:1305",
+   "cite": "data/ChipDataArr.s:1305; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:130",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -570,7 +613,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 30,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:1336",
+   "cite": "data/ChipDataArr.s:1336; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:133",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -583,7 +627,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 50,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:1367",
+   "cite": "data/ChipDataArr.s:1367; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:136",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -596,7 +641,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 70,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:1398",
+   "cite": "data/ChipDataArr.s:1398; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:139",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -609,7 +655,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 140,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:1429",
+   "cite": "data/ChipDataArr.s:1429; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:142",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -622,7 +669,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 150,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:1460",
+   "cite": "data/ChipDataArr.s:1460; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:145",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -635,7 +683,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 120,
    "mb": 44,
-   "cite": "data/ChipDataArr.s:1491",
+   "cite": "data/ChipDataArr.s:1491; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:148",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -648,7 +697,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 130,
    "mb": 48,
-   "cite": "data/ChipDataArr.s:1522",
+   "cite": "data/ChipDataArr.s:1522; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:151",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -661,7 +711,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 60,
    "mb": 19,
-   "cite": "data/ChipDataArr.s:1553",
+   "cite": "data/ChipDataArr.s:1553; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:154",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -674,7 +725,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 70,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:1584",
+   "cite": "data/ChipDataArr.s:1584; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:157",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -687,7 +739,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 20,
    "mb": 16,
-   "cite": "data/ChipDataArr.s:1615",
+   "cite": "data/ChipDataArr.s:1615; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:160",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -700,7 +753,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 20,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:1646",
+   "cite": "data/ChipDataArr.s:1646; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:163",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -713,7 +767,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 50,
    "mb": 6,
-   "cite": "data/ChipDataArr.s:1677",
+   "cite": "data/ChipDataArr.s:1677; asset idx 8; name data/textscript/TextScriptChipNames0.s:166",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -726,7 +781,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 11,
-   "cite": "data/ChipDataArr.s:1708",
+   "cite": "data/ChipDataArr.s:1708; asset idx 35; name data/textscript/TextScriptChipNames0.s:169",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -739,7 +795,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 27,
-   "cite": "data/ChipDataArr.s:1739",
+   "cite": "data/ChipDataArr.s:1739; asset idx 36; name data/textscript/TextScriptChipNames0.s:172",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -752,7 +809,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:1770",
+   "cite": "data/ChipDataArr.s:1770; asset idx 40; name data/textscript/TextScriptChipNames0.s:175",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -765,7 +823,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 70,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:1801",
+   "cite": "data/ChipDataArr.s:1801; asset idx 41; name data/textscript/TextScriptChipNames0.s:178",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -778,7 +837,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 100,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:1832",
+   "cite": "data/ChipDataArr.s:1832; asset idx 42; name data/textscript/TextScriptChipNames0.s:181",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -791,7 +851,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 250,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:1863",
+   "cite": "data/ChipDataArr.s:1863; asset idx 23; name data/textscript/TextScriptChipNames0.s:184",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -804,7 +865,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 40,
    "mb": 31,
-   "cite": "data/ChipDataArr.s:1894",
+   "cite": "data/ChipDataArr.s:1894; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:187",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -817,7 +879,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 60,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:1925",
+   "cite": "data/ChipDataArr.s:1925; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:190",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -830,7 +893,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 80,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:1956",
+   "cite": "data/ChipDataArr.s:1956; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:193",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -843,7 +907,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 50,
    "mb": 14,
-   "cite": "data/ChipDataArr.s:1987",
+   "cite": "data/ChipDataArr.s:1987; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:196",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -856,7 +921,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 60,
    "mb": 26,
-   "cite": "data/ChipDataArr.s:2018",
+   "cite": "data/ChipDataArr.s:2018; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:199",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -869,7 +935,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 70,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:2049",
+   "cite": "data/ChipDataArr.s:2049; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:202",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -882,7 +949,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:2080",
+   "cite": "data/ChipDataArr.s:2080; asset idx 46; name data/textscript/TextScriptChipNames0.s:205",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -895,7 +963,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 10,
    "mb": 19,
-   "cite": "data/ChipDataArr.s:2111",
+   "cite": "data/ChipDataArr.s:2111; asset idx 45; name data/textscript/TextScriptChipNames0.s:208",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -908,7 +977,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 10,
    "mb": 31,
-   "cite": "data/ChipDataArr.s:2142",
+   "cite": "data/ChipDataArr.s:2142; asset idx 44; name data/textscript/TextScriptChipNames0.s:211",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -921,7 +991,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 10,
    "mb": 37,
-   "cite": "data/ChipDataArr.s:2173",
+   "cite": "data/ChipDataArr.s:2173; asset idx 43; name data/textscript/TextScriptChipNames0.s:214",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -934,7 +1005,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 80,
    "mb": 8,
-   "cite": "data/ChipDataArr.s:2204",
+   "cite": "data/ChipDataArr.s:2204; asset idx 5; name data/textscript/TextScriptChipNames0.s:217",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -947,7 +1019,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 80,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:2235",
+   "cite": "data/ChipDataArr.s:2235; asset idx 6; name data/textscript/TextScriptChipNames0.s:220",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -960,7 +1033,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 100,
    "mb": 25,
-   "cite": "data/ChipDataArr.s:2266",
+   "cite": "data/ChipDataArr.s:2266; asset idx 7; name data/textscript/TextScriptChipNames0.s:223",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -973,7 +1047,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 150,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:2297",
+   "cite": "data/ChipDataArr.s:2297; asset idx 25; name data/textscript/TextScriptChipNames0.s:226",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -986,7 +1061,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 150,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:2328",
+   "cite": "data/ChipDataArr.s:2328; asset idx 26; name data/textscript/TextScriptChipNames0.s:229",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -999,7 +1075,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 140,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:2359",
+   "cite": "data/ChipDataArr.s:2359; asset idx 19; name data/textscript/TextScriptChipNames0.s:232",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -1012,7 +1089,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 160,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:2390",
+   "cite": "data/ChipDataArr.s:2390; asset idx 20; name data/textscript/TextScriptChipNames0.s:235",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -1025,7 +1103,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 120,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:2421",
+   "cite": "data/ChipDataArr.s:2421; asset idx 21; name data/textscript/TextScriptChipNames0.s:238",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -1038,7 +1117,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 150,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:2452",
+   "cite": "data/ChipDataArr.s:2452; asset idx 22; name data/textscript/TextScriptChipNames0.s:241",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -1051,7 +1131,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 140,
    "mb": 19,
-   "cite": "data/ChipDataArr.s:2483",
+   "cite": "data/ChipDataArr.s:2483; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:244",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1064,7 +1145,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 160,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:2514",
+   "cite": "data/ChipDataArr.s:2514; asset idx 32; name data/textscript/TextScriptChipNames0.s:247",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1077,7 +1159,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 160,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:2545",
+   "cite": "data/ChipDataArr.s:2545; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:250",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1090,7 +1173,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 220,
    "mb": 52,
-   "cite": "data/ChipDataArr.s:2576",
+   "cite": "data/ChipDataArr.s:2576; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:253",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1103,7 +1187,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 130,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:2607",
+   "cite": "data/ChipDataArr.s:2607; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:256",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1116,7 +1201,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 1020,
    "mb": 77,
-   "cite": "data/ChipDataArr.s:2638",
+   "cite": "data/ChipDataArr.s:2638; asset idx 31; name data/textscript/TextScriptChipNames0.s:259",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -1129,7 +1215,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 200,
    "mb": 37,
-   "cite": "data/ChipDataArr.s:2669",
+   "cite": "data/ChipDataArr.s:2669; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:262",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1142,7 +1229,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 220,
    "mb": 43,
-   "cite": "data/ChipDataArr.s:2700",
+   "cite": "data/ChipDataArr.s:2700; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:265",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1155,7 +1243,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 240,
    "mb": 50,
-   "cite": "data/ChipDataArr.s:2731",
+   "cite": "data/ChipDataArr.s:2731; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:268",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1168,7 +1257,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 4,
-   "cite": "data/ChipDataArr.s:2762",
+   "cite": "data/ChipDataArr.s:2762; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:271",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1181,7 +1271,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 8,
-   "cite": "data/ChipDataArr.s:2793",
+   "cite": "data/ChipDataArr.s:2793; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:274",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1194,7 +1285,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 100,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:2824",
+   "cite": "data/ChipDataArr.s:2824; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:277",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1207,7 +1299,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 80,
    "mb": 15,
-   "cite": "data/ChipDataArr.s:2855",
+   "cite": "data/ChipDataArr.s:2855; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:280",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1220,7 +1313,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 120,
    "mb": 22,
-   "cite": "data/ChipDataArr.s:2886",
+   "cite": "data/ChipDataArr.s:2886; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:283",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1233,7 +1327,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 160,
    "mb": 29,
-   "cite": "data/ChipDataArr.s:2917",
+   "cite": "data/ChipDataArr.s:2917; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:286",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1246,7 +1341,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 130,
    "mb": 25,
-   "cite": "data/ChipDataArr.s:2948",
+   "cite": "data/ChipDataArr.s:2948; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:289",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1259,7 +1355,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 150,
    "mb": 33,
-   "cite": "data/ChipDataArr.s:2979",
+   "cite": "data/ChipDataArr.s:2979; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:292",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1272,7 +1369,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 170,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:3010",
+   "cite": "data/ChipDataArr.s:3010; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:295",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1285,7 +1383,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 100,
    "mb": 18,
-   "cite": "data/ChipDataArr.s:3041",
+   "cite": "data/ChipDataArr.s:3041; asset idx 37; name data/textscript/TextScriptChipNames0.s:298",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -1298,7 +1397,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 140,
    "mb": 23,
-   "cite": "data/ChipDataArr.s:3072",
+   "cite": "data/ChipDataArr.s:3072; asset idx 38; name data/textscript/TextScriptChipNames0.s:301",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1311,7 +1411,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 180,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:3103",
+   "cite": "data/ChipDataArr.s:3103; asset idx 39; name data/textscript/TextScriptChipNames0.s:304",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1324,7 +1425,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 130,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:3134",
+   "cite": "data/ChipDataArr.s:3134; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:307",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1337,7 +1439,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 150,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:3165",
+   "cite": "data/ChipDataArr.s:3165; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:310",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1350,7 +1453,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 170,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:3196",
+   "cite": "data/ChipDataArr.s:3196; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:313",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1363,7 +1467,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 10,
    "mb": 26,
-   "cite": "data/ChipDataArr.s:3227",
+   "cite": "data/ChipDataArr.s:3227; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:316",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1376,7 +1481,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 10,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:3258",
+   "cite": "data/ChipDataArr.s:3258; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:319",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1389,7 +1495,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 10,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:3289",
+   "cite": "data/ChipDataArr.s:3289; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:322",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1402,7 +1509,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 60,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:3320",
+   "cite": "data/ChipDataArr.s:3320; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:325",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1415,7 +1523,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 120,
    "mb": 22,
-   "cite": "data/ChipDataArr.s:3351",
+   "cite": "data/ChipDataArr.s:3351; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:328",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1428,7 +1537,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 180,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:3382",
+   "cite": "data/ChipDataArr.s:3382; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:331",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1441,7 +1551,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 100,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:3413",
+   "cite": "data/ChipDataArr.s:3413; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:334",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1454,7 +1565,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 120,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:3444",
+   "cite": "data/ChipDataArr.s:3444; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:337",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1467,7 +1579,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 140,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:3475",
+   "cite": "data/ChipDataArr.s:3475; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:340",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1480,7 +1593,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 100,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:3506",
+   "cite": "data/ChipDataArr.s:3506; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:343",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1493,7 +1607,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 130,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:3537",
+   "cite": "data/ChipDataArr.s:3537; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:346",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1506,7 +1621,8 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 160,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:3568",
+   "cite": "data/ChipDataArr.s:3568; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:349",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1519,7 +1635,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 100,
    "mb": 16,
-   "cite": "data/ChipDataArr.s:3599",
+   "cite": "data/ChipDataArr.s:3599; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:352",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1532,7 +1649,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 140,
    "mb": 26,
-   "cite": "data/ChipDataArr.s:3630",
+   "cite": "data/ChipDataArr.s:3630; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:355",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1545,7 +1663,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 170,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:3661",
+   "cite": "data/ChipDataArr.s:3661; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:358",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1558,7 +1677,8 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 150,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:3692",
+   "cite": "data/ChipDataArr.s:3692; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:361",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1571,7 +1691,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 140,
    "mb": 17,
-   "cite": "data/ChipDataArr.s:3723",
+   "cite": "data/ChipDataArr.s:3723; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:364",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1584,7 +1705,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 190,
    "mb": 27,
-   "cite": "data/ChipDataArr.s:3754",
+   "cite": "data/ChipDataArr.s:3754; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:367",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1597,7 +1719,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 250,
    "mb": 37,
-   "cite": "data/ChipDataArr.s:3785",
+   "cite": "data/ChipDataArr.s:3785; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:370",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1610,7 +1733,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 70,
    "mb": 13,
-   "cite": "data/ChipDataArr.s:3816",
+   "cite": "data/ChipDataArr.s:3816; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:373",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1623,7 +1747,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 100,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:3847",
+   "cite": "data/ChipDataArr.s:3847; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:376",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1636,7 +1761,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 130,
    "mb": 27,
-   "cite": "data/ChipDataArr.s:3878",
+   "cite": "data/ChipDataArr.s:3878; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:379",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1649,7 +1775,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 50,
    "mb": 22,
-   "cite": "data/ChipDataArr.s:3909",
+   "cite": "data/ChipDataArr.s:3909; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:382",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1662,7 +1789,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 50,
    "mb": 29,
-   "cite": "data/ChipDataArr.s:3940",
+   "cite": "data/ChipDataArr.s:3940; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:385",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1675,7 +1803,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 50,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:3971",
+   "cite": "data/ChipDataArr.s:3971; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:388",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1688,7 +1817,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 0,
    "mb": 10,
-   "cite": "data/ChipDataArr.s:4002",
+   "cite": "data/ChipDataArr.s:4002; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:391",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1701,7 +1831,8 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 0,
    "mb": 10,
-   "cite": "data/ChipDataArr.s:4033",
+   "cite": "data/ChipDataArr.s:4033; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:394",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1714,7 +1845,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 7,
-   "cite": "data/ChipDataArr.s:4064",
+   "cite": "data/ChipDataArr.s:4064; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:397",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1727,7 +1859,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 120,
    "mb": 16,
-   "cite": "data/ChipDataArr.s:4095",
+   "cite": "data/ChipDataArr.s:4095; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:400",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1740,7 +1873,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 200,
    "mb": 25,
-   "cite": "data/ChipDataArr.s:4126",
+   "cite": "data/ChipDataArr.s:4126; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:403",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1753,7 +1887,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 30,
    "mb": 34,
-   "cite": "data/ChipDataArr.s:4157",
+   "cite": "data/ChipDataArr.s:4157; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:406",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1766,7 +1901,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 160,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:4188",
+   "cite": "data/ChipDataArr.s:4188; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:409",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1779,7 +1915,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 200,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:4219",
+   "cite": "data/ChipDataArr.s:4219; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:412",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1792,7 +1929,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 260,
    "mb": 46,
-   "cite": "data/ChipDataArr.s:4250",
+   "cite": "data/ChipDataArr.s:4250; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:415",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1805,7 +1943,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 1021,
    "mb": 69,
-   "cite": "data/ChipDataArr.s:4281",
+   "cite": "data/ChipDataArr.s:4281; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:418",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1818,7 +1957,8 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 40,
    "mb": 73,
-   "cite": "data/ChipDataArr.s:4312",
+   "cite": "data/ChipDataArr.s:4312; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:421",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1831,7 +1971,8 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 220,
    "mb": 90,
-   "cite": "data/ChipDataArr.s:4343",
+   "cite": "data/ChipDataArr.s:4343; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:424",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1844,7 +1985,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 130,
    "mb": 31,
-   "cite": "data/ChipDataArr.s:4374",
+   "cite": "data/ChipDataArr.s:4374; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:427",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1857,7 +1999,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 150,
    "mb": 35,
-   "cite": "data/ChipDataArr.s:4405",
+   "cite": "data/ChipDataArr.s:4405; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:430",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1870,7 +2013,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 200,
    "mb": 6,
-   "cite": "data/ChipDataArr.s:4436",
+   "cite": "data/ChipDataArr.s:4436; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:433",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1883,7 +2027,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 150,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:4467",
+   "cite": "data/ChipDataArr.s:4467; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:436",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1896,7 +2041,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 200,
    "mb": 28,
-   "cite": "data/ChipDataArr.s:4498",
+   "cite": "data/ChipDataArr.s:4498; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:439",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1909,7 +2055,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 0,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:4529",
+   "cite": "data/ChipDataArr.s:4529; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:442",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1922,7 +2069,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 0,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:4560",
+   "cite": "data/ChipDataArr.s:4560; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:445",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1935,7 +2083,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 0,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:4591",
+   "cite": "data/ChipDataArr.s:4591; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:448",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1948,7 +2097,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 0,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:4622",
+   "cite": "data/ChipDataArr.s:4622; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:451",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1961,7 +2111,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 10,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:4653",
+   "cite": "data/ChipDataArr.s:4653; asset idx 47; name data/textscript/TextScriptChipNames0.s:454",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -1974,7 +2125,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 200,
    "mb": 64,
-   "cite": "data/ChipDataArr.s:4684",
+   "cite": "data/ChipDataArr.s:4684; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:457",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -1987,7 +2139,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 1,
    "mb": 86,
-   "cite": "data/ChipDataArr.s:4715",
+   "cite": "data/ChipDataArr.s:4715; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:460",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2000,7 +2153,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 1,
    "mb": 66,
-   "cite": "data/ChipDataArr.s:4746",
+   "cite": "data/ChipDataArr.s:4746; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:463",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2013,7 +2167,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 4,
-   "cite": "data/ChipDataArr.s:4777",
+   "cite": "data/ChipDataArr.s:4777; asset idx 9; name data/textscript/TextScriptChipNames0.s:466",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2026,7 +2181,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:4808",
+   "cite": "data/ChipDataArr.s:4808; asset idx 10; name data/textscript/TextScriptChipNames0.s:469",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2039,7 +2195,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 18,
-   "cite": "data/ChipDataArr.s:4839",
+   "cite": "data/ChipDataArr.s:4839; asset idx 16; name data/textscript/TextScriptChipNames0.s:472",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2052,7 +2209,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:4870",
+   "cite": "data/ChipDataArr.s:4870; asset idx 17; name data/textscript/TextScriptChipNames0.s:475",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2065,7 +2223,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:4901",
+   "cite": "data/ChipDataArr.s:4901; asset idx 18; name data/textscript/TextScriptChipNames0.s:478",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2078,7 +2237,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:4932",
+   "cite": "data/ChipDataArr.s:4932; asset idx 27; name data/textscript/TextScriptChipNames0.s:481",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2091,7 +2251,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:4963",
+   "cite": "data/ChipDataArr.s:4963; asset idx 28; name data/textscript/TextScriptChipNames0.s:484",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2104,7 +2265,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 48,
-   "cite": "data/ChipDataArr.s:4994",
+   "cite": "data/ChipDataArr.s:4994; asset idx 29; name data/textscript/TextScriptChipNames0.s:487",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
@@ -2117,7 +2279,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 10,
    "mb": 6,
-   "cite": "data/ChipDataArr.s:5025",
+   "cite": "data/ChipDataArr.s:5025; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:490",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2130,7 +2293,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 10,
    "mb": 8,
-   "cite": "data/ChipDataArr.s:5056",
+   "cite": "data/ChipDataArr.s:5056; asset idx 12; name data/textscript/TextScriptChipNames0.s:493",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -2143,7 +2307,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 20,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:5087",
+   "cite": "data/ChipDataArr.s:5087; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:496",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2156,7 +2321,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 50,
-   "cite": "data/ChipDataArr.s:5118",
+   "cite": "data/ChipDataArr.s:5118; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:499",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2169,7 +2335,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 14,
-   "cite": "data/ChipDataArr.s:5149",
+   "cite": "data/ChipDataArr.s:5149; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:502",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2182,7 +2349,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 47,
-   "cite": "data/ChipDataArr.s:5180",
+   "cite": "data/ChipDataArr.s:5180; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:505",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2195,7 +2363,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 24,
-   "cite": "data/ChipDataArr.s:5211",
+   "cite": "data/ChipDataArr.s:5211; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:508",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2208,7 +2377,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 62,
-   "cite": "data/ChipDataArr.s:5242",
+   "cite": "data/ChipDataArr.s:5242; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:511",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2221,7 +2391,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 21,
-   "cite": "data/ChipDataArr.s:5273",
+   "cite": "data/ChipDataArr.s:5273; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:514",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2234,7 +2405,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 21,
-   "cite": "data/ChipDataArr.s:5304",
+   "cite": "data/ChipDataArr.s:5304; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:517",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2247,7 +2419,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:5335",
+   "cite": "data/ChipDataArr.s:5335; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:520",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2260,7 +2433,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 48,
-   "cite": "data/ChipDataArr.s:5366",
+   "cite": "data/ChipDataArr.s:5366; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:523",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2273,7 +2447,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 50,
-   "cite": "data/ChipDataArr.s:5397",
+   "cite": "data/ChipDataArr.s:5397; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:526",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2286,7 +2461,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 0,
    "mb": 11,
-   "cite": "data/ChipDataArr.s:5428",
+   "cite": "data/ChipDataArr.s:5428; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:529",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2299,7 +2475,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 62,
-   "cite": "data/ChipDataArr.s:5459",
+   "cite": "data/ChipDataArr.s:5459; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:532",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2312,7 +2489,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:5490",
+   "cite": "data/ChipDataArr.s:5490; asset idx 13; name data/textscript/TextScriptChipNames0.s:535",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -2325,7 +2503,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 7,
-   "cite": "data/ChipDataArr.s:5521",
+   "cite": "data/ChipDataArr.s:5521; asset idx 11; name data/textscript/TextScriptChipNames0.s:538",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -2338,7 +2517,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:5552",
+   "cite": "data/ChipDataArr.s:5552; asset idx 33; name data/textscript/TextScriptChipNames0.s:541",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -2351,7 +2531,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 52,
-   "cite": "data/ChipDataArr.s:5583",
+   "cite": "data/ChipDataArr.s:5583; asset idx 34; name data/textscript/TextScriptChipNames0.s:544",
+   "reachable": true,
    "status": "verified"
   },
   {
@@ -2364,7 +2545,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 0,
    "mb": 58,
-   "cite": "data/ChipDataArr.s:5614",
+   "cite": "data/ChipDataArr.s:5614; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:547",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2377,7 +2559,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 70,
-   "cite": "data/ChipDataArr.s:5645",
+   "cite": "data/ChipDataArr.s:5645; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:550",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2390,7 +2573,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 14,
-   "cite": "data/ChipDataArr.s:5676",
+   "cite": "data/ChipDataArr.s:5676; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:553",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2403,7 +2587,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:5707",
+   "cite": "data/ChipDataArr.s:5707; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:556",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2416,7 +2601,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 60,
-   "cite": "data/ChipDataArr.s:5738",
+   "cite": "data/ChipDataArr.s:5738; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:559",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2429,7 +2615,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 50,
-   "cite": "data/ChipDataArr.s:5769",
+   "cite": "data/ChipDataArr.s:5769; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:562",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2442,7 +2629,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 100,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:5800",
+   "cite": "data/ChipDataArr.s:5800; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:565",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2455,7 +2643,8 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 100,
    "mb": 33,
-   "cite": "data/ChipDataArr.s:5831",
+   "cite": "data/ChipDataArr.s:5831; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:568",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2468,7 +2657,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 0,
    "mb": 37,
-   "cite": "data/ChipDataArr.s:5862",
+   "cite": "data/ChipDataArr.s:5862; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:571",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2481,7 +2671,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 0,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:5893",
+   "cite": "data/ChipDataArr.s:5893; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:574",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2494,7 +2685,8 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 0,
    "mb": 12,
-   "cite": "data/ChipDataArr.s:5924",
+   "cite": "data/ChipDataArr.s:5924; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:577",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2507,7 +2699,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 10,
    "mb": 4,
-   "cite": "data/ChipDataArr.s:5955",
+   "cite": "data/ChipDataArr.s:5955; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:580",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2520,7 +2713,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 20,
    "mb": 36,
-   "cite": "data/ChipDataArr.s:5986",
+   "cite": "data/ChipDataArr.s:5986; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:583",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2533,7 +2727,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 0,
    "mb": 31,
-   "cite": "data/ChipDataArr.s:6017",
+   "cite": "data/ChipDataArr.s:6017; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:586",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2546,7 +2741,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 30,
    "mb": 66,
-   "cite": "data/ChipDataArr.s:6048",
+   "cite": "data/ChipDataArr.s:6048; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:589",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2559,7 +2755,8 @@
    "element": "CHIP_ELEM_PLUS",
    "damage": 0,
    "mb": 50,
-   "cite": "data/ChipDataArr.s:6079",
+   "cite": "data/ChipDataArr.s:6079; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:592",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2572,7 +2769,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 240,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:6110",
+   "cite": "data/ChipDataArr.s:6110; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:595",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2585,7 +2783,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 25,
-   "cite": "data/ChipDataArr.s:6141",
+   "cite": "data/ChipDataArr.s:6141; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:598",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2598,7 +2797,8 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 150,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:6172",
+   "cite": "data/ChipDataArr.s:6172; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:601",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2611,7 +2811,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 190,
    "mb": 30,
-   "cite": "data/ChipDataArr.s:6203",
+   "cite": "data/ChipDataArr.s:6203; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:604",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2624,7 +2825,8 @@
    "element": "CHIP_ELEM_OBSTACLE",
    "damage": 230,
    "mb": 37,
-   "cite": "data/ChipDataArr.s:6234",
+   "cite": "data/ChipDataArr.s:6234; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:607",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -2637,12 +2839,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 140,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:6265",
+   "cite": "data/ChipDataArr.s:6265; asset idx 24; name data/textscript/TextScriptChipNames0.s:610",
+   "reachable": true,
    "status": "verified-pixels"
   },
   {
    "id": 203,
-   "name": "Roll",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2651,11 +2854,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6296",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 204,
-   "name": "Roll2",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2664,11 +2868,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6327",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 205,
-   "name": "Roll3",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2677,11 +2882,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6358",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 206,
-   "name": "ProtoMan",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2690,11 +2896,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6389",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 207,
-   "name": "ProtoMn[EX]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2703,11 +2910,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6420",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 208,
-   "name": "ProtoMn[SP]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2716,11 +2924,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6451",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 209,
-   "name": "HeatMan",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2729,11 +2938,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6482",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 210,
-   "name": "HeatMan[EX]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2742,11 +2952,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6513",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 211,
-   "name": "HeatMan[SP]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2755,11 +2966,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6544",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 212,
-   "name": "ElecMan",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2768,11 +2980,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6575",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 213,
-   "name": "ElecMan[EX]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2781,11 +2994,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6606",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 214,
-   "name": "ElecMan[SP]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2794,11 +3008,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6637",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 215,
-   "name": "SlashMan",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2807,11 +3022,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6668",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 216,
-   "name": "SlashMn[EX]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2820,11 +3036,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6699",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 217,
-   "name": "SlashMn[SP]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2833,11 +3050,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6730",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 218,
-   "name": "EraseMan",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2846,11 +3064,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6761",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 219,
-   "name": "EraseMn[EX]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2859,11 +3078,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6792",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 220,
-   "name": "EraseMn[SP]",
+   "name": "",
    "codes": "1a020100",
    "codes_decoded": "ABC*",
    "class_raw": 0,
@@ -2872,11 +3092,12 @@
    "damage": 40,
    "mb": 8,
    "cite": "data/ChipDataArr.s:6823",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
    "id": 221,
-   "name": "ChrgeMan",
+   "name": "Roll",
    "codes": "ffff1a11",
    "codes_decoded": "R*",
    "class_raw": 1,
@@ -2884,12 +3105,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 20,
    "mb": 20,
-   "cite": "data/ChipDataArr.s:6854",
+   "cite": "data/ChipDataArr.s:6854; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:667",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 222,
-   "name": "ChrgeMn[EX]",
+   "name": "Roll2",
    "codes": "ffffff11",
    "codes_decoded": "R",
    "class_raw": 1,
@@ -2897,12 +3119,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 40,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:6885",
+   "cite": "data/ChipDataArr.s:6885; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:670",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 223,
-   "name": "ChrgeMn[SP]",
+   "name": "Roll3",
    "codes": "ffffff11",
    "codes_decoded": "R",
    "class_raw": 1,
@@ -2910,12 +3133,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 60,
-   "cite": "data/ChipDataArr.s:6916",
+   "cite": "data/ChipDataArr.s:6916; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:673",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 224,
-   "name": "SpoutMan",
+   "name": "ProtoMan",
    "codes": "ffff1a01",
    "codes_decoded": "B*",
    "class_raw": 1,
@@ -2923,12 +3147,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 150,
    "mb": 41,
-   "cite": "data/ChipDataArr.s:6947",
+   "cite": "data/ChipDataArr.s:6947; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:676",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 225,
-   "name": "SpoutMn[EX]",
+   "name": "ProtoMn[EX]",
    "codes": "ffffff01",
    "codes_decoded": "B",
    "class_raw": 1,
@@ -2936,12 +3161,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 170,
    "mb": 53,
-   "cite": "data/ChipDataArr.s:6978",
+   "cite": "data/ChipDataArr.s:6978; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:679",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 226,
-   "name": "SpoutMn[SP]",
+   "name": "ProtoMn[SP]",
    "codes": "ffffff01",
    "codes_decoded": "B",
    "class_raw": 1,
@@ -2949,12 +3175,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 1011,
    "mb": 68,
-   "cite": "data/ChipDataArr.s:7009",
+   "cite": "data/ChipDataArr.s:7009; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:682",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 227,
-   "name": "TmhkMan",
+   "name": "HeatMan",
    "codes": "ffff1a07",
    "codes_decoded": "H*",
    "class_raw": 1,
@@ -2962,12 +3189,13 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 100,
    "mb": 32,
-   "cite": "data/ChipDataArr.s:7040",
+   "cite": "data/ChipDataArr.s:7040; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:685",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 228,
-   "name": "TmhkMan[EX]",
+   "name": "HeatMan[EX]",
    "codes": "ffffff07",
    "codes_decoded": "H",
    "class_raw": 1,
@@ -2975,12 +3203,13 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 130,
    "mb": 55,
-   "cite": "data/ChipDataArr.s:7071",
+   "cite": "data/ChipDataArr.s:7071; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:688",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 229,
-   "name": "TmhkMan[SP]",
+   "name": "HeatMan[SP]",
    "codes": "ffffff07",
    "codes_decoded": "H",
    "class_raw": 1,
@@ -2988,12 +3217,13 @@
    "element": "CHIP_ELEM_FIRE",
    "damage": 1001,
    "mb": 70,
-   "cite": "data/ChipDataArr.s:7102",
+   "cite": "data/ChipDataArr.s:7102; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:691",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 230,
-   "name": "TenguMan",
+   "name": "ElecMan",
    "codes": "ffff1a04",
    "codes_decoded": "E*",
    "class_raw": 1,
@@ -3001,12 +3231,13 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 120,
    "mb": 38,
-   "cite": "data/ChipDataArr.s:7133",
+   "cite": "data/ChipDataArr.s:7133; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:694",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 231,
-   "name": "TenguMn[EX]",
+   "name": "ElecMan[EX]",
    "codes": "ffffff04",
    "codes_decoded": "E",
    "class_raw": 1,
@@ -3014,12 +3245,13 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 140,
    "mb": 52,
-   "cite": "data/ChipDataArr.s:7164",
+   "cite": "data/ChipDataArr.s:7164; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:697",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 232,
-   "name": "TenguMn[SP]",
+   "name": "ElecMan[SP]",
    "codes": "ffffff04",
    "codes_decoded": "E",
    "class_raw": 1,
@@ -3027,12 +3259,13 @@
    "element": "CHIP_ELEM_ELEC",
    "damage": 1002,
    "mb": 79,
-   "cite": "data/ChipDataArr.s:7195",
+   "cite": "data/ChipDataArr.s:7195; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:700",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 233,
-   "name": "GrndMan",
+   "name": "SlashMan",
    "codes": "ffff1a12",
    "codes_decoded": "S*",
    "class_raw": 1,
@@ -3040,12 +3273,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 80,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:7226",
+   "cite": "data/ChipDataArr.s:7226; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:703",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 234,
-   "name": "GrndMan[EX]",
+   "name": "SlashMn[EX]",
    "codes": "ffffff12",
    "codes_decoded": "S",
    "class_raw": 1,
@@ -3053,12 +3287,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 100,
    "mb": 65,
-   "cite": "data/ChipDataArr.s:7257",
+   "cite": "data/ChipDataArr.s:7257; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:706",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 235,
-   "name": "GrndMan[SP]",
+   "name": "SlashMn[SP]",
    "codes": "ffffff12",
    "codes_decoded": "S",
    "class_raw": 1,
@@ -3066,12 +3301,13 @@
    "element": "CHIP_ELEM_SWORD",
    "damage": 1003,
    "mb": 79,
-   "cite": "data/ChipDataArr.s:7288",
+   "cite": "data/ChipDataArr.s:7288; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:709",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 236,
-   "name": "DustMan",
+   "name": "EraseMan",
    "codes": "ffff1a0a",
    "codes_decoded": "K*",
    "class_raw": 1,
@@ -3079,12 +3315,13 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 120,
    "mb": 51,
-   "cite": "data/ChipDataArr.s:7319",
+   "cite": "data/ChipDataArr.s:7319; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:712",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 237,
-   "name": "DustMan[EX]@ ",
+   "name": "EraseMn[EX]",
    "codes": "ffffff0a",
    "codes_decoded": "K",
    "class_raw": 1,
@@ -3092,12 +3329,13 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 140,
    "mb": 65,
-   "cite": "data/ChipDataArr.s:7350",
+   "cite": "data/ChipDataArr.s:7350; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:715",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 238,
-   "name": "",
+   "name": "EraseMn[SP]",
    "codes": "ffffff0a",
    "codes_decoded": "K",
    "class_raw": 1,
@@ -3105,12 +3343,13 @@
    "element": "CHIP_ELEM_CURSOR",
    "damage": 1004,
    "mb": 79,
-   "cite": "data/ChipDataArr.s:7381",
+   "cite": "data/ChipDataArr.s:7381; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:718",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 239,
-   "name": "",
+   "name": "ChrgeMan",
    "codes": "ffff1a02",
    "codes_decoded": "C*",
    "class_raw": 1,
@@ -3118,12 +3357,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 60,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:7412",
+   "cite": "data/ChipDataArr.s:7412; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:721",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 240,
-   "name": "",
+   "name": "ChrgeMn[EX]",
    "codes": "ffffff02",
    "codes_decoded": "C",
    "class_raw": 1,
@@ -3131,12 +3371,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 70,
    "mb": 63,
-   "cite": "data/ChipDataArr.s:7443",
+   "cite": "data/ChipDataArr.s:7443; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:724",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 241,
-   "name": "",
+   "name": "ChrgeMn[SP]",
    "codes": "ffffff02",
    "codes_decoded": "C",
    "class_raw": 1,
@@ -3144,12 +3385,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 1005,
    "mb": 81,
-   "cite": "data/ChipDataArr.s:7474",
+   "cite": "data/ChipDataArr.s:7474; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:727",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 242,
-   "name": "",
+   "name": "SpoutMan",
    "codes": "ffff1a00",
    "codes_decoded": "A*",
    "class_raw": 1,
@@ -3157,12 +3399,13 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 50,
    "mb": 42,
-   "cite": "data/ChipDataArr.s:7505",
+   "cite": "data/ChipDataArr.s:7505; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:730",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 243,
-   "name": "",
+   "name": "SpoutMn[EX]",
    "codes": "ffffff00",
    "codes_decoded": "A",
    "class_raw": 1,
@@ -3170,12 +3413,13 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 60,
    "mb": 56,
-   "cite": "data/ChipDataArr.s:7536",
+   "cite": "data/ChipDataArr.s:7536; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:733",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 244,
-   "name": "",
+   "name": "SpoutMn[SP]",
    "codes": "ffffff00",
    "codes_decoded": "A",
    "class_raw": 1,
@@ -3183,12 +3427,13 @@
    "element": "CHIP_ELEM_AQUA",
    "damage": 1006,
    "mb": 78,
-   "cite": "data/ChipDataArr.s:7567",
+   "cite": "data/ChipDataArr.s:7567; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:736",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 245,
-   "name": "",
+   "name": "TmhkMan",
    "codes": "ffff1a13",
    "codes_decoded": "T*",
    "class_raw": 1,
@@ -3196,12 +3441,13 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 140,
    "mb": 40,
-   "cite": "data/ChipDataArr.s:7598",
+   "cite": "data/ChipDataArr.s:7598; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:739",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 246,
-   "name": "",
+   "name": "TmhkMan[EX]",
    "codes": "ffffff13",
    "codes_decoded": "T",
    "class_raw": 1,
@@ -3209,12 +3455,13 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 160,
    "mb": 60,
-   "cite": "data/ChipDataArr.s:7629",
+   "cite": "data/ChipDataArr.s:7629; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:742",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 247,
-   "name": "",
+   "name": "TmhkMan[SP]",
    "codes": "ffffff13",
    "codes_decoded": "T",
    "class_raw": 1,
@@ -3222,12 +3469,13 @@
    "element": "CHIP_ELEM_WOOD",
    "damage": 1007,
    "mb": 80,
-   "cite": "data/ChipDataArr.s:7660",
+   "cite": "data/ChipDataArr.s:7660; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:745",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 248,
-   "name": "",
+   "name": "TenguMan",
    "codes": "ffff1a13",
    "codes_decoded": "T*",
    "class_raw": 1,
@@ -3235,12 +3483,13 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 70,
    "mb": 43,
-   "cite": "data/ChipDataArr.s:7691",
+   "cite": "data/ChipDataArr.s:7691; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:748",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 249,
-   "name": "",
+   "name": "TenguMn[EX]",
    "codes": "ffffff13",
    "codes_decoded": "T",
    "class_raw": 1,
@@ -3248,12 +3497,13 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 90,
    "mb": 61,
-   "cite": "data/ChipDataArr.s:7722",
+   "cite": "data/ChipDataArr.s:7722; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:751",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 250,
-   "name": "",
+   "name": "TenguMn[SP]",
    "codes": "ffffff13",
    "codes_decoded": "T",
    "class_raw": 1,
@@ -3261,12 +3511,13 @@
    "element": "CHIP_ELEM_WIND",
    "damage": 1008,
    "mb": 74,
-   "cite": "data/ChipDataArr.s:7753",
+   "cite": "data/ChipDataArr.s:7753; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:754",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 251,
-   "name": "",
+   "name": "GrndMan",
    "codes": "ffff1a06",
    "codes_decoded": "G*",
    "class_raw": 1,
@@ -3274,12 +3525,13 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 60,
    "mb": 41,
-   "cite": "data/ChipDataArr.s:7784",
+   "cite": "data/ChipDataArr.s:7784; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:757",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 252,
-   "name": "",
+   "name": "GrndMan[EX]",
    "codes": "ffffff06",
    "codes_decoded": "G",
    "class_raw": 1,
@@ -3287,12 +3539,13 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 70,
    "mb": 66,
-   "cite": "data/ChipDataArr.s:7815",
+   "cite": "data/ChipDataArr.s:7815; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:760",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 253,
-   "name": "",
+   "name": "GrndMan[SP]",
    "codes": "ffffff06",
    "codes_decoded": "G",
    "class_raw": 1,
@@ -3300,12 +3553,13 @@
    "element": "CHIP_ELEM_BREAK",
    "damage": 1009,
    "mb": 85,
-   "cite": "data/ChipDataArr.s:7846",
+   "cite": "data/ChipDataArr.s:7846; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:763",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 254,
-   "name": "",
+   "name": "DustMan",
    "codes": "ffff1a03",
    "codes_decoded": "D*",
    "class_raw": 1,
@@ -3313,12 +3567,13 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 110,
    "mb": 39,
-   "cite": "data/ChipDataArr.s:7877",
+   "cite": "data/ChipDataArr.s:7877; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:766",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
    "id": 255,
-   "name": "",
+   "name": "DustMan[EX]",
    "codes": "ffffff03",
    "codes_decoded": "D",
    "class_raw": 1,
@@ -3326,7 +3581,8 @@
    "element": "CHIP_ELEM_NONE",
    "damage": 130,
    "mb": 56,
-   "cite": "data/ChipDataArr.s:7908",
+   "cite": "data/ChipDataArr.s:7908; not in the shipped 48-record asset; name data/textscript/TextScriptChipNames0.s:769",
+   "reachable": true,
    "status": "unrecorded"
   },
   {
@@ -3340,6 +3596,7 @@
    "damage": 1010,
    "mb": 74,
    "cite": "data/ChipDataArr.s:7939",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3353,6 +3610,7 @@
    "damage": 120,
    "mb": 30,
    "cite": "data/ChipDataArr.s:7970",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3366,6 +3624,7 @@
    "damage": 140,
    "mb": 49,
    "cite": "data/ChipDataArr.s:8001",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3379,6 +3638,7 @@
    "damage": 1012,
    "mb": 68,
    "cite": "data/ChipDataArr.s:8032",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3392,6 +3652,7 @@
    "damage": 130,
    "mb": 45,
    "cite": "data/ChipDataArr.s:8063",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3405,6 +3666,7 @@
    "damage": 150,
    "mb": 60,
    "cite": "data/ChipDataArr.s:8094",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3418,6 +3680,7 @@
    "damage": 1013,
    "mb": 75,
    "cite": "data/ChipDataArr.s:8125",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3431,6 +3694,7 @@
    "damage": 20,
    "mb": 42,
    "cite": "data/ChipDataArr.s:8156",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3444,6 +3708,7 @@
    "damage": 25,
    "mb": 64,
    "cite": "data/ChipDataArr.s:8187",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3457,6 +3722,7 @@
    "damage": 1014,
    "mb": 86,
    "cite": "data/ChipDataArr.s:8218",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3470,6 +3736,7 @@
    "damage": 100,
    "mb": 52,
    "cite": "data/ChipDataArr.s:8249",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3483,6 +3750,7 @@
    "damage": 120,
    "mb": 62,
    "cite": "data/ChipDataArr.s:8280",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3496,6 +3764,7 @@
    "damage": 1015,
    "mb": 72,
    "cite": "data/ChipDataArr.s:8311",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3509,6 +3778,7 @@
    "damage": 100,
    "mb": 50,
    "cite": "data/ChipDataArr.s:8342",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3522,6 +3792,7 @@
    "damage": 120,
    "mb": 53,
    "cite": "data/ChipDataArr.s:8373",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3535,6 +3806,7 @@
    "damage": 1016,
    "mb": 66,
    "cite": "data/ChipDataArr.s:8404",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3548,6 +3820,7 @@
    "damage": 160,
    "mb": 45,
    "cite": "data/ChipDataArr.s:8435",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3561,6 +3834,7 @@
    "damage": 180,
    "mb": 70,
    "cite": "data/ChipDataArr.s:8466",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3574,6 +3848,7 @@
    "damage": 1018,
    "mb": 91,
    "cite": "data/ChipDataArr.s:8497",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3587,6 +3862,7 @@
    "damage": 20,
    "mb": 60,
    "cite": "data/ChipDataArr.s:8528",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3600,6 +3876,7 @@
    "damage": 25,
    "mb": 75,
    "cite": "data/ChipDataArr.s:8559",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3613,6 +3890,7 @@
    "damage": 1017,
    "mb": 89,
    "cite": "data/ChipDataArr.s:8590",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3626,6 +3904,7 @@
    "damage": 130,
    "mb": 30,
    "cite": "data/ChipDataArr.s:8621",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3639,6 +3918,7 @@
    "damage": 180,
    "mb": 70,
    "cite": "data/ChipDataArr.s:8652",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3652,6 +3932,7 @@
    "damage": 260,
    "mb": 90,
    "cite": "data/ChipDataArr.s:8683",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3665,6 +3946,7 @@
    "damage": 0,
    "mb": 10,
    "cite": "data/ChipDataArr.s:8714",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3678,6 +3960,7 @@
    "damage": 0,
    "mb": 30,
    "cite": "data/ChipDataArr.s:8745",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3691,6 +3974,7 @@
    "damage": 0,
    "mb": 40,
    "cite": "data/ChipDataArr.s:8776",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3704,6 +3988,7 @@
    "damage": 0,
    "mb": 50,
    "cite": "data/ChipDataArr.s:8807",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3717,6 +4002,7 @@
    "damage": 0,
    "mb": 80,
    "cite": "data/ChipDataArr.s:8838",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3730,6 +4016,7 @@
    "damage": 400,
    "mb": 80,
    "cite": "data/ChipDataArr.s:8869",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3743,6 +4030,7 @@
    "damage": 200,
    "mb": 80,
    "cite": "data/ChipDataArr.s:8900",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3756,6 +4044,7 @@
    "damage": 0,
    "mb": 80,
    "cite": "data/ChipDataArr.s:8931",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3769,6 +4058,7 @@
    "damage": 0,
    "mb": 64,
    "cite": "data/ChipDataArr.s:8962",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3782,6 +4072,7 @@
    "damage": 50,
    "mb": 80,
    "cite": "data/ChipDataArr.s:8993",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3795,6 +4086,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9024",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3808,6 +4100,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9055",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3821,6 +4114,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9086",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3834,6 +4128,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9117",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3847,6 +4142,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9148",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3860,6 +4156,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9179",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3873,6 +4170,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9210",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3886,6 +4184,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9241",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3899,6 +4198,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9272",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3912,6 +4212,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9303",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3925,6 +4226,7 @@
    "damage": 60,
    "mb": 95,
    "cite": "data/ChipDataArr.s:9334",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3938,6 +4240,7 @@
    "damage": 240,
    "mb": 92,
    "cite": "data/ChipDataArr.s:9365",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3951,6 +4254,7 @@
    "damage": 260,
    "mb": 82,
    "cite": "data/ChipDataArr.s:9396",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3964,6 +4268,7 @@
    "damage": 30,
    "mb": 90,
    "cite": "data/ChipDataArr.s:9427",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3977,6 +4282,7 @@
    "damage": 0,
    "mb": 80,
    "cite": "data/ChipDataArr.s:9458",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -3990,6 +4296,7 @@
    "damage": 160,
    "mb": 95,
    "cite": "data/ChipDataArr.s:9489",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4003,6 +4310,7 @@
    "damage": 100,
    "mb": 90,
    "cite": "data/ChipDataArr.s:9520",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4016,6 +4324,7 @@
    "damage": 250,
    "mb": 93,
    "cite": "data/ChipDataArr.s:9551",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4029,6 +4338,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:9582",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4042,6 +4352,7 @@
    "damage": 0,
    "mb": 80,
    "cite": "data/ChipDataArr.s:9613",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4055,6 +4366,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:9644",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4068,6 +4380,7 @@
    "damage": 300,
    "mb": 99,
    "cite": "data/ChipDataArr.s:9675",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4081,6 +4394,7 @@
    "damage": 100,
    "mb": 99,
    "cite": "data/ChipDataArr.s:9706",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4094,6 +4408,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9737",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4107,6 +4422,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9768",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4120,6 +4436,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9799",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4133,6 +4450,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9830",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4146,6 +4464,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9861",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4159,6 +4478,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:9892",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4172,6 +4492,7 @@
    "damage": 300,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9923",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4185,6 +4506,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9954",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4198,6 +4520,7 @@
    "damage": 500,
    "mb": 5,
    "cite": "data/ChipDataArr.s:9985",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4211,6 +4534,7 @@
    "damage": 300,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10016",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4224,6 +4548,7 @@
    "damage": 350,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10047",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4237,6 +4562,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10078",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4250,6 +4576,7 @@
    "damage": 300,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10109",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4263,6 +4590,7 @@
    "damage": 350,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10140",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4276,6 +4604,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10171",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4289,6 +4618,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10202",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4302,6 +4632,7 @@
    "damage": 500,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10233",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4315,6 +4646,7 @@
    "damage": 600,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10264",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4328,6 +4660,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10295",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4341,6 +4674,7 @@
    "damage": 350,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10326",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4354,6 +4688,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10357",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4367,6 +4702,7 @@
    "damage": 700,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10388",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4380,6 +4716,7 @@
    "damage": 150,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10419",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4393,6 +4730,7 @@
    "damage": 150,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10450",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4406,6 +4744,7 @@
    "damage": 60,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10481",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4419,6 +4758,7 @@
    "damage": 400,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10512",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4432,6 +4772,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10543",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4445,6 +4786,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10574",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4458,6 +4800,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10605",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4471,6 +4814,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10636",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4484,6 +4828,7 @@
    "damage": 60,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10667",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4497,6 +4842,7 @@
    "damage": 300,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10698",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4510,6 +4856,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10729",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4523,6 +4870,7 @@
    "damage": 200,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10760",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4536,6 +4884,7 @@
    "damage": 200,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10791",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4549,6 +4898,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10822",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4562,6 +4912,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10853",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4575,6 +4926,7 @@
    "damage": 1,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10884",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4588,6 +4940,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10915",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4601,6 +4954,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10946",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4614,6 +4968,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:10977",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4627,6 +4982,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11008",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4640,6 +4996,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11039",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4653,6 +5010,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11070",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4666,6 +5024,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11101",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4679,6 +5038,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11132",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4692,6 +5052,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11163",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4705,6 +5066,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11194",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4718,6 +5080,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11225",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4731,6 +5094,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11256",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4744,6 +5108,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11287",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4757,6 +5122,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11318",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4770,6 +5136,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11349",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4783,6 +5150,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11380",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4796,6 +5164,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11411",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4809,6 +5178,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11442",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4822,6 +5192,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11473",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4835,6 +5206,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11504",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4848,6 +5220,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11535",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4861,6 +5234,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11566",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4874,6 +5248,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11597",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4887,6 +5262,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11628",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4900,6 +5276,7 @@
    "damage": 80,
    "mb": 8,
    "cite": "data/ChipDataArr.s:11659",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4913,6 +5290,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11690",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4926,6 +5304,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11721",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4939,6 +5318,7 @@
    "damage": 40,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11752",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4952,6 +5332,7 @@
    "damage": 200,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11783",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4965,6 +5346,7 @@
    "damage": 100,
    "mb": 5,
    "cite": "data/ChipDataArr.s:11814",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4978,6 +5360,7 @@
    "damage": 0,
    "mb": 30,
    "cite": "data/ChipDataArr.s:11845",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -4991,6 +5374,7 @@
    "damage": 0,
    "mb": 6,
    "cite": "data/ChipDataArr.s:11876",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5004,6 +5388,7 @@
    "damage": 0,
    "mb": 6,
    "cite": "data/ChipDataArr.s:11907",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5017,6 +5402,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:11938",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5030,6 +5416,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:11969",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5043,6 +5430,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12000",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5056,6 +5444,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12031",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5069,6 +5458,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12062",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5082,6 +5472,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12093",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5095,6 +5486,7 @@
    "damage": 0,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12124",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5108,6 +5500,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12155",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5121,6 +5514,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12186",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5134,6 +5528,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12217",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5147,6 +5542,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12248",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5160,6 +5556,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12279",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5173,6 +5570,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12310",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5186,6 +5584,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12341",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5199,6 +5598,7 @@
    "damage": 10,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12372",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5212,6 +5612,7 @@
    "damage": 1024,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12403",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5225,6 +5626,7 @@
    "damage": 1026,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12434",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5238,6 +5640,7 @@
    "damage": 1028,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12465",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5251,6 +5654,7 @@
    "damage": 1030,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12496",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5264,6 +5668,7 @@
    "damage": 1032,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12527",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5277,6 +5682,7 @@
    "damage": 1034,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12558",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5290,6 +5696,7 @@
    "damage": 1036,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12589",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5303,6 +5710,7 @@
    "damage": 1038,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12620",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5316,6 +5724,7 @@
    "damage": 1040,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12651",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5329,6 +5738,7 @@
    "damage": 1042,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12682",
+   "reachable": false,
    "status": "unrecorded"
   },
   {
@@ -5342,6 +5752,7 @@
    "damage": 1044,
    "mb": 99,
    "cite": "data/ChipDataArr.s:12713",
+   "reachable": false,
    "status": "unrecorded"
   }
  ]

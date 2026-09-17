@@ -1,6 +1,13 @@
 """Export battle chip data and card art for the ROM.
 
-usage: python3 chip_export.py <out.bin>
+usage: python3 chip_export.py [--reachable] [<out.bin>]
+
+Default: the landed 48-record hand list (the CHIPS list below) -- this must
+reproduce the shipped assets/chips.bin byte for byte. --reachable: the
+237-id folder-reachable set (reachable_ids below; T116), which is NOT what
+the shipped blob carries -- the asset extension was measured and reverted
+(footprint coupling, docs/worklog/T116.md), so --reachable writes a
+different, unlanded asset.
 
 Chips are the 411 chip_data_struct records of ChipDataArr_8021DA8
 (data/ChipDataArr.s), one per chip id in order (id 0 is MegaBstr, id 1
@@ -29,12 +36,12 @@ which matches the fixed 0x540 transfer in sub_80284E2. Chip families
 share an image block (Cannon and HiCannon share byte_86F60F4) but keep
 their own palette and icon, so image blobs are stored once.
 
-The 13 chips below are looked up by name in TextScriptChipNames0. The
-ROM's display names are at most 8 letters, so three requested names are
-aliased to the table's spellings: WideSwd -> WideSwrd (id 72), LongSwd ->
-LongSwrd (id 73), Invis -> Invisibl (id 177). ShotGun, CrossGun and
-Spreader are not in bn6f's names at all and are skipped (the spreader
-family there is Spreadr1..3).
+The default export is the hand list below, looked up by name in
+TextScriptChipNames0. The ROM's display names are at most 8 letters, so
+three requested names are aliased to the table's spellings: WideSwd ->
+WideSwrd (id 72), LongSwd -> LongSwrd (id 73), Invis -> Invisibl (id 177).
+ShotGun, CrossGun and Spreader are not in bn6f's names at all and are
+skipped (the spreader family there is Spreadr1..3).
 
 Format (little-endian):
   0x00  magic "BNCH"
@@ -87,6 +94,40 @@ CHIPS = [
     "FlshBom1", "FlshBom2", "FlshBom3",
     "PoisSeed", "IceSeed", "GrasSeed", "BugBomb", "VDoll",
 ]
+# The reachability gates (T116, docs/coverage/chips.md), measured from the
+# ROM: an id is folder-reachable when
+#   id < 0x19B (411) -- the folder/hand validation's own cap
+#     (tooManyGigasMegasAntiCheatHappensHere_800B022, asm/asm00_1.s:17513,
+#     dword_800B104 = 0x19b),
+#   the record has at least one code -- a folder item is an (id, code) pair
+#     and the pack quantity lookup matches the code against the record's
+#     four code bytes (getOffsetToQuantityOfChipCodeMaybe_8021c7c,
+#     asm/asm02.s:305-333); exactly one named id (MegaBstr, id 0) has none,
+#   and a display name exists -- TextScriptChipNames0.s holds 256
+#     def_text_script blocks (ids 0..255) but only 238 .string entries:
+#     TextScriptChipNames0_unkN names chip id N, ids 203..220 carry no
+#     string (placeholder rows) and ids 256..410 have no def at all.
+REACHABLE_MAX_ID = 256  # provenance: derived -- TextScriptChipNames0.s holds 256 def_text_script blocks (ids 0..255)
+
+
+def reachable_ids(chips, names):
+    """The folder-reachable chip ids (T116): a def-number-keyed name (so ids
+    203..220, which carry no .string, drop out), plus the gates above.
+    Returns 237 ids: 1..202 + 221..255. See the gate block above."""
+    out = []
+    for cid, c in enumerate(chips):
+        if not 0 < cid < REACHABLE_MAX_ID:
+            continue
+        if cid not in names:  # no name string -> never renders in pack/library
+            continue
+        if int(c["codes"], 0) == 0xFFFFFFFF:  # no code: can never match a folder item
+            continue
+        if int(c["library_num"], 0) == 0:  # unnamed placeholder rows
+            continue
+        out.append(cid)
+    return out
+
+
 ALIASES = {"WideSwd": "WideSwrd", "LongSwd": "LongSwrd", "Invis": "Invisibl"}
 ICON_BASE = 0x8725894  # data/dat38_86.s:22229; sub_80281E4 indexes id*0x80
 FIELD = re.compile(r"\s*(\w+):\s*((?:0x[0-9A-Fa-f]+)|(?:[A-Za-z_]\w*)),?")
@@ -96,9 +137,9 @@ def chip_data():
     """The 411 ChipDataArr records in order; index i is chip id i."""
     chips = []
     cur = None
-    for line in open(ARR):
+    for lineno, line in enumerate(open(ARR), 1):
         if "chip_data_struct [" in line:
-            cur = {}
+            cur = {"line": lineno}
             chips.append(cur)
             continue
         if cur is None:
@@ -108,7 +149,7 @@ def chip_data():
             "codes", "chip_element", "mb", "attack_power",
             "effect_flags", "attack_family", "attack_subfamily",
             "attack_param_1", "attack_param_2", "attack_param_3",
-            "attack_param_4", "lockout_frames",
+            "attack_param_4", "lockout_frames", "library_num",
             "chip_icon_ptr", "chip_image_ptr", "chip_palette_ptr",
         ):
             cur[m.group(1)] = m.group(2)
@@ -117,7 +158,7 @@ def chip_data():
         for k in ("codes", "chip_element", "mb", "attack_power",
                   "effect_flags", "attack_family", "attack_subfamily",
                   "attack_param_1", "attack_param_2", "attack_param_3",
-                  "attack_param_4", "lockout_frames",
+                  "attack_param_4", "lockout_frames", "library_num",
                   "chip_icon_ptr", "chip_image_ptr", "chip_palette_ptr"):
             assert k in c, (chips.index(c), k)
     return chips
@@ -136,9 +177,19 @@ def chip_names():
             continue
         m = re.search(r'\.string "([^"]*)"', line)
         if m:
-            names[cur] = m.group(1)[:-1]
+            names[cur] = m.group(1).split("@")[0]  # the '@' terminator, and any padding after it, are not the name
             cur = None
     return names
+
+
+def chip_name_lines():
+    """Chip id -> line of its def_text_script in TextScriptChipNames0.s."""
+    out = {}
+    for n, line in enumerate(open(NAMES), 1):
+        m = re.match(r"\s*def_text_script TextScriptChipNames0_unk(\d+)", line)
+        if m:
+            out[int(m.group(1))] = n
+    return out
 
 
 def label_offsets(path):
@@ -167,8 +218,16 @@ def label_offsets(path):
     return out
 
 
+# Since T116 the export is the REACHABLE SET (ids 1..237, the gates and
+# cites in reachable_ids below) instead of a hand list: the three-way census
+# (docs/coverage/chips.md) showed the gap list was bounded -- 189 reachable
+# ids missing from the old 48-record asset, 5 in-asset ids unverified, 174
+# table rows reachable by neither gate.
+
+
 def main():
-    out_path = sys.argv[1] if len(sys.argv) > 1 else "chips.bin"
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    out_path = args[0] if args else "chips.bin"
     chips = chip_data()
     names = chip_names()
     offs = label_offsets(DAT)
@@ -182,10 +241,18 @@ def main():
             image_pos[sym] = offs[sym]
     order = sorted(image_pos, key=image_pos.get)
 
-    wanted = [ALIASES.get(n, n) for n in CHIPS]
-    by_name = {v: k for k, v in names.items()}
-    wanted = [n for n in wanted if n in by_name]
-    skipped = [n for n in CHIPS if ALIASES.get(n, n) not in by_name]
+    # Default (verifier follow-up): the landed CHIPS hand list, which must
+    # reproduce the shipped 48-record assets/chips.bin byte for byte. The
+    # 237-record reachable set is opt-in via --reachable and is NOT what the
+    # shipped blob carries (T116 step 4 measured it; reverted, footprint
+    # coupling -- docs/worklog/T116.md).
+    if "--reachable" in sys.argv[1:]:
+        wanted = reachable_ids(chips, names)
+    else:
+        hand = [ALIASES.get(n, n) for n in CHIPS]
+        by_name = {v: k for k, v in names.items()}
+        wanted = [by_name[n] for n in hand if n in by_name]
+    nlines = chip_name_lines()
 
     def resolve(sym):
         """Bytes a symbol names; fall back to an address inside a labelled blob."""
@@ -204,13 +271,16 @@ def main():
                            through_labels=True)[addr - int(before[-1], 0):]
 
     recs = []
-    for name in wanted:
-        cid = by_name[name]
+    for cid in wanted:
         c = chips[cid]
+        name = names[cid]
         icon = c["chip_icon_ptr"]
         pal = c["chip_palette_ptr"]
         img = c["chip_image_ptr"]
-        assert c["chip_icon_ptr"] == f"byte_{ICON_BASE + cid * 0x80:X}", (name, cid, icon)
+        # T116: the icon assert is relaxed to "any labelled icon blob": 45
+        # reachable ids share icon blobs or use dword_/unk_ icon labels
+        # (ElcPuls1-3, the Navi ids 203..237, ...), not byte_8725894 + id*0x80.
+        assert icon in offs, (name, cid, icon)
         codes = struct.pack("<I", int(c["codes"], 0))
         icon_blob = resolve(icon)
         pal_blob = resolve(pal)
@@ -222,7 +292,7 @@ def main():
         assert len(icon_blob) >= 0x80 and len(pal_blob) >= 0x20
         assert img_blob[0] != 0x10, f"{name}: image starts with an LZ77 header"
         recs.append(dict(
-            id=cid, name=name, element=int(c["chip_element"], 0), mb=int(c["mb"], 0),
+            id=cid, line=c["line"], name=name[:8], full_name=name, element=int(c["chip_element"], 0), mb=int(c["mb"], 0),
             power=int(c["attack_power"], 0), codes=codes,
             effect_flags=int(c["effect_flags"], 0),
             family=int(c["attack_family"], 0), subfamily=int(c["attack_subfamily"], 0),
@@ -273,7 +343,11 @@ def main():
     lengths = {}
     for a, b in zip(order, order[1:]):
         lengths.setdefault(image_pos[b] - image_pos[a], []).append((a, b))
-    assert all(len(r["img"][1]) == 0x540 for r in recs)
+    # Whole-tile blocks: 0x540 for every standard card, but the Navi ids'
+    # card art blocks are contiguous multiples of 0x540 (0xA80 x2, 0x1A40 x1
+    # -- docs/coverage/chips.md); the record stores the real length and
+    # src/chips.rs reads by the stored length, so a bigger blob is data-safe.
+    assert all(len(r["img"][1]) % 0x540 == 0 and len(r["img"][1]) > 0 for r in recs)
     print(f"{out_path}: {len(out)} bytes, {len(recs)} chips")
     print(f"image blocks: {len(order)} distinct over all {len(chips)} chips; "
           f"gaps {sorted(lengths)} (outliers: "
@@ -285,8 +359,17 @@ def main():
               f"eff={r['effect_flags']:02x} fam={r['family']:02x} sub={r['subfamily']:02x} "
               f"p={r['params']} lo={r['lockout']} "
               f"icon={r['icon'][0]} img={r['img'][0]}({len(r['img'][1])}) pal={r['pal'][0]}")
-    if skipped:
-        print("SKIPPED (not in TextScriptChipNames0): " + ", ".join(skipped))
+    # T116's per-id cite: table line + name string line per exported record
+    # (asset index is the record's position in this printed list).
+    for i, r in enumerate(recs):
+        print(f"  cite id {r['id']}: data/ChipDataArr.s:{r['line']} "
+              f"asset idx {i} "
+              f"data/textscript/TextScriptChipNames0.s:{nlines[r['id']]}")
+    truncated = [(r['id'], r['full_name']) for r in recs if r['full_name'] != r['name']]
+    if truncated:
+        print("NAMES TRUNCATED to the BNCH char[9] field (the .s line stays the "
+              "cite; no src arm dispatches on names): "
+              + ", ".join(f"{i} '{n}'" for i, n in truncated))
 
 
 if __name__ == "__main__":
