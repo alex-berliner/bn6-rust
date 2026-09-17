@@ -51,6 +51,10 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   echo "A role's model changes only if, over at least 10 tickets, its cost per landed ticket is twice an alternative's on the replay benchmark (tools/replay_bench.py), and never on one day's numbers."
   echo
   python3 tools/index.py >/dev/null 2>&1   # keep the tool index current before checking the instructions against it
+  echo "## Queue and contention (tools/queue_report.py, last ${SINCE}h)"
+  echo "Whether there was work for the workers: supply against demand, starved starts, idle launcher ticks."
+  python3 tools/queue_report.py --since "$SINCE" 2>&1 | tee "$TMP/queue.txt"
+  echo
   echo "## Do the instructions still match the project (tools/docs_check.py)"
   python3 tools/docs_check.py --since-days 7 2>&1 | tee "$TMP/docs.txt"
   echo
@@ -66,6 +70,7 @@ STAMP="$(date +%Y-%m-%d)"; OUT="docs/reviews/$STAMP.md"; TMP=/tmp/bn-review; mkd
   [ "$NT" -ge 8 ] && [ "$NEGRATE" -ge 30 ] && TRIG="$TRIG negative-or-blocked rate ${NEGRATE}% over $NT tickets;"
   [ "$PHASE" != "$LASTPHASE" ] && TRIG="$TRIG phase changed $LASTPHASE -> $PHASE;"
   [ "$AUDIT" = 1 ] && TRIG="$TRIG forced;"
+  grep -q "^QUEUE-TRIGGER: yes" "$TMP/queue.txt" 2>/dev/null && TRIG="$TRIG ticket supply behind demand;"
   grep -q "^DOCS-TRIGGER: yes" "$TMP/docs.txt" 2>/dev/null && TRIG="$TRIG instructions behind the tools ($(grep -c '^- ' "$TMP/docs.txt") findings);"
   grep -q "^WASTE-TRIGGER: yes" "$TMP/waste.txt" 2>/dev/null && TRIG="$TRIG waste: $(grep -oE 'provider errors per 100 turns: [0-9.]+' "$TMP/waste.txt" | head -1), or a repeated-call loop;"
   echo "$PHASE" > "$TMP/last_phase"
@@ -92,6 +97,8 @@ python3 tools/learn_slides.py --existing 6 --recent 6 --since "$SINCE" --post 2>
 python3 tools/annotate_asm.py --since "$SINCE" --post 2>&1 | tail -8
 # a fresh ROM on the site every morning (the user, 2026-09-15): tools/publish_site.sh without --no-build rebuilds the
 # release ROMs, the browser ROM (web/bn6-rust.gba + build.txt) and the gallery manifest, then publishes
+# leave the day with more work queued than the workers can take at once (2026-09-17: three runs shared one ticket)
+bash tools/prime_queue.sh 2>&1 | tail -4
 CARGO_BUILD_JOBS=2 bash tools/publish_site.sh 2>&1 | tail -2
 # the build rewrites tracked files (captures manifest, progress GIFs): commit them, or every landing refuses a dirty tree
 ( exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add web/captures web/blog web/build.txt 2>/dev/null; git diff --cached --quiet || git commit -q -m 'roundup: rebuilt captures manifest, progress GIFs and site index
