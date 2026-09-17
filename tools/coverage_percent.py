@@ -29,7 +29,7 @@ The library bucket (libs.s: memcpy, division, the decompressors) is reported sep
 constantly and is real code, but reimplementing the C library is not reimplementing the battle engine,
 and leaving it in the denominator would permanently depress the number for no reason.
 """
-import argparse, glob, json, os, re, sys
+import argparse, datetime, glob, json, os, re, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # Two row shapes. The plain one is a resolved routine. The second, "`anchor` (code in `owner`)", is an
@@ -124,7 +124,13 @@ def main():
     ap.add_argument("--all", action="store_true", help="every scenario in docs/coverage, plus their union")
     ap.add_argument("--missing", type=int, default=10, help="list the N heaviest unported routines")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--record", action="store_true",
+                    help="append today's union figure to docs/inventory/coverage-history.json and print it")
+    ap.add_argument("--headline", action="store_true",
+                    help="print one line for the blog headline: today's percent and the change since last time")
     a = ap.parse_args()
+    if a.headline or a.record:
+        a.all = True
 
     ours = cited()
     files = sorted(glob.glob(os.path.join(ROOT, "docs/coverage/*.md"))) if a.all else \
@@ -142,11 +148,41 @@ def main():
                 union[s] = (union[s][0] + c, max(union[s][1], n), loc)   # instr: the deepest run, not a sum
             else:
                 union[s] = v
-        out.append(report(os.path.basename(f)[:-3], ex, ours, 0 if a.all else a.missing, a.json))
+        quiet = a.json or a.record or a.headline
+        out.append(report(os.path.basename(f)[:-3], ex, ours, 0 if a.all else a.missing, quiet))
     if a.all and union:
-        out.append(report("UNION of every recorded scenario", union, ours, a.missing, a.json))
+        out.append(report("UNION of every recorded scenario", union, ours, a.missing,
+                          a.json or a.record or a.headline))
     if a.json:
         print(json.dumps(out, indent=1))
+    if a.record or a.headline:
+        u = out[-1]
+        hist_path = os.path.join(ROOT, "docs/inventory/coverage-history.json")
+        hist = []
+        if os.path.exists(hist_path):
+            try: hist = json.load(open(hist_path))
+            except ValueError: hist = []
+        today = datetime.date.today().isoformat()
+        prev = next((h for h in reversed(hist) if h["date"] != today), None)
+        entry = {"date": today, "instructions_pct": u["instructions_pct"],
+                 "routines_pct": u["routines_pct"], "routines_ported": u["routines_ported"],
+                 "routines_executed": u["routines_executed"],
+                 "instructions_ported": u["instructions_ported"],
+                 "instructions_executed": u["instructions_executed"]}
+        if a.record:
+            hist = [h for h in hist if h["date"] != today] + [entry]
+            os.makedirs(os.path.dirname(hist_path), exist_ok=True)
+            json.dump(hist, open(hist_path, "w"), indent=1)
+        if a.headline:
+            # The blog's headline number. Newcomers read this line with no other context, so it says what
+            # the percentage is OF, and the change only appears when there is a previous day to compare.
+            d = ""
+            if prev:
+                diff = entry["instructions_pct"] - prev["instructions_pct"]
+                d = ", %s%.1f points since %s" % ("+" if diff >= 0 else "", diff, prev["date"])
+            print("%.1f%% of the battle engine's running code is ours%s" % (entry["instructions_pct"], d))
+        else:
+            print("recorded %s: %.2f%%" % (today, entry["instructions_pct"]))
 
 
 if __name__ == "__main__":

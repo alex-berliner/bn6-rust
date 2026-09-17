@@ -123,6 +123,15 @@ mv "$OUT.tmp" "$OUT"; echo "$OUT"
 python3 tools/premise_check.py --commit 2>&1 | tail -4
 # the automated digest post (agreed 2026-09-14): one blog post per day that had a ticket result or a merge,
 # built from the record the review just read, with the auditor's open proposals summarized in it
+# The code-coverage figure the blog headlines with, recorded before the digest reads it so the post and
+# the history agree. The profile it scores against is of CANON, which never changes, so this is a grep
+# over our own sources rather than a re-profile: cents of nothing, a second of wall clock.
+echo "## Code coverage"
+python3 tools/coverage_percent.py --record 2>&1 | tail -1
+python3 tools/coverage_percent.py --headline 2>&1 | tail -1
+( exec 9>/tmp/bn-land.lock; flock -w 600 9 && git add docs/inventory/coverage-history.json 2>/dev/null; git diff --cached --quiet || git commit -q -m 'coverage history: today'"'"'s executed-code percentage
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>' )
 [ "${BN_SKIP_DIGEST:-0}" = 1 ] && echo "digest: skipped (BN_SKIP_DIGEST)" || python3 tools/digest_post.py --since "$SINCE" --review "$OUT" --post 2>&1 | tail -2
 # the learn feed grows every morning (the user, 2026-09-15): slides on existing code and on the last day's code
 python3 tools/learn_slides.py --existing 6 --recent 6 --since "$SINCE" --post 2>&1 | tail -16

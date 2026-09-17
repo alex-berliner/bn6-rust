@@ -226,7 +226,15 @@ def main():
     done = [r for r in results if r[2] == "DONE"]; part = [r for r in results if r[2] == "PARTIAL"]
     stuck = [r for r in results if r[2] in ("BLOCKED", "NEGATIVE")]
     end = datetime.datetime.now(); start = end - datetime.timedelta(hours=a.since)
-    title = a.title or "Daily digest for %s" % start.strftime("%-d %B %Y")      # the day the window mostly covers
+    # The headline carries the one number that says how far the whole project has got (the user,
+    # 2026-09-17). It is the share of the instructions the real game actually executes that belong to
+    # routines this port has reimplemented -- measured, not estimated, by tools/coverage_percent.py
+    # against a single-stepped profile of canon. It is phrased so a reader who knows nothing about the
+    # project can tell what the percentage is OF.
+    cov = sh("python3 tools/coverage_percent.py --headline 2>/dev/null").strip().splitlines()
+    cov = cov[-1] if cov else ""
+    title = a.title or ("Daily digest for %s — %s" % (start.strftime("%-d %B %Y"), cov) if cov
+                        else "Daily digest for %s" % start.strftime("%-d %B %Y"))
     facts = "\n".join(r[3] for r in results) + "\n" + score + "\n" + "\n".join(failing) + "\n" + ledger + "\n" + "\n".join(hyper)
     out = []                                     # blog.py writes the title itself; the body must not repeat it
     out.append(ORIENTATION); out.append("")
@@ -270,7 +278,10 @@ def main():
     md = "\n".join(out)
     if not a.post:
         print(md); return
-    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:60]
+    # The headline now carries the coverage figure, which would truncate mid-word in a URL and change
+    # the shape of every slug in the series. The slug stays the date part alone, so post URLs match the
+    # ones already published.
+    slug = re.sub(r"[^a-z0-9]+", "-", title.split(" — ")[0].lower()).strip("-")[:60]
     slug_exists = glob.glob("web/blog/posts/*-%s.md" % slug)
     if slug_exists:
         print("digest: already posted (%s)" % slug_exists[0]); return
