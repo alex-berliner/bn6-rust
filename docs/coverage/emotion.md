@@ -30,13 +30,31 @@ landed `assets/emotion.bin` bank and `src/emotion.rs`'s per-face palettes:
   cycle: canon suppresses the face window about 2 frames per cycle -- that IS
   the blink. The row pins 0x0203528F = 5 (aligned halfword poke
   0x0203528E:0x0500; the other byte of that poke lands on +0xe, the
-  beast-out counter -- see the chain section -- which reads 0 on this route, so
-  the poke is harmless), and `drawEmotionWindow_801CDEC` emits NO OBJ for
-  countdown 5/6 (asm00_2.s:27647-27652; T108 measured byte=5 -> face gone).
+  beast-out counter -- see the chain section -- which reads 0x03 on this
+  route, NOT 0 as T122's comment claimed (T123 measured byte 0x03 flat over
+  100 frames); the poke zeroes it mid-window, which T122 measured harmless
+  there -- face-ONLY, 694 px/frame), and `drawEmotionWindow_801CDEC` emits NO
+  OBJ for countdown 5/6 (asm00_2.s:27647-27652; T108 measured byte=5 -> face
+  gone).
   Ours (descriptor `emotion=5`) builds no sprites for slots 5/6. Row reads
   0/0/40, negative not blind (644): BOTH worlds show an empty face box over
   all 40 frames -- an empty box against an empty box, pairing evidence for
   the align window, NOT face coverage.
+
+**When the countdown arms (T123, read off sub_801CC94 asm00_2.s:27520-27600
+and confirmed by a 100-frame watch):** the countdown does NOT free-run. A
+period halfword r5[0x38] reloads 0x14 (20) per blink; when it expires and the
+state conditions allow (r5[0x15]==0 needs r5[0x1e]!=0; r5[0x15]!=0 needs
+r5[0x17]!=0xff), `GetPositiveSignedRNGSecondary & 1 + 1` arms 1 or 2 blinks
+(r5[0x1d]), each 12 frames (r5[0xf] = 0xc at :27550-27551, decremented at
+:27557-27566, reload at 0 while blinks remain); the 0x20-byte blink overlay
+pattern copies while the PRE-decrement countdown has bit 1 set (:27567-27574).
+MEASURED on the descriptor route (T123, probe.py watch, emotion_syn recipe,
+100 capture frames): the countdown reads 0x00 on EVERY frame -- the blink
+never arms, so the 5/6 blanking phases never occur in any compared window
+here. The port's fixed 5/6 arm therefore matches canon on this route for the
+wrong reason, and slots 5/6 DO draw on canon whenever the countdown is not in
+a blink: see the skip-range note below for the cross state.
 
 Measured poke effects (T122 step 2, canon 43..82, each poke against the same
 recipe with no face poke): both pokes are face-ONLY -- 27760 total = 694
@@ -86,6 +104,27 @@ slot 5 (e.g. `byte_801E700[1] = 5`, a cross state) is uploaded and drawn
 whenever the blink countdown is not sitting at 5/6. Our `emotion_skip` row
 does NOT exercise this path; it pins the blink countdown byte 0x0203528F = 5
 instead (an empty box against an empty box).
+
+**The cross state itself (T123, measured -- recipe for the battle-side
+ticket):** the battle NaviStats.Transformation byte sits at
+`eBattleNaviStats0 + 0x2c` = **0x0203ce2c** for the player (ewram.s:3109,
+include/structs/NaviStats.inc:36, read per frame by
+possiblyGetBattleEmotion_8015B64 via GetBattleNaviStatsAddr asm00_2.s:10159).
+On the emotion_syn recipe NOTHING writes it (100-frame --watch-write: zero
+writes), so a load poke `0x0203ce2c:0x0001` survives: the resolved slot
+halfword 0x02035290 reads 0x0005 on every frame 38..99 with the countdown
+flat 0x00 -- canon draws the slot-5 cross face on all 40 compared frames.
+Two measured cautions: (1) do NOT carry the siblings' Unk_32 poke on top --
+enum 1 -> byte_801E6F4[1]=2 -> the full-synchro +5 (sub_801E6A8
+asm00_2.s:30975-31001) lands slot 0x000a, measured; (2) the cross state
+repaints MegaMan himself -- 587 px/frame of non-face delta (x≈50..79,
+y≈70..119, flat) that the descriptor route cannot reproduce (it fixes
+MegaMan in his calm form), so a cross-state emotion row cannot reach 0 until
+the battle-side cross model exists. T123's src/emotion.rs 5/6-arm deletion
+was verified to make the face match canon pixel-exactly (the 694 px/frame
+face delta vanishes) but is NOT landed: it breaks the frozen emotion_skip
+pairing row (0/0/40 -> FAILED 27760/694, same descriptor byte, contradictory
+outputs). Full numbers: docs/worklog/T123.md.
 
 **Slot coverage**: `off_801CD08` @ 0x0801CD08 (asm00_2.s:27580-27603), 23
 pointer words read from ROM, deltas from dword_872D814:
