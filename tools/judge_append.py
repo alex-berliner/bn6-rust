@@ -6,7 +6,10 @@ ticket it follows. Appends the accepted tickets to the T section, commits TODO.m
 admitted or refused.  usage: python3 tools/judge_append.py <proposal.md>"""
 import os, re, subprocess, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-HEAD = re.compile(r"^### ([A-Z]+\d+[a-z]?)\. .*\*\((OPEN)\b.*\)\*\s*$", re.M)
+# A judge writes the heading as "### T107." or, often enough to matter, as "# T107." with an "*(OPEN)*" stamp
+# that may carry no date. Accept both rather than throw a whole batch away (2026-09-17: a 3,000-word proposal
+# was discarded for a missing "##").
+HEAD = re.compile(r"^#{1,3} ([A-Z]+\d+[a-z]?)\. .*\*\((OPEN)\b.*?\)\*\s*$", re.M)
 p = sys.argv[1]; text = open(p).read()
 todo = open(os.path.join(ROOT, "TODO.md")).read(); arch = open(os.path.join(ROOT, "TODO_ARCHIVE.md")).read()
 known = set(re.findall(r"^### ([A-Z]+\d+[a-z]?)\. ", todo + arch, re.M)) | set(re.findall(r"^- ([A-Z]+\d+[a-z]?) ", todo, re.M))
@@ -34,6 +37,7 @@ for i, m in enumerate(heads):
     dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
     if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
     if today_batches.isdigit() and int(today_batches) >= 40: why.append("daily cap: %s judge batches already admitted today" % today_batches)
+    body = re.sub(r"^#{1,3} (%s)\." % re.escape(tid), "### \\1.", body, count=1, flags=re.M)
     (refused if why else admitted).append((tid, why, body))
 if admitted:
     # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section
