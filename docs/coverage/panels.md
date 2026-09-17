@@ -1,0 +1,97 @@
+# Panel type writers — per-type site walk (T115, 2026-09-18)
+
+Measurement ticket: zero `src/` edits, canon observed read-only, ROM sha256 unchanged.
+Method = T18's field walk applied to `oPanelData_Type` + T65/T70's data streams.
+
+## The dispatch machinery (what T33's 4-site sweep missed)
+
+- `object_setPanelType` (asm/object.s:2601-2611) is a **trampoline**
+  (`ldr r4, =_object_setPanelType+1; bx r4`) to `_object_setPanelType`
+  (asm/asm38.s:4309-4315). One routine, **36 `bl` sites**: asm38.s ×4 (T33's sweep),
+  asm31.s ×28, asm32.s ×2, asm00_2.s ×2.
+- The setter **refuses type-0 targets**: `ldrb r3,[r0,#oPanelData_Type]; tst; beq skip`
+  (asm38.s:4316-4317). Types 9..0xC additionally get `Unk_12=0x708` (asm38.s:4318-4326).
+- Companion `object_setPanelTypeBlink` (object.s:2651-2663) stages the intended type
+  into `oPanelData_Unk_08` (+`Unk_0d=1`), used by the blink-then-set gimmick families.
+- Direct stores to `oPanelData_Type` exist **only** at 13 sites: asm38.s:4318 (setter)
+  + object.s:2220/2235/2272/2287/2323/2357/2371/2405/2419/2455/2469/2505/2519 (all 1/3)
+  + object_panel_setPoison literal-offset store (object.s:2540-2563, type 4).
+  The flag-mask (`0x3f0f`) write forms exist only inside the crackPanel family
+  (object.s:2215-2484). No hidden inline writer anywhere in `reference/bn6f/asm`.
+
+## Per-type writer table
+
+| type | verdict | sites (file:line) → dispatch condition → value source |
+|---|---|---|
+| 0x0 hole | **zero-writer** (init-only) | setter protect asm38.s:4316-4317 makes 0 unwritable by any helper; 36 bl sites + 13 strb sites + 4 data tables + 1240 records + 1076 arrays produce no 0. Default-zero from battle-init memset. |
+| 0x1 broken | verified (T33) | object.s:2323 breakPanel; crackPanel 2nd arm object.s:2235; regen object.s:1503-1504 |
+| 0x2 normal | verified (T33) | object.s:1471-1472 regen; asm00_2.s:8306 (sub_8012792 #2); asm31.s:38397-38398; fire melt asm38.s:3575-3582 |
+| 0x3 cracked | verified (T33) | object.s:2218-2222 crackPanel 1st arm; also t4_0x16 enemy-half arm asm31.s:88780-88781 (`mov r2,#3`); navi event 0xf5 asm00_2.s:10805-10810 |
+| 0x4 poison | verified (T33) | asm31.s:6146-6147 (sub_80BAE16); navi events 0xfe/0xfa/0xf9 asm00_2.s:10776-10800 (byte12=4) replayed by sub_8013CC4 |
+| 0x5 holy | **zero-writer** | no constant arg (36 sites), no strb site, no table byte (byte_80E6D0C {2,3,6,7,8}; byte_80CE41E {4,7,6}; dword_80DE79C {FF,3,7,6}; navi events {3,4}), no record/array byte. Reader rule lives: object.s:4831-4833 + asm00_2.s:22788-22791. |
+| 0x6 grass | verified (T33) | asm31.s:6168-6169 (sub_80BAE16); :30843-30844 cornfiesta; byte_80CE41E[2]=6 via sub_80CE424; dword_80DE79C[3]=6 |
+| 0x7 ice candidate | verified (T33) | asm31.s:6104-6105 (sub_80BAE16); byte_80CE41E[1]=7; dword_80DE79C[2]=7 |
+| **0x8** | **WRITER FOUND (T115)** | asm31.s:99515-99529 `sub_80E6CAA` (in t4_0x56_80E6BDC): base = `byte_80E6D0C + Param1*0xc + alliance*0x78`; per panel `ldr word / lsr (row-1)*4 / and #0xf` → type = **packed 4-bit nibble**; table `byte_80E6D0C` asm31.s:99543-99566 = 240 bytes (2 alliances × 10 Param1 entries × 12), nibble set {2,3,6,7,8} — 8 in Param1 2/3/4 own-side rows and 0x82/0x28 bytes in both halves. Update-handler vtable asm00_1.s:2491. Spawner sub_80E6C8C asm31.s:99473-99489 is **unreferenced in the whole ROM** (no `bl`, no pointer word 0x080E6C8C/D — byte search) → no live capture. |
+| 0x9 | **zero-writer** | setter special-cases 9..0xC (asm38.s:4318-4326) and sub_3007708 melts them (asm38.s:3993), but no constant/strb/table/record byte equals 9 anywhere walked. |
+| 0xA | **zero-writer** | same walk as 0x9; no producer. |
+| 0xB | verified (T33) | asm31.s:27871-27872 (t3_0x0_80C4E58, alliance≠0 arm) |
+| 0xC | verified (T33) | asm31.s:27855-27856 (t3_0x0_80C4E58, alliance==0 arm) |
+
+### Variable-type sites fully walked (step 1 additions over T33)
+
+- t3_0x0_80C4E58 default arm asm31.s:27879-27896: type = `RelatedObject1Ptr->CurState`,
+  skip 0xFF; disassembly comment records the real-ROM measurement (buster/charge shot:
+  panel type stays NORMAL 140 frames). Gates: Param1 0x22→0xC / 0x24→0xB arms above.
+- t3_0xc9_80DE404 → sub_80DE768 asm31.s:81479-81488: `type = dword_80DE79C[Param1]`,
+  0xFF = skip. Table bytes: FF,03,07,06.
+- t3_0x4f_80CE24C → sub_80CE3C4 asm31.s:47194-47218 → sub_80CE424 (area setter over a
+  `PanelOffsetListsPointerTable` 0x7F-terminated pair list): `type = byte_80CE41E[Param1]`.
+- t4_0x16_80E1E4C asm31.s:88662-88960: 4 arms dispatched by `off_80E1E60[Param2]`;
+  blink phase stages Param1 into Unk_08 over the field, final phase sets Param1 (whole
+  field), enemy half only → constant 3, two more Param1 arms (sub_80E1F32/80E1FB6).
+- t4_0x1f_80E28A8 asm31.s:89990-90045: list of `(alliance<<4|panel)` bytes in
+  ExtraVars, type = `ExtraVars[0]`.
+- applyShockwavePanelEffect_80C6CFC asm31.s:31640-31653: 0xFF skip / 3 crack /
+  1 break / else setPanelType(r2).
+- sub_8013CC4 asm00_2.s:11109-11160: NaviStats byte 0x12 → panel type (skip if
+  current 0/1; 1→break, 3→crack, else direct), gated by byte 0x13 chance. Byte 0x12
+  writers: asm00_2.s:10776-10810 (events 0xfe/0xfa/0xf9 → 4; 0xf5 → 3) — only {3,4}.
+- Remaining constant sites: asm31.s:30844/39065/65798 (#6), :60577 (#4), :65592 (#7),
+  :88781 (#3), asm00_2.s:8306 (#2), asm32.s:3241 (#2, sub_810F3F8).
+
+## Data-stream walk (step 2)
+
+- **1240 BattleSettings records** (16 bytes, include/rom_structs/BattleSettings.inc):
+  family A scripted (0x080aee70: 269 + 0x080b0d88: 192 = 461), family B encounter tree
+  (off_8020170 → 44 groups → map arrays → lists). Byte histograms: byte[0] Battlefield
+  (family A: 251×0 + scattered ids up to 236; family B: all 0), byte[4] Background
+  {7:192, 8:1, 255:268} family A / all 255 family B — **known-answer check passes**
+  (reproduces T65's backdrop census: Comps art 0x07/0x08, 0xff = map default),
+  byte[6] SidesModifier {0:7, 56:454} family A / all 56 family B. No record byte
+  flows to any panel writer.
+- **1076 formation arrays**: quad[0]&0xFC dispatch ∈ {0,0x10,0x20,0x30,0x80,0x90,0xA0}
+  → only the 11 spawners of `SpawnBattleObjectUsingBattleEntityConfig_8007368`
+  (asm00_1.s:8588-8621: MegaMan/enemy/mystery data/rocks/cubes/guardian). asm00_1.s
+  contains **zero** panel-type store sites → arrays structurally cannot write panels.
+  quad[2] enemy ids all ≤ 0xE3, quad[3] ∈ {0,1}.
+- **T70 stage pairs `byte_203CA50`**: both ROM references (asm03_0.s:14639 pool used by
+  `battleSettings_802D2B2`; asm00_1.s:18213 pool) feed the stage→**background** pairing
+  only. Ruled out for panels.
+- The actual panel-type ROM data is the four tables above; every value they contain is
+  in {FF,2,3,4,6,7,8} — the 8 verified types are predicted (2,3,4,6,7 from data;
+  1,B,C from code arms; 0 from init), and 5/9/A appear in none.
+
+## Step 3 — live captures
+
+**0 captures taken (budget ≤3).** The one newly proven writer feeds a GAP row (0x8),
+but its spawner `sub_80E6C8C` is unreferenced anywhere in the ROM, so no scenario in
+the harness reaches it; the other four types have no firing writer to watch by the
+finding itself. Canon-side observation only; no row semantics changed.
+
+## Unverified / next
+
+- The *effects* of panel types (movement block, regen timings, holy damage halving)
+  still need scenarios + src — next ticket, not this one.
+- What spawns t4_0x56 / t4_0x16 / t4_0x1f in a real battle (the wrappers are
+  unreferenced; likely a computed dispatch or data-driven spawn path outside the
+  labeled disassembly).

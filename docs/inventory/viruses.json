@@ -10,7 +10,7 @@
    "address": "0x080182C4",
    "row_bytes": 3,
    "rows": 452,
-   "bound": "bound inferred from getBattleArmPositionMaybe_8018810 (asm00_2.s:20497)",
+   "bound": "bound inferred from getBattleArmPositionMaybe_8018810 (asm00_2.s:20519)",
    "accessor": "GetVerActorTyAndAIIdx_80182B4 (asm/asm00_2.s:19965-19974)",
    "actor_type_enum_cite": "include/structs/AIData.inc:6-8"
   },
@@ -18,7 +18,7 @@
    "symbol": "off_8109050",
    "address": "0x08109050",
    "words": 32,
-   "bound": "bound inferred from AIEnemyStruct1Ptrs_81090D0 (asm31.s:169509)",
+   "bound": "bound inferred from AIEnemyStruct1Ptrs_81090D0 (asm31.s:169513)",
    "cite": "asm/asm31.s:169420",
    "semantics": "NOT a called routine: the word is passed as an argument to battle_801B1C4 (jump-table store, asm31.s:169395-169402); each entry is a CurAction-indexed state-handler TABLE pointer ('// indexed by CurAction * 4', asm31.s:170981-170984 and asm32.s:10122-10125)",
    "note": "ticket predicted 96 words for off_8109050->off_81091D0 (0x180 bytes); the real span holds THREE parallel 0x80-byte tables: off_8109050 think, off_81090D0 per-AIIndex Struct1 pointers (enemy_getStruct1, asm00_2.s:669-674), off_8109150 per-AIIndex Struct2 pointers (enemy_getStruct2, asm00_2.s:713). The act table off_81091D0 starts exactly at the span's end"
@@ -27,14 +27,14 @@
    "symbol": "off_81090D0",
    "address": "0x081090D0",
    "words": 32,
-   "bound": "bound inferred from AIEnemyStruct2Ptrs_8109150 (asm31.s:169574)",
+   "bound": "bound inferred from AIEnemyStruct2Ptrs_8109150 (asm31.s:169578)",
    "cite": "asm/asm31.s:169485, selected for virus by enemy_getStruct1 (asm00_2.s:669-674)"
   },
   "struct2_table": {
    "symbol": "off_8109150",
    "address": "0x08109150",
    "words": 32,
-   "bound": "bound inferred from AIActHandlers_81091D0 (asm31.s:169639)",
+   "bound": "bound inferred from AIActHandlers_81091D0 (asm31.s:169643)",
    "cite": "asm/asm31.s:169550, selected for virus by enemy_getStruct2 (asm00_2.s:713)",
    "struct": "{elem_hp: u16 @0x00, unk_02: u8 @0x02, unk_flags: u8 @0x03, elem_damage: u16 @0x04} (asm00_2.s:677-681)"
   },
@@ -42,7 +42,7 @@
    "symbol": "off_81091D0",
    "address": "0x081091D0",
    "words": 32,
-   "bound": "bound inferred from off_8109250 (asm31.s:169704)",
+   "bound": "bound inferred from off_8109250 (asm31.s:169708)",
    "cite": "asm/asm31.s:169615"
   },
   "counts": {
@@ -78,7 +78,7 @@
      "family": "Mettaur",
      "ai_index": 1,
      "struct2_symbol": "MettaurEnemyStruct2_8109BD8",
-     "struct2_cite": "asm/asm31.s:170652",
+     "struct2_cite": "asm/asm31.s:170656",
      "elem_hp": "0x0028",
      "expected": "0x28",
      "pass": true
@@ -158,9 +158,9 @@
   {
    "ai_index": 0,
    "think": "off_8109B74",
-   "think_cite": "asm/asm31.s:170600",
+   "think_cite": "asm/asm31.s:170604",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -178,9 +178,9 @@
   {
    "ai_index": 1,
    "think": "ForMettaur_8109EF4",
-   "think_cite": "asm/asm31.s:171012",
+   "think_cite": "asm/asm31.s:171016",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -322,9 +322,9 @@
   {
    "ai_index": 2,
    "think": "off_810A550",
-   "think_cite": "asm/asm31.s:172012",
+   "think_cite": "asm/asm31.s:172025",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -397,9 +397,9 @@
   {
    "ai_index": 3,
    "think": "off_810A9EC",
-   "think_cite": "asm/asm31.s:172503",
+   "think_cite": "asm/asm31.s:172516",
    "act": "sub_810ABD0",
-   "act_cite": "asm/asm31.s:172724",
+   "act_cite": "asm/asm31.s:172737",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -473,9 +473,9 @@
   {
    "ai_index": 4,
    "think": "off_810B2D0",
-   "think_cite": "asm/asm31.s:173608",
+   "think_cite": "asm/asm31.s:173621",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -548,9 +548,9 @@
   {
    "ai_index": 5,
    "think": "off_810BB94",
-   "think_cite": "asm/asm31.s:174652",
+   "think_cite": "asm/asm31.s:174665",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -623,9 +623,9 @@
   {
    "ai_index": 6,
    "think": "off_810C170",
-   "think_cite": "asm/asm31.s:175332",
+   "think_cite": "asm/asm31.s:175345",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -700,7 +700,7 @@
    "think": "off_810C6F0",
    "think_cite": "data/dat31.s:384",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -775,7 +775,7 @@
    "think": "off_810CD60",
    "think_cite": "data/dat31.s:1130",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -850,7 +850,7 @@
    "think": "off_810D0F4",
    "think_cite": "data/dat31.s:1457",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -925,7 +925,7 @@
    "think": "off_810D554",
    "think_cite": "data/dat31.s:1967",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1000,7 +1000,7 @@
    "think": "off_810D910",
    "think_cite": "data/dat31.s:2369",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1300,7 +1300,7 @@
    "think": "off_810F39C",
    "think_cite": "asm/asm32.s:3025",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1450,7 +1450,7 @@
    "think": "off_81104D4",
    "think_cite": "asm/asm32.s:4997",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1525,7 +1525,7 @@
    "think": "off_8110DC0",
    "think_cite": "asm/asm32.s:6089",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1675,7 +1675,7 @@
    "think": "off_8111DC0",
    "think_cite": "asm/asm32.s:7952",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1750,7 +1750,7 @@
    "think": "off_81121F0",
    "think_cite": "asm/asm32.s:8405",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1900,7 +1900,7 @@
    "think": "ForGunner_8113078",
    "think_cite": "asm/asm32.s:10141",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -1975,7 +1975,7 @@
    "think": "off_81135CC",
    "think_cite": "asm/asm32.s:10758",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -2050,7 +2050,7 @@
    "think": "off_8113D50",
    "think_cite": "asm/asm32.s:11655",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -2200,7 +2200,7 @@
    "think": "off_81154F0",
    "think_cite": "asm/asm32.s:14415",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [
@@ -2500,7 +2500,7 @@
    "think": "off_81166B0",
    "think_cite": "asm/asm32.s:16260",
    "act": "nullsub_13",
-   "act_cite": "asm/asm31.s:169930",
+   "act_cite": "asm/asm31.s:169934",
    "ranks": [
     {
      "spawn_enemy_idxs": [

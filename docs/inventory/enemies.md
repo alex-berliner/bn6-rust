@@ -2,8 +2,8 @@
 
 Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 
-- identity rows: 452 (byte_80182C4, bound inferred from getBattleArmPositionMaybe_8018810, asm00_2.s:20497)
-- think words: 32 (off_8109050, bound inferred from AIEnemyStruct1Ptrs_81090D0, asm31.s:169509); act words: 32 (off_81091D0, bound inferred from off_8109250, asm31.s:169704)
+- identity rows: 452 (byte_80182C4, bound inferred from getBattleArmPositionMaybe_8018810, asm00_2.s:20519)
+- think words: 32 (off_8109050, bound inferred from AIEnemyStruct1Ptrs_81090D0, asm31.s:169513); act words: 32 (off_81091D0, bound inferred from off_8109250, asm31.s:169708)
 - between them: Struct1 ptrs off_81090D0 (32 words, asm31.s:169485) and Struct2 ptrs off_8109150 (32 words, asm31.s:169550) — the ticket's 0x180 span is think+Struct1+Struct2; act starts exactly at its end
 - think entries are CurAction-indexed state-handler TABLE pointers (passed to battle_801B1C4 as a jump table, asm31.s:169395-169402; '// indexed by CurAction * 4', asm31.s:170981-170984) — NOT called routines; act words ARE called (mov lr,pc; bx r0)
 - think handler-table pointers named `For*_HHHHHHHH`: 2/32; distinct think handler tables over used AIIndexes (family count): 32; act routines named `For*`: 0/32
@@ -43,7 +43,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x189 | 4 | ACTOR_TYPE_NAVI | 0x17 | nullsub_13 |
 | 0x18A | 5 | ACTOR_TYPE_NAVI | 0x17 | nullsub_13 |
 
-### ForMettaur_8109EF4 — 82 enemy_idx (think cite asm/asm31.s:171012)
+### ForMettaur_8109EF4 — 82 enemy_idx (think cite asm/asm31.s:171016)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -130,7 +130,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x106 | 5 | ACTOR_TYPE_NAVI | 0x01 | nullsub_13 |
 | 0x1A1 | 0 | ACTOR_TYPE_PLAYER | 0x01 | nullsub_13 |
 
-### off_8109B74 — 18 enemy_idx (think cite asm/asm31.s:170600)
+### off_8109B74 — 18 enemy_idx (think cite asm/asm31.s:170604)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -153,7 +153,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x19F | 0 | ACTOR_TYPE_NAVI | 0x00 | nullsub_13 |
 | 0x1A0 | 0 | ACTOR_TYPE_PLAYER | 0x00 | nullsub_13 |
 
-### off_810A550 — 13 enemy_idx (think cite asm/asm31.s:172012)
+### off_810A550 — 13 enemy_idx (think cite asm/asm31.s:172025)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -171,7 +171,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x10C | 5 | ACTOR_TYPE_NAVI | 0x02 | nullsub_13 |
 | 0x1A2 | 0 | ACTOR_TYPE_PLAYER | 0x02 | nullsub_13 |
 
-### off_810A9EC — 13 enemy_idx (think cite asm/asm31.s:172503)
+### off_810A9EC — 13 enemy_idx (think cite asm/asm31.s:172516)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -189,7 +189,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x112 | 5 | ACTOR_TYPE_VIRUS | 0x03 | sub_810ABD0 |
 | 0x1A3 | 0 | ACTOR_TYPE_PLAYER | 0x03 | sub_810ABD0 |
 
-### off_810B2D0 — 13 enemy_idx (think cite asm/asm31.s:173608)
+### off_810B2D0 — 13 enemy_idx (think cite asm/asm31.s:173621)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -207,7 +207,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x118 | 5 | ACTOR_TYPE_NAVI | 0x04 | nullsub_13 |
 | 0x1A4 | 0 | ACTOR_TYPE_PLAYER | 0x04 | nullsub_13 |
 
-### off_810BB94 — 13 enemy_idx (think cite asm/asm31.s:174652)
+### off_810BB94 — 13 enemy_idx (think cite asm/asm31.s:174665)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|
@@ -225,7 +225,7 @@ Regenerate: `python3 tools/rom_enemy_tables.py > docs/inventory/enemies.json`
 | 0x11E | 5 | ACTOR_TYPE_NAVI | 0x05 | nullsub_13 |
 | 0x1A5 | 0 | ACTOR_TYPE_PLAYER | 0x05 | nullsub_13 |
 
-### off_810C170 — 13 enemy_idx (think cite asm/asm31.s:175332)
+### off_810C170 — 13 enemy_idx (think cite asm/asm31.s:175345)
 
 | enemy_idx | version | ActorType | AIIndex | act |
 |---|---|---|---|---|

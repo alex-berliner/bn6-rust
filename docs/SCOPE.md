@@ -43,7 +43,7 @@ ported or listed out of scope with a reason).
 | M1 | navis + cybeasts (M6) | FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0 | 25 / 25 |
 | M1 | cybeasts (M6) | FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18) | 0 / 14 |
 | M1 | forms (M7) | FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789) | 0 / 25 |
-| M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 8 / 13 |
+| M1 | panels (M3) | FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219) | 9 / 13 |
 | M1 | statuses (M3) | DERIVED-FROM-CODE (T18, corrected by verifier re-run): per-bit canonical sites measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in reference/bn6f/asm -- written per-bit-store 39/69 (flags1 26/32, flags2 13/32, DAMAGE 0/5; loose any-mask mention 40/69), per-bit readers 37/69 (flags1 24/32, flags2 13/32; loose any-mask mention 43/69), 32 with no per-bit reader, 30 both written and read per-bit; nearest per-status table off_80209EC (data/dat01.s:155, via sub_801A554 asm/asm00_2.s:22211) holds 37 records -- RECORDS: 25 table-only (f4=7+f2=6+f5=6+f6=6) + 12 shared-family (f1=6+f3=6) = 37; MASKS: 4 table-only (0x10000,0x20000,0x40,0x80) + 2 overlap (0x20,0x8) = 6; and 11 distinct directly-written flag2 masks OUTSIDE the table (0x1,0x10,0x100,0x100000,0x2,0x200,0x4,0x4000,0x40000,0x8000,0x80000) -- a mask count, not a record count; table-mask direct sites: 0x8 direct reader asm/asm00_2.s:17482-17485, 0x20 direct setter asm/asm00_2.s:11368 / no reader, 0x40/0x80 neither, 0x10000/0x20000 unmeasured; M3 candidates (per-bit readers): CONFUSED (asm/asm00_2.s:1894-1897) / BLIND (asm/asm00_2.s:16861-16863) / IMMOBILIZED (asm/asm31.s:171386-171390) | 0 / 69 |
 | M1 | formations (M8) | ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), 1240 records over 84 lists (2 scripted + 82 encounter-tree), 1076 0xF0-terminated formation arrays (section denominator = 1076 arrays, all rows status unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0 | 0 / 1076 |
 | M1 | backdrops (M8) | DERIVED-FROM-RECORDS, byte->art CLOSED (T65 pass 3; mapping verified + poked T70): BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592; for scripted battles also sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599); the byte is read at battle init by sub_8081308 (asm/asm21.s:469-523, ldrb [BattleSettings+0x4] :473-475, called from sub_8080DA0 asm/asm21.s:15-45 via initBattleStructsAndVram_80071D4 asm/asm00_1.s:8435) and indexes off_8080F98[r] -> LoadBGAnimData (asm/asm03_0.s:21209) = explicit LZ77 tiles/tilemap/palette pointers: 0x07/0x08 = the Comps1/Comps2 bg art in its two palette variants (id 6 is the RobotControlComp art), 0xff = map default (real 7, net pt_808139C[group-0x80][map] asm/asm21.s:548-564, weather-puzzle maps 0x15/0x10) -- census in rows below; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis) | 3 / 3 |
@@ -733,31 +733,31 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | index | navi | ai_arm | pattern | act | cite | status |
 |---|---|---|---|---|---|---|
-| 0 | NAVI_MEGAMAN | off_8109B74 (asm/asm31.s:16944 | nullsub_106 (asm/asm31 | sub_80F2A1E (asm/asm31 | asm/asm31.s:123447,123498,123548,123420,169446 | per-ai routine named |
-| 1 | NAVI_HEATMAN | ForMettaur_8109EF4 (asm/asm31. | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123449,123500,123549,123421,169448 | named-via-NAVI-enum (per-type work in ai |
-| 2 | NAVI_ELECMAN | off_810A550 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123451,123502,123550,123422,169450 | named-via-NAVI-enum (per-type work in ai |
-| 3 | NAVI_SLASHMAN | off_810A9EC (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123551,123423,169452 | named-via-NAVI-enum (per-type work in ai |
-| 4 | NAVI_ERASEMAN | off_810B2D0 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123552,123424,169454 | named-via-NAVI-enum (per-type work in ai |
-| 5 | NAVI_CHARGEMAN | off_810BB94 (asm/asm31.s:16945 | sub_80F651C (asm/asm31 | sub_80F650A (asm/asm31 | asm/asm31.s:123457,123508,123553,123425,169456 | per-ai routine named |
-| 6 | NAVI_SPOUTMAN | off_810C170 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123554,123426,169458 | named-via-NAVI-enum (per-type work in ai |
-| 7 | NAVI_TOMAHAWKMAN | off_810C6F0 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123461,123512,123555,123427,169460 | named-via-NAVI-enum (per-type work in ai |
-| 8 | NAVI_TENGUMAN | off_810CD60 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123556,123428,169462 | named-via-NAVI-enum (per-type work in ai |
-| 9 | NAVI_GROUNDMAN | off_810D0F4 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123557,123429,169464 | named-via-NAVI-enum (per-type work in ai |
-| 10 | NAVI_DUSTMAN | off_810D554 (asm/asm31.s:16946 | sub_80FAE5C (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123558,123430,169466 | per-ai routine named |
-| 11 | NAVI_PROTOMAN | off_810D910 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123559,123431,169468 | named-via-NAVI-enum (per-type work in ai |
-| 12 | // unnamed: navi-table i | off_810E120 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123560,123432,169470 | GAP: no NAVI_* enum match + ai_pattern a |
-| 13 | // unnamed: navi-table i | off_810E7B0 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | sub_80FDEFC (asm/asm31 | asm/asm31.s:123473,123524,123561,123433,169472 | per-ai routine named |
-| 14 | // unnamed: navi-table i | off_810F010 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123562,123434,169474 | GAP: no NAVI_* enum match + ai_pattern a |
-| 15 | // unnamed: navi-table i | off_810F39C (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123477,123528,123563,123435,169476 | GAP: no NAVI_* enum match + ai_pattern a |
-| 16 | // unnamed: navi-table i | off_810FCE0 (asm/asm31.s:16947 | sub_81003A8 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123564,123436,169478 | per-ai routine named |
-| 17 | // unnamed: navi-table i | off_81104D4 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123565,123437,169480 | GAP: no NAVI_* enum match + ai_pattern a |
-| 18 | // unnamed: navi-table i | off_8110DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123566,123438,169482 | GAP: no NAVI_* enum match + ai_pattern a |
-| 19 | // unnamed: navi-table i | off_8111330 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123567,123439,169484 | GAP: no NAVI_* enum match + ai_pattern a |
-| 20 | // unnamed: navi-table i | off_8111DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123568,123440,169486 | GAP: no NAVI_* enum match + ai_pattern a |
-| 21 | // unnamed: navi-table i | off_81121F0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123569,123441,169488 | GAP: no NAVI_* enum match + ai_pattern a |
-| 22 | // unnamed: navi-table i | off_81129A0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123570,123442,169490 | GAP: no NAVI_* enum match + ai_pattern a |
-| 23 | // unnamed: navi-table i | ForGunner_8113078 (asm/asm31.s | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123571,123443,169492 | GAP: no NAVI_* enum match + ai_pattern a |
-| 24 | // unnamed: navi-table i | off_81135CC (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123572,123444,169494 | GAP: no NAVI_* enum match + ai_pattern a |
+| 0 | NAVI_MEGAMAN | off_8109B74 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | sub_80F2A1E (asm/asm31 | asm/asm31.s:123451,123502,123552,123424,169450 | per-ai routine named |
+| 1 | NAVI_HEATMAN | ForMettaur_8109EF4 (asm/asm31. | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123453,123504,123553,123425,169452 | named-via-NAVI-enum (per-type work in ai |
+| 2 | NAVI_ELECMAN | off_810A550 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123455,123506,123554,123426,169454 | named-via-NAVI-enum (per-type work in ai |
+| 3 | NAVI_SLASHMAN | off_810A9EC (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123457,123508,123555,123427,169456 | named-via-NAVI-enum (per-type work in ai |
+| 4 | NAVI_ERASEMAN | off_810B2D0 (asm/asm31.s:16945 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123459,123510,123556,123428,169458 | named-via-NAVI-enum (per-type work in ai |
+| 5 | NAVI_CHARGEMAN | off_810BB94 (asm/asm31.s:16946 | sub_80F651C (asm/asm31 | sub_80F650A (asm/asm31 | asm/asm31.s:123461,123512,123557,123429,169460 | per-ai routine named |
+| 6 | NAVI_SPOUTMAN | off_810C170 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123463,123514,123558,123430,169462 | named-via-NAVI-enum (per-type work in ai |
+| 7 | NAVI_TOMAHAWKMAN | off_810C6F0 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123465,123516,123559,123431,169464 | named-via-NAVI-enum (per-type work in ai |
+| 8 | NAVI_TENGUMAN | off_810CD60 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123467,123518,123560,123432,169466 | named-via-NAVI-enum (per-type work in ai |
+| 9 | NAVI_GROUNDMAN | off_810D0F4 (asm/asm31.s:16946 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123469,123520,123561,123433,169468 | named-via-NAVI-enum (per-type work in ai |
+| 10 | NAVI_DUSTMAN | off_810D554 (asm/asm31.s:16947 | sub_80FAE5C (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123471,123522,123562,123434,169470 | per-ai routine named |
+| 11 | NAVI_PROTOMAN | off_810D910 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123473,123524,123563,123435,169472 | named-via-NAVI-enum (per-type work in ai |
+| 12 | // unnamed: navi-table i | off_810E120 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123475,123526,123564,123436,169474 | GAP: no NAVI_* enum match + ai_pattern a |
+| 13 | // unnamed: navi-table i | off_810E7B0 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | sub_80FDEFC (asm/asm31 | asm/asm31.s:123477,123528,123565,123437,169476 | per-ai routine named |
+| 14 | // unnamed: navi-table i | off_810F010 (asm/asm31.s:16947 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123479,123530,123566,123438,169478 | GAP: no NAVI_* enum match + ai_pattern a |
+| 15 | // unnamed: navi-table i | off_810F39C (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123481,123532,123567,123439,169480 | GAP: no NAVI_* enum match + ai_pattern a |
+| 16 | // unnamed: navi-table i | off_810FCE0 (asm/asm31.s:16948 | sub_81003A8 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123483,123534,123568,123440,169482 | per-ai routine named |
+| 17 | // unnamed: navi-table i | off_81104D4 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123485,123536,123569,123441,169484 | GAP: no NAVI_* enum match + ai_pattern a |
+| 18 | // unnamed: navi-table i | off_8110DC0 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123487,123538,123570,123442,169486 | GAP: no NAVI_* enum match + ai_pattern a |
+| 19 | // unnamed: navi-table i | off_8111330 (asm/asm31.s:16948 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123489,123540,123571,123443,169488 | GAP: no NAVI_* enum match + ai_pattern a |
+| 20 | // unnamed: navi-table i | off_8111DC0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123491,123542,123572,123444,169490 | GAP: no NAVI_* enum match + ai_pattern a |
+| 21 | // unnamed: navi-table i | off_81121F0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123493,123544,123573,123445,169492 | GAP: no NAVI_* enum match + ai_pattern a |
+| 22 | // unnamed: navi-table i | off_81129A0 (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123495,123546,123574,123446,169494 | GAP: no NAVI_* enum match + ai_pattern a |
+| 23 | // unnamed: navi-table i | ForGunner_8113078 (asm/asm31.s | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123497,123548,123575,123447,169496 | GAP: no NAVI_* enum match + ai_pattern a |
+| 24 | // unnamed: navi-table i | off_81135CC (asm/asm31.s:16949 | nullsub_106 (asm/asm31 | nullsub_106 (asm/asm31 | asm/asm31.s:123499,123550,123576,123448,169498 | GAP: no NAVI_* enum match + ai_pattern a |
 
 ### cybeasts (M6) (FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18))
 
@@ -782,47 +782,49 @@ Note: elem_hp caveat: the Struct2 word is `elem_hp u16 @0x00`; its HIGH nibble i
 
 | tf_value | form | charge_shot | charge_cite | status |
 |---|---|---|---|---|
-| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5805 | unrecorded |
-| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5806 | unrecorded |
-| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5807 | unrecorded |
-| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5808 | unrecorded |
-| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5809 | unrecorded |
-| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5810 | unrecorded |
-| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5811 | unrecorded |
-| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5812 | unrecorded |
-| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5813 | unrecorded |
-| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5814 | unrecorded |
-| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5815 | unrecorded |
-| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5816 | unrecorded |
-| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5817 | unrecorded |
-| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5818 | unrecorded |
-| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5819 | unrecorded |
-| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5820 | unrecorded |
-| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5821 | unrecorded |
-| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5822 | unrecorded |
-| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5823 | unrecorded |
-| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5824 | unrecorded |
-| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5825 | unrecorded |
-| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5826 | unrecorded |
-| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5827 | unrecorded |
-| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5828 | unrecorded |
-| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5829 | unrecorded |
+| 0x00 | TF_NONE | megamanChargeShotBPwrAtk_init_8011 | asm/asm00_2.s:5810 | unrecorded |
+| 0x01 | TF_HEATCROSS | busterBugChargeShotDamageCalcHappe | asm/asm00_2.s:5811 | unrecorded |
+| 0x02 | TF_ELECCROSS | sub_8011ADA | asm/asm00_2.s:5812 | unrecorded |
+| 0x03 | TF_SLASHCROSS | sub_8011AF2 | asm/asm00_2.s:5813 | unrecorded |
+| 0x04 | TF_ERASECROSS | sub_8011B4A | asm/asm00_2.s:5814 | unrecorded |
+| 0x05 | TF_CHARGECROSS | nullsub_44 | asm/asm00_2.s:5815 | unrecorded |
+| 0x06 | TF_SPOUTCROSS | sub_8011BA2 | asm/asm00_2.s:5816 | unrecorded |
+| 0x07 | TF_TOMAHAWKCROSS | greatfireAPwrAtk_init_8011BD0 | asm/asm00_2.s:5817 | unrecorded |
+| 0x08 | TF_TENGUCROSS | sub_8011BE8 | asm/asm00_2.s:5818 | unrecorded |
+| 0x09 | TF_GROUNDCROSS | sub_8011C00 | asm/asm00_2.s:5819 | unrecorded |
+| 0x0a | TF_DUSTCROSS | sub_8011C18 | asm/asm00_2.s:5820 | unrecorded |
+| 0x0b | TF_GREGARBEAST | sub_8011C38 | asm/asm00_2.s:5821 | unrecorded |
+| 0x0c | TF_FALZARBEAST | spoutcrossBPwrAtk_init_8011C5E | asm/asm00_2.s:5822 | unrecorded |
+| 0x0d | TF_HEATBEAST | nullsub_44 | asm/asm00_2.s:5823 | unrecorded |
+| 0x0e | TF_ELECBEAST | nullsub_44 | asm/asm00_2.s:5824 | unrecorded |
+| 0x0f | TF_SLASHBEAST | sub_8011C88 | asm/asm00_2.s:5825 | unrecorded |
+| 0x10 | TF_ERASEBEAST | sub_8011CA8 | asm/asm00_2.s:5826 | unrecorded |
+| 0x11 | TF_CHARGEBEAST | sub_8011CB4 | asm/asm00_2.s:5827 | unrecorded |
+| 0x12 | TF_SPOUTBEAST | slashcrossBPwrAtk_init_8011CD6 | asm/asm00_2.s:5828 | unrecorded |
+| 0x13 | TF_TOMAHAWKBEAST | nullsub_44 | asm/asm00_2.s:5829 | unrecorded |
+| 0x14 | TF_TENGUBEAST | sub_8011CF8 | asm/asm00_2.s:5830 | unrecorded |
+| 0x15 | TF_GROUNDBEAST | sub_8011D20 | asm/asm00_2.s:5831 | unrecorded |
+| 0x16 | TF_DUSTBEAST | sub_8011D38 | asm/asm00_2.s:5832 | unrecorded |
+| 0x17 | TF_GREGARBEASTOVER | sub_8011D54 | asm/asm00_2.s:5833 | unrecorded |
+| 0x18 | TF_FALZARBEASTOVER | nullsub_44 | asm/asm00_2.s:5834 | unrecorded |
 
 ### panels (M3) (FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219))
 
+Note: T115 field walk (supersedes T33's 4-site sweep): object_setPanelType (object.s:2601) is a trampoline to _object_setPanelType, so 36 bl sites (asm31 x28, asm32 x2, asm00_2 x2, asm38 x4) + 13 direct strb oPanelData_Type sites + 4 data-fed writers (t4_0x56 whole-field nibble table byte_80E6D0C {2,3,6,7,8}; t3_0x4f area byte_80CE41E {4,7,6}; t3_0xc9 dword_80DE79C {FF,3,7,6}; navi-byte replay asm00_2.s:10776-10810 + sub_8013CC4 {3,4}) walked; BattleSettings records (1240) and formation arrays (1076) carry no panel-type byte (quad[0] dispatches only the 11 non-panel spawners asm00_1.s:8588-8621), and T70's byte_203CA50 pairs stages to BACKGROUNDS only. 0x8 is written by byte_80E6D0C nibbles; 0x0/0x5/0x9/0xA have no producer
+
 | type | meaning | flag_word | writer | reader | status |
 |---|---|---|---|---|---|
-| 0x0 | hole (skipped by every r | 0x18000 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4315-4317 (_object_setPanelType  | bounded-GAP (T33): walked writer sites,  |
+| 0x0 | hole (skipped by every r | 0x18000 | GAP confirmed zero-writer (T33 4-site swee | asm/asm38.s:4315-4317 (_object_setPanelType  | bounded-GAP (T33): walked writer sites,  |
 | 0x1 | broken | 0x14000 | asm/object.s:2323 (object_breakPanel); als | asm/asm00_2.s:11130 (sub_8013CC4 cmp #1) + a | verified |
 | 0x2 | normal (regen target of  | 0x10010 | asm/object.s:1471-1472 (tickPanels regen); | asm/object.s:1460 (tickPanels default arm re | verified |
 | 0x3 | cracked | 0x10050 | asm/object.s:2218-2222 (object_crackPanel  | asm/object.s:1436-1442 (tickPanels: regen th | verified |
 | 0x4 | poison | 0x10110 | asm/asm31.s:6146-6147 (sub_80BAE16 local a | asm/asm00_2.s:21674-21689 (sub_801A186 ticks | verified |
-| 0x5 | holy | 0x12010 | GAP (T33): no writer in bn6f disassembly - | asm/object.s:4831-4833 (object_calculateFina | bounded-GAP (T33): walked writer sites,  |
+| 0x5 | holy | 0x12010 | GAP confirmed zero-writer (T115 full walk, | asm/object.s:4831-4833 (object_calculateFina | bounded-GAP (T33): walked writer sites,  |
 | 0x6 | grass | 0x10410 | asm/asm31.s:6168-6169 (sub_80BAE16 local a | asm/asm38.s:3855-3862 (applyHeatOnGrassDamag | verified |
 | 0x7 | unnamed: stage terrain m | 0x10810 | asm/asm31.s:6104-6105 (sub_80BAE16 local a | asm/asm38.s:3575-3582 (sub_3007460 cmp #7 -> | verified |
-| 0x8 | unnamed: regen like brok | 0x11010 | GAP (T33): no writer in bn6f disassembly - | asm/object.s:1444-1450 (tickPanels regen 0x2 | bounded-GAP (T33): walked writer sites,  |
-| 0x9 | unnamed: 9..0xC share fl | 0x10210 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4318-4326 (_object_setPanelType: | bounded-GAP (T33): walked writer sites,  |
-| 0xA | unnamed: same regen grou | 0x10210 | GAP (T33): no writer in bn6f disassembly - | asm/asm38.s:4318-4326 + asm/object.s:1452-14 | bounded-GAP (T33): walked writer sites,  |
+| 0x8 | unnamed: ice candidate;  | 0x11010 | asm31.s:99515-99529 (sub_80E6CAA in t4_0x5 | asm/object.s:1444-1450 (tickPanels regen 0x2 | verified |
+| 0x9 | unnamed: 9..0xC share fl | 0x10210 | GAP confirmed zero-writer (T115 full walk, | asm/asm38.s:4318-4326 (_object_setPanelType: | bounded-GAP (T33): walked writer sites,  |
+| 0xA | unnamed: same regen grou | 0x10210 | GAP confirmed zero-writer (T115 full walk, | asm/asm38.s:4318-4326 + asm/object.s:1452-14 | bounded-GAP (T33): walked writer sites,  |
 | 0xB | unnamed: stage type writ | 0x10210 | asm/asm31.s:27871-27872 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 | 0xC | unnamed: stage type writ | 0x10210 | asm/asm31.s:27855-27856 (t3_0x0_80C4E58, a | asm/asm38.s:4318-4326 (_object_setPanelType  | verified |
 
@@ -833,53 +835,53 @@ Note: T18 verdict, CORRECTED by verifier-hyper re-run (all numbers are generator
 | bit | value | setter | reader | battle_visible | via_table | cite | status |
 |---|---|---|---|---|---|---|---|
 | OBJECT_FLAGS_GUARD | 0x00000001 | asm/asm31.s:112363 (+8) | none | no | - | include/structs/CollisionData.inc:3 | unrecorded |
-| OBJECT_FLAGS_INVIS | 0x00000002 | asm/asm00_2.s:3315 | asm/asm00_2.s:22325 | yes | - | include/structs/CollisionData.inc:4 | unrecorded |
-| OBJECT_FLAGS_UNK_4 | 0x00000004 | asm/asm00_2.s:2875 (+2) | asm/asm00_2.s:2829 (+2) | yes | - | include/structs/CollisionData.inc:5 | unrecorded |
-| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | asm/asm31.s:68375 (+2) | asm/asm00_2.s:16729 | yes | - | include/structs/CollisionData.inc:6 | unrecorded |
-| OBJECT_FLAGS_AIRSHOE | 0x00000010 | asm/asm00_2.s:10661 (+3) | asm/asm00_2.s:3163 (+4) | yes | - | include/structs/CollisionData.inc:7 | unrecorded |
-| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | asm/asm00_2.s:10644 (+2) | asm/asm38.s:3905 | yes | - | include/structs/CollisionData.inc:8 | unrecorded |
-| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | asm/asm31.s:32325 (+143) | asm/asm00_2.s:23084 (+3) | yes | - | include/structs/CollisionData.inc:9 | unrecorded |
+| OBJECT_FLAGS_INVIS | 0x00000002 | asm/asm00_2.s:3320 | asm/asm00_2.s:22353 | yes | - | include/structs/CollisionData.inc:4 | unrecorded |
+| OBJECT_FLAGS_UNK_4 | 0x00000004 | asm/asm00_2.s:2880 (+2) | asm/asm00_2.s:2834 (+2) | yes | - | include/structs/CollisionData.inc:5 | unrecorded |
+| OBJECT_FLAGS_INVULNERABLE | 0x00000008 | asm/asm31.s:68375 (+2) | asm/asm00_2.s:16740 | yes | - | include/structs/CollisionData.inc:6 | unrecorded |
+| OBJECT_FLAGS_AIRSHOE | 0x00000010 | asm/asm00_2.s:10666 (+3) | asm/asm00_2.s:3168 (+4) | yes | - | include/structs/CollisionData.inc:7 | unrecorded |
+| OBJECT_FLAGS_FLOATSHOE | 0x00000020 | asm/asm00_2.s:10649 (+2) | asm/asm38.s:3905 | yes | - | include/structs/CollisionData.inc:8 | unrecorded |
+| OBJECT_FLAGS_CANNOT_SLIDE | 0x00000040 | asm/asm31.s:32325 (+143) | asm/asm00_2.s:23112 (+3) | yes | - | include/structs/CollisionData.inc:9 | unrecorded |
 | OBJECT_FLAGS_UNK_8 | 0x00000080 | NONE | none | no | - | include/structs/CollisionData.inc:10 | unrecorded |
-| OBJECT_FLAGS_DEAD | 0x00000100 | asm/asm00_2.s:23485 (+7) | asm/asm00_2.s:16761 (+23) | yes | - | include/structs/CollisionData.inc:11 | unrecorded |
-| OBJECT_FLAGS_FLASHING | 0x00000200 | asm/asm00_2.s:22338 (+2) | asm/asm03_0.s:14697 (+1) | yes | - | include/structs/CollisionData.inc:12 | unrecorded |
-| OBJECT_FLAGS_FLINCHING | 0x00000400 | asm/asm00_2.s:18308 (combined-mask only) | asm/asm00_2.s:12088 (combined-mask only) | no | - | include/structs/CollisionData.inc:13 | unrecorded |
-| OBJECT_FLAGS_PARALYZED | 0x00000800 | asm/object.s:5333 | asm/asm00_2.s:17033 (+6) | yes | - | include/structs/CollisionData.inc:14 | unrecorded |
-| OBJECT_FLAGS_SLIDING | 0x00001000 | asm/asm00_2.s:16515 (+1) | asm/asm00_2.s:1745 (+11) | yes | - | include/structs/CollisionData.inc:15 | unrecorded |
-| OBJECT_FLAGS_BLIND | 0x00002000 | asm/object.s:5530 | asm/asm00_2.s:16861 (+11) | yes | - | include/structs/CollisionData.inc:16 | unrecorded |
-| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | asm/object.s:5510 (+1) | asm/asm31.s:171386 | yes | - | include/structs/CollisionData.inc:17 | unrecorded |
-| OBJECT_FLAGS_CONFUSED | 0x00008000 | asm/object.s:5483 | asm/asm00_2.s:1894 (+10) | yes | - | include/structs/CollisionData.inc:18 | unrecorded |
-| OBJECT_FLAGS_FROZEN | 0x00010000 | asm/object.s:5383 | asm/asm00_2.s:16784 (+5) | yes | - | include/structs/CollisionData.inc:19 | unrecorded |
-| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | asm/asm00_2.s:10684 (+9) | asm/asm00_2.s:23375 (combined-mask only) | no | - | include/structs/CollisionData.inc:20 | unrecorded |
-| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | asm/asm00_2.s:10673 | asm/asm00_2.s:24874 | yes | - | include/structs/CollisionData.inc:21 | unrecorded |
-| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | asm/asm31.s:42478 (+117) | asm/asm00_2.s:21962 | yes | - | include/structs/CollisionData.inc:22 | unrecorded |
-| OBJECT_FLAGS_DRAG | 0x00100000 | asm/asm00_2.s:17289 (+2) | asm/asm00_2.s:23606 (+6) | yes | - | include/structs/CollisionData.inc:23 | unrecorded |
-| OBJECT_FLAGS_ANGER | 0x00200000 | asm/asm00_2.s:11994 | asm/asm00_2.s:11942 (+1) | yes | - | include/structs/CollisionData.inc:24 | unrecorded |
-| OBJECT_FLAGS_USING_ACTION | 0x00400000 | asm/asm00_2.s:18388 (+89) | asm/asm00_2.s:2870 | yes | - | include/structs/CollisionData.inc:25 | unrecorded |
+| OBJECT_FLAGS_DEAD | 0x00000100 | asm/asm00_2.s:23513 (+7) | asm/asm00_2.s:16772 (+23) | yes | - | include/structs/CollisionData.inc:11 | unrecorded |
+| OBJECT_FLAGS_FLASHING | 0x00000200 | asm/asm00_2.s:22366 (+2) | asm/asm03_0.s:14700 (+1) | yes | - | include/structs/CollisionData.inc:12 | unrecorded |
+| OBJECT_FLAGS_FLINCHING | 0x00000400 | asm/asm00_2.s:18319 (combined-mask only) | asm/asm00_2.s:12099 (combined-mask only) | no | - | include/structs/CollisionData.inc:13 | unrecorded |
+| OBJECT_FLAGS_PARALYZED | 0x00000800 | asm/object.s:5333 | asm/asm00_2.s:17044 (+6) | yes | - | include/structs/CollisionData.inc:14 | unrecorded |
+| OBJECT_FLAGS_SLIDING | 0x00001000 | asm/asm00_2.s:16526 (+1) | asm/asm00_2.s:1745 (+11) | yes | - | include/structs/CollisionData.inc:15 | unrecorded |
+| OBJECT_FLAGS_BLIND | 0x00002000 | asm/object.s:5530 | asm/asm00_2.s:16872 (+11) | yes | - | include/structs/CollisionData.inc:16 | unrecorded |
+| OBJECT_FLAGS_IMMOBILIZED | 0x00004000 | asm/object.s:5510 (+1) | asm/asm31.s:171390 | yes | - | include/structs/CollisionData.inc:17 | unrecorded |
+| OBJECT_FLAGS_CONFUSED | 0x00008000 | asm/object.s:5483 | asm/asm00_2.s:1899 (+10) | yes | - | include/structs/CollisionData.inc:18 | unrecorded |
+| OBJECT_FLAGS_FROZEN | 0x00010000 | asm/object.s:5383 | asm/asm00_2.s:16795 (+5) | yes | - | include/structs/CollisionData.inc:19 | unrecorded |
+| OBJECT_FLAGS_SUPERARMOR | 0x00020000 | asm/asm00_2.s:10689 (+9) | asm/asm00_2.s:23403 (combined-mask only) | no | - | include/structs/CollisionData.inc:20 | unrecorded |
+| OBJECT_FLAGS_UNDERSHIRT | 0x00040000 | asm/asm00_2.s:10678 | asm/asm00_2.s:24907 | yes | - | include/structs/CollisionData.inc:21 | unrecorded |
+| OBJECT_FLAGS_MOVE_COMPLETE | 0x00080000 | asm/asm31.s:42478 (+117) | asm/asm00_2.s:21990 | yes | - | include/structs/CollisionData.inc:22 | unrecorded |
+| OBJECT_FLAGS_DRAG | 0x00100000 | asm/asm00_2.s:17300 (+2) | asm/asm00_2.s:23634 (+6) | yes | - | include/structs/CollisionData.inc:23 | unrecorded |
+| OBJECT_FLAGS_ANGER | 0x00200000 | asm/asm00_2.s:12005 | asm/asm00_2.s:11953 (+1) | yes | - | include/structs/CollisionData.inc:24 | unrecorded |
+| OBJECT_FLAGS_USING_ACTION | 0x00400000 | asm/asm00_2.s:18405 (+89) | asm/asm00_2.s:2875 | yes | - | include/structs/CollisionData.inc:25 | unrecorded |
 | OBJECT_FLAGS_UNK_24 | 0x00800000 | asm/asm32.s:15970 | none | no | - | include/structs/CollisionData.inc:26 | unrecorded |
 | OBJECT_FLAGS_UNK_25 | 0x01000000 | asm/asm31.s:46667 | asm/asm38.s:3243 | yes | - | include/structs/CollisionData.inc:27 | unrecorded |
-| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | asm/asm00_2.s:17693 | none | no | - | include/structs/CollisionData.inc:28 | unrecorded |
+| OBJECT_FLAGS_AFFECTED_BY_ICE | 0x02000000 | asm/asm00_2.s:17704 | none | no | - | include/structs/CollisionData.inc:28 | unrecorded |
 | OBJECT_FLAGS_UNK_26 | 0x04000000 | NONE | asm/asm31.s:60669 | yes | - | include/structs/CollisionData.inc:29 | unrecorded |
-| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | asm/asm00_2.s:12678 (+1) | none | no | - | include/structs/CollisionData.inc:30 | unrecorded |
-| OBJECT_FLAGS_UNK_28 | 0x10000000 | NONE | asm/asm00_2.s:19868 | yes | - | include/structs/CollisionData.inc:31 | unrecorded |
-| OBJECT_FLAGS_UNK_29 | 0x20000000 | NONE | asm/asm00_2.s:24101 (combined-mask only) | no | - | include/structs/CollisionData.inc:32 | unrecorded |
-| OBJECT_FLAGS_UNK_30 | 0x40000000 | NONE | asm/asm00_2.s:16374 (+3) | yes | - | include/structs/CollisionData.inc:33 | unrecorded |
-| OBJECT_FLAGS_BUBBLED | 0x80000000 | asm/object.s:5440 | asm/asm00_2.s:17107 (+7) | yes | - | include/structs/CollisionData.inc:34 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | asm/asm00_2.s:23824 (+6) | asm/asm00_2.s:23477 (+6) | yes | - | include/structs/CollisionData.inc:48 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | asm/asm00_2.s:23389 (+1) | asm/asm00_2.s:22310 (+2) | yes | - | include/structs/CollisionData.inc:49 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | asm/asm00_2.s:23383 (+2) | asm/asm00_2.s:23637 | yes | - | include/structs/CollisionData.inc:50 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | asm/asm00_2.s:22545 | asm/asm00_2.s:17482 | yes | 1 | include/structs/CollisionData.inc:51 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | asm/asm00_2.s:22000 (+3) | asm/asm00_2.s:23617 (+1) | yes | - | include/structs/CollisionData.inc:52 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | asm/asm00_2.s:11368 (+2) | none | no | 3 | include/structs/CollisionData.inc:53 | unrecorded |
+| OBJECT_FLAGS_UNAFFECTED_BY_POISON | 0x08000000 | asm/asm00_2.s:12689 (+1) | none | no | - | include/structs/CollisionData.inc:30 | unrecorded |
+| OBJECT_FLAGS_UNK_28 | 0x10000000 | NONE | asm/asm00_2.s:19885 | yes | - | include/structs/CollisionData.inc:31 | unrecorded |
+| OBJECT_FLAGS_UNK_29 | 0x20000000 | NONE | asm/asm00_2.s:24134 (combined-mask only) | no | - | include/structs/CollisionData.inc:32 | unrecorded |
+| OBJECT_FLAGS_UNK_30 | 0x40000000 | NONE | asm/asm00_2.s:16385 (+3) | yes | - | include/structs/CollisionData.inc:33 | unrecorded |
+| OBJECT_FLAGS_BUBBLED | 0x80000000 | asm/object.s:5440 | asm/asm00_2.s:17118 (+7) | yes | - | include/structs/CollisionData.inc:34 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_00 | 0x00000001 | asm/asm00_2.s:23852 (+6) | asm/asm00_2.s:23505 (+6) | yes | - | include/structs/CollisionData.inc:48 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_01 | 0x00000002 | asm/asm00_2.s:23417 (+1) | asm/asm00_2.s:22338 (+2) | yes | - | include/structs/CollisionData.inc:49 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_02 | 0x00000004 | asm/asm00_2.s:23411 (+2) | asm/asm00_2.s:23665 | yes | - | include/structs/CollisionData.inc:50 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_03 | 0x00000008 | asm/asm00_2.s:22573 | asm/asm00_2.s:17493 | yes | 1 | include/structs/CollisionData.inc:51 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_04 | 0x00000010 | asm/asm00_2.s:22028 (+3) | asm/asm00_2.s:23645 (+1) | yes | - | include/structs/CollisionData.inc:52 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_05 | 0x00000020 | asm/asm00_2.s:11379 (+2) | none | no | 3 | include/structs/CollisionData.inc:53 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_06 | 0x00000040 | NONE | none | no | 4 | include/structs/CollisionData.inc:54 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_07 | 0x00000080 | NONE | none | no | 2 | include/structs/CollisionData.inc:55 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | asm/asm00_2.s:23090 (+4) | asm/asm00_2.s:23566 (+6) | yes | - | include/structs/CollisionData.inc:56 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | asm/asm00_2.s:11960 (+1) | asm/asm00_2.s:11985 | yes | - | include/structs/CollisionData.inc:57 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | NONE | asm/asm00_2.s:19645 | yes | - | include/structs/CollisionData.inc:58 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | NONE | asm/asm00_2.s:24077 (combined-mask only) | no | - | include/structs/CollisionData.inc:59 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | NONE | asm/asm00_2.s:19814 | yes | - | include/structs/CollisionData.inc:60 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | NONE | asm/asm00_2.s:24093 (combined-mask only) | no | - | include/structs/CollisionData.inc:61 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | asm/object.s:5859 (+1) | asm/asm00_2.s:23582 (+1) | yes | - | include/structs/CollisionData.inc:62 | unrecorded |
-| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | asm/asm00_2.s:1622 (+1) | asm/asm00_2.s:24046 (+19) | yes | - | include/structs/CollisionData.inc:63 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_08 | 0x00000100 | asm/asm00_2.s:23118 (+4) | asm/asm00_2.s:23594 (+6) | yes | - | include/structs/CollisionData.inc:56 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_09 | 0x00000200 | asm/asm00_2.s:11971 (+1) | asm/asm00_2.s:11996 | yes | - | include/structs/CollisionData.inc:57 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_10 | 0x00000400 | NONE | asm/asm00_2.s:19662 | yes | - | include/structs/CollisionData.inc:58 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_11 | 0x00000800 | NONE | asm/asm00_2.s:24110 (combined-mask only) | no | - | include/structs/CollisionData.inc:59 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_12 | 0x00001000 | NONE | asm/asm00_2.s:19831 | yes | - | include/structs/CollisionData.inc:60 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_13 | 0x00002000 | NONE | asm/asm00_2.s:24126 (combined-mask only) | no | - | include/structs/CollisionData.inc:61 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_14 | 0x00004000 | asm/object.s:5859 (+1) | asm/asm00_2.s:23610 (+1) | yes | - | include/structs/CollisionData.inc:62 | unrecorded |
+| OBJECT_FLAGS_2_UNK_BIT_15 | 0x00008000 | asm/asm00_2.s:1622 (+1) | asm/asm00_2.s:24079 (+19) | yes | - | include/structs/CollisionData.inc:63 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_16 | 0x00010000 | NONE | none | no | 5 | include/structs/CollisionData.inc:64 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_17 | 0x00020000 | NONE | none | no | 6 | include/structs/CollisionData.inc:65 | unrecorded |
 | OBJECT_FLAGS_2_UNK_BIT_18 | 0x00040000 | asm/asm00_2.s:1637 | none | no | - | include/structs/CollisionData.inc:66 | unrecorded |
