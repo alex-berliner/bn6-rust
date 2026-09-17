@@ -724,3 +724,122 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 **Coordinator:** docs/tools-first and only src/emotion.rs if a row proves it; pairable with T119/T120/T121 (disjoint files). Free tier: verify_rows on the guard set + three emotion rows; verifier for step 1's 23-entry transcription. ≤$0.20 expected, ≤$0.40 cap. **Advances M7.**
 
+### T118b. cursor's seam phase anchored to a scanline instead of a fitted iteration count — the gate that lands wt/T112 (M2) and wt/T117 (M7) *(OPEN -- 2026-09-18)*
+
+**Why.** Two finished, verified branches sit unmerged on one veto. wt/T112 (M2 rank+zenny: `result` trace first divergence none, 40/40 both fields, row 0/0/40 held) reads cursor 7/6/170; wt/T117 (M7 charged muzzle flash: `buster_charge` 2498/188/32 → **188/188/32**, negative non-blind 3167, control `buster` 0/0/28) reads cursor 10/9/170. `docs/coverage/cursor.md` names the cause: agb's `GraphicsFrame::commit` copies the whole screenblock after vblank and spills into visible scanlines, so the cut's phase is a function of the binary's footprint; the landed absorber `SEAM_PHASE_PAD_ITERS` (src/main.rs:322, 382-391, T111 0fee41d) counts `nop` iterations at ~5-8 cycles each, so every code or asset delta re-rolls it. T117's sweep on a +1132-byte asset (13:38/37, 14:11/11, 15:26/25, 16:10/9, 17:17/15, 18:20/19) is non-monotone and reaches no ≤1/1 value at all. Until the knob's unit is a scanline, every later port of a routine is gated on a refit that may not exist.
+
+**New evidence.** T56's code-size control test (NEGATIVE) established the class is footprint-calibrated, not logical; T111 (DONE 0fee41d) then proved a wait inside the registered VBlank closure moves the copy start with no loads or stores (verifier-confirmed timing-only). What did not exist then: two blocked footprints to test an anchor against, and the measurement that one integer count cannot serve both.
+
+**Files.** `src/main.rs` (the VBlank closure: the pad and its replacement), `docs/coverage/cursor.md` (anchor + perturbation tables), `docs/worklog/T118.md`. **NOT** src/battle.rs, src/hudtiles.rs, tools/harness.py (row semantics frozen), tools/states.py, tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. On the k=37 seam frame measure both sides' cut: the scanline at which the tile copy is interrupted on canon and on ours at pad 17, and our copy's duration in scanlines (`probe.py` watch / per-scanline diff, one aligned capture pair). **measurement.**
+2. Reproduce the defect on main's own binary: perturb the footprint (a declared `static [u8; N]`, +1132 B, and one in the other direction), sweep the pad over 4 sizes per footprint, report footprint × pad → cursor total/worst. This is the ticket's premise as numbers. ≤4 captures. **measurement.**
+3. Anchor to hardware: in the same VBlank closure spin on `REG_DISPSTAT`'s LY count to a named target scanline before returning, so commit's copy starts at a scanline rather than at a cycle count. Name it `SEAM_ANCHOR_LY` with `// provenance:` citing step 1. If a sub-scanline `nop` trim is still needed, keep it and report it as fitted. **code change + measurement.**
+4. Re-run cursor with ONE unchanged anchor value on three binaries whose footprints differ by ≥1 KiB (main, +1132 B, −1132 B or T117's real asset): ≤1/1/170 each, with the per-frame k table. **measurement.**
+5. Apply only this change on top of wt/T112 and wt/T117 and report cursor's row line for each; then the 8-row guard set on main. **measurement.**
+
+**Rules.** One anchor const, cited; a value that must change per footprint fails the ticket. `fitted` hygiene count must not rise (main prints 17). Row semantics and negatives frozen, no allowlist, no patch_sterile, canon never changes. ≤8 captures, tool budget ≤80.
+
+**Acceptance.** cursor isolated ≤1/1/170 at one unchanged anchor across ≥3 footprints spanning ≥1 KiB, and ≤1/1/170 on wt/T112 and wt/T117 rebased with that same value — the two landings are the deliverable. verify_rows PASS on the 9-row set from a clean checkout is the veto. A bounded NEGATIVE closes it too: phase-vs-LY table, copy duration in scanlines, and what still sets the phase.
+
+**Measure and report.** rows: cursor + 8-row guard set; frames 170/40. Measured cut scanline both sides, copy duration, footprint × pad table before, footprint × anchor table after, both branch reads, ROM sha256+size, fitted/derived/peeked before/after, commit; one line of mechanism; one line unverified (whether the anchor survives a >4 KiB delta).
+
+**Coordinator:** owns src/main.rs only, so it pairs with T119/T120/T121/T122. Land it first, then wt/T112 and wt/T117 in the same session before dispatching further src work. Free tier: verify_rows on the 9-row set ×3 footprints; verifier for step 1's scanline measurement and step 3's cite. ≤$0.30 expected, ≤$0.60 cap. **Advances M2 and M7 — it is the gate on both their finished ports.**
+
+---
+
+### T119b. M2 end of battle, finished: rank from canon's own best-time tables, zenny from its drop roll — trace `rank`/`zenny` on two endings *(OPEN -- 2026-09-18)*
+
+**Why.** T112 (PARTIAL, wt/T112) made the two end-of-battle words computed and measured them at first divergence none over the `result` row's 40 frames (rank 40/40, zenny 40/40), and named exactly what is still borrowed rather than ported: canon's rank byte is `eS20364C0+0x0e` (0x020364CE) written by `sub_802C97E` (asm03_0.s:13232-13257) through the record check `sub_802CA1E` (:13260-13286) against best-time tables **`unk_20018C0`/`unk_2000260`, which we never read**, so our rank comes out 0 through canon's own 0xFF branch; the zenny **drop roll `sub_802C8FA` → `sub_80AA8E0`/`sub_80AAC8C` is unported** and we fall back to `RESULTMATCH_ZENNY`; our `Actor` carries no `ai_index`/`enemy_idx` to index those tables with. On the second ending it measured `battle_full` zenny diverging first at k=406 (113/540 frames) with both sides' stored word 100 once the window is up, and our busted level reading 8 where canon reads 2. Rank at 0 on every ending is not "end of battle with rank and rewards".
+
+**Files.** `src/battle.rs` (the two calcs and their call sites), `src/actor.rs` (the `ai_index`/`enemy_idx` inputs at the enemy's construction), `src/results.rs` (signature only if rank stops being a parameter), `tools/trace.py` (the rank/zenny/level pair), `docs/coverage/end-of-battle.md` (append T112's file), `docs/worklog/T119.md`. **NOT** tools/harness.py, tools/states.py, tools/oracle.py, tools/allowlist.py, src/main.rs (T118's), reference/bn6f (read-only), canon. Runs after T118 lands (the cursor veto), on wt/T112's commits.
+
+**Do.**
+1. Read the two best-time tables out of the ROM: stride, the level/time thresholds, the rank each yields; then state what rank canon awards for the `result` scenario's own (level, time) pair and for the watched record 0x0203F4A4 (+1 level, +4 time, +8 reward 0xFFFF→0x4064). **measurement.**
+2. Give our build the missing inputs from the ROM's own identity rows (`byte_80182C4`, `off_8109150`, stride 6), not from a fixture; report our enemy's ai_index/enemy_idx per row against those bytes. **code change + measurement.**
+3. Port `sub_802C97E`/`sub_802CA1E` cited against the exported tables so rank is produced, not defaulted; retire the literal at `src/battle.rs:2452`. **code change + measurement.**
+4. Port the zenny drop roll `sub_802C8FA`→`sub_80AA8E0`/`sub_80AAC8C` cited, and account for the level byte (ours 8 vs canon 2 on battle_full) at its writer. **code change + measurement.**
+5. Re-run the trace pairs: `result` 40 frames — `rank`, `zenny`, `level`, first divergence none; `battle_full` 540 frames — report the divergent-frame counts before (113/540) and after, and whether k=406's window-up export stall still owns the residue. Then `result` 0/0/40, 8-row guard set, cursor ≤1/1. **measurement.**
+
+**Rules.** No fitted rank or zenny value: every term cited or left unported and named. Descriptor paths stay legal only where a row already compares against them. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** Trace targets `rank` + `zenny` + `level`: `result` 40/40 frames, first divergence **none**, with rank produced by the ported tables and ≠0 on at least one ending where canon awards one (name the scenario and the watched value); `battle_full` zenny divergence strictly under 113/540, ideally 0/540 or its residual frames attributed to the export-counter stall. `result` isolated 0/0/40 unchanged, 8-row guard set + cursor ≤1/1/170, verify_rows PASS from a clean checkout as the veto. A NEGATIVE naming the table record that disagrees with canon's live byte closes it.
+
+**Measure and report.** rows: result + 8-row guard set; frames 40/170. The two tables' addresses, stride and decoded rows with cites; watched vs computed rank/zenny/level per scenario before/after; divergent-frame counts 113/540 → N; pixel totals unchanged; ROM sha256+size; fitted count; commit; one line of mechanism; one line unverified (the reward ITEMS — chips/PAs granted — are still outside these three words).
+
+**Coordinator:** owns src/battle.rs+actor.rs+trace.py; runs alone, after T118, and supersedes nothing on wt/T112 — rebase that branch's commits first. Free tier: verify_rows on the 9-row set; verifier for step 1's table decode and step 4's cites. ≤$0.30 expected, ≤$0.60 cap. **Advances M2.**
+
+---
+
+### T120b. M5: the ai-0x04 think arm and a per-kind enemy spawn — carry T113's 477686-pixel row to 0 *(OPEN -- 2026-09-18)*
+
+**Why.** T113 (PARTIAL, branch wt/T113-ai4, 447f403) measured the whole residue and stopped exactly where its file list predicted. Its audit: our build has **no ai_index-keyed arm table** — dispatch is a hand-written `Style` enum whose only per-type port is `Style::Mettaur` = `ForMettaur_8109EF4` (asm31.s:170982, ai_index 1) — and `src/battle.rs:2148/:2165` construct `Style::Mettaur` for **every** fixture enemy with the sprite hardwired METTAUR at `:2142/:2159`, while `src/fixture.rs:348 kind_of` is read by nothing in src/. So even the landed `gunner` row's rust side fields two Mettaurs. Its `ai4` row reads isolated FAILED **477686/38237/40**, negative non-blind 522293; residue k=0..5 flat ~38.2k (canon's fade tail, gunner's named class), 5938 at k=6, ~7.3-7.7k after; regions top 100174 / mid 317084 / bot 60428. Trace first divergence k=0 on `enemy_state_action` (canon 0x0004, ours 0x0a04) and on `enemy_hp` (canon 0x005a, ours the 0xffff per-kind sentinel). Identity bytes read from the ROM with no capture: `byte_80182C4+3*0x13 = 00 00 04`, `off_8109150[4]` row-0 elem_hp 0x005a, formation `0x080b580a` = shell 0x00 (1,2), Gunner 0x85 (6,1), ai-4 rank v0 0x13 (6,3). One port, and the `0x113..0x118` Navi rows share the think table.
+
+**Files.** `src/battle.rs` (only the enemy's style/sprite selection at :2142/:2148/:2159/:2165, driven by the identity row), `src/fixture.rs` (consume `kind_of`), `src/ai.rs` (ai_index 4's arm cited to `off_810B2D0` asm31.s:173621-173637, indexed through `AIThinkTables_8109050` asm31.s:169448), `tools/harness.py` (keep T113's `ai4` row commit, rebase it), `tools/inventory.py` (keep its identity-byte keying), `docs/coverage/ai4.md`, `docs/worklog/T120.md`. **NOT** tools/states.py (T87's `battlestart_ai4_rank0` is the fixture), src/main.rs, tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Rebase wt/T113-ai4's row+inventory commits onto main-with-T118, re-run `ai4` and report reproduction of 477686/38237/40 with negative 522293. **measurement.**
+2. Make the kind an input: `GetVerActorTyAndAIIdx_80182B4` (asm00_2.s:19965-19974) over `byte_80182C4`, style and sprite from the resulting (ai_index, version); report the ai now used for each fixture enemy in `gunner` and `ai4`, and confirm the gunner row no longer fields two Mettaurs. **code change + measurement.**
+3. Port ai 4's think entry as an arm keyed by ai_index, each of the 15 CurAction handlers cited to `off_810B2D0`; anything uncited stays unported and is listed. Element HP from `off_8109150[4]`'s 0x005a instead of the sentinel. Rebuild, ROM sha256+size. **code change + measurement.**
+4. Re-run `ai4`: residue per frame and per region before/after, and first divergent frame for `enemy_state_action`, `enemy_anim`, `enemy_hp`. **measurement.**
+5. Close the residue: if the flat k=0..5 ~38.2k is canon's fade tail (gunner's named class), port the fade's exit — do not shift the compared window. Then 8-row guard set + `gunner` + `mettaur` + `wave` + cursor. **measurement.**
+
+**Rules.** A virus is a port under the interpreters, never a re-creation: every arm cites a ROM address or stays unported and named. Poke provenance stays `peeked`. No new fitted const (main prints 17), no allowlist, no patch_sterile, canon never changes, row semantics of existing rows frozen. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `ai4` isolated 0/0/40 with a non-blind negative, `enemy_state_action` and `enemy_hp` first divergence **none** over the row's 40 frames, M1 viruses **1/187 → 2/187** with the row keyed on the identity bytes, `gunner`/`mettaur`/`wave` + 8-row guard set + cursor ≤1/1/170 unchanged, verify_rows PASS from a clean checkout as the veto. If not 0: the residue attributed frame-by-frame and region-by-region with the owning trace field named; the count does not move.
+
+**Measure and report.** rows: ai4 + gunner + mettaur + 8-row guard set; frames 40/70/90/170 for cursor. Before/after totals, worst, per-region sums, the negative's total, the arm's cite list, the identity/Struct2 bytes checked, first divergent frame per field, ROM sha256+size, fitted count, commit; one line of mechanism; one line unverified (ai-4 ranks v1..v5, enemy_idx 0x14..0x18, and the 0x113..0x118 Navi rows sharing the think table).
+
+**Coordinator:** owns src/battle.rs — runs alone, sequenced after T118 and after T119's merge if both are dispatched (they hold the same file). Free tier: verify_rows on the 9-row set + gunner/mettaur/wave; verifier for step 2's identity decode and step 3's cites. ≤$0.35 expected, ≤$0.70 cap. **Advances M5 and M1 (viruses line).**
+
+---
+
+### T121b. M3's first panel rule: the 13-word flag table becomes data and one type is measured on both surfaces *(OPEN -- 2026-09-18)*
+
+**Why.** M3 reads "not started" and its foundation is one table, already found: `word_3007924` (IWRAM copy of `0x081D7E24`, bn6f.map:34342, copied by start.s:57-63 to 0x3005B00, len 0x1ed4) — 13 words, stride 4, one per type 0x0..0xC, **OR-ed into `oPanelData_Flags` by `_object_updatePanelParameters` (asm/asm38.s:4213-4219)**, with the setter `_object_setPanelType` (asm38.s:4315-4326) refusing type 0 and giving types 9..0xC `Unk_12=0x708`. T115 (DONE, 1ecee9d) landed the per-type writer table: type 4 poison at `object_panel_setPoison`'s literal-offset store (object.s:2540-2563) and asm31.s:6146-6147, navi events asm00_2.s:10776-10800 replayed by `sub_8013CC4`, and it ruled out 0x0/0x5/0x9/0xA as zero-writer by the full field walk. Our build carries panel types only as tile indices (`src/field.rs:289 set`, `PANEL_CRACKED` :31) and **nothing in src/ reads a panel flag word**, so no M3 rule can even be traced — yet a type change is already live in a compared row: the doll's landing poisons its panel via `object_setPanelType` 4 (`src/battle.rs:346`, `:1002`).
+
+**New evidence.** T115's writer table (landed 2026-09-17/18) postdates every earlier panel sweep, and it names the effect as the next ticket's own deliverable; T18's per-bit census plus `docs/recon/T10.md:53` give the object-side mirrors (`PoisonPanelTimer +0x8`, CollisionData.inc).
+
+**Files.** `src/field.rs` (per-panel flag word + the OR of the table entry, cited), `src/objects.rs` (the object-side mirror if a reader consumes it), `tools/panel_flags_export.py` (NEW: the 13 words from the ROM bytes at 0x081D7E24 into an asset, each bit named from `include/structs/PanelData.inc`), `assets/panels.bin` (exported bytes only), `tools/states.py` (ONE scenario `panel_poison_full` = a battlestart-rooted recipe plus one type poke), `tools/harness.py` (ONE new row `panel_poison`, negative = the same scenario without the poke), `tools/trace.py` (one flags watch), `docs/coverage/panels.md` (append), `docs/worklog/T121.md`. **NOT** src/battle.rs (T119/T120 own it), src/main.rs, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Dump the 13 words from the ROM and decode each against `oPanelData_Flags`' named bits; report type → word → bits, and check that the 9 types with writers predict what T115's cited sites produce. **measurement.**
+2. Live on canon only: one `--watch` of the panel object's flags word over the doll-poison route — report the flip frame and the value and whether it equals your type-4 row. **measurement.**
+3. Port the OR as data: the exported word indexed by type into `src/field.rs` (no hand-written triples), with the setter's rules that a measurement can see (type 0 refused). Rebuild, ROM sha256+size. **code change + measurement.**
+4. Add the row and run it: `panel_poison` total/worst/frames with the negative non-zero, and the flags word traced first divergence none over the compared frames. If the flags are right but the tick's damage or popup is not, name the owning routine as the follow-up and stop. **measurement.**
+5. 8-row guard set + cursor ≤1/1/170. **measurement.**
+
+**Rules.** Flag words from the ROM's bytes only, each exported with its address; no fitted triples. Existing rows' semantics and frames frozen; one new row, one new scenario. No allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `python3 tools/inventory.py` prints the panels section with a per-type flag word and cite (M1 panels ≥9/13, no row loses its writer cite), and M3 gains its first rule scenario: `panel_poison` isolated **0/0/N** with a non-blind negative and the flags word's first divergence **none** over those N frames; 8-row guard set + cursor unchanged; verify_rows PASS from a clean checkout as the veto. A bounded NEGATIVE closes it: the type→flags table both sides plus the reason no live type change is reachable on an existing scenario, named.
+
+**Measure and report.** rows: panel_poison + 8-row guard set; frames N/40 (cursor 170). The 13-word table with bit names and cites, canon's flip frame and value, ours before/after, row totals, the negative's total, ROM sha256+size, fitted count before/after, commit; one line of mechanism (which type's flags own which rule); one line unverified (the other twelve types' effects, and the four zero-writer types).
+
+**Coordinator:** owns src/field.rs + a new exporter + one row; pairable with T118 (main.rs) and, if src/battle.rs stays untouched, with T119/T120 only after they merge — otherwise run alone. Free tier: verify_rows on the 9-row set + the new row; verifier for step 1's bit decode and step 2's watch. ≤$0.30 expected, ≤$0.60 cap. **Advances M3 (first entry) and M1 (panels line).**
+
+---
+
+### T122b. M7: buster_charge's last frame — the release edge that turns 188/188/32 into the row's first 0 *(OPEN -- 2026-09-18)*
+
+**Why.** wt/T117 (PARTIAL, kept at f3c76d6) ported the charged-shot muzzle flash and took `buster_charge` isolated **2498/188/32 → 188/188/32** (negative non-blind 5113 → 3167), with k=1..31 clean, control `buster` PASS 0/0/28 and every guard row 0; only the cursor veto held it unmerged, and T118 exists to clear that class. The whole remaining residue is **k=0's 188 px**, documented since T106 as a one-frame release skew — canon writes CurAction 0x10 at capture frame 130, our export block one frame later — and T117's worklog measured the same one-tick lag on the other side: the `Update::Strike` arm fires once at capture f222..224 = row k=7, one tick AFTER canon's flash first frame at k=6 (marker debug), which is why the spawn had to be armed at the release with `CHARGE_FX_DELAY = 8` (peeked) instead of at the strike. Our charge→release→strike pipeline is one frame long, twice, and the row is 188 px from being a zero.
+
+**New evidence.** T117's marker measurements name both off-by-ones in one row, and T118's anchor makes a src change on the release path landable — neither existed when the skew was first written down.
+
+**Files.** `src/battle.rs` (the charge-release and `Update::Strike` arms only), `docs/coverage/charge-gauge.md` (apply the three corrections T117 never reached: the measured x-range 74..88, the pal/pri attribution line, the hygiene counts dated to base 261ee30), `docs/worklog/T122.md`. **NOT** tools/harness.py (row, canon side and negative frozen), `src/charge_shot.rs`, src/main.rs (T118's), tools/states.py, tools/trace.py, tools/oracle.py, tools/allowlist.py, reference/bn6f (read-only), canon.
+
+**Do.**
+1. Inventory k=0's 188 px: layer, position and which OBJ/BG entries differ, and the pair of frames that owns it — canon's CurAction 0x10 store frame vs our export frame — with both addresses and the row's alignment (canon_ref, offset) stated. **measurement.**
+2. Read canon's charged path order: where the release condition sits in the object's update relative to the frame's tile export, in `ChargeShotHandlersByTransformation_80117D4` cell 0x11 `sub_8011CB4` (asm00_2.s:5827, 6339-6360) and its caller; report our order at the same two lines. **measurement.**
+3. Port the edge (or the gate canon actually uses) so our release lands on canon's frame; keep the plain `buster` path byte-identical. Rebuild, ROM sha256+size. **code change + measurement.**
+4. Re-run `buster_charge` isolated: 0/0/32 with the negative still non-zero; confirm the flash did not slide (k=1..31 still 0, `CHARGE_FX_DELAY` still 8 or re-derived from the new edge and reported). **measurement.**
+5. `buster` 0/0/28, 8-row guard set, cursor ≤1/1/170 at T118's unchanged anchor. **measurement.**
+
+**Rules.** One frame, one edge: no window widening, no baseline subtraction, no shifted alignment. Every moved const cited or left peeked and named; fitted count must not rise (main prints 17). Row semantics frozen, no allowlist, no patch_sterile, canon never changes. ≤6 captures, tool budget ≤80.
+
+**Acceptance.** `buster_charge` isolated **0/0/32** with a non-blind negative (baseline 3167), `buster` 0/0/28 unchanged, 8-row guard set + cursor unchanged, verify_rows PASS from a clean checkout as the veto — then wt/T117's flash lands with it and M7's charge-shot row reaches its first zero. A bounded NEGATIVE closes it: the k=0 pixel inventory, the two frames' cited CurAction writes, and why our export cannot move.
+
+**Measure and report.** rows: buster_charge, buster + 8-row guard set; frames 32/28/40 (cursor 170). The k=0 inventory (pixels, layers, objects), canon's and ours' release frames with addresses and cites, before/after totals and worst, the negative's total, ROM sha256+size, fitted/derived/peeked before/after, commit; one line of mechanism; one line unverified (the other six shot_kinds, and whether the same edge is what `battle_full`'s mm tail diverges on).
+
+**Coordinator:** owns src/battle.rs charge arms — run after T118 and after T120's merge if both are dispatched (same file, different functions; cherry-pick wt/T117 first). Free tier: verify_rows on the 9-row set + buster; verifier for step 2's order reading. ≤$0.25 expected, ≤$0.50 cap. **Advances M7 (charge-shot row to 0).**
+
