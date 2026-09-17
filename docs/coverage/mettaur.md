@@ -869,3 +869,62 @@ Executed: 517 routines, 16988713 instructions profiled (BIOS bucket 1052129, 6.2
 | 316 | 0 | 471 | `locret_81096F8` (code in `sub_81096BA`) | asm31.s:170031 |
 | 317 | 0 | 0 | `byte_811EBDA` (code in `sub_811EA28`) | asm32.s:32522 |
 | 318 | 0 | 0 | `off_811F79C` (code in `sub_811F758`) | asm32.s:33919 |
+
+## T87 -- AIIndex-4 rank census + the first non-Mettaur rank fielded through the frame-60 lever (2026-09-17)
+
+`ai_index 4` is a virus family distinct from Mettaur (ai 1): identity rows `byte_80182C4`
+rows 19-24 (3 bytes each, cite asm/asm00_2.s:19965-19974), reading `(version 0..5,
+ACTOR_TYPE_VIRUS, ai_index 4)`. Think table pointer `off_810B2D0`, act = `nullsub_13`
+(both empty of named handlers, as for Mettaur). Per-version Struct2 rows are 6 bytes
+(`elem_hp u16 @0` first, asm00_2.s:677-681; stride verified against ai 1 =
+0x28/0x50/0x78/0xA0/0x78/0xB4 and ai 0x17 row 0 = 0x3C); `off_8109150[4]` = 0x0810ae4c,
+row 0 elem_hp = **0x005a** (90).
+
+### Where each rank can appear (all 1240 records / 84 lists re-walked from the ROM's own pointers)
+
+| rank (NameID) | random-encounter (family B) records | scripted (family A) records |
+|---|---|---|
+| 0x13 ai4 v0 | 46 slots, ALL rec7==0; first record 0x080b4334 rec0 (list 0x080b4334, net g13 m4, rec7=0, lever 0); in g0x10 also list 0x080b50b0 rec3 0x080b50e0 (lever 3), rec6 0x080b5110 (lever 6), rec7 0x080b5120 (7), rec8 0x080b5130 (8), rec9 0x080b5140 (9), rec10 0x080b5150 (10), rec11 0x080b5160 (11), and list 0x080b5174/0x080b5238 recs (levers per record as listed) | 3 (battleSettingsList0 rec49 0x080af180, rec124 0x080af630, rec247 0x080afde0; rec7=0, no roll) |
+| 0x14 ai4 v1 | 19 slots, ALL rec7==0; first 0x080b2a3c rec3 (list 0x080b2a0c, net g3 m0, rec7=0, lever 3); also net g19 m1 / g20 m0-m2 / g21 m0-m1 lists | 2 |
+| 0x15 ai4 v2 | 11 slots, ALL rec7==0; first 0x080b2f4c rec3 (list 0x080b2f1c, net g5 m0, rec7=0, lever 3); also g5 m4, g19 m1 | 2 |
+| 0x16 ai4 v3 | **NONE** (NEGATIVE: no random-encounter record names it) | 4 (battleSettingsList0 rec163 0x080af8a0, rec183 0x080af9e0, rec217 0x080afc00 x2 slots; rec7=0, index-fetched by getBattleSettingsFromList0/List1 asm00_1.s:16046-16062 -- no roll lever exists) |
+| 0x17 ai4 v4 | exactly ONE: rec12 **0x080b67a8** of list 0x080b66e8 (net g19 m0), **rec7 = 1 -> sub_80AA6EC gate** (asm29.s:10488, T58's NEGATIVE shape) -- blocked | 0 |
+| 0x18 ai4 v5 | exactly ONE: rec13 **0x080b67b8** of list 0x080b66e8, **rec7 = 1 -> sub_80AA6EC gate** -- blocked | 0 |
+
+CentralArea1's own list (0x080b4b78, overworld_net) names only ids {00, 01, 05, 06, 0c, 85}:
+no ai_index-4 rank at all, so the base state's roll can never field one unchanged.
+
+### The unlock that works: EVENT_681 swaps the internet group-table root (not the map)
+
+- selectEncounterTableForMap_80AA5F4 reads EVENT_67F/680/681 (asm29.s:10344-10371) and
+  swaps the whole root table (default 0x08020170 / 0x08020178 / 0x08020180 / 0x08020188).
+  Under EVENT_681, (net group 0x10, **map 0** -- CentralArea1's own map number, untouched)
+  resolves to list 0x080b50b0 (12 records, ALL rec7==0). Its rec3 = 0x080b50e0, formation
+  0x080b580a, enemy ids 00/85/13. Event flag storage: eEventFlags = 0x02001c88
+  (bn6f.map:253); flag N at eEventFlags+(N>>3) bit 0x80>>(N&7) (asm03_0.s:18558-18577);
+  EVENT_681 = byte 0x02001d58 bit 0x40.
+- Lever: poke iCurrFrame (0x0200a210) 0x37a at frame 60; the roll reads 0x37b = 891 one
+  tick later (T58 model), 891 mod 12 = 3 -> rec3 0x080b50e0. Verified live:
+  0x02001b9c reads 0x080b50e0 from frame 0 of the built state.
+- Two DEAD unlock routes, kept as traps: (1) writing GameState.MapId (0x02001b84,
+  GameState.inc loc=0x4) to point at another map WEDGES the overworld -- iCurrFrame
+  freezes at the poked value+1, rollRandomEncounter_80AA4C0 is never entered again
+  (its Unk_14 step accumulator 0x02001c18 stays 0), no battle ever starts
+  (net g13 m4 with lever 0x373 and g16 m6 with 0x37a both reproduced this); (2) a
+  byte-width intent on 0x02001b85 still writes a u16 (--poke-at stores 16 bits),
+  zeroing GameProgress (GameState.inc loc=0x6) on the way.
+
+### The state (battlestart_ai4_rank0)
+
+base /tmp/overworld_net.state + battlestart_gunner's 79-frame direction cycle and roll-open
+pokes (60:0x02001c16:0x2000, 60:0x02001c18:0) + 60:0x02001d58:0x0240 (set EVENT_681, keep
+the 0x02 neighbour byte) + 60:0x0200a210:0x37a (lever). Chosen record 0x080b50e0 from frame
+0. Slots populate at capture frame 69 (= frame 148 from overworld_net): slot0 NameID 0x0085
+(Gunner) HP 0x003c (0x0203aab0/aaac), slot1 **NameID 0x0013 (ai_index-4 rank v0) HP 0x005a**
+(0x0203ab88/ab84) -- byte-equal to off_8109150[4] row-0 elem_hp 0x005a; slot2 NameID/HP stay
+0 (the id-00 quad spawns a shell object, ai 0's act is nullsub_13). Determinism: 40 frames
+from two independent builds diff to **0 pixels** (worst 0). Attack arming: NONE through 330
+frames -- slot0/slot1 CurState_CurAction (0x0203aa90/0x0203ab68) go 0x0004 at 69 -> 0x0104
+at 151 and never reach an action >= 0x20; sequencer 0x0203CA70 reads 0 at frame 320 (T58's
+stuck-sequencer blocker on this poke route). The spawn/Hp match at frame 69 is the
+alignment evidence a follow-up port ticket can start from.
