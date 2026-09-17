@@ -2,8 +2,12 @@
 """Export the per-panel-type flag words (T121b, step 1).
 
 The table lives at ROM address 0x081D7E24 (`word_3007924`'s ROM source, an
-IWRAM copy at 0x3007924 -- bn6f.map:34342, copied by start.s:57-63 to
-0x3005B00, len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC,
+IWRAM copy at 0x3007924 -- word_3007924 is in no map line; the address is
+derived from the copy routine instead: reference/bn6f/asm/start.s copies
+IWRAMRoutinesROMLocation = 0x081d6000 (bn6f.map:34342) to 0x3005B00,
+size 0x1ed4, so 0x3007924 - 0x3005B00 = 0x1e24 and
+0x081d6000 + 0x1e24 = 0x081D7E24, inside the copy): 13 words, stride 4,
+one per panel type 0x0..0xC,
 OR-ed into `oPanelData_Flags` (+0x14) by `_object_updatePanelParameters`
 (asm/asm38.s:4213-4219: `lsl r2,r1,#2; ldr r3,[r3,r2]; orr r1,r3`).
 The alliance bit is OR'd separately by the same routine
@@ -27,7 +31,9 @@ import struct
 import sys
 
 ROM_PATHS = ("/tmp/bn6f_real.gba", "reference/bn6f/bn6f.gba")
-# canon: word_3007924 -- the table's ROM source address (bn6f.map:34342)
+# canon: word_3007924 -- the table's ROM source address, derived from the copy
+# routine (start.s: IWRAMRoutinesROMLocation 0x081d6000 -> 0x3005B00, 0x1ed4;
+# 0x3007924 - 0x3005B00 = 0x1e24; 0x081d6000 + 0x1e24 = 0x081D7E24)
 TABLE_ADDR = 0x081D7E24
 TYPES = 13
 

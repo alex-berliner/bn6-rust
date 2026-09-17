@@ -618,8 +618,11 @@ def parse_forms():
 # ------------------------------------------------------------------ panels
 
 # canon: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249). ROM original:
-# IWRAMRoutinesROMLocation + 0x1E24 = 0x081D7E24 (bn6f.map:34342 = 0x081d6000,
-# copied to 0x3005B00 len 0x1ed4 by start.s:57-63 start_copyMemory; byte match
+# IWRAMRoutinesROMLocation + 0x1E24 = 0x081D7E24 -- bn6f.map:34342 is the
+# IWRAMRoutinesROMLocation line itself (0x081d6000), and word_3007924 is in
+# no map line: the address is derived from the copy routine (start.s
+# start_copyMemory: 0x081d6000 -> 0x3005B00 len 0x1ed4, so
+# 0x3007924 - 0x3005B00 = 0x1E24; byte match
 # verified in the ROM at 0x081D7E24). _object_updatePanelParameters reads
 # oPanelData_Type, copies it to oPanelData_Animation, lsls it by 2 and ORs the
 # word into oPanelData_Flags (asm/asm38.s:4213-4219). 13 words, stride 4,
@@ -2039,7 +2042,7 @@ def main():
         ("M1", ("navis + cybeasts (M6)", "FOUND: asm/asm31.s off_80F24D8/off_80F253C/off_80F25A0", navis)),
         ("M1", ("cybeasts (M6)", "FOUND: TF enum values + dedicated sprite categories (constants/enums/sprite_categories.inc:17-18)", cybeasts)),
         ("M1", ("forms (M7)", "FOUND: constants/constants.inc TF enum + charge-shot dispatch off_80117D4 (asm/asm00_2.s:5789)", forms)),
-        ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (bn6f.map:34342; copied by start.s:57-63 to 0x3005B00 len 0x1ed4): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
+        ("M1", ("panels (M3)", "FOUND: word_3007924 (IWRAM copy, asm/asm38.s:4242-4249) = IWRAMRoutinesROMLocation+0x1E24 = 0x081D7E24 in ROM (word_3007924 is in no map line; derived from start.s's copy: bn6f.map:34342 IWRAMRoutinesROMLocation = 0x081d6000 -> 0x3005B00 len 0x1ed4, 0x3007924-0x3005B00=0x1E24): 13 words, stride 4, one per panel type 0x0..0xC, OR-ed into oPanelData_Flags by _object_updatePanelParameters (asm/asm38.s:4213-4219)", panels)),
         ("M1", ("statuses (M3)",
                 "DERIVED-FROM-CODE (T18, corrected by verifier re-run): per-bit canonical sites"
                 f" measured by walking every object_setFlag/clearFlag/getFlag call and inline flags-field orr/str/tst in"

@@ -80,6 +80,15 @@ CANON_WATCHES = {
     # asm03_0.s:13256). One watch covers rank byte (0xe), level byte (8) and
     # the zenny halfword (0x14) for the T112 pair.
     "results": (0x020364C0, 0x20),
+    # T130: panel[3] = row 1, col 4 of the 0x20-stride panel array at
+    # 0x02039C00 (8 panels per row) -- the first of the nine panels the
+    # chip-poisseed sheet poisons. Type is the +0x2 byte, Flags the +0x14
+    # word; the live flip reads Flags 0x00010032 -> 0x00010134 and Type
+    # 02 -> 04 one frame after the pod's occupancy bit appears
+    # (/tmp/t121b_wide.txt, frames 52/53). These two fill the watch budget
+    # (mgba_capture takes 16); no src-side watch static exists for ours.
+    "panel_type": (0x02039C62, 1),
+    "panel_flags": (0x02039C74, 4),
 }
 #: Mercy is a pointer chase ([0x0203a9b0+0x54]+0x24 -- T1 probe: 0x02038514
 #: reads 119 on the mettaur hit frame, then counts down), so its address is

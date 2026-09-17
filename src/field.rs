@@ -33,6 +33,51 @@ pub const PANEL_CRACKED: usize = 3;
 #[allow(dead_code)]
 pub const PANEL_POISON: usize = 4;
 
+/// The 13-word per-type flag table's own words for the types this field
+/// carries (canon: ROM 0x081D7E24 + type*4, exported byte-identical to
+/// `assets/panels.bin` by tools/panel_flags_export.py, T121b's dd|cmp check;
+/// OR-ed onto `oPanelData_Flags` by `_object_updatePanelParameters`,
+/// asm/asm38.s:4213-4219). Types 5..0xC exist in the ROM but not in this
+/// tilemap, so their words are not carried here.
+const PANEL_FLAG_WORDS: [u32; 5] = [
+    0x0001_8000, // type 0 hole
+    0x0001_4000, // type 1 broken
+    0x0001_0010, // type 2 normal
+    0x0001_0050, // type 3 cracked
+    0x0001_0110, // type 4 poison (template below; see PANEL_POISON_MASK)
+];
+
+/// Panel Flags bits (PanelData.inc, `oPanelData_Flags` +0x14).
+/// 0x2 blocks movement, 0x20 enemy panel, 0x00800000.. the support/attack
+/// group; every other bit the ROM sets on panels has no `.inc` name.
+mod panel_flags {
+    /// PanelData.inc: 0x00000002 - blocks movement. Present in the measured
+    /// frame-0 flag word (0x00010012 own / 0x00010032 enemy, T130's re-parse
+    /// of /tmp/t121b_wide.txt); which routine ORs it at init is unpinned.
+    pub const BLOCKS_MOVEMENT: u32 = 0x2; // canon: PanelData.inc
+    /// setPoison's guard immediate (asm/object.s:2544): a panel is poisoned
+    /// only when this bit IS SET (`tst`/`beq`-to-return-0 skips when clear),
+    /// so holes and broken panels (whose table words lack it) are excluded.
+    /// unnamed: no .inc names this bit; pinned by listing + live capture
+    /// (T130: /tmp/t121b_wide.txt frame 53, all nine flips from normal panels).
+    pub const GUARD_10: u32 = 0x10; // canon: object.s:2544 immediate
+    /// PanelData.inc: 0x00000020 - enemy panel. OR'd from `Alliance << 5` by
+    /// `_object_updatePanelParameters` (asm/asm38.s:4220-4223), never from
+    /// the type table.
+    pub const ENEMY_PANEL: u32 = 0x20; // canon: PanelData.inc, asm38.s:4220-4223
+}
+
+/// `object_panel_setPoison`'s masked template (asm/object.s:2540-2563):
+/// guard `Flags & 0x10` (:2544-2546, skip when CLEAR), then
+/// `Flags = (Flags & ~0x3f5f) | 0x114` (:2547-2551; mask = dword_800CBD0,
+/// template = off_800CBD4), then `Type = 4` and `Animation = 4` at +0x2/+0x6
+/// (one `mov r2,#4` feeding two `strb`s, :2552-2554). The mask clears
+/// 0x2 (blocks movement) and re-sets 0x10 via the OR; 0x4 is unnamed, set by
+/// this routine itself and present in no `.inc`; 0x114 is the landed type-4
+/// table word 0x110 plus that 0x4.
+const PANEL_POISON_MASK: u32 = 0x3f5f; // canon: dword_800CBD0, object.s:2561
+const PANEL_POISON_TEMPLATE: u32 = 0x114; // canon: off_800CBD4, object.s:2563
+
 /// The two highlight overlays follow the panel variants in the tilemap: a
 /// solid block of one tile each, drawn over a panel for a single frame when
 /// something asks for a flash (sub_800C0BA, asm/object.s:1121).
@@ -196,6 +241,11 @@ fn index(col: i32, row: i32) -> usize {
 pub struct Panels {
     types: [u8; PANEL_COUNT],
     animation: [u8; PANEL_COUNT],
+    /// Per-panel flag word, `oPanelData_Flags` (+0x14 of the 0x20-byte panel
+    /// struct, PanelData.inc). Initialised from the type table plus the
+    /// alliance bit; moved by the writers -- so far only setPoison's masked
+    /// template (see `poison`).
+    flags: [u32; PANEL_COUNT],
     regen: [u16; PANEL_COUNT],
     occupied_last: u32,
     dirty: u32,
@@ -215,6 +265,13 @@ impl Panels {
         Self {
             types: [fill as u8; PANEL_COUNT],
             animation: [fill as u8; PANEL_COUNT],
+            flags: core::array::from_fn(|i| {
+                let word = PANEL_FLAG_WORDS[fill.min(PANEL_FLAG_WORDS.len() - 1)];
+                let enemy = i % COLS as usize >= 3;
+                word
+                    | if enemy { panel_flags::ENEMY_PANEL } else { 0 }
+                    | panel_flags::BLOCKS_MOVEMENT
+            }),
             regen: [REGEN_FRAMES; PANEL_COUNT],
             occupied_last: 0,
             dirty: 0,
@@ -270,6 +327,7 @@ impl Panels {
                 && occupied & panel_bit(lo, row) == 0
             {
                 self.enemy_owned[index(lo, row)] = false;
+                self.flags[index(lo, row)] &= !panel_flags::ENEMY_PANEL;
                 self.dirty |= panel_bit(lo, row);
                 taken.push((lo, row));
             }
@@ -288,8 +346,29 @@ impl Panels {
 
     pub fn set(&mut self, col: i32, row: i32, panel_type: usize) {
         let i = index(col, row);
+        if panel_type == PANEL_POISON && !self.poison(i) {
+            // `object_panel_setPoison` refused the panel (guard bit clear:
+            // a hole or broken panel, object.s:2544-2546) -- no write at all,
+            // matching its return-0 tail (:2554-2556).
+            return;
+        }
         self.types[i] = panel_type as u8;
         self.regen[i] = REGEN_FRAMES;
+    }
+
+    /// `object_panel_setPoison` (asm/object.s:2540-2563) against panel `i`:
+    /// the guard (`Flags & 0x10` must be SET, else the routine returns 0),
+    /// then the masked template `Flags = (Flags & ~0x3f5f) | 0x114`, then
+    /// `Type = 4` / `Animation = 4` -- which the per-frame tick derives from
+    /// `types` exactly as it does for every other type change. Returns
+    /// whether the write happened, like the routine's own return value.
+    fn poison(&mut self, i: usize) -> bool {
+        if self.flags[i] & panel_flags::GUARD_10 == 0 {
+            return false;
+        }
+        self.flags[i] = (self.flags[i] & !PANEL_POISON_MASK) | PANEL_POISON_TEMPLATE;
+        self.types[i] = PANEL_POISON as u8;
+        true
     }
 
     /// Crack a panel, or break it outright if it was cracked already, which is
