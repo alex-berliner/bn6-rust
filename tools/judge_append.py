@@ -4,8 +4,14 @@ a `### ID. title *(OPEN -- date)*` heading with a fresh ID, a `**Files.**` line,
 `**Measure and report.**`) section, and a reference to a docs/SCOPE.md milestone (M1..M11) or to an OPEN
 ticket it follows. Appends the accepted tickets to the T section, commits TODO.md alone, and prints what it
 admitted or refused.  usage: python3 tools/judge_append.py <proposal.md>"""
-import os, re, subprocess, sys
+import fcntl, os, re, subprocess, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# TODO.md is one file in one shared checkout, and every run's judge and every run's coordinator do a
+# read-modify-write on it. Two at the same second meant the second read a TODO.md without the first's
+# tickets and wrote them back out: a whole admitted batch gone, with both processes reporting success.
+# This got likelier when the daily batch cap went 12 -> 40 and the judge stopped being pinned to one
+# provider (2026-09-17). Held until the process exits, which is after the commit.
+_lock = open("/tmp/bn-land.lock", "w"); fcntl.flock(_lock, fcntl.LOCK_EX)
 # A judge writes the heading as "### T107." or, often enough to matter, as "# T107." with an "*(OPEN)*" stamp
 # that may carry no date. Accept both rather than throw a whole batch away (2026-09-17: a 3,000-word proposal
 # was discarded for a missing "##").

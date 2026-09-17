@@ -6,7 +6,7 @@ usage: python3 tools/ticket_result.py <ID> <STATUS> "<result text>" [--no-commit
 The status line becomes "*(STATUS -- <today>, <first sentence of result>)*"; the paragraph is inserted
 right after the ticket's heading (an existing Result paragraph is replaced).
 """
-import datetime, os, re, subprocess, sys
+import datetime, fcntl, os, re, subprocess, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -17,6 +17,10 @@ def main():
     tid, status, result = sys.argv[1], sys.argv[2].upper(), sys.argv[3].strip()
     commit = "--no-commit" not in sys.argv
     p = os.path.join(ROOT, "TODO.md")
+    # One shared TODO.md, several runs stamping results into it at once: without this the second
+    # reader overwrites the first's stamp and both report success. Same lock the landings take, so a
+    # stamp also cannot interleave with a merge that is rewriting the same file.
+    _lock = open("/tmp/bn-land.lock", "w"); fcntl.flock(_lock, fcntl.LOCK_EX)
     s = open(p).read()
     m = re.search(r"^### %s\. (.*?)\s*\*\((\w+)\b.*\)\*\s*$" % re.escape(tid), s, re.M)
     if not m:

@@ -21,12 +21,15 @@ bash tools/check_inputs.sh || exit 1
 # landings are serialized machine-wide: two concurrent merges into the same checkout would corrupt it
 exec 9>/tmp/bn-land.lock; flock -w 1800 9 || { echo "could not take the landing lock in 30 min" >&2; exit 1; }
 # The main checkout is shared by every run, the roundup and the human session, so one uncommitted generated
-# file used to block every landing: 158 refusals in two days (2026-09-17). Generated paths are committed here
-# rather than refused; anything else still refuses, with the list, because it is someone's unfinished work.
+# file used to block every landing. (An earlier version of this comment claimed "158 refusals in two days";
+# that number came from a grep matching this script's own text inside command logs, and a second count of 51
+# was no better. The mechanism is real and the refusals were frequent; the magnitude was never measured from
+# a source worth trusting, so no number is quoted here.) Generated paths are committed rather than refused;
+# anything else still refuses, with the list, because it is someone's unfinished work.
 if ! git diff --quiet || ! git diff --cached --quiet; then
   dirty="$(git diff --name-only; git diff --cached --name-only)"
-  generated="$(echo "$dirty" | grep -E '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/SCOPE\.md)' || true)"
-  other="$(echo "$dirty" | grep -vE '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/SCOPE\.md)' || true)"
+  generated="$(echo "$dirty" | grep -E '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/benchmarks/|docs/worklog/|docs/SCOPE\.md)' || true)"
+  other="$(echo "$dirty" | grep -vE '^(tools/README\.md|web/captures/|web/blog/|web/build\.txt|docs/reviews/|docs/inventory/|docs/benchmarks/|docs/worklog/|docs/SCOPE\.md)' || true)"
   if [ -n "$other" ]; then
     echo "main checkout is dirty with work that is not generated; refusing:" >&2; echo "$other" | sed 's/^/  /' >&2; exit 1
   fi
