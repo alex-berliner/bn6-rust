@@ -4,7 +4,7 @@
 decomp/
 # Derived from the copyrighted ROM, so it is a local reading aid only and must
 docs/tickets/
-docs/tickets/    # generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible
+# generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible
 # Ghidra's decompilation of the real cartridge (tools/ghidra_decompile.sh).
 # never be committed.  The Ghidra install and its project database live outside
 # out of git (only served locally).
