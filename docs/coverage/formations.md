@@ -7,42 +7,54 @@ Census of every BattleSettings record stream reachable from the ROM's own pointe
 
 - Family A (scripted battles): battleSettingsList0 @0x080aee70, BattleSettingsList1 @0x080b0d88 (bn6f.map:28302/28573), consumed by getBattleSettingsFromList0/List1 (asm/asm00_1.s:16046-16062, index*0x10). 269+192 = 461 records, 297 formation arrays (the old .s parse's numbers, confirmed).
 
-- Family B (random encounters): off_8020170 group tables (selectEncounterTableForMap_80AA5F4, asm/asm29.s:10338-10457): [0x08020170] = real-world table (21 groups) / [+4] = internet table (23 groups, INTERNET_NUM_GROUPS GameAreas.inc:10); mapgroup >= 0x80 indexes the internet table at group-0x80. Group slot -> map array (16 words) -> record list. EVENT_67F/680/681 swap only the internet table (0x08020178/80/88). 82 distinct lists, 779 records, 779 formation arrays -- ALL missed by the old .s parse.
+- Family B (random encounters): off_8020170 group tables (selectEncounterTableForMap_80AA5F4, asm/asm29.s:10338-10457): [0x08020170] = real-world table (21 groups, off_8020190 block) / [+4] = internet table (23 words, proven by 0x080201E4 + 23*4 = 0x08020240 = pt_8020240, asm/asm01.s:555-580); mapgroup >= 0x80 indexes the internet table at group-0x80. Group slot -> map array (16 words) -> record list. EVENT_67F/680/681 swap only the internet table (0x08020178/80/88). 82 distinct lists, 779 records, 779 formation arrays -- ALL missed by the old .s parse.
 
-- Totals: 84 lists, 1240 records, 1076 distinct 0xF0-terminated formation arrays; 0 terminator mismatches (every list ends on record[0]==0xff, every EnemySetupArrPtr reaches a 0xF0).
+- Totals: 84 lists (2 scripted + 82 encounter), 1240 records, 1076 distinct 0xF0-terminated formation arrays; 0 terminator mismatches (every list ends on record[0]==0xff, every EnemySetupArrPtr reaches a 0xF0).
 
-- Record = 16 bytes (BattleSettings.inc): byte[0]==0xff list terminator, byte[4] Background, byte[7] gate handler index (JumpTable80AA6B8, asm29.s:10471), u32@0xc EnemySetupArrPtr -> 4-byte quads, quad[0]==0xF0 stop, quad[2] = enemy id. Formation = byte_ label (family A) or rom_XXXXXXXX (family B, unlabeled).
+- Record = 16 bytes (include/rom_structs/BattleSettings.inc): byte[0]==0xff list terminator, byte[4] Background (meaning proven by battleSettings_setBackground asm/asm03_0.s:14591-14593, strb r0,[BattleSettings_200AF60+0x4]), byte[7] gate handler index (JumpTable80AA6B8, asm29.s:10471), u32@0xc EnemySetupArrPtr -> 4-byte quads, quad[0]==0xF0 stop, quad[2] = enemy id. Formation = byte_ label (family A, labels carried from data/BattleSettings.s) or rom_XXXXXXXX (family B, unlabeled in ROM).
 
 
 ## Known answers (CentralArea1, list 0x080b4b78, mapgroup 0x90 map 0, 14 records)
 
 | rec | addr | rec7 | formation | enemy ids (quad[2]) |
 |---|---|---|---|---|
-| rec0 | 0x080b4b78 | 0 | 0x080b52f9 | 00,01,01 |
-| rec1 | 0x080b4b88 | 0 | 0x080b5306 | 00,01,01 |
-| rec2 | 0x080b4b98 | 0 | 0x080b5313 | 00,01,01 |
-| rec3 | 0x080b4ba8 | 0 | 0x080b5320 | 00,01,01 |
-| rec4 | 0x080b4bb8 | 0 | 0x080b532d | 00,01,01 |
-| rec5 | 0x080b4bc8 | 0 | 0x080b533a | 00,01,01 |
-| rec6 | 0x080b4bd8 | 0 | 0x080b5347 | 00,01,85 |
-| rec7 | 0x080b4be8 | 0 | 0x080b5354 | 00,01,01,01 |
-| rec8 | 0x080b4bf8 | 0 | 0x080b5365 | 00,01,01,01 |
-| rec9 | 0x080b4c08 | 0 | 0x080b5376 | 00,01,01,01 |
-| rec10 | 0x080b4c18 | 0 | 0x080b5387 | 00,01,85,01 |
-| rec11 | 0x080b4c28 | 0 | 0x080b5398 | 00,01,01,01,0c |
-| rec12 | 0x080b4c38 | 1 | 0x080b53ad | 00,01,01,05 |
-| rec13 | 0x080b4c48 | 1 | 0x080b53be | 00,01,01,06 |
+| rec0 | 080b4b78 | 0 | 0x080b52f9 | 00,01,01 |
+| rec1 | 080b4b88 | 0 | 0x080b5306 | 00,01,01 |
+| rec2 | 080b4b98 | 0 | 0x080b5313 | 00,01,01 |
+| rec3 | 080b4ba8 | 0 | 0x080b5320 | 00,01,01 |
+| rec4 | 080b4bb8 | 0 | 0x080b532d | 00,01,01 |
+| rec5 | 080b4bc8 | 0 | 0x080b533a | 00,01,01 |
+| rec6 | 080b4bd8 | 0 | 0x080b5347 | 00,01,85 |
+| rec7 | 080b4be8 | 0 | 0x080b5354 | 00,01,01,01 |
+| rec8 | 080b4bf8 | 0 | 0x080b5365 | 00,01,01,01 |
+| rec9 | 080b4c08 | 0 | 0x080b5376 | 00,01,01,01 |
+| rec10 | 080b4c18 | 0 | 0x080b5387 | 00,01,85,01 |
+| rec11 | 080b4c28 | 0 | 0x080b5398 | 00,01,01,01,0c |
+| rec12 | 080b4c38 | 1 | 0x080b53ad | 00,01,01,05 |
+| rec13 | 080b4c48 | 1 | 0x080b53be | 00,01,01,06 |
 
 rec6 = 0x080b4bd8 (ids 00,01,85) and rec10 = 0x080b4c18 (ids 00,01,85,01, formation 0x080b5387 = T58's byte_80B5387) are ungated; rec12 0x080b4c38 (id 05) and rec13 0x080b4c48 (id 06) carry rec7==1 -> sub_80AA6EC (asm29.s:10488, EVENT_1D8 + progress gate) -- all four byte-for-byte as T58 recorded.
 
 Roll arithmetic re-derived: the mod count is the FILTERED count (12 rec7==0 records here, not 14): poke+1 882 mod 12 = 6 (rec6), 886 mod 12 = 10 (rec10), 894 mod 12 = 6, and 894 mod 14 = 12 = T58's 'count of 14 would have picked rec12'.
 
 
-## M5 answer: ungated (rec7==0) encounter records naming enemy_idx 2..6
+## M5 answer: ungated (rec7==0) records naming enemy_idx 2..6
 
-Lever value = iCurrFrame mod (filtered count) position that picks the record = its index among the list's rec7==0 records (element-mask test of sub_80AA824 assumed passing under the 0x1f fallback select arg; other JumpTable80AA6B8 handlers may pass with events set and shift the count).
+**Lever values exist only for family B** (the random-encounter lists the roll actually reads via selectEncounterTableForMap_80AA5F4). Family A is fetched by index (getBattleSettingsFromList0/List1, idx*0x10) -- there is no iCurrFrame roll in family A, so its records below are listed without lever semantics.
 
-**88 ungated records over 24 distinct lists; enemy_idx 2 (92 slots) and 3 (42 slots) only. NEGATIVE: no list read this way has an ungated record naming enemy_idx 4, 5 or 6** (idx 5/6 only gated rec12/13; idx 4 never in family B -- scripted list0 holds 25 such records, fetched by index, no roll lever).
+**Lever** = position of the record among its list's rec7==0 records = the value v such that `iCurrFrame mod (filtered count) == v` picks it (T58 model: the roll reads iCurrFrame one tick after the frame-60 poke; element-mask test of sub_80AA824 assumed passing under the 0x1f fallback select arg; other JumpTable80AA6B8 handlers passing would shift the count).
+
+### Notation legend (read before auditing rows)
+
+- Columns: **list** = encounter-list ROM address; **mapgroup/map** = owner slot in the group tables (mapgroup shown as 0x80+g for internet groups); **rec** = 0-based record index within the list; **addr** = record address; **lever** = filtered position (see above); **enemy_idx(qN)** = quad N of the record's formation array, 0-based over the 4-byte EnemySetup entries, whose byte[2] is the named enemy id; **formation** = array address.
+
+- `(q0, id)`-style pairs are (quad index, enemy id byte[2]) -- NOT raw ROM quad dumps; a record naming the same id in several slots prints one pair per slot. Version nibbles (quad[3]>>4) read 0 throughout this census and are not shown.
+
+### Family B (roll-levered): 88 ungated records over 24 distinct lists
+
+enemy_idx 2 (92 slots) and 3 (42 slots) only.
+
+**NEGATIVE, scoped to family B: zero family-B records are ungated AND name enemy_idx 4, 5 or 6.** In family B, ids 5 and 6 appear exactly once each and both behind the rec7==1 gate (CentralArea1 rec12 0x080b4c38 / rec13 0x080b4c48); id 4 never appears in family B at all. This is a PER-FAMILY statement: family A (scripted, index-fetched) DOES hold ungated records naming 4/5/6 -- 15 records with rec7==0 (e.g. 0x080af430, 0x080af480, 0x080af4e0 name enemy_idx 4) -- but none of them is reachable through the encounter roll.
 
 | list | mapgroup/map | rec | addr | lever | enemy_idx (quad slot) | formation |
 |---|---|---|---|---|---|---|
@@ -134,3 +146,17 @@ Lever value = iCurrFrame mod (filtered count) position that picks the record = i
 | 0x080b7b14 | 0x16/1 | rec13 | 0x080b7be4 | 13 | 3(q1) 3(q2) | 0x080b7fe3 |
 | 0x080b7ce8 | 0x16/2 | rec0 | 0x080b7ce8 | 0 | 3(q1) 3(q3) | 0x080b80e7 |
 | 0x080b7ce8 | 0x16/2 | rec6 | 0x080b7d48 | 6 | 3(q1) 3(q3) | 0x080b8145 |
+
+### Family A (scripted, index-fetched -- no roll lever): 50 records name enemy_idx 2..6
+
+All rec7==0; enemy_idx 2 in 26 slots, 3 in 45, 4 in 25; the 15 records naming 4/5/6 are the only family-A occurrences of those ranks. Fetched by getBattleSettingsFromList0/List1(battleSettingsIdx), so fielding them is an index question, not a lever question.
+
+
+## Caveats
+
+- **Zero-id gap:** 1045 of the 1076 formation arrays contain a quad with byte[2]==0x00 (e.g. rom_080aff44 = ['00','7f'], and every CentralArea1 record's first quad). Nobody has interpreted id 0x00 from a table or reader in this census; it is consistent with the player/MegaMan slot T9c observed (slot data shows 0x00 slots beside NameID 0x0001 Mettaur), but treat 0x00 as UNVERIFIED, not an enemy_idx.
+
+- Lever values assume only rec7==0 records pass; if an event sets a gate handler (entries 2..11 of JumpTable80AA6B8) the filtered count grows and every subsequent lever shifts.
+
+- Element-mask pass rate per select arg (0x40 / 0x20 / PET byte / 0x1f fallback) is inferred from T58's three verified (poke, record) pairs, not traced.
+

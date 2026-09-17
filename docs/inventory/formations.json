@@ -20,7 +20,7 @@
  },
  "rows": [
   {
-   "formation": "rom_080aff44",
+   "formation": "byte_80AFF44",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -30,7 +30,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff4d",
+   "formation": "byte_80AFF4D",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -42,7 +42,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff5e",
+   "formation": "byte_80AFF5E",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -52,7 +52,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff67",
+   "formation": "byte_80AFF67",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -62,7 +62,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff70",
+   "formation": "byte_80AFF70",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -72,7 +72,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff79",
+   "formation": "byte_80AFF79",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -82,7 +82,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff82",
+   "formation": "byte_80AFF82",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -92,7 +92,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff8b",
+   "formation": "byte_80AFF8B",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -102,7 +102,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff94",
+   "formation": "byte_80AFF94",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -112,7 +112,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080aff9d",
+   "formation": "byte_80AFF9D",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -122,7 +122,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affa6",
+   "formation": "byte_80AFFA6",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -132,7 +132,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affaf",
+   "formation": "byte_80AFFAF",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -142,7 +142,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affb8",
+   "formation": "byte_80AFFB8",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -152,7 +152,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affc1",
+   "formation": "byte_80AFFC1",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -162,7 +162,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affca",
+   "formation": "byte_80AFFCA",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -172,7 +172,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affd3",
+   "formation": "byte_80AFFD3",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -182,7 +182,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affdc",
+   "formation": "byte_80AFFDC",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -192,7 +192,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affe5",
+   "formation": "byte_80AFFE5",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -202,7 +202,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080affee",
+   "formation": "byte_80AFFEE",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -212,7 +212,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080afff7",
+   "formation": "byte_80AFFF7",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -222,7 +222,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0000",
+   "formation": "byte_80B0000",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -232,7 +232,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0009",
+   "formation": "byte_80B0009",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -242,7 +242,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0012",
+   "formation": "byte_80B0012",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -252,7 +252,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b001b",
+   "formation": "byte_80B001B",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -262,7 +262,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0024",
+   "formation": "byte_80B0024",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -272,7 +272,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b002d",
+   "formation": "byte_80B002D",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -282,7 +282,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0036",
+   "formation": "byte_80B0036",
    "entries": 2,
    "enemy_ids": [
     "01",
@@ -292,7 +292,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b003f",
+   "formation": "byte_80B003F",
    "entries": 2,
    "enemy_ids": [
     "3d",
@@ -302,7 +302,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0048",
+   "formation": "byte_80B0048",
    "entries": 2,
    "enemy_ids": [
     "01",
@@ -312,7 +312,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0051",
+   "formation": "byte_80B0051",
    "entries": 2,
    "enemy_ids": [
     "07",
@@ -322,7 +322,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b005a",
+   "formation": "byte_80B005A",
    "entries": 2,
    "enemy_ids": [
     "1f",
@@ -332,7 +332,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0063",
+   "formation": "byte_80B0063",
    "entries": 2,
    "enemy_ids": [
     "4f",
@@ -342,7 +342,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b006c",
+   "formation": "byte_80B006C",
    "entries": 2,
    "enemy_ids": [
     "07",
@@ -352,7 +352,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0075",
+   "formation": "byte_80B0075",
    "entries": 2,
    "enemy_ids": [
     "4f",
@@ -362,7 +362,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b007e",
+   "formation": "byte_80B007E",
    "entries": 2,
    "enemy_ids": [
     "9d",
@@ -372,7 +372,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0087",
+   "formation": "byte_80B0087",
    "entries": 4,
    "enemy_ids": [
     "7f",
@@ -384,7 +384,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0098",
+   "formation": "byte_80B0098",
    "entries": 4,
    "enemy_ids": [
     "73",
@@ -396,7 +396,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00a9",
+   "formation": "byte_80B00A9",
    "entries": 2,
    "enemy_ids": [
     "73",
@@ -406,7 +406,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00b2",
+   "formation": "byte_80B00B2",
    "entries": 2,
    "enemy_ids": [
     "9d",
@@ -416,7 +416,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00bb",
+   "formation": "byte_80B00BB",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -426,7 +426,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00c4",
+   "formation": "byte_80B00C4",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -436,7 +436,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00cd",
+   "formation": "byte_80B00CD",
    "entries": 2,
    "enemy_ids": [
     "25",
@@ -446,7 +446,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00d6",
+   "formation": "byte_80B00D6",
    "entries": 2,
    "enemy_ids": [
     "8b",
@@ -456,7 +456,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00df",
+   "formation": "byte_80B00DF",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -466,7 +466,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00e8",
+   "formation": "byte_80B00E8",
    "entries": 2,
    "enemy_ids": [
     "25",
@@ -476,7 +476,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00f1",
+   "formation": "byte_80B00F1",
    "entries": 2,
    "enemy_ids": [
     "8b",
@@ -486,7 +486,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b00fa",
+   "formation": "byte_80B00FA",
    "entries": 2,
    "enemy_ids": [
     "8b",
@@ -496,7 +496,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0103",
+   "formation": "byte_80B0103",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -506,7 +506,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b010c",
+   "formation": "byte_80B010C",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -516,7 +516,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0115",
+   "formation": "byte_80B0115",
    "entries": 2,
    "enemy_ids": [
     "13",
@@ -526,7 +526,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b011e",
+   "formation": "byte_80B011E",
    "entries": 2,
    "enemy_ids": [
     "01",
@@ -536,7 +536,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0127",
+   "formation": "byte_80B0127",
    "entries": 2,
    "enemy_ids": [
     "91",
@@ -546,7 +546,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0130",
+   "formation": "byte_80B0130",
    "entries": 2,
    "enemy_ids": [
     "25",
@@ -556,7 +556,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0139",
+   "formation": "byte_80B0139",
    "entries": 2,
    "enemy_ids": [
     "67",
@@ -566,7 +566,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0142",
+   "formation": "byte_80B0142",
    "entries": 2,
    "enemy_ids": [
     "9d",
@@ -576,7 +576,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b014b",
+   "formation": "byte_80B014B",
    "entries": 2,
    "enemy_ids": [
     "43",
@@ -586,7 +586,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0154",
+   "formation": "byte_80B0154",
    "entries": 2,
    "enemy_ids": [
     "6d",
@@ -596,7 +596,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b015d",
+   "formation": "byte_80B015D",
    "entries": 2,
    "enemy_ids": [
     "2b",
@@ -606,7 +606,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0166",
+   "formation": "byte_80B0166",
    "entries": 2,
    "enemy_ids": [
     "01",
@@ -616,7 +616,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b016f",
+   "formation": "byte_80B016F",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -627,7 +627,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b017c",
+   "formation": "byte_80B017C",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -639,7 +639,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b018d",
+   "formation": "byte_80B018D",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -651,7 +651,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b019e",
+   "formation": "byte_80B019E",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -663,7 +663,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01af",
+   "formation": "byte_80B01AF",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -675,7 +675,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01c0",
+   "formation": "byte_80B01C0",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -686,7 +686,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01cd",
+   "formation": "byte_80B01CD",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -698,7 +698,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01de",
+   "formation": "byte_80B01DE",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -710,7 +710,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01ef",
+   "formation": "byte_80B01EF",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -720,7 +720,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b01f8",
+   "formation": "byte_80B01F8",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -732,7 +732,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0209",
+   "formation": "byte_80B0209",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -742,7 +742,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0212",
+   "formation": "byte_80B0212",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -754,7 +754,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0223",
+   "formation": "byte_80B0223",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -764,7 +764,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b022c",
+   "formation": "byte_80B022C",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -774,7 +774,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0235",
+   "formation": "byte_80B0235",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -786,7 +786,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0246",
+   "formation": "byte_80B0246",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -798,7 +798,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0257",
+   "formation": "byte_80B0257",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -810,7 +810,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0268",
+   "formation": "byte_80B0268",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -822,7 +822,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0279",
+   "formation": "byte_80B0279",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -834,7 +834,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b028a",
+   "formation": "byte_80B028A",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -846,7 +846,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b029b",
+   "formation": "byte_80B029B",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -858,7 +858,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02ac",
+   "formation": "byte_80B02AC",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -870,7 +870,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02bd",
+   "formation": "byte_80B02BD",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -880,7 +880,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02c6",
+   "formation": "byte_80B02C6",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -890,7 +890,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02cf",
+   "formation": "byte_80B02CF",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -900,7 +900,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02d8",
+   "formation": "byte_80B02D8",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -911,7 +911,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02e5",
+   "formation": "byte_80B02E5",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -922,7 +922,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02f2",
+   "formation": "byte_80B02F2",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -933,7 +933,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b02ff",
+   "formation": "byte_80B02FF",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -944,7 +944,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b030c",
+   "formation": "byte_80B030C",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -955,7 +955,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0319",
+   "formation": "byte_80B0319",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -966,7 +966,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0326",
+   "formation": "byte_80B0326",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -977,7 +977,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0333",
+   "formation": "byte_80B0333",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -988,7 +988,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0340",
+   "formation": "byte_80B0340",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -999,7 +999,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b034d",
+   "formation": "byte_80B034D",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1010,7 +1010,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b035a",
+   "formation": "byte_80B035A",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1021,7 +1021,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0367",
+   "formation": "byte_80B0367",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1032,7 +1032,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0374",
+   "formation": "byte_80B0374",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1043,7 +1043,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0381",
+   "formation": "byte_80B0381",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1054,7 +1054,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b038e",
+   "formation": "byte_80B038E",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1065,7 +1065,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b039b",
+   "formation": "byte_80B039B",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1076,7 +1076,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03a8",
+   "formation": "byte_80B03A8",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1087,7 +1087,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03b5",
+   "formation": "byte_80B03B5",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1098,7 +1098,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03c2",
+   "formation": "byte_80B03C2",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1109,7 +1109,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03cf",
+   "formation": "byte_80B03CF",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1120,7 +1120,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03dc",
+   "formation": "byte_80B03DC",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1131,7 +1131,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03e9",
+   "formation": "byte_80B03E9",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1142,7 +1142,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b03f6",
+   "formation": "byte_80B03F6",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1153,7 +1153,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0403",
+   "formation": "byte_80B0403",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1164,7 +1164,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0410",
+   "formation": "byte_80B0410",
    "entries": 3,
    "enemy_ids": [
     "00",
@@ -1175,7 +1175,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b041d",
+   "formation": "byte_80B041D",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1187,7 +1187,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b042e",
+   "formation": "byte_80B042E",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1199,7 +1199,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b043f",
+   "formation": "byte_80B043F",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1211,7 +1211,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0450",
+   "formation": "byte_80B0450",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1221,7 +1221,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0459",
+   "formation": "byte_80B0459",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1231,7 +1231,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0462",
+   "formation": "byte_80B0462",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1241,7 +1241,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b046b",
+   "formation": "byte_80B046B",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1251,7 +1251,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0474",
+   "formation": "byte_80B0474",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1261,7 +1261,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b047d",
+   "formation": "byte_80B047D",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1271,7 +1271,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0486",
+   "formation": "byte_80B0486",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1281,7 +1281,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b048f",
+   "formation": "byte_80B048F",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1293,7 +1293,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04a0",
+   "formation": "byte_80B04A0",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1303,7 +1303,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04a9",
+   "formation": "byte_80B04A9",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1313,7 +1313,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04b2",
+   "formation": "byte_80B04B2",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1323,7 +1323,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04bb",
+   "formation": "byte_80B04BB",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1333,7 +1333,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04c4",
+   "formation": "byte_80B04C4",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1343,7 +1343,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04cd",
+   "formation": "byte_80B04CD",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1353,7 +1353,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04d6",
+   "formation": "byte_80B04D6",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1363,7 +1363,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04df",
+   "formation": "byte_80B04DF",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1373,7 +1373,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04e8",
+   "formation": "byte_80B04E8",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1383,7 +1383,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04f1",
+   "formation": "byte_80B04F1",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1393,7 +1393,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b04fa",
+   "formation": "byte_80B04FA",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1403,7 +1403,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0503",
+   "formation": "byte_80B0503",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1413,7 +1413,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b050c",
+   "formation": "byte_80B050C",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1423,7 +1423,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0515",
+   "formation": "byte_80B0515",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1433,7 +1433,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b051e",
+   "formation": "byte_80B051E",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1443,7 +1443,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0527",
+   "formation": "byte_80B0527",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1453,7 +1453,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0530",
+   "formation": "byte_80B0530",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1463,7 +1463,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0539",
+   "formation": "byte_80B0539",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1473,7 +1473,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0542",
+   "formation": "byte_80B0542",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1483,7 +1483,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b054b",
+   "formation": "byte_80B054B",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1493,7 +1493,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0554",
+   "formation": "byte_80B0554",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1503,7 +1503,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b055d",
+   "formation": "byte_80B055D",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1513,7 +1513,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0566",
+   "formation": "byte_80B0566",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1525,7 +1525,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0577",
+   "formation": "byte_80B0577",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1535,7 +1535,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0580",
+   "formation": "byte_80B0580",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1545,7 +1545,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0589",
+   "formation": "byte_80B0589",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1555,7 +1555,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0592",
+   "formation": "byte_80B0592",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1565,7 +1565,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b059b",
+   "formation": "byte_80B059B",
    "entries": 2,
    "enemy_ids": [
     "00",
@@ -1575,7 +1575,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05a4",
+   "formation": "byte_80B05A4",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1587,7 +1587,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05b5",
+   "formation": "byte_80B05B5",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1599,7 +1599,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05c6",
+   "formation": "byte_80B05C6",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1611,7 +1611,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05d7",
+   "formation": "byte_80B05D7",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1623,7 +1623,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05e8",
+   "formation": "byte_80B05E8",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1635,7 +1635,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b05f9",
+   "formation": "byte_80B05F9",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1647,7 +1647,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b060a",
+   "formation": "byte_80B060A",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1659,7 +1659,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b061b",
+   "formation": "byte_80B061B",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1671,7 +1671,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b062c",
+   "formation": "byte_80B062C",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1683,7 +1683,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b063d",
+   "formation": "byte_80B063D",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1695,7 +1695,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b064e",
+   "formation": "byte_80B064E",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1707,7 +1707,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b065f",
+   "formation": "byte_80B065F",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1719,7 +1719,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0670",
+   "formation": "byte_80B0670",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1731,7 +1731,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0681",
+   "formation": "byte_80B0681",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1743,7 +1743,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0692",
+   "formation": "byte_80B0692",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1755,7 +1755,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06a3",
+   "formation": "byte_80B06A3",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1767,7 +1767,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06b4",
+   "formation": "byte_80B06B4",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1779,7 +1779,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06c5",
+   "formation": "byte_80B06C5",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1791,7 +1791,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06d6",
+   "formation": "byte_80B06D6",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1803,7 +1803,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06e7",
+   "formation": "byte_80B06E7",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1815,7 +1815,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b06f8",
+   "formation": "byte_80B06F8",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1827,7 +1827,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0709",
+   "formation": "byte_80B0709",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1839,7 +1839,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b071a",
+   "formation": "byte_80B071A",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1851,7 +1851,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b072b",
+   "formation": "byte_80B072B",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1863,7 +1863,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b073c",
+   "formation": "byte_80B073C",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1875,7 +1875,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b074d",
+   "formation": "byte_80B074D",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1887,7 +1887,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b075e",
+   "formation": "byte_80B075E",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1899,7 +1899,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b076f",
+   "formation": "byte_80B076F",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1911,7 +1911,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0780",
+   "formation": "byte_80B0780",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1923,7 +1923,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0791",
+   "formation": "byte_80B0791",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1935,7 +1935,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07a2",
+   "formation": "byte_80B07A2",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1947,7 +1947,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07b3",
+   "formation": "byte_80B07B3",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1959,7 +1959,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07c4",
+   "formation": "byte_80B07C4",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1971,7 +1971,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07d5",
+   "formation": "byte_80B07D5",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1983,7 +1983,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07e6",
+   "formation": "byte_80B07E6",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -1995,7 +1995,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b07f7",
+   "formation": "byte_80B07F7",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -2007,7 +2007,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0808",
+   "formation": "byte_80B0808",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -2019,7 +2019,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b0819",
+   "formation": "byte_80B0819",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -2031,7 +2031,7 @@
    "status": "unrecorded"
   },
   {
-   "formation": "rom_080b082a",
+   "formation": "byte_80B082A",
    "entries": 4,
    "enemy_ids": [
     "00",
@@ -2040,6 +2040,1296 @@
     "6a"
    ],
    "cite": "reference/bn6f/bn6f.gba:0x080b082a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B084C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "40",
+    "22",
+    "22"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b084c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B085D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b085d (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B086E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "1a",
+    "91",
+    "a9"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b086e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B087F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "87"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b087f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0890",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "91",
+    "97",
+    "97"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0890 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08A1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "5b",
+    "04",
+    "04"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08a1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08B2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "14",
+    "04",
+    "46"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08b2 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08C3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "6d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08c3 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08D4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08d4 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08E5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "6a"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08e5 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B08F6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "52",
+    "8e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b08f6 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0907",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "64"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0907 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0918",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "75",
+    "69"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0918 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0929",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "94"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0929 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B093A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9d",
+    "9e",
+    "9d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b093a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B094B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "a0",
+    "9e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b094b (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B095C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "6f",
+    "57",
+    "3b"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b095c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B096D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a3",
+    "2c",
+    "52"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b096d (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B097E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "91",
+    "87",
+    "3c"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b097e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B098F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "43",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b098f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09A0",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "49"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09a0 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09A9",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "4f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09a9 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09B2",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "55"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09b2 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09BB",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "5b"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09bb (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09C4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "6d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09c4 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09D5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a0",
+    "a0",
+    "6d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09d5 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09E6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "52",
+    "58",
+    "6e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09e6 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B09F7",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "a6",
+    "92",
+    "6e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b09f7 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A08",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "10",
+    "10",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a08 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A19",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "16",
+    "16",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a19 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A2A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "5b",
+    "5c",
+    "70"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a2a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A3B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "86",
+    "86",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a3b (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A4C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "87",
+    "70"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a4c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A5D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "20",
+    "86"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a5d (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A6E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "08",
+    "50"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a6e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A7F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "50",
+    "56"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a7f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0A90",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "68",
+    "62",
+    "8c"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0a90 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AA1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "10",
+    "1c",
+    "4d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0aa1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AB2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0ab2 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AC3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0ac3 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AD4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0ad4 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AE5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "02"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0ae5 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0AF6",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "49"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0af6 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B07",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "3e",
+    "49"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b07 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B18",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2c",
+    "3e",
+    "49"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b18 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B29",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "76"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b29 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B3A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b3a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B4B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "02",
+    "a4"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b4b (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B5C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "15"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b5c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B6D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "75"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b6d (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B7E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "0f",
+    "aa"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b7e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0B8F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "44",
+    "a4",
+    "93"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0b8f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BA0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "50",
+    "56",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0ba0 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BB1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "20",
+    "88"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0bb1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BC2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "80",
+    "4b",
+    "9a"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0bc2 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BD3",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0e",
+    "92",
+    "6f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0bd3 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BE4",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "01",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0be4 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0BF5",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "85",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0bf5 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C06",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "2b",
+    "3d",
+    "2c"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c06 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C17",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "13",
+    "4f",
+    "50"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c17 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C28",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "07",
+    "14"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c28 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C39",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "56",
+    "20",
+    "1f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c39 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C4A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "74",
+    "74",
+    "80"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c4a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C5B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9e",
+    "9e",
+    "9e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c5b (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C6C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "9f",
+    "a4",
+    "02"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c6c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C7D",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "51",
+    "8c",
+    "62"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c7d (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C8E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "15",
+    "63",
+    "62"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c8e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0C9F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "27",
+    "86"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0c9f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CB0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "87",
+    "6f",
+    "87"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cb0 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CC1",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "1b",
+    "1b"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cc1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CCE",
+   "entries": 3,
+   "enemy_ids": [
+    "00",
+    "93",
+    "76"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cce (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CDB",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0f",
+    "10",
+    "0f"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cdb (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CEC",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "0f",
+    "1c",
+    "46"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cec (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0CFD",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "99",
+    "04",
+    "5e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0cfd (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D0E",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "04",
+    "04",
+    "94"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d0e (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D1F",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "4b",
+    "4c",
+    "4d"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d1f (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D30",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "02",
+    "86",
+    "3e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d30 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D41",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "20",
+    "50"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d41 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D52",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "3e",
+    "2c",
+    "2c"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d52 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D63",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "08",
+    "08",
+    "56"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d63 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B0D74",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "20",
+    "86",
+    "3e"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b0d74 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1989",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1989 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1992",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1992 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19AD",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19ad (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19B6",
+   "entries": 2,
+   "enemy_ids": [
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19b6 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19BF",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19bf (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19D0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19d0 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19E1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19e1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B19F2",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b19f2 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A03",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a03 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A14",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a14 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A25",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a25 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A36",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a36 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A47",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a47 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A58",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a58 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A69",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a69 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A7A",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "01",
+    "01"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a7a (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A8B",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a8b (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1A9C",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1a9c (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AAD",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1aad (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1ABE",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1abe (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1ACF",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1acf (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AE0",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1ae0 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1AF1",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1af1 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B02",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1b02 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B13",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1b13 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B24",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "03",
+    "03"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1b24 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B35",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1b35 (within data/BattleSettings.s spans)",
+   "status": "unrecorded"
+  },
+  {
+   "formation": "byte_80B1B46",
+   "entries": 4,
+   "enemy_ids": [
+    "00",
+    "00",
+    "00",
+    "00"
+   ],
+   "cite": "reference/bn6f/bn6f.gba:0x080b1b46 (within data/BattleSettings.s spans)",
    "status": "unrecorded"
   },
   {
@@ -2052,1296 +3342,6 @@
     "82"
    ],
    "cite": "reference/bn6f/bn6f.gba:0x080b083b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b084c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "40",
-    "22",
-    "22"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b084c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b085d",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9e",
-    "9e",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b085d (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b086e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "1a",
-    "91",
-    "a9"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b086e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b087f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "74",
-    "74",
-    "87"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b087f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0890",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "91",
-    "97",
-    "97"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0890 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08a1",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "5b",
-    "04",
-    "04"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08a1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08b2",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "14",
-    "04",
-    "46"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08b2 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08c3",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "74",
-    "74",
-    "6d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08c3 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08d4",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "01",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08d4 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08e5",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "04",
-    "6a"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08e5 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b08f6",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "52",
-    "8e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b08f6 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0907",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "04",
-    "64"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0907 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0918",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "75",
-    "69"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0918 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0929",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "04",
-    "94"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0929 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b093a",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9d",
-    "9e",
-    "9d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b093a (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b094b",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9e",
-    "a0",
-    "9e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b094b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b095c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "6f",
-    "57",
-    "3b"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b095c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b096d",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "a3",
-    "2c",
-    "52"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b096d (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b097e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "91",
-    "87",
-    "3c"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b097e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b098f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "43",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b098f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09a0",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "49"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09a0 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09a9",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "4f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09a9 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09b2",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "55"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09b2 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09bb",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "5b"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09bb (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09c4",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "04",
-    "6d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09c4 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09d5",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "a0",
-    "a0",
-    "6d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09d5 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09e6",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "52",
-    "58",
-    "6e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09e6 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b09f7",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "a6",
-    "92",
-    "6e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b09f7 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a08",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "10",
-    "10",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a08 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a19",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "16",
-    "16",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a19 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a2a",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "5b",
-    "5c",
-    "70"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a2a (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a3b",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "86",
-    "86",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a3b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a4c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "87",
-    "87",
-    "70"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a4c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a5d",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "20",
-    "86"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a5d (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a6e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "08",
-    "08",
-    "50"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a6e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a7f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "20",
-    "50",
-    "56"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a7f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0a90",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "68",
-    "62",
-    "8c"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0a90 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0aa1",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "10",
-    "1c",
-    "4d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0aa1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0ab2",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "02"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0ab2 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0ac3",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "02"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0ac3 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0ad4",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "02"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0ad4 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0ae5",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "02"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0ae5 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0af6",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "49"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0af6 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b07",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "3e",
-    "3e",
-    "49"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b07 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b18",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "2c",
-    "3e",
-    "49"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b18 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b29",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9e",
-    "9e",
-    "76"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b29 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b3a",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b3a (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b4b",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "02",
-    "a4"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b4b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b5c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "74",
-    "74",
-    "15"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b5c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b6d",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "74",
-    "74",
-    "75"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b6d (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b7e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "0e",
-    "0f",
-    "aa"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b7e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0b8f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "44",
-    "a4",
-    "93"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0b8f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0ba0",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "50",
-    "56",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0ba0 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0bb1",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "20",
-    "20",
-    "88"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0bb1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0bc2",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "80",
-    "4b",
-    "9a"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0bc2 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0bd3",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "0e",
-    "92",
-    "6f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0bd3 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0be4",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "01",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0be4 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0bf5",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "85",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0bf5 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c06",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "2b",
-    "3d",
-    "2c"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c06 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c17",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "13",
-    "4f",
-    "50"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c17 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c28",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "08",
-    "07",
-    "14"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c28 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c39",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "56",
-    "20",
-    "1f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c39 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c4a",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "74",
-    "74",
-    "80"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c4a (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c5b",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9e",
-    "9e",
-    "9e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c5b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c6c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "9f",
-    "a4",
-    "02"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c6c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c7d",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "51",
-    "8c",
-    "62"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c7d (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c8e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "15",
-    "63",
-    "62"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c8e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0c9f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "87",
-    "27",
-    "86"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0c9f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cb0",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "87",
-    "6f",
-    "87"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cb0 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cc1",
-   "entries": 3,
-   "enemy_ids": [
-    "00",
-    "1b",
-    "1b"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cc1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cce",
-   "entries": 3,
-   "enemy_ids": [
-    "00",
-    "93",
-    "76"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cce (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cdb",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "0f",
-    "10",
-    "0f"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cdb (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cec",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "0f",
-    "1c",
-    "46"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cec (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0cfd",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "99",
-    "04",
-    "5e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0cfd (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d0e",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "04",
-    "04",
-    "94"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d0e (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d1f",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "4b",
-    "4c",
-    "4d"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d1f (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d30",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "02",
-    "86",
-    "3e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d30 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d41",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "20",
-    "20",
-    "50"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d41 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d52",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "3e",
-    "2c",
-    "2c"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d52 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d63",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "08",
-    "08",
-    "56"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d63 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b0d74",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "20",
-    "86",
-    "3e"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b0d74 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1989",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1989 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1992",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1992 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19ad",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19ad (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19b6",
-   "entries": 2,
-   "enemy_ids": [
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19b6 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19bf",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19bf (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19d0",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19d0 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19e1",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19e1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b19f2",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b19f2 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a03",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a03 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a14",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a14 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a25",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a25 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a36",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a36 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a47",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a47 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a58",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a58 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a69",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a69 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a7a",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "01",
-    "01"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a7a (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a8b",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a8b (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1a9c",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1a9c (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1aad",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1aad (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1abe",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1abe (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1acf",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1acf (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1ae0",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1ae0 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1af1",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1af1 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1b02",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1b02 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1b13",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1b13 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1b24",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "03",
-    "03"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1b24 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1b35",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1b35 (within data/BattleSettings.s spans)",
-   "status": "unrecorded"
-  },
-  {
-   "formation": "rom_080b1b46",
-   "entries": 4,
-   "enemy_ids": [
-    "00",
-    "00",
-    "00",
-    "00"
-   ],
-   "cite": "reference/bn6f/bn6f.gba:0x080b1b46 (within data/BattleSettings.s spans)",
    "status": "unrecorded"
   },
   {

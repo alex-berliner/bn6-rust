@@ -1031,12 +1031,13 @@ def parse_formations():
     - family B (random encounters): off_8020170 group tables
       (selectEncounterTableForMap_80AA5F4, asm/asm29.s:10338-10457):
       [0x08020170] = real-world table (21 groups, canon span
-      0x08020190..0x080201E4) / [0x08020170+4] = internet table (23 groups,
-      canon: INTERNET_NUM_GROUPS constants/enums/GameAreas.inc:10); mapgroup
+      0x08020190..0x080201E4) / [0x08020170+4] = internet table (23 words:
+      0x080201E4 + 23*4 = 0x08020240 = pt_8020240, asm/asm01.s:555-580); mapgroup
       >= 0x80 uses the internet table at index group-0x80.  Group slot ->
       map array (16 words); map slot -> record list.  EVENT_67F/680/681 swap
       only the internet table (0x08020178/80/88, asm29.s:10348-10366).
-    Records: 16 bytes (BattleSettings.inc); byte[0]==0xff ends a list
+    Records: 16 bytes (include/rom_structs/BattleSettings.inc; Background
+    +0x4 proven by asm/asm03_0.s:14591-14593); byte[0]==0xff ends a list
     (T58's self-check); byte[4] Background; byte[7] gate handler index
     (JumpTable80AA6B8, asm29.s:10471); u32@0xc EnemySetupArrPtr ->
     0xF0-terminated 4-byte quads, quad[2] = enemy id (inventory.py:1060)."""
@@ -1050,6 +1051,12 @@ def parse_formations():
         m = re.match(r"\s+0x(0*8[0-9a-f]{7})\s+(\S+)", line)
         if m:
             labels.setdefault(int(m.group(1), 16), m.group(2))
+    for m2 in re.finditer(r"(?m)^(byte_[0-9A-Fa-f]+)::", open(
+            os.path.join(REF, "data", "BattleSettings.s"), errors="replace").read()):
+        # byte_* labels live only in data/BattleSettings.s (address embedded
+        # in the name), not in bn6f.map -- carry them so family-A formation
+        # arrays keep the label names the T50 baseline had
+        labels.setdefault(int(m2.group(1)[5:], 16), m2.group(1))
 
     def walk_list(la):
         off = la - 0x08000000
@@ -1083,7 +1090,7 @@ def parse_formations():
     ROOTS = {"default": 0x08020170, "EVENT_67F": 0x08020178,   # canon: asm29.s:10348-10371
              "EVENT_680": 0x08020180, "EVENT_681": 0x08020188}
     REAL_GROUPS = 21      # canon: off_8020190 block 0x08020190..0x080201E4
-    INTERNET_GROUPS = 23  # canon: INTERNET_NUM_GROUPS GameAreas.inc:10
+    INTERNET_GROUPS = 23  # canon: 0x080201E4 + 23*4 = 0x08020240 = pt_8020240 (asm/asm01.s:555-580)
     map_arrs = {}
     for vname, vaddr in ROOTS.items():
         for world, base, n in (("real", w(vaddr), REAL_GROUPS),
@@ -1150,7 +1157,9 @@ def parse_formations():
 # --------------------------------------------------------------- backdrops
 
 def parse_backdrops(formation_lists):
-    """T65: Background byte (BattleSettings+0x4, BattleSettings.inc:8)
+    """T65: Background byte (BattleSettings+0x4; meaning proven by
+    battleSettings_setBackground asm/asm03_0.s:14591-14593 strb
+    r0,[BattleSettings_200AF60+0x4])
     census over EVERY record of BOTH families (see parse_formations for the
     walk) -- previously counted from the .s parse only, which saw the 461
     family-A records but none of the 779 encounter-tree ones."""
@@ -1176,7 +1185,7 @@ def parse_backdrops(formation_lists):
     ROOTS = (("default", 0x08020170), ("EVENT_67F", 0x08020178),   # canon: asm29.s:10348-10371
              ("EVENT_680", 0x08020180), ("EVENT_681", 0x08020188))
     REAL_GROUPS = 21      # canon: off_8020190 block 0x08020190..0x080201E4
-    INTERNET_GROUPS = 23  # canon: INTERNET_NUM_GROUPS GameAreas.inc:10
+    INTERNET_GROUPS = 23  # canon: 0x080201E4 + 23*4 = 0x08020240 = pt_8020240 (asm/asm01.s:555-580)
     seen = set()
     for vname, vaddr in ROOTS:
         for base, n in ((w(vaddr), REAL_GROUPS), (w(vaddr + 4), INTERNET_GROUPS)):
@@ -1198,7 +1207,8 @@ def parse_backdrops(formation_lists):
         # 0xff is the UNSET sentinel on the majority of records, not a
         # backdrop id (see the section note emitted by regenerate_scope)
         "role": "unset-sentinel" if v == 0xFF else "set-value",
-        "cite": "reference/bn6f/bn6f.gba ROM walk (BattleSettings.Background, +0x4)",
+        "cite": "asm/asm03_0.s:14591-14593 battleSettings_setBackground strb r0,[BattleSettings_200AF60+0x4]; reference/bn6f/bn6f.gba ROM walk"
+                + ("; 0x08 singleton = record 0 of battleSettingsList0 (reference/bn6f/bn6f.gba:0x080aee70)" if v == 0x08 else ""),
         "status": "unrecorded",
     } for v, c in sorted(values.items())]
     return rows
@@ -1310,14 +1320,18 @@ SECTION_NOTES = {
             f" formation arrays (the old .s parse was exactly right HERE), plus"
             f" family B random-encounter tree (off_8020170 group tables," 
             f" selectEncounterTableForMap_80AA5F4 asm/asm29.s:10338-10457: 21"
-            f" real-world groups / 23 internet (INTERNET_NUM_GROUPS"
-            f" GameAreas.inc:10), group slot -> 16-word map array -> record"
+            f" real-world groups / 23 internet groups (23 words proven by"
+            f" 0x080201E4 + 23*4 = 0x08020240 = pt_8020240, asm/asm01.s:555-580),"
+            f" group slot -> 16-word map array -> record"
             f" list; EVENT_67F/680/681 swap only the internet table) = 82"
             f" distinct lists, 779 records, 779 formation arrays -- ALL of it"
             f" missed by the .s parse (unlabeled ROM after 0x080b1bbc). Totals"
             f" 84 lists / 1240 records / 1076 formation arrays; every list"
             f" ends on a 0xff record[0] and every EnemySetupArrPtr reaches a"
-            f" 0xF0 (mismatches 0). Records are 16 bytes (BattleSettings.inc):"
+            f" 0xF0 (mismatches 0). Records are 16 bytes"
+            f" (include/rom_structs/BattleSettings.inc; the Background byte"
+            f" +0x4 is proven by battleSettings_setBackground"
+            f" asm/asm03_0.s:14591-14593 strb r0,[BattleSettings_200AF60+0x4]):"
             f" byte[0]==0xff terminator, byte[4] Background, byte[7] gate"
             f" handler index (JumpTable80AA6B8 asm29.s:10471), u32@0xc"
             f" EnemySetupArrPtr -> 4-byte quads, quad[0]==0xF0 stop, quad[2] ="
@@ -1611,7 +1625,8 @@ def main():
     write_section("navicust", {"generator": "tools/inventory.py", "rows": navicust})
 
     nrec = sum(v["records"] for v in lists.values())
-    nlists = len(lists)
+    # computed, not a literal: 2 scripted lists + the encounter tree's lists
+    nlists = sum(v.get("lists", 1) for v in lists.values())
     f1w = sum(1 for r in statuses if r['bit'].startswith('OBJECT_FLAGS_')
               and not r['bit'].startswith('OBJECT_FLAGS_2_')
               and r['_counts'][0] > 0)
@@ -1649,7 +1664,7 @@ def main():
                 + " / ".join(f"{s} ({r})" for s, r, _p in STATUS_M3_CANDIDATES),
                 statuses)),
 
-        ("M1", ("formations (M8)", f"ROM-WALK (T65): data/BattleSettings.s battleSettingsList0 (bn6f.map:28302) / BattleSettingsList1 (bn6f.map:28573) scripted battles + off_8020170 encounter tree (asm/asm29.s:10371), {nrec} records over {nlists} lists, {len(form_rows)} 0xF0-terminated formation arrays -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
+        ("M1", ("formations (M8)", f"ROM-WALK (T65): reference/bn6f/bn6f.gba record streams -- off_8020170 encounter tree (asm/asm29.s:10371) + scripted battleSettingsList0 0x080aee70 (bn6f.map:28302) / BattleSettingsList1 0x080b0d88 (bn6f.map:28573, getBattleSettingsFromList0/List1 asm/asm00_1.s:16046-16062), {nrec} records over {nlists} lists (2 scripted + {nlists - 2} encounter-tree), {len(form_rows)} 0xF0-terminated formation arrays (section denominator = {len(form_rows)} arrays, all rows status unrecorded) -- old .s parse held 461 records / 297 arrays and missed the whole encounter tree (779 records, 779 arrays); mismatches 0", form_rows)),
         ("M1", ("backdrops (M8)", "DERIVED-FROM-RECORDS: BattleSettings.Background byte values (writer battleSettings_setBackground asm/asm03_0.s:14592, sourced from byte_203CA50 stage pairs by battleSettings_802D2B2 asm/asm03_0.s:14599; byte->art/palette mapping a GAP -- no table or arithmetic offset found, trail in note; ART CONTENT of the scheduled field anim verified as data T22: BattleBackdropGFXAnimScript_807FB98 dat20.s:148, 29 entries :150-178 -> 7 tile tables dat20.s:181-225 byte-exact vs assets/backdrop.bin FRAMES; canon SLOTWISE 37/37 x 7 steps (slot k = FRAMES[step][k-1]; canon BG1 cell ids = asset MAP +1, port's = asset MAP +512); port permutes tile array AND map, the two cancel (composed render 1024/1024 cells x7 canon, 6/7 port, on kept F47 dumps -- port not slotwise faithful, 1/37; permutation provenance 'map-scan first-occurrence order' unconfirmed hypothesis)", backdrops)),
         ("M1", ("navicust battle effects (M7)", "FOUND (NCP battle-effect handler table): asm/asm37_0.s:2111 navicust_jt_NCPs, 47 words stride 4 (45 navicust_NCP_* + navicust_GigFldr1 + a no-op stub; NOT a program-id enumeration), dispatched by applyNavicustPrograms_813C684 (asm/asm37_0.s:2012, index = sub_813B9FC(id-1) record halfword >> 2, sub_813B9FC = r10[oToolkit_Unk2004190_Ptr] + 8*id record array); handlers 32x SetCurPETNaviStatsByte + 11x GetCurPETNaviStatsByte (asm37_0.s:2161-2600); give/take chain GiveNaviCustPrograms asm/asm03_1_1.s:8794 -> GiveItem 803cd98 -> reloadCurNaviStatBoosts_813c3ac -> applyNaviStatsMaybe_813C458; slot rows below DERIVED-FROM-HEADERS (NaviStats.inc)", navicust)),
     ]
