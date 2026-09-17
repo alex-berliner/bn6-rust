@@ -391,7 +391,7 @@ docs/worklog/T63.md names only docs/worklog/T63.md and docs/coverage/battle_full
 **Coordinator:** a docs ticket; no verifier needed when verify_rows is identical.
 
 
-### T66. Replace the fitted POST_FLINCH_FRAMES shadow with the measured Timer hold (M2, model quality)
+### T66. Replace the fitted POST_FLINCH_FRAMES shadow with the measured Timer hold (M2, model quality)  *(OPEN)*
 
 **Why.** `src/actor.rs:429` carries `const POST_FLINCH_FRAMES: u8 = 11;` tagged
 `// provenance: fitted -- read off the PAUSED+Start@10 watch capture`, and the export at
@@ -446,7 +446,7 @@ means unmerged). If the change turns out to be unobservable anywhere today, that
 report it as a model-quality change with the rows unchanged, and name the trace that would show it once
 the hit lands.
 
-### T67. Attribute the PAUSED+Start@10 Timer tail -- which player-slot writer decrements Timer after a flinch? (M2, model audit)
+### T67. Attribute the PAUSED+Start@10 Timer tail -- which player-slot writer decrements Timer after a flinch? (M2, model audit)  *(OPEN)*
 
 **Why.** T66 deleted `const POST_FLINCH_FRAMES: u8 = 11; // provenance: fitted` and replaced the
 9..0 countdown shadow with an open-ended `TIMER_SENTINEL` hold (`src/actor.rs`, branch wt/t66). Its
