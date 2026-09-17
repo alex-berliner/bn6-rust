@@ -657,8 +657,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 ---
 
-### T96. M9 — Audio parity first scenario: chip-cannon audio on the existing chip-cannon row, diffed via T95  *(OPEN)*
+### T96. M9 — Audio parity first scenario: chip-cannon audio on the existing chip-cannon row, diffed via T95  *(NEGATIVE -- 2026-09-17, Closed NEGATIVE on wt/t96 @ 961f24c [branch stays unmerged])*
 
+**Result.** Closed NEGATIVE on wt/t96 @ 961f24c (branch stays unmerged). Worker's added code in tools/harness.py run() uses  (line 458) but  is NOT a parameter of run() — signature is . Harness errors with  on every chip-cannon run; all 7 named rows show DID NOT RUN (exit 1, 1 check(s) FAILED). The patch is fundamentally broken (cannot pass  from run_check without changing the signature, but the worker didn't). Branch is unmergeable. No audio diff was measured (capture invocation was not executed before the bug was hit). Recommended next ticket: T96a = 'Pass check parameter to run() (or hoist the audio_dir resolution into run_check)' — the worker should either (a) change run() signature to accept check, or (b) hoist the audio_dir resolution into run_check before calling run(), or (c) inline the audio_dir resolution into Check construction. Branch stays unmerged; wt/t96 removed after stamp.
 **Why.** SCOPE: "M9: ... per scenario: audio parity + the triggers' trace". T95 lands the audio comparison tool; this ticket applies it. The chip-cannon scenario is the cheapest available (a 40-frame fixture with one SFX per fire-cue); T13c BLOCKED already measured cannon-route audio manually on it. M9 has no applied audio comparison without this ticket — the tool alone is unused.
 
 **New evidence.** T13c BLOCKED (2026-09-17) measured cannon-route audio manually on the chip-cannon scenario and named the predicates (chip-fire, chip-damage) at `file:line` in src/chips.rs or src/battle.rs. T95 lands `tools/audio_diff.py`. The chip-cannon state at `/tmp/chip_cannon.state` feeds the existing `chip-cannon` harness row.
