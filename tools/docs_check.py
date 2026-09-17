@@ -10,13 +10,31 @@ Printed by tools/daily_review.sh; a finding trips the auditor the way the blocke
 import argparse, collections, glob, json, os, re, subprocess, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..")); os.chdir(ROOT)
-# every file an agent is told to read: the shared rules, the worker guide, the role and loop texts, the
-# handoff sections tickets cite, and the contracts a ticket sends a worker to.
-DOCS = sorted(set(["AGENT_GUIDE.md", "AGENTS.md", "HANDOFF.md", "FIXTURE.md", ".pi/coordinator.md"]
-                  + glob.glob(".pi/roles/*.md") + glob.glob("docs/HANDOFF_*.md") + glob.glob("docs/*.md")))
-# changelogs and records are history, not instructions: an agent is never sent to them
-DOCS = [d for d in DOCS if os.path.exists(d) and not d.startswith(("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/"))
-        and os.path.basename(d) not in ("config-log.md", "note_audits.md", "measurement-drift.md", "renames.md")]
+# The set to audit is measured, not guessed: the files agents are TOLD to read, plus any other document
+# they actually opened in several sessions (2026-09-16: AGENT_GUIDE 232 sessions, AGENTS 81, HANDOFF 33,
+# the long handoff 35, FIXTURE 25, SCOPE 18; the coverage notes and work logs follow behind them).
+INSTRUCTIONS = ["AGENT_GUIDE.md", "AGENTS.md", "HANDOFF.md", "FIXTURE.md", ".pi/coordinator.md"] + sorted(glob.glob(".pi/roles/*.md"))
+SKIP = ("docs/reviews/", "docs/audits/", "docs/proposals/", "docs/benchmarks/", "docs/tickets/", "docs/worklog/")
+SKIP_NAMES = ("config-log.md", "note_audits.md", "measurement-drift.md", "renames.md", "TRANSFER.md", "TODO.md", "TODO_ARCHIVE.md")
+
+
+def opened_by_agents(min_sessions=5):
+    """documents agents actually opened, and in how many sessions"""
+    import collections
+    sessions = collections.defaultdict(set)
+    for f in glob.glob("/tmp/bn-pi/*/session/subagent-artifacts/*_transcript.jsonl"):
+        for line in open(f, errors="replace"):
+            if ".md" not in line: continue
+            for m in re.finditer(r"([A-Za-z0-9_./-]+\.md)", line):
+                p = m.group(1).replace("/home/box/Code/bn/", "").lstrip("./")
+                if os.path.exists(p): sessions[p].add(f)
+    return {p: len(v) for p, v in sessions.items() if len(v) >= min_sessions}
+
+
+USED = opened_by_agents()
+DOCS = [d for d in dict.fromkeys(INSTRUCTIONS + sorted(USED))
+        if os.path.exists(d) and not d.startswith(SKIP) and os.path.basename(d) not in SKIP_NAMES]
+
 PATH = re.compile(r"\b((?:tools|docs|src|web|reference)/[A-Za-z0-9_./<>-]+|[A-Z][A-Z_]+\.md)\b")
 
 
@@ -88,7 +106,7 @@ def main():
     whole = sum(n for k, n in heads.items() if k >= lines)
     if cut and cut >= whole: findings.append("workers truncate AGENT_GUIDE.md more often than not (%d reads cut short of its %d lines, %d whole)" % (cut, lines, whole))
 
-    print("instructions checked: %s" % ", ".join(text))
+    print("checked: %s" % ", ".join("%s (%s sessions)" % (d, USED.get(d, "told to read")) for d in text))
     print("AGENT_GUIDE.md is %d lines; reads seen: %s" % (lines, dict(heads) or "none in the artifacts on disk"))
     if findings:
         for f in findings: print("- " + f)
