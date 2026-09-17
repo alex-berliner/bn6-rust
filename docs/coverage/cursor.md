@@ -59,3 +59,61 @@ landing, run the cursor row and compare against the class (total <=1, worst
 <=1, frames 170; the tear's frame may move with layout). If it re-rolls,
 T111's sweep protocol (one named const, V-table, ~6 sizes) re-fits the pad on
 one ticket-sized loop.
+
+## The anchor attempt (T118b, 2026-09-19) — bounded NEGATIVE
+
+T118's census (its worklog: whole copy ~= 4.1k cycles ~= 3.3 scanlines, never
+overruns the 68-line vblank budget) moved the model from "copy spills into
+visible scanlines" to "phase-alignment coincidence". T118b measured the phase
+response directly. Alignment for all numbers below: canon 15+k <-> rust
+origin(8)+237+k; the cut on every measured out-of-class pair lives at
+scanlines 0..4, x~217..238 (top-right corner), deepening by scanlines as the
+phase moves off canon's.
+
+### Footprint x pad (T111's knob, re-measured on today's main)
+
+| footprint | ROM B | pad 0 | pad 13 | pad 17 | pad 21 |
+|-----------|-------|-------|--------|--------|--------|
+| main | 592536..592604 | 0/1 | — | 0/1 | — |
+| +1132 B static | 595056..595140 | 0/1 | 0/1 | **17/6** | **25/3** |
+| −1132 B asset | 591408..591492 | 0/1 | **19/1** | **40/1** | **55/1** |
+
+(k37/k97 px; k7 = 0 everywhere. 1 pad iteration ~= 6.5 cycles ~= 1.6 px of cut
+phase; one scanline = 1232 cycles ~= 190 iterations.)
+
+So: NO fitted iteration count serves all footprints (T117's sweep failure is
+explained — the pad itself pushes a re-rolled footprint out of class), but the
+UNPADDED copy start was in class on all three footprints (3.6 KB span) on the
+day of measurement. That unpadded in-class band is a layout coincidence, not a
+mechanism — see below.
+
+### Anchor to REG_VCOUNT (the ticket's step 3): measured NEGATIVE
+
+`SEAM_ANCHOR_LY` spin in the VBlank closure (commit 8da06fb on wt/t118b,
+reverted): the closure spins on the scanline count (0x04000006) so commit's
+copy starts at a scanline. Measured (k37/k97):
+
+| anchor layout variant | ROM B | cursor |
+|------------------------|-------|--------|
+| LY=160 spin (no trim) | 592564 | **31/19** |
+| LY=160 + 1..4 nop trim | 592564..592580 | 31/19, 31/29, 31/29, 22/1 |
+| LY=161 spin (one full scanline delay) | 592564 | **37/21** |
+
+One full scanline of delay does NOT re-phase the cut into class: the phase
+that sets the seam lives BELOW scanline granularity, so a scanline anchor
+cannot see it, and the spin's own 28 bytes of code re-roll the phase on
+main's own footprint (0/1 -> 31/19). The sub-scanline residue would need a
+per-binary fitted trim — exactly the knob this ticket retires — and its
+response is chaotic: the pad-0 layout is in-class across +-2.5 KB of asset
+delta while a 28-byte code delta breaks it.
+
+### Verdict
+
+The <=1/1/170 class is a layout coincidence at sub-scanline granularity. What
+still sets the phase: the code size/alignment of everything between the
+VBlank interrupt entry and commit's copy (closure body, IRQ return path,
+commit preamble). No footprint-stable knob was found: not the fitted pad (per
+footprint), not an LY anchor, not LY+trim. The pad (fitted 17) stays on main;
+any landing that moves code must re-run the cursor row (the existing rule at
+the top of this file). A footprint-stable fix needs the copy placed at
+canon's phase by construction (content/timing), not re-fitted after the fact.
