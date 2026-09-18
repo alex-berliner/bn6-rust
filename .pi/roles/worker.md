@@ -11,12 +11,26 @@ If the ticket says "measurement only", run the command it names from the directo
 the harness line in the AGENTS.md shape, and stop: no worktree, no edits, no commit, and no lines about
 steps you skipped. Otherwise, steps, in order:
 
-1. Run the ticket's baseline command and record the harness line before touching code.
-2. Make the change in `src/` (or the paths the ticket allows), keeping constants tagged
+This method is the same on every ticket, so a ticket will NOT repeat it. Do all of it whether the
+ticket mentions it or not; a ticket that does spell a step out is only emphasising it.
+
+1. **Baseline.** Run the row the ticket names and record the harness line before touching code.
+   Record the canary rows it names too -- those must read the same at the end.
+2. **Read canon first.** Find the routine in the disassembly and cite `file:line` for every byte you
+   are about to transcribe. You are transcribing canon's routine, not writing code that makes a
+   number fall: a constant you arrived at by trying values is `fitted` and is a failure even if the
+   row reads zero.
+3. **Make the change** in `src/` (or the paths the ticket allows), keeping constants tagged
    `// provenance: derived|peeked|fitted -- <source>`.
-3. Run the identical command again. If the ticket names an oracle field, report the first divergent
-   frame and field before and after.
-4. Commit on your branch per landed step with a message that says what was measured.
+4. **Add or update the harness row** if the ticket names one that does not exist yet, including its
+   negative fixture -- a row whose negative does not fail is BLIND and its zero means nothing.
+5. **Re-measure.** Run the identical command again. If the ticket names an oracle field, report the
+   first divergent frame and field before and after.
+6. **Verify no regression.** Run verify_rows over the ticket's row plus its canaries.
+7. **Commit** on your branch per landed step with a message that says what was measured.
+
+Steps 1, 2, 4, 6 and 7 are procedure and are yours to remember. What the ticket gives you is the part
+that varies: which routine, which row, and which numbers close it.
 
 Token discipline (every turn re-sends your whole context): batch related shell work into ONE command
 or a small script per stretch -- `tools/probe.py` covers the common measurements (watch, peek, frame,

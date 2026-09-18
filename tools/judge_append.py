@@ -59,10 +59,18 @@ for i, m in enumerate(heads):
     # produces work, and the incident tells us whether the prompt is being followed.
     dosec = re.search(r"\*\*Do\.\*\*(.*?)(?=\n?\*\*(?:Rules|Acceptance|Measure)\.|\Z)", body, re.S)
     steps = len(re.findall(r"(?:^|\s)(\d+)\.\s+\S", dosec.group(1))) if dosec else 0
-    if steps > 4:
+    if steps > 3:
         subprocess.run(["bash", os.path.join(ROOT, "tools", "incident.sh"), "ticket-oversized",
-                        "%s has %d Do steps; the judge is asked for at most 3 (a worker's budget is ~80 tool "
-                        "calls and a step costs 15-25) -- expect a PARTIAL" % (tid, steps)])
+                        "%s has %d Do steps; a ticket carries one outcome and never the standing method "
+                        "(baseline, cite, add row, re-measure, verify_rows, commit are the worker's job on "
+                        "every ticket) -- expect a PARTIAL" % (tid, steps)])
+    # The procedure leaking back into tickets is the thing to watch, so it is named rather than inferred
+    # from a step count: these phrases mean the judge is restating the worker's standing method.
+    if dosec and sum(bool(re.search(w, dosec.group(1), re.I))
+                     for w in (r"\bbaseline\b", r"\bverify_rows\b", r"\bre-?measure\b", r"\bcommit\b")) >= 2:
+        subprocess.run(["bash", os.path.join(ROOT, "tools", "incident.sh"), "ticket-boilerplate",
+                        "%s restates the worker's standing method in its Do steps; that text is re-sent to "
+                        "the worker every turn and belongs in .pi/roles/worker.md" % tid])
     whytext = re.search(r"\*\*Why\.\*\*(.*?)(?=\n\*\*|\Z)", body, re.S); whytext = whytext.group(1) if whytext else body
     dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
     if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
