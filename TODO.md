@@ -770,9 +770,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T182. first Navi pattern *(OPEN -- 2026-09-18)*
+### T182. first Navi pattern  *(PARTIAL -- 2026-09-18, Landed 20a3c60)*
 
-
+**Result.** Landed 20a3c60. Data-only Navi port: tools/harness.py adds navi-gunner-ai Check (NAVI_GUNNER_ROW=GUNNER_ROW + enemy_kind=0x08, canon_ref=80, frames=130); tools/oracle.py adds ENEMY_SLOT[navi-gunner]=2 and ENEMY_SLOT[navi-gunner-ai]=2 (slot-probe verified slot2@0x203ab60 state=04 hp=003c); docs/coverage/navi.md + docs/worklog/T182.md added; src/navi.rs+src/battle.rs untouched. navi-gunner 2092176/38237/130/2247584, navi-gunner-ai 2092176/38237/130/2247584 (byte-identical, Style::Navi still passthrough — AI arm data-only), mettaur 0/0/70/41734, cursor 1/1/170/186279. verifier-minimax CONFIRMED 5/5 (ENEMY_SLOT, NAVI_GUNNER_ROW, AI_ARM cite at src/navi.rs:159-169 = off_81068E8, src/ untouched, byte-identical claim). M6 0/25 → 1/25 row exists; 0/0/N gate unreachable without true-navi-spawn state (T153 OPEN, T166 PROPOSAL carry) — follow-up after spawn scenario lands.
 **Why.** M6 0/25. T145 PARTIAL landed actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643) at 107e228; navi-gunner row 2092176/38237/130/2247584. T153 OPEN + T166 PROPOSAL port spawn gate: `byte_80182C4[3*0x185]=00 01 17` (fill-time) + `sub_800EC80` quad-byte (spawn-time) into `spawnEnemy_80073E2` (asm00_1.s:86); art `byte_81067FC=00 0b 01 01 17 00 00 01`; HP 900 at asm31.s:123497/123548. After spawn lands, pattern routine unported. T76 DONE: 22/25 navis have `nullsub_106` in `off_80F2474` AND `NaviActHandlers_80F25A0`; pattern work is in `AIThinkTables_8109050[ai_index]` (reader `sub_80F2354` asm31.s:123323-123356).
 
 **Files.** src/navi.rs, src/battle.rs, tools/states.py, tools/harness.py, tools/inventory.py, docs/coverage/navi.md, docs/worklog/T182.md.
