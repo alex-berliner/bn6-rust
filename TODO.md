@@ -650,9 +650,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T165. M5 Mettaur rank-1 art *(OPEN -- 2026-09-18)*
+### T165. M5 Mettaur rank-1 art  *(BLOCKED -- 2026-09-18, Worker cold-start failure: 2 attempts [initial + resume] both produced no output)*
 
-
+**Result.** Worker cold-start failure: 2 attempts (initial + resume) both produced no output. Branch wt/T165 created but no commits made. Empty docs/worklog/T165.md left behind. Next-worker restart needed. Plan fully assembled in T151a BLOCKED worklog: KIND_METTAUR_V1 enum + compVirusBattleSprite_8242E94.lz77 -> assets/mettaur_v1.bin + branch on f.kind_of(i) in src/battle.rs::spawnEnemy_80073E2 (asm00_1.s:86) + HOP_COOLDOWN_BY_VERSION[rank] from byte_8109F46 ([0x1e,0x18,0x12,0x0c,0x12,0x0c], v1 selects 0x18). Acceptance: mettaur_rank1 0/0/N; mettaur + cursor + ai4_rank0 byte-identical. Run cargo build --release in worktree FIRST before verify_rows.
 **Why.** T151 OPEN measured rank-1 residual 677252/38400/70 (neg 642150 non-blind) on wt/t151; scenario + row on disk, art byte unported. T151a OPEN cites `sub_800EC80` quad-id at `SpawnBattleObjectUsingBattleEntityConfig_8007368` asm00_1.s:8552; terminator `0xF0` at `BattleSettings+0xc` (`tools/inventory.py:1143`). T151's `byte_80182C4` row-1 cite falsified on wt/t151 itself. T6 DONE's `ForMettaur_8109EF4` already handles all Mettaur ranks — only the art byte varies.
 **Files.** `src/battle.rs`, `docs/coverage/mettaur.md`, `docs/worklog/T165.md`.
 **Row.** `mettaur_rank1` (exists on wt/t151); canary mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
