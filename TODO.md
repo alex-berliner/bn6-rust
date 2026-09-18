@@ -620,9 +620,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 **Milestone.** M5 1/187 → 2/187 with art ported.
 
-### T162. M2 banner-idle predicate *(OPEN -- 2026-09-18)*
+### T162. M2 banner-idle predicate  *(PARTIAL -- 2026-09-18, is_banner_idle[] ported per T152c, banner_at=0 on SEQ_04 entry per T162 fix)*
 
-
+**Result.** is_banner_idle() ported per T152c, banner_at=0 on SEQ_04 entry per T162 fix. cursor 1/1/170/186279 -> 3/2/170/186277 (T152c's 32 reduced to 2 — residual 2-px is acceptable per acceptance 'cursor byte-identical' being the gate; NOT met because of windowclose regression). windowclose 0/0/40/207166 -> 41627/1900/40 (regression from banner-in-window: rust banner up 29 frames vs canon's 0 during rust frames 253..292). mettaur/opening/popup/wave/result/buster/warp/field all byte-identical to T147 PASS set. fitted 17->17 (SEQ04_FRAMES removed). Trace target eBattleSequencerState_203CA70 not re-run but unchanged by the patch (SEQ_00 -> SEQ_04 path gated by entry_park=true, new banner spawn only fires when entry_park=false). Branch wt/T162 KEPT UNMERGED (src/battle.rs +worklog changes). Next-worker fix: implement banner-record lifecycle counter (60 frames, decoupled from visual banner's 58) — option (b) from T152c note; banner-record must say 'idle' at frame 60 even if visual banner rolls up at 58.
 **Why.** T152a PARTIAL (1950c68): sequencer `eBattleSequencerState_203CA70` 0/40 first-div, both actors CurAction (4,0) on battlestart_scripted. `SEQ04_FRAMES=60` in `src/battle.rs` is the residue T152 OPEN cannot clear. `isBannerBusy_801E754` at asm00_2.s:31105-31131 is the canon predicate; T152a's worklog transcribed `is_banner_idle()`'s two arms (`!hud_live || (banner.is_none() && banner_was_up)`).
 **Files.** `src/battle.rs`, `docs/coverage/battle_full.md`, `docs/worklog/T162.md`.
 **Row.** Sequencer trace target (inherited from T152); canary cursor 1/1/170/186279, mettaur 0/0/70/41734.
