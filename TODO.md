@@ -501,3 +501,121 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, canary intact) → T154 (M7 emotion, smallest src/ delta) → T146 (M3 first live damage, docs complete) → T151a (M5 rank-1 art, state+row already on disk) → T153 (M6 navi spawn, T151a cite reused).
 
+### T152b. Battle_full phase gap
+
+
+**Why.** T147 DONE mapped battle_full on T131's family-A scripted scenario: sequencer `eBattleSequencerState_203CA70` 40/40 diverge k=0 (canon PARKED word 0 across 113 captured frames, every actor CurAction (4,0)) vs rust fight phase (0x8; mm (4,8); enemy (4,10)); static fields incl. rec163 HPs 250/250 and rng_cadence match 40/40. Top three fields cited: `stepBannerSequencer_800801C`/`off_8008038` (asm00_1.s:10452-10465), `playerObject_main_80EA460` (asm31.s:107131), Gunner exec family (asm32.s:9958-10102). T147's stamp names the next step: closing the parked-vs-fight phase gap.
+
+**Files.** `src/battle.rs` (sequencer word + actor init), `tools/trace.py` (sequencer divergence report), `docs/coverage/battle_full.md`. NOT `src/objects.rs`, NOT `src/actor.rs`.
+
+**Row.** Sequencer trace target (M2 is trace-acceptance per docs/SCOPE.md); canary: cursor 1/1/170/186279, mettaur 0/0/70/41734.
+
+**Do.**
+1. Port the actor-init gate in `src/battle.rs` that predicates `playerObject_main_80EA460`'s seq-store (asm31.s:107131 vicinity) on the `stepBannerSequencer_800801C` banner-idle predicate (asm00_1.s:10452-10518, table `off_8008038`).
+
+**Rules.** No fitted frame count. No allowlist change. Cursor 1/1/170 must not move.
+
+**Acceptance.** Sequencer `eBattleSequencerState_203CA70` first-div at k>0 OR both actors at CurAction (4,0) for k=0..40; cursor + mettaur byte-identical; full isolated table byte-identical to T147 PASS set.
+
+**Measure and report.** sequencer · frames k=0..40 · first-div k · actor CurAction pair (mm, enemy) at k=0, k=17, k=40 · cursor + mettaur · commit · mechanism (which `stepBannerSequencer_800801C` predicate) · unverified.
+
+**Coordinator:** verify_rows on full isolated table; cross-family verifier reviews the `stepBannerSequencer_800801C` cite and the actor-init gate.
+
+**Milestone.** M2 (closes one phase gap on T147's mapped scenario; trace moves forward).
+
+---
+
+### T152c. Actor-init gate
+
+
+**Why.** T152 OPEN's trace target (`eBattleSequencerState_203CA70`) needs the canonical banner-idle predicate ported to replace the fitted `SEQ04_FRAMES=60` — the in-tree fitted count is the residue T152 cannot clear on its own.
+
+**Files.** `src/battle.rs`, `docs/coverage/battle_full.md`, `docs/worklog/T152a.md`.
+
+**Row.** Sequencer trace target (inherited from T152); canary: cursor 1/1/170/186279, mettaur 0/0/70/41734.
+
+**Do.**
+1. Port `is_banner_idle()` from `sub_801E754` (asm00_2.s:31106 vicinity) into `src/battle.rs` and replace the `SEQ04_FRAMES=60` fitted count.
+
+**Rules.** No fitted frame count. No allowlist change. Cursor 1/1/170 must not move.
+
+**Acceptance.** Sequencer first-div at k>0 OR both actors at CurAction (4,0) for k=0..40; cursor + mettaur byte-identical; full isolated table byte-identical to T147 PASS set; no `SEQ04_FRAMES=60` constant in src/.
+
+**Measure and report.** sequencer · frames k=0..40 · first-div k · actor CurAction pair (mm, enemy) at k=0, k=17, k=40 · cursor + mettaur · commit · mechanism · unverified (battle_full's remaining ~173 sequencer-frame divergences).
+
+**Coordinator:** verify_rows on full isolated table; cross-family verifier reviews the `sub_801E754` cite.
+
+**Milestone.** M2 (closes the parked-vs-fight gap; trace moves forward).
+
+---
+
+### T146b. Elements/weakness port
+
+
+**Why.** T126 PARTIAL: `docs/coverage/elements.md` (+159 lines, 19f75e0) cites `sub_3007218` asm38.s:3483-3520 (additive model, starts 1, +1/weakness), `getPrimaryElementWeaknessMultipler_3007432` asm38.s:3533-3540 (table `byte_3007444` at ROM `0x081d7944`, `defender*5+attacker`), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492; T146 proposal in `docs/proposals/20260917-200300.md`.
+
+**Files.** `src/battle.rs`, `src/field.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T146.md`. NOT `src/objects.rs`, NOT `src/actor.rs`, NOT `src/ai.rs`.
+
+**Row.** `element_hit` (new) paired with `chip-cannon`; canary: chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279.
+
+**Do.**
+1. Port `damage_element_mult(attacker_elem, target_elem) -> u32` into `src/battle.rs::damage_apply` (call sites asm38.s:3486, :3492), transcribing `getPrimaryElementWeaknessMultipler_3007432` (table `byte_3007444`) and `getSecondaryElementWeaknessMultipler_30074e2` (asm38.s:3490-3492) as Rust with the additive model — single weakness = ×2, double = ×3 — reading the chip's element byte from `chips.rs::element` at damage time.
+
+**Rules.** No fitted multiplier. The additive model (NOT multiplicative) — a multiplicative port fails by exactly the +1/weakness factor. HUD popup (+50/+100 flash) out of scope.
+
+**Acceptance.** `element_hit` at 0/0/N with non-blind negative; chip-cannon + mettaur + cursor byte-identical; full isolated table byte-identical to T147 PASS set.
+
+**Measure and report.** element_hit · frames · total · worst · region · commit · mechanism (HP delta on a Fire→Wood weak pair) · unverified (secondary element multiplier on a non-default pair, next ticket).
+
+**Coordinator:** verify_rows on element_hit + chip-cannon + mettaur + cursor + full isolated table; cross-family verifier reviews the `byte_3007444` cite and the additive model.
+
+**Milestone.** M3 first live damage rule ported.
+
+---
+
+### T151b. Mettaur rank-1 scenario
+
+
+**Why.** M5 viruses 1/187 today (T6 Mettaur rank 0). T87 DONE landed ai_index-4 rank 0 via EVENT_681 flag poke (12 ungated records, lever 60:0x0200a210:0x37a → 891 mod 12 = 3 → rec3 ai_index-4 rank v0). T6 already ported `ForMettaur_8109EF4` (asm31.s:171386-171390 vicinity), so the per-type routine is reused.
+
+**Files.** `tools/states.py` (new state `battlestart_mettaur_rank1`), `tools/inventory.py`, `tools/harness.py` (new row `mettaur_rank1`), `docs/coverage/mettaur.md`, `docs/worklog/T151.md`. NOT `src/ai.rs` (T6 already ported `ForMettaur_8109EF4`), NOT `src/objects.rs`, NOT `src/battle.rs`.
+
+**Row.** `mettaur_rank1` (new); canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0 (T87).
+
+**Do.**
+1. Add `battlestart_mettaur_rank1` state to `tools/states.py` mirroring T87's lever (EVENT_681 flag poke + rank-1 byte poke at `byte_80182C4` row 1, asm00_2.s:19965-19974) and the paired `mettaur_rank1` row in `tools/harness.py` + `tools/inventory.py`.
+
+**Rules.** No allowlist change. Cursor 1/1/170 must not move. Cite every byte in the row.
+
+**Acceptance.** `mettaur_rank1` at 0/0/N with non-blind negative; mettaur (rank 0) unchanged; T87 row unchanged; cursor 1/1/170 unchanged.
+
+**Measure and report.** mettaur_rank1 · frames · total · worst · region · commit · mechanism · unverified.
+
+**Coordinator:** verify_rows on mettaur_rank1 + mettaur + ai4_rank0 + cursor + wave + window + opening; cross-family verifier reviews the `byte_80182C4` row 1 cite.
+
+**Milestone.** M5 (viruses: 1/187 → 2/187; per-type routine reused).
+
+---
+
+### T151c. Mettaur rank-1 art
+
+
+**Why.** T151 OPEN's rank-1 scenario is ready; rank-1 art unported. T6 DONE already ported `ForMettaur_8109EF4`; only the rank byte drives art variation.
+
+**Files.** `src/battle.rs`, `docs/coverage/mettaur.md`, `docs/worklog/T151a.md`. NOT `src/ai.rs`, NOT `src/objects.rs`, NOT `src/navi.rs`.
+
+**Row.** `mettaur_rank1` (exists on wt/t151); canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
+
+**Do.**
+1. Port rank-1 art into `src/battle.rs::spawnEnemy_80073E2` (asm00_1.s:86) reading the rank byte to vary the tile slice passed to `ForMettaur_8109EF4` (T6 DONE).
+
+**Rules.** No allowlist change. Cursor 1/1/170 must not move.
+
+**Acceptance.** mettaur_rank1 0/0/N with non-blind negative; mettaur + cursor + ai4_rank0 byte-identical; full isolated table byte-identical to T147 PASS set.
+
+**Measure and report.** mettaur_rank1 · frames · total · worst · region · commit · mechanism · unverified.
+
+**Coordinator:** verify_rows on mettaur_rank1 + mettaur + ai4_rank0 + cursor + full isolated table.
+
+**Milestone.** M5 1/187 → 2/187 with art ported.
+
