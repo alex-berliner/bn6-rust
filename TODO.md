@@ -870,3 +870,68 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 If "the" means "stop here": the proposal set across this session is T183-T219 (37 tickets spanning M2-M10 in ladder order). Per-ticket format matches `tools/judge_append.py`'s required parts (heading with OPEN stamp, Files, Acceptance, milestone reference) and avoids the standing-method phrases (`branch`, `baseline`, `verify_rows`, `re-measure`, `commit`) inside Do steps.
 
+### T220. Banner record-lifecycle port *(OPEN -- 2026-09-18)*
+
+**Why.** M2: T162 ported `isBannerBusy_801E754` (asm00_2.s:31105-31131) to replace fitted `SEQ04_FRAMES=60` (src/battle.rs:1302) and vetoed itself: windowclose 0/0/40/207166 → 41627/1900/40 (rust banner up 29 frames, 253..292, canon none) and cursor → 3/2/170/186277. T152/T215 sit behind that veto.
+**New evidence.** wt/T162 exists in no ref today — only docs/worklog/T162.md survives, and it carries the complete port transcript, the before/after table, and the named fix: a 60-frame banner-record lifecycle decoupled from the visual 58-frame roll-up.
+**Files.** `src/battle.rs`, `docs/coverage/battle_full.md`
+**Row.** No new row (M2 is trace-acceptance); canaries windowclose 0/0/40/207166, cursor 1/1/170/186279, mettaur 0/0/70/41734.
+**Change.** Port the record lifecycle of `spawnBannerRecord_801E792` (asm00_1.s:10567; HudElementMask bit 15, `eStruct2035280` & 0x8000) so SEQ_04's release edge reads the record, and retire SEQ04_FRAMES.
+**Rules.** No fitted frame counts — 58/60 must come from the record's cited length; no allowlist change.
+**Acceptance.** Trace `eBattleSequencerState_203CA70` on battlestart_scripted: 40/40 match, both actors CurAction (4,0) k=0..40; windowclose 0/0/40, cursor 1/1/170/186279; verify_rows identical on the full isolated table at the 7fb6dd6 pins; SEQ04_FRAMES absent.
+**Measure and report.** sequencer · k=0..40 · first-div · windowclose/cursor · commit · one line mechanism (which record edge releases) · one line unverified.
+**Coordinator:** verify_rows full isolated table; cross-family verifier reviews the spawnBannerRecord cite and the record-length source.
+**Milestone.** M2.
+
+### T222. Mettaur rank-1 art and row, one landing *(OPEN -- 2026-09-18)*
+
+**Why.** M5: the rank-1 scenario and row exist nowhere on main — they are 5 commits on wt/t151; the row read 677252/38400/70 with a twin negative 642150 non-blind. Discovery is complete: `KIND_METTAUR_V1` = the free 4th two-bit value (src/fixture.rs:360-368), art `compVirusBattleSprite_8242E94`, hop cooldowns `byte_8109F46` = [0x1e,0x18,…]; rank comes from the `sub_800EC80` quad — the byte_80182C4-poke route is falsified (T151b).
+**New evidence.** Verified today: `refs/heads/wt/t151` = c977210e with a live worktree; /tmp/baseline_mettaur_rank1.log carries the exact row line; main has moved past c977210e (T163/T180/T182), so the row+state arrive by cherry-pick, not reset.
+**Files.** `src/battle.rs`, `assets/`, `docs/coverage/mettaur.md`
+**Row.** `mettaur_rank1` — must be created, by the branch step below; canaries mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0 dropped (no such row on main).
+**Do.**
+1. Branch: worktree.sh, then `git cherry-pick c977210e~5..c977210e` (worktree.sh starts at HEAD; re-check endpoints against `git log wt/t151 -5` first).
+**Change.** Port the rank byte to art and cooldown: export the v1 sheet to assets/mettaur_v1.bin, branch on `f.kind_of(i)` at the kind-0 hardwire (src/battle.rs:2142), version-indexed cooldown from byte_8109F46.
+**Rules.** No byte_80182C4 poke; the EnemySetup quad byte drives rank; no allowlist change.
+**Acceptance.** mettaur_rank1 0/0/70 non-blind with state+row+art landing together; all other rows byte-identical to the 7fb6dd6 pins.
+**Measure and report.** mettaur_rank1 · frames 70 · total · worst · region · commit · one line mechanism (which quad byte) · one line unverified (rank 2).
+**Coordinator:** verify_rows mettaur_rank1 + mettaur + cursor + full isolated table; cross-family verifier reviews the sub_800EC80 read site and the cherry-picked set.
+**Milestone.** M5.
+
+### T221. element_hit row *(OPEN -- 2026-09-18)*
+
+**Why.** M3: `damage_element_mult` landed (b7a1367, src/battle.rs:944) wired only with literal (0,0) at :4880/:4903 — no row sees a multiplier ≠ 1, so every chip-pixel zero is blind to the ported rule (T163's own residue note). The ×2 cell is sited: `byte_3007444`, ROM 0x081d7944, `def*5+atk`, AQUA→WOOD = 1 (docs/coverage/elements.md).
+**Files.** `src/fixture.rs`, `src/battle.rs`, `tools/states.py`, `tools/harness.py`
+**Row.** `element_hit` — must be created; canaries chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279.
+**Change.** Make the ×2 pair reachable and measured: element-override bytes in the descriptor reserved region (F38h/T105 precedent) plus the canon-side F5b one-shot `--poke-at` of the RAM chip record's +2 element byte.
+**Rules.** Override zero means no override; the negative (override zeroed) must be measurably different from the positive; no allowlist change.
+**Acceptance.** element_hit 0/0/N non-blind; chip-cannon/mettaur/cursor byte-identical.
+**Measure and report.** element_hit · frames · HP delta on the ×2 pair · worst · region · commit · one line mechanism · one line unverified (secondary bitfield arm).
+**Coordinator:** verify_rows element_hit + chip rows + cursor + full isolated table; cross-family verifier reviews the +2 poke address and the reserved-byte choice.
+**Milestone.** M3.
+
+### T224. Chip-fire SFX trigger *(OPEN -- 2026-09-18)*
+
+**Why.** M9: the comparator landed (T95, tools/audio_diff.py, sample-exact) and the cannon route is measured (docs/coverage/audio-cannon.md, trees at /tmp/aud_t13d): canon fires ch4 f22..37 (peak 20391@f33) plus a ch0 blip f2; ours fires 0 samples — no arm exists and assets/ ships only buster_hit.wav. The gate is sited there: CurAction 0x08→0x14 at f3 (`--watch-write 0x0203a9b8`, `sub_800FB54`), onset +19.
+**Files.** `src/battle.rs`, `assets/`
+**Row.** no pixel row; the close is audio_diff on the cannon route; canaries chip-cannon 0/0/40/9505, mettaur, cursor (a shipped wav must not move ROM layout).
+**Change.** Port the `PlaySoundEffect` arm for the chip-fire event from `sub_800FB54`'s write site: read the sound id at that call site (not chosen from the 6B/6D/6E candidates) and export that sample from the ROM.
+**Rules.** no fitted id, no fitted onset; fitted-constants count ≤ 17; no allowlist change.
+**Acceptance.** audio_diff cannon route: ch4 onset at f22 present and sample-aligned (first-divergent sample named); every pixel row byte-identical to the 7fb6dd6 pins.
+**Measure and report.** first-div sample before/after · ch4 onset · sfx id + cite · commit · one line mechanism · one line unverified (music stream).
+**Coordinator:** verify_rows chip-cannon + full isolated table; cross-family verifier reviews the call-site cite and the sample export.
+**Milestone.** M9.
+
+### T225. Emotion blink port, restore the withdrawn row *(OPEN -- 2026-09-18)*
+
+**Why.** M7: `emotion_skip` landed 0/0/40/644 but T122 withdrew it from coverage — the rust 5/6 arm is a static model of what canon drives from the blink countdown at 0x0203528F (updater `sub_801CADC`, asm00_2.s:25577; drawer `drawEmotionWindow_801CDEC`, :27554-27583). T154's FACE_INDEX-entry premise was falsified by its own Step 0: the 23-entry `off_801CD08` table is already landed byte-identical.
+**New evidence.** Re-read on main today: the three emotion rows sit in tools/harness.py (:3382/:3449/:3493) with the static-arm comment intact, and T122's landing put M7 emotion at 2/25, not SCOPE's stale 1/25 — the live gap is the mechanism, not another table entry.
+**Files.** `src/emotion.rs`, `docs/coverage/emotion.md`
+**Row.** `emotion_skip` — exists at 0/0/40/644; it is won back by mechanism, not re-landed; canaries emotion_syn/emotion_face_b 0/0/40/644, mettaur 0/0/70/41734, cursor 1/1/170/186279.
+**Change.** Transcribe `drawEmotionWindow_801CDEC`'s blink test so the 0x0203528F countdown, not the arm choice, blanks the face.
+**Rules.** T105's cross-face swap branch untouched; no fitted blink period — it comes from the cited updater's write.
+**Acceptance.** emotion_skip 0/0/40 with the negative failing through the ported blink arm (zeroing the ported write must change the row); the two face rows and canaries byte-identical.
+**Measure and report.** blank-frame pattern (which frames canon blanks) · row before/after · commit · one line mechanism (which writer of 0x0203528F arms blanking) · one line unverified (Beast-Out counter interaction, `sub_801CB38` asm00_2.s:27343).
+**Coordinator:** verify_rows emotion rows + mettaur + cursor + full isolated table; cross-family verifier reviews the drawer-test cite and that the negative now exercises the blink arm.
+**Milestone.** M7.
+
