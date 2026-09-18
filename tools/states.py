@@ -889,13 +889,45 @@ TRACE_SCENARIOS = {
     "battlestart_scripted": {
         "frames": 40,
         "canon_ref": 69,  # provenance: peeked -- populate frame on the ai4_rank0 route's own capture (T87; re-checked on T131's)
-        "rust_base": 0,  # provenance: derived -- canon-only scenario, no rust side exists
+        "rust_base": 0,  # provenance: peeked -- rust export-frame counter at its battle start, the same contract as battle_full's (counter = capture - 8, T1 probe)
         "mercy_addr": 0x02038514,  # provenance: peeked -- same battle-object family as mettaur/popup, T1 probe
         "extra_watches": {"settings": (0x02001b9c, 4)},
         "drop_watches": ("panel_type", "panel_flags"),  # T130's raw-bin-only watches (never parsed); dropped here so 13 + mercy + settings <= 16
         "canon": {
             "rom": REAL,
             "loadstate": "/tmp/battlestart_scripted.state",
+        },
+        # T147: the rust side -- rec163's own slots as the descriptor names
+        # them. T131 step 3 measured the fielded record (re-read on this
+        # ticket's canon capture at built-frame 69): e1 NameID 0x0088 panel
+        # (4,3) HP 0x00fa, e2 0x0088 (5,1) 0x00fa, e3 0x0016 (6,2) 0x00c8;
+        # MegaMan (2,2) HP 100. The port's kind table has 0=Mettaur,
+        # 1=Gunner (src/fixture.rs kind_of) and no ai4 family, so slot 2
+        # fields a Gunner where canon fields ai4 0x16 -- that name/HP delta
+        # is exactly what this scenario's map is supposed to surface, not a
+        # fixture bug. enemy_hp names the FIRST enemy only (FIXTURE.md +32),
+        # so e2/e3 ride the kind default -- HP is not a judged field here.
+        "rust": {
+            "fixture": {
+                "enemies": 3,
+                "enemy_kind": 0x15,  # provenance: derived -- packed 2 bits/slot (src/fixture.rs), slots 0/1/2 = kind 1 (Gunner); ai4 (0x16) has no kind value in the port
+                "panel_col": [4, 5, 6],  # provenance: peeked -- rec163 formation 0x080b06a3 quads (T131 step 3; canon e-watches, built-frame 69, this ticket's capture)
+                "panel_row": [3, 1, 2],  # provenance: peeked -- same quads
+                "panel_override_mask": 0x07,  # provenance: derived -- F38h: all three slots take the override (the opening row's own mask)
+                "megaman_hp": 100,  # provenance: peeked -- canon mm_hp 100 at built-frame 69 (this ticket's canon capture)
+                "megaman_col": 2, "megaman_row": 2,  # provenance: peeked -- canon mm_panel (2,2) at built-frame 69
+                "hand": [1], "hand_count": 1,
+                # From here down: battle_full's standing fixture contract
+                # (T7r) verbatim -- gauge=1 arms the custom-window chain at
+                # frame ~124, outside this scenario's 40-frame entry window.
+                "gauge": 1,
+                "flags": 0x19,
+                "deck_count": 5, "deck": [5, 4, 71, 54, 1],
+                "deck_codes": [3, 0xFF, 18, 0xFF, 0xFF],
+                "window_pick_count": 1, "window_pick_slot": 4, "window_cursor": 0xa,
+                "fire_frame": 180, "enemy_hp": 250,  # provenance: peeked -- canon e1_hp 0x00fa (GunnerEnemyStruct2_8112B9C row 3, T131 step 3); FIRST enemy only (FIXTURE.md +32)
+            },
+            "script": "A@170",
         },
     },
 }
