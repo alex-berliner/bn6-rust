@@ -574,9 +574,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T151b. Mettaur rank-1 scenario *(OPEN -- 2026-09-18)*
+### T151b. Mettaur rank-1 scenario  *(PARTIAL -- 2026-09-18, battlestart_mettaur_rank1 state added to tools/states.py [T87 EVENT_681 lever + OPT-path rec226 0x080afc90 ado)*
 
-
+**Result.** battlestart_mettaur_rank1 state added to tools/states.py (T87 EVENT_681 lever + OPT-path rec226 0x080afc90 adopt, formation 0x080b0ab2 with 3x enemy_idx 2 quads at panels (4,1)/(5,3)/(6,2)). mettaur_rank1 row added to tools/harness.py (isolated 70 frames --disable-bg, kind 0 hardwired to METTAUR asset at src/battle.rs:2142 — T151a's art port is OUT OF SCOPE). inventory.py enemy_idx=2 (Mettaur v1) -> 'recorded' (T113 convention: canon recording without pixel-port); docs/SCOPE.md regenerated: M5 1/187 -> 2/187, M8 0/1076 -> 1/1076. mettaur_rank1 isolated measured 677252/38400/70 (negative 642150 non-blind, twin rec60 rank0 differs in NameID 0x0001/HP 0x0028 AND pixels). Acceptance 'mettaur_rank1 at 0/0/N' NOT met: rust renders METTAUR v0 sprite in rank1 scenario (no art port yet). Canary mettaur 0/0/70/41734 + cursor 1/1/170/186279 byte-identical to T147 PASS set. Branch wt/T151b 92881f8 KEPT UNMERGED (7 atomic commits; src/ untouched; tools/{states,harness,inventory}.py + docs/{coverage,worklog,SCOPE,inventory}/ changed). Next-worker plan: T151a art port (METTAUR_V1 sprite sheet export + KIND_METTAUR_V1 enum + branch on f.kind_of(i)) THEN re-run T151b to verify mettaur_rank1 collapses to 0.
 **Why.** M5 viruses 1/187 today (T6 Mettaur rank 0). T87 DONE landed ai_index-4 rank 0 via EVENT_681 flag poke (12 ungated records, lever 60:0x0200a210:0x37a → 891 mod 12 = 3 → rec3 ai_index-4 rank v0). T6 already ported `ForMettaur_8109EF4` (asm31.s:171386-171390 vicinity), so the per-type routine is reused.
 
 **Files.** `tools/states.py` (new state `battlestart_mettaur_rank1`), `tools/inventory.py`, `tools/harness.py` (new row `mettaur_rank1`), `docs/coverage/mettaur.md`, `docs/worklog/T151.md`. NOT `src/ai.rs` (T6 already ported `ForMettaur_8109EF4`), NOT `src/objects.rs`, NOT `src/battle.rs`.
