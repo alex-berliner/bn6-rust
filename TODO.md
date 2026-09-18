@@ -678,3 +678,116 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 **Coordinator:** cross-family verifier reviews `byte_80182C4[3*0x185]` cite (T145) and `sub_800EC80` cite (T151a) and the join's src diff.
 **Milestone advanced.** M6 (0/25 → 1/25 via live spawn).
 
+### T178. sequencer 0x20 window opening
+
+
+**Why.** T147 DONE mapped battle_full on battlestart_scripted: sequencer 0x0203CA70 40/40 first-div k=0. T125 re-measured 273/540 sequencer divergent, first-div k=31 (canon 0x20, rust 0x08). T152 OPEN, T152a PARTIAL (1950c68), T162 PROPOSAL close their clusters. Step 4 table in docs/coverage/battle_full.md: canon `0x20 31..32`, rust **0** frames in 0x20. Cite: `loc_800819A` (asm00_1.s:10681-10684) gate `isCustGaugeFullAndBattleLive_800A21C` (:15305) per groups table.
+
+**Files.** src/battle.rs, docs/coverage/battle_full.md, docs/worklog/T178.md.
+
+**Row.** trace target (no harness row); canary mettaur 0/0/70/41734, cursor 1/1/170/186279.
+
+**Change.** Add `SEQ_20` to the sequencer; port the `isCustGaugeFullAndBattleLive_800A21C`-gated `0x08 → 0x20` transition at `loc_800819A` (asm00_1.s:10681-10684); SEQ_20 dwell = 2 frames per canon span.
+
+**Rules.** No fitted frame count. No allowlist change. Cursor 1/1/170 must not move.
+
+**Acceptance.** Sequencer first-div k>32 OR `0x20` present in rust span k=31..32; mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Measure and report.** sequencer · frames k=0..40 · first-div k · actor CurAction pair (mm, enemy) at k=0/17/40 · cursor + mettaur · commit · mechanism (which `loc_800819A` arm) · unverified.
+
+**Coordinator:** verify_rows on full isolated table; cross-family verifier reviews the `loc_800819A` cite and the diff.
+
+**Milestone advanced.** M2.
+
+---
+
+### T179. cracked-panel bonus via flag word
+
+
+**Why.** T130 PARTIAL landed poison via masked template `(Flags & ~0x3f5f) | 0x114` on type-4. T121b NEGATIVE landed `word_3007924` (IWRAM copy 0x081D7E24) as data, OR-ed into `oPanelData_Flags` by `_object_updatePanelParameters` (asm38.s:4213-4219). T35 BLOCKED tried direct `object_crackPanel` object.s:2218-2222. **New evidence.** T130's masked template is the same flag-word mechanism for a different panel type; type-5 cracked sits at `word_3007924 + 5*4` (IWRAM 0x081D7E38), OR-template is the analog. The flag-word path T35 didn't take.
+
+**Files.** src/field.rs, src/battle.rs, docs/coverage/panels.md, docs/worklog/T179.md.
+
+**Row.** `cracked_panel` (NEW) paired with mettaur; canary mettaur 0/0/70/41734, cursor 1/1/170/186279.
+
+**Change.** Port cracked-panel break on MegaMan's step via the type-5 OR-template in `word_3007924` (IWRAM 0x081D7E38) gated on MegaMan's step.
+
+**Rules.** No fitted constant. No `object_crackPanel` direct port (T35 path). Cursor 1/1/170 must not move.
+
+**Acceptance.** `cracked_panel` 0/0/N non-blind (negative = no cracked panel loaded, equals mettaur baseline); mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Measure and report.** cracked_panel · frames · total · worst · region · commit · mechanism (which `word_3007924` word + OR-template) · unverified.
+
+**Coordinator:** verify_rows on cracked_panel + mettaur + cursor + full isolated table; cross-family verifier reviews the word cite and the OR-template diff.
+
+**Milestone advanced.** M3.
+
+---
+
+### T180. Cannon family AS_DATA
+
+
+**Why.** M4 43/411. `AS_DATA_FAMILIES = {0x13, 0x15, 0x21}` per tools/inventory.py. T17/T48/T52 done. Cannon/HiCannon/M-Cannon verified pixel-exact but predate AS_DATA dispatch (hardcoded path). Family-0x07 has 3 chips (id 1/2/3) with `CHIP_ELEM_NONE` damage 40/100/180 at `ChipDataArr_8021DA8` (data/ChipDataArr.s:2, stride 0x2c, include/rom_structs/ChipData.inc).
+
+**Files.** src/chip.rs, tools/inventory.py, docs/coverage/chips.md, docs/worklog/T180.md.
+
+**Row.** chip-cannon (EXISTS, 0/0/40/9505), chip-hicannon (NEW), chip-mcannon (NEW); canary mettaur 0/0/70/41734, cursor 1/1/170/186279.
+
+**Change.** Add family-0x07 to `AS_DATA_FAMILIES`; route Cannon/HiCannon/M-Cannon through family-table dispatch in src/chip.rs reading `AttackFamily` from the chip_data_struct record.
+
+**Rules.** AS_DATA path only (no per-chip hardcoding). Cursor 1/1/170 must not move.
+
+**Acceptance.** Three rows at 0/0/N non-blind (negative = family byte zeroed, equals chip-cannon baseline); mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Measure and report.** chip-cannon + chip-hicannon + chip-mcannon · frames · totals · commit · mechanism (which family-0x07 entry) · unverified.
+
+**Coordinator:** verify_rows on three rows + mettaur + cursor + full isolated table; cross-family verifier reviews the family-0x07 cite.
+
+**Milestone advanced.** M4 (43/411 → 46/411, all routed through AS_DATA).
+
+---
+
+### T181. third virus type
+
+
+**Why.** M5 2/187 after T151 OPEN + T165 PROPOSAL (Mettaur rank 1 + art). T9c BLOCKED on Gunner. Next: third virus type from a different family via `byte_80182C4` (asm00_2.s:19965-19974, GetVerActorTyAndAIIdx_80182B4) + `off_8109150` Struct2 (T12 FOUND, tools/rom_enemy_tables.py). **New evidence.** T151a OPEN characterizes the `sub_800EC80` quad-id spawn cite (asm00_1.s:8552); the third virus spawns through the same quad path with a different quad byte — only the per-type routine at the new identity row varies.
+
+**Files.** src/virus.rs, src/battle.rs, tools/states.py, tools/harness.py, docs/coverage/viruses.md, docs/worklog/T181.md.
+
+**Row.** `virus-<name>` (NEW); canary mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
+
+**Change.** Port the chosen virus's per-type routine from `byte_80182C4` row + `off_8109150` Struct2 entry into src/virus.rs; wire the spawn path in src/battle.rs through T151a's `sub_800EC80` quad cite.
+
+**Rules.** No fitted timing. Cursor 1/1/170 must not move.
+
+**Acceptance.** `virus-<name>` 0/0/N non-blind (negative = virus byte zeroed, equals mettaur baseline); mettaur + cursor + ai4_rank0 byte-identical; verify_rows PASS on full isolated table.
+
+**Measure and report.** virus-<name> · frames · total · worst · region · commit · mechanism (which per-type routine + which quad byte) · unverified.
+
+**Coordinator:** verify_rows on virus-<name> + mettaur + cursor + ai4_rank0 + full isolated table; cross-family verifier reviews the `byte_80182C4` row cite and the per-type routine cite.
+
+**Milestone advanced.** M5 (2/187 → 3/187).
+
+---
+
+### T182. first Navi pattern
+
+
+**Why.** M6 0/25. T145 PARTIAL landed actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643) at 107e228; navi-gunner row 2092176/38237/130/2247584. T153 OPEN + T166 PROPOSAL port spawn gate: `byte_80182C4[3*0x185]=00 01 17` (fill-time) + `sub_800EC80` quad-byte (spawn-time) into `spawnEnemy_80073E2` (asm00_1.s:86); art `byte_81067FC=00 0b 01 01 17 00 00 01`; HP 900 at asm31.s:123497/123548. After spawn lands, pattern routine unported. T76 DONE: 22/25 navis have `nullsub_106` in `off_80F2474` AND `NaviActHandlers_80F25A0`; pattern work is in `AIThinkTables_8109050[ai_index]` (reader `sub_80F2354` asm31.s:123323-123356).
+
+**Files.** src/navi.rs, src/battle.rs, tools/states.py, tools/harness.py, tools/inventory.py, docs/coverage/navi.md, docs/worklog/T182.md.
+
+**Row.** `navi-<name>` (NEW); canary mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0, navi-gunner 2092176/38237/130/2247584.
+
+**Change.** Port the chosen navi's first-pattern routine from `off_80F24D8` / `off_80F253C` / `off_80F25A0` (M6 FOUND; per-AIIndex via `sub_80F2354`) into src/navi.rs; wire CurAction dispatch through T145's actor-type fork.
+
+**Rules.** No fitted pattern. Cursor 1/1/170 must not move.
+
+**Acceptance.** `navi-<name>` 0/0/N non-blind (negative = navi byte zeroed, equals mettaur baseline); mettaur + cursor + ai4_rank0 + navi-gunner byte-identical; verify_rows PASS on full isolated table.
+
+**Measure and report.** navi-<name> · frames · total · worst · region · commit · mechanism (which navi + which pattern arm) · unverified.
+
+**Coordinator:** verify_rows on navi-<name> + mettaur + cursor + ai4_rank0 + navi-gunner + full isolated table; cross-family verifier reviews the `off_80F24D8`/`off_80F253C` cite and the pattern diff.
+
+**Milestone advanced.** M6 (0/25 → 1/25 with pattern, not just spawn).
+
