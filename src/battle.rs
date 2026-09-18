@@ -2197,6 +2197,59 @@ impl<'a> Battle<'a> {
         BATTLE_RANK_NO_RECORD
     }
 
+    /// canon's getBattleOutcome_800A152 (asm00_1.s:15213-15248), the fight
+    /// state's end-edge read (bannerSeqState08Fight_80080D2 calls it at
+    /// asm00_1.s:10629). canon: battle_isTimeStop (battle_getFlags bit 2,
+    /// asm00_1.s:15089-15094) reads 0 -- timeStop is not modeled in this
+    /// build; the ordinary branch (oBattleState_Unk_04 == 0, :15220-15228)
+    /// returns 1 when the WIN-variant latch oBattleState_Unk_0d != 0, else 2.
+    /// Unk_0d is written ONCE, by battle-FSM step sub_80079A8 (asm00_1.s:9646-9668:
+    /// `GetBattleEffects & 8 ? sub_803DD60() : 0`; T127's note -- the port's
+    /// variant decision is the WIN/LOSE pick at the show site). This build
+    /// fuses that latch with its own write event: the dissolve countdown
+    /// hitting 0 (DISSOLVE_FRAMES, the watched 35-frame death-action to 0x0C
+    /// gap) is the same-frame stand-in, so `is_defeated` is read exactly
+    /// where canon reads its latched byte. The Unk_04/Unk_05/Unk_0b branches
+    /// (:15229-15243 -- the tag/net variants and the outcome-7 sibling) are
+    /// unported: those bytes are never set in this build.
+    fn battle_outcome(&self) -> u32 {
+        if self.megaman.is_defeated() {
+            2 // canon: getBattleOutcome's Unk_0d == 0 read (asm00_1.s:15224-15228), LOSE
+        } else {
+            1 // canon: getBattleOutcome's Unk_0d != 0 read (asm00_1.s:15227-15228), WIN
+        }
+    }
+
+    /// The banner sequencer's fight-state end edge -- the 0x0C entry
+    /// predicate, transcribed from bannerSeqState08Fight_80080D2's outcome
+    /// dispatch (asm00_1.s:10629-10663; the dispatcher is
+    /// stepBannerSequencer_800801C, asm00_1.s:10477-10520, over the state
+    /// table BannerSequencerStates_8008038 :10540-10566 -- T7e/T26). canon,
+    /// in order: `cmp r0,#1` after getBattleOutcome_800A152 (:10630-10631);
+    /// outcome == 1 && oBattleState_Unk_3a == 0 (ldrh :10634 -- the
+    /// alive-actor-removal flag sub_800AAE8 sets, asm00_1.s:16745-16751, from
+    /// the remove path sub_810E386 asm32.s:1354; never set in this build)
+    /// -> loc_8008116 :10637-10644: oBattleState_Unk_18 += 1 (the per-battle
+    /// turn counter, an unported word) and `mov r0,#0xc; str r0,[r5]` --
+    /// SEQ_0C, the WIN count. Unk_3a != 0 instead runs sub_800AAD6
+    /// (asm00_1.s:16734-16745) and writes NO state -- unported with the byte
+    /// that arms it. outcome == 2 -> oBattleState_Unk_19 += 1 + 0x10
+    /// (:10645-10653, the LOSE count); outcome == 7 -> 0x18 (:10654-10663,
+    /// unported: Unk_0b is never set). Entering 0x0C arms
+    /// bannerSeqState0CWinCount_80081A4 (asm00_1.s:10722: the 0x5e/0x66
+    /// result countdown and its entry work) whose window is the results
+    /// hand-off: the rank byte there is the rank-table reader `battle_rank`
+    /// (sub_802CA1E + sub_802C97E's clear-time record check against
+    /// unk_20018C0/unk_2000260, asm03_0.s:13232-13257 -- T119), fed to
+    /// results.show at this build's show site.
+    fn sequencer_step(&mut self) {
+        match self.battle_outcome() {
+            1 => self.seq.transition(SEQ_0C), // canon: loc_8008116's 0xc write, asm00_1.s:10643-10644
+            2 => self.seq.transition(SEQ_10), // canon: the outcome-2 arm, asm00_1.s:10651-10653
+            _ => {} // canon: outcome 0 (timestop) and the unported 7 arm (0x18), :10654-10663
+        }
+    }
+
     /// T112: the results zenny amount, decoded from the reward halfword
     /// (`reward_word`, canon's stats-record +8: 0x0203F4AC live /
     /// 0x02035268 results slot; watched 0xFFFF -> 0x4064 = 0x4000 flag | 100
@@ -3058,15 +3111,19 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         if let Some(n) = self.dissolve_in.as_mut() {
             *n = n.saturating_sub(1);
         }
-        // The 0x08 -> end edge of the banner sequencer (sub_80080D2's
-        // transition write): the fight is decided when the last combatant
-        // goes down and the dissolve runs out -- exactly the old `over`
-        // latch, now as the table's own state. Lose when the navi is already
-        // down, win otherwise (canon reads the outcome the same way through
-        // sub_800A152; the message follows the state).
+        // The 0x08 -> end edge of the banner sequencer: the fight is decided
+        // when the last combatant goes down and the dissolve runs out --
+        // exactly the old `over` latch, now as the table's own state. The
+        // dissolve countdown hitting 0 is this build's stand-in for canon's
+        // WIN-variant latch event (battle-FSM step sub_80079A8's oBattleState_Unk_0d
+        // write, asm00_1.s:9646-9668 -- see `battle_outcome`); the edge itself
+        // is the transcribed entry predicate in `sequencer_step`
+        // (bannerSeqState08Fight_80080D2's outcome dispatch, asm00_1.s:10629-10663).
+        // Lose when the navi is already down, win otherwise (canon reads the
+        // outcome the same way through getBattleOutcome_800A152; the message
+        // follows the state).
         if self.dissolve_in == Some(0) && self.seq.state == SEQ_08 {
-            self.seq
-                .transition(if self.megaman.is_defeated() { SEQ_10 } else { SEQ_0C });
+            self.sequencer_step();
         }
         // T7c: the chip-select window's own states, entered from the fight
         // (the 0x08 handler's window path, asm00_1.s:10609-10611:
