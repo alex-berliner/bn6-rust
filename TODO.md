@@ -974,6 +974,16 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows on the named set; verifier only if a cite changes meaning.
 **Milestone advanced.** M7.
 
+### T233. element_hit: fire the press through the 0x1c banner window, land the row *(OPEN -- 2026-09-18)*
+
+**Why.** T221 PARTIAL: the byte-inert code half (descriptor +65/+66 element overrides wired at both `damage_element_mult` sites) is committed on wt/t221 at 684d77e -- UNMERGED. The row failed because on the live-enemy route the sequencer word `0x0203CA70` holds 0x1c (banner-busy under T220's record model) for the whole capture window and A presses are ignored there (MegaMan CurAction stays 0x08); the proven chip-use fire (harness.py:2600) only lands on the zero-enemy route. All other machinery is solved and cited in docs/worklog/T221.md: attacker poke 0x02034122, defender poke 0x0203859a, HP 0x0203aaac:=0x0064 (x2=160 kills vs 80 survives = non-blind), LongSwrd 0x49 two-panel reach, canon panel X=4 / PanelXY 0x0204. Pair fix: WOOD weak to HEAT (the ticket's "AQUA->WOOD=1" cell does not exist in ROM 0x081d7944; table read back: def1<-atk2, def2<-atk3, def3<-atk4, def4<-atk1).
+**Files.** `tools/harness.py`, `tools/states.py`, `src/fixture.rs` (only if FIXTURE_SIZE must grow to 67/68), `docs/coverage/elements.md`, `docs/worklog/T233.md`. NOT src/battle.rs (its half is already on wt/t221), NOT src/main.rs, NOT docs/coverage/windows.md.
+**Do.** 1. Worktree carrying wt/t221 (bash tools/worktree.sh t233; git merge wt/t221). **code.** 2. Find the press window that the 0x1c state admits: either script the release press first (T220's BANNER_RECORD release: Start/A at the windowclose frames) THEN the AIData tap, or find the input-gate site in reference/bn6f that reads 0x08/0x0C and cite what 0x1c requires. Two recipes max, then conclude. **measurement.** 3. Land `element_hit` per T221's worklog design (HEAT->WOOD x2, kill-vs-survive negative); canaries chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279 byte-identical; full isolated table. **measurement.**
+**Rules.** No allowlist change; if no press route exists in two recipes, report the refutation with frame receipts and leave the row out (do NOT add a frozen-red row to CHECKS).
+**Acceptance.** element_hit 0/0/N non-blind + canaries identical, OR a measured negative naming the gate site.
+**Measure and report.** press window found (word value at press frames) · row · commit · mechanism · unverified.
+**Milestone advanced.** M3.
+
 ### T231. windowclose is red on main: reclaim the boot frame the T216 landing lost  *(DONE -- 2026-09-18, landed e7b1600: SEAM_PHASE_PAD_ITERS 21->20 reclaims the boot frame T216's landing lost)*
 
 **Result.** landed e7b1600: SEAM_PHASE_PAD_ITERS 21->20 reclaims the boot frame T216's landing lost; windowclose 0/0/40 neg 207166 restored (was 63962/3557/40/266037 red on main since f440247); cursor 1/1/170/186279 kept (plateau 20/21/22), emotion_skip 0/0/40 neg 27760, blind_met 0/0/70 neg 60901, mettaur 0/0/70/41734; full isolated table 8 FAILED all pre-existing pins (field-bg1/2 improved 206045->4800, unnamed); pad 22 equal-good spare; marker-phase note in docs/worklog/T231.md
