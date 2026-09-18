@@ -320,7 +320,7 @@ pub fn fixture_ptr() -> *const u8 {
 /// the BIOS's VBlankIntrWait, and commit's copies start after it returns),
 /// so the pad lives here: a busy-wait that reads and writes nothing,
 /// delaying every frame's copy start by a measured constant.
-const SEAM_PHASE_PAD_ITERS: u32 = 21; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout; re-fitted 21 by T216's sweep on the BLIND-gate layout (17:23/22, 21:1/1, 23:35/34, 25:3/2, 27:1/1, 29:3/2, 33:41/40 -- 21 and 27 both read main's exact line 1/1/170/186279; 21 chosen, the first in-class value)
+const SEAM_PHASE_PAD_ITERS: u32 = 21; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout. T230 sweep on the MERGED tree (T216 BLIND-gate layout + T225 blink port), cursor row: 19:766/728, 20:1/1, 21:1/1, 22:1/1, 23:16241/3385, 24:6/6, 25:1/1 -- all of 20/21/22 (and 25) read the exact main line 1/1/170/186279/neg 186279; 21 pinned, mid-plateau and T216's value, so the pad is unchanged against main
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {
