@@ -1918,3 +1918,45 @@ BANNER_WAIT -> fight) follows the table's rule but has no canon comparison here;
 reads 18740 on this base with the T152 src stashed too (pre-existing move from the older 72499,
 ungated by the pinned opening=0/0/40/86591 isolated expectation); the full verify_rows sweep is the
 land gate's to reproduce.
+
+## T215 — the 0x0C entry predicate, transcribed and verified (2026-09-18)
+
+Ticket T215 ("the post-0x0C path through rank/zenny is the actual hand-off"):
+`bannerSeqState08Fight_80080D2`'s outcome dispatch — the SEQ_08 → SEQ_0C edge —
+landed as `src/battle.rs::sequencer_step` (+ `battle_outcome`), citing
+getBattleOutcome_800A152 (asm00_1.s:15213-15248), the dispatch site
+(asm00_1.s:10629-10663) and the rank-table reader (`battle_rank`, sub_802CA1E +
+sub_802C97E, asm03_0.s:13232-13257). NOTE on the ticket's cite
+"sub_800801C asm00_1.s:10422-10465": that range drifted — on the 2026-09-18
+tree `stepBannerSequencer_800801C` is at asm00_1.s:10477-10520 and the fight
+state at 10613-10720; symbol-anchored cites per T26's rule.
+
+**Canon watch (this ticket's own capture).** REAL rom, battle_full recipe
+(PAUSED state, cheat 0x020349c2:0x01, Start@10,L@40,Start@70,A@80,A@260,A@440,
+A@470), 560 frames. `--dump 0x020093c8:8` reads eToolkit_BattleStatePtr =
+**0x02034880** (eToolkit 0x020093b0 + oToolkit_BattleStatePtr 0x18; a bare
+`--peek` prints the halfword only — the first watch at 0x02004880 read static
+bytes and was re-run). `--watch 0x02034880:0x40` + `--watch 0x0203CA70:4`:
+
+- Word spans reproduce T26: 0x08 196..304, **0x0C 305..548**.
+- The transcribed predicate (state 0x08 ∧ getBattleOutcome==1 ∧ Unk_3a==0 ∧
+  ¬timestop) fires at exactly **k=304**; the word flips 0x08→0x0C at capture
+  316 (k=305) with **oBattleState_Unk_18 0→1 the same frame** (asm00_1.s:
+  10640-10644). Unk_3a == 0 and Unk_19 == 0 on every frame.
+- **k=305..530: predicate-driven model vs traced word, 0 mismatches** — the
+  OR route of the ticket's acceptance.
+- The measured WIN read: Unk_04 == 1 the whole capture, Unk_05 (1 throughout
+  the fight) clears at k=304, Unk_0d == 0 → :15229-15237 returns 1. The
+  Unk_04 == 0 arm (:15220-15228) and the Unk_0b outcome-7 sibling
+  (:15238-15243) are unmeasured here. Unk_0d stays 0 at the edge —
+  sub_80079A8's variant latch (T127) runs AFTER the 0x0C entry on this battle.
+  flags +0x32: 0x3 → 0x13 (f30) → 0x1 (f37..), timestop bit 2 never set.
+
+**Rust side.** sequencer_step is the only SEQ_0C writer; re-measured after the
+landing, the trace is decision-identical to baseline: sequencer 273/540, first
+k=31, canon 0x0C from k=305 / ours from k=405, rank 540/540, zenny first k=406
+(canon 100 / rust 0 at window-up, T119's offset). Canaries: mettaur 0/0/70
+(negative 41734), cursor 1/1/170 (negative 186279) — byte-identical to HEAD's
+class. The 100-frame 0x0C entry offset is the fight's own kill-timing offset
+(enemy model divergence from k=17, 458/540 frames — separately ticketed on
+that timeline); the predicate does not hold it.

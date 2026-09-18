@@ -2201,17 +2201,24 @@ impl<'a> Battle<'a> {
     /// state's end-edge read (bannerSeqState08Fight_80080D2 calls it at
     /// asm00_1.s:10629). canon: battle_isTimeStop (battle_getFlags bit 2,
     /// asm00_1.s:15089-15094) reads 0 -- timeStop is not modeled in this
-    /// build; the ordinary branch (oBattleState_Unk_04 == 0, :15220-15228)
-    /// returns 1 when the WIN-variant latch oBattleState_Unk_0d != 0, else 2.
-    /// Unk_0d is written ONCE, by battle-FSM step sub_80079A8 (asm00_1.s:9646-9668:
-    /// `GetBattleEffects & 8 ? sub_803DD60() : 0`; T127's note -- the port's
-    /// variant decision is the WIN/LOSE pick at the show site). This build
-    /// fuses that latch with its own write event: the dissolve countdown
+    /// build (the watched flags halfword BattleState+0x32 never sets bit 2 on
+    /// the battle_full capture). The MEASURED battle_full path takes the
+    /// oBattleState_Unk_04 != 0 arm (Unk_04 == 1 the whole capture, watched):
+    /// Unk_05 == 0 -> Unk_0d == 0 ? 1 : 2 (:15229-15237) -- the fight-live
+    /// byte Unk_05 (1 throughout the fight) clears at k=304, one frame before
+    /// the 0x0C write at k=305, and Unk_0d reads 0, so canon reads 1 (WIN)
+    /// exactly there; the T215 watch numbers are in
+    /// docs/coverage/battle_full.md #T215. The Unk_04 == 0 arm
+    /// (:15220-15228, Unk_0d != 0 ? 1 : 2) and the Unk_0b outcome-7 sibling
+    /// (:15238-15243) are unmeasured on this scenario. This build fuses the
+    /// win/lose decision with its own write event: the dissolve countdown
     /// hitting 0 (DISSOLVE_FRAMES, the watched 35-frame death-action to 0x0C
-    /// gap) is the same-frame stand-in, so `is_defeated` is read exactly
-    /// where canon reads its latched byte. The Unk_04/Unk_05/Unk_0b branches
-    /// (:15229-15243 -- the tag/net variants and the outcome-7 sibling) are
-    /// unported: those bytes are never set in this build.
+    /// gap) is the same-frame stand-in for canon's latch byte clearing, so
+    /// `is_defeated` is read exactly where canon's getter flips to 1. Unk_0d's
+    /// single writer is battle-FSM step sub_80079A8 (asm00_1.s:9646-9668,
+    /// T127's note -- the port's variant decision is the WIN/LOSE pick at the
+    /// show site); on the traced battle it runs AFTER this edge (Unk_0d still
+    /// 0 at the 0x0C write, watched).
     fn battle_outcome(&self) -> u32 {
         if self.megaman.is_defeated() {
             2 // canon: getBattleOutcome's Unk_0d == 0 read (asm00_1.s:15224-15228), LOSE
