@@ -1810,3 +1810,82 @@ only evidence either way, and it settles only the dwell lengths (fixture) and th
 (port). The mm group's entire 290-frame footprint starts at a script-vs-fixture firing gap
 (A@260 vs fire_frame), so those frames are suspect as fixture artefact; the enemy's 478 and our
 missing 0x20 are not explained by the fixture.
+
+## T147 — the family-A scripted scenario's trace map (measurement only, base 292dca0)
+
+The map above stays the battle_full row's state; THIS section adds the map of T131's
+`battlestart_scripted` scenario (the roll's OPT path fielding rec163 0x080af8a0 — the family-A,
+scripted BattleSettings entry), which this ticket made traceable on BOTH sides. Zero src/ or
+assets/ edits; tools-only wiring: states.py's scenario gains a `rust` spec (rec163's own slots as
+the descriptor names them: enemies=3, kind 0x15 = Gunner in slots 0/1/2 — the port has no ai4
+kind, so canon e3's 0x0016 fields as a Gunner BY DESIGN), panel_col [4,5,6] / panel_row [3,1,2] /
+mask 0x07, enemy_hp 250 (first slot), mm (2,2) HP 100, T7r's gauge=1 contract below that;
+trace.py `E1_SLOT` = e1; oracle.py `ENEMY_SLOT` = 1 and two-sided-scenario routing. Canon
+re-captured (113 frames from /tmp/battlestart_scripted.state, `states.py build all` gate exit 0):
+`settings` (0x02001b9c) rides 0x080AF8A0 = rec163 through the whole capture; slots populate at
+capture 69 = battle frame 0 (T131's peeked canon_ref, re-confirmed — e1 name 0x0088 appears
+exactly there).
+
+**The one fact that shapes the whole map: canon's side is PARKED.** The sequencer word
+0x0203CA70 reads 0x00000000 on every captured frame (113), every actor reads (state,action)
+(4,0), and T87 measured the word still 0 at capture 320 on the parent route — T58's
+stuck-sequencer stall. The scripted entry never reaches its own fight state in this window, so
+the comparison pairs canon's parked ENTRY against our FIGHT phase (rust export frame 0 is our
+battle's first frame; sequencer 0x08 from there, as on battle_full). The three diverging fields
+below are that phase gap, not per-field model gaps: every STATIC field matches byte-for-byte.
+
+### Per-field table (canon 69+k ↔ rust export 0+k, 40 compared frames)
+
+| field | divergent | first k (canon frame) | canon | rust |
+|---|---|---|---|---|
+| sequencer (0x0203CA70 low half) | **40/40** | k=0 (69) | 0x0 | 0x8 |
+| mm_state_action | **40/40** | k=0 (69) | (4,0) | (4,8) |
+| enemy_state_action (canon e1 ↔ rust slot 0) | **40/40** | k=0 (69) | (4,0) | (4,10) |
+| mm_anim / mm_panel_x / mm_panel_y / mm_timer | 0/40 | — | match | match |
+| enemy_anim / enemy_panel_x / enemy_panel_y | 0/40 | — | match | match |
+| rank / zenny | 0/40 | — | match | match |
+| rng_cadence | 0/40 | — | match (1 step/frame both sides) | |
+
+TOTAL 40/40 frames carry a judged divergence; first: enemy_state_action at k=0 (canon frame 69).
+oracle.py battlestart_scripted (routed for the first time here) agrees field for field and adds
+the INFO pair: mm_hp 100=100, enemy_hp 250=250 — rec163's row-3 HPs reproduced by the fixture.
+Pixel surface on the same alignment: total 1225257, worst 38400, first non-zero k=0 — the phases
+differ visually from the first frame, as the field map says. Rust export counter: 1 repeated /
+38 jumped rows (F33d stall note), 1-frame drift by the last row; rows pair by capture index.
+
+Negative controls, honest about being weak: trace `--shift 1` reads the same 40/40 with the same
+first k (canon frame 70), and the oracle names its own field negative BLIND — the window is ONE
+frozen canon state (every field holds exactly one value pair across all 40 frames), so there is
+no state timing to shift. What actually validates the pairing: the byte-level statics (panels,
+anims, timers, HPs, rng cadence) hold 40/40 at the fixed (69, 0) offset, and canon_ref 69 is the
+peeked populate frame re-confirmed at k=0.
+
+### Top three divergence fields (this map's priorities, one cite each)
+
+| # | field | frames | first k | cite (reference/bn6f) |
+|---|---|---|---|---|
+| 1 | sequencer (dword_203CA70 low half) — the phase carrier | 40/40 | 0 (cf 69) | stepBannerSequencer_800801C's dispatch table off_8008038 (asm00_1.s; renames.md:96); the route never advances it (T58's stall, T87's 0 at capture 320) |
+| 2 | mm_state_action | 40/40 | 0 (cf 69) | playerObject_main_80EA460 (asm31.s:107131) / playerObject_update_80EA484 (asm31.s:107147) |
+| 3 | enemy_state_action | 40/40 | 0 (cf 69) | Gunner exec family: sub_8113162 aim predicate (asm32.s:10248); sub_8112F4E/sub_8113002/ai_8113038 volley (asm32.s:9958-10102) |
+
+All three are 40/40 with zero unique-frame separation — one mechanism (canon parked in entry vs
+our fight phase) drives all three; the ranking is by role. Priority 1 is not a port re-fit: it is
+either (a) canon-side — learn whether the scripted route's stall ever breaks (T87's 320-frame
+datum is the last), because a live fight-phase window is the only version of this scenario where
+the sequencer can be judged like battle_full's, or (b) accept the parked-entry window as the
+scenario's contract, in which case the map is already CLOSED on every judged static field and the
+three fields above are the documented, permanent phase delta.
+
+### What this map cannot see (unjudged by construction)
+
+canon e2/e3 read parked (4,0) with HP 250/200; the rust export's e2/e3 columns are 0xFFFF
+sentinels ("No second/third enemy in this model", src/battle.rs trace_snapshot — never judged,
+same rule as oracle.py's has_enemy). The ai4 gap (canon e3 NameID 0x0016, HP 0xc8 vs our Gunner
+kind) lives entirely in those unjudged columns: closing it is a new-enemy-family ticket, not a
+field re-fit. The settings word likewise has no rust counterpart (the port has no adoption path)
+— carried as info by the scenario's extra_watches only.
+
+UNVERIFIED: whether canon's scripted-route stall ever escapes (nothing after T87's capture-320
+zero); whether the parked-entry window is the route's permanent state or a fixable recipe gap.
+No battle_full row number moved — no src/ change, ROM hashes identically to main (the row's own
+guard is verify_rows, run for the full isolated table in this ticket's report).
