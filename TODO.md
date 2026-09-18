@@ -678,9 +678,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 **Coordinator:** cross-family verifier reviews `byte_80182C4[3*0x185]` cite (T145) and `sub_800EC80` cite (T151a) and the join's src diff.
 **Milestone advanced.** M6 (0/25 → 1/25 via live spawn).
 
-### T178. sequencer 0x20 window opening *(OPEN -- 2026-09-18)*
+### T178. sequencer 0x20 window opening  *(BLOCKED -- 2026-09-18, Worker model cold-start)*
 
-
+**Result.** Worker model cold-start; empty response after 1m45s, no commits on branch, no worklog written. Branch wt/T178 does not exist (worker bailed before creating it). Next-worker restart needed. Acceptance target: sequencer first-div k>32 OR 0x20 present in rust span k=31..32 (currently 0 frames in 0x20 across 540-frame trace; canon 0x20 at k=31..32). Cite loc_800819A (asm00_1.s:10681-10684) gate isCustGaugeFullAndBattleLive_800A21C (asm00_1.s:15305) per groups table. Canary mettaur 0/0/70/41734 + cursor 1/1/170/186279 byte-identical.
 **Why.** T147 DONE mapped battle_full on battlestart_scripted: sequencer 0x0203CA70 40/40 first-div k=0. T125 re-measured 273/540 sequencer divergent, first-div k=31 (canon 0x20, rust 0x08). T152 OPEN, T152a PARTIAL (1950c68), T162 PROPOSAL close their clusters. Step 4 table in docs/coverage/battle_full.md: canon `0x20 31..32`, rust **0** frames in 0x20. Cite: `loc_800819A` (asm00_1.s:10681-10684) gate `isCustGaugeFullAndBattleLive_800A21C` (:15305) per groups table.
 
 **Files.** src/battle.rs, docs/coverage/battle_full.md, docs/worklog/T178.md.
