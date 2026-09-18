@@ -747,9 +747,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T181. third virus type *(OPEN -- 2026-09-18)*
+### T181. third virus type  *(BLOCKED -- 2026-09-18, Worker-minimax exhausted discovery budget on wt/third-virus @ a1d97da [worklog-only])*
 
-
+**Result.** Worker-minimax exhausted discovery budget on wt/third-virus @ a1d97da (worklog-only). Picked AIIndex 0x02 (third family after Mettaur=0x01, Gunner=0x17). Per-type routine off_810A550 at asm31.s:172025 has 4 family-specific handlers to transcribe (sub_810A5C2/D6/EA/3AC) + 8 shared. BattleSettings record carrying enemy_idx 0x07..0x0C not named in inventory; spawn cite T151a sub_800EC80 unchanged for X=0 (v0 base enemy_idx 0x07). No src/ edit landed. Baseline harness: mettaur 0/0/70/41734 PASS, cursor 1/1/170/186279 (canary unchanged), gunner 2.1M (T9c BLOCKED carry). ai4_rank0 not in harness.py (T151 phantom). Worklog at docs/worklog/T181.md committed.
 **Why.** M5 2/187 after T151 OPEN + T165 PROPOSAL (Mettaur rank 1 + art). T9c BLOCKED on Gunner. Next: third virus type from a different family via `byte_80182C4` (asm00_2.s:19965-19974, GetVerActorTyAndAIIdx_80182B4) + `off_8109150` Struct2 (T12 FOUND, tools/rom_enemy_tables.py). **New evidence.** T151a OPEN characterizes the `sub_800EC80` quad-id spawn cite (asm00_1.s:8552); the third virus spawns through the same quad path with a different quad byte — only the per-type routine at the new identity row varies.
 
 **Files.** src/virus.rs, src/battle.rs, tools/states.py, tools/harness.py, docs/coverage/viruses.md, docs/worklog/T181.md.
