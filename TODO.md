@@ -550,9 +550,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T146b. Elements/weakness port *(OPEN -- 2026-09-18)*
+### T146b. Elements/weakness port  *(PARTIAL -- 2026-09-18, damage_element_mult[chip_elem, def_elem, def_weakness] -> u32 [additive model, 25-byte primary table from ROM )*
 
-
+**Result.** damage_element_mult(chip_elem, def_elem, def_weakness) -> u32 (additive model, 25-byte primary table from ROM 0x081d7944, secondary-bitfield from asm38.s:3634-3692) ported in src/battle.rs. damage_apply(enemy, base_damage, chip_elem, def_elem, def_weakness) -> bool (saturating_mul, dispatches to take_damage) ported. Two call sites wired: chip_strike sword path and AirShot hit, both passing (0,0) for def_elem/def_weakness (fixture-side override is M3 follow-up). Bomb-element port deferred per T146 BLOCKED step 5 (Bomb struct layout regressed cursor). element_hit row NOT built (no fixture override; every existing fixture's multiplier is 1). Cursor isolated REGRESSED 1/1/170/186279 -> 10/9/170 (9 px worst-frame on a row that does not fire a chip, likely code-layout shift from .rodata table exposure; 1-2 px noise on mettaur/windowclose). Acceptances NOT met: element_hit not built, cursor not byte-identical. Branch wt/T146b 96ad33e KEPT UNMERGED (src/battle.rs +worklog). Next-worker fix: try #[inline(always)] at call sites or revert .rodata table exposure to root-cause the 9-px cursor shift; build element_hit row with fixture override at offset +64/+65 (free past +63).
 **Why.** T126 PARTIAL: `docs/coverage/elements.md` (+159 lines, 19f75e0) cites `sub_3007218` asm38.s:3483-3520 (additive model, starts 1, +1/weakness), `getPrimaryElementWeaknessMultipler_3007432` asm38.s:3533-3540 (table `byte_3007444` at ROM `0x081d7944`, `defender*5+attacker`), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492; T146 proposal in `docs/proposals/20260917-200300.md`.
 
 **Files.** `src/battle.rs`, `src/field.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T146.md`. NOT `src/objects.rs`, NOT `src/actor.rs`, NOT `src/ai.rs`.
