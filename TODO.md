@@ -972,6 +972,16 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows on the named set; verifier only if a cite changes meaning.
 **Milestone advanced.** M7.
 
+### T231. windowclose is red on main: reclaim the boot frame the T216 landing lost *(OPEN -- 2026-09-18)*
+
+**Why.** Landing forensics (T230 c167b0c, evidence table in docs/worklog/T230.md): `windowclose` reads 63962/3557/40/266037 on current main (d491354) -- it was 0/0/40/207166 when T220 landed (0033d2d) and the drift 0->63962 entered main with the T216 landing (f440247, pad 25->21) onto T220's tree: the two changes were verified apart, not together (this coordinator's landing-order miss -- T216's land rows omitted windowclose). The mechanism is the known boot-frame coupling: a `Battle` field addition shifts `BATTLE_MARKER` one capture frame (T220's own discovery), and pad 21 on the NEW tree lands on a different marker phase than pad 20/21 on the old one. T226 step 1 (boot-frame reclaim) is the structural fix; this ticket is the targeted restoration so main carries no red it didn't have on 2026-09-17.
+**Files.** `src/main.rs` (pad or BATTLE_MARKER phase only), `tools/harness.py` (windowclose negative pairing only if needed), `docs/coverage/windows.md`, `docs/worklog/T231.md`.
+**Do.** 1. Baseline: windowclose + cursor + emotion_skip + blind_met on main. **measurement.** 2. Sweep SEAM_PHASE_PAD_ITERS (20, 22 first -- T230's own sweep showed the plateau spans 20/21/22 all reading cursor 1/1/170/186279) for one value where windowclose reads 0/0/40/207166 AND cursor stays 1/1/170 AND emotion/blind rows stay 0. If none exists, move the pad only in the boot-capture marker phase (one-line main.rs change at the BATTLE_MARKER capture site with cite) so windowclose's frame-0 alignment returns without touching cursor. **measurement.** 3. Full isolated table after pinning. **measurement.**
+**Rules.** No row weakened; cursor's 1/1/170 stays its landed value; no allowlist change; cite every number touched.
+**Acceptance.** windowclose 0/0/40/207166, blind_met 0/0/70 neg 60901, emotion_skip 0/0/40 neg 27760, cursor 1/1/170/186279, mettaur 0/0/70, full isolated table PASS; the pad/marker choice written into the worklog with the sweep table.
+**Measure and report.** sweep table · rows · commit · one line of what the marker phase means · unverified.
+**Milestone advanced.** M4 (regression repair).
+
 ### F49. Cite-drift sweep + the false Battle::new reset sentence *(OPEN -- 2026-09-18)*
 
 **Why.** reference/bn6f asm files are regenerated working trees (today mtimes 11:09/11:26), so every line-number cite in this run's landed work has drifted 4-84 lines; the verifiers handed back the true anchors (label + relative offset). Also `src/battle.rs:1391-1393` claims BANNER_RECORD is "cleared at battle construction (see Battle::new's reset)" -- it is NOT cleared anywhere (T220 verifier REFUTED; latent stuck-live risk if a capture truncates mid-SEQ_04).
