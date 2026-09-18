@@ -922,6 +922,12 @@ TRACE_SCENARIOS = {
                 # frame ~124, outside this scenario's 40-frame entry window.
                 "gauge": 1,
                 "flags": 0x19,
+                # T152 (coordinator-authorized line, outside the ticket's own
+                # Files list): the scripted battlestart entry -- the sequencer
+                # enters at the zero-filled SETTLE word 0x00 and the entry
+                # holds until the first chip window's slide-out completes
+                # (src/battle.rs Sequencer::battlestart / entry_park).
+                "start_state": 2,
                 "deck_count": 5, "deck": [5, 4, 71, 54, 1],
                 "deck_codes": [3, 0xFF, 18, 0xFF, 0xFF],
                 "window_pick_count": 1, "window_pick_slot": 4, "window_cursor": 0xa,
