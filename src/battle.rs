@@ -5629,7 +5629,7 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         for enemy in self.enemies.iter().filter(|e| e.is_present()) {
             // T216: the enemy OBJ commit, gated on the per-bit read
             // (objects.rs::render_enemy -- blindVisualHandledHere_8016934's
-            // cross-alliance arm, asm00_2.s:16846-16870).
+            // cross-alliance arm, asm00_2.s:16918-16942).
             objects::render_enemy(enemy, frame, cam_dy, opposing_flags);
         }
         if let Some(cursor) = self.gunner_ctl.cursor() {

@@ -216,10 +216,12 @@ proposed in the worklog.
 
 The blink/invis machinery's sibling arm in the same render path is now ported
 and rowed: `blindVisualHandledHere_8016934`'s cross-alliance arm
-(asm00_2.s:16846-16870) clears OBJECT_FLAG_VISIBLE on an object whose opposing
+(asm00_2.s:16918-16942, routine 16893-16961 -- line numbers corrected by the
+T216 verifier against this checkout; the earlier 16846-16870 read predated
+it) clears OBJECT_FLAG_VISIBLE on an object whose opposing
 player (`battle_findPlayer(alliance^1)`) carries OBJECT_FLAGS_BLIND (0x2000),
 read per object through `object_getFlag` (T18's cited reader,
-asm00_2.s:21655-21661, `CollisionDataPtr->ObjectFlags1` +0x3c). Render-only:
+asm00_2.s:21739-21744, `CollisionDataPtr->ObjectFlags1` +0x3c). Render-only:
 the blind Mettaur's wave still flies and hits (T64 step 2). Ported as
 `src/objects.rs::render_enemy` gating BOTH enemy OBJ commit sites (T69's
 survivor list: the HP readout is 315 px/frame a sprite-only gate never
