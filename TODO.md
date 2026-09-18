@@ -851,9 +851,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T219. Results ESCAPE *(OPEN -- 2026-09-18)*
+### T219. Results ESCAPE  *(NEGATIVE -- 2026-09-18, no result_escape row: escape [kind 2] ends battle with dim/cutscene/fade-to-map and NO result window [measured)*
 
-
+**Result.** no result_escape row: escape (kind 2) ends battle with dim/cutscene/fade-to-map and NO result window (measured f140-190, map dump >=860/864 off all three arts, BattleType 0x06); ticket premise B-held-escape measured FALSE (watch receipts); kind->window anatomy landed in docs/coverage/end-of-battle.md SS T219: 0=WIN byte_872F3F4, 1=LOSE byte_8730254 NEVER EXPORTED (our exporter packs kind-2 as LOSE -- T189 handoff), 2=flee; sole writer sub_80079A8 asm00_1.s:9657-9660 writes 0/1 only; escape arrival = t4_0x3b from attack-effect table 0x1a; cite fix sub_80E4954 asm31.s:94519; docs-only branch wt/t219 4010985, result guard 0/0/40 neg 111839 unmoved
 **Why.** T189 (proposed) covers LOSER; T143 BLOCKED on premise. The four results variants are WIN/LOSE/ESCAPE/TIMEOUT; only WIN is recorded today.
 
 **Files.** `tools/states.py`, `tools/harness.py`, `docs/coverage/end-of-battle.md`, `docs/worklog/T219.md`.
