@@ -806,9 +806,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T216. BLIND status reticket *(OPEN -- 2026-09-18)*
+### T216. BLIND status reticket  *(DONE -- 2026-09-18, landed f440247: BLIND render-gate [cross-side arm, render-only)*
 
-
+**Result.** landed f440247: BLIND render-gate (cross-side arm, render-only; Unk_0d^Alliance NOT modelled, declared); blind_met 0/0/70 neg 60901 non-blind; pad 25->21 (src/main.rs) restores cursor exact 1/1/170/186279; mettaur/buster/gunner/navi/field-bg1/2/3 verified PASS from clean checkout (field rows improved 3360-class then superseded by T220's 4080 on merged tree); verifier CONFIRMED mechanism; cite-fix 5a14182 byte-identical ROM b76da93d; mailbox nm 0x020002f4. child 0.5099+0.2739+0.5741
 **Why.** T60/T64 PARTIAL landed BLIND's render-gate per-bit copy; T69 BLOCKED on cursor veto. **New evidence.** T124/T141 cursor pad class; T130 mask-template mechanism for status bits.
 
 **Files.** `src/objects.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/emotion.md`, `docs/worklog/T216.md`.
