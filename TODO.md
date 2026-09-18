@@ -923,8 +923,9 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows chip-cannon + full isolated table; cross-family verifier reviews the call-site cite and the sample export.
 **Milestone.** M9.
 
-### T225. Emotion blink port, restore the withdrawn row *(OPEN -- 2026-09-18)*
+### T225. Emotion blink port, restore the withdrawn row  *(DONE -- 2026-09-18, landed via T230 as d491354 [blink port itself: verifier CONFIRMED mechanism a2a4bdb -- blank-on-5/6 asm00_2.s:)*
 
+**Result.** landed via T230 as d491354 (blink port itself: verifier CONFIRMED mechanism a2a4bdb -- blank-on-5/6 asm00_2.s:27762-27768, period 0xc :27655-27656/:27674-27675, descriptor +64; first-tier rows see T230)
 **Why.** M7: `emotion_skip` landed 0/0/40/644 but T122 withdrew it from coverage — the rust 5/6 arm is a static model of what canon drives from the blink countdown at 0x0203528F (updater `sub_801CADC`, asm00_2.s:25577; drawer `drawEmotionWindow_801CDEC`, :27554-27583). T154's FACE_INDEX-entry premise was falsified by its own Step 0: the 23-entry `off_801CD08` table is already landed byte-identical.
 **New evidence.** Re-read on main today: the three emotion rows sit in tools/harness.py (:3382/:3449/:3493) with the static-arm comment intact, and T122's landing put M7 emotion at 2/25, not SCOPE's stale 1/25 — the live gap is the mechanism, not another table entry.
 **Files.** `src/emotion.rs`, `docs/coverage/emotion.md`
