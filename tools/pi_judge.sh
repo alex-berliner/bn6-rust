@@ -8,7 +8,17 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-MODEL="${BN_MODEL:-$(python3 tools/roles.py pick judge --tail)}"   # the first scheduled run with budget, not always the first run
+# One model is not enough. A judge session that produces no ticket text is not rare and it is not one
+# bug: on 2026-09-17, hyper/qwen3.8-flash ran 33 turns of file reading into the hard timeout, while
+# minimax/MiniMax-M3 emitted a single 105-character thought ("Let me prune context and then check the
+# latest open tickets") and stopped, with stopReason "stop" and no text block at all. Both left the
+# queue empty and both looked like a successful run in every log. 9 of 37 sessions that day.
+# So: try the candidates in turn, stop at the first that actually writes tickets, and bound the spend
+# at two attempts -- a judge run is about nine cents and an empty queue idles six workers.
+CANDIDATES="${BN_MODEL:-$(for r in $(python3 tools/roles.py schedule 2>/dev/null | sed -n 's/^RUNS="\(.*\)"/\1/p'); do
+  python3 tools/roles.py model "$r" judge --tail 2>/dev/null || true
+done | awk '!seen[$0]++' | head -2)}"
+[ -n "$CANDIDATES" ] || CANDIDATES="$(python3 tools/roles.py pick judge --tail)"
 mkdir -p docs/proposals /tmp/bn-pi/judge
 STAMP="$(date +%Y%m%d-%H%M%S)"; OUT="docs/proposals/$STAMP.md"; SESS="/tmp/bn-pi/judge/$STAMP"
 mkdir -p "$SESS"
@@ -16,6 +26,9 @@ CTX="$(python3 tools/next_ticket.py --list 2>/dev/null || true)"
 SCOPE="$(sed -n '1,60p' docs/SCOPE.md 2>/dev/null || true)"
 BLOCKED="$(grep -E '^- .* BLOCKED -- ' TODO.md TODO_ARCHIVE.md 2>/dev/null | cut -c1-400 || true)"
 LEDGER="$(python3 tools/spend_ledger.py 2>/dev/null | tail -8 || true)"
+for MODEL in $CANDIDATES; do
+SESS="/tmp/bn-pi/judge/$STAMP-$(echo "$MODEL" | tr "/." "--")"; mkdir -p "$SESS"
+echo "judge attempt: $MODEL"
 timeout 1500 pi -p --approve --no-session --mode json \
   --model "$MODEL" --thinking high --tools read,grep,find,ls \
   "You are the judge for /home/box/Code/bn. Read HANDOFF.md (short) and AGENTS.md. Do not edit or run anything; you have read-only tools. ${1:-}
@@ -50,10 +63,14 @@ open(sys.argv[2], "w").write("# Proposed tickets %s (%s, $%.4f)\n\n%s\n" % (sys.
 print("%s ($%.4f)" % (sys.argv[2], cost))
 print("EMPTY" if not last else "OK")
 EOF
+if ! grep -q "no output -- see the session" "$OUT" 2>/dev/null; then break; fi
+echo "judge: $MODEL wrote no tickets; trying the next candidate" >&2
+bash tools/incident.sh judge-empty "$MODEL produced no ticket text ($(wc -c < "$SESS/events.jsonl") bytes of events); trying the next candidate"
+done
 
-# A judge session that produces no text has spent real money and left the queue exactly as it was.
-# It used to look identical to a successful run in every log. 9 of 37 on 2026-09-17, all of them the
-# hard timeout firing while the model was still reading.
+# Only now, with every candidate spent, is the batch actually lost. The kind is judge-empty rather than
+# judge-timeout because the two known causes are not both timeouts and naming one of them would send
+# the next reader down the wrong path.
 if grep -q "no output -- see the session" "$OUT" 2>/dev/null; then
-  bash tools/incident.sh judge-timeout "$OUT: no ticket text written (session killed at the timeout); the batch is lost"
+  bash tools/incident.sh judge-empty "$OUT: no candidate wrote ticket text; the batch is lost and the queue is unchanged"
 fi

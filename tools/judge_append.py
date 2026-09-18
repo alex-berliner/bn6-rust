@@ -12,10 +12,18 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # This got likelier when the daily batch cap went 12 -> 40 and the judge stopped being pinned to one
 # provider (2026-09-17). Held until the process exits, which is after the commit.
 _lock = open("/tmp/bn-land.lock", "w"); fcntl.flock(_lock, fcntl.LOCK_EX)
-# A judge writes the heading as "### T107." or, often enough to matter, as "# T107." with an "*(OPEN)*" stamp
-# that may carry no date. Accept both rather than throw a whole batch away (2026-09-17: a 3,000-word proposal
-# was discarded for a missing "##").
-HEAD = re.compile(r"^#{1,3} ([A-Z]+\d+[a-z]?)\. .*\*\((OPEN)\b.*?\)\*\s*$", re.M)
+# How a judge opens a ticket is not something any prompt has managed to pin down, and every variant that
+# did not match used to cost a whole batch of good tickets. On 2026-09-17 alone: "# T107." instead of
+# "### T107." threw away a 3,000-word proposal, and later the same day five complete, well-formed tickets
+# (T143-T147, every section present) were discarded because they opened "**T143** -- title" with no hash
+# and no OPEN stamp. Patching one variant at a time loses another batch each time, so this accepts the
+# family -- any heading level or none, bold or plain, stamp or no stamp -- and normalises it.
+#
+# Over-matching is safe here: a line that merely mentions a ticket id becomes a candidate, and then the
+# template check below refuses it for having no Files line and no acceptance. A false positive costs a
+# refusal line in the log; a false negative costs five tickets.
+HEAD = re.compile(
+    r"^(?:#{1,4}\s*)?\*{0,2}([A-Z]+\d+[a-z]?)\*{0,2}[.:]?\s*(?:--|\u2014|-|\.)?\s+\S.*$", re.M)
 p = sys.argv[1]; text = open(p).read()
 todo = open(os.path.join(ROOT, "TODO.md")).read(); arch = open(os.path.join(ROOT, "TODO_ARCHIVE.md")).read()
 known = set(re.findall(r"^### ([A-Z]+\d+[a-z]?)\. ", todo + arch, re.M)) | set(re.findall(r"^- ([A-Z]+\d+[a-z]?) ", todo, re.M))
@@ -28,6 +36,10 @@ today_batches = subprocess.run("git -C %s log --since='%s 00:00' --format=%%s | 
 heads = list(HEAD.finditer(text)); admitted, refused = [], []
 for i, m in enumerate(heads):
     body = text[m.start():heads[i + 1].start() if i + 1 < len(heads) else len(text)].rstrip() + "\n\n"
+    # A bare label line ("T143 (M8):") above the real ticket also matches the heading family. It is not a
+    # ticket and refusing it is just noise in the log, so anything too short to hold a ticket is skipped.
+    if len(body.strip()) < 200:
+        continue
     tid = m.group(1); why = []
     if tid in known:
         base = re.match(r"([A-Z]+\d+)", tid).group(1)
@@ -43,7 +55,19 @@ for i, m in enumerate(heads):
     dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
     if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
     if today_batches.isdigit() and int(today_batches) >= 40: why.append("daily cap: %s judge batches already admitted today" % today_batches)
-    body = re.sub(r"^#{1,3} (%s)\." % re.escape(tid), "### \\1.", body, count=1, flags=re.M)
+    # Rewrite whatever shape the first line arrived in into the one TODO.md and every reader expect.
+    first, _, rest = body.partition("\n")
+    stamp = "" if re.search(r"\*\(\w+\b", first) else " *(OPEN -- %s)*" % __import__('datetime').date.today().isoformat()
+    titletext = re.sub(r"^(?:#{1,4}\s*)?\*{0,2}[A-Z]+\d+[a-z]?\*{0,2}[.:]?\s*(?:--|\u2014|-|\.)?\s+", "", first).strip()
+    titletext = re.sub(r"\s*\*\(\w+\b[^)]*\)\*\s*$", "", titletext)
+    # A judge often writes the whole ticket as one paragraph, so the "first line" is the entire ticket.
+    # The heading must stay a heading: cut it at the first section marker and push the rest into the body,
+    # or TODO.md gets a 1,400-character title and becomes unreadable.
+    cut = titletext.find("**")
+    if cut > 0:
+        titletext, carried = titletext[:cut].strip(), titletext[cut:].strip()
+        rest = carried + ("\n" + rest if rest else "")
+    body = "### %s. %s%s\n\n%s" % (tid, titletext, stamp, rest)
     (refused if why else admitted).append((tid, why, body))
 if admitted:
     # at the END of the T section (older OPEN tickets keep their place in the queue), before the next section
