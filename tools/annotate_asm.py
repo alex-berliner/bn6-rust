@@ -97,8 +97,12 @@ def main():
               "is not cited; one note per cited site; no ticket bookkeeping talk (no 'landed', 'verifier', 'branch'); cite by symbol and line. "
               "When done, reply with one line per note: file:line and the ticket. \n\n%s" % ("<TICKET>", today, brief))
     if a.dry_run: print("would annotate:\n" + "\n".join("  %s %s -> %s" % (t, st, ", ".join("%s:%d" % c for c in cites)) for t, st, _, cites in found)); print("model:", model); return
-    p = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", model, "--thinking", "medium",
-                        "--tools", "read,grep,find,ls,edit", prompt], capture_output=True, text=True, timeout=1800, stdin=subprocess.DEVNULL)
+    try:
+        p = subprocess.run(["pi", "-p", "--approve", "--no-session", "--mode", "json", "--model", model, "--thinking", "medium",
+                            "--tools", "read,grep,find,ls,edit", prompt], capture_output=True, text=True, timeout=1800, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        incident("asm-refused", "the notes model (%s) hit the 1800s timeout; no notes this window" % model)
+        sys.exit("annotate_asm: model call timed out after 1800s; recorded as an incident")
     if not comment_only_diff():
         print("annotate_asm: nothing comment-only to keep"); sh("git -C %s checkout -- ." % SUB); return
     print(sh("git -C %s diff --stat" % SUB))

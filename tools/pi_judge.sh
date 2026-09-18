@@ -28,7 +28,7 @@ BLOCKED="$(grep -E '^- .* BLOCKED -- ' TODO.md TODO_ARCHIVE.md 2>/dev/null | cut
 LEDGER="$(python3 tools/spend_ledger.py 2>/dev/null | tail -8 || true)"
 for MODEL in $CANDIDATES; do
 SESS="/tmp/bn-pi/judge/$STAMP-$(echo "$MODEL" | tr "/." "--")"; mkdir -p "$SESS"
-echo "judge attempt: $MODEL"
+echo "judge attempt: $MODEL" >&2   # stderr: stdout is parsed by prime_queue.sh and must stay "<path> ($cost)" then OK/EMPTY
 timeout 1500 pi -p --approve --no-session --mode json \
   --model "$MODEL" --thinking high --tools read,grep,find,ls \
   "You are the judge for /home/box/Code/bn. Read HANDOFF.md (short) and AGENTS.md. Do not edit or run anything; you have read-only tools. ${1:-}
