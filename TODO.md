@@ -884,8 +884,9 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows full isolated table; cross-family verifier reviews the spawnBannerRecord cite and the record-length source.
 **Milestone.** M2.
 
-### T222. Mettaur rank-1 art and row, one landing *(OPEN -- 2026-09-18)*
+### T222. Mettaur rank-1 art and row, one landing  *(BLOCKED -- 2026-09-18, port landed on wt/t222 [e76a54a] but row moved wrong way: baseline 677252/38400/70 neg642150 reproduced on cur)*
 
+**Result.** port landed on wt/t222 (e76a54a) but row moved wrong way: baseline 677252/38400/70 neg642150 reproduced on current main+cherry-pick (no drift), post-art 728067/38400/70 neg693002 = WORSE, not landed, kept unmerged; OAM diagnosis (a47a69d): rank-1 Mettaurs materialize ~35f apart, in-window pose is static 3-part OAM (8x8+64x64+16x16, tiles 31/35/43) in OBJ palette ROW 1 while exported 8242E94 sheet anim0 is 4-5 part cycle palette 0 -- wrong sheet or materialize-pose-only window; next step: dump OBJ VRAM tiles on the row state, name the true sheet, match materialize pose; canaries not re-run; rank byte = EnemySetup quad (T151 finding holds)
 **Why.** M5: the rank-1 scenario and row exist nowhere on main — they are 5 commits on wt/t151; the row read 677252/38400/70 with a twin negative 642150 non-blind. Discovery is complete: `KIND_METTAUR_V1` = the free 4th two-bit value (src/fixture.rs:360-368), art `compVirusBattleSprite_8242E94`, hop cooldowns `byte_8109F46` = [0x1e,0x18,…]; rank comes from the `sub_800EC80` quad — the byte_80182C4-poke route is falsified (T151b).
 **New evidence.** Verified today: `refs/heads/wt/t151` = c977210e with a live worktree; /tmp/baseline_mettaur_rank1.log carries the exact row line; main has moved past c977210e (T163/T180/T182), so the row+state arrive by cherry-pick, not reset.
 **Files.** `src/battle.rs`, `assets/`, `docs/coverage/mettaur.md`
