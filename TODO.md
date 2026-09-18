@@ -870,8 +870,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 If "the" means "stop here": the proposal set across this session is T183-T219 (37 tickets spanning M2-M10 in ladder order). Per-ticket format matches `tools/judge_append.py`'s required parts (heading with OPEN stamp, Files, Acceptance, milestone reference) and avoids the standing-method phrases (`branch`, `baseline`, `verify_rows`, `re-measure`, `commit`) inside Do steps.
 
-### T220. Banner record-lifecycle port *(OPEN -- 2026-09-18)*
+### T220. Banner record-lifecycle port  *(DONE -- 2026-09-18, landed 0033d2d: SEQ04_FRAMES retired, SEQ_04 release reads spawnBannerRecord_801E792 record [5->48->5->0x0C, H)*
 
+**Result.** landed 0033d2d: SEQ04_FRAMES retired, SEQ_04 release reads spawnBannerRecord_801E792 record (5->48->5->0x0C, HudElementMask bit15 self-unregistering tick, 59 updates release 60th frame = old fitted edge by hand-simulation); battlestart trace 40/40 first-div none, actors (4,0); windowclose 0/0/40/207166, cursor 1/1/170/186279, mettaur 0/0/70/41734 identical; field-bg1/2 improve 4560->4080; verifier CONFIRMED+extra corroboration; BATTLE_FIELD->static-mut build-shape discovery in worklog; false Battle::new-reset sentence + drifted cites -> F49. child 1.22+0.3477
 **Why.** M2: T162 ported `isBannerBusy_801E754` (asm00_2.s:31105-31131) to replace fitted `SEQ04_FRAMES=60` (src/battle.rs:1302) and vetoed itself: windowclose 0/0/40/207166 → 41627/1900/40 (rust banner up 29 frames, 253..292, canon none) and cursor → 3/2/170/186277. T152/T215 sit behind that veto.
 **New evidence.** wt/T162 exists in no ref today — only docs/worklog/T162.md survives, and it carries the complete port transcript, the before/after table, and the named fix: a 60-frame banner-record lifecycle decoupled from the visual 58-frame roll-up.
 **Files.** `src/battle.rs`, `docs/coverage/battle_full.md`
