@@ -359,6 +359,13 @@ pub struct Fixture {
 /// enemy construction keys off these.
 pub const KIND_METTAUR: u8 = 0; // provenance: derived -- this project's own protocol numbering (FIXTURE.md +5's pre-ticket value for every existing row)
 pub const KIND_GUNNER: u8 = 1; // provenance: derived -- T9b's slot probe of BattleSettings record 6 (0x080b4bd8): slot 1's BattleObject reads NameID 0x0085 (enemy_idx 0x85, the Gunner)
+/// T145: the navi identity, `byte_80182C4[3*0x185]` = (version 0, ActorType
+/// 1 navi, AIIndex 0x17) -- the second slot the ROM tables name
+/// (`ForGunner_8113078`, asm31.s:169496). Consumed by battle.rs's fixture
+/// spawn: GUNNER art (the row's canon object spawned as a virus and keeps
+/// its spawn-loaded art -- the t1 ActorType fork is latched, see
+/// `crate::navi`'s module doc) with the navi profile's HP.
+pub const KIND_NAVI: u8 = 2; // provenance: derived -- this project's own protocol numbering (the free third two-bit value; identity row ROM-read, T145)
 
 impl Fixture {
     /// The kind of enemy `slot` (0-based; slots past `enemies` are never
