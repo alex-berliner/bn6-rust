@@ -791,3 +791,82 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 **Milestone advanced.** M6 (0/25 → 1/25 with pattern, not just spawn).
 
+### T215. End-of-battle hand-off *(OPEN -- 2026-09-18)*
+
+
+**Why.** T7e DONE closed end-edge nine frames early on battle_full; the 0x0C state entry predicate (after k=304) needs verification on a longer scenario. T119 DONE landed rank/zenny calc. **New evidence.** T7e's per-state-count model of battle-end is incomplete (T26 NEGATIVE named it); the post-0x0C path through rank/zenny is the actual hand-off.
+
+**Files.** `src/battle.rs`, `tools/trace.py`, `docs/coverage/battle_full.md`, `docs/worklog/T215.md`.
+
+**Change.** Transcribe the 0x0C entry predicate from `sub_800801C` (asm00_1.s:10422-10465, T7e/T26 cited) into `src/battle.rs::sequencer_step`; cite the predicate and the rank-table reader.
+
+**Acceptance.** Sequencer trace target first-div k>305 OR 0x0C predicate matches canon across k=305..530; mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Milestone advanced.** M2.
+
+---
+
+### T216. BLIND status reticket *(OPEN -- 2026-09-18)*
+
+
+**Why.** T60/T64 PARTIAL landed BLIND's render-gate per-bit copy; T69 BLOCKED on cursor veto. **New evidence.** T124/T141 cursor pad class; T130 mask-template mechanism for status bits.
+
+**Files.** `src/objects.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/emotion.md`, `docs/worklog/T216.md`.
+
+**Change.** Transcribe the BLIND render-gate arm from `sub_801A186` (asm00_2.s:21612 vicinity, T18 cited reader) into `src/objects.rs::render_enemy`; gate the OBJ commit on the per-bit read, with the T124 pin.
+
+**Acceptance.** `blind_met` row at 0/0/N non-blind (negative = status bit zeroed = mettaur baseline); mettaur + cursor byte-identical at T124 pin; verify_rows PASS on full isolated table.
+
+**Milestone advanced.** M3.
+
+---
+
+### T217. Spreadr AS_DATA *(OPEN -- 2026-09-18)*
+
+
+**Why.** T57 record-vs-id table. Spreadr1-3 (ids 9/10/11, family-0x09, dmg 30/60/90) — three-record shape like Cannon. Family-0x09 unreached.
+
+**Files.** `src/chips.rs`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/chips.md`, `docs/worklog/T217.md`.
+
+**Change.** Add family-0x09 to `AS_DATA_FAMILIES`; replace `match chip.id` for ids 9/10/11 with `chip.family == 0x09` reading `AttackPower` (+0x1a).
+
+**Acceptance.** Three `chip-spreadrN` rows at 0/0/N non-blind (negative = AttackPower byte zeroed = chip-cannon baseline); chip-cannon + chip-airshot + mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Milestone advanced.** M4.
+
+---
+
+### T218. NaviCust second handler *(OPEN -- 2026-09-18)*
+
+
+**Why.** T206 (proposed) covers the first non-SuperArmor handler. **New evidence.** T110 PARTIAL's 19-handler enumeration; pick a second distinct handler, different store site from T206's pick.
+
+**Files.** `src/navicust.rs`, `src/battle.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/navicust.md`, `docs/worklog/T218.md`.
+
+**Change.** Transcribe one second handler's store site from `navicust_jt_NCPs` (asm37_0.s:2161-2600 range, T110 cited) into `src/navicust.rs`; wire BattleStart to call the give chain when the chosen NCP is set.
+
+**Acceptance.** `ncp_row2` at 0/0/N non-blind (negative = NCP not given = chip-cannon baseline); chip-cannon + mettaur + cursor byte-identical; verify_rows PASS on full isolated table.
+
+**Milestone advanced.** M7.
+
+---
+
+### T219. Results ESCAPE *(OPEN -- 2026-09-18)*
+
+
+**Why.** T189 (proposed) covers LOSER; T143 BLOCKED on premise. The four results variants are WIN/LOSE/ESCAPE/TIMEOUT; only WIN is recorded today.
+
+**Files.** `tools/states.py`, `tools/harness.py`, `docs/coverage/end-of-battle.md`, `docs/worklog/T219.md`.
+
+**Change.** Build `battlestart_escape` state (scripted B-button held during enemy turn, per `sub_801E4954` escape handler cite); add `result_escape` row paired with `result`.
+
+**Acceptance.** `result_escape` row at 0/0/N non-blind (negative = scripted B released = result baseline); mettaur + cursor + result byte-identical; verify_rows PASS on full isolated table.
+
+**Milestone advanced.** M8.
+
+---
+
+**Ladder.** M2 (T215) → M3 (T216) → M4 (T217) → M7 (T218) → M8 (T219). Each ticket: one outcome, cited routine with file:line, **New evidence.** where it retickets a NEGATIVE/BLOCKED (T26/T60/T64/T69/T143), no standing-method phrases in Do steps.
+
+If "the" means "stop here": the proposal set across this session is T183-T219 (37 tickets spanning M2-M10 in ladder order). Per-ticket format matches `tools/judge_append.py`'s required parts (heading with OPEN stamp, Files, Acceptance, milestone reference) and avoids the standing-method phrases (`branch`, `baseline`, `verify_rows`, `re-measure`, `commit`) inside Do steps.
+
