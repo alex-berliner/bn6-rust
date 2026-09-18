@@ -946,3 +946,14 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Measure and report.** row · frames · total · worst · region · commit · mechanism (what cost the boot frame; which counter drives the barrel) · unverified.
 **Coordinator:** verify_rows on all named rows; verifier reviews the boot-frame root cause and the counter cite.
 **Milestone advanced.** M4.
+
+### T229. Mettaur rank-1 art port: close the T151 baseline row to zero *(OPEN -- 2026-09-18)*
+
+**Why.** T151 PARTIAL (this run): state `battlestart_mettaur_rank1` + row `mettaur_rank1` land at true residual 677252/38400/70 (neg 642150 non-blind) on branch wt/t151 (c977210..393070c, tools/docs only); the residual is unported rank-1 art: canon rank1-vs-rank0 twin diff 3731102/38400 (NameID 0x0002 vs 0x0001, HP 0x0050 vs 0x0028) and our kind-0 spawn path hardwires the rank-0 METTAUR asset (`src/battle.rs:2142`). T6 already ported `ForMettaur_8109EF4` (asm31.s:171386 vicinity) which handles all ranks -- the asset/namebar selection is what is missing. Rank byte identity cited and verified this session: `GetVerActorTyAndAIIdx_80182B4` asm00_2.s:20095, `VerActorTyAIIdxTable_80182C4` :20117, rank0 idx :20122, rank1 idx :20123.
+**Files.** `src/battle.rs`, `src/objects.rs`, `assets/` (new rank-1 art if needed), `tools/harness.py` (only to pair negatives), `docs/coverage/mettaur.md`, `docs/worklog/T229.md`
+**Do.** 1. Rebase wt/t151 onto current main in a new worktree (bash tools/worktree.sh t229; `git merge wt/t151`) -- carries the row/state; re-run the mettaur_rank1 baseline. **measurement.** 2. Transcribe the rank-selecting asset/namebar/HP path for kind-0 Mettaur from `ForMettaur_8109EF4`'s canon route (asm31.s cites in T6's record) so idx 0x2 builds rank-1 art + HP 0x0050 + NameID 0x0002. **code.** 3. mettaur_rank1 to 0/0/70 with the T151 negative (rec60/rank0 twin) still non-blind. **measurement.**
+**Rules.** No allowlist change; cursor 1/1/170/186279 and mettaur 0/0/70/41734 byte-identical; no fitted constants -- art/HP/NameID from cited ROM data.
+**Acceptance.** mettaur_rank1 0/0/70 non-blind negative; verify_rows PASS on full isolated table.
+**Measure and report.** row · frames · total · worst · region · commit · mechanism (which select arms were missing) · unverified.
+**Coordinator:** verify_rows mettaur_rank1+mettaur+cursor+wave+window+opening; verifier reviews the rank-select cites.
+**Milestone advanced.** M5 (viruses 1/187 -> 2/187 when the row reads 0).
