@@ -620,3 +620,61 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 **Milestone.** M5 1/187 → 2/187 with art ported.
 
+### T162. M2 banner-idle predicate
+
+
+**Why.** T152a PARTIAL (1950c68): sequencer `eBattleSequencerState_203CA70` 0/40 first-div, both actors CurAction (4,0) on battlestart_scripted. `SEQ04_FRAMES=60` in `src/battle.rs` is the residue T152 OPEN cannot clear. `isBannerBusy_801E754` at asm00_2.s:31105-31131 is the canon predicate; T152a's worklog transcribed `is_banner_idle()`'s two arms (`!hud_live || (banner.is_none() && banner_was_up)`).
+**Files.** `src/battle.rs`, `docs/coverage/battle_full.md`, `docs/worklog/T162.md`.
+**Row.** Sequencer trace target (inherited from T152); canary cursor 1/1/170/186279, mettaur 0/0/70/41734.
+**Change.** Port `is_banner_idle()` from `sub_801E754` (asm00_2.s:31106) into `src/battle.rs` and replace the `SEQ04_FRAMES=60` fitted constant.
+**Rules.** No fitted frame count. No allowlist change. Cursor 1/1/170 must not move.
+**Acceptance.** Sequencer first-div k>0 OR both actors CurAction (4,0) k=0..40; `SEQ04_FRAMES=60` not in src/; cursor + mettaur byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** sequencer · frames k=0..40 · first-div k · actor CurAction (mm, enemy) at k=0/17/40 · cursor + mettaur · commit · mechanism (which `sub_801E754` arm) · unverified.
+**Coordinator:** cross-family verifier reviews `sub_801E754` cite and the `is_banner_idle()` diff.
+**Milestone advanced.** M2.
+
+---
+
+### T163. M3 elements/weakness multiplier
+
+
+**Why.** T126 PARTIAL (19f75e0) +159 lines `docs/coverage/elements.md`: `byte_3007444` ROM 0x081d7944 (defender*5+attacker), `sub_3007218` asm38.s:3483-3520 (additive model, +1/weakness), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492. T146 OPEN cites the same; no src/ port. Mettaur/Gunner both element-0/weakness-0 (elements.md §5), so a hit against an element-1 enemy with a non-None chip is the only row path.
+**Files.** `src/battle.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T163.md`.
+**Row.** `element_hit` (new); paired with `chip-cannon`0/0/40/9505; canary mettaur 0/0/70/41734, cursor 1/1/170/186279.
+**Change.** Port `damage_element_mult(attacker_elem, target_elem) -> u32` from `byte_3007444` into `src/battle.rs::damage_apply` (call sites asm38.s:3486, :3492); transcribe the additive model (×2 single, ×3 double) reading `chip.element` from `chips.rs` at damage time.
+**Rules.** No fitted multiplier. Additive model (NOT multiplicative). Cursor 1/1/170 must not move. HUD popup (+50/+100 flash) out of scope.
+**Acceptance.** `element_hit` 0/0/N with non-blind negative (chip-element zeroed = chip-cannon); chip-cannon + mettaur + cursor byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** element_hit · frames · total · worst · region · commit · mechanism (HP delta on a Fire→Wood weak pair) · unverified (secondary element multiplier on a non-default pair).
+**Coordinator:** cross-family verifier reviews `byte_3007444` cite and the additive model.
+**Milestone advanced.** M3.
+
+---
+
+### T165. M5 Mettaur rank-1 art
+
+
+**Why.** T151 OPEN measured rank-1 residual 677252/38400/70 (neg 642150 non-blind) on wt/t151; scenario + row on disk, art byte unported. T151a OPEN cites `sub_800EC80` quad-id at `SpawnBattleObjectUsingBattleEntityConfig_8007368` asm00_1.s:8552; terminator `0xF0` at `BattleSettings+0xc` (`tools/inventory.py:1143`). T151's `byte_80182C4` row-1 cite falsified on wt/t151 itself. T6 DONE's `ForMettaur_8109EF4` already handles all Mettaur ranks — only the art byte varies.
+**Files.** `src/battle.rs`, `docs/coverage/mettaur.md`, `docs/worklog/T165.md`.
+**Row.** `mettaur_rank1` (exists on wt/t151); canary mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
+**Change.** Port rank-1 art into `src/battle.rs::spawnEnemy_80073E2` (asm00_1.s:86), reading the `sub_800EC80` quad byte to vary the tile slice passed to `ForMettaur_8109EF4`.
+**Rules.** No `byte_80182C4` poke. No allowlist change. Cursor 1/1/170 must not move.
+**Acceptance.** mettaur_rank1 0/0/N non-blind; mettaur + cursor + ai4_rank0 byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** mettaur_rank1 · frames · total · worst · region · commit · mechanism (which quad byte in `sub_800EC80`) · unverified (rank2).
+**Coordinator:** cross-family verifier reviews `sub_800EC80` cite and the quad-byte read site.
+**Milestone advanced.** M5 (1/187 → 2/187).
+
+---
+
+### T166. M6 navi spawn gate
+
+
+**Why.** T145 PARTIAL (107e228): actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643); navi-gunner row 2092176/38237/130. T153 OPEN references T151a's `sub_800EC80` cite; identity `VerActorTyAIIdxTable_80182C4[3*0x185]=00 01 17`; art `byte_81067FC=00 0b 01 01 17 00 00 01`; HP 900 at asm31.s:123497/123548. Join of fill-time + spawn-time missing.
+**Files.** `src/battle.rs`, `src/navi.rs`, `tools/states.py`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/navi.md`, `docs/worklog/T166.md`.
+**Row.** `navi_spawn` (new) paired with mettaur; canary mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0, navi-gunner 2092176/38237/130.
+**Change.** Port the join of `byte_80182C4[3*0x185]` (T145) and `sub_800EC80` quad-byte (T151a) into `src/battle.rs::spawnEnemy_80073E2` (asm00_1.s:86); negative fixture = same scenario with quad byte poked to a virus row (must match mettaur row 0/0/70/41734).
+**Rules.** No fitted panel. No allowlist change. Cursor 1/1/170 must not move.
+**Acceptance.** navi_spawn 0/0/N non-blind; mettaur + cursor + ai4_rank0 + navi-gunner byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** navi_spawn · frames · total · worst · region · commit · mechanism (which T76 navi slot + which `sub_800EC80` quad byte) · unverified (navi-family brain arms 0x08..0x0E off_81068E8).
+**Coordinator:** cross-family verifier reviews `byte_80182C4[3*0x185]` cite (T145) and `sub_800EC80` cite (T151a) and the join's src diff.
+**Milestone advanced.** M6 (0/25 → 1/25 via live spawn).
+
