@@ -635,9 +635,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T163. M3 elements/weakness multiplier *(OPEN -- 2026-09-18)*
+### T163. M3 elements/weakness multiplier  *(PARTIAL -- 2026-09-18, Merged as b7a1367)*
 
-
+**Result.** Merged as b7a1367. damage_element_mult(chip_element, def_elem, def_weakness) -> u32 ported at src/battle.rs:942 as #[inline] non-pub function with inlined match arms (avoids T146b .rodata-exposure regression). PRIMARY 25-byte table from byte_3007444 ROM 0x081d7944 (defender*5+attacker indexing, asm38.s:3533-3555); SECONDARY bitfield from asm38.s:3634-3692 (weakness & attacker_bits != 0). Additive model verified against sub_3007218 asm38.s:3478-3520 (r4=1, +1 per weakness, mul r0,r4). Wired into sword strike (battle.rs:4796-4801) and AirShot strike (battle.rs:4816-4822) call sites only; Bomb paths NOT touched (T146 BLOCKED step 5 regression). verifier-minimax CONFIRMED additive model + byte-inert wiring + no .rodata + no bomb-touch + rules audit PASS. verify_rows 17/17 byte-identical to T147 PASS set + T161 expected values. PARTIAL: element_hit harness row NOT built (no fixture with def_elem != 0 or def_weakness != 0; current Mettaur/Gunner fixtures byte-inert because chip.element=0x0A, def_elem=0, def_weakness=0 makes mult=1). Milestone: M3 first live damage rule ported.
 **Why.** T126 PARTIAL (19f75e0) +159 lines `docs/coverage/elements.md`: `byte_3007444` ROM 0x081d7944 (defender*5+attacker), `sub_3007218` asm38.s:3483-3520 (additive model, +1/weakness), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492. T146 OPEN cites the same; no src/ port. Mettaur/Gunner both element-0/weakness-0 (elements.md §5), so a hit against an element-1 enemy with a non-None chip is the only row path.
 **Files.** `src/battle.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T163.md`.
 **Row.** `element_hit` (new); paired with `chip-cannon`0/0/40/9505; canary mettaur 0/0/70/41734, cursor 1/1/170/186279.
