@@ -526,9 +526,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T152c. Actor-init gate *(OPEN -- 2026-09-18)*
+### T152c. Actor-init gate  *(BLOCKED -- 2026-09-18, isBannerBusy_801E754 [asm00_2.s:31105-31131, 44-byte routine] ported as is_banner_idle[] in src/battle.rs, rep)*
 
-
+**Result.** isBannerBusy_801E754 (asm00_2.s:31105-31131, 44-byte routine) ported as is_banner_idle() in src/battle.rs, replacing fitted SEQ04_FRAMES=60 at line 3810 with . Trace target eBattleSequencerState_203CA70 40/40 match on battlestart_scripted (canon=0x0 rust=0x0 k=0..39, no first-div); both actors at CurAction (4,0) for k=0..40. mettaur 0/0/70/41734 PASS; opening 0/0/40/86591 PASS; windowclose 0/0/40/207166 PASS; popup 0/0/80/1288 PASS; wave/result/buster/warp/field PASS (byte-identical to T147 PASS set). cursor isolated REGRESSED 1/1/170/186279 -> 32/31/170/186276 (banner lifecycle 58 frames from spawn + banner_at=BATTLE_START_AFTER_WINDOW 30-frame delay lands release edge at SEQ_04 age ~85 vs fitted 60, missing the 2-frame off-by-one). CURSOR REGRESSION FAILS ACCEPTANCE — 'cursor + mettaur byte-identical' criterion violated. Worklog + src/battle.rs changes on wt/T152c 336ccf1, branch KEPT UNMERGED. Next-worker fix: set banner_at = 0 when SEQ_04 enters (banner up immediately at age 0, rolls up at age 58, 2-frame off from canon's 60 — solvable via existing banner spawn arm).
 **Why.** T152 OPEN's trace target (`eBattleSequencerState_203CA70`) needs the canonical banner-idle predicate ported to replace the fitted `SEQ04_FRAMES=60` — the in-tree fitted count is the residue T152 cannot clear on its own.
 
 **Files.** `src/battle.rs`, `docs/coverage/battle_full.md`, `docs/worklog/T152a.md`.
