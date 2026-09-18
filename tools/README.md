@@ -10,6 +10,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/archive_tickets.py` — Move closed tickets out of TODO.md into TODO_ARCHIVE.md, leaving a one-line index entry each, so
 - `tools/audio_diff.py` — tools/audio_diff.py -- T95: sample-exact diff of two mgba --dump-audio trees.
 - `tools/audio_probe.py` — tools/audio_probe.py -- T13: sample-exact comparison of two per-frame PCM
+- `tools/audit_apply.py` — Apply the auditor's low-risk proposals without a human.
 - `tools/backdrop_export.py` — Export the battle backdrop's tileset, tilemap and palette for the ROM.
 - `tools/banner_export.py` — Export the battle BANNER -- "BATTLE START!", "ENEMY DELETED" and the rest.
 - `tools/battle_gif.py` — A full-battle GIF of the current release ROM, played by a fixed "player" script: pick chips in the
@@ -29,6 +30,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/compare_frames.py` — Per-pixel compare a real-ROM frame against the Rust port's frame.
 - `tools/compare_stereo.py` — Build a clean real-vs-Rust per-pixel comparison.
 - `tools/coverage.py` — Canon routine coverage per scenario (T2 coverage ticket).
+- `tools/coverage_percent.py` — How much of the battle engine's CODE have we reimplemented?
 - `tools/csrc.py` — Show one MMBN6F routine two ways at once: Ghidra's decompiled C and the
 - `tools/custom_export.py` — Export the in-battle chip selection window for the ROM.
 - `tools/daily_review.sh` — The daily cost-per-progress review (agreed 2026-09-13): joins ticket outcome to model and cost,
@@ -47,6 +49,7 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/harness.py` — One harness, one job (AUDIT.md pair 6): capture both sides of a check,
 - `tools/hud_tiles_export.py` — Export the HUD's tile font and HP-box frame for the ROM.
 - `tools/hyper_credits.py` — Charm Hyper credits: one tiny request, prints the remaining hypercredits and today's use against the
+- `tools/incident.sh` — Record one operational failure, so the loop can see its own machinery breaking.
 - `tools/index.py` — Regenerate tools/README.md: one line per tool, taken from its own docstring or header comment, so an agent
 - `tools/inventory.py` — T10: inventory of the battle engine out of bn6f's own tables.
 - `tools/judge_append.py` — Admit the judge's proposed tickets into TODO.md without a human, if each passes the template check:
@@ -63,15 +66,19 @@ A worker's own loop is in AGENT_GUIDE.md; this is the index for everything else.
 - `tools/oracle.py` — The state oracle (TODO R6/R7): the first divergent FIELD and frame, not
 - `tools/oracle_layout.py` — The oracle block's layout, from its one Rust source to the Python readers.
 - `tools/pacer.sh` — Start, stop or show the pacing proxy for a provider whose providers.toml block has a [providers.X.pacer]
+- `tools/panel_flags_export.py` — Export the per-panel-type flag words (T121b, step 1).
 - `tools/patch_sterile.py` — Patch the canon bn6f ROM for the capture harness.
 - `tools/pi_audit.sh` — The auditor (agreed 2026-09-13): a one-shot, read-only pi session that reads a DIGEST (the latest
 - `tools/pi_coordinator.sh` — Launch a detached pi coordinator session that runs TODO.md tickets through a provider's roles until a
 - `tools/pi_judge.sh` — One-shot "judge" session on the cheap tier: reads the short HANDOFF, the open ticket list, the
 - `tools/pi_watch.sh` — Print ONLY ticket-level events from a coordinator run, one line each, and exit when the run ends:
 - `tools/premise_check.py` — Re-measure the rows an OPEN ticket's **Why.** cites, for free, before a worker spends credits on a premise that
+- `tools/prime_queue.sh` — Keep enough work ahead of the workers. Six worker slots share one queue; a coordinator that starts and finds
 - `tools/probe.py` — The measurements workers kept rewriting as throwaway scripts, as one tool.
 - `tools/progress_gif.py` — A before/after progress GIF for one harness row: canon on top, then our build at <before>, then our
 - `tools/publish_site.sh` — Publish web/ to the GitHub Pages branch (gh-pages) of this repo's origin.
+- `tools/queue_report.py` — Is there enough work for the workers? The ledger counts what got done; nothing counted whether a run had
+- `tools/rename_lane.sh` — The one lane for renaming symbols and struct fields inside the disassembly.
 - `tools/replay_bench.py` — Replay benchmark: re-run an archived ticket with a candidate model from the ticket's base commit and
 - `tools/restore_inputs.sh` — Restore the /tmp working set after a reboot. /tmp is not durable (HANDOFF.md §1); this has
 - `tools/results_export.py` — Export the battle results windows for the ROM.
