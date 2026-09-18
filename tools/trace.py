@@ -200,7 +200,12 @@ def parse_trc2_row(row: bytes) -> dict:
 PARITY = O.FIELD_PAIRS
 #: Canon enemy-slot index per scenario for the E1 parity fields (oracle's
 #: ENEMY_SLOT, restricted to what the trace records).
-E1_SLOT = {"mettaur": "e2", "popup": None, "result": None, "battle_full": "e2"}
+E1_SLOT = {"mettaur": "e2", "popup": None, "result": None, "battle_full": "e2",
+           # T147: rec163 fields slots 1..3 on canon (e1 = 0x0203aa88 is LIVE
+           # here, unlike the PAUSED rows whose slot 1 is a shell); the rust
+           # export's enemy_* fields are the fixture's FIRST enemy (slot 0),
+           # so the honest pairing is canon e1 <-> rust e1.
+           "battlestart_scripted": "e1"}
 
 #: Info fields: recorded and printed, never judged.
 INFO_RUST = ["mercy", "mm_hp", "e1_hp", "gauge", "rng",

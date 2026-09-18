@@ -190,6 +190,15 @@ ENEMY_SLOT = {
     "cursor": 2,
     "windowclose": 2,
     "result": 2,
+    # T147: battlestart_scripted scenario (states.TRACE_SCENARIOS, two-sided
+    # since this ticket) fields rec163's slots 1..3 (T131 step 3): canon's
+    # populated FIRST enemy is e1 = 0x0203aa88 = TABLE SLOT 1 in this file's
+    # indexing (slot 0 is MegaMan itself, 0x0203a9b0 -- the `opening` entry
+    # is the same shape: three enemies in slots 1..3, export block =
+    # enemies.first(), canon counterpart = the FIRST enemy, slot 1). NameID
+    # 0x0088 from built-frame 69 (T131 step 3; this ticket's canon capture
+    # re-reads it).
+    "battlestart_scripted": 1,
     # T47 (2026-09-16): battle_full scenario (states.TRACE_SCENARIOS) is a
     # 540-frame scripted PAUSED battle against a single Mettaur (kind=0),
     # the same enemy family as the mettaur row -- the populated canon slot
@@ -398,6 +407,16 @@ def main() -> None:
         # T47 (2026-09-16): the scenario path is a non-comparison scenario
         # whose Sides and alignment live in states.TRACE_SCENARIOS, not in
         # CHECKS. Build a synthetic Check and route through the same flow.
+        checks = [_scenario_check(args.row)]
+    if not checks and args.row in S.TRACE_SCENARIOS and all(
+            k in S.TRACE_SCENARIOS[args.row] for k in ("canon", "rust")):
+        # T147 (2026-09-19): a two-sided TRACE_SCENARIOS entry -- canon+rust
+        # side specs both present in states.py -- needs no harness.py
+        # SCENARIO_ROWS tuple membership; the same _scenario_check flow
+        # applies. One-sided scenarios (T131's battlestart_scripted before
+        # T147 added its rust side) stay unroutable: the oracle compares
+        # two sides, so there is nothing for it to watch on a one-sided
+        # scenario.
         checks = [_scenario_check(args.row)]
     if not checks:
         raise SystemExit(
