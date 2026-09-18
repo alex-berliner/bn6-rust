@@ -211,3 +211,20 @@ per-frame in docs/worklog/T105.md (pass 6). The emotion feature is
 pixel-correct (emotion_syn 0/0/40, negative 644); the blocker is the cursor
 row's layout calibration, owned by the follow-up recalibration ticket
 proposed in the worklog.
+
+## The BLIND render gate (T216, 2026-09-18)
+
+The blink/invis machinery's sibling arm in the same render path is now ported
+and rowed: `blindVisualHandledHere_8016934`'s cross-alliance arm
+(asm00_2.s:16846-16870) clears OBJECT_FLAG_VISIBLE on an object whose opposing
+player (`battle_findPlayer(alliance^1)`) carries OBJECT_FLAGS_BLIND (0x2000),
+read per object through `object_getFlag` (T18's cited reader,
+asm00_2.s:21655-21661, `CollisionDataPtr->ObjectFlags1` +0x3c). Render-only:
+the blind Mettaur's wave still flies and hits (T64 step 2). Ported as
+`src/objects.rs::render_enemy` gating BOTH enemy OBJ commit sites (T69's
+survivor list: the HP readout is 315 px/frame a sprite-only gate never
+reaches). Row `blind_met` = the mettaur row's own window (canon_ref 140,
+band 193..214, frames 70) with T60's poke recipe on both sides:
+**PASS 0/0/70**, pokeoff negative (status bit zeroed = mettaur baseline)
+not blind (60901). The emotion rows' own lines are unchanged
+(emotion_syn/face_b/skip 0/0/40/644 at the T216 pin, pad 21).
