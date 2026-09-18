@@ -21,6 +21,18 @@ for _d in /tmp/ct_*; do
   [ -n "$(find "$_d" -maxdepth 0 -mmin -360 2>/dev/null)" ] && continue
   rm -rf "$_d"
 done
+# Some tickets pointed CARGO_TARGET_DIR at a path under /tmp/bnwt instead of /tmp/ct_*, so build output
+# collected among the worktrees where nothing was looking for it: 16 such directories, 7.2 GB, on
+# 2026-09-17. A cargo target dir is unmistakable -- it carries CACHEDIR.TAG and no Cargo.toml -- so the
+# test is exact rather than name-based, and a real checkout can never match it.
+for _d in /tmp/bnwt/*/; do
+  _d="${_d%/}"
+  [ -f "$_d/CACHEDIR.TAG" ] || continue
+  [ -f "$_d/Cargo.toml" ] && continue
+  [ -n "$(find "$_d" -maxdepth 0 -mmin -360 2>/dev/null)" ] && continue
+  git worktree list --porcelain 2>/dev/null | grep -qx "worktree $_d" && continue   # the script has already cd'd to the repo root
+  rm -rf "$_d"
+done
 python3 tools/roles.py check >/dev/null || { python3 tools/roles.py check; exit 1; }
 bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly's types within half an hour
 # --- the stage gate: management before work ------------------------------------------------------
