@@ -958,3 +958,24 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Measure and report.** row · frames · total · worst · region · commit · mechanism (which select arms were missing) · unverified.
 **Coordinator:** verify_rows mettaur_rank1+mettaur+cursor+wave+window+opening; verifier reviews the rank-select cites.
 **Milestone advanced.** M5 (viruses 1/187 -> 2/187 when the row reads 0).
+
+### T230. Rebase wt/t225 onto post-T216 main: the pad plateau must be re-found, then land the blink *(OPEN -- 2026-09-18)*
+
+**Why.** T225 (branch wt/t225, a2a4bdb+0da47e6; verifier CONFIRMED mechanism/cites -- blank-on-5/6 at asm00_2.s:27762-27768, period 0xc :27655-27656/:27674-27675, descriptor +64 wiring) landed on branch but its 2026-09-18 landing attempt CONFLICTED with main (T216 f440247 moved SEAM_PHASE_PAD_ITERS 25->21 and T215/T220 changed src/battle.rs) in `src/main.rs` and `tools/harness.py`. The blink row's zero was measured at pad 20 on the OLD tree; the merged tree needs the pad plateau re-found (T216/T225 sweeps both show a 1/1/170/186279 plateau of width >=2 -- 20/19 on T225's tree, 21 on T216's).
+**Files.** `src/main.rs` (pad only), `tools/harness.py` (FIXTURE_SIZE 66 + emotion_skip negative machinery), `src/emotion.rs`, `src/battle.rs` (the one-line `if self.hud_live { self.emotion.update(); }` + descriptor arg), `src/fixture.rs`, `docs/coverage/emotion.md`, `docs/worklog/T230.md`.
+**Do.** 1. New worktree from the branch (bash tools/worktree.sh t230; `git merge wt/t225`), resolve the two conflicts keeping BOTH sides' semantics (T216's blind_met row and T225's emotion rows). **code.** 2. Sweep SEAM_PHASE_PAD_ITERS on the merged tree (candidates 19..25, cursor row each) and pin a value where cursor reads exactly 1/1/170/186279. **measurement.** 3. Re-run T225's acceptance set on the merged tree: emotion_skip 0/0/40 neg 27760, emotion_syn/emotion_face_b 0/0/40/644, form_cross 0/0/40, chip-cannon 0/0/40/9505, mettaur, windowclose 0/0/40/207166, full isolated table PASS. **measurement.**
+**Rules.** No allowlist change; no existing row's frames/align/negative weakened; cite every number touched (the verifier's corrected cites: sub_801CB38 +0xe stores at :27442/:27478/:27485, NOT :27343-27344 -- fix the inherited wrong cite while you are in the file).
+**Acceptance.** All of T225's acceptance plus windowclose unchanged on the merged tree; blink landed.
+**Measure and report.** pad sweep table · rows · commit · mechanism · unverified.
+**Coordinator:** verify_rows on the named set; verifier only if a cite changes meaning.
+**Milestone advanced.** M7.
+
+### F49. Cite-drift sweep + the false Battle::new reset sentence *(OPEN -- 2026-09-18)*
+
+**Why.** reference/bn6f asm files are regenerated working trees (today mtimes 11:09/11:26), so every line-number cite in this run's landed work has drifted 4-84 lines; the verifiers handed back the true anchors (label + relative offset). Also `src/battle.rs:1391-1393` claims BANNER_RECORD is "cleared at battle construction (see Battle::new's reset)" -- it is NOT cleared anywhere (T220 verifier REFUTED; latent stuck-live risk if a capture truncates mid-SEQ_04).
+**Files.** `src/battle.rs`, `src/objects.rs`, `tools/harness.py`, `tools/states.py`, `tools/trace.py`, `docs/coverage/emotion.md`, `docs/coverage/battle_full.md`, `docs/coverage/chips.md`, `docs/worklog/F49.md`.
+**Do.** 1. Add the real `Battle::new` reset of BANNER_RECORD (or delete the sentence and clear `live` at SEQ_04 entry -- pick one, cite the frame it holds). 2. Re-anchor every `asm00_*.s:<lines>` cite touched by landed T215/T216/T220/T225/T151-era comments to `thumb_func_start` label + byte offset; prefer label+offset form for anything you rewrite. **measurement (comments/doc only; ROM must be byte-identical).**
+**Rules.** Comments/docs + the one reset only; ROM sha256 must be unchanged OR the reset must be proven row-neutral by verify_rows on windowclose/cursor/mettaur + any row the reset could touch; no fitted constant added.
+**Acceptance.** No false cite remains in the files listed; the reset sentence is true or gone; verify_rows PASS on the full isolated table.
+**Measure and report.** cite-count before/after · ROM hash · rows · commit · unverified.
+**Milestone advanced.** tooling hygiene.
