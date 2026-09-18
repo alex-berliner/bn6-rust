@@ -1960,3 +1960,29 @@ k=31, canon 0x0C from k=305 / ours from k=405, rank 540/540, zenny first k=406
 class. The 100-frame 0x0C entry offset is the fight's own kill-timing offset
 (enemy model divergence from k=17, 458/540 frames — separately ticketed on
 that timeline); the predicate does not hold it.
+
+## T152 re-measurement on main 5acb6b9 (2026-09-19): the entry park holds after T215/T216/T220/T230
+
+Ticket NOTE asked for a re-run of the baseline after main moved (T215 dca956a 0x0C
+predicate, T220 0033d2d banner record, T216/T230). Measured, unchanged:
+
+- trace map battlestart_scripted (canon frame 69+k <-> rust export 0+k, 40 frames,
+  `trace.py diff --align row:battlestart_scripted`): sequencer 0x0203CA70 **canon=0x0
+  rust=0x0, k=0..39, match 40/40** — the entry park (T152) plus T220's BANNER_RECORD
+  both survive the later landings. mm and enemy CurAction **(4,0)/(4,0) at k=0, k=17,
+  k=39** (spawn-hold byte 0, `playerObject_main_80EA460` asm31.s:107131 dispatching on
+  `oBattleObject_CurState`). All other trace fields (anim/panel/timer/rank/zenny/
+  rng_cadence) match 40/40. FIRST DIVERGENCE: none, 0/40 judged.
+- cite chain re-anchored by thumb_func_start label: `stepBannerSequencer_800801C`
+  (asm00_1.s:10476-10489) dispatches `eBattleSequencerState_203CA70` low byte through
+  `BannerSequencerStates_8008038` (:10512); the parked word is the zero-filled SETTLE
+  entry (`bannerSeqState00Settle_800840C`, holds while `isChipWindowSlideIdle_801483C`
+  reads busy + the `[r5+2]` latch); the fight write rides entry 1
+  (`bannerSeqState04BannerWait_8008064`) gated on `isBannerBusy_801E754`
+  (asm00_2.s:31233) reading 0 — since T220 this is `BannerRecord::is_done()` in
+  src/battle.rs, the fitted `SEQ04_FRAMES` arm is gone from main.
+- full isolated verify_rows on HEAD ee04b58 (21 rows, `--expect cursor=1/1/170/186279`):
+  17 PASS at 0/0; the four nonzero lines are main's own documented pins reproduced
+  byte-identically — cursor 1/1/170/186279 (MATCH, did not move), windowclose
+  63962/3557/40/266037, buster_charge 2498/188/32/5113, gunner 2105613/38237/130
+  (neg 2284867) — all pre-existing on main, src untouched by this pass.
