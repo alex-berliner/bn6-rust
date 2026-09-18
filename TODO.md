@@ -598,9 +598,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T151c. Mettaur rank-1 art *(OPEN -- 2026-09-18)*
+### T151c. Mettaur rank-1 art  *(BLOCKED -- 2026-09-18, Worker re-built battlestart_mettaur_rank1 state and mettaur_rank1 harness row [same as T151b PARTIAL — T113 co)*
 
-
+**Result.** Worker re-built battlestart_mettaur_rank1 state and mettaur_rank1 harness row (same as T151b PARTIAL — T113 convention: recorded without pixel-port). 5 atomic commits: state + row + inventory + coverage + worklog, NO src/battle.rs change. Art port (METTAUR_V1 sprite sheet export, KIND_METTAUR_V1 enum, branch on f.kind_of(i), HOP_COOLDOWN_BY_VERSION[rank]) NOT landed. mettaur_rank1 residual 677252/38400/70 unchanged from T151b. Acceptance 'mettaur_rank1 0/0/N' NOT met (art port is this ticket's scope). Canary mettaur 0/0/70/41734 + cursor 1/1/170/186279 byte-identical to T147 PASS set. Branch wt/T151c KEPT UNMERGED. 4m51s consumed on re-do of T151b work (worker treated the task as scenario infrastructure re-record rather than art port); src/battle.rs entirely untouched. Next worker must land the METTAUR_V1 sprite sheet export + KIND_METTAUR_V1 enum + branch.
 **Why.** T151 OPEN's rank-1 scenario is ready; rank-1 art unported. T6 DONE already ported `ForMettaur_8109EF4`; only the rank byte drives art variation.
 
 **Files.** `src/battle.rs`, `docs/coverage/mettaur.md`, `docs/worklog/T151a.md`. NOT `src/ai.rs`, NOT `src/objects.rs`, NOT `src/navi.rs`.
