@@ -1889,3 +1889,32 @@ UNVERIFIED: whether canon's scripted-route stall ever escapes (nothing after T87
 zero); whether the parked-entry window is the route's permanent state or a fixable recipe gap.
 No battle_full row number moved — no src/ change, ROM hashes identically to main (the row's own
 guard is verify_rows, run for the full isolated table in this ticket's report).
+
+## T152 — the battlestart entry park (scripted family-A open, 2026-09-17)
+
+The T147 map's PARKED-vs-fight gap is closed on the scripted scenario. Canon's battlestart entry
+zero-fills the sequencer word (sub_80084C0, asm00_1.s:11112-11121), so the battle reads
+BATTLE_SEQ_SETTLE 0x00 from its first frame and holds there while the entry's chip-window slide is
+busy (bannerSeqState00Settle_800840C, asm00_1.s:11024-11046: hold on isChipWindowSlideIdle_801483C,
+one-frame [r5+2] latch, then 0x04; bannerSeqState04BannerWait_8008064 writes the fight word 0x08
+only when the banner finishes). Measured this ticket: canon's word reads 0x00000000 for 300 capture
+frames on battlestart_scripted WITH AND WITHOUT an A@170 press (press-independent; the parked word
+is the route's permanent contract within any probe), and the parked actors read CurAction 0 (mm
+0x0203a9b8, e1 0x0203aa90, both 0x0004) until capture ~185 where both flip to action 1
+clock-driven. The port now models the machine: descriptor start_state=2 (FIXTURE.md +40) enters
+Sequencer::battlestart() (SEQ_00), the entry park holds the age until the first window Done
+(suppressing the fight state's SEQ_20 write while parked), freezes enemy object logic + AI decisions
++ Gunner telegraph (canon's FSM dispatch runs no object logic in 0x00/0x04, asm00_1.s:12760 note),
+parks MegaMan in the Appearing spawn state (the T50 player arm that already maps to canon's
+PlayerSpawnAnimation byte 0), and translates the parked enemies' spawn-hold state to canon's spawn
+byte 0 at both export sites (the enemy arm of T50's mapping has no 0x00 of its own). Trace map after
+(canon 69+k <-> rust 0+k, 40 frames): sequencer 0x0==0x0 k=0..39, mm (4,0)==(4,0), enemy
+(4,0)==(4,0) — FIRST DIVERGENCE none, 0/40 frames carry a judged divergence (was 40/40, first at
+k=0). Guard rows re-measured on the branch: cursor 1/1/170 (the tear is a timing knife-edge — the
+first cut moved it to 38/37 until the entry-park reads were hoisted out of the per-frame hot path),
+mettaur 0/0/70, windowclose 0/0/40, popup 0/0/80, opening isolated 0/0/40/86591. Residuals: canon
+never releases the park on this route within the probe, so the post-release shape (settle latch ->
+BANNER_WAIT -> fight) follows the table's rule but has no canon comparison here; opening integrated
+reads 18740 on this base with the T152 src stashed too (pre-existing move from the older 72499,
+ungated by the pinned opening=0/0/40/86591 isolated expectation); the full verify_rows sweep is the
+land gate's to reproduce.
