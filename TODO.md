@@ -450,9 +450,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** verify_rows on emotion + mettaur + cursor + full isolated table; cross-family verifier reviews the `off_801CD08` cite.
 **Milestone.** M7 emotion 1/25 → 2/25.
 
-### T146. Elements/weakness port *(OPEN -- 2026-09-18)*
+### T146. Elements/weakness port  *(BLOCKED -- 2026-09-18, damage_element_mult + damage_apply verified correct against asm38.s:3478-3528 [additive model: r4=1, add prima)*
 
-
+**Result.** damage_element_mult + damage_apply verified correct against asm38.s:3478-3528 (additive model: r4=1, add primary byte_3007444[defender*5+attacker] at ROM 0x081d7944, add secondary weakness-bitfield overlap asm38.s:3634-3692, mul r0,r4 gives x2 single / x3 double). 4 wiring variants tested, only sword+airshot-only preserves cursor 1/1/170; bomb-element as Bomb struct field regressed cursor 16241/3385/170 (heap-init path shift unmeasured, struct-layout). src/ REVERTED to main; only docs/worklog/T146.md +194 lands. Baseline measured at main 940ffa7: chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279 (T147 PASS set). element_hit row NOT built. Next-worker plan: tools/probe.py diff on cursor row frame0 between wt/T146 and main to localize heap-init shift; sword+airshot-only port is regression-safe and can land first.
 **Why.** T126 PARTIAL: `docs/coverage/elements.md` (+159 lines, 19f75e0) with cites `sub_3007218` asm38.s:3483-3520 (additive model, starts 1, +1/weakness), `getPrimaryElementWeaknessMultipler_3007432` asm38.s:3533-3540 (table `byte_3007444` at ROM `0x081d7944`, `defender*5+attacker`), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492; T146 in `docs/proposals/20260917-200300.md`.
 **Files.** `src/battle.rs`, `src/field.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T146.md`.
 **Row.** `element_hit` (new) paired with `chip-cannon`; canary: chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279.
