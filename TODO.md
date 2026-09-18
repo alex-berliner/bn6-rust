@@ -900,8 +900,9 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows mettaur_rank1 + mettaur + cursor + full isolated table; cross-family verifier reviews the sub_800EC80 read site and the cherry-picked set.
 **Milestone.** M5.
 
-### T221. element_hit row *(OPEN -- 2026-09-18)*
+### T221. element_hit row  *(PARTIAL -- 2026-09-18, code half committed byte-inert on wt/t221 [684d77e, UNMERGED]: descriptor +65 chip_elem_override/+66 enemy_ele)*
 
+**Result.** code half committed byte-inert on wt/t221 (684d77e, UNMERGED): descriptor +65 chip_elem_override/+66 enemy_elem_override, both damage_element_mult sites read overrides when nonzero; canaries chip-cannon 0/0/40/9505, mettaur 0/0/70/41734 identical; row NOT landed: on the live-enemy route the sequencer word 0x0203CA70 holds 0x1c the whole window (banner-busy under T220's record model?) and A presses are ignored there (MegaMan CurAction stays 0x08) -- the proven chip-use fire only lands on the zero-enemy route; attacker 0x02034122/defender 0x0203859a pokes, HP-delta non-blind design (LongSwrd 0x49, 80=2-panel reach) all cited in docs/worklog/T221.md; ticket premise fix: ROM table 0x081d7944 has NO AQUA->WOOD cell, WOOD weak to HEAT (row pair = HEAT->WOOD); follow-up T233
 **Why.** M3: `damage_element_mult` landed (b7a1367, src/battle.rs:944) wired only with literal (0,0) at :4880/:4903 — no row sees a multiplier ≠ 1, so every chip-pixel zero is blind to the ported rule (T163's own residue note). The ×2 cell is sited: `byte_3007444`, ROM 0x081d7944, `def*5+atk`, AQUA→WOOD = 1 (docs/coverage/elements.md).
 **Files.** `src/fixture.rs`, `src/battle.rs`, `tools/states.py`, `tools/harness.py`
 **Row.** `element_hit` — must be created; canaries chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279.
