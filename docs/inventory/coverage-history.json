@@ -97,5 +97,14 @@
   "instructions_executed": 18148804,
   "rev": "187e07d",
   "note": "backfilled 2026-09-17 by scoring that day's src against today's fixed canon profile"
+ },
+ {
+  "date": "2026-09-18",
+  "instructions_pct": 9.01,
+  "routines_pct": 15.36,
+  "routines_ported": 172,
+  "routines_executed": 1120,
+  "instructions_ported": 1635141,
+  "instructions_executed": 18148804
  }
 ]
