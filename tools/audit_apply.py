@@ -10,7 +10,7 @@ leaves the rest as a proposal.
 
 "Low risk" is defined narrowly and mechanically, not by judgement:
 
-  1. The diff touches ONLY instruction text -- .pi/coordinator.md, .pi/agents/*.md, AGENTS.md,
+  1. The diff touches ONLY instruction text -- .pi/coordinator.md, .pi/roles/*.md, AGENTS.md,
      AGENT_GUIDE.md. These are prompts. A bad prompt makes an agent work badly for one cycle and the
      next review shows it. Anything under tools/, src/, providers.toml, the harness or the ticket
      files is refused: those can silently corrupt measurements or spend money, and a measurement
@@ -30,7 +30,10 @@ import os, re, subprocess, sys, datetime
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ALLOWED = (".pi/coordinator.md", "AGENTS.md", "AGENT_GUIDE.md")
-ALLOWED_GLOB = re.compile(r"^\.pi/agents/[A-Za-z0-9_.-]+\.md$")
+# .pi/roles/*.md is the SOURCE; .pi/agents/*.md is generated from it by tools/roles.py render and is
+# overwritten on the next render. The first version of this allowed the generated files and refused the
+# source, so the auditor's first real proposal against the worker role was refused (2026-09-18).
+ALLOWED_GLOB = re.compile(r"^\.pi/roles/[A-Za-z0-9_.-]+\.md$")
 # A removed line mentioning any of these is a removed invariant: refuse the item outright.
 INVARIANT = re.compile(r"verify_rows|canon never changes|spend floor|fitted constant|check_inputs", re.I)
 MAX_LINES = 60
@@ -134,6 +137,10 @@ def main():
            "this way; they stay proposals and are recorded as incidents so they reach a person.\n\n"
            "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>\n") % (name[:100], os.path.basename(path), why)
     subprocess.run(["git", "-C", ROOT, "commit", "-q", "-m", msg], check=False)
+    # a change to a role source is only live once the agent files are regenerated from it
+    subprocess.run(["python3", os.path.join(ROOT, "tools", "roles.py"), "render"], capture_output=True)
+    subprocess.run(["git", "-C", ROOT, "add", ".pi/agents"], check=False)
+    subprocess.run(["git", "-C", ROOT, "commit", "-q", "-m", "agents: re-rendered after an auditor change to a role source"], check=False)
     print("applied and committed: %s" % name[:100])
     return 0
 

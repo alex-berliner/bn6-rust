@@ -40,7 +40,7 @@ Outside that window — overnight, and all afternoon — ticks behave exactly as
 The auditor writes proposals as unified diffs. `tools/audit_apply.py` applies at most one per cycle,
 and only if every one of these holds:
 
-1. **It touches instruction text only** — `.pi/coordinator.md`, `.pi/agents/*.md`, `AGENTS.md`,
+1. **It touches instruction text only** — `.pi/coordinator.md`, `.pi/roles/*.md` (the source; `.pi/agents/` is generated from it), `AGENTS.md`,
    `AGENT_GUIDE.md`. These are prompts: a bad one makes an agent work badly for a cycle and the next
    review shows it. Anything under `tools/`, `src/`, the harness or `providers.toml` is refused,
    because those can silently corrupt a measurement or spend money, and a measurement nobody can
