@@ -5773,6 +5773,15 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
         // object text does; the player's is the box at the top left. Both
         // show the lagging number, which flashes while it catches up.
         let hp_readout_live = self.hp_readout_live();
+        // T216: the BLIND render gate's per-bit read, ONCE per frame (T69's
+        // hoist, measured behaviour-neutral). The mailbox stands in for the
+        // opposing player's CollisionData ObjectFlags1 (objects.rs); it
+        // gates BOTH enemy commit sites below -- T69's measured survivor
+        // list: the readout alone is 315 px/frame a sprite-only gate never
+        // reaches, and canon poked leaves 0 OAM entries in the Mettaur's box
+        // where unpoked leaves 6 (readout entry included).
+        let opposing_flags = objects::opposing_player_flags();
+        let enemy_blind_hidden = objects::blind_hides_enemy(opposing_flags);
         // F44's latch evidence came from a probe build that wrote one byte
         // per frame at BATTLE_MARKER's own tail (0x020000C0, inside the
         // marker array's 256 bytes, above the 0x40 descriptor and 0x80 trace
@@ -5789,7 +5798,12 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             .iter()
             .zip(self.hp_shown.iter().skip(1))
             .filter(|(a, _)| {
-                a.is_present() && a.hp() > 0 && a.is_targetable() && hp_readout_live
+                a.is_present()
+                    && a.hp() > 0
+                    && a.is_targetable()
+                    && hp_readout_live
+                    // the BLIND gate covers the readout too (T69)
+                    && !enemy_blind_hidden
             })
         {
             let (px, py) = field::panel_centre(actor.panel().0, actor.panel().1);
@@ -5816,7 +5830,10 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             );
         }
         for enemy in self.enemies.iter().filter(|e| e.is_present()) {
-            enemy.show(frame, cam_dy);
+            // T216: the enemy OBJ commit, gated on the per-bit read
+            // (objects.rs::render_enemy -- blindVisualHandledHere_8016934's
+            // cross-alliance arm, asm00_2.s:16918-16942).
+            objects::render_enemy(enemy, frame, cam_dy, opposing_flags);
         }
         if let Some(cursor) = self.gunner_ctl.cursor() {
             cursor.show(frame);

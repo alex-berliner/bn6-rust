@@ -48,6 +48,105 @@ use crate::actor::{self, Actor, Update};
 use crate::ai::{Ai, Rng, Style};
 use crate::shot::Shot;
 
+use agb::display::GraphicsFrame;
+
+// ---------------------------------------------------------------------------
+// The BLIND render gate (T216) -- the enemy OBJ commit, gated on the
+// per-bit read.
+//
+// Canon: `blindVisualHandledHere_8016934` (asm00_2.s:16893-16961; line
+// numbers corrected 2026-09-18 by the T216 verifier -- the earlier
+// 16846-16870/21655-21661 reads predate this checkout's reference)
+// clears OBJECT_FLAG_VISIBLE on a cross-side object when
+// `battle_findPlayer(alliance ^ 1)` (:16925-16928) carries
+// OBJECT_FLAGS_BLIND (:16933-16937, tst 0x2000; clear at :16938-16942).
+// Cite-only honesty note (verifier): canon's gate FIRST tests
+// BattleState Unk_0d ^ Alliance (:16918-16924) -- that alliance predicate is
+// NOT modelled here; our port treats every present enemy as cross-side, the
+// only side this project's fixtures draw.
+// The bit is read per object through `object_getFlag` (T18's cited reader,
+// asm00_2.s:21739-21744; the ticket's "21612 vicinity" predates both T132's
+// comment insert and this checkout), which returns
+// `CollisionDataPtr->ObjectFlags1`
+// (+0x3c, CollisionData.inc:145). The arm is a RENDER gate only: canon
+// re-asserts the header's visible bit 1 every frame (asm00_2.s:16897-16899)
+// and clears it again at :16938-16942 while the gate holds, so the object
+// keeps updating -- the blind Mettaur's wave still flies and hits (T64 step
+// 2: 72,194 px over frames 40..129, her sprite box x151-202 y68-120 only).
+// T69's measured survivor list gates BOTH of an enemy's per-frame commit
+// sites: the sprite AND the enemy HP readout (315 px/frame the sprite-only
+// gate never reached).
+/// BLIND: the ObjectFlags1 bit the cross-alliance render arm tests.
+/// Per-bit, never a whole-word compare -- object_getFlag returns the word and
+/// the arm's `tst` isolates this one bit (asm00_2.s:16933-16937).
+pub const OBJECT_FLAGS_BLIND: u16 = 0x2000; // provenance: derived -- include/structs/CollisionData.inc:16
+
+/// The poke surface the blind row writes (T64's delivery design; T69's
+/// once-per-frame read hoist measured behaviour-neutral). Our ROM has no
+/// BattleObject/CollisionData mirror to poke, so the row reaches the
+/// cross-alliance arm through these two halfwords standing in for the
+/// opposing (player-side) CollisionData fields the canon gate reads: the
+/// low half of ObjectFlags1 and BlindTimer. Never ticked -- the expiry tick
+/// (sub_800E730, object.s:5512-5520) is not modelled; the row pokes 0xffff,
+/// which outlives the compared window on both sides alike.
+#[repr(C)]
+pub struct BlindMailbox {
+    /// Low half of the opposing player's ObjectFlags1
+    /// (CollisionData.inc:145; the gate reads it via object_getFlag).
+    pub object_flags1: u16,
+    /// The opposing player's BlindTimer (CollisionData.inc:134). Carried so
+    /// the row's poke recipe mirrors canon's byte for byte; never ticked.
+    #[allow(dead_code)]
+    pub blind_timer: u16,
+}
+
+/// `static mut` on purpose: an immutable zero-init static gets placed in
+/// ROM (.rodata, VMA 0x08...) by this target's link, where a poke cannot
+/// reach it; plain .bss lands in EWRAM (gba.ld: `.bss (NOLOAD) > ewram`).
+/// No section attribute -- a second dedicated `.ewram.*` input section can
+/// reorder against BATTLE_MARKER's own and break the fixture's 0x02000000
+/// contract (main.rs's BATTLE_MARKER doc measured exactly that). The poke
+/// address is read from `nm` on the built ELF for the tree the row runs
+/// from (T64: nm said 0x020002fc; re-nm THIS tree after any layout change).
+#[unsafe(no_mangle)]
+pub static mut BLIND_POKE_MAILBOX: BlindMailbox = BlindMailbox {
+    object_flags1: 0,
+    blind_timer: 0,
+};
+
+/// The opposing player's flags halfword as the poke left it. Volatile, and
+/// the ADDRESS goes through black_box: fat LTO proves this program never
+/// writes BLIND_POKE_MAILBOX (the poke is an emulator-side write, invisible
+/// to the compiler) and folds a direct volatile read to 0 -- measured T64:
+/// the row read 69,987 px and the ELF had ZERO literal-pool/load hits for
+/// the mailbox address until the address went opaque. (The fixture block
+/// survives the same folding only because it shares BATTLE_MARKER's array,
+/// which the program does write every frame.)
+pub fn opposing_player_flags() -> u16 {
+    let p = core::hint::black_box(core::ptr::addr_of!(BLIND_POKE_MAILBOX) as *const u16);
+    unsafe { core::ptr::read_volatile(p) }
+}
+
+/// The per-bit read the gate performs: `object_getFlag` returns the whole
+/// ObjectFlags1 word (asm00_2.s:21739-21744) and the render arm's `tst`
+/// isolates OBJECT_FLAGS_BLIND -- true when canon suppresses this enemy's
+/// whole OBJ commit, BOTH commit sites (T69's survivor list).
+pub fn blind_hides_enemy(opposing_flags: u16) -> bool {
+    opposing_flags & OBJECT_FLAGS_BLIND != 0
+}
+
+/// T216: the enemy sprite's OBJ commit, gated on the per-bit read. A
+/// suppressed enemy commits nothing this frame -- canon's gate clears the
+/// header's OBJECT_FLAG_VISIBLE so the sprite layer drops the whole object
+/// (T69 step 3: canon poked leaves 0 OAM entries in her box, unpoked 6) --
+/// while the object's own update path is untouched (render gate only).
+pub fn render_enemy(actor: &Actor, frame: &mut GraphicsFrame, dy: i32, opposing_flags: u16) {
+    if blind_hides_enemy(opposing_flags) {
+        return;
+    }
+    actor.show(frame, dy);
+}
+
 /// T3 type of the buster/cannon projectile: `t3_0x0_80C4E58`
 /// (reference/bn6f/asm/asm31.s:27691; spawn `sub_80C4E7C`/`sub_80C4F02`).
 const T3_BUSTER_CANNON: u8 = 0x0; // provenance: derived -- t3_0x0_80C4E58, asm31.s:27691
@@ -302,7 +401,7 @@ const METTAUR_ALIGN: u8 = 4; // provenance: derived -- off_8109FF0[1], asm31.s:1
 /// T18 measured the gate that arms this state (the RowCheck
 /// `=0xa000` BLIND|CONFUSED tst) at asm31.s:171395-171397, and BLIND's own
 /// reader (a hide-sprite `tst` of 0x2000 on `battle_findPlayer`'s result) at
-/// asm00_2.s:16861 -- see docs/inventory/statuses.json.
+/// asm00_2.s:16933-16937 -- see docs/inventory/statuses.json.
 const METTAUR_WANDER: u8 = 8; // provenance: derived -- off_8109FF0[2], asm31.s:171199
 /// `off_8109FF0[3]`, `sub_810A126` (asm31.s:171379-171451): rows equal,
 /// attack. The value IS `oAIState_Unk_00`.
