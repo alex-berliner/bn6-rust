@@ -320,6 +320,22 @@ pub struct Fixture {
     /// AIData.Anger != 0 -> enum 3 -> byte_801E6F4[3] = 1
     /// (asm00_2.s:15149-15155, :31044), which is the harness's own poke.
     pub emotion: u8,
+    /// NOT IN FIXTURE.md, offset +64 (the descriptor's first byte past its
+    /// original 64 -- FIXTURE_SIZE grew to 66 for it, T225): the emotion
+    /// window's BLINK countdown initial value, canon eStruct2035280+0xf =
+    /// 0x0203528F -- the byte `drawEmotionWindow_801CDEC`'s gate reads
+    /// (asm00_2.s:27759-27768: 5 or 6 emits no OBJ) and `sub_801CC94` owns
+    /// (12-frame period, asm00_2.s:27655-27656/:27674-27675; the ported
+    /// model is `src/emotion.rs`'s `blink_countdown`). This byte is the
+    /// rust-side mirror of canon's at-load poke 0x0203528e:0x0500, the
+    /// emotion_skip row's own pin: nothing writes the byte afterwards on
+    /// either side (canon: T105's 80-frame watch read 0x00 unpoked; the
+    /// port's arming path is unported), so the value holds. 0 = the default
+    /// every pre-T225 row already behaves as (T123's 100-frame watch: canon's
+    /// countdown reads 0x00 flat on every descriptor route -- the blink
+    /// never arms, the gate never blanks). Owns the byte outright (no
+    /// overlay): enemies don't read it.
+    pub blink_countdown: u8,
     /// NOT IN FIXTURE.md, offsets +56/+57/+58 (panel_col[0..2]): the per-
     /// enemy spawn panel column for slots 0/1/2, decoded by `battle.rs`'s
     /// spawn-cell path as `panel_col[i]` / `panel_row[i]` when
@@ -494,6 +510,8 @@ pub fn read() -> Option<Fixture> {
             // harness ORs it over enemy_action (T105), so a descriptor that
             // names both is a harness bug, not something this read can see.
             emotion: r8(63),
+            // NOT IN FIXTURE.md, offset +64: see `blink_countdown`'s doc.
+            blink_countdown: r8(64),
             // NOT IN FIXTURE.md, offsets +56..+62 (panel data, written by the
             // harness AFTER result_elapsed/rng/enemy_state so the existing
             // rows stay byte-identical: see the field docs and
