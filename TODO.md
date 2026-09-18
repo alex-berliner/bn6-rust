@@ -724,9 +724,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T180. Cannon family AS_DATA *(OPEN -- 2026-09-18)*
+### T180. Cannon family AS_DATA  *(DONE -- 2026-09-18, Landed ef0795e)*
 
-
+**Result.** Landed ef0795e. Cannon/HiCannon/M-Cannon onto AS_DATA dispatch (family 0x14, correct cite; ticket's claimed 0x07 was wrong). src/battle.rs const CANNON_FAMILY=0x14 with provenance, _ if chip.family==CANNON_FAMILY arm replaces hardcoded id check, chip.subfamily as usize for barrel palette. tools/inventory.py AS_DATA_FAMILIES={0x13,0x14,0x15,0x21}. chip-cannon 0/0/40/9505, chip-hicannon 0/0/40/9505, chip-mcannon 0/0/40/9508, mettaur 0/0/70/41734, cursor 1/1/170/186279 byte-identical. verifier-minimax CONFIRMED family byte + dispatch refactor + AS_DATA_FAMILIES; asm31.s cite UNCHECKED (reference/bn6f empty in worktree). Worker-minimax, model+cost in subagent meta.
 **Why.** M4 43/411. `AS_DATA_FAMILIES = {0x13, 0x15, 0x21}` per tools/inventory.py. T17/T48/T52 done. Cannon/HiCannon/M-Cannon verified pixel-exact but predate AS_DATA dispatch (hardcoded path). Family-0x07 has 3 chips (id 1/2/3) with `CHIP_ELEM_NONE` damage 40/100/180 at `ChipDataArr_8021DA8` (data/ChipDataArr.s:2, stride 0x2c, include/rom_structs/ChipData.inc).
 
 **Files.** src/chip.rs, tools/inventory.py, docs/coverage/chips.md, docs/worklog/T180.md.
