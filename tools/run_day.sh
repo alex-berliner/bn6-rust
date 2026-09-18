@@ -45,7 +45,14 @@ bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly'
 #
 # MGMT_OPEN is when the window opens (the review's cron slot). MGMT_DEADLINE is when work proceeds
 # anyway, so a broken roundup costs one window rather than the whole day; that case is an incident.
-MGMT_OPEN="${BN_MGMT_OPEN:-1036}"; MGMT_DEADLINE="${BN_MGMT_DEADLINE:-1330}"
+# The gate must close BEFORE the credits reset, not when the window runs. The one hard observation of
+# the reset is a run that launched at 10:30:14 on 2026-09-17 reading 249.9 of 250, so the reset is
+# already done by 10:30 -- and the */30 tick at 10:30 would start workers on the fresh balance six
+# minutes before the 10:36 window asked for it, which is exactly the starvation the window exists to
+# prevent. Holding from 10:00 costs at most half an hour of worker time and guarantees the managerial
+# jobs get first call. The exact reset minute is being logged now (below) so this can stop being an
+# estimate.
+MGMT_OPEN="${BN_MGMT_OPEN:-1000}"; MGMT_DEADLINE="${BN_MGMT_DEADLINE:-1330}"
 NOW="$(date +%H%M)"; MARK="/tmp/bn-pi/mgmt-done-$(date +%F)"
 if [ ! -f "$MARK" ] && [ "$((10#$NOW))" -ge "$((10#$MGMT_OPEN))" ]; then
   if [ "$((10#$NOW))" -lt "$((10#$MGMT_DEADLINE))" ]; then
@@ -54,6 +61,10 @@ if [ ! -f "$MARK" ] && [ "$((10#$NOW))" -ge "$((10#$MGMT_OPEN))" ]; then
   bash tools/incident.sh mgmt-window-missed "no $MARK by $NOW; starting workers anyway"
   echo "stage gate: management never reported finished by $MGMT_DEADLINE; proceeding and recording it"
 fi
+
+# Sample every provider balance each tick into a log, so the reset times are measured instead of
+# inferred from one lucky reading. The window's whole design depends on when credits come back.
+( echo "$(date -Is) hyper $(timeout 30 python3 tools/hyper_credits.py 2>&1 | tr '\n' ' ' | cut -c1-120)" >> /tmp/bn-credits.log ) 2>/dev/null &
 
 eval "$(python3 tools/roles.py schedule)"
 running=0; tailed=""

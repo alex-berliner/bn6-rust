@@ -27,7 +27,7 @@ So the day is now staged. Work does not start until management has finished.
 `run_day.sh` will not start a worker run between the management window opening and the window
 reporting itself finished. Two settings control it, both overridable by environment variable:
 
-- `BN_MGMT_OPEN` (default `1036`) — when the window opens.
+- `BN_MGMT_OPEN` (default `1000`) — when workers are held. Earlier than the window itself, deliberately: see below.
 - `BN_MGMT_DEADLINE` (default `1330`) — when work proceeds regardless.
 
 If the marker has not appeared by the deadline, work starts anyway and an incident is recorded. A
@@ -69,16 +69,25 @@ Kinds recorded today: `land-refused`, `land-conflict`, `verify-failed`, `lock-ti
 
 ## When the window is, and why
 
-10:36, one minute after the main provider's credits reset.
+The window runs at **10:36**, and workers are held from **10:00**.
 
-It used to be 06:00, because that is when the blog post wanted to exist. That put it in the worst
-possible budget position: a 06:00 window spends whatever the night's runs left behind, which on a busy
-night is almost nothing, and that is precisely why the auditor kept dying on "no candidate has budget
-now". Decided on 2026-09-17 to move the whole window rather than split it, so that every managerial job
-— the review, the auditor, the auto-apply, the judge, the digest, the slides, the disassembly notes and
-the site build — runs together on fresh credits, before a single worker starts.
+Those are two different times on purpose. The window is at 10:36 because the main provider's credits
+come back mid-morning, and a window that runs before the reset spends whatever the night's runs left
+behind — which on a busy night is almost nothing, and is precisely why the auditor kept dying on "no
+candidate has budget now". It used to be at 06:00, for the good but unrelated reason that a blog post
+wants to exist by breakfast.
 
-The cost of the move is that the daily blog post and the review now appear mid-morning instead of at
+The gate closes at 10:00 rather than 10:36 because holding workers *when the window runs* is too late.
+The only hard observation of the reset is a run that launched at 10:30:14 on 2026-09-17 reading 249.9
+of 250 — so the balance is already back before 10:30, and the half-hourly tick at 10:30 would start six
+workers on it six minutes before management asked. Holding from 10:00 costs at most half an hour of
+worker time and guarantees the managerial jobs get first call on the day.
+
+That reset minute is an estimate from a single reading, which is not good enough for something the
+whole schedule hangs on, so every tick now appends each provider's balance to `/tmp/bn-credits.log`.
+Once a few days of that exist, the gate can be set from the measurement instead.
+
+The cost of the move is that the daily blog post and the review appear mid-morning instead of at
 breakfast.
 
 The cron is two lines: `*/30 * * * *` runs `tools/run_day.sh`, which holds at the gate; `36 10 * * *`
