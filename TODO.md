@@ -466,9 +466,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** verify_rows on element_hit + chip-cannon + mettaur + cursor + full isolated table; cross-family verifier reviews the `byte_3007444` cite and the additive model.
 **Milestone.** M3 first live damage rule ported.
 
-### T151a. Mettaur rank-1 art *(OPEN -- 2026-09-18)*
+### T151a. Mettaur rank-1 art  *(BLOCKED -- 2026-09-18, Discovery phase [baselines, canon cites, asset walk, fixture-kind design] consumed budget)*
 
-
+**Result.** Discovery phase (baselines, canon cites, asset walk, fixture-kind design) consumed budget; implementation not landed. Worklog d8c8810 on wt/T151a. Planned mechanism: export compVirusBattleSprite_8242E94.lz77 -> assets/mettaur_v1.bin; add KIND_METTAUR_V1 (free 4th two-bit value); branch on f.kind_of(i) in src/battle.rs to pick METTAUR_V1 over METTAUR; add rank:u8 to MettaurEntry (T6) populated from fixture kind; replace HOP_COOLDOWN:u8=0x1e with HOP_COOLDOWN_BY_VERSION[rank] from byte_8109F46 ([0x1e,0x18,0x12,0x0c,0x12,0x0c]; v1 selects 0x18). Baseline measured: mettaur_rank1 677252/38400/70 unchanged. Canaries mettaur 0/0/70/41734 and cursor 1/1/170/186279 at T147 PASS set. Unverified: rank 2/v3 art (compVirusBattleSprite_82455B0.lz77, SpritePointersList.s:33, enemy_idx 4), palette index for v1 OBJ. ai4_rank0 retracted by T151 worklog (was never on main). Next worker: land export step + KIND_METTAUR_V1 + branch + rank byte read.
 **Why.** wt/t151 @ c977210e: state `battlestart_mettaur_rank1`, residual 677252/38400/70, neg 642150 non-blind; T151 OPEN's cite is contradicted by wt/t151 (mechanism is `sub_800EC80` quad id, not `byte_80182C4` row 1); rank-1 art unported. **New evidence.** the `sub_800EC80` cite and the rank1-vs-rank0 differential captured on wt/t151 (taken after T151 was last touched).
 **Files.** `src/battle.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/mettaur.md`, `docs/worklog/T151a.md`.
 **Row.** `mettaur_rank1` (exists on wt/t151). Canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0 (T113's row).
