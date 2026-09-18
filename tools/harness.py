@@ -1928,7 +1928,7 @@ FIELD_ORIGIN = 8
 #: ObjectFlags1 = +0x3c (CollisionData.inc:145) = 0x0203852c and BlindTimer
 #: = +0x20 (CollisionData.inc:134) = 0x02038510. The mettaur control
 #: (0x0203abb4 reads 0x02038640) proves the route ran.
-BLIND_MAILBOX_ADDR = 0x0200_02f4  # provenance: derived -- nm BLIND_POKE_MAILBOX on THIS tree's built ELF (rebuild moves it; the row then fails loudly)
+BLIND_MAILBOX_ADDR = 0x0200_02f8  # provenance: derived -- nm BLIND_POKE_MAILBOX on THIS tree's built ELF (rebuild moves it; the row then fails loudly). T230: moved 0x020002f4 -> 0x020002f8 (+4) when the merge brought T225's emotion code into this tree's .bss
 BLIND_POKES_CANON = ("40:%#x:0x2000" % (0x020384f0 + 0x3c),
                      "40:%#x:0xffff" % (0x020384f0 + 0x20))
 BLIND_POKES_RUST = ("40:%#x:0x2000" % BLIND_MAILBOX_ADDR,
