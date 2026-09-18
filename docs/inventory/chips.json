@@ -27,7 +27,7 @@
    "mb": 6,
    "cite": "data/ChipDataArr.s:34; asset idx 0; name data/textscript/TextScriptChipNames0.s:7",
    "reachable": true,
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 2,
@@ -41,7 +41,7 @@
    "mb": 24,
    "cite": "data/ChipDataArr.s:65; asset idx 1; name data/textscript/TextScriptChipNames0.s:10",
    "reachable": true,
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 3,
@@ -55,7 +55,7 @@
    "mb": 38,
    "cite": "data/ChipDataArr.s:96; asset idx 2; name data/textscript/TextScriptChipNames0.s:13",
    "reachable": true,
-   "status": "verified-pixels"
+   "status": "verified"
   },
   {
    "id": 4,

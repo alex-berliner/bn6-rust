@@ -267,7 +267,15 @@ def chip_asset_index():
 #     ChipDataArr.s:5623/:5654) beyond the 48-record asset; the game only
 #     ever sees the asset, whose 0x15 records are exactly
 #     {163(0x00), 177(0x01), 178/179/180(0x04)}.
-AS_DATA_FAMILIES = {0x13, 0x15, 0x21}  # canon: T57 per-id audit; 0x15 re-admitted by T61; see block comment above
+#   0x14 Cannon family -- RE-ADMITTED (T180): Cannon 1, HiCannon 2,
+#     M-Cannon 3 share one use_chip arm and one shot arm keyed on
+#     `chip.family == CANNON_FAMILY` (src/battle.rs), the subfamily byte
+#     (0/1/2) selects the barrel-palette row. The 48-record asset
+#     (assets/chips.bin) carries exactly these three 0x14 records; the
+#     table's 42 further 0x14 entries (id_sort 0xCB+, 0x140+, 0x170+,
+#     ...) are placeholder chips with no name and the game only ever
+#     sees the asset, so the family gate is exact.
+AS_DATA_FAMILIES = {0x13, 0x14, 0x15, 0x21}  # canon: T57 + T61 (0x15) + T180 (0x14); see block comment above
 
 
 def parse_chips():

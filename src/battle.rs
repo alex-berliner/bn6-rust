@@ -271,9 +271,6 @@ const CHIP_FIRESWRD: u16 = 76;
 const CHIP_AQUASWRD: u16 = 77;
 const CHIP_ELECSWRD: u16 = 78;
 const CHIP_BAMBSWRD: u16 = 79;
-const CHIP_CANNON: u16 = 1;
-const CHIP_HICANNON: u16 = 2;
-const CHIP_MCANNON: u16 = 3;
 const CHIP_VULCAN: u16 = 5;
 const CHIP_VULCAN2: u16 = 6;
 const CHIP_VULCAN3: u16 = 7;
@@ -645,6 +642,11 @@ const AIRSHOT_ARM: (i32, i32) = (18, -24); // provenance: derived -- byte_80B8BD
 /// (data/ChipDataArr.s:127 = id 4); the family byte drives dispatch in
 /// use_chip and chip_strike, replacing the deleted CHIP_AIRSHOT id check.
 const AIRSHOT_FAMILY: u8 = 0x21; // canon: ChipDataArr_8021DA8 AttackFamily of id 4 (data/ChipDataArr.s:136)
+/// Cannon family (attack family 0x14): the three reachable ids in the
+/// 48-record asset (Cannon 1, HiCannon 2, M-Cannon 3 at
+/// data/ChipDataArr.s:43/:74/:105) share one use_chip arm and one shot arm;
+/// the subfamily byte (0/1/2) is the barrel-palette row index.
+const CANNON_FAMILY: u8 = 0x14; // canon: ChipDataArr_8021DA8 AttackFamily +0xb of ids 1/2/3 (data/ChipDataArr.s:43/74/105)
 /// The Recov chips heal their names; the amounts are byte_80EC870
 /// (asm31.s:111044), one per subfamily.
 const RECOV_HP: [u16; 9] = [10, 30, 50, 80, 120, 150, 200, 300, 1000]; // provenance: derived -- RecovHealBySubfamily_80EC870 (asm31.s:111132, body :111133-111134, reader sub_80EC844 :111110-111131, off_80EC86C :111130-111131, decomp asm31.c:86133, ROM offset 0x0EC870)
@@ -4652,7 +4654,12 @@ const FLASH_RAISE_DY: i32 = 24; // provenance: peeked -- measured off the real R
                     flash || seed,
                 ));
             }
-            CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
+            // Cannon family (attack family 0x14, sub_80EBC0E, asm31.s:107671):
+            // the three reachable ids in the 48-record asset (Cannon 1,
+            // HiCannon 2, M-Cannon 3) share one behaviour arm keyed on the
+            // record; the chip's subfamily (0/1/2) is the palette row index
+            // (byte_80B8BD4).
+            _ if chip.family == CANNON_FAMILY => {
                 self.chip_in_use = Some(chip);
                 self.megaman.attack(CANNON);
                 // The barrel is the t1_0x5 object spawned on the navi's arm
@@ -4671,7 +4678,7 @@ const FLASH_RAISE_DY: i32 = 24; // provenance: peeked -- measured off the real R
                 let mut barrel = spr::Player::new(spr::Assets::new(BARREL_CHARGE), 0);
                 // byte_80B8BD4 rows 0-2: the same barrel with palette 0, 1
                 // and 2 for Cannon, HiCannon and M-Cannon.
-                barrel.set_palette_add((chip.id - CHIP_CANNON) as usize);
+                barrel.set_palette_add(chip.subfamily as usize);
 /// The cannon barrel rides 16 forward and 24 up of the navi's panel centre
 /// (measured off the real ROM).
 const CANNON_BARREL_DX: i32 = 16; // provenance: peeked -- measured off the real ROM
@@ -5079,7 +5086,12 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
             // (byte_82FE704 anim 0), spawned off the front panel at the strike
             // (counter 0xf, asm31.s:109531). The barrel itself was spawn at
             // the start of the pose in use_chip, so only the shot runs here.
-            CHIP_CANNON | CHIP_HICANNON | CHIP_MCANNON => {
+            // Cannon family's shot: the big yellow-outlined white orb
+            // (byte_82FE704 anim 0), spawned off the front panel at the strike
+            // (counter 0xf, asm31.s:109531). The barrel itself was spawned at
+            // the start of the pose in use_chip, so only the shot runs here.
+            // Same family gate as use_chip (CANNON_FAMILY 0x14).
+            _ if chip.family == CANNON_FAMILY => {
                 let (fc, fr) = self.megaman.front_panel();
                 self.shots
                     .push(Shot::cannon(spr::Assets::new(CANNON_ORB), fc, fr, dx, chip.power));
