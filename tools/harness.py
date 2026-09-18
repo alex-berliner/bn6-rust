@@ -575,6 +575,15 @@ class Check:
     #: `window` uses "pixel", and its own note carries the measurement that
     #: justifies it.
     negative: str = "frame"
+    #: T216: the poke-value negative (kind "pokeoff"). The canon side of the
+    #: NEGATIVE is the SAME route/recipe with the subject status bit ZEROED
+    #: (the mask template's cleared arm, T130's mechanism) -- i.e. the plain
+    #: baseline scene -- captured separately and diffed against the row's own
+    #: poked rust capture at the row's own alignment. Must FAIL (non-blind):
+    #: it proves the row's zero depends on the bit actually being set on
+    #: canon's side AND on our gate answering it -- a gate that ignored the
+    #: bit leaves both sides showing the enemy and the negative reads ~0.
+    negative_canon: Optional[Callable[[str], "Side"]] = None
     #: T9i (2026-09-15): when True, run() captures rust then canon
     #: sequentially in this process (no ThreadPoolExecutor) -- the rust+canon
     #: pair stays out of cc.CAPTURE_SLOTS contention together. The gunner
@@ -1107,6 +1116,51 @@ CHECKS: List[Check] = [
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
                               extra=("--disable-bg",)),
         canon_variant="canon (sterile)",
+    ),
+    Check(
+        name="blind_met",
+        ui="isolated",
+        frames=70,
+        align=Align(
+            canon_ref=140,
+            search=range(193, 214),
+            note="T216: THE METTAUR ROW'S OWN WINDOW AND BAND, with the cross-alliance "
+                 "BLIND render gate ON (T60's poke recipe, both sides). canon_ref=140 is "
+                 "the same documented fixed point the mettaur row uses (regress.py's "
+                 "frame-140 window start, not searched); the band is that row's own "
+                 "(193..214, F25c/F28's sweep, unique V-minimum at offset 205) because "
+                 "this row is the SAME descriptor, SAME route, SAME window -- the offset "
+                 "is rust capture = canon capture + 73 (T69's measurement: rust capture = "
+                 "canon capture + 73, mettaur align zero at rust offset 205 pins 140<->213) "
+                 "and the band CONFIRMS the minimum did not move with the gate, never "
+                 "chosen by score. The window 140..209 covers exactly the frames the "
+                 "mettaur row proves byte-identical UNPOKED (mettaur 0/0/70), so any "
+                 "residue in this row is the gate, not the scene. The pokes land at "
+                 "capture frame 40 on both sides (T60's recipe: after the CollisionData "
+                 "init at ~31, which overwrites a load-time poke; the BlindTimer 0xffff "
+                 "poke outlives the window -- the tick sub_800E730, object.s:5512-5520, "
+                 "clears the bit only when the signed count fails bgt). Subject: the BLIND "
+                 "render-gate arm -- blindVisualHandledHere_8016934 (asm00_2.s:16846-16870) "
+                 "clears OBJECT_FLAG_VISIBLE on a cross-side object when "
+                 "battle_findPlayer(alliance^1) carries OBJECT_FLAGS_BLIND, read per object "
+                 "through object_getFlag (T18's cited reader, asm00_2.s:21655-21661, "
+                 "CollisionDataPtr->ObjectFlags1 +0x3c); render ONLY -- the blind Mettaur's "
+                 "wave still flies and hits (T64 step 2). Ported as objects.rs::render_enemy "
+                 "gating BOTH enemy OBJ commit sites (T69's measured survivor list: the HP "
+                 "readout is 315 px/frame a sprite-only gate never reaches; canon poked "
+                 "leaves 0 OAM entries in her box where unpoked leaves 6). Rust receives "
+                 "the bit through BLIND_POKE_MAILBOX (objects.rs, .bss), nm'd from THIS "
+                 "tree's ELF -- if an edit moves it, this row fails loudly instead of lying.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=FIELD_ROW, extra=("--disable-bg",),
+                             pokes_at=BLIND_POKES_RUST),
+        canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE, script="Start@10",
+                              pokes_at=BLIND_POKES_CANON, extra=("--disable-bg",)),
+        canon_variant="canon (sterile)",
+        negative="pokeoff",
+        negative_canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED, cheats=ALIVE,
+                                       script="Start@10", pokes_at=BLIND_POKES_CANON_ZEROED,
+                                       extra=("--disable-bg",)),
     ),
     Check(
         name="cannon",
@@ -1826,6 +1880,30 @@ FIELD_ROW = dict(enemies=1, enemy_kind=0, enemy_col=5, enemy_row=2, megaman_hp=6
                  flags=0x11, art_entry=5, art_timer=4, scroll_xq=424, scroll_yq=724,
                  enemy_hp=0xFFFF)
 FIELD_ORIGIN = 8
+
+#: T216's blind_met row: the poke fixture, T60's recipe (both sides at capture
+#: frame 40 -- after the CollisionData init at ~31, which overwrites a
+#: load-time poke; the timer poke is REQUIRED, BlindTimer 0 -> 0xffff fails
+#: the signed `bgt` and would clear the bit the same frame -- object.s:5512
+#: -5520). Canon-side addresses measured (T64 step 1 probe watch, 60 frames
+#: on this route): the player's CollisionDataPtr slot 0x0203aa04
+#: ([MegaMan 0x0203a9b0 + 0x54], BattleObject.inc:144) reads 0x020384f0, so
+#: ObjectFlags1 = +0x3c (CollisionData.inc:145) = 0x0203852c and BlindTimer
+#: = +0x20 (CollisionData.inc:134) = 0x02038510. The mettaur control
+#: (0x0203abb4 reads 0x02038640) proves the route ran.
+BLIND_MAILBOX_ADDR = 0x0200_02f4  # provenance: derived -- nm BLIND_POKE_MAILBOX on THIS tree's built ELF (rebuild moves it; the row then fails loudly)
+BLIND_POKES_CANON = ("40:%#x:0x2000" % (0x020384f0 + 0x3c),
+                     "40:%#x:0xffff" % (0x020384f0 + 0x20))
+BLIND_POKES_RUST = ("40:%#x:0x2000" % BLIND_MAILBOX_ADDR,
+                    "40:%#x:0xffff" % (BLIND_MAILBOX_ADDR + 2))
+#: The pokeoff negative (T216): the SAME canon recipe with the status bit
+#: ZEROED -- T130's mask-template mechanism, cleared arm (Flags & ~0x2000;
+#: the low halfword's live value is 0x0000 here, the enemy flags word's init
+#: 0x02000000 lives in the UPPER half) -- i.e. the mettaur baseline scene.
+#: The timer half of the recipe is kept so the negative differs from the
+#: positive by the ONE bit, not by the recipe.
+BLIND_POKES_CANON_ZEROED = ("40:%#x:0x0000" % (0x020384f0 + 0x3c),
+                            "40:%#x:0xffff" % (0x020384f0 + 0x20))
 
 #: T9h (2026-09-15): the Gunner scenario's rust descriptor. The Mettaur+Gunner
 #: record (T9b's frame-60 iCurrFrame lever, T9c's recipe: battlestart + a
@@ -3757,6 +3835,19 @@ def _old_box_figure(check: Check, result: Result) -> Optional[Tuple[int, int]]:
     return boxed_total, result.total - boxed_total
 
 
+def pokeoff_counts(result: Result, check: "Check", ui: str,
+                   neg_dir: str) -> List[int]:
+    """T216's poke-value negative: the negative_canon capture (the SAME
+    route with the status bit zeroed -- the baseline scene) against the
+    row's own poked rust capture at the row's own found alignment. Deliberately
+    NOT re-searched, same rule as the frame shift: the pairing broken is the
+    bit, not the clock. Must FAIL (non-blind) -- see Check.negative_canon.
+    """
+    return [cc.diff_frames(neg_dir, result.canon_ref + k, result.rust_dir,
+                           result.rust_origin + result.rust_offset + k)
+            for k in range(check.frames)]
+
+
 def run_check(check: Check, *, gallery: bool = True, only_ui: Optional[str] = None) -> Dict[str, dict]:
     """Every ui variant of `check`: the positive run, its negative fixture
     (pair 10), and, if `gallery`, a written comparison GIF (pair 7). Returns
@@ -3784,7 +3875,18 @@ def run_check(check: Check, *, gallery: bool = True, only_ui: Optional[str] = No
         rust_side, canon_side = sides[ui]
         result = run(rust_side, canon_side, check.frames, check.align,
                      variant_label=ui, serial=check.serial)
-        neg = negative_counts(result, check.frames, kind=check.negative)
+        if check.negative == "pokeoff":
+            assert check.negative_canon is not None, "pokeoff needs negative_canon"
+            neg_side = check.negative_canon(ui)
+            if not neg_side.capture_fn:
+                neg_side.resolved_rom()
+            key = hashlib.sha1(repr((neg_side, check.frames, ui)).encode()).hexdigest()[:10]
+            neg_dir = cc.scratch("h_negcanon_%s" % key)
+            neg_side.do_capture(neg_dir, result.canon_ref + check.frames + NEGATIVE_MARGIN)
+            neg = pokeoff_counts(result, check, ui, neg_dir)
+            subprocess.run(["rm", "-rf", neg_dir], check=True)
+        else:
+            neg = negative_counts(result, check.frames, kind=check.negative)
         blind = all(c == 0 for c in neg)
         allowed = _allowed(check.name, ui, result.worst)
         box = _old_box_figure(check, result)
