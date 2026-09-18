@@ -907,6 +907,78 @@ const BOMB_PALETTE_ENER: usize = 5; // provenance: peeked -- the only one of spr
 /// bomb dispatch reads them via the asset record, not via the enum constant.
 const CHIP_ELEM_CURSOR_U8: u8 = 0x06; // canon: CHIP_ELEM_CURSOR // 0x6, constants/constants.inc:123
 const CHIP_ELEM_NONE_U8: u8 = 0x0A; // canon: CHIP_ELEM_NONE // 0xa, constants/constants.inc:127
+/// M3 elements/weakness: damage multiplier (T163).
+///
+/// Additive model from `sub_3007218` (reference/bn6f/asm/asm38.s:3478-3520):
+/// `mov r4,#1` at :3478, then `add r4,r4,r0` at :3486 (primary) and :3493
+/// (secondary), and the final `mul r0,r4` at :3520. So the multiplier is
+/// 1 + primary_hit + secondary_hit (a single weakness makes ×2, a double
+/// weakness ×3). Every existing fixture pair carries
+/// `chip.element == 0x0A (NONE)` AND `def_elem == 0` AND `def_weakness == 0`
+/// (Mettaur/Gunner both read 0/0, docs/coverage/elements.md §5), so the
+/// multiplier is 1 for every green row today and the wiring is byte-inert
+/// there.
+///
+/// PRIMARY table — `getPrimaryElementWeaknessMultipler_3007432`
+/// (asm38.s:3533-3555). Index = `defender*5 + attacker`, one byte per cell,
+/// 25 bytes total at ROM 0x081d7944 (the row-major cycle HEAT→AQUA→ELEC→WOOD
+/// only consistent with ELEM numbering 0..4). Inlined here as a match so no
+/// 25-byte .rodata const is exposed — T146b regressed cursor 1→10/9/170 by
+/// putting `PRIMARY_TABLE: [u8; 25]` at module scope, and the ticket's RULES
+/// forbid re-opening that path.
+///
+/// SECONDARY rule — `getSecondaryElementWeaknessMultipler_30074e2`
+/// (asm38.s:3634-3692). A pure bitfield rule, no table: factor 1 iff
+/// `def_weakness != 0 && (def_weakness & atk_bits) != 0`. The 0x80 special
+/// case (sword-weakness, keys on attacker's `SelfCollisionTypeFlags & 0x2000`)
+/// has no ported read of the attacker flag and is left unported and named —
+/// the only swords the fixtures can build have no weakness target anyway.
+///
+/// CHIP_ELEM → ELEM byte (constants/constants.inc:117-127 + elements.md §6):
+/// +1 for FIRE/AQUA/ELEC/WOOD, flag bits for SWORD/CURSOR/WIND/BREAK,
+/// NONE (and PLUS, OBSTACLE) read 0. PLUS/OBSTACLE have no readable row in
+/// either table and stay unported, named here for the next worker.
+#[inline]
+fn damage_element_mult(chip_element: u8, def_elem: u8, def_weakness: u8) -> u32 {
+    let (atk_primary, atk_bits) = match chip_element {
+        // CHIP_ELEM_FIRE=0 → ELEM_HEAT=1; CHIP_ELEM_AQUA=1 → ELEM_AQUA=2;
+        // CHIP_ELEM_ELEC=2 → ELEM_ELEC=3; CHIP_ELEM_WOOD=3 → ELEM_WOOD=4.
+        0 => (1u8, 0u8),
+        1 => (2, 0),
+        2 => (3, 0),
+        3 => (4, 0),
+        // Secondary bits: SWORD=0x80, CURSOR=0x40, WIND=0x20, BREAK=0x10
+        // (constants/constants.inc:79-82).
+        5 => (0, 0x80),
+        6 => (0, 0x40),
+        8 => (0, 0x20),
+        9 => (0, 0x10),
+        // _ (def _ CHIP_ELEM_PLUS=4, CHIP_ELEM_OBSTACLE=7, CHIP_ELEM_NONE=0x0A)
+        _ => (0, 0),
+    };
+    // PRIMARY_TABLE[def_elem*5 + atk_primary], row/column from
+    // ROM 0x081d7944 (asm38.s:3543-3555). Inlined as match to avoid a
+    // 25-byte .rodata constant — T146b's regression root.
+    let primary_hit: u32 = if (def_elem as usize) < 5 && (atk_primary as usize) < 5 {
+        match (def_elem, atk_primary) {
+            (0, _) => 0, // def=NULL: no weakness.
+            (1, 2) => 1, // def=HEAT weak to AQUA.
+            (2, 3) => 1, // def=AQUA weak to ELEC.
+            (3, 4) => 1, // def=ELEC weak to WOOD.
+            (4, 1) => 1, // def=WOOD weak to HEAT.
+            _ => 0,
+        }
+    } else {
+        0
+    };
+    let secondary_hit: u32 =
+        if def_weakness != 0 && (def_weakness & atk_bits) != 0 { 1 } else { 0 };
+    // provenance: derived -- asm38.s:3478-3520 additive model
+    // (mov r4,#1 + add r4,r4,r0 ×2 + mul r0,r4); primary ROM 0x081d7944
+    // (asm38.s:3543-3555); secondary asm38.s:3634-3692; chip-element map
+    // constants/constants.inc:117-127.
+    1 + primary_hit + secondary_hit
+}
 /// The bomb family's three attack_families (data/ChipDataArr.s, each bomb's
 /// row, see docs/worklog/T46.md for the six-record cite table). MiniBomb is
 /// family 0x2F; EnergBom/MegEnBom/FlshBom share family 0x29; BlkBomb/BigBomb
@@ -4792,7 +4864,15 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 .push((arc, (fx, fy - SWORD_ARC_UP), SWORD_ARC_FRAMES[arc_anim], true, false));
             for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
                 if panels.contains(&enemy.panel()) {
-                    enemy.take_damage(chip.power);
+                    // M3 elements/weakness (T163): apply the additive
+                    // multiplier (1 + primary_hit + secondary_hit) per
+                    // asm38.s:3478-3520. Fixture enemies carry def_elem=0
+                    // and def_weakness=0 (docs/coverage/elements.md §5), so
+                    // mult is 1 here for every existing row and the take_damage
+                    // value is byte-identical to the pre-port code.
+                    let mult = damage_element_mult(chip.element, 0, 0);
+                    let dmg = (chip.power as u32 * mult).min(u16::MAX as u32) as u16;
+                    enemy.take_damage(dmg);
                 }
             }
             return;
@@ -4809,8 +4889,15 @@ const CANNON_BARREL_DY: i32 = 24; // provenance: peeked -- measured off the real
                 .fold(self.megaman.occupancy(), |m, e| m | e.occupancy())
                 | self.panels.other_half(true);
             for enemy in self.enemies.iter_mut().filter(|e| e.is_targetable()) {
-                if enemy.panel() == (fc, fr) && enemy.take_damage(chip.power) {
-                    enemy.hop(dx, 0, blocked);
+                if enemy.panel() == (fc, fr) {
+                    // M3 elements/weakness (T163) — same additive multiplier
+                    // applied as the sword strike above. mult=1 for every
+                    // existing fixture (def_elem=0, def_weakness=0).
+                    let mult = damage_element_mult(chip.element, 0, 0);
+                    let dmg = (chip.power as u32 * mult).min(u16::MAX as u32) as u16;
+                    if enemy.take_damage(dmg) {
+                        enemy.hop(dx, 0, blocked);
+                    }
                 }
             }
             return;
