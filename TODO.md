@@ -482,9 +482,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** verify_rows on mettaur_rank1 + mettaur + ai4_rank0 + cursor + full isolated table; cross-family verifier reviews the `sub_800EC80` cite and the quad-byte read site.
 **Milestone.** M5 1/187 → 2/187.
 
-### T153. Navi spawn gate *(OPEN -- 2026-09-18)*
+### T153. Navi spawn gate  *(BLOCKED -- 2026-09-18, Discovery phase [baselines, canon cites from T151a/T145/T76, fixture-byte walk] consumed budget)*
 
-
+**Result.** Discovery phase (baselines, canon cites from T151a/T145/T76, fixture-byte walk) consumed budget; implementation not landed. Worklog f74bb6b on wt/T153. Planned mechanism: join byte_80182C4 (fill-time) and sub_800EC80 quad (spawn-time) in src/battle.rs::spawnEnemy_80073E2 (asm00_1.s:86) for chosen navi's art (byte_81067FC) and HP 900. No src/ change landed. Baseline measured: mettaur + cursor at T147 PASS set; T145 navi fork cite (byte_80182C4, off_81068E8) byte-cited from docs/coverage. Canaries mettaur 0/0/70/41734, cursor 1/1/170/186279 unchanged. Next worker: drop the quad-byte poke into spawnEnemy; add KIND_NAVI_X enum; port HP 900 from byte_81067FC read; land navi_spawn row in harness.
 **Why.** T145 PARTIAL landed actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643); T76 DONE navi roster; T151a characterizes `sub_800EC80` quad id (cite from T151a).
 **Files.** `src/battle.rs`, `src/navi.rs`, `tools/states.py`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/navi.md`, `docs/worklog/T153.md`.
 **Row.** `navi_spawn` (new) paired with mettaur; canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
