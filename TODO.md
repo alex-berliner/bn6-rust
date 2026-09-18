@@ -836,9 +836,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T218. NaviCust second handler *(OPEN -- 2026-09-18)*
+### T218. NaviCust second handler  *(PARTIAL -- 2026-09-18, no ncp_row2: FstBarr chain [Set[6,1] asm37_0.s:2265-2272 -> battle slot 6 -> consumer sub_8013892 asm00_2.s:10)*
 
-
+**Result.** no ncp_row2: FstBarr chain (Set(6,1) asm37_0.s:2265-2272 -> battle slot 6 -> consumer sub_8013892 asm00_2.s:10572, spawns barrierTakeDamage_801A7CC + bubble sub_80E0D98) measured unlightable on every route: 5 dead ends all 0px, chain runs inside ONE emulated frame (watch-write build 76-78); supervisor b3 time-box hit; gated transcription+BattleStart wiring committed 196ae6c on wt/t218 (unmerged); canaries byte-identical to main (chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279); route needs .srm save-crafting or sub-frame injection -- see worklog
 **Why.** T206 (proposed) covers the first non-SuperArmor handler. **New evidence.** T110 PARTIAL's 19-handler enumeration; pick a second distinct handler, different store site from T206's pick.
 
 **Files.** `src/navicust.rs`, `src/battle.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/navicust.md`, `docs/worklog/T218.md`.
@@ -952,7 +952,7 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 
 **Why.** T151 PARTIAL (this run): state `battlestart_mettaur_rank1` + row `mettaur_rank1` land at true residual 677252/38400/70 (neg 642150 non-blind) on branch wt/t151 (c977210..393070c, tools/docs only); the residual is unported rank-1 art: canon rank1-vs-rank0 twin diff 3731102/38400 (NameID 0x0002 vs 0x0001, HP 0x0050 vs 0x0028) and our kind-0 spawn path hardwires the rank-0 METTAUR asset (`src/battle.rs:2142`). T6 already ported `ForMettaur_8109EF4` (asm31.s:171386 vicinity) which handles all ranks -- the asset/namebar selection is what is missing. Rank byte identity cited and verified this session: `GetVerActorTyAndAIIdx_80182B4` asm00_2.s:20095, `VerActorTyAIIdxTable_80182C4` :20117, rank0 idx :20122, rank1 idx :20123.
 **Files.** `src/battle.rs`, `src/objects.rs`, `assets/` (new rank-1 art if needed), `tools/harness.py` (only to pair negatives), `docs/coverage/mettaur.md`, `docs/worklog/T229.md`
-**Do.** 1. Rebase wt/t151 onto current main in a new worktree (bash tools/worktree.sh t229; `git merge wt/t151`) -- carries the row/state; re-run the mettaur_rank1 baseline. **measurement.** 2. Transcribe the rank-selecting asset/namebar/HP path for kind-0 Mettaur from `ForMettaur_8109EF4`'s canon route (asm31.s cites in T6's record) so idx 0x2 builds rank-1 art + HP 0x0050 + NameID 0x0002. **code.** 3. mettaur_rank1 to 0/0/70 with the T151 negative (rec60/rank0 twin) still non-blind. **measurement.**
+**Do.** 0. `wt/t151`'s three commits (c977210, 8ff1a02, 393070c) conflict with landed main in `tools/harness.py` (T216 f440247 added the blind_met Check at the same site; also main now carries T215/T220/T216). Rebase/re-merge them onto current main FIRST -- keep BOTH the blind_met and mettaur_rank1 entries -- and report the rebased sha so the coordinator lands it before you continue (stop after step 0 with the sha if the rebase or re-verification is not clean). **code.** 1. New worktree from the branch (bash tools/worktree.sh t229; `git merge wt/t2151` -- use the rebased commits from step 0) -- carries the row/state; re-run the mettaur_rank1 baseline. **measurement.** 2. Transcribe the rank-selecting asset/namebar/HP path for kind-0 Mettaur from `ForMettaur_8109EF4`'s canon route (asm31.s cites in T6's record) so idx 0x2 builds rank-1 art + HP 0x0050 + NameID 0x0002. **code.** 3. mettaur_rank1 to 0/0/70 with the T151 negative (rec60/rank0 twin) still non-blind. **measurement.**
 **Rules.** No allowlist change; cursor 1/1/170/186279 and mettaur 0/0/70/41734 byte-identical; no fitted constants -- art/HP/NameID from cited ROM data.
 **Acceptance.** mettaur_rank1 0/0/70 non-blind negative; verify_rows PASS on full isolated table.
 **Measure and report.** row · frames · total · worst · region · commit · mechanism (which select arms were missing) · unverified.
