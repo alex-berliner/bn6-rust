@@ -821,9 +821,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T217. Spreadr AS_DATA *(OPEN -- 2026-09-18)*
+### T217. Spreadr AS_DATA  *(PARTIAL -- 2026-09-18, rows added, not closed: chip-spreadr1/2/3 17138/1260 -> 3250/783/70 neg 4678 non-blind [canon barrel frame is )*
 
-
+**Result.** rows added, not closed: chip-spreadr1/2/3 17138/1260 -> 3250/783/70 neg 4678 non-blind (canon barrel frame is counter-driven asm31.s:111626-111630 vs our asset-duration playback; muzzle tile 37 canon 8-11 unexplained); BLOCKER: cursor regressed 1/1/170/186279 -> 16241/3385/170/170163 caused by 51-record assets/chips.bin boot-frame coupling (clean-tree A/B proved diff-attributed); cannon/airshot/mettaur byte-identical; branch wt/t217r kept UNMERGED (regression); ticket family-0x09 label corrected by measurement to attack_family 0x25 (bubbleShotAttack_80ECBB0 arm, AIAttackJumptable asm31.s:107674; off_802CCB4[9] id-conflation); also touched src/main.rs, scoreboard.py, SCOPE.md, chips.bin beyond ticket Files; worklog docs/worklog/T217.md on branch has next-step notes. 4 worker deaths on provider errors (glm-5.3-flash cold-starts).
 **Why.** T57 record-vs-id table. Spreadr1-3 (ids 9/10/11, family-0x09, dmg 30/60/90) — three-record shape like Cannon. Family-0x09 unreached.
 
 **Files.** `src/chips.rs`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/chips.md`, `docs/worklog/T217.md`.
