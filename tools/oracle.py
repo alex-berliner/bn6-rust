@@ -188,6 +188,12 @@ ENEMY_SLOT = {
     "window": 2,
     "card": 2,
     "cursor": 2,
+    # T182: navi-gunner shares the gunner row's slot 2 population
+    # (verified via tools/f16_slot_probe.py navi-gunner: first compared
+    # canon frame 80 slot2@0x203ab60 state=04 act=00 hp=003c; last compared
+    # canon frame 209 slot2@0x203ab60 state=04 act=01 hp=003c).
+    "navi-gunner": 2,
+    "navi-gunner-ai": 2,
     "windowclose": 2,
     "result": 2,
     # T147: battlestart_scripted scenario (states.TRACE_SCENARIOS, two-sided

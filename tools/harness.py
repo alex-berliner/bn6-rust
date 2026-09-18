@@ -2646,6 +2646,39 @@ PORTED_CHECKS: List[Check] = [
         serial=True,
     ),
     Check(
+        # T182: navi-gunner-ai -- chosen navi slot 0x17, exercising the AI
+        # arm (off_81068E8) dispatch path through T145's actor-type fork.
+        # Same fixture / canon side as navi-gunner (probe: the AI-arm
+        # dispatch does not regress the navi-gunner-side numbers -- the
+        # 0/0/N gate needs a true-navi-spawn state, T153/T166 PROPOSAL).
+        name="navi-gunner-ai",
+        ui="both",
+        frames=130,
+        align=Align(
+            canon_ref=80,
+            search=range(0, 40),
+            note="T182 first Navi pattern: chosen navi slot 0x17, ForGunner_8113078. "
+                 "Same descriptor as navi-gunner (NAVI_GUNNER_ROW = GUNNER_ROW with "
+                 "slot 1 KIND_NAVI, GUNNER art + navi profile HP 60 + Style::Navi). "
+                 "Same canon side: REAL+BATTLESTART_GUNNER + frame-70 identity flip "
+                 "(T145). The first-pattern routine for slot 0x17 is the per-AIIndex "
+                 "CurAction arm off_81068E8 (asm31.s:123395, T145's AI_ARM[15]); its "
+                 "CurAction 0x08 entry = sub_8106924+1 (asm31.s:164174) is the first "
+                 "non-shared CurAction in the navi's own AI arm. This row probes that "
+                 "the AI-arm data ports correctly and the per-AIIndex dispatch through "
+                 "T145's fork does not regress the navi-gunner-side numbers. canon_ref=80, "
+                 "search band match navi-gunner's.",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=NAVI_GUNNER_ROW),
+        canon=lambda ui: Side(
+            rom=REAL,
+            loadstate=BATTLESTART_GUNNER,
+            pokes_at=("70:0x02034280:0x1701", "70:0x0203ab88:0x0185"),
+        ),
+        canon_variant="canon",
+        serial=True,
+    ),
+    Check(
         name="window",
         ui="isolated",
         frames=16,
