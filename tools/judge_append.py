@@ -51,6 +51,18 @@ for i, m in enumerate(heads):
     if "**Acceptance.**" not in body and "**Measure and report.**" not in body: why.append("no acceptance")
     if not re.search(r"\bM(1[01]|[1-9])\b", body) and not re.search(r"\b(follows|follow-up to|after) [A-Z]+\d+[a-z]?\b", body): why.append("no milestone or predecessor")
     if len(body) > 9000: why.append("too long (over 9000 characters; the judge is asked for 5000)")
+    # Scope is counted but NOT refused. The judge is asked for three Do steps because a measured worker
+    # spends 15-25 tool calls on one step against a soft budget of 80, so a six-step ticket cannot finish
+    # in one session: it reaches step three, commits, and stamps PARTIAL. 27 of 83 unmerged branches on
+    # 2026-09-17 were that. But three heading-format bugs the same day each threw away a whole batch of
+    # good tickets, so this records the overrun rather than refusing on it -- an oversized ticket still
+    # produces work, and the incident tells us whether the prompt is being followed.
+    dosec = re.search(r"\*\*Do\.\*\*(.*?)(?=\n?\*\*(?:Rules|Acceptance|Measure)\.|\Z)", body, re.S)
+    steps = len(re.findall(r"(?:^|\s)(\d+)\.\s+\S", dosec.group(1))) if dosec else 0
+    if steps > 4:
+        subprocess.run(["bash", os.path.join(ROOT, "tools", "incident.sh"), "ticket-oversized",
+                        "%s has %d Do steps; the judge is asked for at most 3 (a worker's budget is ~80 tool "
+                        "calls and a step costs 15-25) -- expect a PARTIAL" % (tid, steps)])
     whytext = re.search(r"\*\*Why\.\*\*(.*?)(?=\n\*\*|\Z)", body, re.S); whytext = whytext.group(1) if whytext else body
     dead = sorted({r for r in re.findall(r"\b([A-Z]+\d+[a-z]?)\b", whytext) if STATUS.get(r) in ("NEGATIVE", "BLOCKED")})
     if dead and "**New evidence.**" not in body: why.append("continues an objective closed by %s; needs a **New evidence.** section (a measurement made after that close, or a recon map)" % ", ".join("%s (%s)" % (r, STATUS[r]) for r in dead))
