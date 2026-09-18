@@ -502,7 +502,7 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, canary intact) → T154 (M7 emotion, smallest src/ delta) → T146 (M3 first live damage, docs complete) → T151a (M5 rank-1 art, state+row already on disk) → T153 (M6 navi spawn, T151a cite reused).
 
-### T152b. Battle_full phase gap
+### T152b. Battle_full phase gap *(OPEN -- 2026-09-18)*
 
 
 **Why.** T147 DONE mapped battle_full on T131's family-A scripted scenario: sequencer `eBattleSequencerState_203CA70` 40/40 diverge k=0 (canon PARKED word 0 across 113 captured frames, every actor CurAction (4,0)) vs rust fight phase (0x8; mm (4,8); enemy (4,10)); static fields incl. rec163 HPs 250/250 and rng_cadence match 40/40. Top three fields cited: `stepBannerSequencer_800801C`/`off_8008038` (asm00_1.s:10452-10465), `playerObject_main_80EA460` (asm31.s:107131), Gunner exec family (asm32.s:9958-10102). T147's stamp names the next step: closing the parked-vs-fight phase gap.
@@ -526,7 +526,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T152c. Actor-init gate
+### T152c. Actor-init gate *(OPEN -- 2026-09-18)*
 
 
 **Why.** T152 OPEN's trace target (`eBattleSequencerState_203CA70`) needs the canonical banner-idle predicate ported to replace the fitted `SEQ04_FRAMES=60` — the in-tree fitted count is the residue T152 cannot clear on its own.
@@ -550,7 +550,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T146b. Elements/weakness port
+### T146b. Elements/weakness port *(OPEN -- 2026-09-18)*
 
 
 **Why.** T126 PARTIAL: `docs/coverage/elements.md` (+159 lines, 19f75e0) cites `sub_3007218` asm38.s:3483-3520 (additive model, starts 1, +1/weakness), `getPrimaryElementWeaknessMultipler_3007432` asm38.s:3533-3540 (table `byte_3007444` at ROM `0x081d7944`, `defender*5+attacker`), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492; T146 proposal in `docs/proposals/20260917-200300.md`.
@@ -574,7 +574,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T151b. Mettaur rank-1 scenario
+### T151b. Mettaur rank-1 scenario *(OPEN -- 2026-09-18)*
 
 
 **Why.** M5 viruses 1/187 today (T6 Mettaur rank 0). T87 DONE landed ai_index-4 rank 0 via EVENT_681 flag poke (12 ungated records, lever 60:0x0200a210:0x37a → 891 mod 12 = 3 → rec3 ai_index-4 rank v0). T6 already ported `ForMettaur_8109EF4` (asm31.s:171386-171390 vicinity), so the per-type routine is reused.
@@ -598,7 +598,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T151c. Mettaur rank-1 art
+### T151c. Mettaur rank-1 art *(OPEN -- 2026-09-18)*
 
 
 **Why.** T151 OPEN's rank-1 scenario is ready; rank-1 art unported. T6 DONE already ported `ForMettaur_8109EF4`; only the rank byte drives art variation.
@@ -620,7 +620,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 **Milestone.** M5 1/187 → 2/187 with art ported.
 
-### T162. M2 banner-idle predicate
+### T162. M2 banner-idle predicate *(OPEN -- 2026-09-18)*
 
 
 **Why.** T152a PARTIAL (1950c68): sequencer `eBattleSequencerState_203CA70` 0/40 first-div, both actors CurAction (4,0) on battlestart_scripted. `SEQ04_FRAMES=60` in `src/battle.rs` is the residue T152 OPEN cannot clear. `isBannerBusy_801E754` at asm00_2.s:31105-31131 is the canon predicate; T152a's worklog transcribed `is_banner_idle()`'s two arms (`!hud_live || (banner.is_none() && banner_was_up)`).
@@ -635,7 +635,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T163. M3 elements/weakness multiplier
+### T163. M3 elements/weakness multiplier *(OPEN -- 2026-09-18)*
 
 
 **Why.** T126 PARTIAL (19f75e0) +159 lines `docs/coverage/elements.md`: `byte_3007444` ROM 0x081d7944 (defender*5+attacker), `sub_3007218` asm38.s:3483-3520 (additive model, +1/weakness), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492. T146 OPEN cites the same; no src/ port. Mettaur/Gunner both element-0/weakness-0 (elements.md §5), so a hit against an element-1 enemy with a non-None chip is the only row path.
@@ -650,7 +650,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T165. M5 Mettaur rank-1 art
+### T165. M5 Mettaur rank-1 art *(OPEN -- 2026-09-18)*
 
 
 **Why.** T151 OPEN measured rank-1 residual 677252/38400/70 (neg 642150 non-blind) on wt/t151; scenario + row on disk, art byte unported. T151a OPEN cites `sub_800EC80` quad-id at `SpawnBattleObjectUsingBattleEntityConfig_8007368` asm00_1.s:8552; terminator `0xF0` at `BattleSettings+0xc` (`tools/inventory.py:1143`). T151's `byte_80182C4` row-1 cite falsified on wt/t151 itself. T6 DONE's `ForMettaur_8109EF4` already handles all Mettaur ranks — only the art byte varies.
@@ -665,7 +665,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T166. M6 navi spawn gate
+### T166. M6 navi spawn gate *(OPEN -- 2026-09-18)*
 
 
 **Why.** T145 PARTIAL (107e228): actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643); navi-gunner row 2092176/38237/130. T153 OPEN references T151a's `sub_800EC80` cite; identity `VerActorTyAIIdxTable_80182C4[3*0x185]=00 01 17`; art `byte_81067FC=00 0b 01 01 17 00 00 01`; HP 900 at asm31.s:123497/123548. Join of fill-time + spawn-time missing.
@@ -678,7 +678,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 **Coordinator:** cross-family verifier reviews `byte_80182C4[3*0x185]` cite (T145) and `sub_800EC80` cite (T151a) and the join's src diff.
 **Milestone advanced.** M6 (0/25 → 1/25 via live spawn).
 
-### T178. sequencer 0x20 window opening
+### T178. sequencer 0x20 window opening *(OPEN -- 2026-09-18)*
 
 
 **Why.** T147 DONE mapped battle_full on battlestart_scripted: sequencer 0x0203CA70 40/40 first-div k=0. T125 re-measured 273/540 sequencer divergent, first-div k=31 (canon 0x20, rust 0x08). T152 OPEN, T152a PARTIAL (1950c68), T162 PROPOSAL close their clusters. Step 4 table in docs/coverage/battle_full.md: canon `0x20 31..32`, rust **0** frames in 0x20. Cite: `loc_800819A` (asm00_1.s:10681-10684) gate `isCustGaugeFullAndBattleLive_800A21C` (:15305) per groups table.
@@ -701,7 +701,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T179. cracked-panel bonus via flag word
+### T179. cracked-panel bonus via flag word *(OPEN -- 2026-09-18)*
 
 
 **Why.** T130 PARTIAL landed poison via masked template `(Flags & ~0x3f5f) | 0x114` on type-4. T121b NEGATIVE landed `word_3007924` (IWRAM copy 0x081D7E24) as data, OR-ed into `oPanelData_Flags` by `_object_updatePanelParameters` (asm38.s:4213-4219). T35 BLOCKED tried direct `object_crackPanel` object.s:2218-2222. **New evidence.** T130's masked template is the same flag-word mechanism for a different panel type; type-5 cracked sits at `word_3007924 + 5*4` (IWRAM 0x081D7E38), OR-template is the analog. The flag-word path T35 didn't take.
@@ -724,7 +724,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T180. Cannon family AS_DATA
+### T180. Cannon family AS_DATA *(OPEN -- 2026-09-18)*
 
 
 **Why.** M4 43/411. `AS_DATA_FAMILIES = {0x13, 0x15, 0x21}` per tools/inventory.py. T17/T48/T52 done. Cannon/HiCannon/M-Cannon verified pixel-exact but predate AS_DATA dispatch (hardcoded path). Family-0x07 has 3 chips (id 1/2/3) with `CHIP_ELEM_NONE` damage 40/100/180 at `ChipDataArr_8021DA8` (data/ChipDataArr.s:2, stride 0x2c, include/rom_structs/ChipData.inc).
@@ -747,7 +747,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T181. third virus type
+### T181. third virus type *(OPEN -- 2026-09-18)*
 
 
 **Why.** M5 2/187 after T151 OPEN + T165 PROPOSAL (Mettaur rank 1 + art). T9c BLOCKED on Gunner. Next: third virus type from a different family via `byte_80182C4` (asm00_2.s:19965-19974, GetVerActorTyAndAIIdx_80182B4) + `off_8109150` Struct2 (T12 FOUND, tools/rom_enemy_tables.py). **New evidence.** T151a OPEN characterizes the `sub_800EC80` quad-id spawn cite (asm00_1.s:8552); the third virus spawns through the same quad path with a different quad byte — only the per-type routine at the new identity row varies.
@@ -770,7 +770,7 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 ---
 
-### T182. first Navi pattern
+### T182. first Navi pattern *(OPEN -- 2026-09-18)*
 
 
 **Why.** M6 0/25. T145 PARTIAL landed actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643) at 107e228; navi-gunner row 2092176/38237/130/2247584. T153 OPEN + T166 PROPOSAL port spawn gate: `byte_80182C4[3*0x185]=00 01 17` (fill-time) + `sub_800EC80` quad-byte (spawn-time) into `spawnEnemy_80073E2` (asm00_1.s:86); art `byte_81067FC=00 0b 01 01 17 00 00 01`; HP 900 at asm31.s:123497/123548. After spawn lands, pattern routine unported. T76 DONE: 22/25 navis have `nullsub_106` in `off_80F2474` AND `NaviActHandlers_80F25A0`; pattern work is in `AIThinkTables_8109050[ai_index]` (reader `sub_80F2354` asm31.s:123323-123356).
