@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-recov80-isolated.
-
-Recov80, canon (sterile) left and this build right: 0.0 pixels a frame. The HP counter steps by |difference|/8 + 4 a frame rather than jumping, and the flash is a palette swap on four entries, not a second set of digits.

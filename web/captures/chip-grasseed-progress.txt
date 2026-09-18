@@ -1,3 +1,0 @@
-F12 corners: same row-major sheet order; grasseed 132 to 0
-
-chip-grasseed (isolated), before and after: canon on top; ours at 0e6b477 (132 px over 70 frames, canon 5+k, rust offset 123); ours at 54abe87 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

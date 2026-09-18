@@ -1,3 +1,0 @@
-T57 audited which verified AS DATA chips really share a record's bytes: family 0x15 (Barrier et al.) was dispatching on chip id for AreaGrab/Invisibl while its three barriers were already record-driven, so tools/inventory.py's AS_DATA_FAMILIES dropped 0x15 (14 -> 11 verified-as-data chips). Canon keys chip behaviour off the ChipDataArr record (family/subfamily/params); the ROM and every pixel row are byte-identical before and after -- this landing changed the classification, not the picture.
-
-chip-cannon (isolated), before and after: canon on top; ours at 86a5b18 (0 px over 40 frames, canon 5+k, rust offset 122); ours at 954ed81 (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

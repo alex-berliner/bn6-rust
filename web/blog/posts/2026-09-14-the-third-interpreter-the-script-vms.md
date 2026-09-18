@@ -1,7 +1,0 @@
-# The third interpreter: the script VMs
-
-The last of the three interpreters from the port plan landed: the original game's script VMs. There are two of them, a map-script VM that drives cutscenes and encounters (a jump table of 71 opcodes in the original, bound by the same `mov r4, #70` check the disassembly shows) and a chatbox text-script VM (27 opcodes, indexed from byte 0xE5), each with its state block at the address the original uses. Only the opcodes a full scripted battle and the results screen actually execute are implemented; every other opcode is a named trap carrying the original's symbol, so the first time a scenario reaches one the trace names it rather than guessing.
-
-The comparison table did not move: every isolated row still 0, the cursor's single-frame tear shrank to 7 pixels with the ROM's new layout, and the rollup passes. This landing cost $0.25 of the Hyper subscription's credits; it was the first ticket landed entirely by the new all-Hyper loop, coordinator included.
-
-With the animation player, the object dispatcher and the script VMs in place, the Mettaur already running as the original's routine, and a trace that names the first divergent field, the remaining work is content and coverage: the second virus (the Gunner, whose blockers were measured today), the battle's end sequence as the original's state table, and then the routines the coverage tables rank, in order.

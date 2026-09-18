@@ -1,3 +1,0 @@
-F12 invisibl: name popup gated on FLAG_HUD_LIVE (canon sub_801E95C draws none when torn down); 14740 to 0
-
-chip-invisibl (isolated), before and after: canon on top; ours at 510c666 (14740 px over 80 frames, canon 5+k, rust offset 110); ours at 25fc380 (0 px, canon 5+k, rust offset 110). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

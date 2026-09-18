@@ -1,3 +1,0 @@
-The chip window closing across F26b. With the backdrop phase derived from canon's scroll counters and animation state at this row's reference frame, the backdrop layer reads 0 on all 40 frames and the row fell from 407778 to 34707. Everything left is on the sprite layer.
-
-windowclose (isolated), before and after: canon on top; ours at c70237b (407778 px over 40 frames, canon 81+k, rust offset 253); ours at f76360e (34707 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

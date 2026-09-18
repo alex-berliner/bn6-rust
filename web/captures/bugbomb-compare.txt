@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-bugbomb-isolated.
-
-BugBomb, canon (sterile) left and this build right: 0.0 pixels a frame over seventy. Its arc used to be swept and was one rounding step out on the frame before it lands; the constants are now read out of the object while it is in the air -- vx 0x2C000, vz 0x26062, gravity 0x2800 over 42 frames.

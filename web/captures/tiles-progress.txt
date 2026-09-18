@@ -1,3 +1,0 @@
-The custom gauge under the HUD. Its stripe animation had been fitted by eye with three constants that were close but not right. F6 replaced them with canon's routine (bar tile from t/7, marker from t&8, one counter, no phase), which took the row from 538 px to 208 on one frame; that last frame was a one-frame-early backdrop art step, fixed later in F15, and the row now reads 0.
-
-tiles (isolated), before and after: canon on top; ours at 82df214 (538 px over 8 frames, canon 44+k, rust offset 427); ours at a27b1e6 (208 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

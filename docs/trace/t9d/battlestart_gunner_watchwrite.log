@@ -1,6 +1,0 @@
-# source stdout: /tmp/t9d_gun_stdout.txt
-watch-write: 3 range(s), 12 byte watchpoint(s) armed
-WP frame=0 addr=0x020352A0 write old=0x00000000 new=0x00000000 at=0x00000240 (arm) r15=0x00000248 lr=0x000000A4
-WP frame=0 addr=0x020352A2 write old=0x00000000 new=0x00000020 at=0x0801BE7E (thumb) r15=0x0801BE82 lr=0x080008F7
-WP frame=69 addr=0x020352A2 write old=0x00000020 new=0x00000020 at=0x0801DF8E (thumb) r15=0x0801DF92 lr=0x0801419B
-WP frame=154 addr=0x020352A0 write old=0x00000000 new=0x00000000 at=0x0801DF98 (thumb) r15=0x0801DF9C lr=0x0802685D

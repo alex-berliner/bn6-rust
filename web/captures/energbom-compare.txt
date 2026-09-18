@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-energbom-isolated.
-
-EnergBom, canon (sterile) left and this build right: 0.0 pixels a frame. MiniBomb's launcher and MiniBomb's arc, differing only in what it does when it lands.

@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Kept as a record of that step.
-
-How a battle opens, canon above and this build below. Found with the harness's first save state at a battle's FIRST frame, which immediately showed two things wrong here: a battle OPENS with the chip window (frame 165, unprompted) where this build made you wait 1260 frames for it, and BATTLE START! follows the chip window rather than the intro. Corrected, the banner lands at 291 against canon's 292.

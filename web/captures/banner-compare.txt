@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is banner-isolated.
-
-The ENEMY DELETED banner, canon (sterile) above and this build below: 0 pixels over all 58 frames. The banner is text -- a font of 8x16 cells and a record per message, twenty cells uploaded as five 32x16 objects -- and all forty-five of the game's messages are in the build. The unrolling is one shared affine matrix whose vertical scale opens from a flat line, overshoots into a stretch, holds and rolls back up.

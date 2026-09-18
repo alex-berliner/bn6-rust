@@ -1,3 +1,0 @@
-F12 suprvulc: canon-data muzzle-fire replica chip-gated to SuprVulc; 2464 to 0
-
-chip-suprvulc (isolated), before and after: canon on top; ours at 5cb8320 (2464 px over 113 frames, canon 5+k, rust offset 122); ours at 7b551ad (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

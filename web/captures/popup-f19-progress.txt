@@ -1,3 +1,0 @@
-The damage popup row across F19. Only the fixture changed: on the canon side the Mettaur now goes from ALIVE to DELETE_ENEMY with the dissolve blanking applied, the situation our side was already in, so the two sides finally compare the same moment (107511 to 60614). The popup digits themselves match exactly and the enemy's box dropped from 51991 to 6081. The 55520 pixels that remain are canon's sprite-layer HUD HP bar, which our build does not draw in this fixture yet (the OBJ HUD work of F20).
-
-popup (isolated), before and after: canon on top; ours at 4a2ce08 (107511 px over 80 frames, canon 43+k, rust offset 122); ours at c2c24e6 (60614 px, canon 43+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

@@ -1,7 +1,0 @@
-# The battle's end as a state table, and what the trace says is still missing
-
-The original game runs its banners, its custom-screen pauses and its end of battle from one small state machine: a byte that names the current state, a jump table of handlers, and a count for each state. Our build had a hand-written sequence with a flag and a constant. Today the state table is ported (T7), and a second ticket (T7b) made the evidence for it reproducible after a verifier caught the first attempt reporting matches on a field the recording did not contain: the trace's judge now fails loudly when a field is missing, and fresh recordings of a full battle, the Mettaur, the popup and the results screen are kept with the repository.
-
-What the trace says now, frame by frame, is the useful part. On the full scripted battle the state byte matches the original on 366 of 540 frames. The 174 that differ are named: 100 frames where the original sits in its chip-select and custom-screen states while ours stays in the fight state with the window open, and nine frames at the end where our side reaches the results countdown early. Aligned on that end edge, the two sides match on all 239 remaining frames to the end of the recording. So the next ticket is not a guess: port the custom-screen states from the same table, and find the nine frames.
-
-That is the shape the porting phase is meant to have. Instead of a residue on a picture, a named state on a named frame, with the original's handler to read.

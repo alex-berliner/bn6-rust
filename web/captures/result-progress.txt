@@ -1,3 +1,0 @@
-F34b: no intro fade on results-screen start plus MegaMan panel and no-enemy descriptor; 102547 to 0
-
-result (isolated), before and after: canon on top; ours at 1ca132f (93183 px over 40 frames, canon 21+k, rust offset 21); ours at 92a01a9 (0 px, canon 21+k, rust offset 21). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-megenbom-isolated.
-
-MegEnBom, canon (sterile) left and this build right: 0.0 pixels a frame. It shares MiniBomb's launcher exactly -- vx 0x2E666, vz 0x20666, gravity 0x2800 over forty frames -- read out of the object in flight rather than fitted.

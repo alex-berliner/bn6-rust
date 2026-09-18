@@ -1,3 +1,0 @@
-MegaMan's warp between panels. Canon's scripted presses were silently ignored (the game stops reading the joypad in the battle state the row sits in), so canon's MegaMan stood still while ours warped -- the whole 9198 px was our warp against a static sprite, and the row's negative control read the same number as the row itself. F11 delivers the presses to MegaMan's input record directly, blanks the ready-chip bubble, and locks the alignment on the warp event. Now both warp together.
-
-warp (isolated), before and after: canon on top; ours at 7a3d97b (9198 px over 30 frames, canon 130+k, rust offset 30); ours at 389578d (0 px, canon 130+k, rust offset 51). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

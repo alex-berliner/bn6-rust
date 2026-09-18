@@ -1,3 +1,0 @@
-F37b-F37g: pan, pose, icon, object-Y, bracket, closing mark; windowclose 27819->0
-
-windowclose (isolated), before and after: canon on top; ours at 3347893 (27819 px over 40 frames, canon 81+k, rust offset 253); ours at f322bf9 (0 px, canon 81+k, rust offset 253). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

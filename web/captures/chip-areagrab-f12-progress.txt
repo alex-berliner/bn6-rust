@@ -1,3 +1,0 @@
-The AreaGrab chip across F12's orbs pass. The orbs' art is now extracted byte for byte from the canon ROM and they land at ground level as the disassembly's landing check requires, instead of the earlier approximation: 25644 to 1278 differing pixels over 77 frames. What remains is the burst bank on one frame and the dim shading of the orbs, which our build does not draw yet.
-
-chip-areagrab (isolated), before and after: canon on top; ours at b06fd6f (25644 px over 77 frames, canon 5+k, rust offset 110); ours at 68535fb (1278 px, canon 5+k, rust offset 126). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

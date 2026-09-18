@@ -1,3 +1,0 @@
-F12 vdoll: snap rest Z=0 plus poison plus 1-frame landing lag (sub_80D47C0); 628 to 0
-
-chip-vdoll (isolated), before and after: canon on top; ours at ce4f73e (628 px over 70 frames, canon 5+k, rust offset 123); ours at c622a81 (0 px, canon 5+k, rust offset 123). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

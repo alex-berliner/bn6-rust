@@ -1,3 +1,0 @@
-The custom gauge tiles across F15, the last 208 pixels. The backdrop's art advanced one frame early on our side: canon queues each tile upload one frame before it takes effect, so its step counter runs one ahead of the frame you see, while ours uploaded in sync. Constructing our backdrop with its seed one step ahead (a derived constant, mirroring the first hold length plus one) made the art step land on the same frame, and the row reads 0 on all eight frames.
-
-tiles (isolated), before and after: canon on top; ours at d9f9c46 (208 px over 8 frames, canon 44+k, rust offset 427); ours at 12a130a (0 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

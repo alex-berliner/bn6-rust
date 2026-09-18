@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-vdoll-isolated.
-
-VDoll, canon (sterile) left and this build right: 0.0 pixels a frame over seventy. The doll rises to the top of the screen and stands where it lands. Its launch is vx 0x1EEEE, vz 0x2F333, gravity 0x2000 over sixty frames -- and unlike a bomb it MOVES AND THEN FALLS, which was the last pixel.

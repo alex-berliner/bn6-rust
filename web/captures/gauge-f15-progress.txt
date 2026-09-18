@@ -1,3 +1,0 @@
-The custom gauge row across F15, same fix as tiles: the backdrop's art step was a frame early because canon queues each tile upload one frame ahead while ours uploaded in sync. Seeding our backdrop one step ahead put the step on the same frame and the row reads 0 on all eight frames.
-
-gauge (isolated), before and after: canon on top; ours at d9f9c46 (208 px over 8 frames, canon 44+k, rust offset 427); ours at 12a130a (0 px, canon 44+k, rust offset 427). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

@@ -29,3 +29,4 @@ web/*.srm
 decomp/
 # ticket traces: generated on demand by tools/ticket_trace.py from /tmp artifacts; big and reproducible
 docs/tickets/
+bn.gba

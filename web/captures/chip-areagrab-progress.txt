@@ -1,3 +1,0 @@
-F12 areagrab remainder: lowest-orb-first draw order matches canon y-descending OAM, palette walk into burst; 1278/684/77->0/0/77
-
-chip-areagrab (isolated), before and after: canon on top; ours at bdd94ab (1278 px over 77 frames, canon 5+k, rust offset 126); ours at ad653c0 (0 px, canon 5+k, rust offset 126). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

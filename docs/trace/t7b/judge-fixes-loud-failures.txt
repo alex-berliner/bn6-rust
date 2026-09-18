@@ -1,8 +1,0 @@
-### a v2 (pre-sequencer-field) rust record must fail, not print match:
-rust side (/tmp/tr_bf_r) has no 'sequencer' field in any of its 543 rows -- the sequencer cannot be judged, and this tool will not report a match for a field that is not there. Re-record it against the TRC2 v3 export (tools/trace.py record rust <scenario> --out /tmp/tr_bf_r); that record's rows carry: backdrop_entry, backdrop_timer, backdrop_xq, backdrop_yq, banner_phase, e1_anim, e1_hp, e1_panel_x, e1_panel_y, e1_state_action, e1_timer, e2_state_action, e3_state_action, field_slide, frame, gauge, hud_mask, mercy, mm_anim, mm_hp, mm_panel_x, mm_panel_y, mm_state_action, mm_timer, rng
-
-### --align sequencer=<a state that never happens> must report, not StopIteration:
---align sequencer=0x10: the canon side (/tmp/t7b/base/c_bf) never reads 0x10 -- its 555 recorded rows read 0x0, 0x4, 0x8, 0xc, 0x1c, 0x20, 0x24. Align on a state that happens, or re-record.
-
-### the align T7 ran and crashed on (v2 record, sequencer=0x0C):
-rust side (/tmp/tr_bf_r) has no 'sequencer' field in any of its 543 rows -- the sequencer cannot be judged, and this tool will not report a match for a field that is not there. Re-record it against the TRC2 v3 export (tools/trace.py record rust <scenario> --out /tmp/tr_bf_r); that record's rows carry: backdrop_entry, backdrop_timer, backdrop_xq, backdrop_yq, banner_phase, e1_anim, e1_hp, e1_panel_x, e1_panel_y, e1_state_action, e1_timer, e2_state_action, e3_state_action, field_slide, frame, gauge, hud_mask, mercy, mm_anim, mm_hp, mm_panel_x, mm_panel_y, mm_state_action, mm_timer, rng

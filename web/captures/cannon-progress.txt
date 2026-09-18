@@ -1,3 +1,0 @@
-T13d NEGATIVE: cannon-route audio probe — canon fires ch0+ch4 SFX, ours silent. Docs-only commit; no harness change.
-
-cannon (isolated), before and after: canon on top; ours at 19b83ed (0 px over 40 frames, canon 5+k, rust offset 122); ours at e87cc7f (0 px, canon 5+k, rust offset 122). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

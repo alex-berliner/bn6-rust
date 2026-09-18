@@ -1,3 +1,0 @@
-HISTORY (2026-09-07): made by a tool that no longer exists, under that day's method (a boxed region or a demo-feature build), so any 'pixels a frame' figure below is not today's full-screen standard. Today's measurement for this subject is chip-vulcan3-isolated.
-
-Vulcan3, canon (sterile) left and this build right: 0.0 pixels a frame over eighty. Five shots ten frames apart, each fanned a little above or below the row it was aimed at -- the fan comes from one byte per shot in the game's own table, not from a guess.

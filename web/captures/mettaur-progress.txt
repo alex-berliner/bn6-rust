@@ -1,3 +1,0 @@
-T163 PARTIAL: damage_element_mult ported (additive model from asm38.s:3478-3520, PRIMARY table from ROM 0x081d7944); inline match arms preserve cursor 1/1/170 and mettaur 0/0/70; element_hit row deferred (no def_elem!=0 fixture yet)
-
-mettaur (isolated), before and after: canon on top; ours at a62dce7 (0 px over 70 frames, canon 140+k, rust offset 205); ours at b7a1367 (0 px, canon 140+k, rust offset 205). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).

@@ -1,9 +1,0 @@
-trace diff /tmp/t7b/base/c_pop vs /tmp/t7b/base/r_pop -- row popup: canon frame 43+k <-> rust export frame 122+k, 80 compared frames (shift 0)
-  sequencer          match          80/80 frames
-  mm_state_action    DIVERGES       first k=0 (canon frame 43) canon=(4, 21) rust=(4, 8); 80/80 frames
-  mm_anim            match          80/80 frames
-  mm_panel_x         match          80/80 frames
-  mm_panel_y         match          80/80 frames
-  mm_timer           match          80/80 frames
-  rng_cadence        match          80/80 frames
-FIRST DIVERGENCE: mm_state_action at k=0 (canon frame 43) canon=(4, 21) rust=(4, 8)

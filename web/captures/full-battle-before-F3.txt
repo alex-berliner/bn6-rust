@@ -1,3 +1,0 @@
-The release ROM played by a fixed player script (tools/battle_gif.py), 2400 frames at every 2th: the chip window a battle opens with, a chip picked and OK, 'Sending chip data', BATTLE START!, the fight against a Mettaur with the buster and FireSwrd, deletion and RESULT. OBSERVED, NOT YET MEASURED: after the chip window slides out, a faded copy of it stays drawn on the left of the field for the whole battle; no harness row covers the window closing yet, and TODO F3 measures it against canon under the same inputs. This is the build as a player sees it, not a parity measurement; the per-row GIFs are the measurements. THIS IS THE BEFORE: the ROM at 67f795f, before F3 removed the chip window's ghost -- compare full-battle-loop.gif, the current build.
-
-commit 904f07b
