@@ -791,9 +791,9 @@ Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, 
 
 **Milestone advanced.** M6 (0/25 → 1/25 with pattern, not just spawn).
 
-### T215. End-of-battle hand-off *(OPEN -- 2026-09-18)*
+### T215. End-of-battle hand-off  *(DONE -- 2026-09-18, landed dca956a: 0x0C predicate transcribed [fires k=304, word flips k=305, 0 mismatches k=305..530 canon watch)*
 
-
+**Result.** landed dca956a: 0x0C predicate transcribed (fires k=304, word flips k=305, 0 mismatches k=305..530 canon watch @0x02034880 link-map-confirmed); trace decision-identical (sequencer 273/540 first k=31 unchanged); verify_rows 8 named rows byte-identical from clean checkout + HEAD post-merge; verifier-hyper CONFIRMED behavior-preservation+cites, no land-blockers; arm-cite nits (sub_802CA1E 13324-13357, BannerSequencerStates table 10512) -> cite sweep ticket. child 0.5099 USD-equiv
 **Why.** T7e DONE closed end-edge nine frames early on battle_full; the 0x0C state entry predicate (after k=304) needs verification on a longer scenario. T119 DONE landed rank/zenny calc. **New evidence.** T7e's per-state-count model of battle-end is incomplete (T26 NEGATIVE named it); the post-0x0C path through rank/zenny is the actual hand-off.
 
 **Files.** `src/battle.rs`, `tools/trace.py`, `docs/coverage/battle_full.md`, `docs/worklog/T215.md`.
