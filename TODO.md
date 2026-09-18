@@ -502,9 +502,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 
 Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, canary intact) → T154 (M7 emotion, smallest src/ delta) → T146 (M3 first live damage, docs complete) → T151a (M5 rank-1 art, state+row already on disk) → T153 (M6 navi spawn, T151a cite reused).
 
-### T152b. Battle_full phase gap *(OPEN -- 2026-09-18)*
+### T152b. Battle_full phase gap  *(BLOCKED -- 2026-09-18, Worker measured canonical is_banner_idle: with banner_at=BATTLE_START_AFTER_WINDOW [30-frame pre-banner delay])*
 
-
+**Result.** Worker measured canonical is_banner_idle: with banner_at=BATTLE_START_AFTER_WINDOW (30-frame pre-banner delay), SEQ_04 release edge lands at age ~85 vs fitted 60, off by ~25 frames from canon's record-idle check (byte_2036840 == 4). With banner_at=0 (banner up immediately), release lands at age 58, 2-frame off from canon's 60 — solvable via existing banner spawn arm but the worker did not modify src/. Branch wt/T152b kept UNMERGED (worklog-only); cursor would regress 1->32+ px under any banner_at != 0 port (measured against T147 PASS set, see T152c doc for the residual regression). T152b is logically equivalent to T152c — same banner-idle port attempt on the same chain; both BLOCKED for the same reason. 7 BLOCKED in this run (T150/T161/T154/T146/T151a/T153/T152c/T152b); next-worker fix is shared: set banner_at = 0 when SEQ_04 enters.
 **Why.** T147 DONE mapped battle_full on T131's family-A scripted scenario: sequencer `eBattleSequencerState_203CA70` 40/40 diverge k=0 (canon PARKED word 0 across 113 captured frames, every actor CurAction (4,0)) vs rust fight phase (0x8; mm (4,8); enemy (4,10)); static fields incl. rec163 HPs 250/250 and rng_cadence match 40/40. Top three fields cited: `stepBannerSequencer_800801C`/`off_8008038` (asm00_1.s:10452-10465), `playerObject_main_80EA460` (asm31.s:107131), Gunner exec family (asm32.s:9958-10102). T147's stamp names the next step: closing the parked-vs-fight phase gap.
 
 **Files.** `src/battle.rs` (sequencer word + actor init), `tools/trace.py` (sequencer divergence report), `docs/coverage/battle_full.md`. NOT `src/objects.rs`, NOT `src/actor.rs`.
