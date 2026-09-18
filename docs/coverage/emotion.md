@@ -36,10 +36,20 @@ landed `assets/emotion.bin` bank and `src/emotion.rs`'s per-face palettes:
   there -- face-ONLY, 694 px/frame), and `drawEmotionWindow_801CDEC` emits NO
   OBJ for countdown 5/6 (asm00_2.s:27647-27652; T108 measured byte=5 -> face
   gone).
-  Ours (descriptor `emotion=5`) builds no sprites for slots 5/6. Row reads
-  0/0/40, negative not blind (644): BOTH worlds show an empty face box over
-  all 40 frames -- an empty box against an empty box, pairing evidence for
-  the align window, NOT face coverage.
+  T225 WON THE ROW BACK BY MECHANISM: the port now models the countdown byte
+  (`src/emotion.rs`'s `blink_countdown`/`blink_cycles`, gated in `show` exactly
+  like canon's drawer at asm00_2.s:27762-27768; the active arm of sub_801CC94 --
+  per-frame decrement, wrap-reload of the canon period 0xc -- is transcribed in
+  `Emotion::update`; the ARMING path and the bit-1 overlay queue are still
+  unported, see unverified) and takes its initial value from descriptor +64
+  (`blink_countdown`, the descriptor mirror of canon's at-load poke
+  0x0203528e:0x0500). The static "emotion=5 builds no sprites" arm is DELETED:
+  slots 5/6 build sprites like every other slot (T123 verified the slot-5
+  render pixel-exact). Row reads 0/0/40 and the negative is the ZEROED PORTED
+  WRITE (harness `negative_rust`: the same descriptor with blink_countdown 0),
+  which must read the slot-5 face -- negative 27760 = 694 px/frame flat in the
+  face box, T123's measured profile: the row fails through the ported blink
+  arm, not through a frame shift.
 
 **When the countdown arms (T123, read off sub_801CC94 asm00_2.s:27520-27600
 and confirmed by a 100-frame watch):** the countdown does NOT free-run. A
@@ -52,9 +62,10 @@ pattern copies while the PRE-decrement countdown has bit 1 set (:27567-27574).
 MEASURED on the descriptor route (T123, probe.py watch, emotion_syn recipe,
 100 capture frames): the countdown reads 0x00 on EVERY frame -- the blink
 never arms, so the 5/6 blanking phases never occur in any compared window
-here. The port's fixed 5/6 arm therefore matches canon on this route for the
-wrong reason, and slots 5/6 DO draw on canon whenever the countdown is not in
-a blink: see the skip-range note below for the cross state.
+here. Slots 5/6 DO draw on canon whenever the countdown is not in a blink: see the
+skip-range note below for the cross state. (T225 landed exactly this: the
+static 5/6 arm is deleted, the countdown byte is modeled, and the row is won
+back with the zeroed-write negative -- 27760.)
 
 Measured poke effects (T122 step 2, canon 43..82, each poke against the same
 recipe with no face poke): both pokes are face-ONLY -- 27760 total = 694
@@ -194,11 +205,11 @@ Measured this session (probe.py diff, 90 frames, sterile PAUSED route):
   rng_cadence) match 40/40.
 - `cursor` residue 29/28/170 (veto 1/1/170/186300): pre-existing from pass
   4's port, unchanged by this pass (identical before and after).
-- Coverage arithmetic (corrected after the verifier pass): M7 emotion goes
-  **1/25 → 2/25** with T122 (`emotion_syn` + `emotion_face_b`); the
-  `emotion_skip` row is WITHDRAWN from coverage pending the follow-up -- it
-  pairs an empty box against an empty box, which proves the align window,
-  not a face.
+- Coverage arithmetic (corrected after the verifier pass): M7 emotion went
+  **1/25 → 2/25** with T122 (`emotion_syn` + `emotion_face_b`); T225 won the
+  withdrawn `emotion_skip` back by mechanism (the modeled 0x0203528F countdown
+  gates the draw; the negative zeroes the ported write and fails at 27760),
+  taking M7 emotion to **3/25**.
 
 ## Known coupling (pass 6, 2026-09-17): the cursor row reads the binary footprint
 

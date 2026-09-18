@@ -320,7 +320,7 @@ pub fn fixture_ptr() -> *const u8 {
 /// the BIOS's VBlankIntrWait, and commit's copies start after it returns),
 /// so the pad lives here: a busy-wait that reads and writes nothing,
 /// delaying every frame's copy start by a measured constant.
-const SEAM_PHASE_PAD_ITERS: u32 = 25; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout
+const SEAM_PHASE_PAD_ITERS: u32 = 20; // provenance: fitted -- T111 size sweep on the cursor row: k=37 seam 28px at 0 iters, 25@1, 15@8, 6@16, 0@17, 17@18, 25@20 (V-bottom at 17); k=97 tear 1px throughout. RE-FIT by T225 after the emotion blink-countdown port re-rolled the footprint: 16241/3385 at the old 25 AND at 21, 1/1/170/186279 at 19 and 20 (swept 19,20,21,25,30) -- 20 taken, mid-plateau
 
 #[agb::entry]
 fn main(mut gba: agb::Gba) -> ! {

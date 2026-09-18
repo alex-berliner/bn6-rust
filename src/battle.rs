@@ -2606,6 +2606,11 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 // an emotion, and with enemies>=1 this window's face byte is
                 // not ours to read (0 = calm = the pre-T105 behaviour).
                 fixture.map_or(0, |f| if f.enemies == 0 { f.emotion } else { 0 }),
+                // +64 (T225): the blink countdown's initial value, canon
+                // eStruct2035280+0xf -- the byte the draw gate reads. Owns
+                // the byte outright (no enemy_action-style overlay), so it
+                // is read whatever the arena holds.
+                fixture.map_or(0, |f| f.blink_countdown),
             ),
             // Canon enables the emotion window with the rest of the battle
             // HUD and never re-enables it inside a battle, so this starts
@@ -3102,6 +3107,16 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // modelled here; it is never re-enabled inside a battle.
         if over {
             self.hud_live = false;
+        }
+
+        // The emotion window's updater frame: canon dispatches
+        // updateEmotionWindow_801CADC (asm00_2.s:27377-27427) every frame
+        // while element 14 is enabled -- the same mask bit that `hud_live`
+        // models -- and its tail call sub_801CC94 owns the blink countdown
+        // byte the drawer's gate reads (asm00_2.s:27426; see
+        // `Emotion::update` for exactly what is and is not ported).
+        if self.hud_live {
+            self.emotion.update();
         }
 
         // The gauge only runs while the fight does; a full gauge holds

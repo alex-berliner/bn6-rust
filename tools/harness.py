@@ -122,7 +122,7 @@ def find_marker_origin(watch_file, magic=MARKER_MAGIC):
 # ROM's own init could plausibly stomp EWRAM at 0x02000040.
 FIXTURE_ADDR = 0x0200_0040
 FIXTURE_MAGIC = 0x4649_5854  # "FIXT"
-FIXTURE_SIZE = 64
+FIXTURE_SIZE = 66
 
 
 def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
@@ -259,6 +259,19 @@ def fixture_cheats(descriptor: dict) -> Tuple[str, ...]:
     # pre-T105 row already delivered). The value is canon's off_801CD08 face
     # slot (asm00_2.s:27580-27603), read by src/fixture.rs's `emotion`.
     buf[63] = descriptor.get("enemy_action", 0) | descriptor.get("emotion", 0)
+    # T225: +64 blink_countdown, the descriptor's first byte past its original
+    # 64 (FIXTURE_SIZE grew 64 -> 66 so the val16 write loop below covers it;
+    # +65 stays 0, spare). NOT in FIXTURE.md -- src/fixture.rs's own reserved
+    # addition, same shape as +62/+63: the emotion window's blink countdown
+    # initial value, canon eStruct2035280+0xf = 0x0203528F, the byte
+    # drawEmotionWindow_801CDEC's gate reads (asm00_2.s:27759-27768, blank at
+    # 5/6) and sub_801CC94 owns (period 0xc, asm00_2.s:27655-27656 and
+    # :27674-27675). It mirrors canon's at-load poke 0x0203528e:0x0500: the
+    # byte is never written afterwards on either side of the compared routes
+    # (canon: T105's 80-frame watch; the port's arming path is unported), so
+    # the value holds. 0 = the never-armed default every pre-T225 descriptor
+    # already delivered (T123's 100-frame watch: canon's countdown flat 0x00).
+    buf[64] = descriptor.get("blink_countdown", 0)
     out = []
     for off in range(0, FIXTURE_SIZE, 2):
         val, = struct.unpack_from("<H", buf, off)
@@ -575,6 +588,18 @@ class Check:
     #: `window` uses "pixel", and its own note carries the measurement that
     #: justifies it.
     negative: str = "frame"
+    #: T225: when set, the negative fixture is not a shift of the row's own
+    #: captures but a THIRD capture: this callable builds the rust Side for
+    #: it (same canon side, same align, own variant_label). Its per-frame
+    #: counts ARE the negative -- the BLIND test (`all(c == 0)`) applies to
+    #: them unchanged. Use it when the row's subject is a byte the port
+    #: WRITES from a descriptor field: zeroing the field in the negative's
+    #: rust side proves the row's zero comes from that write and not from a
+    #: static arm the descriptor cannot reach. emotion_skip's negative is
+    #: this row's own rust descriptor with blink_countdown 0 -- the ported
+    #: write of eStruct2035280+0xf zeroed -- so the negative fails through
+    #: the live blink gate (the ported countdown, not the face slot).
+    negative_rust: Optional[Callable[[str], Side]] = None
     #: T9i (2026-09-15): when True, run() captures rust then canon
     #: sequentially in this process (no ThreadPoolExecutor) -- the rust+canon
     #: pair stays out of cc.CAPTURE_SLOTS contention together. The gunner
@@ -726,7 +751,8 @@ def plain_rom() -> str:
 
 #: TODO F27b: `flags` defaults to every chip row's own 0x1F and only the
 #: `popup` row passes anything else -- see that row's own note.
-def _chip_rust(chip_hex: str, flags: int = 0x1F, emotion: int = 0) -> Callable[[str], Side]:
+def _chip_rust(chip_hex: str, flags: int = 0x1F, emotion: int = 0,
+               blink_countdown: int = 0) -> Callable[[str], Side]:
     desc = {
         "enemies": 0, "megaman_hp": 100, "megaman_col": 2, "megaman_row": 2,
         "hand": [int(chip_hex, 16)], "hand_count": 1, "gauge": 0,
@@ -737,6 +763,14 @@ def _chip_rust(chip_hex: str, flags: int = 0x1F, emotion: int = 0) -> Callable[[
         # named when nonzero so every pre-existing descriptor's +63 byte is
         # untouched.
         desc["emotion"] = emotion
+    if blink_countdown:
+        # T225: the emotion window's blink countdown initial value, canon
+        # eStruct2035280+0xf = 0x0203528F (the byte drawEmotionWindow_801CDEC's
+        # gate reads; the port's model is src/emotion.rs's blink_countdown).
+        # Only named when nonzero so every pre-existing descriptor's +64 byte
+        # is untouched (0 = the never-armed default every descriptor route
+        # already behaves as).
+        desc["blink_countdown"] = blink_countdown
     return lambda ui: Side(rom=plain_rom(), fixture=desc, extra=("--disable-bg",))
 
 
@@ -744,9 +778,11 @@ def _form_cross_rust(chip_hex: str) -> Callable[[str], Side]:
     """T135: the emotion_syn descriptor route with the transformation byte
     poked on OUR side too -- src/battle.rs reads it at battle build the way
     canon's init reads it (playerObject_init_80172F0, asm00_2.s:18108-18110).
-    emotion=5 takes the landed 5/6 arm (empty face box, matching the canon
-    side's pinned countdown), so the row isolates the recoloured body."""
-    inner = _chip_rust(chip_hex, flags=0x5F, emotion=5)
+    blink_countdown=5 (T225) is the descriptor mirror of the canon side's own
+    pinned countdown poke 0x0203528e:0x0500 -- the draw gate blanks on the
+    countdown byte, not on the face slot, so the row isolates the recoloured
+    body."""
+    inner = _chip_rust(chip_hex, flags=0x5F, emotion=5, blink_countdown=5)
     return lambda ui: replace(inner(ui), pokes=inner(ui).pokes + ("0x0203ce2c:0x0001",))
 
 
@@ -3494,36 +3530,44 @@ PORTED_CHECKS: List[Check] = [
         ui="isolated",
         frames=40,
         align=ALIGN_CHIP,
-        # T122: pairing row -- canon's BLINK blanking vs our emotion 5/6
-        # arm, an empty box against an empty box. This is pairing evidence
-        # for the align window, NOT face coverage and NOT skip-arm
-        # coverage: eStruct2035280+0xf = 0x0203528F is the 12-step blink
-        # countdown owned by sub_801CC94 (asm00_2.s:27550-27551 loads 0xc,
-        # :27557-27566 decrements per frame, :27567-27574 copies the blink
-        # pattern off bit 1), and drawEmotionWindow_801CDEC emits NO OBJ
-        # when that countdown sits at 5/6 (asm00_2.s:27648-27652; T108
-        # measured byte=5 -> face gone, 694 px/frame) -- the `cmp #6`/
-        # `cmp #5` are two phases of the blink cycle, ~2 blank frames per
-        # cycle on canon. The row pins the countdown byte to 5 (nothing
-        # else writes it on this route -- T105 pass-4 watch read 0x00 for
-        # 80 frames -- so a load poke survives). MEASURED this session (T122
-        # step 2, 40-frame window canon 43..82): the aligned halfword poke
-        # 0x0203528E:0x0500 -- bytes 0x0203528E=0x00 (eStruct+0xe, the
-        # beast-out counter, sub_801CB38:27343-27344 stores the emotion
-        # call's second return; reads 0 on this route so the poke is
-        # harmless) and 0x0203528F=0x05 (the countdown byte) -- is
-        # face-ONLY: 27760 total = 694 px/frame flat in the face box
-        # x0..48/y18..34, 0 px everywhere else, i.e. the calm face vanishes
-        # and stays gone for the whole window.
+        # T122, WON BACK BY MECHANISM IN T225: the BLINK row.
+        # eStruct2035280+0xf = 0x0203528F is the 12-step blink countdown
+        # owned by sub_801CC94 (asm00_2.s:27655-27656 loads 0xc when arming,
+        # :27667-27675 decrements per updater frame and reloads 0xc at the
+        # wrap, :27677-27683 copies the blink pattern off bit 1), and
+        # drawEmotionWindow_801CDEC emits NO OBJ when that countdown sits at
+        # 5/6 (asm00_2.s:27762-27768; T108 measured byte=5 -> face gone,
+        # 694 px/frame) -- the `cmp #6`/`cmp #5` are two phases of the blink
+        # cycle, ~2 blank frames per cycle on canon. The row pins the
+        # countdown byte to 5 (nothing else writes it on this route -- T105
+        # pass-4 watch read 0x00 for 80 frames -- so a load poke survives).
+        # MEASURED (T122 step 2, 40-frame window canon 43..82): the aligned
+        # halfword poke 0x0203528E:0x0500 -- bytes 0x0203528E=0x00
+        # (eStruct+0xe, the beast-out counter, sub_801CB38:27343-27344 stores
+        # the emotion call's second return; T123 measured it 0x03 on this
+        # route, so the poke is harmless there) and 0x0203528F=0x05 (the
+        # countdown byte) -- is face-ONLY: 27760 total = 694 px/frame flat in
+        # the face box x0..48/y18..34, 0 px everywhere else, i.e. the calm
+        # face vanishes and stays gone for the whole window.
         #
-        # rust: the same descriptor with emotion=5 (+63) -- src/emotion.rs
-        # builds NO sprites for slots 5/6, so BOTH sides show an empty face
-        # box for the whole window. (That makes this a blink-vs-empty
-        # pairing row, per the comment above -- the cross-state slot 5/6
-        # faces canon DOES draw via the transformation table are a separate,
-        # untested path and likely missing from our port; see
-        # docs/worklog/T122.md "for the next ticket".)
-        rust=_chip_rust("b1", flags=0x5F, emotion=5),
+        # T122 had withdrawn this row: the old rust arm -- descriptor
+        # emotion=5 building no sprites -- was a static model of the pin, an
+        # empty box against an empty box. T225 ports the countdown byte
+        # (src/emotion.rs's blink_countdown, gated in `show` exactly like
+        # canon's drawer) and takes its initial value from descriptor +64:
+        # blink_countdown=5 here, the descriptor mirror of canon's own
+        # at-load poke 0x0203528e:0x0500. The face-slot byte (emotion=5) is
+        # now LIVE on our side -- slots 5/6 build sprites like every other
+        # slot (T123 verified the slot-5 render pixel-exact) -- so the row's
+        # zero comes from the countdown gate alone. The negative proves it:
+        # negative_rust runs this same descriptor with blink_countdown 0 --
+        # THE PORTED WRITE ZEROED -- and must read the slot-5 face (T123's
+        # measured 694 px/frame profile), i.e. the row fails through the
+        # ported blink arm, not through a frame shift.
+        rust=_chip_rust("b1", flags=0x5F, emotion=5, blink_countdown=5),
+        # The ported countdown write zeroed: the same descriptor with
+        # blink_countdown 0 (the default every pre-T225 descriptor delivered).
+        negative_rust=_chip_rust("b1", flags=0x5F, emotion=5, blink_countdown=0),
         # emotion_syn's canon side verbatim with the Unk_32 halfword swapped
         # for the gate-byte one -- the face poke is the ONLY delta.
         canon=lambda ui: Side(rom=STERILE, loadstate=PAUSED,
@@ -3773,18 +3817,36 @@ def run_check(check: Check, *, gallery: bool = True, only_ui: Optional[str] = No
     if only_ui:
         variants = tuple(v for v in variants if v == only_ui)
     sides = {ui: (check.rust(ui), check.canon(ui)) for ui in variants}
+    # T225: the negative's own rust side (when the check names one) resolves
+    # its ROM up front too, so the parallel runs below never race cargo.
+    negative_sides = ({ui: check.negative_rust(ui) for ui in variants}
+                      if check.negative_rust is not None else {})
     # Resolve (build) every ROM up front, serially, so the parallel runs below
     # never race cargo or the ROM cache.
     for r, c in sides.values():
         for side in (r, c):
             if not side.capture_fn:
                 side.resolved_rom()
+    for side in negative_sides.values():
+        if not side.capture_fn:
+            side.resolved_rom()
 
     def one(ui):
         rust_side, canon_side = sides[ui]
         result = run(rust_side, canon_side, check.frames, check.align,
                      variant_label=ui, serial=check.serial)
-        neg = negative_counts(result, check.frames, kind=check.negative)
+        if ui in negative_sides:
+            # T225: the negative is its own capture -- the alternative rust
+            # side against the same canon side at the same align. A frame or
+            # pixel shift cannot zero the ported write; this can.
+            neg_result = run(negative_sides[ui], canon_side, check.frames,
+                             check.align, variant_label=ui + "_negrust",
+                             serial=check.serial)
+            neg = neg_result.counts
+            subprocess.run(["rm", "-rf", neg_result.rust_dir, neg_result.canon_dir],
+                           check=True)
+        else:
+            neg = negative_counts(result, check.frames, kind=check.negative)
         blind = all(c == 0 for c in neg)
         allowed = _allowed(check.name, ui, result.worst)
         box = _old_box_figure(check, result)
