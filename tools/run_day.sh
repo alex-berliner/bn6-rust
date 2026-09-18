@@ -10,6 +10,17 @@ cd "$(dirname "$0")/.."
 bash tools/check_inputs.sh >/dev/null 2>&1 || bash tools/restore_inputs.sh >/dev/null 2>&1   # a reboot empties /tmp
 find /tmp/bnwt -maxdepth 1 -name "verify-*" -mtime +1 -exec git worktree remove --force {} \; 2>/dev/null; git worktree prune
 find /tmp -maxdepth 1 -name "ct_verify*" -mtime +2 -exec rm -rf {} + 2>/dev/null
+# Every worktree gets its own cargo target dir, and nothing removed them once the worktree was gone:
+# 169 orphans holding 73 GB had collected by 2026-09-17, on a disk that was 83% full. They are pure
+# build output -- rebuildable in about 30 seconds -- so an orphan older than six hours goes. The
+# six-hour floor keeps a dir a live build or verification is still writing to.
+for _d in /tmp/ct_*; do
+  [ -d "$_d" ] || continue
+  _n="${_d#/tmp/ct_}"
+  [ -d "/tmp/bnwt/$_n" ] && continue
+  [ -n "$(find "$_d" -maxdepth 0 -mmin -360 2>/dev/null)" ] && continue
+  rm -rf "$_d"
+done
 python3 tools/roles.py check >/dev/null || { python3 tools/roles.py check; exit 1; }
 bash tools/retype_if_stale.sh        # the decompiled C follows the disassembly's types within half an hour
 # --- the stage gate: management before work ------------------------------------------------------
