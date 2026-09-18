@@ -416,3 +416,88 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 ### T161. M-field field-bg regression: restore the 05eb8f9 pins, keep navi-gunner *(OPEN -- 2026-09-18)*
 
 **Why.** T145's landing (107e228, commit a0f8049 — the only src/ commit between 05eb8f9 and HEAD, coordinator-verified) worsened three isolated rows nobody re-checked at its gate: field-bg1 3600/3600/40/174345 -> 5280/5280/40/176025, field-bg2 3600/3600/40/3600 -> 5280/5280/40/5280, field-bg3 380219/24906/40/405125 -> 380263/24906/40/405169 (pre-landing pins verified MATCH at 107e228^1 = 05eb8f9; HEAD readings verified at 36eea42; +1680/+1680/+44 px). A landing may not make any row worse; the navi-gunner row must stay. **New evidence:** the six verify_rows runs quoted above (coordinator, 2026-09-18). **Files.** src/navi.rs, src/battle.rs, src/fixture.rs, src/main.rs. **Do.** 1. Baseline: full-table sweep on HEAD; name EVERY row whose reading differs from the T147-gate pins (field-bg1 3600/3600/40/174345, field-bg2 3600/3600/40/3600, field-bg3 380219/24906/40/405125, buster_charge 2498/188/32/5113, gunner 2105613/38237/130/2284867, cursor 1/1/170/186279) and report the deltas. **measurement.** 2. Bisect T145's diff (a0f8049) hunk-by-hunk against the field-bg scenario to name the exact change that moves the field rows (suspects: the fixture spawn consume path for KIND_NAVI, the fork's effect on non-navi spawns, or the new row's harness entry touching shared fixtures). **measurement.** 3. Restore every moved row to its 05eb8f9 pin WITHOUT moving navi-gunner (2092176/38237/130/2247584), mettaur (0/0/70/41734) or cursor (1/1/170/186279). **code change + measurement.** 4. verify_rows on field-bg1+field-bg2+field-bg3+navi-gunner+mettaur+cursor+gunner+buster_charge — restored pins MATCH, guards byte-identical. **measurement.** **Rules.** No allowlist change. Cursor 1/1/170 must not move. No deletion of the navi-gunner row or its state. **Acceptance.** field-bg1/bg2/bg3 byte-identical to the 05eb8f9 pins; navi-gunner and all guard rows unchanged; verify_rows PASS. **Measure and report.** rows · frames · totals before/after · commit · mechanism · unverified. **Coordinator:** verify_rows on the eight rows; cross-family verifier reviews the hunk attribution and the restore diff.
+
+### T152a. Battle_full actor-init gate *(OPEN -- 2026-09-18)*
+
+
+**Why.** T147 DONE: battle_full on T131's family-A scenario, sequencer `eBattleSequencerState_203CA70` 40/40 diverge at k=0 (canon PARKED word 0; rust fight 0x8, actors (4,8)/(4,10)); wt/t152 carries trace.py + battle_full.md + worklog.
+**Files.** `src/battle.rs`, `tools/trace.py`, `docs/coverage/battle_full.md`, `docs/worklog/T152a.md`.
+**Row.** `eBattleSequencerState_203CA70` trace target (no harness row — M2 is trace-acceptance per docs/SCOPE.md); canary: cursor 1/1/170/186279, mettaur 0/0/70/41734.
+**Do.**
+1. Branch: `wt/T152a` from wt/t152's tip.
+2. Baseline: sequencer first-div at k=0 (40/40 reproduce T147).
+3. Port `stepBannerSequencer_800801C`'s banner-idle predicate (asm00_1.s:10452-10518, table `off_8008038`) into `src/battle.rs` so `playerObject_main_80EA460`'s seq-store (asm31.s:107131 vicinity) reads the canonical state.
+**Rules.** No fitted frame count. No allowlist change. Cursor 1/1/170 must not move.
+**Acceptance.** Trace target `eBattleSequencerState_203CA70` first-div at k>0 OR both actors at CurAction (4,0) for k=0..40; cursor + mettaur byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** sequencer · frames k=0..40 · first-div k · actor CurAction pair (mm, enemy) at k=0, k=17, k=40 · cursor + mettaur · commit · one line mechanism (which `stepBannerSequencer_800801C` predicate) · one line unverified (battle_full's remaining ~173 sequencer-frame divergences).
+**Coordinator:** verify_rows on full isolated table (free tier); cross-family verifier reviews the `stepBannerSequencer_800801C` cite and the actor-init gate.
+**Milestone.** M2 — closes one phase gap on the scripted scenario T147 mapped.
+
+### T154. Second emotion face *(OPEN -- 2026-09-18)*
+
+
+**Why.** T105 DONE: `src/emotion.rs::FACE_INDEX` for Full Synchro (enum 2, cross-face 5..9→10..14); T122 PARTIAL: 23-entry enum→slot table as docs/tools (3cf35ad), two values staged (drawn face + skip arm), scenarios + rows already added.
+**Files.** `src/emotion.rs`, `docs/coverage/emotion.md`, `docs/worklog/T154.md`.
+**Row.** T122's emotion row (exists on wt/T122). Canary: mettaur 0/0/70/41734, cursor 1/1/170/186279.
+**Do.**
+1. Branch: `wt/T154` from main HEAD.
+2. Baseline: emotion row reads 0 (no face) on mettaur base.
+3. Extend `src/emotion.rs::FACE_INDEX` with the chosen drawn face enum (NOT the Full Synchro cross-face swap) → its slot in `off_801CD08` (asm00_2.s:27554-27583, 23 entries, OBJ at (0,18)/(32,18), palette bank 12).
+**Rules.** No fitted palette. No allowlist change. The cross-face swap code (T105's Full Synchro branch) is untouched.
+**Acceptance.** Emotion row at 0/0/N with non-blind negative; mettaur + cursor byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** emotion · frames · total · worst · region · commit · one line mechanism (which face-bank slot) · one line unverified (skip-arm port, next ticket).
+**Coordinator:** verify_rows on emotion + mettaur + cursor + full isolated table; cross-family verifier reviews the `off_801CD08` cite.
+**Milestone.** M7 emotion 1/25 → 2/25.
+
+### T146. Elements/weakness port *(OPEN -- 2026-09-18)*
+
+
+**Why.** T126 PARTIAL: `docs/coverage/elements.md` (+159 lines, 19f75e0) with cites `sub_3007218` asm38.s:3483-3520 (additive model, starts 1, +1/weakness), `getPrimaryElementWeaknessMultipler_3007432` asm38.s:3533-3540 (table `byte_3007444` at ROM `0x081d7944`, `defender*5+attacker`), `getSecondaryElementWeaknessMultipler_30074e2` asm38.s:3490-3492; T146 in `docs/proposals/20260917-200300.md`.
+**Files.** `src/battle.rs`, `src/field.rs`, `src/chips.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/elements.md`, `docs/worklog/T146.md`.
+**Row.** `element_hit` (new) paired with `chip-cannon`; canary: chip-cannon 0/0/40/9505, mettaur 0/0/70/41734, cursor 1/1/170/186279.
+**Do.**
+1. Branch: `wt/T146` from main HEAD.
+2. Baseline: chip-cannon + mettaur + cursor at T147 PASS set.
+3. Port `damage_element_mult(attacker_elem, target_elem) -> u32` into `src/battle.rs::damage_apply` (call sites asm38.s:3486, :3492); model is additive (single weakness = ×2, double = ×3).
+**Rules.** No fitted multiplier. The additive model (NOT multiplicative) — a multiplicative port fails by exactly the +1/weakness factor. HUD popup (+50/+100 flash) out of scope.
+**Acceptance.** `element_hit` at 0/0/N with non-blind negative; chip-cannon + mettaur + cursor byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** element_hit · frames · total · worst · region · commit · one line mechanism (HP delta on a Fire→Wood weak pair) · one line unverified (secondary element multiplier on a non-default pair, next ticket).
+**Coordinator:** verify_rows on element_hit + chip-cannon + mettaur + cursor + full isolated table; cross-family verifier reviews the `byte_3007444` cite and the additive model.
+**Milestone.** M3 first live damage rule ported.
+
+### T151a. Mettaur rank-1 art *(OPEN -- 2026-09-18)*
+
+
+**Why.** wt/t151 @ c977210e: state `battlestart_mettaur_rank1`, residual 677252/38400/70, neg 642150 non-blind; T151 OPEN's cite is contradicted by wt/t151 (mechanism is `sub_800EC80` quad id, not `byte_80182C4` row 1); rank-1 art unported. **New evidence.** the `sub_800EC80` cite and the rank1-vs-rank0 differential captured on wt/t151 (taken after T151 was last touched).
+**Files.** `src/battle.rs`, `tools/states.py`, `tools/harness.py`, `docs/coverage/mettaur.md`, `docs/worklog/T151a.md`.
+**Row.** `mettaur_rank1` (exists on wt/t151). Canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0 (T113's row).
+**Do.**
+1. Branch: `wt/T151a` from c977210e.
+2. Baseline: mettaur_rank1 677252/38400/70, mettaur + cursor at T147 PASS set.
+3. Port rank-1 art into `src/battle.rs::spawnEnemy_80073E2` (asm00_1.s:86) reading the `sub_800EC80` quad id (cite `SpawnBattleObjectUsingBattleEntityConfig_8007368` asm00_1.s:8552; terminator `0xF0` at `BattleSettings+0xc`, inventory.py:1143) and passing the rank byte to `ForMettaur_8109EF4` (T6 DONE).
+**Rules.** No `byte_80182C4` poke (falsified). No allowlist change. The EnemySetup quad byte, not the identity row, drives rank.
+**Acceptance.** mettaur_rank1 0/0/N with non-blind negative; mettaur + cursor + ai4_rank0 byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** mettaur_rank1 · frames · total · worst · region · commit · one line mechanism (which quad byte in `sub_800EC80`) · one line unverified (rank 2, next ticket on the same chain).
+**Coordinator:** verify_rows on mettaur_rank1 + mettaur + ai4_rank0 + cursor + full isolated table; cross-family verifier reviews the `sub_800EC80` cite and the quad-byte read site.
+**Milestone.** M5 1/187 → 2/187.
+
+### T153. Navi spawn gate *(OPEN -- 2026-09-18)*
+
+
+**Why.** T145 PARTIAL landed actor-type fork + four 25-slot tables (asm31.s:169448/169513/169578/169643); T76 DONE navi roster; T151a characterizes `sub_800EC80` quad id (cite from T151a).
+**Files.** `src/battle.rs`, `src/navi.rs`, `tools/states.py`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/navi.md`, `docs/worklog/T153.md`.
+**Row.** `navi_spawn` (new) paired with mettaur; canary: mettaur 0/0/70/41734, cursor 1/1/170/186279, ai4_rank0.
+**Do.**
+1. Branch: `wt/T153` from main HEAD (T145's fork at 107e228 is on main).
+2. Baseline: mettaur + cursor at T147 PASS set; T145 navi fork cite (byte_80182C4, off_81068E8) byte-cited from docs.
+3. Port the join of `byte_80182C4` (fill-time) and `sub_800EC80` quad (spawn-time) into `src/battle.rs::spawnEnemy_80073E2` (asm00_1.s:86) for the chosen navi's art (`byte_81067FC`) and HP 900.
+**Rules.** No fitted panel. No allowlist change. Use the cite from T151a — do NOT re-hunt `sub_800EC80`.
+**Acceptance.** navi_spawn 0/0/N with non-blind negative (negative = same scenario with the quad byte poked to a virus row, must equal mettaur baseline); mettaur + cursor + ai4_rank0 byte-identical; full isolated table byte-identical to T147 PASS set.
+**Measure and report.** navi_spawn · frames · total · worst · region · commit · one line mechanism (which T76 navi + which quad byte) · one line unverified (navi-family brain arms 0x08..0x0E off_81068E8, next ticket).
+**Coordinator:** verify_rows on navi_spawn + mettaur + cursor + ai4_rank0 + full isolated table; cross-family verifier reviews the navi-spawn byte and the T76 roster pick.
+**Milestone.** M6 0/25 → 1/25 via live spawn.
+
+---
+
+Order by trace/row divergence removed per dollar: T152a (M2, trace moves first, canary intact) → T154 (M7 emotion, smallest src/ delta) → T146 (M3 first live damage, docs complete) → T151a (M5 rank-1 art, state+row already on disk) → T153 (M6 navi spawn, T151a cite reused).
+
