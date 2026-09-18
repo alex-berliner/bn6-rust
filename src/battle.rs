@@ -32,13 +32,13 @@ use crate::results::{self, Results};
 use crate::script;
 use crate::shot::Shot;
 use crate::{
-    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR,
+    BARREL_CHARGE, CANNON_ORB, CHARGE, CURSOR, DELETE, IMPACT, MEGAMAN, METTAUR, GUNNER,
     AREAGRAB_ORB, AIRSHOT_BARREL, AQUA_SWORD, BARRIER, BLKBOMB, BOMB_BLAST, ELEC_SWORD, ENERGBOM_BLAST, FIRE_SWORD, HEAL,
     FLSHBOM, LILBOILER, MINIBOMB, POISAREA, POISSEED, VDOLL,
     BUSTER_ARM, BUSTER_FX, BUSTER_HIT,
     SHOTFX, SWORD_ARC, SWORD_SPR, VULCAN_FIREBALL, VULCAN_GUN, WAVE,
 };
-use crate::{ai, gunner, objects, spr};
+use crate::{ai, gunner, navi, objects, spr};
 use crate::fixture::{self, Fixture};
 use agb::display::Graphics;
 
@@ -2257,7 +2257,9 @@ impl<'a> Battle<'a> {
             //     the low bits (bits 0-2); this fixture encodes col and
             //     row as separate u8s so any per-scenario row can name any
             //     of the 6x3 panel grid.
-            let hp = if f.enemy_hp == 0 { METTAUR_HP } else { f.enemy_hp };
+            // Per-slot HP: a KIND_NAVI slot carries the flip-route profile HP
+            // (60, `navi::profile_ai17`); the pre-T145 default stays METTAUR_HP
+            // for every other kind -- kind 0/1 spawns stay byte-identical.
             let mut es = alloc::vec::Vec::new();
             let mut ai_list = alloc::vec::Vec::new();
             for i in 0..f.enemies as i32 {
@@ -2274,14 +2276,27 @@ impl<'a> Battle<'a> {
                     // pre-F38h descriptor needed (enemy_col+i, enemy_row+i).
                     (f.enemy_col as i32 + i, f.enemy_row as i32 + i)
                 };
-                es.push(Actor::new(
-                    spr::Assets::new(METTAUR),
-                    col,
-                    row,
-                    true,
-                    enemy(hp),
-                ));
-                ai_list.push(ai::Ai::new(ai::Style::Mettaur));
+                // T145: consume the fixture kind for KIND_NAVI (slot 0x17,
+                // ForGunner_8113078's navi): GUNNER art -- the row's canon
+                // object keeps its spawn-loaded virus art because the t1
+                // ActorType fork is latched (navi.rs's module doc) -- plus
+                // the navi HP profile, and Style::Navi whose per-frame brain
+                // is the same shared think arm Style::Gunner services.
+                // KIND_GUNNER keeps the pre-T145 all-Mettaur spawn on
+                // purpose: the gunner row's rust side stays byte-identical.
+                let (asset, style, kind_hp) =
+                    if f.kind_of(i as usize) == crate::fixture::KIND_NAVI {
+                        (
+                            spr::Assets::new(GUNNER),
+                            ai::Style::Navi,
+                            navi::profile_ai17().hp,
+                        )
+                    } else {
+                        (spr::Assets::new(METTAUR), ai::Style::Mettaur, METTAUR_HP)
+                    };
+                let hp = if f.enemy_hp == 0 { kind_hp } else { f.enemy_hp };
+                es.push(Actor::new(asset, col, row, true, enemy(hp)));
+                ai_list.push(ai::Ai::new(style));
             }
             (es, ai_list)
         } else {
@@ -3819,7 +3834,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             .zip(self.ais.iter_mut())
             .filter(|((_, e), _)| e.is_present())
         {
-            if matches!(ai.style(), ai::Style::Gunner) {
+            if matches!(ai.style(), ai::Style::Gunner | ai::Style::Navi) {
                 if !paused && self.megaman.is_targetable() {
                     self.gunner_ctl.update(
                         enemy,
@@ -3873,7 +3888,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // every eighth frame of the wind-up (asm31.s:142671, 157045);
             // Colonel's overhead slash borrows the same telegraph.
             let targets: Vec<(i32, i32)> = match ai.style() {
-                ai::Style::Thrust | ai::Style::Mettaur | ai::Style::Gunner => {
+                ai::Style::Thrust | ai::Style::Mettaur | ai::Style::Gunner | ai::Style::Navi => {
                     alloc::vec![enemy.front_panel()]
                 }
                 ai::Style::Divide => match self.cross_shape {
@@ -3943,7 +3958,7 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                             ai::Style::Thrust => SWORD_DAMAGE,
                             ai::Style::Divide if self.cross_shape.is_some() => CROSS_DAMAGE,
                             ai::Style::Divide => DIVIDE_DAMAGE,
-                            ai::Style::Mettaur | ai::Style::Gunner => WAVE_DAMAGE,
+                            ai::Style::Mettaur | ai::Style::Gunner | ai::Style::Navi => WAVE_DAMAGE,
                         };
                         self.megaman.take_damage(damage);
                     }

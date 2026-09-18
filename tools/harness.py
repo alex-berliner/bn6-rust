@@ -1861,6 +1861,12 @@ GUNNER_ROW = dict(enemies=2, enemy_kind=0x05, enemy_col=5, enemy_row=2, megaman_
                   gate="isCustGaugeFullAndBattleLive_800A21C")  # T32: same symbol as name; fixture_cheats does not read this key today (it is harness-side doc until a future src/ gate wiring lifts it).
 GUNNER_ORIGIN = 8
 
+#: T145: navi slot 0x17 (ForGunner_8113078). Same descriptor as GUNNER_ROW
+#: except enemy_kind=0x08 (slot 1 = KIND_NAVI, bits 2-3 = 2) and
+#: enemy_hp=0 (per-kind defaults: slot 0 Mettaur 40, slot 1 navi 60 --
+#: exactly the canon state's own HP pair, vs GUNNER_ROW's borrowed 0xFFFF).
+NAVI_GUNNER_ROW = dict(GUNNER_ROW, enemy_kind=0x08, enemy_hp=0)
+
 #: T9h (2026-09-15): canon-side state for the gunner row. Re-uses T9c's
 #: battlestart_gunner.state (built by states.py from overworld_net.state +
 #: battlestart's pokes + the iCurrFrame lever) -- the BattleSettings record
@@ -2604,6 +2610,39 @@ PORTED_CHECKS: List[Check] = [
         # folds variant_label into the scratch key, so the watch file is
         # unique per variant, and serial captures run rust then canon
         # sequentially -- the gunner row no longer hits the 3-slot race.
+        serial=True,
+    ),
+    Check(
+        name="navi-gunner",
+        ui="both",
+        frames=130,
+        align=Align(
+            canon_ref=80,
+            search=range(0, 40),
+            note="T145 (T134 step-3 redo): navi slot 0x17 -- ForGunner_8113078, "
+                 "identity row byte_80182C4[3*0x185]={00,01,17} ROM-read. canon: "
+                 "REAL+BATTLESTART_GUNNER with the frame-70 identity flip: "
+                 "poke-at 70:0x02034280:0x1701 (AIData ActorType 0->1; AIIndex "
+                 "already 0x17 -- watched live at spawn frame 69, AIDataPtr at "
+                 "+0x58=0x0203abb8) and 70:0x0203ab88:0x0185 (NameID -> 0x185). "
+                 "The flip holds (watched through frame 110) and is "
+                 "behaviour-inert because the t1 ActorType fork is spawn-latched "
+                 "-- src/navi.rs's module doc. So canon is the Gunner object "
+                 "carrying the navi identity (NameID-keyed struct reads go to "
+                 "the navi columns: Struct1 byte_81067FC, Struct2 byte_8106804 "
+                 "row0 900HP -- but cur HP stays the spawn's 60), which is what "
+                 "the rust side models: NAVI_GUNNER_ROW = GUNNER_ROW with slot 1 "
+                 "KIND_NAVI (GUNNER art + navi profile HP 60 + Style::Navi). "
+                 "canon_ref=80 and the search band are the gunner row's own "
+                 "(same spawn timing: slot 1 populates at capture frame 69).",
+        ),
+        rust=lambda ui: Side(rom=plain_rom(), fixture=NAVI_GUNNER_ROW),
+        canon=lambda ui: Side(
+            rom=REAL,
+            loadstate=BATTLESTART_GUNNER,
+            pokes_at=("70:0x02034280:0x1701", "70:0x0203ab88:0x0185"),
+        ),
+        canon_variant="canon",
         serial=True,
     ),
     Check(

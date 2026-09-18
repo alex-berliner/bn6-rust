@@ -20,6 +20,7 @@ mod fixture;
 mod gunner;
 mod hud;
 mod hudtiles;
+mod navi;
 mod objects;
 mod results;
 mod script;

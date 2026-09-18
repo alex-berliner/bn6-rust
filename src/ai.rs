@@ -150,6 +150,14 @@ pub enum Style {
     Divide,
     /// Driven by its own controller in `gunner`; nothing to do here.
     Gunner,
+    /// T145: navi ActorType, AIIndex 0x17 (`ForGunner_8113078`'s slot --
+    /// identity row `byte_80182C4[3*0x185]` = (0, navi, 0x17), ROM-read).
+    /// Measured this ticket: the t1 ActorType fork is latched at spawn, so
+    /// the per-frame brain this style services is the same shared think arm
+    /// [`Style::Gunner`] services; the fork's live effect is re-keying the
+    /// NameID-driven struct reads. Identity data in [`crate::navi`] -- see
+    /// its module doc for the flip experiment.
+    Navi,
     /// The real Mettaur's own 5-state, RNG-gated decision loop, ported as
     /// the per-type entry [`crate::objects::MettaurEntry`]. A first-version
     /// Mettaur never guards.
@@ -253,7 +261,7 @@ impl Ai {
                     self.pause = ATTACK_PAUSE;
                 }
             }
-            Style::Gunner => {}
+            Style::Gunner | Style::Navi => {}
             Style::Mettaur => unreachable!("handled by the entry above"),
             Style::Divide => {
                 let spec = if cross_targets(target).is_some() {

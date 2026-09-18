@@ -154,7 +154,11 @@ pub fn enemy_think(
         // for the Mettaur. Reached through the dispatch (battle.rs's
         // `enemy_think` call) once CurAction reaches 0x0A; for the other
         // CurActions this arm falls through to `ai.update` as before.
-        Style::Gunner => {}
+        // T145: Style::Navi (AIIndex 0x17, ForGunner_8113078's slot) rides
+        // the same arm: the latched dispatch services the shared per-AIIndex
+        // think arm for it exactly as for the Gunner virus (live flip
+        // measured inert -- src/navi.rs's module doc).
+        Style::Gunner | Style::Navi => {}
     }
     ai.update(me, target, blocked, rng);
 }
