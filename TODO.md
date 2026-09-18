@@ -434,9 +434,9 @@ also fails, mark the ticket BLOCKED and move on to the next OPEN ticket.
 **Coordinator:** verify_rows on full isolated table (free tier); cross-family verifier reviews the `stepBannerSequencer_800801C` cite and the actor-init gate.
 **Milestone.** M2 — closes one phase gap on the scripted scenario T147 mapped.
 
-### T154. Second emotion face *(OPEN -- 2026-09-18)*
+### T154. Second emotion face  *(BLOCKED -- 2026-09-18, Worker bash failures across two attempts [c932b34b exit 1 'cat docs/worklog/T154.md' file-not-found before cre)*
 
-
+**Result.** Worker bash failures across two attempts (c932b34b exit 1 'cat docs/worklog/T154.md' file-not-found before creation; acf5cb64 exit 2 'ls /tmp/ct_t154/.../bn.gba No such file' — cargo build --release never run despite worktree creation at 05:00:49). Branch wt/t154 exists but is at HEAD 940ffa7 with no diff. Resume guidance was given but the worker did not execute cargo build before verify_rows. Worklog never written. Coordinator records: T154's task is to extend src/emotion.rs::FACE_INDEX with one drawn face enum (NOT Full Synchro cross-face) from off_801CD08 (asm00_2.s:27554-27583, 23 entries, palette bank 12). Files: src/emotion.rs, docs/coverage/emotion.md, docs/worklog/T154.md. Canary rows: mettaur 0/0/70/41734, cursor 1/1/170/186279. Stamping BLOCKED; next worker should run cargo build --release in the worktree first.
 **Why.** T105 DONE: `src/emotion.rs::FACE_INDEX` for Full Synchro (enum 2, cross-face 5..9→10..14); T122 PARTIAL: 23-entry enum→slot table as docs/tools (3cf35ad), two values staged (drawn face + skip arm), scenarios + rows already added.
 **Files.** `src/emotion.rs`, `docs/coverage/emotion.md`, `docs/worklog/T154.md`.
 **Row.** T122's emotion row (exists on wt/T122). Canary: mettaur 0/0/70/41734, cursor 1/1/170/186279.
