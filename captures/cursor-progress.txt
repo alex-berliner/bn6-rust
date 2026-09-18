@@ -1,3 +1,3 @@
-T5 object dispatcher ported: table and dispatch with citations; isolated rows 0, cursor tear 15->1
+T152a PARTIAL: trace eBattleSequencerState_203CA70 40/40 match on battlestart_scripted; entry-park closes sequencer gap via T152 inheritance; cursor kept at documented 1/1/170/186279; canonical is_banner_idle() port left as follow-up
 
-cursor (isolated), before and after: canon on top; ours at b8b45ad (15 px over 170 frames, canon 15+k, rust offset 237); ours at 163293b (1 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
+cursor (isolated), before and after: canon on top; ours at acf8154 (1 px over 170 frames, canon 15+k, rust offset 237); ours at 1950c68 (1 px, canon 15+k, rust offset 237). Each build on its own commit's alignment, from a clean checkout (tools/progress_gif.py).
