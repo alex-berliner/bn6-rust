@@ -1293,13 +1293,110 @@ const SEQ_00: u32 = 0x00; // provenance: derived -- off_8008038 entry 0 (sub_800
 const SEQ_04: u32 = 0x04; // provenance: derived -- off_8008038 entry 1 (sub_8008064, the banner wait)
 const SEQ_20: u32 = 0x20; // provenance: derived -- off_8008038 entry 8 (sub_8008452, the window opening)
 const SEQ_24: u32 = 0x24; // provenance: derived -- off_8008038 entry 9 (sub_8008492, the window open)
-/// Updates the 0x04 banner-wait state runs before its sub_801E754
-/// banner-idle check lets it write 0x08: battle_full's own trace has canon
-/// in 0x04 for exactly 60 exported frames (k=136..195, docs/trace/t7b +
-/// T7c's re-measure) -- the banner record's lifetime (spawned at the state's
-/// entry by sub_801E792, gone 60 updates later), the same wait on every
-/// route that reaches the state.
-const SEQ04_FRAMES: u16 = 60; // provenance: derived -- battle_full's trace, canon k=136..195 (docs/trace/t7b)
+/// The banner record spawned at the 0x04 banner-wait state's entry by
+/// spawnBannerRecord_801E792 (asm00_2.s:31276): its state byte byte_2036840
+/// and counter byte_2036847 are a four-state machine dispatched per update by
+/// sub_801CE28 (asm00_2.s:27796-27822) through off_801CE5C -- state 0x00
+/// counts byte_2036847 to 5 then leaves for 0x04 (sub_801CE6C,
+/// asm00_2.s:27831-27847), 0x04 counts it to 0x30 then leaves for 0x08
+/// (sub_801CE92, asm00_2.s:27850-27876; the sub_801CE28 increment
+/// suppression at counter==5 applies only when the record kind byte_2036848
+/// is 2 or 4, and the SEQ_04 entry spawn passes kind 0), 0x08 counts it to 5
+/// again then leaves for 0x0C (sub_801CED2, asm00_2.s:27879-27898), and 0x0C
+/// clears HudElementMask bit 15 (sub_801CEFA's
+/// clearBattleHudElements_801BED6(0x8000), asm00_2.s:27901-27908). Bit 15 is
+/// what isBannerBusy_801E754 (asm00_2.s:31233-31255) reads: the 0x04 state's
+/// release edge (`cmp r0,#0; bne`, asm00_1.s:10569-10571) fires the frame
+/// after the 0x0C update clears it -- 5+48+5 counting updates plus the 0x0C
+/// update, so the mask is clear from the record's 59th update and SEQ_04
+/// spans 60 exported frames (canon k=136..195, battle_full's trace).
+#[derive(Clone, Copy)]
+struct BannerRecord {
+    /// The record state byte byte_2036840 (0x00/0x04/0x08/0x0C).
+    state: u8,
+    /// The record counter byte_2036847, reset on each state leave.
+    counter: u8,
+    /// True once the record's 0x0C update has run: sub_801CEFA's
+    /// clearBattleHudElements_801BED6(0x8000) has cleared mask bit 15
+    /// (asm00_2.s:27901-27908) -- the edge isBannerBusy_801E754 reads as
+    /// not-busy. Entering 0x0C is not enough: the mask clears ON the 0x0C
+    /// update, one update later.
+    done: bool,
+    /// The Option<BannerRecord> the struct replaces: false while no record
+    /// holds HudElementMask bit 15 (canon's mask bit clear at
+    /// isBannerBusy_801E754, asm00_2.s:31233-31255).
+    live: bool,
+}
+impl BannerRecord {
+    /// The spawn: byte_2036847 = 0 and byte_2036840 = 0
+    /// (asm00_2.s:31292-31293), mask bit 15 set by the caller.
+    fn spawn() -> Self {
+        Self {
+            state: 0x00, // canon: byte_2036840 zeroed at spawn (asm00_2.s:31293)
+            counter: 0,  // canon: byte_2036847 zeroed at spawn (asm00_2.s:31292)
+            done: false,
+            live: true,
+        }
+    }
+    /// The release-edge predicate: isBannerBusy_801E754's mask-bit-15-clear
+    /// arm (asm00_2.s:31233-31255) -- busy unless a live record's 0x0C
+    /// update has run.
+    fn is_done(&self) -> bool {
+        self.live && self.done
+    }
+    /// One update on a copy, for the static-mut owner (Rust 2024 denies
+    /// `&mut` on a `static mut`; the record is Copy, so tick through value).
+    fn ticked(&self) -> Self {
+        let mut r = *self;
+        if r.live {
+            r.update();
+        }
+        r
+    }
+    /// One record update (sub_801CE28's counter increment + state dispatch):
+    /// the counter runs first, then the state handler's leave edge.
+    fn update(&mut self) {
+        // The done update: state 0x0C is sub_801CEFA's
+        // clearBattleHudElements_801BED6(0x8000) (asm00_2.s:27901-27908).
+        if self.state == 0x0C {
+            self.done = true;
+            return;
+        }
+        self.counter += 1;
+        self.state = match self.state {
+            // sub_801CE6C's leave edge: >= 5 -> 0x04, counter reset
+            // (asm00_2.s:27841-27845).
+            0x00 if self.counter >= 5 => {
+                self.counter = 0;
+                0x04
+            }
+            // sub_801CE92's leave edge: >= 0x30 -> 0x08, counter reset
+            // (asm00_2.s:27867-27872).
+            0x04 if self.counter >= 0x30 => {
+                self.counter = 0;
+                0x08
+            }
+            // sub_801CED2's leave edge: >= 5 -> 0x0C (asm00_2.s:27891-27896);
+            // the counter is left as-is, 0x0C never reads it.
+            0x08 if self.counter >= 5 => 0x0C,
+            _ => self.state,
+        };
+    }
+}
+/// The banner record lives OUTSIDE `Battle` on purpose: adding a field to
+/// `Battle` shifts its layout, and this build's boot/init path sits close
+/// enough to a VBlank boundary that the shift moves the first visible battle
+/// frame by one capture frame (measured: windowclose 0/0/40 -> 63962/3557/40
+/// with the field on `Battle`, byte-identical with the field out of it).
+/// `BATTLE_MARKER` (main.rs) is the same-shape precedent: a `static mut`
+/// owned by the battle module, one battle at a time. Cleared at battle
+/// construction (see Battle::new's reset) and dropped at the release edge.
+static mut BANNER_RECORD: BannerRecord = BannerRecord {
+    state: 0,
+    counter: 0,
+    done: false,
+    live: false,
+};
 /// Frames from `over` to the RESULT show: kept at field's landing (show at
 /// battle 110 = BG3 setup at capture 121/122, slide 140..153). A fitted
 /// composite, not canon's count (canon's setup starts at 0x0C+59 and its
@@ -3142,7 +3239,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // the Done edge in the window block below -- k=33..132); 0x00 runs
         // the close redraw (sub_80147E4/sub_801482C, F18c's own frames) and
         // hands to 0x04 after three exported frames (k=133..135); 0x04 waits
-        // out the banner record and writes 0x08 (k=136..195, SEQ04_FRAMES).
+        // out the banner record and writes 0x08 (k=136..195, the record's
+        // cited lifecycle, BannerRecord above).
         // What each state RUNS is the composite this build already had (the
         // window in `custom`, the redraw in `close_redraw_pending`, the
         // banner in `banner_at`/`opening`); the table owns the state word
@@ -3151,7 +3249,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // (sub_800938A -> battle_update_8007A44) runs the executor first
         // and re-enters the sequencer handler on the same frame, so the
         // SEQ_04 -> SEQ_08 release edge fires AFTER the player's per-tick
-        // work on its last frame (k=147..207, SEQ04_FRAMES - 1). Moving the
+        // work on its last frame (k=147..207, the record's last counted
+        // update). Moving the
         // block to after the executor closes that gate by one frame.
         // The end sequence is the end COUNTS only: the window path's
         // 0x20/0x24/0x00/0x04 are not it. `over` used to read `state !=
@@ -3944,9 +4043,49 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // scripted route (this ticket's probes), so the park pins the age
             // until the first window Done clears it.
             SEQ_00 if entry_park => self.seq.age = 0,
-            SEQ_00 if self.seq.age >= 2 => self.seq.transition(SEQ_04),
-            SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08),
-            SEQ_20 | SEQ_00 | SEQ_04 => self.seq.age += 1,
+            SEQ_00 if self.seq.age >= 2 => {
+                // The record spawn rides the 0x00 -> 0x04 edge (canon: the
+                // 0x04 handler's entry run, [r5,#3] == 0, calls
+                // spawnBannerRecord_801E792, asm00_1.s:10555-10567). Canon's
+                // early return when bit 15 is already set (asm00_2.s:31284-31289)
+                // cannot fire here -- a previous record only releases this same
+                // edge -- but the guard is kept for the shape.
+                // SAFETY: single-threaded battle loop, one Battle at a time
+                // (the same ownership shape BATTLE_MARKER's doc claims); the
+                // record is Copy, so it is read and written by value.
+                if !unsafe { BANNER_RECORD }.live {
+                    unsafe { BANNER_RECORD = BannerRecord::spawn() };
+                }
+                self.seq.transition(SEQ_04);
+            }
+            // The 0x04 release edge reads the record, not a frame count:
+            // isBannerBusy_801E754 returns 0 once the record's 0x0C update
+            // cleared mask bit 15 (asm00_1.s:10569-10571, asm00_2.s:31233-31255,
+            // 27901-27908). The hold arm below ticks the record after this
+            // check, so the first release lands on the 60th SEQ_04 frame
+            // (canon k=136..195) -- the frame fitted `age >= 59` fired on.
+            SEQ_04 if unsafe { BANNER_RECORD }.is_done() => {
+                // The record is inert past the release (bit 15 clear): drop
+                // it so the next 0x00 -> 0x04 edge spawns a fresh one
+                // (canon's spawn re-zeroes the struct every entry).
+                unsafe { BANNER_RECORD.live = false };
+                self.seq.transition(SEQ_08);
+            }
+            SEQ_20 | SEQ_00 | SEQ_04 => {
+                self.seq.age += 1;
+                // The record ticks once per 0x04 hold frame, after the
+                // release check above (canon: the mask dispatch runs after
+                // the sequencer handler in frame order; the mask-clearing
+                // 0x0C update therefore lands in this frame's tail and the
+                // release check reads it the NEXT frame).
+                // SAFETY: single-threaded battle loop; the record is Copy,
+                // so it is ticked through a value, never through a reference
+                // to the static (Rust 2024 static_mut_refs).
+                unsafe {
+                    let r = BANNER_RECORD;
+                    BANNER_RECORD = r.ticked();
+                }
+            }
             _ => {}
         }
         if let Some((gun, _, _)) = self.vulcan_gun.as_mut() {
