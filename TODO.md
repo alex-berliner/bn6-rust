@@ -935,3 +935,14 @@ If "the" means "stop here": the proposal set across this session is T183-T219 (3
 **Coordinator:** verify_rows emotion rows + mettaur + cursor + full isolated table; cross-family verifier reviews the drawer-test cite and that the negative now exercises the blink arm.
 **Milestone.** M7.
 
+
+### T226. Spreadr rows to zero: reclaim the boot frame, then counter-drive the barrel *(OPEN -- 2026-09-18)*
+
+**Why.** T217 PARTIAL: chip-spreadr1/2/3 went 17138/1260 -> 3250/783/70 (neg 4678 non-blind) on branch wt/t217r (commits 0c88a84, f2c8799 -- UNMERGED, cursor regressed 1/1/170/186279 -> 16241/3385/170: the 2 KB growth of assets/chips.bin costs one boot frame, rust marker origin 8->9, custmatch phase shifts; align-band widening 230-253 does NOT re-pin; with the 48-record asset kept cursor reads 18/17/170, the F30/F12 layout-jitter class). Remainder 3250: canon hand-increments the barrel object's CurAnim every frame (asm31.s:111626-111630) vs our asset-duration playback, plus one pose-tail frame at canon 27. Ticket family-0x09 label already corrected by measurement to attack_family 0x25 (ChipDataArr.s:291/:322/:353; ids 9/10/11 power 30/60/90 at :305/:336/:367).
+**Files.** `src/chips.rs`, `src/battle.rs`, `assets/chips.bin`, `tools/harness.py`, `tools/inventory.py`, `docs/coverage/chips.md`, `docs/worklog/T226.md`
+**Do.** Start from branch wt/t217r HEAD f2c8799 (bash tools/worktree.sh t226, then `git merge f2c8799` into it -- keep its records/gate). 1. Root-cause the boot-frame coupling: what in the boot/custmatch build reads the asset record count (one frame, marker origin 8->9); fix WITHOUT narrowing/reshifting any compared window -- the fix is on our side's boot timing, not the cursor band. **measurement.** 2. Drive the barrel's CurAnim from the canon counter (cite asm31.s:111626-111630); investigate the pose-tail frame at canon 27. **code + measurement.** 3. When the three rows read 0, join 0x25 to AS_DATA_FAMILIES (tools/inventory.py comment + assert 46->47) and restore cursor to exactly 1/1/170/186279. **measurement.**
+**Rules.** No allowlist change; no fitted frame counts; cursor 1/1/170/186279 must return exactly; chip-cannon/chip-airshot/mettaur byte-identical.
+**Acceptance.** chip-spreadr1/2/3 0/0/70 non-blind (negative = AttackPower byte zeroed); cursor back to main's exact line; full isolated table verify_rows PASS; AS_DATA gains 0x25.
+**Measure and report.** row · frames · total · worst · region · commit · mechanism (what cost the boot frame; which counter drives the barrel) · unverified.
+**Coordinator:** verify_rows on all named rows; verifier reviews the boot-frame root cause and the counter cite.
+**Milestone advanced.** M4.
