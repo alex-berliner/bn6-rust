@@ -1262,6 +1262,21 @@ impl Sequencer {
             age: 0,
         }
     }
+    /// The scripted battlestart entry (T152): canon's battle init zero-fills
+    /// the word (sub_80084C0, asm00_1.s:11112-11121 -- ZeroFillByWord 12
+    /// bytes at eBattleSequencerState_203CA70), so a battlestart battle
+    /// reads 0x00 = BATTLE_SEQ_SETTLE from its first frame and holds there
+    /// while the entry's window slide is busy (measured: 0x00000000 for 300
+    /// capture frames on the battlestart_scripted route, with and without
+    /// an A press -- this ticket's probes). The descriptor battle rows keep
+    /// `battle`'s fight arrival: their canon side joins a PAUSED root past
+    /// the entry (0x1c -> 0x08 at capture 11).
+    fn battlestart() -> Self {
+        Self {
+            state: SEQ_00,
+            age: 0,
+        }
+    }
     /// A fight already decided before frame 0 (F36's structural arrival):
     /// the result row's canon reads the win count 0x0C on every compared
     /// frame (docs/trace/t7b/result.diff.txt) -- the countdown was already
@@ -1574,6 +1589,13 @@ pub struct Battle<'a> {
     /// Canon's banner sequencer as its state table (T7): the 0x08 fight
     /// state, the 0x0C/0x10 end counts, the handoff. See `Sequencer`.
     seq: Sequencer,
+    /// T152: the scripted battlestart entry's park is live -- the sequencer
+    /// entered at the zero-filled SETTLE word (descriptor start_state == 2,
+    /// FIXTURE.md +40) and the first chip window's slide-out has not
+    /// completed yet. Cleared at that window Done; the mid-fight settle
+    /// flow (the SEQ_00 age>=2 latch leg, SEQ_04, the fight) takes over
+    /// from there.
+    entry_park: bool,
     /// Frames until the end sequence fires once the fight is decided, counting
     /// down from DISSOLVE_FRAMES; None until the last combatant goes down.
     /// The RESOLVE_OVER stand-in (death before frame 0) starts at Some(0).
@@ -1938,7 +1960,18 @@ impl<'a> Battle<'a> {
         if let Some(enemy) = self.enemies.first() {
             let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
             let e = enemy.oracle_fields(false, ai_wait);
-            put_oracle_u16(&mut b, OracleField::EnemyStateAction, e.cur_state_action); // canon: oracle snapshot layout, see the table above
+            let entry_park = self.entry_park;
+            // T152: under the battlestart entry park the spawn-hold state
+            // (Appearing) translates to canon's own spawn byte 0 -- mm and
+            // e1 read 0x0004 at 0x0203a9b8/0x0203aa90 through capture ~185
+            // (this ticket's probes) -- not the joined-late rows'
+            // hop-executor byte (T50's mapping).
+            let e_word = if entry_park {
+                e.cur_state_action & 0x00ff
+            } else {
+                e.cur_state_action
+            };
+            put_oracle_u16(&mut b, OracleField::EnemyStateAction, e_word); // canon: oracle snapshot layout, see the table above
             put_oracle_u8(&mut b, OracleField::EnemyAnim, e.anim); // canon: oracle snapshot layout, see the table above
             put_oracle_u8(&mut b, OracleField::EnemyPanelX, e.panel_x); // canon: oracle snapshot layout, see the table above
             put_oracle_u8(&mut b, OracleField::EnemyPanelY, e.panel_y); // canon: oracle snapshot layout, see the table above
@@ -2002,7 +2035,15 @@ impl<'a> Battle<'a> {
         if let Some(enemy) = self.enemies.first() {
             let ai_wait = self.ais.first().map(|ai| ai.oracle_is_wait()).unwrap_or(false);
             let e = enemy.oracle_fields(false, ai_wait);
-            b[26..28].copy_from_slice(&e.cur_state_action.to_le_bytes()); // trace snapshot layout, see the table above
+            let entry_park = self.entry_park;
+            // T152: the entry park's spawn-byte translation -- see the
+            // oracle site above for the cite.
+            let e_word = if entry_park {
+                e.cur_state_action & 0x00ff
+            } else {
+                e.cur_state_action
+            };
+            b[26..28].copy_from_slice(&e_word.to_le_bytes()); // trace snapshot layout, see the table above
             b[28] = e.anim; // trace snapshot layout, see the table above
             b[29] = e.panel_x; // trace snapshot layout, see the table above
             b[30] = e.panel_y; // trace snapshot layout, see the table above
@@ -2223,6 +2264,16 @@ impl<'a> Battle<'a> {
         };
         let demo_row = fixture.map(|f| f.megaman_row as i32).unwrap_or(DEMO_ROW);
         let mut megaman = Actor::new(spr::Assets::new(MEGAMAN), demo_col, demo_row, false, player);
+        // T152: the battlestart entry parks every combatant in its spawn
+        // action -- canon's mm reads 0x0004 (CurState 4, CurAction 0 = the
+        // PlayerSpawnAnimation hold) at 0x0203a9b8 from populate to capture
+        // ~185 on the scripted route (this ticket's probes). The gated
+        // executor (player_executor_gated: sequencer 0x00/0x04) holds the
+        // Appearing spawn state -- which is exactly the arm that maps to
+        // canon's 0x00 byte -- until the fight state releases it.
+        if fixture.map(|f| f.start_state == 2).unwrap_or(false) {
+            megaman.appear();
+        }
         // T135: the cross-form body. canon reads the transformation byte once
         // at battle init (playerObject_init_80172F0, asm00_2.s:18108-18110)
         // and re-derives the palette row per frame (sub_801002C +
@@ -2522,6 +2573,9 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             fight_latch: fixture
                 .map(|f| f.flags.skip_intro())
                 .unwrap_or(false),
+            // T152: the scripted battlestart entry parks from boot -- see
+            // the field's doc and Sequencer::battlestart.
+            entry_park: fixture.map(|f| f.start_state == 2).unwrap_or(false),
             gauge,
             gauge_pause,
             name_suppressed: false,
@@ -2535,6 +2589,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // sequencer otherwise opens with.
             seq: if fixture.map(|f| f.start_state == 1).unwrap_or(false) {
                 Sequencer::arrived_at_result()
+            } else if fixture.map(|f| f.start_state == 2).unwrap_or(false) {
+                Sequencer::battlestart()
             } else {
                 Sequencer::battle()
             },
@@ -2675,6 +2731,10 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         gfx: &Graphics,
         mixer: &mut agb::sound::mixer::Mixer,
     ) -> bool {
+        // T152: hoisted once per frame -- the entry-park checks below sit in
+        // the per-frame hot path, and the cursor row's 1-pixel tear is a
+        // timing knife-edge.
+        let entry_park = self.entry_park;
         // AUDIT wave 3d ticket: the real ROM's primary RNG (`ePrimaryRngSeed`)
         // advances by exactly one step every rendered battle frame,
         // independent of any enemy's own decisions -- measured (see
@@ -3015,6 +3075,11 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 // a fresh boot, so it never arms this banner regardless of
                 // which flags it carries.
                 self.window_closed = true;
+                // T152: the first window's slide-out idle ends the entry
+                // park (bannerSeqState00Settle's busy leg, asm00_1.s:11036);
+                // the settle's own latch edge takes the word to BANNER_WAIT
+                // from here.
+                self.entry_park = false;
                 // T7c: Done is the slide-out idle sub_801483C reports -- the
                 // 0x24 state's own leave condition (sub_801483C call sites
                 // asm00_1.s:10958 in sub_800840C and :11022 in sub_8008492;
@@ -3070,8 +3135,14 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
                 });
                 self.custom = Some(self.custom_assets.open(bg, &offered, gfx, self.fixture));
                 // T7c: the fight state's window path writes 0x20 the update
-                // the window opens (asm00_1.s:10609-10611).
-                self.seq.transition(SEQ_20);
+                // the window opens (asm00_1.s:10609-10611). T152: not during
+                // the battlestart entry park -- the entry's window opens
+                // under SETTLE and canon's word stays 0x00 through it
+                // (measured, this ticket's probes); the 0x20 write belongs
+                // to the fight state's own window path only.
+                if !entry_park {
+                    self.seq.transition(SEQ_20);
+                }
                 // F37b: the custom screen pauses the fight (canon's
                 // PauseBattle/BattlePaused, GameState+0x0A -- F37 watched it
                 // read 1 while the window is up), so whatever the enemy held
@@ -3725,6 +3796,16 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
         // the player's per-tick work on the SEQ_04 -> SEQ_08 frame.
         match self.seq.state {
             SEQ_20 if self.seq.age >= 1 => self.seq.transition(SEQ_24),
+            // T152: the battlestart entry's SETTLE hold. bannerSeqState00Settle
+            // (asm00_1.s:11024-11046) holds the word at 0x00 while
+            // isChipWindowSlideIdle_801483C reads busy -- busy from the
+            // sub_80147E4 seed at SETTLE entry (asm00_1.s:11029-11034) to the
+            // first window's slide-out idle -- and its [r5+2] latch leg
+            // (sub_801482C once, then leave) is the age>=2 edge below. The
+            // measured canon holds 0x00000000 for 300 capture frames on the
+            // scripted route (this ticket's probes), so the park pins the age
+            // until the first window Done clears it.
+            SEQ_00 if entry_park => self.seq.age = 0,
             SEQ_00 if self.seq.age >= 2 => self.seq.transition(SEQ_04),
             SEQ_04 if self.seq.age >= SEQ04_FRAMES - 1 => self.seq.transition(SEQ_08),
             SEQ_20 | SEQ_00 | SEQ_04 => self.seq.age += 1,
@@ -3835,7 +3916,10 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             .filter(|((_, e), _)| e.is_present())
         {
             if matches!(ai.style(), ai::Style::Gunner | ai::Style::Navi) {
-                if !paused && self.megaman.is_targetable() {
+                // T152: the aim telegraph is object logic too -- held under
+                // the battlestart entry park (same canon dispatch note as
+                // the act gate).
+                if !paused && self.megaman.is_targetable() && !entry_park {
                     self.gunner_ctl.update(
                         enemy,
                         self.megaman.panel(),
@@ -3859,12 +3943,27 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // (Inline rather than a helper: the loop below holds
             // `enemies`/`ais` mutably borrowed, so a &self method would not
             // compile; disjoint field reads do.)
-            if self.custom.is_none() && !(self.fixture.is_some() && self.window_closed) {
+            if self.custom.is_none()
+                && !(self.fixture.is_some() && self.window_closed)
+                // T152: the battlestart entry park holds the object logic
+                // too -- canon's FSM dispatch routes sequencer 0x00/0x04 to
+                // the window/banner arms and runs no object logic there
+                // (asm00_1.s:12760's dispatch note), so the parked viruses
+                // hold their spawn action (e1 reads 0x0004 at 0x0203aa90,
+                // this ticket's probe).
+                && !entry_park
+            {
                 objects::enemy_act(enemy);
             }
             continue;
             }
-            if !paused && !enemy.is_busy() && self.megaman.is_targetable() {
+            if !paused
+                && !enemy.is_busy()
+                && self.megaman.is_targetable()
+                // T152: no AI decisions under the entry park either (same
+                // canon dispatch note as the act gate above).
+                && !entry_park
+            {
                 let blocked = (all_held & !held[i]) | self.panels.other_half(true);
                 // Decided as the attack begins, as the game does, and held for
                 // its duration even if the player moves.
@@ -3877,6 +3976,8 @@ const INTRO_HOLD: u16 = 71; // provenance: peeked -- full white through the 71st
             // spawns no shot, lights no panel, ends no life.
             let update = if self.custom.is_none()
                 && !(self.fixture.is_some() && self.window_closed)
+                // T152: the entry park freeze -- see the act gate above.
+                && !entry_park
             {
                 objects::enemy_act(enemy)
             } else {

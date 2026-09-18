@@ -30,7 +30,7 @@ little-endian.
 | +32 | u16 | enemy_hp | first enemy's HP; 0 = the kind's default (what `fixture::read()` implements; the harness pokes 0 by default). `demo-field` pins its Mettaur at the literal 0xffff. |
 | +34 | u8  | deck_count | 0..5: chips the chip WINDOW offers (distinct from `hand`, the already-picked ones) |
 | +35 | u8[5] | deck | chip ids offered, in order; each slot's code is `deck_codes[i]` unless that is 0xFF |
-| +40 | u8  | start_state | 0 = battle; 1 = at the RESULT window already |
+| +40 | u8  | start_state | 0 = battle; 1 = at the RESULT window already; 2 = scripted battlestart entry -- the banner sequencer enters at the zero-filled SETTLE word (0x0203CA70 = 0x00) and the entry's object logic holds until the first chip window's slide-out completes (T152) |
 | +41 | u8  | result_level | busting level shown when `start_state` = 1 |
 | +42 | u16 | result_frames | battle time shown when `start_state` = 1 |
 | +44 | u16 | result_zenny | reward shown when `start_state` = 1 |

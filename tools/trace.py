@@ -567,6 +567,32 @@ def cmd_diff(args) -> None:
         prev_rrng, prev_crng = r["rng"], crng
     print("trace diff %s vs %s -- %s, %d compared frames (shift %d)"
           % (args.canon_dir, args.rust_dir, how, frames, args.shift))
+    # T152: the sequencer divergence report -- the word k-by-k on both
+    # sides, grouped into runs of one identical (canon, rust) pair, so a
+    # park/release shape reads straight off the diff, match or diverge;
+    # plus the actor CurAction pairs at the ticket's spot ks (0, 17, last).
+    pair_runs = []
+    for k in range(frames):
+        pair = (ctab[c0 + k][SEQ_CANON_KEY] & SEQ_MASK,
+                rtab[rbase + k][SEQ_RUST_KEY] & SEQ_MASK)
+        if pair_runs and pair_runs[-1][2] == pair:
+            pair_runs[-1][1] = k
+        else:
+            pair_runs.append([k, k, pair])
+    print("  sequencer word k=0..%d (canon frame %d+k / rust export %d+k):"
+          % (frames - 1, c0, rbase))
+    for k0, k1, (cval, rval) in pair_runs:
+        mark = "" if cval == rval else "  DIVERGES"
+        print("    k=%-4d..%-4d canon=%s rust=%s%s" % (k0, k1, hex(cval), hex(rval), mark))
+    for label, kc, kr in (("mm", "mm_state_action", "mm_state_action"),
+                          ("enemy", "e1_state_action", "enemy_state_action")):
+        spots = []
+        for k in (0, 17, frames - 1):
+            crow, rrow = ctab[c0 + k], rtab[rbase + k]
+            c_val = crow.get(kc, crow.get("enemy_state_action"))
+            r_val = rrow.get(kr, rrow.get("e1_state_action"))
+            spots.append("k=%d %s/%s" % (k, tuple(c_val), tuple(r_val)))
+        print("  %s CurAction (canon/rust): %s" % (label, "  ".join(spots)))
     # T7 acceptance field: the sequencer word's low half on both sides.
     # Judged and printed like a parity field, but NOT folded into FIRST
     # DIVERGENCE below, which stays parity-defined (oracle.py FIELD_PAIRS).
